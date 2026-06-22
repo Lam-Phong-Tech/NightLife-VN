@@ -1,0 +1,22 @@
+{
+  "name": "nightlife-vn-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\""
+  },
+  "devDependencies": {
+    "prettier": "3.8.4",
+    "turbo": "2.9.18",
+    "typescript": "6.0.3"
+  }
+}

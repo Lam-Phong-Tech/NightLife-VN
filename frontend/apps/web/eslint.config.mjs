@@ -1,0 +1,6 @@
+// App chỉ cần import cấu hình đã đóng gói sẵn từ package dùng chung.
+// Muốn đổi rule cho toàn bộ frontend → sửa trong packages/eslint-config.
+import { nextJsConfig } from "@nightlife/eslint-config/next";
+
+/** @type {import("eslint").Linter.Config[]} */
+export default nextJsConfig;

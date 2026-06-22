@@ -1,0 +1,22 @@
+/* Tailwind v4: chỉ cần 1 dòng import này là có toàn bộ utility class.
+   (Bản v3 cũ phải viết @tailwind base; @tailwind components; @tailwind utilities;) */
+@import "tailwindcss";
+
+/* @theme: nơi khai báo design token của Tailwind v4 (thay cho tailwind.config.js).
+   Các biến này tự sinh ra utility class, ví dụ --color-night-500 -> bg-night-500. */
+@theme {
+  --color-night-900: #0a0a0f;
+  --color-night-800: #14141f;
+  --color-neon-pink: #ff2d75;
+  --color-neon-cyan: #22d3ee;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-night-900);
+  color: #ededed;
+  font-family: system-ui, -apple-system, sans-serif;
+}

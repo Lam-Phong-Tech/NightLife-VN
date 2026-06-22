@@ -1,0 +1,15 @@
+# Khai báo các "workspace package" cho pnpm.
+# Mọi thư mục con khớp các pattern dưới đây mà có package.json
+# sẽ được pnpm coi là 1 package trong monorepo và liên kết với nhau.
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 10+ CHẶN script cài đặt (postinstall/install) của dependency theo mặc định
+# vì lý do bảo mật (một package độc hại có thể chạy mã khi cài).
+# Ta DUYỆT (allow-list) những package tin cậy có binary "native" cần build:
+#   - sharp:        thư viện xử lý/nén ảnh, Next.js dùng cho tối ưu <Image>
+#   - unrs-resolver: resolver tốc độ cao viết bằng Rust, ESLint dùng để phân giải import
+allowBuilds:
+  sharp: true
+  unrs-resolver: true

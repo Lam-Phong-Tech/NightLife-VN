@@ -1,0 +1,19 @@
+{
+  "name": "@nightlife/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./base": "./base.js",
+    "./next": "./next.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.5.0",
+    "eslint-config-next": "16.2.9",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.6.0",
+    "typescript-eslint": "8.61.1"
+  }
+}
