@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* nightlife.hn — dữ liệu & logic dùng chung cho prototype bấm-được.
    Đặt window.NL trước khi support.js render (nạp đồng bộ trong <head>). */
 window.NL = (function () {
