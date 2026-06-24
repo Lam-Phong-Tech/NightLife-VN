@@ -134,20 +134,20 @@
       {/* FORM */}
       <div style={{"flex":"1","background":"#fff","padding":"40px"}}>
         <h2 style={{"fontSize":"22px","fontWeight":"800"}}>Đăng ký hợp tác</h2>
-        <p style={{"fontSize":"13px","color":"#8a879a","marginTop":"5px"}}>Gửi thông tin — Admin sẽ liên hệ &amp; kiểm duyệt trước khi hiển thị.</p>
+        <p style={{"fontSize":"13px","color":"#8a879a","marginTop":"5px"}}>Gửi thông tin — Admin sẽ liên hệ & kiểm duyệt trước khi hiển thị.</p>
 
         <div style={{"marginTop":"20px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px"}}>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Tên quán / cơ sở <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>VD: Club Lumière</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Loại hình</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Bar / Lounge<span style={{"color":"#8a879a"}}>▾</span></div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Khu vực</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Hà Nội · Tây Hồ<span style={{"color":"#8a879a"}}>▾</span></div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Người liên hệ <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>Họ tên</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>SĐT / Telegram <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>0912 345 678</div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Mô tả ngắn</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6","minHeight":"72px"}}>Mô tả quán, dịch vụ nổi bật, đối tượng khách…</div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Hình ảnh quán <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div className="up" style={{"marginTop":"6px","border":"1.5px dashed #d9c9f7","borderRadius":"11px","padding":"20px","textAlign":"center","background":"#faf7ff"}}><img src="https://img.icons8.com/fluency/96/add-image.png" style={{"width":"30px","height":"30px","display":"inline-block"}} alt="" /><div style={{"fontSize":"12.5px","color":"#6d28d9","fontWeight":"600","marginTop":"6px"}}>Kéo thả hoặc tải ảnh lên</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Ảnh đẹp giúp quán nổi bật trên trang khám phá</div></div></div>
+          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Tên quán / cơ sở</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>VD: Club Lumière</div></div>
+          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Loại hình</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Bar / Lounge<span style={{"color":"#8a879a","fontSize":"10px"}}>▼</span></div></div>
+          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Khu vực</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Hà Nội<span style={{"color":"#8a879a","fontSize":"10px"}}>▼</span></div></div>
+          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Người liên hệ</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>Họ tên</div></div>
+          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>SĐT / Telegram</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>0912 345 678</div></div>
+          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Giới thiệu ngắn</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6","minHeight":"72px"}}>Mô tả quán, dịch vụ nổi bật...</div></div>
+          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Hình ảnh quán <span style={{"color":"#8a879a","fontWeight":"500"}}>(tuỳ chọn)</span></label><div className="up" style={{"marginTop":"6px","border":"1.5px dashed #d9c9f7","borderRadius":"11px","padding":"20px","textAlign":"center","background":"#faf7ff","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","height":"90px"}}><img src="https://img.icons8.com/fluency/96/add-image.png" style={{"width":"24px","height":"24px","display":"inline-block"}} alt="" /><div style={{"fontSize":"12.5px","color":"#6d28d9","fontWeight":"600"}}>Tải ảnh lên</div></div></div>
         </div>
 
-        <div className="btn" style={{"marginTop":"18px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"15px"}}>Gửi đăng ký</div>
-        <div style={{"marginTop":"10px","fontSize":"12px","color":"#8a879a","textAlign":"center"}}>Yêu cầu sẽ gửi tới Admin qua Telegram để kiểm duyệt. Đã có tài khoản? <a href="/dang-nhap" style={{"color":"#6d28d9","fontWeight":"600"}}>Đăng nhập đối tác</a></div>
+        <div className="btn" style={{"marginTop":"24px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"15px"}}>Gửi đăng ký hợp tác</div>
+        <div style={{"marginTop":"12px","fontSize":"12px","color":"#8a879a","textAlign":"center"}}>Yêu cầu sẽ gửi tới Admin qua Telegram để kiểm duyệt.</div>
       </div>
     </div>
   </div>
@@ -155,6 +155,51 @@
 </>
 
 
+
+<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
+  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
+    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
+      <div style={{"maxWidth":"300px"}}>
+        <a href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a>
+        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
+        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
+        </div>
+      </div>
+      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
+        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
+          <a href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</a>
+          <a href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</a>
+          <a href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</a>
+        </div>
+        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
+          <a href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</a>
+          <a href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</a>
+          <a href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</a>
+        </div>
+        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
+          <a href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</a>
+          <a href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</a>
+          <a href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</a>
+        </div>
+      </div>
+    </div>
+    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
+      <img src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
+      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
+    </div>
+    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
+      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
+      <div>v2.0.0 • Nightlife Platform</div>
+      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
+        <img src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
+      </div>
+    </div>
+  </div>
+</div>
 </div>
       </React.Fragment>
     );
