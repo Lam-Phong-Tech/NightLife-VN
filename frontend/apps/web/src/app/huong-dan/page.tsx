@@ -1,8 +1,11 @@
 
   "use client";
-  import React from 'react';
+  import React, { useState } from 'react';
 
   export default function Page() {
+    const [activeRankTab, setActiveRankTab] = useState('quan');
+    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
+    const [isReg, setIsReg] = useState(false);
     // Mock data arrays for loops
     const faqs: any[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
@@ -42,7 +45,7 @@
     {/* header */}
     <div style={{"background":"#fff","padding":"8px 18px 14px","display":"flex","alignItems":"center","gap":"12px"}}>
       <a href="/" style={{"width":"34px","height":"34px","borderRadius":"10px","background":"#f3f2f5","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}>
-        <img src="https://img.icons8.com/ios/100/1f1d29/left.png" style={{"width":"16px","height":"16px"}} alt="" />
+        <img src="https://img.icons8.com/ios/100/1f1d29/left.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" />
       </a>
       <div>
         <div style={{"fontWeight":"800","fontSize":"17px"}}>Hướng dẫn sử dụng</div>
@@ -95,15 +98,15 @@
       <div style={{"background":"#fff","borderRadius":"14px","padding":"14px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"display":"flex","flexDirection":"column","gap":"12px"}}>
           <div style={{"display":"flex","alignItems":"center","gap":"11px"}}>
-            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#ede9fe","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/6D28D9/search.png" style={{"width":"18px","height":"18px"}} alt="" /></span>
+            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#ede9fe","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/6D28D9/search.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span>
             <div><div style={{"fontWeight":"600","fontSize":"13px"}}>Tìm &amp; chọn quán</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Lọc theo khu vực, loại hình, mức giá.</div></div>
           </div>
           <div style={{"display":"flex","alignItems":"center","gap":"11px"}}>
-            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#ede9fe","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/6D28D9/calendar.png" style={{"width":"18px","height":"18px"}} alt="" /></span>
+            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#ede9fe","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/6D28D9/calendar.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span>
             <div><div style={{"fontWeight":"600","fontSize":"13px"}}>Chọn ngày, giờ &amp; số người</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Đặt trước tối thiểu 2 tiếng.</div></div>
           </div>
           <div style={{"display":"flex","alignItems":"center","gap":"11px"}}>
-            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#ede9fe","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/6D28D9/checkmark.png" style={{"width":"18px","height":"18px"}} alt="" /></span>
+            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#ede9fe","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/6D28D9/checkmark.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span>
             <div><div style={{"fontWeight":"600","fontSize":"13px"}}>Xác nhận &amp; nhận SMS</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Mã xác nhận gửi về số điện thoại ngay lập tức.</div></div>
           </div>
         </div>
@@ -118,15 +121,15 @@
       <div style={{"background":"#fff","borderRadius":"14px","padding":"14px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"display":"flex","flexDirection":"column","gap":"12px"}}>
           <div style={{"display":"flex","alignItems":"center","gap":"11px"}}>
-            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#fef3eb","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/e8923a/geisha.png" style={{"width":"18px","height":"18px"}} alt="" /></span>
+            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#fef3eb","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/e8923a/geisha.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span>
             <div><div style={{"fontWeight":"600","fontSize":"13px"}}>Xem profile, album &amp; video</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Đánh giá đầy đủ trước khi chọn Cast.</div></div>
           </div>
           <div style={{"display":"flex","alignItems":"center","gap":"11px"}}>
-            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#fef3eb","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/e8923a/marker.png" style={{"width":"18px","height":"18px"}} alt="" /></span>
+            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#fef3eb","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/e8923a/marker.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span>
             <div><div style={{"fontWeight":"600","fontSize":"13px"}}>Lọc theo khu vực</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Hà Nội · TP.HCM · Đà Nẵng · Hải Phòng.</div></div>
           </div>
           <div style={{"display":"flex","alignItems":"center","gap":"11px"}}>
-            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#fef3eb","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/e8923a/appointment-reminders.png" style={{"width":"18px","height":"18px"}} alt="" /></span>
+            <span style={{"width":"38px","height":"38px","borderRadius":"11px","flex":"none","background":"#fef3eb","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/e8923a/appointment-reminders.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span>
             <div><div style={{"fontWeight":"600","fontSize":"13px"}}>Liên hệ &amp; giữ lịch trước</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Nhắn tin qua ứng dụng để xác nhận lịch.</div></div>
           </div>
         </div>
@@ -145,28 +148,28 @@
         <div style={{"display":"flex","flexDirection":"column","gap":"8px"}}>
           <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"10px 12px","background":"#fdf8f1","borderRadius":"10px","borderLeft":"3px solid #b45309"}}>
             <div style={{"display":"flex","alignItems":"center","gap":"9px"}}>
-              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#b45309","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/star.png" style={{"width":"14px","height":"14px"}} alt="" /></span>
+              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#b45309","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/star.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
               <span style={{"fontWeight":"700","fontSize":"13px","color":"#b45309"}}>Đồng</span>
             </div>
             <span style={{"fontSize":"11px","color":"#8a879a"}}>0 – 999 điểm</span>
           </div>
           <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"10px 12px","background":"#f4f5f6","borderRadius":"10px","borderLeft":"3px solid #64748b"}}>
             <div style={{"display":"flex","alignItems":"center","gap":"9px"}}>
-              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#64748b","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/star.png" style={{"width":"14px","height":"14px"}} alt="" /></span>
+              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#64748b","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/star.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
               <span style={{"fontWeight":"700","fontSize":"13px","color":"#475569"}}>Bạc</span>
             </div>
             <span style={{"fontSize":"11px","color":"#8a879a"}}>1.000 – 4.999 điểm</span>
           </div>
           <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"10px 12px","background":"#fffbeb","borderRadius":"10px","borderLeft":"3px solid #d97706"}}>
             <div style={{"display":"flex","alignItems":"center","gap":"9px"}}>
-              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#d97706","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/star.png" style={{"width":"14px","height":"14px"}} alt="" /></span>
+              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#d97706","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/star.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
               <span style={{"fontWeight":"700","fontSize":"13px","color":"#d97706"}}>Vàng</span>
             </div>
             <span style={{"fontSize":"11px","color":"#8a879a"}}>5.000 – 14.999 điểm</span>
           </div>
           <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"10px 12px","background":"linear-gradient(90deg,#f5f1ff,#fce8f8)","borderRadius":"10px","borderLeft":"3px solid #6d28d9"}}>
             <div style={{"display":"flex","alignItems":"center","gap":"9px"}}>
-              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#6d28d9","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/diamond.png" style={{"width":"14px","height":"14px"}} alt="" /></span>
+              <span style={{"width":"28px","height":"28px","borderRadius":"8px","background":"#6d28d9","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/ffffff/diamond.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
               <span style={{"fontWeight":"700","fontSize":"13px","color":"#6d28d9"}}>Kim Cương</span>
             </div>
             <span style={{"fontSize":"11px","color":"#8a879a"}}>15.000+ điểm</span>
@@ -198,11 +201,11 @@
 
     {/* bottom nav */}
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
-      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
-      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
-      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
-      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
+      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
+      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
+      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
+      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
+      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
     </div>
   </div>
 </div>
