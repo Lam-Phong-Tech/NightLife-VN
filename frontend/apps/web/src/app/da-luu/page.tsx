@@ -1,8 +1,11 @@
 
   "use client";
-  import React from 'react';
+  import React, { useState } from 'react';
 
   export default function Page() {
+    const [activeRankTab, setActiveRankTab] = useState('quan');
+    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
+    const [isReg, setIsReg] = useState(false);
     // Mock data arrays for loops
     const items: any[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
@@ -17,9 +20,9 @@
       });
     
     // Standalone mock variables
-    const pickQuan: any = undefined;
+    const pickQuan = () => {};
     const segQuan = { background: '#fff', color: '#6d28d9', borderRadius: '16px', padding: '4px 14px', fontWeight: 600, fontSize: '13px', boxShadow: '0 2px 6px rgba(0,0,0,.08)' };
-    const pickCast: any = undefined;
+    const pickCast = () => {};
     const segCast = { background: 'transparent', color: '#8a879a', borderRadius: '16px', padding: '4px 14px', fontWeight: 600, fontSize: '13px' };
 
     return (
@@ -52,22 +55,22 @@
     <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"11px"}}>
       <a href="/chi-tiet-quan" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <span style={{"width":"96px","flex":"none","background":"url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)"}}></span>
-        <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>Club Lumière</div><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Tây Hồ · Bar Lounge</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.8</span><span style={{"fontSize":"9.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"8px","padding":"2px 7px","fontWeight":"600"}}>−30% Happy Hour</span></div></div>
+        <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>Club Lumière</div><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none","display":"inline-block"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Tây Hồ · Bar Lounge</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.8</span><span style={{"fontSize":"9.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"8px","padding":"2px 7px","fontWeight":"600"}}>−30% Happy Hour</span></div></div>
       </a>
       <a href="/chi-tiet-quan" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <span style={{"width":"96px","flex":"none","background":"url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#3a8fb0,#2d5fae)"}}></span>
-        <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>KTV Hoàng Gia</div><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Kim Mã · Karaoke VIP</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.6</span><span style={{"fontSize":"9.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"8px","padding":"2px 7px","fontWeight":"600"}}>Combo VIP 2+1</span></div></div>
+        <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>KTV Hoàng Gia</div><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none","display":"inline-block"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Kim Mã · Karaoke VIP</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.6</span><span style={{"fontSize":"9.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"8px","padding":"2px 7px","fontWeight":"600"}}>Combo VIP 2+1</span></div></div>
       </a>
       <a href="/chi-tiet-quan" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <span style={{"width":"96px","flex":"none","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8)"}}></span>
-        <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>Sakura Lounge</div><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Hoàn Kiếm · Lounge</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.7</span></div></div>
+        <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>Sakura Lounge</div><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none","display":"inline-block"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Hoàn Kiếm · Lounge</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.7</span></div></div>
       </a>
     </div>
 
     {/* empty state illustration */}
     <div style={{"padding":"6px 18px 18px"}}>
       <div style={{"background":"#fff","border":"1px dashed #e2e0e8","borderRadius":"14px","padding":"26px 18px","textAlign":"center"}}>
-        <span style={{"width":"54px","height":"54px","borderRadius":"50%","background":"#f1ebff","display":"flex","alignItems":"center","justifyContent":"center","margin":"0 auto"}}><img src="https://img.icons8.com/ios/100/6D28D9/like.png" style={{"width":"26px","height":"26px"}} alt="" /></span>
+        <span style={{"width":"54px","height":"54px","borderRadius":"50%","background":"#f1ebff","display":"flex","alignItems":"center","justifyContent":"center","margin":"0 auto"}}><img src="https://img.icons8.com/ios/100/6D28D9/like.png" style={{"width":"26px","height":"26px","display":"inline-block"}} alt="" /></span>
         <div style={{"fontSize":"13.5px","fontWeight":"700","marginTop":"11px"}}>Chưa lưu mục nào</div>
         <div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"5px","lineHeight":"1.55"}}>Nhấn biểu tượng tim trên quán hoặc cast<br />để lưu lại và xem nhanh tại đây.</div>
         <a href="/danh-sach-quan" style={{"display":"inline-block","marginTop":"13px","background":"#6d28d9","color":"#fff","borderRadius":"10px","padding":"10px 18px","fontSize":"12.5px","fontWeight":"700"}}>Khám phá quán ›</a>
@@ -76,11 +79,11 @@
 
     {/* bottom nav */}
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
-      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
-      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
-      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
-      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/user.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Tài khoản</span></a>
+      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
+      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
+      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
+      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
+      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Tài khoản</span></a>
     </div>
   </div>
 </div>
@@ -118,11 +121,11 @@
         <a href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a>
         <div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><a href="/" className="lk">Trang chủ</a><a href="/danh-sach-quan" className="lk">Tìm quán</a><a href="/danh-sach-cast" className="lk">Cast</a><a href="/xep-hang" className="lk">Bảng xếp hạng</a><a href="/tour" className="lk">Tour</a><a href="/blog" className="lk">Blog</a></div>
       </div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="/" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><a href="/dang-ky-doi-tac" style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</a></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><a href="/dang-ky-doi-tac" style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</a></div>
     </div>
 
     <div style={{"padding":"26px 34px 8px","display":"flex","alignItems":"center","justifyContent":"space-between","flexWrap":"wrap","gap":"12px"}}>
-      <div><h2 style={{"fontSize":"24px","fontWeight":"800"}}><img src="https://img.icons8.com/fluency/96/like.png" style={{"width":"24px","height":"24px","verticalAlign":"-5px","marginRight":"8px"}} alt="" />Đã lưu</h2><p style={{"fontSize":"13px","color":"#5b5870","marginTop":"5px"}}>Quán &amp; cast bạn đã thêm vào yêu thích.</p></div>
+      <div><h2 style={{"fontSize":"24px","fontWeight":"800"}}><img src="/icons/dich-vu-noi-bat.svg" style={{"width":"24px","height":"24px","verticalAlign":"-5px","marginRight":"8px","display":"inline-block"}} alt="" />Đã lưu</h2><p style={{"fontSize":"13px","color":"#5b5870","marginTop":"5px"}}>Quán &amp; cast bạn đã thêm vào yêu thích.</p></div>
       <div style={{"display":"flex","gap":"8px","background":"#fff","border":"1px solid #ececec","borderRadius":"18px","padding":"4px","width":"240px"}}>
         <div onClick={pickQuan} style={segQuan}>Quán</div>
         <div onClick={pickCast} style={segCast}>Cast</div>
@@ -136,7 +139,7 @@
           <div onClick={v.open} className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
             <div style={{"height":"128px","background":v.img,"position":"relative"}}>
               <><span style={{"position":"absolute","top":"10px","left":"10px","background":"#fff","color":v.badgeColor,"fontSize":"10.5px","fontWeight":"700","borderRadius":"14px","padding":"3px 9px"}}>{v.badgeText}</span></>
-              <span onClick={v.fav} className="btn" style={{"position":"absolute","top":"8px","right":"8px","width":"30px","height":"30px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"16px","height":"16px"}} alt="" /></span>
+              <span onClick={v.fav} className="btn" style={{"position":"absolute","top":"8px","right":"8px","width":"30px","height":"30px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" /></span>
             </div>
             <div style={{"padding":"13px"}}>
               <div style={{"fontWeight":"600","fontSize":"14.5px"}}>{v.name}</div>
@@ -148,7 +151,7 @@
 
         {/* empty-state placeholder card (illustrative) */}
         <div style={{"background":"#fff","border":"1.5px dashed #e2e0e8","borderRadius":"16px","overflow":"hidden","opacity":".55","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","textAlign":"center","minHeight":"215px","padding":"18px"}}>
-          <div style={{"width":"54px","height":"54px","borderRadius":"50%","background":"#f3f2f5","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/B6B3C0/like.png" style={{"width":"26px","height":"26px"}} alt="" /></div>
+          <div style={{"width":"54px","height":"54px","borderRadius":"50%","background":"#f3f2f5","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios/100/B6B3C0/like.png" style={{"width":"26px","height":"26px","display":"inline-block"}} alt="" /></div>
           <div style={{"fontSize":"13px","fontWeight":"600","color":"#8a879a","marginTop":"12px"}}>Chưa lưu mục nào</div>
           <div style={{"fontSize":"11.5px","color":"#a8a5b4","marginTop":"5px","lineHeight":"1.5"}}>Bấm vào trái tim ở mỗi quán / cast để lưu vào đây.</div>
         </div>

@@ -1,8 +1,11 @@
 
   "use client";
-  import React from 'react';
+  import React, { useState } from 'react';
 
   export default function Page() {
+    const [activeRankTab, setActiveRankTab] = useState('quan');
+    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
+    const [isReg, setIsReg] = useState(false);
     // Mock data arrays for loops
     const filters: any[] = [
           { label: 'Tất cả', style: { background: '#6d28d9', color: '#fff', borderRadius: '16px', padding: '7px 13px', fontWeight: 600, fontSize: '12.5px', whiteSpace: 'nowrap', cursor: 'pointer' } },
@@ -53,7 +56,7 @@
     <div style={{"padding":"14px 18px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"11px"}}>
       {cards?.map((c, index) => (<React.Fragment key={index}>
         <div onClick={c.open} style={{"borderRadius":"14px","overflow":"hidden","position":"relative","height":"200px","background":c.img,"boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
-          <span onClick={c.fav} style={{"position":"absolute","top":"8px","right":"8px","width":"27px","height":"27px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={c.favIcon} style={{"width":"14px","height":"14px"}} alt="" /></span>
+          <span onClick={c.fav} style={{"position":"absolute","top":"8px","right":"8px","width":"27px","height":"27px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={c.favIcon} style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
           <><span style={{"position":"absolute","top":"8px","left":"8px","background":"rgba(255,255,255,.92)","color":"#1f1d29","fontSize":"9px","fontWeight":"700","borderRadius":"9px","padding":"2px 7px"}}>🇯🇵 Nhật</span></>
           <div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"11px","background":"linear-gradient(0deg,rgba(20,8,16,.85),transparent)","color":"#fff"}}><div style={{"fontWeight":"600","fontSize":"13.5px"}}>{c.name} · {c.age}</div><div style={{"fontSize":"10px","color":"#f0dde8","marginTop":"2px"}}>{c.desc} · ★ {c.rating}</div></div>
         </div>
@@ -61,11 +64,11 @@
     </div>
 
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
-      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/fluency/96/geisha.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Cast</span></a>
-      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
-      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
-      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
+      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
+      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/fluency/96/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Cast</span></a>
+      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
+      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
+      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
     </div>
   </div>
 </div>
@@ -107,7 +110,7 @@
     <div style={{"padding":"0 34px 30px","display":"grid","gridTemplateColumns":"repeat(5,1fr)","gap":"14px"}}>
       {cards?.map((c, index) => (<React.Fragment key={index}>
         <div onClick={c.open} className="card" style={{"borderRadius":"14px","overflow":"hidden","position":"relative","height":"240px","background":c.img,"boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-          <span onClick={c.fav} style={{"position":"absolute","top":"9px","right":"9px","width":"28px","height":"28px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer"}}><img src={c.favIcon} style={{"width":"15px","height":"15px"}} alt="" /></span>
+          <span onClick={c.fav} style={{"position":"absolute","top":"9px","right":"9px","width":"28px","height":"28px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer"}}><img src={c.favIcon} style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" /></span>
           <><span style={{"position":"absolute","top":"9px","left":"9px","background":"rgba(255,255,255,.92)","color":"#1f1d29","fontSize":"9.5px","fontWeight":"700","borderRadius":"10px","padding":"3px 8px"}}>🇯🇵 Tiếng Nhật</span></>
           <div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"12px","background":"linear-gradient(0deg,rgba(20,8,16,.85),transparent)","color":"#fff"}}>
             <div style={{"fontWeight":"600","fontSize":"14px"}}>{c.name} · {c.age}</div>

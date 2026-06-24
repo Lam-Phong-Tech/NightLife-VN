@@ -1,20 +1,20 @@
 
   "use client";
-  import React from 'react';
+  import React, { useState } from 'react';
 
   export default function Page() {
+    const [activeRankTab, setActiveRankTab] = useState('quan');
+    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
+    const [isReg, setIsReg] = useState(false);
     // Mock data arrays for loops
-    const offers: any[] = Array(5).fill({
-        name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
-        img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
-        grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
-        label: 'Tất cả', style: { background: '#f3f2f5', color: '#5b5870' }, date: '12/10',
-        time: '21:00', code: 'NIGHT10', st: 'Hoàn tất',
-        favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
-        favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
-        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-        open: () => window.location.href = '/chi-tiet-quan'
-      });
+    const offers: any[] = [
+          { title: 'Happy Hour cuối tuần', place: 'Club Lumière · Tây Hồ', value: '-30%', expiry: 'Còn 3 ngày', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
+          { title: 'Combo phòng VIP 2+1', place: 'KTV Hoàng Gia · Kim Mã', value: '2+1', expiry: 'Còn 8 ngày', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
+          { title: 'Spa thư giãn nửa giá', place: 'Spa Hồng Ngọc · Đống Đa', value: '-50%', expiry: 'Sắp hết', img: "url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Đã lưu ví ✓', btnStyle: { background: '#e6f7ee', color: '#177544' }, take: () => alert('Mã đã được lưu') },
+          { title: 'Ladies Night -20%', place: 'Hanoi Velvet · Hoàn Kiếm', value: '-20%', expiry: 'Thứ 5 hàng tuần', img: "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
+          { title: 'Welcome Member -8%', place: 'Sora Lounge · Quận 1', value: '-8%', expiry: 'Hội viên mới', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
+          { title: 'Khai trương -10%', place: 'Neon Garden · Bình Thạnh', value: '-10%', expiry: 'Còn 5 ngày', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') }
+        ];
     
     // Standalone mock variables
     
@@ -45,17 +45,17 @@
       {offers?.map((o, index) => (<React.Fragment key={index}>
         <div style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"flex"}}>
           <div style={{"width":"96px","flex":"none","background":o.img,"position":"relative"}}><span style={{"position":"absolute","top":"8px","left":"8px","background":"#ffd24d","color":"#5a3d00","fontSize":"12px","fontWeight":"800","borderRadius":"9px","padding":"3px 8px"}}>{o.value}</span></div>
-          <div style={{"padding":"11px 12px","flex":"1"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>{o.title}</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>{o.place}</div><div style={{"marginTop":"9px","display":"flex","alignItems":"center","justifyContent":"space-between"}}><span style={{"fontSize":"10px","color":"#c0246a","background":"#fce4ef","borderRadius":"8px","padding":"3px 8px","fontWeight":"600"}}>{o.expiry}</span><span onClick={o.take} className="btn" style={{"fontSize":"11.5px","fontWeight":"700","borderRadius":"9px","padding":"6px 12px"}}>{o.btnLabel}</span></div></div>
+          <div style={{"padding":"11px 12px","flex":"1"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>{o.title}</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>{o.place}</div><div style={{"marginTop":"9px","display":"flex","alignItems":"center","justifyContent":"space-between"}}><span style={{"fontSize":"10px","color":"#c0246a","background":"#fce4ef","borderRadius":"8px","padding":"3px 8px","fontWeight":"600"}}>{o.expiry}</span><span onClick={o.take} className="btn" style={{ ...{"fontSize":"11.5px","fontWeight":"700","borderRadius":"9px","padding":"6px 12px"}, ...o.btnStyle }}>{o.btnLabel}</span></div></div>
         </div>
       </React.Fragment>))}
     </div>
 
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
-      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
-      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/fluency/96/gift.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Ưu đãi</span></a>
-      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
-      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
+      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
+      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
+      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/fluency/96/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Ưu đãi</span></a>
+      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
+      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
     </div>
   </div>
 </div>
@@ -101,7 +101,7 @@
             <div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"4px"}}>{o.place}</div>
             <div style={{"marginTop":"13px","display":"flex","alignItems":"center","justifyContent":"space-between"}}>
               <span style={{"fontSize":"11.5px","color":"#c0246a","background":"#fce4ef","borderRadius":"10px","padding":"4px 9px","fontWeight":"600"}}>{o.expiry}</span>
-              <span onClick={o.take} className="btn" style={{"fontSize":"13px","fontWeight":"700","borderRadius":"10px","padding":"8px 16px"}}>{o.btnLabel}</span>
+              <span onClick={o.take} className="btn" style={{ ...{"fontSize":"13px","fontWeight":"700","borderRadius":"10px","padding":"8px 16px"}, ...o.btnStyle }}>{o.btnLabel}</span>
             </div>
           </div>
         </div>

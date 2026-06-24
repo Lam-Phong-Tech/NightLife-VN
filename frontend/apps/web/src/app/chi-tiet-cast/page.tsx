@@ -1,20 +1,20 @@
 
   "use client";
-  import React from 'react';
+  import React, { useState } from 'react';
 
   export default function Page() {
+    const [activeRankTab, setActiveRankTab] = useState('quan');
+    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
+    const [isReg, setIsReg] = useState(false);
     // Mock data arrays for loops
-    const album: any[] = Array(5).fill({
-        name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
-        img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
-        grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
-        label: 'Tất cả', style: { background: '#f3f2f5', color: '#5b5870' }, date: '12/10',
-        time: '21:00', code: 'NIGHT10', st: 'Hoàn tất',
-        favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
-        favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
-        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-        open: () => window.location.href = '/chi-tiet-quan'
-      });
+    const album: any[] = [
+          { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
+          { bg: "url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
+          { bg: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
+          { bg: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
+          { bg: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
+          { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: true }
+        ];
     const tabs: any[] = [
           { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
@@ -29,13 +29,12 @@
     const cDesc = 'Phong cách đẹp';
     const toggleFav: any = undefined;
     const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
-    const cBorn: any = undefined;
-    const book: any = undefined;
-    const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
-    const isVideo: any = undefined;
+    const cBorn = 2002;
+    const book = () => window.location.href = '/dat-cho';
+    const mainBg = "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80') center/cover";
+    const isVideo = false;
     const cJp = false;
     const isIntro = true;
-    const isReview: any = undefined;
     const favIconDark = 'https://img.icons8.com/ios/100/1f1d29/like.png';
 
     return (
@@ -62,11 +61,11 @@
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"position":"relative","height":"300px","background":mainBg}}>
       <a href="/danh-sach-cast" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</a>
-      <span className="btn" onClick={toggleFav} style={{"position":"absolute","top":"12px","right":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIconDark} style={{"width":"17px","height":"17px"}} alt="" /></span>
-      <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"22px","height":"22px","marginLeft":"2px"}} alt="" /></span></>
+      <span className="btn" onClick={toggleFav} style={{"position":"absolute","top":"12px","right":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIconDark} style={{"width":"17px","height":"17px","display":"inline-block"}} alt="" /></span>
+      <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"22px","height":"22px","marginLeft":"2px","display":"inline-block"}} alt="" /></span></>
     </div>
     <div className="hscroll" style={{"display":"flex","gap":"7px","padding":"10px 18px 0","overflowX":"auto"}}>
-      {album?.map((a, index) => (<React.Fragment key={index}><div className="btn" onClick={a.pick} style={{"width":"54px","height":"54px","flex":"none","borderRadius":"9px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"14px","height":"14px"}} alt="" /></span></></div></React.Fragment>))}
+      {album?.map((a, index) => (<React.Fragment key={index}><div className="btn" onClick={a.pick} style={{"width":"54px","height":"54px","flex":"none","borderRadius":"9px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span></></div></React.Fragment>))}
     </div>
 
     <div style={{"background":"#fff","padding":"14px 18px"}}>
@@ -122,10 +121,10 @@
       {/* album */}
       <div style={{"width":"440px","flex":"none"}}>
         <div style={{"height":"440px","borderRadius":"16px","background":mainBg,"position":"relative","overflow":"hidden"}}>
-          <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"60px","height":"60px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"24px","height":"24px","marginLeft":"3px"}} alt="" /></span></>
+          <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"60px","height":"60px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"24px","height":"24px","marginLeft":"3px","display":"inline-block"}} alt="" /></span></>
         </div>
         <div style={{"display":"flex","gap":"8px","marginTop":"10px"}}>
-          {album?.map((a, index) => (<React.Fragment key={index}><div className="thumb" onClick={a.pick} style={{"flex":"1","height":"74px","borderRadius":"10px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"16px","height":"16px"}} alt="" /></span></></div></React.Fragment>))}
+          {album?.map((a, index) => (<React.Fragment key={index}><div className="thumb" onClick={a.pick} style={{"flex":"1","height":"74px","borderRadius":"10px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" /></span></></div></React.Fragment>))}
         </div>
       </div>
 
@@ -141,7 +140,7 @@
               <span style={{"fontSize":"12px","background":"#f3f2f5","color":"#5b5870","borderRadius":"14px","padding":"5px 11px"}}>{cDesc}</span>
             </div>
           </div>
-          <span className="btn" onClick={toggleFav} style={{"width":"44px","height":"44px","borderRadius":"12px","border":"1px solid #ececec","background":"#fff","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIcon} style={{"width":"20px","height":"20px"}} alt="" /></span>
+          <span className="btn" onClick={toggleFav} style={{"width":"44px","height":"44px","borderRadius":"12px","border":"1px solid #ececec","background":"#fff","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIcon} style={{"width":"20px","height":"20px","display":"inline-block"}} alt="" /></span>
         </div>
 
         <div style={{"display":"flex","gap":"26px","borderBottom":"1px solid #ececec","marginTop":"22px","fontSize":"14px"}}>
@@ -156,11 +155,7 @@
             <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"14px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Đang làm tại</div><div style={{"fontSize":"14px","fontWeight":"600","marginTop":"5px"}}>Club Lumière</div></div>
           </div>
         </>
-        <>
-          <div style={{"marginTop":"16px","display":"flex","flexDirection":"column","gap":"12px"}}>
-            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"15px"}}><div style={{"display":"flex","alignItems":"center","gap":"10px"}}><span style={{"width":"32px","height":"32px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=70') center/cover"}}></span><div><div style={{"fontSize":"13px","fontWeight":"600"}}>Khách H.</div><div style={{"fontSize":"11px","color":"#e8923a"}}>★★★★★</div></div></div><p style={{"fontSize":"13px","color":"#3a384a","marginTop":"9px","lineHeight":"1.6"}}>Bạn ấy vui vẻ, trò chuyện thoải mái. Rất recommend!</p></div>
-          </div>
-        </>
+
 
         <div style={{"marginTop":"20px","background":"#fff","border":"1px solid #ececec","borderRadius":"16px","padding":"18px","display":"flex","alignItems":"center","gap":"16px","boxShadow":"0 6px 20px rgba(40,20,60,.06)"}}>
           <div style={{"flex":"1"}}><div style={{"fontSize":"13px","color":"#8a879a"}}>Đặt theo cast tại</div><div style={{"fontSize":"16px","fontWeight":"700"}}>Club Lumière · Tây Hồ</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"3px"}}>Phí cast từ 500.000đ / giờ · Admin xác nhận lịch</div></div>
