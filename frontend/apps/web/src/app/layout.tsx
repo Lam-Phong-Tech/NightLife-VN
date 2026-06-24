@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 // metadata: Next.js đọc object này để sinh ra thẻ <title>, <meta> trong <head>.
 // Đây là tính năng của App Router (không cần tự viết thẻ <head>).
@@ -17,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" className={cn("font-sans", geist.variable)}>
       <head>
         <Script src="/shared.js" strategy="beforeInteractive" />
         <Script src="/theme.js" strategy="beforeInteractive" />
