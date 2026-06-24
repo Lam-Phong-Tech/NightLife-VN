@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Coupon } from '@/types';
 
 interface CouponCardProps {
@@ -11,14 +12,14 @@ interface CouponCardProps {
 export const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick, onTakeClick, variant = 'hot' }) => {
   if (variant === 'list') {
     return (
-      <a href="/chi-tiet-quan" onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', borderRadius: '13px', padding: '11px', boxShadow: '0 3px 12px rgba(40,20,60,.06)' }}>
+      <Link href="/chi-tiet-quan" onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', borderRadius: '13px', padding: '11px', boxShadow: '0 3px 12px rgba(40,20,60,.06)', textDecoration: 'none', color: 'inherit' }}>
         <span style={{ width: '48px', height: '48px', borderRadius: '11px', flex: 'none', background: coupon.img }}></span>
         <div style={{ flex: '1' }}>
           <div style={{ fontWeight: '700', fontSize: '13.5px' }}>{coupon.title}</div>
           <div style={{ fontSize: '11px', color: '#8a879a', marginTop: '2px' }}>{coupon.place}</div>
         </div>
-        <span onClick={onTakeClick || coupon.take} style={{ fontSize: '12px', color: '#6d28d9', fontWeight: '600' }}>{coupon.btnLabel} ›</span>
-      </a>
+        <span onClick={(e) => { e.preventDefault(); onTakeClick ? onTakeClick(e) : coupon.take?.(); }} style={{ fontSize: '12px', color: '#6d28d9', fontWeight: '600' }}>{coupon.btnLabel} ›</span>
+      </Link>
     );
   }
 
@@ -37,7 +38,7 @@ export const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick, onTakeC
           <span style={{ fontSize: '11.5px', color: '#c0246a', background: '#fce4ef', borderRadius: '10px', padding: '4px 9px', fontWeight: '600' }}>
             {coupon.expiry}
           </span>
-          <span onClick={onTakeClick || coupon.take} style={{ fontSize: '13px', color: '#6d28d9', fontWeight: '600' }}>
+          <span onClick={(e) => { e.preventDefault(); onTakeClick ? onTakeClick(e) : coupon.take?.(); }} style={{ fontSize: '13px', color: '#6d28d9', fontWeight: '600' }}>
             {coupon.btnLabel} ›
           </span>
         </div>

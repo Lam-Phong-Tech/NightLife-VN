@@ -8,6 +8,7 @@ export interface BaseItem {
   favIcon?: string;
   favIconDark?: string;
   img?: string;
+  tag?: string;
   open?: () => void;
   fav?: (e: React.MouseEvent) => void;
 }
@@ -50,6 +51,12 @@ export interface Coupon {
   color?: string;
   bg?: string;
   dim?: string;
+}
+
+export interface FilterTab {
+  label: string;
+  style?: React.CSSProperties;
+  pick?: () => void;
 }
 
 export interface Booking {

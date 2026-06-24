@@ -19,16 +19,10 @@
 
 <>
 <>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-<style dangerouslySetInnerHTML={{__html: `
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#e7e5df;}
-  a{text-decoration:none;color:inherit;}
-  .hscroll{scrollbar-width:none;}
-  .hscroll::-webkit-scrollbar{display:none;}
-`}} />
+
+
+
+
 </>
 
 <div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
@@ -102,20 +96,10 @@
 
 <>
 <>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-<style dangerouslySetInnerHTML={{__html: `
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#e7e5df;}
-  a{text-decoration:none;color:inherit;}
-  .btn{transition:filter .14s ease, transform .12s ease;cursor:pointer;}
-  .btn:hover{filter:brightness(1.06);transform:translateY(-1px);}
-  .lk{transition:color .14s ease;}
-  .lk:hover{color:#6d28d9;}
-  .up{transition:background .14s ease;cursor:pointer;}
-  .up:hover{background:#f3ecff;}
-`}} />
+
+
+
+
 </>
 
 <div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
@@ -277,3 +261,4 @@
     );
   }
   
+

@@ -7,11 +7,21 @@ import { cats, areas, venues } from '@/lib/mock-data';
 import { VenueCard } from '@/components/ui/VenueCard';
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function Page() {
   const [activeRankTab, setActiveRankTab] = useState('quan');
   const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
   const [isReg, setIsReg] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Simulate loading state for demonstration
+  React.useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
     
     // Standalone mock variables
     const onSearch: any = undefined;
@@ -24,17 +34,10 @@ export default function Page() {
 
 <>
 <>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-<style dangerouslySetInnerHTML={{__html: `
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#e7e5df;}
-  a{text-decoration:none;color:inherit;}
-  input{font-family:inherit;outline:none;}
-  .hscroll{scrollbar-width:none;}
-  .hscroll::-webkit-scrollbar{display:none;}
-`}} />
+
+
+
+
 </>
 
 <div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
@@ -52,18 +55,18 @@ export default function Page() {
     </div>
 
     <div style={{"padding":"12px 18px 6px","fontSize":"12.5px","color":"#5b5870"}}><b style={{"color":"#1f1d29"}}>{count} quán</b> phù hợp</div>
-    <div style={{"padding":"0 18px 12px","display":"flex","flexDirection":"column","gap":"12px"}}>
-      {venues?.map((v, index) => (<React.Fragment key={index}>
-        <div onClick={v.open} style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
-          <div style={{"width":"108px","flex":"none","background":v.img,"position":"relative"}}><span onClick={v.fav} style={{"position":"absolute","top":"7px","left":"7px","width":"26px","height":"26px","borderRadius":"50%","background":"rgba(0,0,0,.28)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={v.favIcon} style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span></div>
-          <div style={{"padding":"11px 12px 11px 0","flex":"1","minWidth":"0"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"fontWeight":"600","fontSize":"14px"}}>{v.name}</span><><span style={{"fontSize":"9px","fontWeight":"700","color":v.badgeColor,"background":"#f3f2f5","borderRadius":"8px","padding":"2px 6px"}}>{v.badgeText}</span></></div>
-            <div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"2px"}}>{v.area} · {v.catLabel}</div>
-            <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginTop":"8px"}}><span style={{"fontSize":"12px","color":"#e8923a"}}>★ {v.rating} <span style={{"color":"#a8a5b4"}}>({v.reviews})</span></span><span style={{"fontSize":"12px","fontWeight":"600"}}>từ {v.price}</span></div>
-          </div>
-        </div>
-      </React.Fragment>))}
-      <><div style={{"textAlign":"center","color":"#8a879a","fontSize":"13px","padding":"30px 0"}}>Không có quán nào khớp bộ lọc.</div></>
+    <div style={{ padding: '0 18px 12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {isLoading ? (
+        <LoadingSkeleton />
+      ) : venues?.length > 0 ? (
+        venues.map((v, index) => (
+          <React.Fragment key={index}>
+            <VenueCard venue={v} variant="horizontal" />
+          </React.Fragment>
+        ))
+      ) : (
+        <EmptyState />
+      )}
     </div>
 
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
@@ -83,19 +86,10 @@ export default function Page() {
 
 <>
 <>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-<style dangerouslySetInnerHTML={{__html: `
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#e7e5df;}
-  a{text-decoration:none;color:inherit;}
-  input{font-family:inherit;outline:none;}
-  .card{transition:transform .16s ease, box-shadow .16s ease;}
-  .card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(40,20,60,.14);}
-  .lk{transition:color .14s ease;}
-  .lk:hover{color:#6d28d9;}
-`}} />
+
+
+
+
 </>
 
 <div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
@@ -144,7 +138,7 @@ export default function Page() {
         </div>
         <div style={{"display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"16px"}}>
           {venues?.map((v, index) => (<React.Fragment key={index}>
-            <div onClick={v.open} className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
+            <a href={`/stores/${v.id || 'store-1'}`} className="card" style={{"display": "block", "textDecoration": "none", "color": "inherit", "background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
               <div style={{"height":"128px","background":v.img,"position":"relative"}}>
                 <><span style={{"position":"absolute","top":"10px","left":"10px","background":"#fff","color":v.badgeColor,"fontSize":"10.5px","fontWeight":"700","borderRadius":"14px","padding":"3px 9px"}}>{v.badgeText}</span></>
                 <span onClick={v.fav} style={{"position":"absolute","top":"8px","right":"8px","width":"30px","height":"30px","borderRadius":"50%","background":"rgba(0,0,0,.28)","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer"}}><img src={v.favIcon} style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" /></span>
@@ -154,7 +148,7 @@ export default function Page() {
                 <div style={{"fontSize":"12px","color":"#8a879a","marginTop":"3px"}}>{v.area} · {v.catLabel}</div>
                 <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginTop":"9px"}}><span style={{"fontSize":"12.5px","color":"#e8923a"}}>★ {v.rating} <span style={{"color":"#a8a5b4"}}>({v.reviews})</span></span><span style={{"fontSize":"12.5px","color":"#1f1d29","fontWeight":"600"}}>từ {v.price}</span></div>
               </div>
-            </div>
+            </a>
           </React.Fragment>))}
         </div>
         <><div style={{"textAlign":"center","color":"#8a879a","fontSize":"14px","padding":"40px 0"}}>Không có quán nào khớp bộ lọc. Thử bỏ bớt điều kiện.</div></>
@@ -215,3 +209,4 @@ export default function Page() {
     );
   }
   
+
