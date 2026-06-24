@@ -1,53 +1,20 @@
-/* eslint-disable */
+
 
   "use client";
   import React, { useState } from 'react';
 
-  export default function Page() {
-    const [activeRankTab, setActiveRankTab] = useState('quan');
-    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
-    const [isReg, setIsReg] = useState(false);
-    // Mock data arrays for loops
-    const recs: any[] = Array(5).fill({
-        name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
-        img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
-        grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
-        label: 'Tất cả', style: { background: '#f3f2f5', color: '#5b5870' }, date: '12/10',
-        time: '21:00', code: 'NIGHT10', st: 'Hoàn tất',
-        favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
-        favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
-        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-        open: () => window.location.href = '/chi-tiet-quan'
-      });
-    const cityTabs: any[] = [
-          { label: 'Tất cả', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } },
-          { label: 'Hà Nội', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } },
-          { label: 'TP.HCM', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } }
-        ];
-    const rankList: any[] = activeRankTab === 'quan' ? [
-            { rank: '1', numColor: '#713f12', crown: 'linear-gradient(140deg, #fef08a, #eab308)', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Club Lumière', area: 'Tây Hồ · HN', metric: '12.4k lượt', open: () => window.location.href = '/chi-tiet-quan' },
-            { rank: '2', numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sora Lounge', area: 'Quận 1 · HCM', metric: '11.8k lượt', open: () => window.location.href = '/chi-tiet-quan' },
-            { rank: '3', numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'KTV Hoàng Gia', area: 'Kim Mã · HN', metric: '9.7k lượt', open: () => window.location.href = '/chi-tiet-quan' },
-            { rank: '4', numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)', img: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Diamond Bar', area: 'Quận 3 · HCM', metric: '8.9k lượt', open: () => window.location.href = '/chi-tiet-quan' },
-            { rank: '5', numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sakura Lounge', area: 'Trúc Bạch · HN', metric: '8.1k lượt', open: () => window.location.href = '/chi-tiet-quan' }
-          ] : [
-            { rank: '1', numColor: '#713f12', crown: 'linear-gradient(140deg, #fef08a, #eab308)', img: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Yuki', area: 'Tây Hồ · HN', metric: '4.9 ⭐', open: () => window.location.href = '/chi-tiet-cast' },
-            { rank: '2', numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)', img: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Hana', area: 'Quận 1 · HCM', metric: '4.8 ⭐', open: () => window.location.href = '/chi-tiet-cast' },
-            { rank: '3', numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)', img: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Rina', area: 'Kim Mã · HN', metric: '4.7 ⭐', open: () => window.location.href = '/chi-tiet-cast' },
-            { rank: '4', numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)', img: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Mai', area: 'Quận 3 · HCM', metric: '4.6 ⭐', open: () => window.location.href = '/chi-tiet-cast' },
-            { rank: '5', numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Lan', area: 'Trúc Bạch · HN', metric: '4.5 ⭐', open: () => window.location.href = '/chi-tiet-cast' }
-          ];
-    const svc: any[] = activeSvcTab === 'nhahang' ? [
-            { name: 'Sakura Teppanyaki', area: 'Tây Hồ · Nhà hàng Nhật', price: 'từ 800K', tag: 'Đặt bàn nhanh', grad: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' },
-            { name: 'Yakitori Hanoi', area: 'Ba Đình · BBQ Nhật', price: 'từ 600K', tag: 'Mới', grad: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' },
-            { name: 'Sushi Lava', area: 'Quận 1 · Omakase', price: 'từ 1.2tr', tag: 'Đánh giá cao', grad: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' },
-            { name: 'Wagyu House', area: 'Hoàn Kiếm · Steak', price: 'từ 1.5tr', tag: 'Hot', grad: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' }
-          ] : [
-            { name: 'Spa Hồng Ngọc', area: 'Đống Đa · Massage', price: 'từ 500K', tag: 'Thư giãn', grad: "url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' },
-            { name: 'Hanoi Oasis Spa', area: 'Tây Hồ · Xông hơi', price: 'từ 700K', tag: 'Ưu đãi 20%', grad: "url('https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' },
-            { name: 'Sen Tài Thu', area: 'Ba Đình · Cổ truyền', price: 'từ 400K', tag: 'Phổ biến', grad: "url('https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' },
-            { name: 'Aroma Clinic', area: 'Quận 1 · Chăm sóc da', price: 'từ 1.0tr', tag: 'Cao cấp', grad: "url('https://images.unsplash.com/photo-1570172619644-def2f520b22a?auto=format&fit=crop&w=480&q=70') center/cover", open: () => window.location.href = '/chi-tiet-quan' }
-          ];
+import { recs, cityTabs, rankListQuan, rankListCast, svcData, spaData } from '@/lib/mock-data';
+import { VenueCard } from '@/components/ui/VenueCard';
+import { Header } from '@/components/layout/Header';
+import { BottomNav } from '@/components/layout/BottomNav';
+
+export default function Page() {
+  const [activeRankTab, setActiveRankTab] = useState('quan');
+  const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
+  const [isReg, setIsReg] = useState(false);
+
+  const rankList = activeRankTab === 'quan' ? rankListQuan : rankListCast;
+  const svc = activeSvcTab === 'nhahang' ? svcData : spaData;
     
     // Standalone mock variables
     const rankTitle = "Bảng xếp hạng — Quán nổi bật tháng 6/2026";
