@@ -87,7 +87,7 @@
 
 <div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"maxWidth":"920px","marginBottom":"22px","display":"flex","alignItems":"center","gap":"14px"}}>
-    <a href="trang-chu.html" style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"7px 14px","fontWeight":"600"}}>‹ Trang chủ</a>
+    <a href="/" style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"7px 14px","fontWeight":"600"}}>‹ Trang chủ</a>
     <div style={{"fontSize":"13px","color":"#8a8780"}}><b style={{"color":"#2b2a26"}}>Đăng nhập / Đăng ký</b></div>
   </div>
 

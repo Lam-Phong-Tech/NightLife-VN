@@ -40,27 +40,27 @@
     </div>
 
     <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"12px"}}>
-      <a href="blog-chi-tiet.html" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
+      <a href="/blog-chi-tiet" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
         <div style={{"height":"120px","background":"url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=480&q=70') center/cover,linear-gradient(140deg,#3a8fb0,#2d5fae)"}}></div>
         <div style={{"padding":"12px"}}><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":"#1f7a8c","background":"#e0f2f5"}}>Cẩm nang khu vực</span><div style={{"fontWeight":"700","fontSize":"13.5px","marginTop":"8px","lineHeight":"1.35"}}>Cẩm nang đi chơi đêm khu Tây Hồ cho khách Nhật</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"7px"}}>21/06 · 5 phút đọc</div></div>
       </a>
-      <a href="blog-chi-tiet.html" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
+      <a href="/blog-chi-tiet" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
         <div style={{"height":"120px","background":"url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)"}}></div>
         <div style={{"padding":"12px"}}><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":"#c0246a","background":"#fce4ef"}}>Văn hoá Nhật</span><div style={{"fontWeight":"700","fontSize":"13.5px","marginTop":"8px","lineHeight":"1.35"}}>Văn hoá karaoke Nhật tại Hà Nội</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"7px"}}>20/06 · 7 phút đọc</div></div>
       </a>
-      <a href="blog-chi-tiet.html" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
+      <a href="/blog-chi-tiet" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
         <div style={{"height":"120px","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=480&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8)"}}></div>
         <div style={{"padding":"12px"}}><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":"#1f7a8c","background":"#e0f2f5"}}>Cẩm nang khu vực</span><div style={{"fontWeight":"700","fontSize":"13.5px","marginTop":"8px","lineHeight":"1.35"}}>Bản đồ Quận 1 về đêm cho khách Nhật</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"7px"}}>19/06 · 6 phút đọc</div></div>
       </a>
-      <a href="blog-chi-tiet.html" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
+      <a href="/blog-chi-tiet" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
         <div style={{"height":"120px","background":"url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=480&q=70') center/cover,linear-gradient(140deg,#e0a23a,#c0782d)"}}></div>
         <div style={{"padding":"12px"}}><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":"#b06a00","background":"#fdefd6"}}>Sự kiện</span><div style={{"fontWeight":"700","fontSize":"13.5px","marginTop":"8px","lineHeight":"1.35"}}>Midnight Festival Tây Hồ trở lại tháng này</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"7px"}}>18/06 · 3 phút đọc</div></div>
       </a>
-      <a href="blog-chi-tiet.html" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
+      <a href="/blog-chi-tiet" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
         <div style={{"height":"120px","background":"url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=480&q=70') center/cover,linear-gradient(140deg,#e0598a,#a8336b)"}}></div>
         <div style={{"padding":"12px"}}><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":"#6d28d9","background":"#f1ebff"}}>Mẹo đặt chỗ</span><div style={{"fontWeight":"700","fontSize":"13.5px","marginTop":"8px","lineHeight":"1.35"}}>5 mẹo đặt bàn nhanh dịp cuối tuần</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"7px"}}>16/06 · 4 phút đọc</div></div>
       </a>
-      <a href="blog-chi-tiet.html" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
+      <a href="/blog-chi-tiet" style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"block"}}>
         <div style={{"height":"120px","background":"linear-gradient(140deg,#5fae8a,#2d8a6a)"}}></div>
         <div style={{"padding":"12px"}}><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":"#1f7a8c","background":"#e0f2f5"}}>Cẩm nang khu vực</span><div style={{"fontWeight":"700","fontSize":"13.5px","marginTop":"8px","lineHeight":"1.35"}}>Lounge nào hợp tiếp khách đối tác?</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"7px"}}>14/06 · 5 phút đọc</div></div>
       </a>
@@ -68,11 +68,11 @@
 
     {/* bottom nav */}
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <a href="trang-chu.html" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/home.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Trang chủ</span></a>
-      <a href="danh-sach-cast.html" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
-      <a href="uu-dai.html" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
-      <a href="lich-su-dat-cho.html" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
-      <a href="tai-khoan.html" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
+      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/home.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Trang chủ</span></a>
+      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
+      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
+      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
+      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></a>
     </div>
   </div>
 </div>
@@ -105,17 +105,17 @@
     {/* HEADER */}
     <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
       <div style={{"display":"flex","alignItems":"center","gap":"34px"}}>
-        <a href="trang-chu.html" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a>
-        <div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><a href="trang-chu.html" className="lk">Trang chủ</a><a href="danh-sach-quan.html" className="lk">Tìm quán</a><a href="danh-sach-cast.html" className="lk">Cast</a><a href="xep-hang.html" className="lk">Bảng xếp hạng</a><span className="lk">Tour</span><a href="blog.html" style={{"color":"#6d28d9","fontWeight":"600"}}>Blog</a></div>
+        <a href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a>
+        <div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><a href="/" className="lk">Trang chủ</a><a href="/danh-sach-quan" className="lk">Tìm quán</a><a href="/danh-sach-cast" className="lk">Cast</a><a href="/xep-hang" className="lk">Bảng xếp hạng</a><a href="/tour" className="lk">Tour</a><a href="/blog" style={{"color":"#6d28d9","fontWeight":600}}>Blog</a></div>
       </div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="../../index.html" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><a href="dang-ky-doi-tac.html" style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</a></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="/" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><a href="/dang-ky-doi-tac" style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</a></div>
     </div>
 
     <div style={{"padding":"26px 34px 0"}}><h2 style={{"fontSize":"26px","fontWeight":"800"}}>Blog &amp; Cẩm nang</h2><p style={{"fontSize":"13.5px","color":"#5b5870","marginTop":"5px"}}>Hướng dẫn khu vực, văn hoá về đêm &amp; mẹo trải nghiệm cho khách.</p></div>
 
     {/* FEATURED */}
     <div style={{"padding":"18px 34px 0"}}>
-      <a href="blog-chi-tiet.html" className="card" style={{"borderRadius":"18px","overflow":"hidden","display":"flex","background":"#fff","boxShadow":"0 4px 16px rgba(40,20,60,.07)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"borderRadius":"18px","overflow":"hidden","display":"flex","background":"#fff","boxShadow":"0 4px 16px rgba(40,20,60,.07)"}}>
         <div style={{"width":"46%","flex":"none","background":"url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#7b2d6b,#3a1f6e)","minHeight":"230px"}}></div>
         <div style={{"padding":"30px","display":"flex","flexDirection":"column","justifyContent":"center"}}>
           <span style={{"fontSize":"11px","color":"#c0246a","background":"#fce4ef","borderRadius":"9px","padding":"4px 10px","fontWeight":"700","width":"fit-content"}}>Nổi bật · Cẩm nang khu vực</span>
@@ -138,47 +138,47 @@
     {/* GRID */}
     <div style={{"padding":"18px 34px 34px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"16px"}}>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#3a9fb0,#2d6fae)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#1f7a8c","background":"#e0f2f5"}}>Cẩm nang khu vực</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Cẩm nang đi chơi đêm khu Tây Hồ</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>21/06/2026 · 5 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#c0246a","background":"#fce4ef"}}>Văn hoá Nhật</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Văn hoá karaoke Nhật tại Hà Nội</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>20/06/2026 · 7 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#1f7a8c","background":"#e0f2f5"}}>Cẩm nang khu vực</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Bản đồ Quận 1 về đêm cho khách Nhật</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>19/06/2026 · 6 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#e0a23a,#c0782d)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#b06a00","background":"#fdefd6"}}>Sự kiện</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Midnight Festival Tây Hồ trở lại</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>18/06/2026 · 3 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#e0598a,#a8336b)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#6d28d9","background":"#f1ebff"}}>Mẹo đặt chỗ</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>5 mẹo đặt bàn nhanh cuối tuần</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>16/06/2026 · 4 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#5fae8a,#2d8a6a)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#1f7a8c","background":"#e0f2f5"}}>Cẩm nang khu vực</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Lounge nào hợp tiếp khách đối tác?</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>14/06/2026 · 5 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#3a8fb0,#2d5fae)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#c0246a","background":"#fce4ef"}}>Văn hoá Nhật</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Etiquette khi đi lounge cùng khách Nhật</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>12/06/2026 · 6 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#e0985f,#c06a2d)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#b06a00","background":"#fdefd6"}}>Sự kiện</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Lịch sự kiện đêm TP.HCM tháng 6</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>10/06/2026 · 4 phút đọc</div></div>
       </a>
 
-      <a href="blog-chi-tiet.html" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <a href="/blog-chi-tiet" className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <div style={{"height":"150px","background":"url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#6d28d9,#3a1f6e)"}}></div>
         <div style={{"padding":"14px"}}><span style={{"fontSize":"10.5px","fontWeight":"700","borderRadius":"9px","padding":"3px 9px","color":"#6d28d9","background":"#f1ebff"}}>Mẹo đặt chỗ</span><div style={{"fontWeight":"700","fontSize":"15px","marginTop":"9px","lineHeight":"1.35"}}>Cách dùng coupon &amp; tích điểm hiệu quả</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"9px"}}>08/06/2026 · 5 phút đọc</div></div>
       </a>

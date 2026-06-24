@@ -12,36 +12,31 @@
         time: '21:00', code: 'NIGHT10', st: 'Hoàn tất',
         favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
         favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
-        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover"
+        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
+        open: () => window.location.href = '/chi-tiet-quan'
       });
-    const tabs: any[] = Array(5).fill({
-        name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
-        img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
-        grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
-        label: 'Tất cả', style: { background: '#f3f2f5', color: '#5b5870' }, date: '12/10',
-        time: '21:00', code: 'NIGHT10', st: 'Hoàn tất',
-        favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
-        favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
-        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover"
-      });
+    const tabs: any[] = [
+          { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
+          { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
+        ];
     
     // Standalone mock variables
-    const cName: any = undefined;
-    const cAge: any = undefined;
-    const cRating: any = undefined;
-    const cArea: any = undefined;
-    const cLang: any = undefined;
-    const cDesc: any = undefined;
+    const cName = 'Yuki';
+    const cAge = 24;
+    const cRating = 4.8;
+    const cArea = 'Kim Mã';
+    const cLang = 'Việt · Anh';
+    const cDesc = 'Phong cách đẹp';
     const toggleFav: any = undefined;
-    const favIcon: any = undefined;
+    const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
     const cBorn: any = undefined;
     const book: any = undefined;
-    const mainBg: any = undefined;
+    const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isVideo: any = undefined;
-    const cJp: any = undefined;
-    const isIntro: any = undefined;
+    const cJp = false;
+    const isIntro = true;
     const isReview: any = undefined;
-    const favIconDark: any = undefined;
+    const favIconDark = 'https://img.icons8.com/ios/100/1f1d29/like.png';
 
     return (
       <React.Fragment>
@@ -66,7 +61,7 @@
 <div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"position":"relative","height":"300px","background":mainBg}}>
-      <a href="danh-sach-cast.html" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</a>
+      <a href="/danh-sach-cast" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</a>
       <span className="btn" onClick={toggleFav} style={{"position":"absolute","top":"12px","right":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIconDark} style={{"width":"17px","height":"17px"}} alt="" /></span>
       <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"22px","height":"22px","marginLeft":"2px"}} alt="" /></span></>
     </div>
@@ -118,10 +113,10 @@
 <div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
     <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><a href="trang-chu.html" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><a href="trang-chu.html" className="lk">Trang chủ</a><a href="danh-sach-quan.html" className="lk">Tìm quán</a><a href="danh-sach-cast.html" style={{"color":"#6d28d9","fontWeight":"600"}}>Cast</a><a href="xep-hang.html" className="lk">Bảng xếp hạng</a><span className="lk">Tour</span><span className="lk">Blog</span></div></div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="dang-nhap.html" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><a href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><a href="/" className="lk">Trang chủ</a><a href="/danh-sach-quan" className="lk">Tìm quán</a><a href="/danh-sach-cast" className="lk">Cast</a><a href="/xep-hang" className="lk">Bảng xếp hạng</a><a href="/tour" className="lk">Tour</a><a href="/blog" className="lk">Blog</a></div></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
     </div>
-    <div style={{"padding":"18px 34px 0","fontSize":"12.5px","color":"#8a879a"}}><a href="trang-chu.html" className="lk">Trang chủ</a> › <a href="danh-sach-cast.html" className="lk">Cast</a> › <span style={{"color":"#1f1d29"}}>{cName}</span></div>
+    <div style={{"padding":"18px 34px 0","fontSize":"12.5px","color":"#8a879a"}}><a href="/" className="lk">Trang chủ</a> › <a href="/danh-sach-cast" className="lk">Cast</a> › <span style={{"color":"#1f1d29"}}>{cName}</span></div>
 
     <div style={{"display":"flex","gap":"24px","padding":"18px 34px 30px"}}>
       {/* album */}
