@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 // metadata: Next.js đọc object này để sinh ra thẻ <title>, <meta> trong <head>.
@@ -17,6 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
+      <head>
+        <Script src="/shared.js" strategy="beforeInteractive" />
+        <Script src="/theme.js" strategy="beforeInteractive" />
+        <Script src="/support.js" strategy="beforeInteractive" />
+      </head>
       <body>{children}</body>
     </html>
   );
