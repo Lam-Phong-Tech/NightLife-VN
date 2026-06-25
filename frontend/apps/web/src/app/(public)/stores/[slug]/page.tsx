@@ -4,24 +4,24 @@ import Image from 'next/image';
 "use client";
 import React, { useState } from 'react';
 
-export default function Page({ params }: { params: Record<string, any> }) {
+export default function Page({ params }: { params: { slug?: string, [key: string]: unknown } }) {
   const [activeRankTab, setActiveRankTab] = useState('quan');
   const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
   const [isReg, setIsReg] = useState(false);
-  const thumbs: Record<string, any>[] = [
+  const thumbs: { bg?: string }[] = [
     { bg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover" },
     { bg: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover" },
           { bg: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=360&q=70') center/cover" },
           { bg: "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=360&q=70') center/cover" }
         ];
-    const tabs: Record<string, any>[] = [
+    const tabs: { label?: string, style?: React.CSSProperties }[] = [
           { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Bảng giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Cast', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Bản đồ', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
         ];
-    const cast: Record<string, any>[] = Array(5).fill({
+    const cast: Cast[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
         img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
         grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
@@ -32,12 +32,12 @@ export default function Page({ params }: { params: Record<string, any> }) {
         mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
         open: () => console.log('Navigate')
       });
-    const dates: Record<string, any>[] = [
+    const dates: { label?: string, style?: React.CSSProperties }[] = [
           { label: 'T6 · 21/06', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: 'T7 · 22/06', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: 'CN · 23/06', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } }
         ];
-    const times: Record<string, any>[] = [
+    const times: { label?: string, style?: React.CSSProperties }[] = [
           { label: '20:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: '21:00', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: '22:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
@@ -53,9 +53,9 @@ export default function Page({ params }: { params: Record<string, any> }) {
     const toggleFav: (() => void) | undefined = undefined;
     const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
     const vPrice = 'từ 1.2tr';
-    const dec: Record<string, any> = undefined;
+    const dec: (() => void) | undefined = undefined;
     const guests = 4;
-    const inc: Record<string, any> = undefined;
+    const inc: (() => void) | undefined = undefined;
     const book = () => console.log('Navigate');
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isIntro = true;
@@ -63,7 +63,7 @@ export default function Page({ params }: { params: Record<string, any> }) {
     const isCast = false;
     const isReview: boolean = undefined;
     const favIconDark = 'https://img.icons8.com/ios/100/1f1d29/like.png';
-    const vPriceShort: Record<string, any> = undefined;
+    const vPriceShort: string | undefined = undefined;
 
     return (
       <React.Fragment>

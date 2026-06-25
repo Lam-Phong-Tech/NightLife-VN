@@ -5,10 +5,10 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 
   export default function Page() {
-    const onSearch: Record<string, any> = undefined;
+    const onSearch: { [key: string]: unknown } = undefined;
     const count = 3;
 
-    const tours: Record<string, any>[] = [
+    const tours: { [key: string]: unknown }[] = [
       { name: 'Tour đêm Tây Hồ', info: '3 điểm · 4 giờ · có hướng dẫn viên', price: '1.5tr / người', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#5d3da8,#3a1f6e)" },
       { name: 'Phố cổ & Ẩm thực đêm', info: '5 điểm · 3 giờ · tự do', price: '800K / người', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)" },
       { name: 'Bar Hopping Hà Nội', info: '4 quán · 5 giờ · free 1 drink/quán', price: '2.5tr / người', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#e0598a,#a8336b)" }
