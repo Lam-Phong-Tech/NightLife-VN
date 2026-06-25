@@ -68,6 +68,9 @@ CREATE TYPE "MediaStatus" AS ENUM ('UPLOADING', 'READY', 'HIDDEN', 'DELETED');
 CREATE TYPE "MediaType" AS ENUM ('IMAGE', 'VIDEO', 'DOCUMENT', 'OTHER');
 
 -- CreateEnum
+CREATE TYPE "MediaAccess" AS ENUM ('PUBLIC', 'PROTECTED');
+
+-- CreateEnum
 CREATE TYPE "ContentStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED', 'DELETED');
 
 -- CreateEnum
@@ -302,6 +305,7 @@ CREATE TABLE "coupon_issues" (
     "user_id" UUID,
     "guest_id" UUID,
     "issued_by_id" UUID,
+    "scanned_by_id" UUID,
     "code" TEXT NOT NULL,
     "qr_payload_hash" TEXT NOT NULL,
     "status" "CouponIssueStatus" NOT NULL DEFAULT 'ISSUED',
@@ -406,6 +410,7 @@ CREATE TABLE "media_files" (
     "url" TEXT NOT NULL,
     "purpose" TEXT,
     "type" "MediaType" NOT NULL DEFAULT 'OTHER',
+    "access" "MediaAccess" NOT NULL DEFAULT 'PROTECTED',
     "status" "MediaStatus" NOT NULL DEFAULT 'READY',
     "metadata" JSONB,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -614,6 +619,9 @@ CREATE INDEX "coupon_issues_guest_id_idx" ON "coupon_issues"("guest_id");
 CREATE INDEX "coupon_issues_issued_by_id_idx" ON "coupon_issues"("issued_by_id");
 
 -- CreateIndex
+CREATE INDEX "coupon_issues_scanned_by_id_idx" ON "coupon_issues"("scanned_by_id");
+
+-- CreateIndex
 CREATE INDEX "coupon_issues_status_idx" ON "coupon_issues"("status");
 
 -- CreateIndex
@@ -684,6 +692,9 @@ CREATE INDEX "media_files_bill_id_idx" ON "media_files"("bill_id");
 
 -- CreateIndex
 CREATE INDEX "media_files_content_id_idx" ON "media_files"("content_id");
+
+-- CreateIndex
+CREATE INDEX "media_files_access_idx" ON "media_files"("access");
 
 -- CreateIndex
 CREATE INDEX "media_files_status_idx" ON "media_files"("status");
@@ -795,6 +806,9 @@ ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_guest_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_issued_by_id_fkey" FOREIGN KEY ("issued_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_scanned_by_id_fkey" FOREIGN KEY ("scanned_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bills" ADD CONSTRAINT "bills_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE SET NULL ON UPDATE CASCADE;

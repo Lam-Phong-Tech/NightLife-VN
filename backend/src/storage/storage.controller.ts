@@ -61,6 +61,31 @@ export class StorageController {
           type: 'string',
           example: 'venue-cover',
         },
+        access: {
+          type: 'string',
+          enum: ['PUBLIC', 'PROTECTED'],
+          example: 'PROTECTED',
+        },
+        storeId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        castId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        bookingId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        billId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        contentId: {
+          type: 'string',
+          format: 'uuid',
+        },
       },
       required: ['file'],
     },
@@ -92,17 +117,50 @@ export class StorageController {
     @UploadedFile() file: LocalUploadedFile,
     @Req() request: RequestWithUser,
     @Body('purpose') purpose?: string,
+    @Body('access') access?: 'PUBLIC' | 'PROTECTED',
+    @Body('storeId') storeId?: string,
+    @Body('castId') castId?: string,
+    @Body('bookingId') bookingId?: string,
+    @Body('billId') billId?: string,
+    @Body('contentId') contentId?: string,
   ) {
-    return this.storageService.saveLocalFile(file, request.user.id, purpose);
+    return this.storageService.saveLocalFile(file, {
+      ownerId: request.user.id,
+      purpose,
+      access,
+      storeId,
+      castId,
+      bookingId,
+      billId,
+      contentId,
+    });
   }
 
-  @Get('files/:storageKey')
-  async getFile(
+  @Get('public/:storageKey')
+  async getPublicFile(
     @Param('storageKey') storageKey: string,
     @Res() response: express.Response,
   ) {
     const { mediaFile, path } =
-      await this.storageService.resolveLocalFile(storageKey);
+      await this.storageService.resolvePublicLocalFile(storageKey);
+
+    response.type(mediaFile.mimeType);
+    return response.sendFile(path);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('files/:storageKey')
+  async getFile(
+    @Param('storageKey') storageKey: string,
+    @Req() request: RequestWithUser,
+    @Res() response: express.Response,
+  ) {
+    const { mediaFile, path } =
+      await this.storageService.resolveProtectedLocalFile(
+        storageKey,
+        request.user,
+      );
 
     response.type(mediaFile.mimeType);
     return response.sendFile(path);
