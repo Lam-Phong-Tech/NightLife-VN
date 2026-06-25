@@ -1,4 +1,5 @@
 "use client";
+import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -8,7 +9,7 @@ import React, { useState } from 'react';
     
     
     // Mock data arrays for loops
-    const items: unknown[] = Array(5).fill({
+    const items: MockItem[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
         img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
         grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',

@@ -1,4 +1,5 @@
 "use client";
+import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -8,7 +9,7 @@ import React, { useState } from 'react';
     
     
     // Mock data arrays for loops
-    const tabs: unknown[] = Array(5).fill({
+    const tabs: MockItem[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
         img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
         grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
@@ -19,7 +20,7 @@ import React, { useState } from 'react';
         mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
         open: () => console.log('Navigate')
       });
-    const list: unknown[] = [
+    const list: MockItem[] = [
           { rank: '1', numColor: '#713f12', crown: 'linear-gradient(140deg, #fef08a, #eab308)', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Club Lumière', area: 'Tây Hồ · HN', metric: '12.4k lượt', open: () => console.log('Navigate') },
           { rank: '2', numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sora Lounge', area: 'Quận 1 · HCM', metric: '11.8k lượt', open: () => console.log('Navigate') },
           { rank: '3', numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'KTV Hoàng Gia', area: 'Kim Mã · HN', metric: '9.7k lượt', open: () => console.log('Navigate') },
@@ -28,7 +29,7 @@ import React, { useState } from 'react';
         ];
     
     // Standalone mock variables
-    const empty: unknown = undefined;
+    const empty: MockItem | undefined = undefined;
 
     return (
       <React.Fragment>

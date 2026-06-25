@@ -1,20 +1,20 @@
-import { Venue, Cast, FAQ } from '@/types';
+"use client";
+import { Venue, Cast, FAQ, MockItem } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
-"use client";
 import React, { useState } from 'react';
 
 export default function Page({ params }: { params: { slug?: string, [key: string]: unknown } }) {
   const [activeRankTab, setActiveRankTab] = useState('quan');
   const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
   const [isReg, setIsReg] = useState(false);
-  const thumbs: { bg?: string }[] = [
+  const thumbs: MockItem[] = [
     { bg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover" },
     { bg: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover" },
           { bg: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=360&q=70') center/cover" },
           { bg: "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=360&q=70') center/cover" }
         ];
-    const tabs: { label?: string, style?: React.CSSProperties }[] = [
+    const tabs: MockItem[] = [
           { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Bảng giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Cast', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
@@ -32,12 +32,12 @@ export default function Page({ params }: { params: { slug?: string, [key: string
         mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
         open: () => console.log('Navigate')
       });
-    const dates: { label?: string, style?: React.CSSProperties }[] = [
+    const dates: MockItem[] = [
           { label: 'T6 · 21/06', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: 'T7 · 22/06', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: 'CN · 23/06', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } }
         ];
-    const times: { label?: string, style?: React.CSSProperties }[] = [
+    const times: MockItem[] = [
           { label: '20:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: '21:00', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
           { label: '22:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
@@ -59,9 +59,9 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     const book = () => console.log('Navigate');
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isIntro = true;
-    const isPrice: boolean = undefined;
+    const isPrice: boolean | undefined = undefined;
     const isCast = false;
-    const isReview: boolean = undefined;
+    const isReview: boolean | undefined = undefined;
     const favIconDark = 'https://img.icons8.com/ios/100/1f1d29/like.png';
     const vPriceShort: string | undefined = undefined;
 

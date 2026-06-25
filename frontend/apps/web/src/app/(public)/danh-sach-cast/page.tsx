@@ -1,5 +1,5 @@
-import { Venue, Cast, FAQ } from '@/types';
 "use client";
+import { Venue, Cast, FAQ } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';

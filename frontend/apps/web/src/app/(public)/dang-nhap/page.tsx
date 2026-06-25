@@ -1,4 +1,5 @@
 "use client";
+import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -18,8 +19,8 @@ import React, { useState } from 'react';
     const submit = () => window.location.href = '/tai-khoan';
     const cta = isReg ? 'Đăng ký' : 'Đăng nhập';
     
-    const sLogin: unknown = undefined;
-    const sReg: unknown = undefined;
+    const sLogin: MockItem | undefined = undefined;
+    const isReg: MockItem | undefined = undefined;
 
     return (
       <React.Fragment>
@@ -42,7 +43,7 @@ import React, { useState } from 'react';
     <div style={{"padding":"18px"}}>
       <div style={{"display":"flex","gap":"6px","background":"#f3f2f5","borderRadius":"12px","padding":"4px"}}>
         <div onClick={pickLogin} style={sLogin}>Đăng nhập</div>
-        <div onClick={pickReg} style={sReg}>Đăng ký</div>
+        <div onClick={pickReg} style={isReg}>Đăng ký</div>
       </div>
       <h2 style={{"fontSize":"19px","fontWeight":"800","marginTop":"16px"}}>{title}</h2>
       <div style={{"marginTop":"14px","display":"flex","flexDirection":"column","gap":"11px"}}>
