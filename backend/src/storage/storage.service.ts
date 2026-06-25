@@ -53,7 +53,7 @@ export class StorageService implements OnModuleInit {
       `http://localhost:${this.configService.get<string>('PORT', '3001')}`,
     );
 
-    return this.prisma.mediaFile.create({
+    return this.prisma.media.create({
       data: {
         ownerId,
         storageKey,
@@ -67,7 +67,7 @@ export class StorageService implements OnModuleInit {
   }
 
   async resolveLocalFile(storageKey: string) {
-    const mediaFile = await this.prisma.mediaFile.findUnique({
+    const mediaFile = await this.prisma.media.findUnique({
       where: { storageKey },
     });
     if (!mediaFile) {
