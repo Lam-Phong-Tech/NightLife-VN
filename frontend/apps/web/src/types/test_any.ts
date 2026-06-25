@@ -1,1 +1,1 @@
-export type AnyFixMe = any;
+export type AnyFixMe = unknown;
