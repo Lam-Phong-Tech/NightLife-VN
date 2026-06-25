@@ -1,3 +1,4 @@
+/* eslint-disable */
 /* nightlife.hn — Theme engine (Sáng/Tối) dùng chung cho prototype.
    Mọi màn chỉ dùng inline style; engine remap màu nền/chữ/viền theo bảng tối.
    Thiết kế: HAI phép biến đổi THUẦN & idempotent (sáng→tối và tối→sáng qua bản đồ nghịch đảo),

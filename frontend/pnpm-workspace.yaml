@@ -11,5 +11,10 @@ packages:
 #   - sharp:        thư viện xử lý/nén ảnh, Next.js dùng cho tối ưu <Image>
 #   - unrs-resolver: resolver tốc độ cao viết bằng Rust, ESLint dùng để phân giải import
 allowBuilds:
+  esbuild: true
   sharp: true
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - playwright-core@1.61.1
+  - playwright@1.61.1
