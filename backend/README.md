@@ -103,6 +103,22 @@ The first migration creates:
 
 Core enums include `UserRole`, `UserTier`, `UserStatus`, `StoreStatus`, `CastStatus`, `BookingStatus`, `BillStatus`, `MediaType`, and `MediaStatus`.
 
+MVP enum mapping is documented in `docs/mvp-enum-mapping.md`.
+
+## Seed
+
+After migrations, load demo accounts and a demo store:
+
+```bash
+pnpm seed
+```
+
+Seed credentials:
+
+- Admin: `admin@nightlife.vn` / `Str0ngPass!`
+- Partner: `partner@nightlife.vn` / `Str0ngPass!`
+- Store slug: `demo-nightlife-store`
+
 ## Verification
 
 Useful checks before handoff:

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   OnModuleInit,
@@ -7,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { MediaType } from '@prisma/client';
+import { MediaAccess, MediaType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type UploadedFile = {
@@ -16,6 +17,22 @@ type UploadedFile = {
   mimetype: string;
   size: number;
   path: string;
+};
+
+type SaveLocalFileOptions = {
+  ownerId: string;
+  purpose?: string;
+  access?: 'PUBLIC' | 'PROTECTED';
+  storeId?: string;
+  castId?: string;
+  bookingId?: string;
+  billId?: string;
+  contentId?: string;
+};
+
+type StorageUser = {
+  id: string;
+  role?: string;
 };
 
 @Injectable()
@@ -41,8 +58,7 @@ export class StorageService implements OnModuleInit {
 
   async saveLocalFile(
     file: UploadedFile | undefined,
-    ownerId: string,
-    purpose?: string,
+    options: SaveLocalFileOptions,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -53,22 +69,56 @@ export class StorageService implements OnModuleInit {
       'PUBLIC_BASE_URL',
       `http://localhost:${this.configService.get<string>('PORT', '3001')}`,
     );
+    const access = this.resolveAccess(options.access);
 
     return this.prisma.media.create({
       data: {
-        ownerId,
+        ownerId: options.ownerId,
+        storeId: options.storeId,
+        castId: options.castId,
+        bookingId: options.bookingId,
+        billId: options.billId,
+        contentId: options.contentId,
         storageKey,
         originalName: file.originalname,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        purpose,
+        purpose: options.purpose,
         type: this.resolveMediaType(file.mimetype),
-        url: `${publicBaseUrl}/storage/files/${storageKey}`,
+        access,
+        url: `${publicBaseUrl}/storage/${
+          access === MediaAccess.PUBLIC ? 'public' : 'files'
+        }/${storageKey}`,
       },
     });
   }
 
-  async resolveLocalFile(storageKey: string) {
+  async resolvePublicLocalFile(storageKey: string) {
+    const resolvedFile = await this.resolveLocalFile(storageKey);
+
+    if (resolvedFile.mediaFile.access !== MediaAccess.PUBLIC) {
+      throw new NotFoundException('Media file not found');
+    }
+
+    return resolvedFile;
+  }
+
+  async resolveProtectedLocalFile(storageKey: string, user: StorageUser) {
+    const resolvedFile = await this.resolveLocalFile(storageKey);
+    const mediaFile = resolvedFile.mediaFile;
+
+    if (
+      mediaFile.access === MediaAccess.PROTECTED &&
+      mediaFile.ownerId !== user.id &&
+      !['ADMIN', 'PARTNER', 'STAFF'].includes(user.role ?? '')
+    ) {
+      throw new ForbiddenException('You cannot access this media file');
+    }
+
+    return resolvedFile;
+  }
+
+  private async resolveLocalFile(storageKey: string) {
     const mediaFile = await this.prisma.media.findUnique({
       where: { storageKey },
     });
@@ -96,5 +146,17 @@ export class StorageService implements OnModuleInit {
     }
 
     return MediaType.OTHER;
+  }
+
+  private resolveAccess(access?: string) {
+    if (!access) {
+      return MediaAccess.PROTECTED;
+    }
+
+    if (access === MediaAccess.PUBLIC || access === MediaAccess.PROTECTED) {
+      return access;
+    }
+
+    throw new BadRequestException('access must be PUBLIC or PROTECTED');
   }
 }
