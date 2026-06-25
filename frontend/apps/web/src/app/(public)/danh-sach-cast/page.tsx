@@ -41,7 +41,7 @@ export default function Page() {
     <div style={{"padding":"14px 18px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"11px"}}>
       {cards?.map((c, index) => (<React.Fragment key={index}>
         <div onClick={c.open} style={{"borderRadius":"14px","overflow":"hidden","position":"relative","height":"200px","background":c.img,"boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
-          <span onClick={c.fav} style={{"position":"absolute","top":"8px","right":"8px","width":"27px","height":"27px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src={c.favIcon} style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
+          <span onClick={c.fav} style={{"position":"absolute","top":"8px","right":"8px","width":"27px","height":"27px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src={c.favIcon || ""} style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span>
           <><span style={{"position":"absolute","top":"8px","left":"8px","background":"rgba(255,255,255,.92)","color":"#1f1d29","fontSize":"9px","fontWeight":"700","borderRadius":"9px","padding":"2px 7px"}}>🇯🇵 Nhật</span></>
           <div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"11px","background":"linear-gradient(0deg,rgba(20,8,16,.85),transparent)","color":"#fff"}}><div style={{"fontWeight":"600","fontSize":"13.5px"}}>{c.name} · {c.age}</div><div style={{"fontSize":"10px","color":"#f0dde8","marginTop":"2px"}}>{c.desc} · ★ {c.rating}</div></div>
         </div>
@@ -87,7 +87,7 @@ export default function Page() {
     <div style={{"padding":"0 34px 30px","display":"grid","gridTemplateColumns":"repeat(5,1fr)","gap":"14px"}}>
       {cards?.map((c, index) => (<React.Fragment key={index}>
         <div onClick={c.open} className="card" style={{"borderRadius":"14px","overflow":"hidden","position":"relative","height":"240px","background":c.img,"boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-          <span onClick={c.fav} style={{"position":"absolute","top":"9px","right":"9px","width":"28px","height":"28px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer"}}><Image width={100} height={100} src={c.favIcon} style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" /></span>
+          <span onClick={c.fav} style={{"position":"absolute","top":"9px","right":"9px","width":"28px","height":"28px","borderRadius":"50%","background":"rgba(0,0,0,.3)","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer"}}><Image width={100} height={100} src={c.favIcon || ""} style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" /></span>
           <><span style={{"position":"absolute","top":"9px","left":"9px","background":"rgba(255,255,255,.92)","color":"#1f1d29","fontSize":"9.5px","fontWeight":"700","borderRadius":"10px","padding":"3px 8px"}}>🇯🇵 Tiếng Nhật</span></>
           <div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"12px","background":"linear-gradient(0deg,rgba(20,8,16,.85),transparent)","color":"#fff"}}>
             <div style={{"fontWeight":"600","fontSize":"14px"}}>{c.name} · {c.age}</div>

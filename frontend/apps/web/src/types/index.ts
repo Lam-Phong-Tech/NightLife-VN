@@ -44,6 +44,9 @@ export interface Cast {
   rating?: number;
   jp?: boolean;
   rank?: number;
+  numColor?: string;
+  crown?: string;
+  metric?: string | number;
   img?: string;
   open?: (e?: React.SyntheticEvent) => void;
 }
@@ -95,6 +98,7 @@ export interface MockItem {
   value?: string | number;
   desc?: string;
   price?: string | number;
+  info?: string;
   img?: string;
   bg?: string;
   style?: React.CSSProperties;

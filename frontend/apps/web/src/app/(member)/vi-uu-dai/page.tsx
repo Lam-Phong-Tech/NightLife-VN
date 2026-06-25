@@ -15,8 +15,8 @@ import React, { useState } from 'react';
           { label: 'Hết hạn', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} }
         ];
     const list: MockItem[] = [
-          { title: 'Happy Hour -30%', place: 'KTV Hoàng Gia · Kim Mã', expiry: 'Còn 22:13:56', value: '-30%', label: 'Chờ duyệt', color: '#c0246a', bg: '#fce4ef', dim: '' },
-          { title: 'Combo phòng VIP', place: 'Diamond Bar · Quận 3', expiry: 'Hôm nay', value: '1.2tr', label: 'Đã xác nhận', color: '#177544', bg: '#e6f7ee', dim: '' }
+          { title: 'Happy Hour -30%', place: 'KTV Hoàng Gia · Kim Mã', expiry: 'Còn 22:13:56', value: '-30%', label: 'Chờ duyệt', color: '#c0246a', bg: '#fce4ef', dim: false },
+          { title: 'Combo phòng VIP', place: 'Diamond Bar · Quận 3', expiry: 'Hôm nay', value: '1.2tr', label: 'Đã xác nhận', color: '#177544', bg: '#e6f7ee', dim: false }
         ];
     
     // Standalone mock variables
@@ -42,7 +42,7 @@ import React, { useState } from 'react';
     </div>
     <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"11px"}}>
       {list?.map((c, index) => (<React.Fragment key={index}>
-        <div style={{ ...{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}, ...c.dim }}>
+        <div style={{ ...{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}, ...(c.dim ? { opacity: 0.5 } : {}) }}>
           <div style={{"padding":"13px","display":"flex","gap":"12px","alignItems":"center"}}>
             <div style={{"width":"58px","height":"58px","borderRadius":"11px","border":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><Image width={100} height={100} src="https://img.icons8.com/ios/200/000000/qr-code.png" style={{"width":"46px","height":"46px","display":"inline-block"}} alt="" /></div>
             <div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>{c.title}</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"2px"}}>{c.place}</div><span style={{"display":"inline-block","marginTop":"6px","fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":c.color,"background":c.bg}}>{c.label}</span></div>
@@ -90,7 +90,7 @@ import React, { useState } from 'react';
     </div>
     <div style={{"padding":"18px 34px 32px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"16px"}}>
       {list?.map((c, index) => (<React.Fragment key={index}>
-        <div style={{ ...{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}, ...c.dim }}>
+        <div style={{ ...{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}, ...(c.dim ? { opacity: 0.5 } : {}) }}>
           <div style={{"padding":"16px","display":"flex","gap":"14px","alignItems":"center"}}>
             <div style={{"width":"72px","height":"72px","borderRadius":"12px","border":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><Image width={100} height={100} src="https://img.icons8.com/ios/200/000000/qr-code.png" style={{"width":"58px","height":"58px","display":"inline-block"}} alt="" /></div>
             <div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"700","fontSize":"15px"}}>{c.title}</div><div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"3px"}}>{c.place}</div><span style={{"display":"inline-block","marginTop":"8px","fontSize":"11px","fontWeight":"700","borderRadius":"9px","padding":"4px 10px","color":c.color,"background":c.bg}}>{c.label}</span></div>

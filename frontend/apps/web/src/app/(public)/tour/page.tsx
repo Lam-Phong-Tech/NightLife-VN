@@ -3,6 +3,7 @@ import { Venue, Cast, FAQ } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
+import { MockItem } from '@/types';
 
   export default function Page() {
     const onSearch: MockItem | undefined = undefined;

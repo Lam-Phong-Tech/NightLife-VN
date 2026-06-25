@@ -10,12 +10,12 @@ export default function Page({ params }: { params: MockItem }) {
     
     // Mock data arrays for loops
     const album: MockItem[] = [
-          { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
-          { bg: "url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
-          { bg: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
-          { bg: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
-          { bg: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
-          { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: true }
+          { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: false },
+          { bg: "url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: false },
+          { bg: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: false },
+          { bg: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: false },
+          { bg: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: false },
+          { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: true }
         ];
     const tabs: MockItem[] = [
           { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
