@@ -12,6 +12,7 @@ import React, { useState } from 'react';
     
     
     // Standalone mock variables
+    const [isReg, setIsReg] = useState(false);
     const pickLogin = () => setIsReg(false);
     const pickReg = () => setIsReg(true);
     const title = isReg ? 'Tạo tài khoản mới' : 'Chào mừng trở lại';
@@ -19,8 +20,8 @@ import React, { useState } from 'react';
     const submit = () => window.location.href = '/tai-khoan';
     const cta = isReg ? 'Đăng ký' : 'Đăng nhập';
     
-    const sLogin: MockItem | undefined = undefined;
-    const isReg: MockItem | undefined = undefined;
+    const sLogin: React.CSSProperties | undefined = undefined;
+    // removed isReg
 
     return (
       <React.Fragment>
@@ -43,7 +44,7 @@ import React, { useState } from 'react';
     <div style={{"padding":"18px"}}>
       <div style={{"display":"flex","gap":"6px","background":"#f3f2f5","borderRadius":"12px","padding":"4px"}}>
         <div onClick={pickLogin} style={sLogin}>Đăng nhập</div>
-        <div onClick={pickReg} style={isReg}>Đăng ký</div>
+        <div onClick={pickReg} style={sLogin}>Đăng ký</div>
       </div>
       <h2 style={{"fontSize":"19px","fontWeight":"800","marginTop":"16px"}}>{title}</h2>
       <div style={{"marginTop":"14px","display":"flex","flexDirection":"column","gap":"11px"}}>

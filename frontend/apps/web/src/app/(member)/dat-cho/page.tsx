@@ -18,10 +18,10 @@ import React, { useState } from 'react';
     
     // Standalone mock variables
     const vName = 'Club Lumière';
-    const pickGuest: MockItem | undefined = undefined;
-    const sGuest: MockItem = { flex: 1, textAlign: 'center', background: '#f1ebff', color: '#6d28d9', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
-    const pickMember: MockItem | undefined = undefined;
-    const sMember: MockItem = { flex: 1, textAlign: 'center', background: 'transparent', color: '#8a879a', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
+    const pickGuest: any = undefined;
+    const sGuest: React.CSSProperties = { flex: 1, textAlign: 'center', background: '#f1ebff', color: '#6d28d9', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
+    const pickMember: any = undefined;
+    const sMember: React.CSSProperties = { flex: 1, textAlign: 'center', background: 'transparent', color: '#8a879a', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
     const discountNote = 'Guest: giảm 5% · hạn mã 24 giờ. Đăng nhập để nhận tới 10%.';
     const vArea = 'Tây Hồ';
     const vCat = 'Bar Lounge';
