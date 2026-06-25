@@ -11,6 +11,18 @@ CREATE TYPE "UserTier" AS ENUM ('FREE', 'PREMIUM', 'VIP');
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'SUSPENDED', 'DELETED');
 
 -- CreateEnum
+CREATE TYPE "GuestStatus" AS ENUM ('ACTIVE', 'CONVERTED', 'BLOCKED', 'DELETED');
+
+-- CreateEnum
+CREATE TYPE "PartnerAccountStatus" AS ENUM ('PENDING_REVIEW', 'ACTIVE', 'SUSPENDED', 'CLOSED', 'DELETED');
+
+-- CreateEnum
+CREATE TYPE "StoreCategory" AS ENUM ('BAR', 'CLUB', 'LOUNGE', 'KARAOKE', 'RESTAURANT', 'SPA', 'EVENT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "AreaStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'DELETED');
+
+-- CreateEnum
 CREATE TYPE "ProfileStatus" AS ENUM ('ACTIVE', 'HIDDEN', 'DELETED');
 
 -- CreateEnum
@@ -27,6 +39,9 @@ CREATE TYPE "BookingStatus" AS ENUM ('REQUESTED', 'CONFIRMED', 'CHECKED_IN', 'CO
 
 -- CreateEnum
 CREATE TYPE "CouponStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'ARCHIVED', 'DELETED');
+
+-- CreateEnum
+CREATE TYPE "CouponIssueStatus" AS ENUM ('ISSUED', 'USED', 'EXPIRED', 'REVOKED');
 
 -- CreateEnum
 CREATE TYPE "DiscountType" AS ENUM ('PERCENT', 'FIXED_AMOUNT');
@@ -59,10 +74,16 @@ CREATE TYPE "ContentStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED', 'DELETED'
 CREATE TYPE "ContentType" AS ENUM ('BLOG', 'STORE_POST', 'BANNER', 'POLICY', 'FAQ');
 
 -- CreateEnum
-CREATE TYPE "NotificationChannel" AS ENUM ('EMAIL', 'SMS', 'PUSH', 'IN_APP', 'ZALO');
+CREATE TYPE "NotificationChannel" AS ENUM ('EMAIL', 'SMS', 'PUSH', 'IN_APP', 'ZALO', 'TELEGRAM', 'LINE');
 
 -- CreateEnum
 CREATE TYPE "NotificationStatus" AS ENUM ('QUEUED', 'SENT', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "RankingTargetType" AS ENUM ('STORE', 'CAST', 'COUPON', 'CONTENT');
+
+-- CreateEnum
+CREATE TYPE "RankingConfigStatus" AS ENUM ('ACTIVE', 'PAUSED', 'EXPIRED', 'DELETED');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -79,6 +100,22 @@ CREATE TABLE "users" (
     "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "guests" (
+    "id" UUID NOT NULL,
+    "converted_user_id" UUID,
+    "display_name" TEXT,
+    "phone" TEXT,
+    "email" TEXT,
+    "note" TEXT,
+    "status" "GuestStatus" NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
+
+    CONSTRAINT "guests_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -123,11 +160,50 @@ CREATE TABLE "user_role_assignments" (
 );
 
 -- CreateTable
+CREATE TABLE "partner_accounts" (
+    "id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "business_name" TEXT NOT NULL,
+    "legal_name" TEXT,
+    "tax_code" TEXT,
+    "contact_name" TEXT,
+    "contact_phone" TEXT,
+    "contact_email" TEXT,
+    "bank_info" JSONB,
+    "contract_number" TEXT,
+    "status" "PartnerAccountStatus" NOT NULL DEFAULT 'PENDING_REVIEW',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
+
+    CONSTRAINT "partner_accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "areas" (
+    "id" UUID NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "city" TEXT NOT NULL DEFAULT 'Ho Chi Minh City',
+    "district" TEXT,
+    "ward" TEXT,
+    "status" "AreaStatus" NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
+
+    CONSTRAINT "areas_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "stores" (
     "id" UUID NOT NULL,
     "owner_id" UUID,
+    "partner_account_id" UUID,
+    "area_id" UUID,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "category" "StoreCategory" NOT NULL DEFAULT 'OTHER',
     "description" TEXT,
     "address" TEXT,
     "city" TEXT NOT NULL DEFAULT 'Ho Chi Minh City',
@@ -135,6 +211,9 @@ CREATE TABLE "stores" (
     "phone" TEXT,
     "latitude" DECIMAL(10,7),
     "longitude" DECIMAL(10,7),
+    "opening_hours" JSONB,
+    "map_url" TEXT,
+    "google_place_id" TEXT,
     "status" "StoreStatus" NOT NULL DEFAULT 'DRAFT',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -151,6 +230,12 @@ CREATE TABLE "casts" (
     "stage_name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "bio" TEXT,
+    "public_alias" TEXT,
+    "public_headline" TEXT,
+    "public_bio" TEXT,
+    "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "languages" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "is_public" BOOLEAN NOT NULL DEFAULT true,
     "hourly_rate_vnd" INTEGER,
     "status" "CastStatus" NOT NULL DEFAULT 'DRAFT',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -163,10 +248,12 @@ CREATE TABLE "casts" (
 -- CreateTable
 CREATE TABLE "bookings" (
     "id" UUID NOT NULL,
-    "user_id" UUID NOT NULL,
+    "user_id" UUID,
+    "guest_id" UUID,
     "store_id" UUID NOT NULL,
     "cast_id" UUID,
     "coupon_id" UUID,
+    "coupon_issue_id" UUID,
     "status" "BookingStatus" NOT NULL DEFAULT 'REQUESTED',
     "scheduled_at" TIMESTAMP(3) NOT NULL,
     "party_size" INTEGER NOT NULL DEFAULT 1,
@@ -209,12 +296,34 @@ CREATE TABLE "coupons" (
 );
 
 -- CreateTable
+CREATE TABLE "coupon_issues" (
+    "id" UUID NOT NULL,
+    "coupon_id" UUID NOT NULL,
+    "user_id" UUID,
+    "guest_id" UUID,
+    "issued_by_id" UUID,
+    "code" TEXT NOT NULL,
+    "qr_payload_hash" TEXT NOT NULL,
+    "status" "CouponIssueStatus" NOT NULL DEFAULT 'ISSUED',
+    "expires_at" TIMESTAMP(3),
+    "used_at" TIMESTAMP(3),
+    "revoked_at" TIMESTAMP(3),
+    "metadata" JSONB,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "coupon_issues_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "bills" (
     "id" UUID NOT NULL,
-    "booking_id" UUID NOT NULL,
-    "user_id" UUID NOT NULL,
+    "booking_id" UUID,
+    "user_id" UUID,
+    "guest_id" UUID,
     "store_id" UUID NOT NULL,
     "coupon_id" UUID,
+    "coupon_issue_id" UUID,
     "status" "BillStatus" NOT NULL DEFAULT 'DRAFT',
     "bill_number" TEXT,
     "subtotal_vnd" INTEGER NOT NULL DEFAULT 0,
@@ -230,6 +339,9 @@ CREATE TABLE "bills" (
     "point_rule_snapshot" JSONB,
     "submitted_at" TIMESTAMP(3),
     "verified_at" TIMESTAMP(3),
+    "rejected_at" TIMESTAMP(3),
+    "reject_reason" TEXT,
+    "used_at" TIMESTAMP(3),
     "paid_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -327,6 +439,7 @@ CREATE TABLE "contents" (
 CREATE TABLE "notification_logs" (
     "id" UUID NOT NULL,
     "user_id" UUID,
+    "guest_id" UUID,
     "store_id" UUID,
     "booking_id" UUID,
     "bill_id" UUID,
@@ -343,11 +456,42 @@ CREATE TABLE "notification_logs" (
     CONSTRAINT "notification_logs_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "ranking_configs" (
+    "id" UUID NOT NULL,
+    "created_by_id" UUID,
+    "target_type" "RankingTargetType" NOT NULL,
+    "target_id" UUID NOT NULL,
+    "manual_score" INTEGER NOT NULL DEFAULT 0,
+    "pin_rank" INTEGER,
+    "reason" TEXT,
+    "status" "RankingConfigStatus" NOT NULL DEFAULT 'ACTIVE',
+    "starts_at" TIMESTAMP(3),
+    "ends_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "deleted_at" TIMESTAMP(3),
+
+    CONSTRAINT "ranking_configs_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE INDEX "users_status_idx" ON "users"("status");
+
+-- CreateIndex
+CREATE INDEX "guests_converted_user_id_idx" ON "guests"("converted_user_id");
+
+-- CreateIndex
+CREATE INDEX "guests_phone_idx" ON "guests"("phone");
+
+-- CreateIndex
+CREATE INDEX "guests_email_idx" ON "guests"("email");
+
+-- CreateIndex
+CREATE INDEX "guests_status_idx" ON "guests"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "profiles_user_id_key" ON "profiles"("user_id");
@@ -368,10 +512,34 @@ CREATE INDEX "user_role_assignments_role_id_idx" ON "user_role_assignments"("rol
 CREATE UNIQUE INDEX "user_role_assignments_user_id_role_id_key" ON "user_role_assignments"("user_id", "role_id");
 
 -- CreateIndex
+CREATE INDEX "partner_accounts_user_id_idx" ON "partner_accounts"("user_id");
+
+-- CreateIndex
+CREATE INDEX "partner_accounts_status_idx" ON "partner_accounts"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "areas_code_key" ON "areas"("code");
+
+-- CreateIndex
+CREATE INDEX "areas_city_district_ward_idx" ON "areas"("city", "district", "ward");
+
+-- CreateIndex
+CREATE INDEX "areas_status_idx" ON "areas"("status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "stores_slug_key" ON "stores"("slug");
 
 -- CreateIndex
 CREATE INDEX "stores_owner_id_idx" ON "stores"("owner_id");
+
+-- CreateIndex
+CREATE INDEX "stores_partner_account_id_idx" ON "stores"("partner_account_id");
+
+-- CreateIndex
+CREATE INDEX "stores_area_id_idx" ON "stores"("area_id");
+
+-- CreateIndex
+CREATE INDEX "stores_category_idx" ON "stores"("category");
 
 -- CreateIndex
 CREATE INDEX "stores_status_idx" ON "stores"("status");
@@ -392,7 +560,13 @@ CREATE INDEX "casts_user_id_idx" ON "casts"("user_id");
 CREATE INDEX "casts_status_idx" ON "casts"("status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "bookings_coupon_issue_id_key" ON "bookings"("coupon_issue_id");
+
+-- CreateIndex
 CREATE INDEX "bookings_user_id_idx" ON "bookings"("user_id");
+
+-- CreateIndex
+CREATE INDEX "bookings_guest_id_idx" ON "bookings"("guest_id");
 
 -- CreateIndex
 CREATE INDEX "bookings_store_id_idx" ON "bookings"("store_id");
@@ -422,13 +596,40 @@ CREATE INDEX "coupons_status_idx" ON "coupons"("status");
 CREATE INDEX "coupons_starts_at_ends_at_idx" ON "coupons"("starts_at", "ends_at");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "coupon_issues_code_key" ON "coupon_issues"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "coupon_issues_qr_payload_hash_key" ON "coupon_issues"("qr_payload_hash");
+
+-- CreateIndex
+CREATE INDEX "coupon_issues_coupon_id_idx" ON "coupon_issues"("coupon_id");
+
+-- CreateIndex
+CREATE INDEX "coupon_issues_user_id_idx" ON "coupon_issues"("user_id");
+
+-- CreateIndex
+CREATE INDEX "coupon_issues_guest_id_idx" ON "coupon_issues"("guest_id");
+
+-- CreateIndex
+CREATE INDEX "coupon_issues_issued_by_id_idx" ON "coupon_issues"("issued_by_id");
+
+-- CreateIndex
+CREATE INDEX "coupon_issues_status_idx" ON "coupon_issues"("status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "bills_booking_id_key" ON "bills"("booking_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "bills_coupon_issue_id_key" ON "bills"("coupon_issue_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "bills_bill_number_key" ON "bills"("bill_number");
 
 -- CreateIndex
 CREATE INDEX "bills_user_id_idx" ON "bills"("user_id");
+
+-- CreateIndex
+CREATE INDEX "bills_guest_id_idx" ON "bills"("guest_id");
 
 -- CreateIndex
 CREATE INDEX "bills_store_id_idx" ON "bills"("store_id");
@@ -506,6 +707,9 @@ CREATE INDEX "contents_status_idx" ON "contents"("status");
 CREATE INDEX "notification_logs_user_id_idx" ON "notification_logs"("user_id");
 
 -- CreateIndex
+CREATE INDEX "notification_logs_guest_id_idx" ON "notification_logs"("guest_id");
+
+-- CreateIndex
 CREATE INDEX "notification_logs_store_id_idx" ON "notification_logs"("store_id");
 
 -- CreateIndex
@@ -516,6 +720,18 @@ CREATE INDEX "notification_logs_bill_id_idx" ON "notification_logs"("bill_id");
 
 -- CreateIndex
 CREATE INDEX "notification_logs_status_idx" ON "notification_logs"("status");
+
+-- CreateIndex
+CREATE INDEX "ranking_configs_created_by_id_idx" ON "ranking_configs"("created_by_id");
+
+-- CreateIndex
+CREATE INDEX "ranking_configs_target_type_target_id_idx" ON "ranking_configs"("target_type", "target_id");
+
+-- CreateIndex
+CREATE INDEX "ranking_configs_status_idx" ON "ranking_configs"("status");
+
+-- AddForeignKey
+ALTER TABLE "guests" ADD CONSTRAINT "guests_converted_user_id_fkey" FOREIGN KEY ("converted_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -530,7 +746,16 @@ ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_user_i
 ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "partner_accounts" ADD CONSTRAINT "partner_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "stores" ADD CONSTRAINT "stores_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stores" ADD CONSTRAINT "stores_partner_account_id_fkey" FOREIGN KEY ("partner_account_id") REFERENCES "partner_accounts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "stores" ADD CONSTRAINT "stores_area_id_fkey" FOREIGN KEY ("area_id") REFERENCES "areas"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "casts" ADD CONSTRAINT "casts_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -539,7 +764,10 @@ ALTER TABLE "casts" ADD CONSTRAINT "casts_store_id_fkey" FOREIGN KEY ("store_id"
 ALTER TABLE "casts" ADD CONSTRAINT "casts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bookings" ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_guest_id_fkey" FOREIGN KEY ("guest_id") REFERENCES "guests"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -551,19 +779,40 @@ ALTER TABLE "bookings" ADD CONSTRAINT "bookings_cast_id_fkey" FOREIGN KEY ("cast
 ALTER TABLE "bookings" ADD CONSTRAINT "bookings_coupon_id_fkey" FOREIGN KEY ("coupon_id") REFERENCES "coupons"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "bookings" ADD CONSTRAINT "bookings_coupon_issue_id_fkey" FOREIGN KEY ("coupon_issue_id") REFERENCES "coupon_issues"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "coupons" ADD CONSTRAINT "coupons_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bills" ADD CONSTRAINT "bills_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_coupon_id_fkey" FOREIGN KEY ("coupon_id") REFERENCES "coupons"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bills" ADD CONSTRAINT "bills_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_guest_id_fkey" FOREIGN KEY ("guest_id") REFERENCES "guests"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "coupon_issues" ADD CONSTRAINT "coupon_issues_issued_by_id_fkey" FOREIGN KEY ("issued_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bills" ADD CONSTRAINT "bills_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bills" ADD CONSTRAINT "bills_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bills" ADD CONSTRAINT "bills_guest_id_fkey" FOREIGN KEY ("guest_id") REFERENCES "guests"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bills" ADD CONSTRAINT "bills_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "bills" ADD CONSTRAINT "bills_coupon_id_fkey" FOREIGN KEY ("coupon_id") REFERENCES "coupons"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "bills" ADD CONSTRAINT "bills_coupon_issue_id_fkey" FOREIGN KEY ("coupon_issue_id") REFERENCES "coupon_issues"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "commission_configs" ADD CONSTRAINT "commission_configs_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -611,6 +860,9 @@ ALTER TABLE "contents" ADD CONSTRAINT "contents_store_id_fkey" FOREIGN KEY ("sto
 ALTER TABLE "notification_logs" ADD CONSTRAINT "notification_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "notification_logs" ADD CONSTRAINT "notification_logs_guest_id_fkey" FOREIGN KEY ("guest_id") REFERENCES "guests"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "notification_logs" ADD CONSTRAINT "notification_logs_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -618,3 +870,6 @@ ALTER TABLE "notification_logs" ADD CONSTRAINT "notification_logs_booking_id_fke
 
 -- AddForeignKey
 ALTER TABLE "notification_logs" ADD CONSTRAINT "notification_logs_bill_id_fkey" FOREIGN KEY ("bill_id") REFERENCES "bills"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ranking_configs" ADD CONSTRAINT "ranking_configs_created_by_id_fkey" FOREIGN KEY ("created_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;

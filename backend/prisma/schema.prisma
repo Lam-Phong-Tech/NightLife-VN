@@ -25,6 +25,38 @@ enum UserStatus {
   DELETED
 }
 
+enum GuestStatus {
+  ACTIVE
+  CONVERTED
+  BLOCKED
+  DELETED
+}
+
+enum PartnerAccountStatus {
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+  CLOSED
+  DELETED
+}
+
+enum StoreCategory {
+  BAR
+  CLUB
+  LOUNGE
+  KARAOKE
+  RESTAURANT
+  SPA
+  EVENT
+  OTHER
+}
+
+enum AreaStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
 enum ProfileStatus {
   ACTIVE
   HIDDEN
@@ -70,6 +102,13 @@ enum CouponStatus {
   EXPIRED
   ARCHIVED
   DELETED
+}
+
+enum CouponIssueStatus {
+  ISSUED
+  USED
+  EXPIRED
+  REVOKED
 }
 
 enum DiscountType {
@@ -147,6 +186,8 @@ enum NotificationChannel {
   PUSH
   IN_APP
   ZALO
+  TELEGRAM
+  LINE
 }
 
 enum NotificationStatus {
@@ -154,6 +195,20 @@ enum NotificationStatus {
   SENT
   FAILED
   CANCELLED
+}
+
+enum RankingTargetType {
+  STORE
+  CAST
+  COUPON
+  CONTENT
+}
+
+enum RankingConfigStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  DELETED
 }
 
 model User {
@@ -168,20 +223,49 @@ model User {
   profile          Profile?
   roleAssignments  UserRoleAssignment[]
   ownedStores      Store[]              @relation("StoreOwner")
+  partnerAccounts  PartnerAccount[]
+  convertedGuests  Guest[]              @relation("GuestConvertedUser")
   casts            Cast[]
   bookings         Booking[]
   bills            Bill[]
   pointLedgers     PointLedger[]
+  couponIssues     CouponIssue[]        @relation("CouponIssueUser")
+  issuedCoupons    CouponIssue[]        @relation("CouponIssueIssuer")
   media            Media[]              @relation("MediaOwner")
   contents         Content[]
   notifications    NotificationLog[]
   commissionConfig CommissionConfig[]
+  rankingConfigs   RankingConfig[]
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
   deletedAt        DateTime?            @map("deleted_at")
 
   @@index([status])
   @@map("users")
+}
+
+model Guest {
+  id              String            @id @default(uuid()) @db.Uuid
+  convertedUserId String?           @map("converted_user_id") @db.Uuid
+  convertedUser   User?             @relation("GuestConvertedUser", fields: [convertedUserId], references: [id], onDelete: SetNull)
+  displayName     String?           @map("display_name")
+  phone           String?
+  email           String?
+  note            String?
+  status          GuestStatus       @default(ACTIVE)
+  bookings        Booking[]
+  bills           Bill[]
+  couponIssues    CouponIssue[]
+  notifications   NotificationLog[]
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  deletedAt       DateTime?         @map("deleted_at")
+
+  @@index([convertedUserId])
+  @@index([phone])
+  @@index([email])
+  @@index([status])
+  @@map("guests")
 }
 
 model Profile {
@@ -231,12 +315,58 @@ model UserRoleAssignment {
   @@map("user_role_assignments")
 }
 
+model PartnerAccount {
+  id             String               @id @default(uuid()) @db.Uuid
+  userId         String               @map("user_id") @db.Uuid
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  businessName   String               @map("business_name")
+  legalName      String?              @map("legal_name")
+  taxCode        String?              @map("tax_code")
+  contactName    String?              @map("contact_name")
+  contactPhone   String?              @map("contact_phone")
+  contactEmail   String?              @map("contact_email")
+  bankInfo       Json?                @map("bank_info")
+  contractNumber String?              @map("contract_number")
+  status         PartnerAccountStatus @default(PENDING_REVIEW)
+  stores         Store[]
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  deletedAt      DateTime?            @map("deleted_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("partner_accounts")
+}
+
+model Area {
+  id        String     @id @default(uuid()) @db.Uuid
+  code      String     @unique
+  name      String
+  city      String     @default("Ho Chi Minh City")
+  district  String?
+  ward      String?
+  status    AreaStatus @default(ACTIVE)
+  stores    Store[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  deletedAt DateTime?  @map("deleted_at")
+
+  @@index([city, district, ward])
+  @@index([status])
+  @@map("areas")
+}
+
 model Store {
   id                String             @id @default(uuid()) @db.Uuid
   ownerId           String?            @map("owner_id") @db.Uuid
+  partnerAccountId  String?            @map("partner_account_id") @db.Uuid
+  areaId            String?            @map("area_id") @db.Uuid
   owner             User?              @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  partnerAccount    PartnerAccount?    @relation(fields: [partnerAccountId], references: [id], onDelete: SetNull)
+  area              Area?              @relation(fields: [areaId], references: [id], onDelete: SetNull)
   name              String
   slug              String             @unique
+  category          StoreCategory      @default(OTHER)
   description       String?
   address           String?
   city              String             @default("Ho Chi Minh City")
@@ -244,6 +374,9 @@ model Store {
   phone             String?
   latitude          Decimal?           @db.Decimal(10, 7)
   longitude         Decimal?           @db.Decimal(10, 7)
+  openingHours      Json?              @map("opening_hours")
+  mapUrl            String?            @map("map_url")
+  googlePlaceId     String?            @map("google_place_id")
   status            StoreStatus        @default(DRAFT)
   casts             Cast[]
   bookings          Booking[]
@@ -258,27 +391,36 @@ model Store {
   deletedAt         DateTime?          @map("deleted_at")
 
   @@index([ownerId])
+  @@index([partnerAccountId])
+  @@index([areaId])
+  @@index([category])
   @@index([status])
   @@index([city, district])
   @@map("stores")
 }
 
 model Cast {
-  id            String     @id @default(uuid()) @db.Uuid
-  storeId       String     @map("store_id") @db.Uuid
-  userId        String?    @map("user_id") @db.Uuid
-  store         Store      @relation(fields: [storeId], references: [id], onDelete: Restrict)
-  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  stageName     String     @map("stage_name")
-  slug          String     @unique
-  bio           String?
-  hourlyRateVnd Int?       @map("hourly_rate_vnd")
-  status        CastStatus @default(DRAFT)
-  bookings      Booking[]
-  media         Media[]
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-  deletedAt     DateTime?  @map("deleted_at")
+  id             String     @id @default(uuid()) @db.Uuid
+  storeId        String     @map("store_id") @db.Uuid
+  userId         String?    @map("user_id") @db.Uuid
+  store          Store      @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  user           User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stageName      String     @map("stage_name")
+  slug           String     @unique
+  bio            String?
+  publicAlias    String?    @map("public_alias")
+  publicHeadline String?    @map("public_headline")
+  publicBio      String?    @map("public_bio")
+  tags           String[]   @default([])
+  languages      String[]   @default([])
+  isPublic       Boolean    @default(true) @map("is_public")
+  hourlyRateVnd  Int?       @map("hourly_rate_vnd")
+  status         CastStatus @default(DRAFT)
+  bookings       Booking[]
+  media          Media[]
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  deletedAt      DateTime?  @map("deleted_at")
 
   @@index([storeId])
   @@index([userId])
@@ -288,14 +430,18 @@ model Cast {
 
 model Booking {
   id                     String            @id @default(uuid()) @db.Uuid
-  userId                 String            @map("user_id") @db.Uuid
+  userId                 String?           @map("user_id") @db.Uuid
+  guestId                String?           @map("guest_id") @db.Uuid
   storeId                String            @map("store_id") @db.Uuid
   castId                 String?           @map("cast_id") @db.Uuid
   couponId               String?           @map("coupon_id") @db.Uuid
-  user                   User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  couponIssueId          String?           @unique @map("coupon_issue_id") @db.Uuid
+  user                   User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guest                  Guest?            @relation(fields: [guestId], references: [id], onDelete: SetNull)
   store                  Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
   cast                   Cast?             @relation(fields: [castId], references: [id], onDelete: SetNull)
   coupon                 Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponIssue            CouponIssue?      @relation("BookingCouponIssue", fields: [couponIssueId], references: [id], onDelete: SetNull)
   bill                   Bill?
   pointLedgers           PointLedger[]
   notifications          NotificationLog[]
@@ -316,6 +462,7 @@ model Booking {
   deletedAt              DateTime?         @map("deleted_at")
 
   @@index([userId])
+  @@index([guestId])
   @@index([storeId])
   @@index([castId])
   @@index([couponId])
@@ -325,26 +472,27 @@ model Booking {
 }
 
 model Coupon {
-  id             String       @id @default(uuid()) @db.Uuid
-  storeId        String       @map("store_id") @db.Uuid
-  store          Store        @relation(fields: [storeId], references: [id], onDelete: Restrict)
-  code           String       @unique
+  id             String        @id @default(uuid()) @db.Uuid
+  storeId        String        @map("store_id") @db.Uuid
+  store          Store         @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  code           String        @unique
   name           String
   description    String?
-  discountType   DiscountType @map("discount_type")
-  discountValue  Int          @map("discount_value")
-  maxDiscountVnd Int?         @map("max_discount_vnd")
-  minSpendVnd    Int?         @map("min_spend_vnd")
-  usageLimit     Int?         @map("usage_limit")
-  usedCount      Int          @default(0) @map("used_count")
-  startsAt       DateTime     @map("starts_at")
-  endsAt         DateTime?    @map("ends_at")
-  status         CouponStatus @default(DRAFT)
+  discountType   DiscountType  @map("discount_type")
+  discountValue  Int           @map("discount_value")
+  maxDiscountVnd Int?          @map("max_discount_vnd")
+  minSpendVnd    Int?          @map("min_spend_vnd")
+  usageLimit     Int?          @map("usage_limit")
+  usedCount      Int           @default(0) @map("used_count")
+  startsAt       DateTime      @map("starts_at")
+  endsAt         DateTime?     @map("ends_at")
+  status         CouponStatus  @default(DRAFT)
   bookings       Booking[]
   bills          Bill[]
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  deletedAt      DateTime?    @map("deleted_at")
+  issues         CouponIssue[]
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
 
   @@index([storeId])
   @@index([status])
@@ -352,16 +500,50 @@ model Coupon {
   @@map("coupons")
 }
 
+model CouponIssue {
+  id            String            @id @default(uuid()) @db.Uuid
+  couponId      String            @map("coupon_id") @db.Uuid
+  userId        String?           @map("user_id") @db.Uuid
+  guestId       String?           @map("guest_id") @db.Uuid
+  issuedById    String?           @map("issued_by_id") @db.Uuid
+  coupon        Coupon            @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  user          User?             @relation("CouponIssueUser", fields: [userId], references: [id], onDelete: SetNull)
+  guest         Guest?            @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  issuedBy      User?             @relation("CouponIssueIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  booking       Booking?          @relation("BookingCouponIssue")
+  bill          Bill?             @relation("BillCouponIssue")
+  code          String            @unique
+  qrPayloadHash String            @unique @map("qr_payload_hash")
+  status        CouponIssueStatus @default(ISSUED)
+  expiresAt     DateTime?         @map("expires_at")
+  usedAt        DateTime?         @map("used_at")
+  revokedAt     DateTime?         @map("revoked_at")
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([guestId])
+  @@index([issuedById])
+  @@index([status])
+  @@map("coupon_issues")
+}
+
 model Bill {
   id                     String            @id @default(uuid()) @db.Uuid
-  bookingId              String            @unique @map("booking_id") @db.Uuid
-  userId                 String            @map("user_id") @db.Uuid
+  bookingId              String?           @unique @map("booking_id") @db.Uuid
+  userId                 String?           @map("user_id") @db.Uuid
+  guestId                String?           @map("guest_id") @db.Uuid
   storeId                String            @map("store_id") @db.Uuid
   couponId               String?           @map("coupon_id") @db.Uuid
-  booking                Booking           @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  user                   User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  couponIssueId          String?           @unique @map("coupon_issue_id") @db.Uuid
+  booking                Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  user                   User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guest                  Guest?            @relation(fields: [guestId], references: [id], onDelete: SetNull)
   store                  Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
   coupon                 Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponIssue            CouponIssue?      @relation("BillCouponIssue", fields: [couponIssueId], references: [id], onDelete: SetNull)
   pointLedgers           PointLedger[]
   media                  Media[]
   notifications          NotificationLog[]
@@ -380,12 +562,16 @@ model Bill {
   pointRuleSnapshot      Json?             @map("point_rule_snapshot")
   submittedAt            DateTime?         @map("submitted_at")
   verifiedAt             DateTime?         @map("verified_at")
+  rejectedAt             DateTime?         @map("rejected_at")
+  rejectReason           String?           @map("reject_reason")
+  usedAt                 DateTime?         @map("used_at")
   paidAt                 DateTime?         @map("paid_at")
   createdAt              DateTime          @default(now()) @map("created_at")
   updatedAt              DateTime          @updatedAt @map("updated_at")
   deletedAt              DateTime?         @map("deleted_at")
 
   @@index([userId])
+  @@index([guestId])
   @@index([storeId])
   @@index([couponId])
   @@index([status])
@@ -512,10 +698,12 @@ model Content {
 model NotificationLog {
   id          String              @id @default(uuid()) @db.Uuid
   userId      String?             @map("user_id") @db.Uuid
+  guestId     String?             @map("guest_id") @db.Uuid
   storeId     String?             @map("store_id") @db.Uuid
   bookingId   String?             @map("booking_id") @db.Uuid
   billId      String?             @map("bill_id") @db.Uuid
   user        User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guest       Guest?              @relation(fields: [guestId], references: [id], onDelete: SetNull)
   store       Store?              @relation(fields: [storeId], references: [id], onDelete: SetNull)
   booking     Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
   bill        Bill?               @relation(fields: [billId], references: [id], onDelete: SetNull)
@@ -530,9 +718,32 @@ model NotificationLog {
   updatedAt   DateTime            @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([guestId])
   @@index([storeId])
   @@index([bookingId])
   @@index([billId])
   @@index([status])
   @@map("notification_logs")
+}
+
+model RankingConfig {
+  id          String              @id @default(uuid()) @db.Uuid
+  createdById String?             @map("created_by_id") @db.Uuid
+  createdBy   User?               @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  targetType  RankingTargetType   @map("target_type")
+  targetId    String              @map("target_id") @db.Uuid
+  manualScore Int                 @default(0) @map("manual_score")
+  pinRank     Int?                @map("pin_rank")
+  reason      String?
+  status      RankingConfigStatus @default(ACTIVE)
+  startsAt    DateTime?           @map("starts_at")
+  endsAt      DateTime?           @map("ends_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  deletedAt   DateTime?           @map("deleted_at")
+
+  @@index([createdById])
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("ranking_configs")
 }
