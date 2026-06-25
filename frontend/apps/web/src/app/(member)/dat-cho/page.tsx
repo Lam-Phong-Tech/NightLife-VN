@@ -1,4 +1,5 @@
 "use client";
+import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -8,7 +9,7 @@ import React, { useState } from 'react';
     
     
     // Mock data arrays for loops
-    const couponItems: unknown[] = [
+    const couponItems: MockItem[] = [
           { label: 'Happy Hour −30%', style: { background: '#6d28d9', color: '#fff', borderRadius: '16px', padding: '5px 12px', fontWeight: 600, fontSize: '12px' } },
           { label: 'Combo VIP 2+1', style: { background: '#fff', color: '#5b5870', border: '1px solid #ececec', borderRadius: '16px', padding: '4px 12px', fontWeight: 600, fontSize: '12px' } },
           { label: 'Welcome −8%', style: { background: '#fff', color: '#5b5870', border: '1px solid #ececec', borderRadius: '16px', padding: '4px 12px', fontWeight: 600, fontSize: '12px' } },
@@ -17,19 +18,19 @@ import React, { useState } from 'react';
     
     // Standalone mock variables
     const vName = 'Club Lumière';
-    const pickGuest: unknown = undefined;
-    const sGuest: unknown = { flex: 1, textAlign: 'center', background: '#f1ebff', color: '#6d28d9', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
-    const pickMember: unknown = undefined;
-    const sMember: unknown = { flex: 1, textAlign: 'center', background: 'transparent', color: '#8a879a', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
+    const pickGuest: MockItem | undefined = undefined;
+    const sGuest: MockItem = { flex: 1, textAlign: 'center', background: '#f1ebff', color: '#6d28d9', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
+    const pickMember: MockItem | undefined = undefined;
+    const sMember: MockItem = { flex: 1, textAlign: 'center', background: 'transparent', color: '#8a879a', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
     const discountNote = 'Guest: giảm 5% · hạn mã 24 giờ. Đăng nhập để nhận tới 10%.';
     const vArea = 'Tây Hồ';
     const vCat = 'Bar Lounge';
     const castName = 'Rina - 21';
     const date = 'T6 - 21/06';
     const time = '21:00';
-    const dec: unknown = undefined;
+    const dec: MockItem | undefined = undefined;
     const guests = 4;
-    const inc: unknown = undefined;
+    const inc: MockItem | undefined = undefined;
     const submit = () => window.location.href = '/xac-nhan';
     const coupon = 'Happy Hour -30%';
     const discountPct = '5%';

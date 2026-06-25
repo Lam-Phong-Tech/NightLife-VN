@@ -1,4 +1,5 @@
 "use client";
+import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -8,12 +9,12 @@ import React, { useState } from 'react';
     
     
     // Mock data arrays for loops
-    const tabs: unknown[] = [
+    const tabs: MockItem[] = [
           { label: 'Đang giữ chỗ', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} },
           { label: 'Đã sử dụng', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} },
           { label: 'Hết hạn', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} }
         ];
-    const list: unknown[] = [
+    const list: MockItem[] = [
           { title: 'Happy Hour -30%', place: 'KTV Hoàng Gia · Kim Mã', expiry: 'Còn 22:13:56', value: '-30%', label: 'Chờ duyệt', color: '#c0246a', bg: '#fce4ef', dim: '' },
           { title: 'Combo phòng VIP', place: 'Diamond Bar · Quận 3', expiry: 'Hôm nay', value: '1.2tr', label: 'Đã xác nhận', color: '#177544', bg: '#e6f7ee', dim: '' }
         ];

@@ -1,8 +1,8 @@
+"use client";
 import Link from 'next/link';
 import Image from 'next/image';
 
 
-  "use client";
   import React, { useState } from 'react';
 
   export default function Page() {

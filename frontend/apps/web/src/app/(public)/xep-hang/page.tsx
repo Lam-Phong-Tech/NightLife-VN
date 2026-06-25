@@ -1,5 +1,5 @@
-import { Venue, Cast, FAQ } from '@/types';
 "use client";
+import { Venue, Cast, FAQ } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -9,7 +9,7 @@ import React, { useState } from 'react';
     
     
     // Mock data arrays for loops
-    const areas: { name?: string, count?: number }[] = [
+    const areas: MockItem[] = [
           { label: 'Tất cả', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } },
           { label: 'Hà Nội', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } },
           { label: 'TP.HCM', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } }

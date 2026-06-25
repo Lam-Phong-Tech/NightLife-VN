@@ -1,14 +1,15 @@
 "use client";
+import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
 
-export default function Page({ params }: { params: unknown }) {
+export default function Page({ params }: { params: MockItem }) {
     
     
     
     // Mock data arrays for loops
-    const album: unknown[] = [
+    const album: MockItem[] = [
           { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
           { bg: "url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
           { bg: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
@@ -16,7 +17,7 @@ export default function Page({ params }: { params: unknown }) {
           { bg: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
           { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: true }
         ];
-    const tabs: unknown[] = [
+    const tabs: MockItem[] = [
           { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
         ];
@@ -28,7 +29,7 @@ export default function Page({ params }: { params: unknown }) {
     const cArea = 'Kim Mã';
     const cLang = 'Việt · Anh';
     const cDesc = 'Phong cách đẹp';
-    const toggleFav: unknown = undefined;
+    const toggleFav: MockItem | undefined = undefined;
     const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
     const cBorn = 2002;
     const book = () => window.location.href = '/dat-cho';
