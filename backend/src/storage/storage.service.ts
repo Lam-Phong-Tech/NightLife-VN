@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { MediaType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type UploadedFile = {
@@ -61,6 +62,7 @@ export class StorageService implements OnModuleInit {
         mimeType: file.mimetype,
         sizeBytes: file.size,
         purpose,
+        type: this.resolveMediaType(file.mimetype),
         url: `${publicBaseUrl}/storage/files/${storageKey}`,
       },
     });
@@ -78,5 +80,21 @@ export class StorageService implements OnModuleInit {
       mediaFile,
       path: join(this.getUploadDir(), storageKey),
     };
+  }
+
+  private resolveMediaType(mimeType: string) {
+    if (mimeType.startsWith('image/')) {
+      return MediaType.IMAGE;
+    }
+
+    if (mimeType.startsWith('video/')) {
+      return MediaType.VIDEO;
+    }
+
+    if (mimeType === 'application/pdf') {
+      return MediaType.DOCUMENT;
+    }
+
+    return MediaType.OTHER;
   }
 }

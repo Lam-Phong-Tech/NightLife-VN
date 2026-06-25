@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -15,6 +16,17 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import type * as express from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StorageService } from './storage.service';
+
+const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/webm',
+  'application/pdf',
+]);
 
 type RequestWithUser = express.Request & {
   user: {
@@ -57,6 +69,22 @@ export class StorageController {
   @UseInterceptors(
     FileInterceptor('file', {
       dest: process.env.STORAGE_LOCAL_DIR ?? 'uploads',
+      limits: {
+        fileSize: MAX_UPLOAD_SIZE_BYTES,
+      },
+      fileFilter: (_request, file, callback) => {
+        if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+          callback(
+            new BadRequestException(
+              'Unsupported file type. Upload image, video, or PDF files only.',
+            ),
+            false,
+          );
+          return;
+        }
+
+        callback(null, true);
+      },
     }),
   )
   @Post('upload')
