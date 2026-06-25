@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface EmptyStateProps {
   title?: string;
@@ -14,7 +15,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
       <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f3f2f5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-        <img src={icon} alt="" style={{ width: '32px', height: '32px', opacity: 0.7 }} />
+        <Image src={icon} alt="" width={32} height={32} style={{ opacity: 0.7 }} />
       </div>
       <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f1d29', marginBottom: '8px' }}>{title}</h3>
       <p style={{ fontSize: '14px', color: '#8a879a', maxWidth: '280px' }}>{description}</p>

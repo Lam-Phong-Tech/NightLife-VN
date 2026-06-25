@@ -81,3 +81,44 @@ export const spaData: Venue[] = [
   { name: 'Sen Tài Thu', area: 'Ba Đình · Cổ truyền', price: 'từ 400K', badgeText: 'Phổ biến', grad: "url('https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=480&q=70') center/cover" },
   { name: 'Aroma Clinic', area: 'Quận 1 · Chăm sóc da', price: 'từ 1.0tr', badgeText: 'Cao cấp', grad: "url('https://images.unsplash.com/photo-1570172619644-def2f520b22a?auto=format&fit=crop&w=480&q=70') center/cover" }
 ];
+
+export const adBanners = [
+  {
+    tag: 'Quảng cáo',
+    title: 'Đêm Nhạc DJ SODA tại Club Lumière',
+    desc: 'Đang diễn ra · Đặt bàn VIP ngay!',
+    btnText: 'Đặt ngay',
+    img: "linear-gradient(rgba(0,0,0,0.15),rgba(0,0,0,0.72)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80') center/cover"
+  },
+  {
+    tag: 'Quảng cáo',
+    title: 'Sakura Lounge - Giảm 25% nhóm 4+',
+    desc: 'Không gian Nhật Bản cực sang xịn',
+    btnText: 'Nhận mã',
+    img: "linear-gradient(rgba(0,0,0,0.15),rgba(0,0,0,0.72)),url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80') center/cover"
+  },
+  {
+    tag: 'Quảng cáo',
+    title: 'Karaoke Hoàng Gia - Tặng Đĩa Trái Cây',
+    desc: 'Áp dụng khi đặt phòng trước 18:00',
+    btnText: 'Chi tiết',
+    img: "linear-gradient(rgba(0,0,0,0.15),rgba(0,0,0,0.72)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=600&q=80') center/cover"
+  }
+];
+
+export const hotVideos = [
+  { name: 'Club Lumière · Tây Hồ', time: '0:45', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=70') center/cover" },
+  { name: 'Sora Lounge · Quận 1', time: '1:12', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=720&q=70') center/cover" },
+  { name: 'Sakura Lounge · Trúc Bạch', time: '0:58', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=720&q=70') center/cover" },
+  { name: 'Casino Diamond · Tây Hồ', time: '1:30', img: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=720&q=70') center/cover" }
+];
+
+export const homeCategories = [
+  { name: 'Tìm quán', icon: '/SVG/tim quan.svg', href: '/danh-sach-quan' },
+  { name: 'Tìm Cast', icon: '/SVG/tim cast.svg', href: '/danh-sach-cast' },
+  { name: 'Ưu đãi', icon: '/SVG/uu daI.svg', href: '/uu-dai' },
+  { name: 'Sự kiện', icon: '/SVG/su kien.svg', href: '/danh-sach-quan' },
+  { name: 'Nhà hàng', icon: '/icons/nha-hang.svg', href: '/danh-sach-quan' },
+  { name: 'Spa', icon: '/SVG/spa.svg', href: '/danh-sach-quan' },
+  { name: 'Hướng dẫn', icon: 'https://img.icons8.com/fluency/96/book.png', href: '/huong-dan' }
+];

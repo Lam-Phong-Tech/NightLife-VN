@@ -1,14 +1,14 @@
-
-
-  "use client";
-  import React, { useState } from 'react';
+"use client";
+import Image from 'next/image';
+import Link from 'next/link';
+import React, { useState } from 'react';
 
   export default function Page() {
-    const [activeRankTab, setActiveRankTab] = useState('quan');
-    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
-    const [isReg, setIsReg] = useState(false);
+    
+    
+    
     // Mock data arrays for loops
-    const menu: any[] = Array(5).fill({
+    const menu: unknown[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
         img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
         grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
@@ -17,16 +17,16 @@
         favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
         favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
         mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-        open: () => window.location.href = '/chi-tiet-quan'
+        open: () => console.log('Navigate')
       });
     
     // Standalone mock variables
     const name = 'Khách lẻ';
     const phone = '—';
-    const tier: any = undefined;
-    const points: any = undefined;
-    const need: any = undefined;
-    const nextTier: any = undefined;
+    const tier: unknown = undefined;
+    const points: unknown = undefined;
+    const need: unknown = undefined;
+    const nextTier: unknown = undefined;
 
     return (
       <React.Fragment>
@@ -51,17 +51,17 @@
 
     <div style={{"padding":"0 18px","display":"flex","flexDirection":"column"}}>
       {menu?.map((m, index) => (<React.Fragment key={index}>
-        <a href={m.href} style={{"display":"flex","alignItems":"center","gap":"12px","padding":"13px 4px","borderBottom":"1px solid #ececec"}}><span style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f1ebff","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><img src={m.icon} style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span><div style={{"flex":"1"}}><div style={{"fontSize":"13.5px","fontWeight":"600"}}>{m.title}</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>{m.sub}</div></div><img src="https://img.icons8.com/ios/100/B6B3C0/chevron-right.png" style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" /></a>
+        <a href={m.href} style={{"display":"flex","alignItems":"center","gap":"12px","padding":"13px 4px","borderBottom":"1px solid #ececec"}}><span style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f1ebff","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><Image width={100} height={100} src={m.icon} style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span><div style={{"flex":"1"}}><div style={{"fontSize":"13.5px","fontWeight":"600"}}>{m.title}</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>{m.sub}</div></div><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/chevron-right.png" style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" /></a>
       </React.Fragment>))}
-      <a href="/dang-nhap" style={{"display":"flex","alignItems":"center","gap":"12px","padding":"14px 4px","color":"#b03a4a"}}><span style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#fbe4e7","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><img src="https://img.icons8.com/ios/100/B03A4A/exit.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span><div style={{"flex":"1","fontSize":"13.5px","fontWeight":"600"}}>Đăng xuất</div></a>
+      <Link href="/dang-nhap" style={{"display":"flex","alignItems":"center","gap":"12px","padding":"14px 4px","color":"#b03a4a"}}><span style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#fbe4e7","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B03A4A/exit.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" /></span><div style={{"flex":"1","fontSize":"13.5px","fontWeight":"600"}}>Đăng xuất</div></Link>
     </div>
 
     <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px","marginTop":"8px"}}>
-      <a href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></a>
-      <a href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></a>
-      <a href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></a>
-      <a href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></a>
-      <a href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Tài khoản</span></a>
+      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
+      <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></Link>
+      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></Link>
+      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
+      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/6D28D9/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Tài khoản</span></Link>
     </div>
   </div>
 </div>
@@ -83,7 +83,7 @@
   <div style={{"width":"100%","margin":"0 auto","background":"#f5f4f2","borderRadius":"16px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
     {/* header */}
     <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><a href="/" style={{"fontWeight":"800","fontSize":"22px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a><div style={{"display":"flex","gap":"24px","fontSize":"14.5px","color":"#5b5870","fontWeight":"500"}}><a href="/" className="lk">Trang chủ</a><a href="/danh-sach-quan" className="lk">Tìm quán</a><a href="/danh-sach-cast" className="lk">Cast</a><a href="/xep-hang" className="lk">Bảng xếp hạng</a><a href="/uu-dai" className="lk">Ưu đãi</a><a href="/blog" className="lk">Blog</a></div></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><Link href="/" style={{"fontWeight":"800","fontSize":"22px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link><div style={{"display":"flex","gap":"24px","fontSize":"14.5px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/uu-dai" className="lk">Ưu đãi</Link><Link href="/blog" className="lk">Blog</Link></div></div>
       <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"8px 14px","fontWeight":"600"}}>VI · 日本語</div><div style={{"fontSize":"13.5px","color":"#fff","background":"#6d28d9","borderRadius":"20px","padding":"8px 16px","fontWeight":"600"}}>Minh H.</div></div>
     </div>
 
@@ -152,35 +152,35 @@
 
         {/* menu list */}
         <div style={{"background":"#fff","borderRadius":"16px","boxShadow":"0 4px 15px rgba(0,0,0,0.04)","padding":"8px 0"}}>
-          <a href="/lich-su-dat-cho" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
+          <Link href="/lich-su-dat-cho" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
             <span style={{"fontSize":"18px","marginRight":"16px"}}>📅</span>
             <span style={{"flex":"1","fontSize":"15px","fontWeight":"600","color":"#1f1d29"}}>Lịch sử đặt chỗ</span>
             <span style={{"color":"#b6b3c0","fontSize":"16px"}}>›</span>
-          </a>
-          <a href="/vi-uu-dai" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
+          </Link>
+          <Link href="/vi-uu-dai" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
             <span style={{"fontSize":"18px","marginRight":"16px","color":"#e11d48","fontWeight":"800"}}>%</span>
             <span style={{"flex":"1","fontSize":"15px","fontWeight":"600","color":"#1f1d29"}}>Ví ưu đãi</span>
             <span style={{"color":"#b6b3c0","fontSize":"16px"}}>›</span>
-          </a>
-          <a href="/gui-hoa-don" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
+          </Link>
+          <Link href="/gui-hoa-don" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
             <span style={{"fontSize":"18px","marginRight":"16px"}}>🧾</span>
             <span style={{"flex":"1","fontSize":"15px","fontWeight":"600","color":"#1f1d29"}}>Hóa đơn của tôi</span>
             <span style={{"color":"#b6b3c0","fontSize":"16px"}}>›</span>
-          </a>
-          <a href="/da-luu" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
+          </Link>
+          <Link href="/da-luu" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
             <span style={{"fontSize":"18px","marginRight":"16px","color":"#e11d48"}}>❤️</span>
             <span style={{"flex":"1","fontSize":"15px","fontWeight":"600","color":"#1f1d29"}}>Quán & Cast đã lưu</span>
             <span style={{"color":"#b6b3c0","fontSize":"16px"}}>›</span>
-          </a>
+          </Link>
           <a href="#" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px","borderBottom":"1px solid #f8f8f8"}}>
             <span style={{"fontSize":"18px","marginRight":"16px"}}>🔤</span>
             <span style={{"flex":"1","fontSize":"15px","fontWeight":"600","color":"#1f1d29"}}>Ngôn ngữ</span>
             <span style={{"color":"#8a879a","fontSize":"14px"}}>Tiếng Việt · 日本語</span>
           </a>
-          <a href="/dang-nhap" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px"}}>
+          <Link href="/dang-nhap" className="row" style={{"display":"flex","alignItems":"center","padding":"18px 24px"}}>
             <span style={{"fontSize":"18px","marginRight":"16px"}}>🚪</span>
             <span style={{"flex":"1","fontSize":"15px","fontWeight":"600","color":"#e11d48"}}>Đăng xuất</span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>
@@ -194,42 +194,42 @@
   <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
     <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
       <div style={{"maxWidth":"300px"}}>
-        <a href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a>
+        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
         <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
         <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
         </div>
       </div>
       <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
         <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <a href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</a>
-          <a href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</a>
-          <a href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</a>
+          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
+          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
+          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
         </div>
         <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <a href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</a>
-          <a href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</a>
-          <a href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</a>
+          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
+          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
+          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
         </div>
         <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <a href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</a>
-          <a href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</a>
-          <a href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</a>
+          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
+          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
+          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
         </div>
       </div>
     </div>
     <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <img src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
+      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
       <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
     </div>
     <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
       <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
       <div>v2.0.0 • Nightlife Platform</div>
       <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <img src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
+        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
       </div>
     </div>
   </div>

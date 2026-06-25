@@ -1,85 +1,51 @@
-import React from 'react';
-
-export interface BaseItem {
-  id?: string;
+export interface Venue {
   name: string;
-  area?: string;
-  rating?: number;
+  area: string;
+  catLabel: string;
+  rating: number;
+  img?: string;
+  grad?: string;
+  price?: string;
+  tag?: string;
+  label?: string;
+  style?: Record<string, string | number>;
+  date?: string;
+  time?: string;
+  code?: string;
+  st?: string;
   favIcon?: string;
   favIconDark?: string;
-  img?: string;
-  tag?: string;
+  mainBg?: string;
   open?: () => void;
-  fav?: (e: React.MouseEvent) => void;
+  [key: string]: any;
 }
 
-export interface Venue extends BaseItem {
-  catLabel?: string;
-  price?: string;
-  reviews?: number;
-  grad?: string;
-  hasBadge?: boolean;
-  badgeText?: string;
-  badgeColor?: string;
-  metric?: string; // used in rank list
-  rank?: string;
-  numColor?: string;
-  crown?: string;
-}
-
-export interface Cast extends BaseItem {
-  age?: number;
-  desc?: string;
-  jp?: boolean;
-  metric?: string; // used in rank list
-  rank?: string;
-  numColor?: string;
-  crown?: string;
+export interface Cast {
+  name?: string;
+  area?: string;
+  toggle?: () => void;
+  [key: string]: any;
 }
 
 export interface Coupon {
-  id?: string;
-  title: string;
-  place: string;
-  value: string;
-  expiry: string;
-  img: string;
-  btnLabel: string;
-  btnStyle?: React.CSSProperties;
-  take?: () => void;
-  label?: string;
-  color?: string;
-  bg?: string;
-  dim?: string;
-}
-
-export interface FilterTab {
-  label: string;
-  style?: React.CSSProperties;
-  pick?: () => void;
+  [key: string]: any;
 }
 
 export interface Booking {
-  id: string;
-  venueName: string;
-  date: string;
-  time: string;
-  guests: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  [key: string]: any;
 }
 
 export interface Bill {
-  id: string;
-  bookingId: string;
-  totalAmount: number;
-  paymentStatus: 'unpaid' | 'paid';
-  date: string;
+  [key: string]: any;
 }
 
 export interface PartnerAccount {
-  id: string;
-  username: string;
-  email: string;
-  role: 'partner' | 'admin';
-  venueId?: string;
+  [key: string]: any;
+}
+
+export interface FAQ {
+  toggle?: () => void;
+  question?: string;
+  answer?: string;
+  [key: string]: any;
 }

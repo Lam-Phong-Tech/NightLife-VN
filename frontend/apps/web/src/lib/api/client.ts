@@ -6,7 +6,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions extends RequestInit {
-  data?: any;
+  data?: unknown;
   params?: Record<string, string>;
 }
 
@@ -61,7 +61,7 @@ export const apiClient = async <T>(endpoint: string, options: RequestOptions = {
     try {
       const errorData = await response.json();
       errorMessage = errorData.message || errorMessage;
-    } catch (e) {
+    } catch {
       // Ignored
     }
     throw new ApiError(response.status, errorMessage);

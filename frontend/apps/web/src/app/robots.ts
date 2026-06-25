@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/admin/', '/tai-khoan/', '/partner/'],
+      disallow: ['/tai-khoan', '/dat-cho', '/lich-su-dat-cho'],
     },
     sitemap: 'https://nightlife.hn/sitemap.xml',
   };

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
@@ -14,11 +14,7 @@ export default defineConfig({
       extends: true,
       test: {
         environment: 'jsdom',
-        globals: true,
-        setupFiles: './src/tests/setup.ts',
-        alias: {
-          '@': path.resolve(__dirname, './src')
-        }
+        globals: true
       }
     }, {
       extends: true,

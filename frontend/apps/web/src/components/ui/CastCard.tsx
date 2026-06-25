@@ -19,7 +19,7 @@ export const CastCard: React.FC<CastCardProps> = ({ cast, onClick, onFavClick, h
         {cast.jp && (
           <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#fff', color: '#c0246a', fontSize: '10.5px', fontWeight: '700', borderRadius: '14px', padding: '3px 9px' }}>Nói tiếng Nhật</span>
         )}
-        <span onClick={(e) => { e.preventDefault(); onFavClick ? onFavClick(e) : cast.fav?.(e); }} style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(0,0,0,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <span onClick={(e) => { e.preventDefault(); if (onFavClick) { onFavClick(e); } else if (cast.fav) { cast.fav(e); } }} style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(0,0,0,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <Image src={cast.favIcon || 'https://img.icons8.com/ios/100/FFFFFF/like.png'} width={16} height={16} alt="Fav" />
         </span>
       </div>

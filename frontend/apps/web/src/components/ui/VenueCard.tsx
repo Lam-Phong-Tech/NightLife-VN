@@ -23,7 +23,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({ venue, onClick, onFavClick
         {venue.hasBadge && (
           <span style={{ position: 'absolute', top: '10px', left: '10px', background: '#fff', color: venue.badgeColor || '#6d28d9', fontSize: '10.5px', fontWeight: '700', borderRadius: '14px', padding: '3px 9px' }}>{venue.badgeText}</span>
         )}
-        <span onClick={(e) => { e.preventDefault(); onFavClick ? onFavClick(e) : venue.fav?.(e); }} style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(0,0,0,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <span onClick={(e) => { e.preventDefault(); if (onFavClick) { onFavClick(e); } else if (venue.fav) { venue.fav(e); } }} style={{ position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(0,0,0,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <Image src={venue.favIcon || 'https://img.icons8.com/ios/100/FFFFFF/like.png'} width={16} height={16} alt="Fav" />
         </span>
       </div>

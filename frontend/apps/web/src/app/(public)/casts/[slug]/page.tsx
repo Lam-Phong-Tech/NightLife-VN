@@ -1,12 +1,14 @@
 "use client";
+import Image from 'next/image';
+import Link from 'next/link';
 import React, { useState } from 'react';
 
-export default function Page({ params }: { params: any }) {
-    const [activeRankTab, setActiveRankTab] = useState('quan');
-    const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
-    const [isReg, setIsReg] = useState(false);
+export default function Page({ params }: { params: unknown }) {
+    
+    
+    
     // Mock data arrays for loops
-    const album: any[] = [
+    const album: unknown[] = [
           { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
           { bg: "url('https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
           { bg: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
@@ -14,7 +16,7 @@ export default function Page({ params }: { params: any }) {
           { bg: "url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=360&q=70') center/cover", video: false },
           { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", video: true }
         ];
-    const tabs: any[] = [
+    const tabs: unknown[] = [
           { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
           { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
         ];
@@ -26,7 +28,7 @@ export default function Page({ params }: { params: any }) {
     const cArea = 'Kim Mã';
     const cLang = 'Việt · Anh';
     const cDesc = 'Phong cách đẹp';
-    const toggleFav: any = undefined;
+    const toggleFav: unknown = undefined;
     const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
     const cBorn = 2002;
     const book = () => window.location.href = '/dat-cho';
@@ -51,12 +53,12 @@ export default function Page({ params }: { params: any }) {
 <div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"position":"relative","height":"300px","background":mainBg}}>
-      <a href="/danh-sach-cast" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</a>
-      <span className="btn" onClick={toggleFav} style={{"position":"absolute","top":"12px","right":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIconDark} style={{"width":"17px","height":"17px","display":"inline-block"}} alt="" /></span>
-      <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"22px","height":"22px","marginLeft":"2px","display":"inline-block"}} alt="" /></span></>
+      <Link href="/danh-sach-cast" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</Link>
+      <span className="btn" onClick={toggleFav} style={{"position":"absolute","top":"12px","right":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src={favIconDark} style={{"width":"17px","height":"17px","display":"inline-block"}} alt="" /></span>
+      <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"22px","height":"22px","marginLeft":"2px","display":"inline-block"}} alt="" /></span></>
     </div>
     <div className="hscroll" style={{"display":"flex","gap":"7px","padding":"10px 18px 0","overflowX":"auto"}}>
-      {album?.map((a, index) => (<React.Fragment key={index}><div className="btn" onClick={a.pick} style={{"width":"54px","height":"54px","flex":"none","borderRadius":"9px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span></></div></React.Fragment>))}
+      {album?.map((a, index) => (<React.Fragment key={index}><div className="btn" onClick={a.pick} style={{"width":"54px","height":"54px","flex":"none","borderRadius":"9px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" /></span></></div></React.Fragment>))}
     </div>
 
     <div style={{"background":"#fff","padding":"14px 18px"}}>
@@ -93,19 +95,19 @@ export default function Page({ params }: { params: any }) {
 <div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
     <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><a href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><a href="/" className="lk">Trang chủ</a><a href="/danh-sach-quan" className="lk">Tìm quán</a><a href="/danh-sach-cast" className="lk">Cast</a><a href="/xep-hang" className="lk">Bảng xếp hạng</a><a href="/tour" className="lk">Tour</a><a href="/blog" className="lk">Blog</a></div></div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><a href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</a><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div></div>
+      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</Link><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
     </div>
-    <div style={{"padding":"18px 34px 0","fontSize":"12.5px","color":"#8a879a"}}><a href="/" className="lk">Trang chủ</a> › <a href="/danh-sach-cast" className="lk">Cast</a> › <span style={{"color":"#1f1d29"}}>{cName}</span></div>
+    <div style={{"padding":"18px 34px 0","fontSize":"12.5px","color":"#8a879a"}}><Link href="/" className="lk">Trang chủ</Link> › <Link href="/danh-sach-cast" className="lk">Cast</Link> › <span style={{"color":"#1f1d29"}}>{cName}</span></div>
 
     <div style={{"display":"flex","gap":"24px","padding":"18px 34px 30px"}}>
       {/* album */}
       <div style={{"width":"440px","flex":"none"}}>
         <div style={{"height":"440px","borderRadius":"16px","background":mainBg,"position":"relative","overflow":"hidden"}}>
-          <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"60px","height":"60px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"24px","height":"24px","marginLeft":"3px","display":"inline-block"}} alt="" /></span></>
+          <><span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"60px","height":"60px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"24px","height":"24px","marginLeft":"3px","display":"inline-block"}} alt="" /></span></>
         </div>
         <div style={{"display":"flex","gap":"8px","marginTop":"10px"}}>
-          {album?.map((a, index) => (<React.Fragment key={index}><div className="thumb" onClick={a.pick} style={{"flex":"1","height":"74px","borderRadius":"10px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" /></span></></div></React.Fragment>))}
+          {album?.map((a, index) => (<React.Fragment key={index}><div className="thumb" onClick={a.pick} style={{"flex":"1","height":"74px","borderRadius":"10px","background":a.bg,"position":"relative"}}><><span style={{"position":"absolute","inset":"0","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" /></span></></div></React.Fragment>))}
         </div>
       </div>
 
@@ -121,7 +123,7 @@ export default function Page({ params }: { params: any }) {
               <span style={{"fontSize":"12px","background":"#f3f2f5","color":"#5b5870","borderRadius":"14px","padding":"5px 11px"}}>{cDesc}</span>
             </div>
           </div>
-          <span className="btn" onClick={toggleFav} style={{"width":"44px","height":"44px","borderRadius":"12px","border":"1px solid #ececec","background":"#fff","display":"flex","alignItems":"center","justifyContent":"center"}}><img src={favIcon} style={{"width":"20px","height":"20px","display":"inline-block"}} alt="" /></span>
+          <span className="btn" onClick={toggleFav} style={{"width":"44px","height":"44px","borderRadius":"12px","border":"1px solid #ececec","background":"#fff","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src={favIcon} style={{"width":"20px","height":"20px","display":"inline-block"}} alt="" /></span>
         </div>
 
         <div style={{"display":"flex","gap":"26px","borderBottom":"1px solid #ececec","marginTop":"22px","fontSize":"14px"}}>
@@ -154,42 +156,42 @@ export default function Page({ params }: { params: any }) {
   <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
     <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
       <div style={{"maxWidth":"300px"}}>
-        <a href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></a>
+        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
         <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
         <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><img src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
+          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
         </div>
       </div>
       <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
         <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <a href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</a>
-          <a href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</a>
-          <a href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</a>
+          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
+          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
+          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
         </div>
         <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <a href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</a>
-          <a href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</a>
-          <a href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</a>
+          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
+          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
+          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
         </div>
         <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <a href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</a>
-          <a href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</a>
-          <a href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</a>
+          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
+          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
+          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
         </div>
       </div>
     </div>
     <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <img src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
+      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
       <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
     </div>
     <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
       <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
       <div>v2.0.0 • Nightlife Platform</div>
       <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <img src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
+        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
       </div>
     </div>
   </div>

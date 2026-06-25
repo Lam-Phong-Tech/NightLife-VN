@@ -1,30 +1,32 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = 'https://nightlife.hn';
+  
   return [
     {
-      url: 'https://nightlife.hn',
+      url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: 'https://nightlife.hn/danh-sach-quan',
+      url: `${baseUrl}/danh-sach-quan`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://nightlife.hn/danh-sach-cast',
+      url: `${baseUrl}/danh-sach-cast`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: 'https://nightlife.hn/blog',
+      url: `${baseUrl}/uu-dai`,
       lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.5,
+      changeFrequency: 'daily',
+      priority: 0.8,
     },
   ];
 }
