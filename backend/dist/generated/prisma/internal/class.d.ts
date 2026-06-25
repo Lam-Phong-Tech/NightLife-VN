@@ -33,5 +33,23 @@ export interface PrismaClient<in LogOpts extends Prisma.LogLevel = never, in out
     get user(): Prisma.UserDelegate<ExtArgs, {
         omit: OmitOpts;
     }>;
+    get venue(): Prisma.VenueDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    get event(): Prisma.EventDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    get ticketType(): Prisma.TicketTypeDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    get booking(): Prisma.BookingDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    get bookingItem(): Prisma.BookingItemDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
+    get mediaFile(): Prisma.MediaFileDelegate<ExtArgs, {
+        omit: OmitOpts;
+    }>;
 }
 export declare function getPrismaClientClass(): PrismaClientConstructor;

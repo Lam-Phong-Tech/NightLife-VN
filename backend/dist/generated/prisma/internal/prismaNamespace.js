@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineExtension = exports.NullsOrder = exports.QueryMode = exports.SortOrder = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.prismaVersion = exports.getExtensionContext = exports.Decimal = exports.Sql = exports.raw = exports.join = exports.empty = exports.sql = exports.PrismaClientValidationError = exports.PrismaClientInitializationError = exports.PrismaClientRustPanicError = exports.PrismaClientUnknownRequestError = exports.PrismaClientKnownRequestError = void 0;
+exports.defineExtension = exports.NullsOrder = exports.QueryMode = exports.SortOrder = exports.MediaFileScalarFieldEnum = exports.BookingItemScalarFieldEnum = exports.BookingScalarFieldEnum = exports.TicketTypeScalarFieldEnum = exports.EventScalarFieldEnum = exports.VenueScalarFieldEnum = exports.UserScalarFieldEnum = exports.TransactionIsolationLevel = exports.ModelName = exports.AnyNull = exports.JsonNull = exports.DbNull = exports.NullTypes = exports.prismaVersion = exports.getExtensionContext = exports.Decimal = exports.Sql = exports.raw = exports.join = exports.empty = exports.sql = exports.PrismaClientValidationError = exports.PrismaClientInitializationError = exports.PrismaClientRustPanicError = exports.PrismaClientUnknownRequestError = exports.PrismaClientKnownRequestError = void 0;
 const runtime = __importStar(require("@prisma/client/runtime/client"));
 exports.PrismaClientKnownRequestError = runtime.PrismaClientKnownRequestError;
 exports.PrismaClientUnknownRequestError = runtime.PrismaClientUnknownRequestError;
@@ -60,7 +60,13 @@ exports.DbNull = runtime.DbNull;
 exports.JsonNull = runtime.JsonNull;
 exports.AnyNull = runtime.AnyNull;
 exports.ModelName = {
-    User: 'User'
+    User: 'User',
+    Venue: 'Venue',
+    Event: 'Event',
+    TicketType: 'TicketType',
+    Booking: 'Booking',
+    BookingItem: 'BookingItem',
+    MediaFile: 'MediaFile'
 };
 exports.TransactionIsolationLevel = runtime.makeStrictEnum({
     ReadUncommitted: 'ReadUncommitted',
@@ -71,10 +77,76 @@ exports.TransactionIsolationLevel = runtime.makeStrictEnum({
 exports.UserScalarFieldEnum = {
     id: 'id',
     email: 'email',
-    password: 'password',
-    name: 'name',
+    passwordHash: 'passwordHash',
+    displayName: 'displayName',
+    role: 'role',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
+};
+exports.VenueScalarFieldEnum = {
+    id: 'id',
+    ownerId: 'ownerId',
+    name: 'name',
+    slug: 'slug',
+    description: 'description',
+    address: 'address',
+    city: 'city',
+    latitude: 'latitude',
+    longitude: 'longitude',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.EventScalarFieldEnum = {
+    id: 'id',
+    venueId: 'venueId',
+    title: 'title',
+    slug: 'slug',
+    description: 'description',
+    startsAt: 'startsAt',
+    endsAt: 'endsAt',
+    status: 'status',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.TicketTypeScalarFieldEnum = {
+    id: 'id',
+    eventId: 'eventId',
+    name: 'name',
+    priceVnd: 'priceVnd',
+    quota: 'quota',
+    sold: 'sold',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.BookingScalarFieldEnum = {
+    id: 'id',
+    userId: 'userId',
+    eventId: 'eventId',
+    status: 'status',
+    totalVnd: 'totalVnd',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+};
+exports.BookingItemScalarFieldEnum = {
+    id: 'id',
+    bookingId: 'bookingId',
+    ticketTypeId: 'ticketTypeId',
+    quantity: 'quantity',
+    unitPriceVnd: 'unitPriceVnd',
+    createdAt: 'createdAt'
+};
+exports.MediaFileScalarFieldEnum = {
+    id: 'id',
+    ownerId: 'ownerId',
+    venueId: 'venueId',
+    eventId: 'eventId',
+    storageKey: 'storageKey',
+    originalName: 'originalName',
+    mimeType: 'mimeType',
+    sizeBytes: 'sizeBytes',
+    url: 'url',
+    purpose: 'purpose',
+    createdAt: 'createdAt'
 };
 exports.SortOrder = {
     asc: 'asc',
