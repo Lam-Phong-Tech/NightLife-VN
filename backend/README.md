@@ -68,8 +68,9 @@ Implemented endpoints:
 - `POST /auth/register`
 - `POST /auth/login`
 - `GET /auth/me` with `Authorization: Bearer <token>`
+- `GET /users/me` with `Authorization: Bearer <token>`
 
-Passwords are hashed with Node.js `crypto.scrypt`. JWT settings come from `JWT_SECRET` and `JWT_EXPIRES_IN`.
+Users are created through `UsersService`, with email lookup, password hashing, default `role`, default `tier`, and public-user serialization. Passwords are hashed with Node.js `crypto.scrypt`. JWT settings come from `JWT_SECRET` and `JWT_EXPIRES_IN`.
 
 ## Storage
 
@@ -79,20 +80,28 @@ Implemented endpoints:
 - `GET /storage/files/:storageKey`
 
 Uploaded files are saved under `STORAGE_LOCAL_DIR` and metadata is stored in `media_files`.
+Allowed upload types are images, videos, and PDFs. The default upload limit is 25 MB.
 
 ## Core P0 Schema
 
 The first migration creates:
 
 - `users`
-- `venues`
-- `events`
-- `ticket_types`
+- `profiles`
+- `roles`
+- `user_role_assignments`
+- `stores`
+- `casts`
 - `bookings`
-- `booking_items`
+- `coupons`
+- `bills`
+- `commission_configs`
+- `point_ledgers`
 - `media_files`
+- `contents`
+- `notification_logs`
 
-Enums: `UserRole`, `EventStatus`, `BookingStatus`.
+Core enums include `UserRole`, `UserTier`, `UserStatus`, `StoreStatus`, `CastStatus`, `BookingStatus`, `BillStatus`, `MediaType`, and `MediaStatus`.
 
 ## Verification
 

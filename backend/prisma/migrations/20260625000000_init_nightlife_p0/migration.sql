@@ -5,6 +5,9 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "UserRole" AS ENUM ('USER', 'PARTNER', 'STAFF', 'ADMIN');
 
 -- CreateEnum
+CREATE TYPE "UserTier" AS ENUM ('FREE', 'PREMIUM', 'VIP');
+
+-- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'SUSPENDED', 'DELETED');
 
 -- CreateEnum
@@ -69,6 +72,7 @@ CREATE TABLE "users" (
     "display_name" TEXT,
     "phone" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "tier" "UserTier" NOT NULL DEFAULT 'FREE',
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -275,7 +279,7 @@ CREATE TABLE "point_ledgers" (
 );
 
 -- CreateTable
-CREATE TABLE "media" (
+CREATE TABLE "media_files" (
     "id" UUID NOT NULL,
     "owner_id" UUID,
     "store_id" UUID,
@@ -296,7 +300,7 @@ CREATE TABLE "media" (
     "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
 
-    CONSTRAINT "media_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "media_files_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -460,28 +464,28 @@ CREATE INDEX "point_ledgers_reversed_ledger_id_idx" ON "point_ledgers"("reversed
 CREATE INDEX "point_ledgers_status_idx" ON "point_ledgers"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "media_storage_key_key" ON "media"("storage_key");
+CREATE UNIQUE INDEX "media_files_storage_key_key" ON "media_files"("storage_key");
 
 -- CreateIndex
-CREATE INDEX "media_owner_id_idx" ON "media"("owner_id");
+CREATE INDEX "media_files_owner_id_idx" ON "media_files"("owner_id");
 
 -- CreateIndex
-CREATE INDEX "media_store_id_idx" ON "media"("store_id");
+CREATE INDEX "media_files_store_id_idx" ON "media_files"("store_id");
 
 -- CreateIndex
-CREATE INDEX "media_cast_id_idx" ON "media"("cast_id");
+CREATE INDEX "media_files_cast_id_idx" ON "media_files"("cast_id");
 
 -- CreateIndex
-CREATE INDEX "media_booking_id_idx" ON "media"("booking_id");
+CREATE INDEX "media_files_booking_id_idx" ON "media_files"("booking_id");
 
 -- CreateIndex
-CREATE INDEX "media_bill_id_idx" ON "media"("bill_id");
+CREATE INDEX "media_files_bill_id_idx" ON "media_files"("bill_id");
 
 -- CreateIndex
-CREATE INDEX "media_content_id_idx" ON "media"("content_id");
+CREATE INDEX "media_files_content_id_idx" ON "media_files"("content_id");
 
 -- CreateIndex
-CREATE INDEX "media_status_idx" ON "media"("status");
+CREATE INDEX "media_files_status_idx" ON "media_files"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "contents_slug_key" ON "contents"("slug");
@@ -517,7 +521,7 @@ CREATE INDEX "notification_logs_status_idx" ON "notification_logs"("status");
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "profiles" ADD CONSTRAINT "profiles_avatar_media_id_fkey" FOREIGN KEY ("avatar_media_id") REFERENCES "media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_avatar_media_id_fkey" FOREIGN KEY ("avatar_media_id") REFERENCES "media_files"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -580,22 +584,22 @@ ALTER TABLE "point_ledgers" ADD CONSTRAINT "point_ledgers_bill_id_fkey" FOREIGN 
 ALTER TABLE "point_ledgers" ADD CONSTRAINT "point_ledgers_reversed_ledger_id_fkey" FOREIGN KEY ("reversed_ledger_id") REFERENCES "point_ledgers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "media" ADD CONSTRAINT "media_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "media_files" ADD CONSTRAINT "media_files_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "media" ADD CONSTRAINT "media_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "media_files" ADD CONSTRAINT "media_files_store_id_fkey" FOREIGN KEY ("store_id") REFERENCES "stores"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "media" ADD CONSTRAINT "media_cast_id_fkey" FOREIGN KEY ("cast_id") REFERENCES "casts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "media_files" ADD CONSTRAINT "media_files_cast_id_fkey" FOREIGN KEY ("cast_id") REFERENCES "casts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "media" ADD CONSTRAINT "media_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "media_files" ADD CONSTRAINT "media_files_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "media" ADD CONSTRAINT "media_bill_id_fkey" FOREIGN KEY ("bill_id") REFERENCES "bills"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "media_files" ADD CONSTRAINT "media_files_bill_id_fkey" FOREIGN KEY ("bill_id") REFERENCES "bills"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "media" ADD CONSTRAINT "media_content_id_fkey" FOREIGN KEY ("content_id") REFERENCES "contents"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "media_files" ADD CONSTRAINT "media_files_content_id_fkey" FOREIGN KEY ("content_id") REFERENCES "contents"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "contents" ADD CONSTRAINT "contents_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
