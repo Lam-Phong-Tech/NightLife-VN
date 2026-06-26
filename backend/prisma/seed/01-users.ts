@@ -55,6 +55,19 @@ const USERS: UserSeed[] = [
     },
   },
   {
+    email: 'partner@nightlife.vn',
+    displayName: 'Demo Partner',
+    phone: '+84901000006',
+    role: 'PARTNER',
+    tier: 'PREMIUM',
+    roleKey: 'partner',
+    profile: {
+      fullName: 'Demo Partner',
+      gender: 'male',
+      bio: 'Demo partner account for UI sign-in and store management review',
+    },
+  },
+  {
     email: 'member@nightlife.vn',
     displayName: 'Phạm Thành Viên',
     phone: '+84901000004',

@@ -11,9 +11,22 @@ interface RequestOptions extends RequestInit {
 }
 
 const getBaseUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const configuredBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL;
 
-  return baseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined') {
+    const isLocalHost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+
+    return isLocalHost ? 'http://localhost:3001' : '/api/backend';
+  }
+
+  return 'http://localhost:3001';
 };
 
 const getAuthToken = () => {
