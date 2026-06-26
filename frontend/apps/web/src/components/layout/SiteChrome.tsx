@@ -26,6 +26,7 @@ const hiddenChromePaths = [
   '/dang-ky-doi-tac',
   '/partner',
   '/admin',
+  '/chon-giao-dien',
 ];
 
 const navLinks = [
@@ -55,6 +56,19 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const hideChrome = hiddenChromePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   useEffect(() => {
+    // Check cookie first
+    const match = document.cookie.match(new RegExp('(^| )device_preference=([^;]+)'));
+    const preference = match ? match[2] : null;
+
+    if (preference === 'mobile') {
+      setIsMobile(true);
+      return;
+    } else if (preference === 'desktop') {
+      setIsMobile(false);
+      return;
+    }
+
+    // Fallback to media query if no preference is set
     const media = window.matchMedia('(max-width: 767px)');
     const update = () => setIsMobile(media.matches);
     update();
