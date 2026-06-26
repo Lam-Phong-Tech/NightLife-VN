@@ -340,7 +340,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
-                lineHeight: 1,
+                lineHeight: "normal",
                 fontSize: isMobile ? "12px" : "13px",
                 fontWeight: 800,
                 textDecoration: "none",
@@ -350,7 +350,17 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               }}
             >
               <UserRound size={16} style={{ flex: "none" }} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1 }}>
+              <span
+                style={{
+                  height: "100%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: "normal",
+                  paddingTop: "1px",
+                }}
+              >
                 {displayName}
               </span>
             </Link>
