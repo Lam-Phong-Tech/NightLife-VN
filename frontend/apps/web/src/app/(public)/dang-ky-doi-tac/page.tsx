@@ -1,195 +1,721 @@
-"use client";
-import Image from 'next/image';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  BarChart3,
+  Camera,
+  ChevronDown,
+  Crown,
+  FileClock,
+  Home,
+  ImagePlus,
+  LockKeyhole,
+  QrCode,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  TicketCheck,
+  UsersRound,
+} from 'lucide-react';
+import React from 'react';
 
-  export default function Page() {
-    
-    
-    
-    // Mock data arrays for loops
-    
-    
-    // Standalone mock variables
-    
+const colors = {
+  bg: '#0c0c0f',
+  bezel: '#000000',
+  surface1: 'rgba(255,255,255,.035)',
+  surface2: 'rgba(255,255,255,.04)',
+  surface3: 'rgba(255,255,255,.05)',
+  navBg: 'rgba(8,8,11,.9)',
+  borderSoft: 'rgba(255,255,255,.06)',
+  borderHair: 'rgba(255,255,255,.08)',
+  borderGold12: 'rgba(212,178,106,.18)',
+  borderGold22: 'rgba(212,178,106,.22)',
+  borderGold32: 'rgba(212,178,106,.32)',
+  borderGold40: 'rgba(212,178,106,.4)',
+  text: '#f3f0ea',
+  text2: '#c5c0b6',
+  muted: '#8c8679',
+  tertiary: '#9b958a',
+  onGold: '#241a0a',
+  gold: '#d4b26a',
+  goldBright: '#e3c27e',
+  goldPale: '#f0dda8',
+  neonPink: '#e0729e',
+  goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
+};
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+const heroImage =
+  'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1400&q=80';
 
-<>
-<>
+const benefits = [
+  {
+    icon: UsersRound,
+    title: 'Tiếp cận khách mục tiêu',
+    desc: 'Khách Nhật và khách cao cấp tìm quán, cast, ưu đãi mỗi tối.',
+  },
+  {
+    icon: QrCode,
+    title: 'Tài khoản đối tác riêng',
+    desc: 'Tự quét mã, đối soát dịch vụ và theo dõi hiệu quả của quán.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Hiển thị nổi bật',
+    desc: 'Gói tài trợ giúp quán xuất hiện tốt hơn trong đề xuất và ranking.',
+  },
+];
 
+const portalItems = [
+  { icon: TicketCheck, label: 'Quét mã QR', detail: 'Xác nhận coupon tại quán' },
+  { icon: BarChart3, label: 'Dashboard', detail: 'Đặt chỗ, lượt xem, khách đến' },
+  { icon: FileClock, label: 'Đối soát', detail: 'Lọc hôm nay, 7 ngày, 30 ngày' },
+  { icon: Camera, label: 'Đăng thông tin', detail: 'Chờ Admin duyệt trước khi công khai' },
+];
 
+const fields = [
+  { label: 'Tên quán / cơ sở', value: 'VD: Club Lumiere', wide: true },
+  { label: 'Loại hình', value: 'Bar / Lounge', select: true },
+  { label: 'Khu vực', value: 'Ha Noi', select: true },
+  { label: 'Người liên hệ', value: 'Họ tên' },
+  { label: 'SĐT / Telegram', value: '0912 345 678' },
+  { label: 'Giới thiệu ngắn', value: 'Mô tả quán, dịch vụ nổi bật, khung giờ đông khách...', wide: true, tall: true },
+];
 
+const bottomNav = [
+  { href: '/', label: 'Trang chủ', icon: Home },
+  { href: '/danh-sach-cast', label: 'Cast', icon: UsersRound },
+  { href: '/uu-dai', label: 'Ưu đãi', icon: TicketCheck },
+  { href: '/lich-su-dat-cho', label: 'Đặt chỗ', icon: FileClock },
+  { href: '/tai-khoan', label: 'Tài khoản', icon: LockKeyhole },
+];
 
-</>
+function Logo({ compact = false }: { compact?: boolean }) {
+  return (
+    <Link href="/" style={{ display: 'inline-flex', flexDirection: 'column', textDecoration: 'none' }}>
+      <span
+        style={{
+          fontSize: compact ? '23px' : '26px',
+          fontWeight: 800,
+          lineHeight: 1,
+          background: colors.goldGrad,
+          WebkitBackgroundClip: 'text',
+          color: 'transparent',
+        }}
+      >
+        Vietyoru
+      </span>
+      <span style={{ marginTop: '4px', fontSize: '8.5px', letterSpacing: '3.6px', color: colors.muted }}>
+        VIETNAM NIGHTLIFE GUIDE
+      </span>
+    </Link>
+  );
+}
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"margin":"0 auto","width":"100%","background":"#fff","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"height":"40px","background":"#3a1f6e","display":"flex","alignItems":"center","justifyContent":"space-between","padding":"0 22px","fontSize":"13px","fontWeight":"700","color":"#fff"}}><span>21:00</span><span style={{"width":"22px","height":"11px","border":"1.5px solid #fff","borderRadius":"3px","display":"inline-block","position":"relative"}}><span style={{"position":"absolute","inset":"1.5px","right":"6px","background":"#fff","borderRadius":"1px"}}></span></span></div>
-
-    {/* pitch hero */}
-    <div style={{"background":"linear-gradient(150deg,rgba(58,31,110,.82),rgba(26,16,48,.8)),url('https://images.unsplash.com/photo-1513735492246-483525079686?auto=format&fit=crop&w=720&q=70') center/cover","padding":"0 22px 22px","color":"#fff"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"10px","paddingTop":"12px"}}><Link href="/" style={{"fontSize":"20px","color":"#fff","lineHeight":"1"}}>‹</Link><div style={{"fontWeight":"800","fontSize":"18px"}}>nightlife<span style={{"color":"#c9a7ff"}}>.hn</span></div></div>
-      <div style={{"fontSize":"10px","letterSpacing":".16em","textTransform":"uppercase","color":"#d9c9f7","fontWeight":"700","marginTop":"16px"}}>Hợp tác cùng NightLife</div>
-      <h2 style={{"fontSize":"23px","fontWeight":"800","lineHeight":"1.2","marginTop":"8px","maxWidth":"260px"}}>Đưa quán đến hàng nghìn khách mỗi đêm</h2>
-      <div style={{"fontSize":"11.5px","color":"#cbbfe0","marginTop":"10px"}}>Không yêu cầu giấy phép kinh doanh khi đăng ký.</div>
-    </div>
-
-    {/* benefits */}
-    <div style={{"padding":"16px 18px 0","marginTop":"-12px","background":"#fff","borderRadius":"22px 22px 0 0","position":"relative"}}>
-      <div style={{"display":"flex","flexDirection":"column","gap":"10px"}}>
-        <div style={{"display":"flex","gap":"11px","alignItems":"center","background":"#faf7ff","border":"1px solid #ece4fb","borderRadius":"12px","padding":"11px 12px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/conference-call.png" style={{"width":"26px","height":"26px","flex":"none","display":"inline-block"}} alt="" /><div><div style={{"fontWeight":"700","fontSize":"13px"}}>Tiếp cận khách mục tiêu</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"1px"}}>Khách Nhật &amp; khách cao cấp tìm quán mỗi tối.</div></div></div>
-        <div style={{"display":"flex","gap":"11px","alignItems":"center","background":"#faf7ff","border":"1px solid #ece4fb","borderRadius":"12px","padding":"11px 12px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/qr-code.png" style={{"width":"26px","height":"26px","flex":"none","display":"inline-block"}} alt="" /><div><div style={{"fontWeight":"700","fontSize":"13px"}}>Tài khoản đối tác</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"1px"}}>Tự quét mã, đối soát dịch vụ, đăng thông tin.</div></div></div>
-        <div style={{"display":"flex","gap":"11px","alignItems":"center","background":"#faf7ff","border":"1px solid #ece4fb","borderRadius":"12px","padding":"11px 12px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/bar-chart.png" style={{"width":"26px","height":"26px","flex":"none","display":"inline-block"}} alt="" /><div><div style={{"fontWeight":"700","fontSize":"13px"}}>Lên Top xếp hạng</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"1px"}}>Gói tài trợ giúp quán hiển thị nổi bật.</div></div></div>
-      </div>
-    </div>
-
-    {/* form */}
-    <div style={{"padding":"16px 18px 0"}}>
-      <h3 style={{"fontSize":"17px","fontWeight":"800"}}>Đăng ký hợp tác</h3>
-      <p style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"4px"}}>Gửi thông tin — Admin sẽ liên hệ &amp; kiểm duyệt trước khi hiển thị.</p>
-      <div style={{"display":"flex","flexDirection":"column","gap":"11px","marginTop":"14px"}}>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Tên quán / cơ sở</label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#9a98a6"}}>VD: Club Lumière</div></div>
-        <div style={{"display":"flex","gap":"10px"}}><div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Loại hình</label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"12.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Bar / Lounge<span style={{"color":"#8a879a"}}>▾</span></div></div><div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Khu vực</label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"12.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Hà Nội<span style={{"color":"#8a879a"}}>▾</span></div></div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Người liên hệ</label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#9a98a6"}}>Họ tên</div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>SĐT / Telegram</label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#9a98a6"}}>0912 345 678</div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Mô tả ngắn</label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#9a98a6","minHeight":"58px"}}>Mô tả quán, dịch vụ nổi bật…</div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Hình ảnh quán <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div style={{"marginTop":"5px","border":"1.5px dashed #d9c9f7","borderRadius":"10px","padding":"16px","textAlign":"center","background":"#faf7ff"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/add-image.png" style={{"width":"26px","height":"26px","display":"inline-block"}} alt="" /><div style={{"fontSize":"11.5px","color":"#6d28d9","fontWeight":"600","marginTop":"5px"}}>Tải ảnh lên</div></div></div>
-      </div>
-      <div style={{"marginTop":"13px","background":"#f1ebff","border":"1px solid #e0d4fb","borderRadius":"10px","padding":"10px 12px","fontSize":"11px","color":"#6d28d9","lineHeight":"1.6"}}>Không yêu cầu giấy phép kinh doanh khi đăng ký. Admin sẽ kiểm duyệt nội dung trước khi hiển thị.</div>
-      <div style={{"marginTop":"13px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"13px","fontWeight":"700","fontSize":"14px"}}>Gửi đăng ký</div>
-      <div style={{"marginTop":"9px","fontSize":"11px","color":"#8a879a","textAlign":"center"}}>Yêu cầu sẽ gửi tới Admin qua Telegram để kiểm duyệt.</div>
-      <div style={{"height":"18px"}}></div>
-    </div>
-
-    {/* bottom nav */}
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/6D28D9/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Trang chủ</span></Link>
-      <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></Link>
-      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></Link>
-      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
-      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></Link>
-    </div>
-  </div>
-</div>
-</>
-
-
-</div>
-        <div className="hidden md:block">
-
-<>
-<>
-
-
-
-
-</>
-
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-
-  <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-
-    {/* HEADER */}
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div>
-      </div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</Link><Link href="/dang-ky-doi-tac" style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</Link></div>
-    </div>
-
-    <div style={{"display":"flex","gap":"0"}}>
-
-      {/* PITCH */}
-      <div style={{"width":"44%","flex":"none","background":"linear-gradient(150deg,rgba(58,31,110,.82),rgba(26,16,48,.8)),url('https://images.unsplash.com/photo-1513735492246-483525079686?auto=format&fit=crop&w=720&q=70') center/cover","padding":"44px","color":"#fff"}}>
-        <div style={{"fontSize":"12px","letterSpacing":".16em","textTransform":"uppercase","color":"#d9c9f7","fontWeight":"700"}}>Hợp tác cùng NightLife</div>
-        <h2 style={{"fontSize":"32px","fontWeight":"800","lineHeight":"1.18","marginTop":"12px","maxWidth":"340px"}}>Đưa quán của bạn đến hàng nghìn khách mỗi đêm</h2>
-        <p style={{"fontSize":"13.5px","color":"#cbbfe0","marginTop":"12px","lineHeight":"1.6","maxWidth":"340px"}}>Nền tảng khám phá &amp; đặt chỗ cho khách Nhật và khách cao cấp tại Hà Nội &amp; TP.HCM.</p>
-
-        <div style={{"marginTop":"28px","display":"flex","flexDirection":"column","gap":"14px"}}>
-          <div style={{"display":"flex","gap":"13px","alignItems":"flex-start","background":"rgba(255,255,255,.08)","border":"1px solid rgba(255,255,255,.14)","borderRadius":"14px","padding":"14px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/conference-call.png" style={{"width":"28px","height":"28px","flex":"none","display":"inline-block"}} alt="" /><div><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Tiếp cận khách mục tiêu</div><div style={{"fontSize":"12.5px","color":"#cbbfe0","marginTop":"3px","lineHeight":"1.5"}}>Khách Nhật &amp; khách cao cấp tìm quán mỗi tối.</div></div></div>
-          <div style={{"display":"flex","gap":"13px","alignItems":"flex-start","background":"rgba(255,255,255,.08)","border":"1px solid rgba(255,255,255,.14)","borderRadius":"14px","padding":"14px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/qr-code.png" style={{"width":"28px","height":"28px","flex":"none","display":"inline-block"}} alt="" /><div><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Tài khoản đối tác riêng</div><div style={{"fontSize":"12.5px","color":"#cbbfe0","marginTop":"3px","lineHeight":"1.5"}}>Tự quét mã, đối soát dịch vụ, cập nhật thông tin quán.</div></div></div>
-          <div style={{"display":"flex","gap":"13px","alignItems":"flex-start","background":"rgba(255,255,255,.08)","border":"1px solid rgba(255,255,255,.14)","borderRadius":"14px","padding":"14px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/bar-chart.png" style={{"width":"28px","height":"28px","flex":"none","display":"inline-block"}} alt="" /><div><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Lên Top bảng xếp hạng</div><div style={{"fontSize":"12.5px","color":"#cbbfe0","marginTop":"3px","lineHeight":"1.5"}}>Gói tài trợ giúp quán hiển thị nổi bật hơn.</div></div></div>
-        </div>
-
-        <div style={{"marginTop":"28px","display":"inline-flex","alignItems":"center","gap":"8px","background":"rgba(255,255,255,.16)","border":"1px solid rgba(255,255,255,.3)","borderRadius":"20px","padding":"8px 14px","fontSize":"12.5px","fontWeight":"600"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FFFFFF/checkmark.png" style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" />Không yêu cầu giấy phép kinh doanh khi đăng ký</div>
-      </div>
-
-      {/* FORM */}
-      <div style={{"flex":"1","background":"#fff","padding":"40px"}}>
-        <h2 style={{"fontSize":"22px","fontWeight":"800"}}>Đăng ký hợp tác</h2>
-        <p style={{"fontSize":"13px","color":"#8a879a","marginTop":"5px"}}>Gửi thông tin — Admin sẽ liên hệ & kiểm duyệt trước khi hiển thị.</p>
-
-        <div style={{"marginTop":"20px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px"}}>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Tên quán / cơ sở</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>VD: Club Lumière</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Loại hình</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Bar / Lounge<span style={{"color":"#8a879a","fontSize":"10px"}}>▼</span></div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Khu vực</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Hà Nội<span style={{"color":"#8a879a","fontSize":"10px"}}>▼</span></div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Người liên hệ</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>Họ tên</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>SĐT / Telegram</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>0912 345 678</div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Giới thiệu ngắn</label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6","minHeight":"72px"}}>Mô tả quán, dịch vụ nổi bật...</div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Hình ảnh quán <span style={{"color":"#8a879a","fontWeight":"500"}}>(tuỳ chọn)</span></label><div className="up" style={{"marginTop":"6px","border":"1.5px dashed #d9c9f7","borderRadius":"11px","padding":"20px","textAlign":"center","background":"#faf7ff","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","height":"90px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/add-image.png" style={{"width":"24px","height":"24px","display":"inline-block"}} alt="" /><div style={{"fontSize":"12.5px","color":"#6d28d9","fontWeight":"600"}}>Tải ảnh lên</div></div></div>
-        </div>
-
-        <div className="btn" style={{"marginTop":"24px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"15px"}}>Gửi đăng ký hợp tác</div>
-        <div style={{"marginTop":"12px","fontSize":"12px","color":"#8a879a","textAlign":"center"}}>Yêu cầu sẽ gửi tới Admin qua Telegram để kiểm duyệt.</div>
-      </div>
-    </div>
-  </div>
-</div>
-</>
-
-
-
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
-  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-      <div style={{"maxWidth":"300px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
+function SectionTitle({ title, en }: { title: string; en: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+      <div>
+        <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600, lineHeight: 1.15 }}>
+          {title}
+        </h2>
+        <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>
+          {en}
         </div>
       </div>
-      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-        </div>
-      </div>
+      <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
     </div>
-    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-    </div>
-    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-      <div>v2.0.0 • Nightlife Platform</div>
-      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-      </React.Fragment>
-    );
-  }
-  
+  );
+}
 
+function Field({
+  label,
+  value,
+  select,
+  tall,
+}: {
+  label: string;
+  value: string;
+  select?: boolean;
+  tall?: boolean;
+}) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: colors.text2, marginBottom: '6px' }}>
+        {label}
+      </label>
+      <div
+        style={{
+          minHeight: tall ? '78px' : '44px',
+          border: `1px solid ${colors.borderGold22}`,
+          borderRadius: '11px',
+          padding: '12px 13px',
+          color: value.startsWith('VD') || value.startsWith('Họ') || value.startsWith('Mô') ? colors.muted : colors.text,
+          background: colors.surface2,
+          fontSize: '13px',
+          lineHeight: 1.45,
+          display: 'flex',
+          alignItems: tall ? 'flex-start' : 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span>{value}</span>
+        {select ? <ChevronDown size={15} color={colors.gold} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
+  const isMobile = mode === 'mobile';
+
+  return (
+    <main
+      style={{
+        minHeight: '100vh',
+        background: colors.bg,
+        color: colors.text,
+        fontFamily: "'Inter', sans-serif",
+        paddingBottom: isMobile ? '76px' : 0,
+      }}
+    >
+      <div
+        style={{
+        maxWidth: isMobile ? 'none' : 'none',
+        margin: '0 auto',
+        padding: isMobile ? '0' : '0 34px 48px',
+        }}
+      >
+        <header
+          style={{
+            minHeight: isMobile ? '78px' : '82px',
+            padding: isMobile ? '13px 22px 12px' : '18px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
+            gap: isMobile ? '12px' : '0',
+            borderBottom: `1px solid ${colors.borderGold12}`,
+            background: colors.bg,
+            position: isMobile ? 'sticky' : 'static',
+            top: 0,
+            zIndex: 10,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '34px' }}>
+            {isMobile ? (
+              <Link
+                href="/"
+                aria-label="Quay lại"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  border: `1px solid ${colors.borderGold32}`,
+                  color: colors.gold,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: colors.surface2,
+                }}
+              >
+                <ArrowLeft size={18} />
+              </Link>
+            ) : null}
+            <Logo compact={isMobile} />
+            {!isMobile ? (
+              <nav style={{ display: 'flex', gap: '22px', fontSize: '13px', color: colors.text2, fontWeight: 500 }}>
+                <Link href="/" className="lk">Trang chủ</Link>
+                <Link href="/danh-sach-quan" className="lk">Tìm quán</Link>
+                <Link href="/danh-sach-cast" className="lk">Cast</Link>
+                <Link href="/xep-hang" className="lk">Bảng xếp hạng</Link>
+                <Link href="/blog" className="lk">Blog</Link>
+              </nav>
+            ) : null}
+          </div>
+
+          <div
+            style={{
+              width: isMobile ? '100%' : 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isMobile ? 'flex-end' : 'flex-start',
+              gap: isMobile ? '8px' : '14px',
+            }}
+          >
+            <span
+              style={{
+                minHeight: '38px',
+                padding: isMobile ? '0 10px' : '0 11px',
+                borderRadius: '19px',
+                border: `1px solid ${colors.borderGold32}`,
+                color: colors.gold,
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontSize: isMobile ? '11.5px' : '12px',
+                fontWeight: 700,
+                background: colors.surface2,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              VI / JP
+            </span>
+            <Link
+              href="/dang-nhap-doi-tac?redirect=/partner"
+              className="lk"
+              style={{ fontSize: isMobile ? '12px' : '13px', color: colors.text2, fontWeight: 600, whiteSpace: 'nowrap' }}
+            >
+              Đăng nhập
+            </Link>
+            <Link
+              href="/dang-ky-doi-tac"
+              style={{
+                minHeight: '38px',
+                borderRadius: '19px',
+                padding: isMobile ? '0 12px' : '0 16px',
+                background: colors.goldGrad,
+                color: colors.onGold,
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontSize: isMobile ? '12px' : '13px',
+                fontWeight: 800,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Đăng ký đối tác
+            </Link>
+          </div>
+        </header>
+
+        <section
+          style={{
+            display: isMobile ? 'block' : 'grid',
+            gridTemplateColumns: isMobile ? undefined : 'minmax(0,1.12fr) minmax(500px,.88fr)',
+            gap: isMobile ? 0 : '28px',
+            padding: isMobile ? '18px 18px 0' : '32px 0 0',
+            alignItems: 'stretch',
+            minHeight: isMobile ? undefined : 'calc(100vh - 114px)',
+          }}
+        >
+          <div
+            style={{
+              minHeight: isMobile ? '360px' : 'calc(100vh - 146px)',
+              borderRadius: isMobile ? '18px' : '18px',
+              overflow: 'hidden',
+              border: `1px solid ${colors.borderGold22}`,
+              background: `linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.86)), url(${heroImage}) center/cover`,
+              boxShadow: '0 16px 34px -18px rgba(0,0,0,.7)',
+              padding: isMobile ? '22px' : '34px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div
+              style={{
+                alignSelf: 'flex-start',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: `1px solid ${colors.borderGold40}`,
+                borderRadius: '999px',
+                padding: '7px 11px',
+                background: 'rgba(12,12,15,.45)',
+                backdropFilter: 'blur(4px)',
+                color: colors.gold,
+                fontSize: '9.5px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+              }}
+            >
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: colors.neonPink }} />
+              HỢP TÁC CÙNG VIETYORU
+            </div>
+
+            <div>
+              <div style={{ color: colors.gold, fontSize: '10px', fontWeight: 700, letterSpacing: '1.8px', marginBottom: '10px' }}>
+                PARTNER PORTAL
+              </div>
+              <h1
+                style={{
+                  maxWidth: isMobile ? '280px' : '420px',
+                  margin: 0,
+                  color: '#fff',
+                  fontSize: isMobile ? '28px' : '42px',
+                  lineHeight: 1.12,
+                  fontWeight: 700,
+                  textShadow: '0 2px 16px rgba(0,0,0,.4)',
+                }}
+              >
+                Đưa quán của bạn đến đúng khách mỗi đêm
+              </h1>
+              <p
+                style={{
+                  maxWidth: isMobile ? '300px' : '430px',
+                  margin: '13px 0 0',
+                  color: colors.text2,
+                  fontSize: isMobile ? '12.5px' : '13.5px',
+                  lineHeight: 1.65,
+                }}
+              >
+                Cổng đối tác giúp quán nhận đặt chỗ, quét mã ưu đãi, đối soát dịch vụ và gửi nội dung chờ Admin duyệt.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '18px' }}>
+                <Link
+                  href="#partner-form"
+                  style={{
+                    minHeight: '44px',
+                    borderRadius: '11px',
+                    padding: '0 18px',
+                    background: colors.goldGrad,
+                    color: colors.onGold,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <Send size={16} />
+                  Gửi đăng ký
+                </Link>
+                <Link
+                  href="/dang-nhap-doi-tac?redirect=/partner"
+                  style={{
+                    minHeight: '44px',
+                    borderRadius: '11px',
+                    padding: '0 16px',
+                    border: `1px solid ${colors.borderGold32}`,
+                    color: colors.goldPale,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    background: 'rgba(12,12,15,.45)',
+                  }}
+                >
+                  <LockKeyhole size={16} />
+                  Đăng nhập đối tác
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div id="partner-form" style={{ marginTop: isMobile ? '18px' : 0 }}>
+            <div
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: '16px',
+                background: colors.surface1,
+                boxShadow: '0 16px 34px -18px rgba(0,0,0,.7)',
+                padding: isMobile ? '18px' : '24px',
+              }}
+            >
+              <SectionTitle title="Đăng ký hợp tác" en="PARTNER APPLICATION" />
+              <p style={{ margin: '0 0 18px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.65 }}>
+                Gửi thông tin cơ bản. Admin sẽ liên hệ, kiểm duyệt và cấp tài khoản đối tác khi hồ sơ phù hợp.
+              </p>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                  gap: '13px',
+                }}
+              >
+                {fields.map((field) => (
+                  <div key={field.label} style={{ gridColumn: !isMobile && field.wide ? 'span 2' : undefined }}>
+                    <Field label={field.label} value={field.value} select={field.select} tall={field.tall} />
+                  </div>
+                ))}
+
+                <div style={{ gridColumn: !isMobile ? 'span 2' : undefined }}>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: colors.text2, marginBottom: '6px' }}>
+                    Hình ảnh quán <span style={{ color: colors.muted, fontWeight: 500 }}>(tuỳ chọn)</span>
+                  </label>
+                  <div
+                    style={{
+                      minHeight: '92px',
+                      border: `1.5px dashed ${colors.borderGold40}`,
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg,rgba(244,227,180,.08),rgba(255,255,255,.03))',
+                      color: colors.gold,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <ImagePlus size={25} />
+                    <span style={{ fontSize: '12px', fontWeight: 700 }}>Tải ảnh / video lên</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: '14px',
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: '12px',
+                  background: 'rgba(212,178,106,.08)',
+                  color: colors.text2,
+                  padding: '11px 13px',
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'flex-start',
+                  fontSize: '11.5px',
+                  lineHeight: 1.55,
+                }}
+              >
+                <ShieldCheck size={17} color={colors.gold} style={{ flex: 'none', marginTop: '1px' }} />
+                Không yêu cầu giấy phép kinh doanh khi gửi đăng ký. Nội dung chỉ hiển thị công khai sau khi Admin duyệt.
+              </div>
+
+              <button
+                type="button"
+                style={{
+                  width: '100%',
+                  minHeight: '44px',
+                  marginTop: '14px',
+                  border: 0,
+                  borderRadius: '11px',
+                  background: colors.goldGrad,
+                  color: colors.onGold,
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                <Send size={16} />
+                Gửi đăng ký hợp tác
+              </button>
+              <div style={{ marginTop: '9px', color: colors.muted, fontSize: '11px', textAlign: 'center' }}>
+                Yêu cầu sẽ gửi tới Admin qua Telegram để kiểm duyệt.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ padding: isMobile ? '22px 18px 0' : '28px 0 0' }}>
+          <SectionTitle title="Quyền lợi đối tác" en="PARTNER BENEFITS" />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)',
+              gap: '13px',
+            }}
+          >
+            {benefits.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article
+                  key={item.title}
+                  style={{
+                    border: `1px solid ${colors.borderGold12}`,
+                    borderRadius: '16px',
+                    background: colors.surface1,
+                    padding: '14px',
+                    display: 'flex',
+                    gap: '12px',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '15px',
+                      border: `1px solid ${colors.borderGold12}`,
+                      background: colors.surface2,
+                      color: colors.gold,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 'none',
+                    }}
+                  >
+                    <Icon size={22} />
+                  </span>
+                  <span>
+                    <span style={{ display: 'block', color: colors.text, fontSize: '14px', fontWeight: 600 }}>{item.title}</span>
+                    <span style={{ display: 'block', marginTop: '4px', color: colors.muted, fontSize: '12px', lineHeight: 1.55 }}>
+                      {item.desc}
+                    </span>
+                  </span>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section style={{ padding: isMobile ? '22px 18px 0' : '28px 0 0' }}>
+          <SectionTitle title="Cổng quản lý" en="PORTAL MODULES" />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)',
+              gap: '12px',
+            }}
+          >
+            {portalItems.map((item, index) => {
+              const Icon = item.icon;
+              const featured = index === 0;
+              return (
+                <article
+                  key={item.label}
+                  style={{
+                    border: `1px solid ${featured ? colors.borderGold40 : colors.borderSoft}`,
+                    borderRadius: '16px',
+                    background: featured
+                      ? 'linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.03))'
+                      : colors.surface1,
+                    padding: isMobile ? '13px' : '15px',
+                    minHeight: isMobile ? '128px' : '142px',
+                  }}
+                >
+                  <Icon size={22} color={featured ? colors.goldBright : colors.gold} />
+                  <div style={{ marginTop: '12px', color: colors.text, fontSize: '13.5px', fontWeight: 600 }}>{item.label}</div>
+                  <div style={{ marginTop: '5px', color: colors.muted, fontSize: '11.5px', lineHeight: 1.5 }}>{item.detail}</div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section style={{ padding: isMobile ? '22px 18px 26px' : '28px 0 44px' }}>
+          <div
+            style={{
+              borderRadius: '18px',
+              background: colors.goldGrad,
+              color: colors.onGold,
+              boxShadow: '0 16px 34px -16px rgba(168,124,60,.6)',
+              padding: isMobile ? '18px' : '22px 24px',
+              position: 'relative',
+              overflow: 'hidden',
+              display: isMobile ? 'block' : 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '24px',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                right: '-36px',
+                top: '-58px',
+                width: '170px',
+                height: '170px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle,rgba(255,255,255,.45),transparent 70%)',
+              }}
+            />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '15px', fontWeight: 800 }}>
+                <Crown size={20} />
+                Đối tác nổi bật
+              </div>
+              <p style={{ margin: '8px 0 0', maxWidth: '620px', fontSize: '12.5px', lineHeight: 1.6, opacity: .86 }}>
+                Quán đạt hiệu quả tốt có thể nâng lên gói hiển thị VIP, xuất hiện trong đề xuất tối nay và bảng xếp hạng theo khu vực.
+              </p>
+            </div>
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                marginTop: isMobile ? '14px' : 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                minHeight: '44px',
+                borderRadius: '11px',
+                background: colors.onGold,
+                color: colors.goldPale,
+                padding: '0 16px',
+                fontSize: '13px',
+                fontWeight: 800,
+              }}
+            >
+              <Sparkles size={16} />
+              Tư vấn gói VIP
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {isMobile ? (
+        <nav
+          style={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '66px',
+            background: colors.navBg,
+            borderTop: `1px solid ${colors.borderGold12}`,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5,1fr)',
+            alignItems: 'center',
+            paddingBottom: '6px',
+            backdropFilter: 'blur(16px)',
+            zIndex: 20,
+          }}
+        >
+          {bottomNav.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  color: item.href === '/' ? colors.goldBright : '#6f6b62',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  textDecoration: 'none',
+                  fontSize: '9.5px',
+                  fontWeight: item.href === '/' ? 600 : 500,
+                }}
+              >
+                <Icon size={21} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : (
+        <footer style={{ borderTop: `1px solid ${colors.borderGold12}`, color: colors.muted, padding: '24px 34px', fontSize: '12px' }}>
+          <div style={{ maxWidth: 'none', margin: '0 auto', display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+            <span>© 2026 Vietyoru · Partner Portal</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <BadgeCheck size={15} color={colors.gold} />
+              Chỉ công khai nội dung sau khi Admin duyệt
+            </span>
+          </div>
+        </footer>
+      )}
+    </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <React.Fragment>
+      <div className="block md:hidden">
+        <PartnerPageContent mode="mobile" />
+      </div>
+      <div className="hidden md:block">
+        <PartnerPageContent mode="desktop" />
+      </div>
+    </React.Fragment>
+  );
+}

@@ -3,13 +3,10 @@
 import React, { type CSSProperties, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Bell,
   CalendarDays,
   Crown,
   Heart,
   MapPin,
-  Martini,
-  MessageCircle,
   Play,
   Search,
   SlidersHorizontal,
@@ -53,14 +50,6 @@ const categoryItems = [
   { label: "Spa", icon: Waves, href: "/danh-sach-quan" },
   { label: "Ranking", icon: Crown, href: "/xep-hang" },
   { label: "VIP", icon: Star, href: "/dang-nhap", featured: true },
-];
-
-const navItems = [
-  { label: "Trang chủ", href: "/", icon: Martini, active: true },
-  { label: "Cast", href: "/danh-sach-cast", icon: UserRound },
-  { label: "Ưu đãi", href: "/uu-dai", icon: Ticket },
-  { label: "Đặt chỗ", href: "/lich-su-dat-cho", icon: CalendarDays },
-  { label: "Tài khoản", href: "/tai-khoan", icon: UserRound },
 ];
 
 const serviceTabs = [
@@ -116,58 +105,9 @@ const pillStyle: CSSProperties = {
 };
 
 function HeaderBar({ desktop = false }: { desktop?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "18px",
-        padding: desktop ? "22px 38px" : "18px 18px 10px",
-      }}
-    >
-      <Link href="/" style={{ lineHeight: 1, color: colors.goldSoft }}>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: desktop ? "32px" : "28px", fontWeight: 800 }}>
-          Vietyoru
-        </div>
-        <div style={{ marginTop: "5px", color: colors.dim, fontSize: "9px", letterSpacing: ".42em" }}>
-          VIETNAM NIGHTLIFE GUIDE
-        </div>
-      </Link>
-
-      {desktop ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "22px", color: colors.muted, fontSize: "14px" }}>
-          <Link href="/danh-sach-quan">Tìm quán</Link>
-          <Link href="/danh-sach-cast">Cast</Link>
-          <Link href="/uu-dai">Ưu đãi</Link>
-          <Link href="/xep-hang">Ranking</Link>
-          <Link href="/blog">Blog</Link>
-        </div>
-      ) : null}
-
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <button aria-label="Tin nhắn" style={circleButtonStyle}>
-          <MessageCircle size={18} />
-        </button>
-        <button aria-label="Thông báo" style={circleButtonStyle}>
-          <Bell size={18} />
-        </button>
-      </div>
-    </div>
-  );
+  void desktop;
+  return null;
 }
-
-const circleButtonStyle: CSSProperties = {
-  width: "42px",
-  height: "42px",
-  borderRadius: "50%",
-  border: `1px solid ${colors.line}`,
-  background: "rgba(255,255,255,.03)",
-  color: colors.gold,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
 
 function SearchPanel() {
   return (
@@ -505,32 +445,7 @@ function TabSwitch({
 }
 
 function BottomNav() {
-  return (
-    <div
-      style={{
-        position: "sticky",
-        bottom: 0,
-        zIndex: 5,
-        height: "68px",
-        display: "grid",
-        gridTemplateColumns: "repeat(5,1fr)",
-        alignItems: "center",
-        background: "rgba(8,8,11,.95)",
-        borderTop: `1px solid ${colors.line}`,
-        backdropFilter: "blur(16px)",
-      }}
-    >
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <Link key={item.label} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: item.active ? colors.gold : colors.dim }}>
-            <Icon size={20} />
-            <span style={{ fontSize: "10px", fontWeight: item.active ? 800 : 600 }}>{item.label}</span>
-          </Link>
-        );
-      })}
-    </div>
-  );
+  return null;
 }
 
 export default function Page() {
