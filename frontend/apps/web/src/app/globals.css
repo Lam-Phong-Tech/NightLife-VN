@@ -281,3 +281,49 @@ input::placeholder,
 textarea::placeholder {
   color: var(--nl-muted) !important;
 }
+
+/* Shared chrome owns navigation/footer. Hide generated legacy nav/footer fragments. */
+.nl-page-content .hidden.md\:block > div > div > div:first-child[style*="justify-content: space-between"][style*="padding: 18px 34px"],
+.nl-page-content [style*="padding: 60px 0px 20px"],
+.nl-page-content [style*="padding: 60px 0 20px"] {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  .nl-site-header {
+    min-height: auto !important;
+    padding: 13px 18px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .nl-site-nav-links {
+    display: none !important;
+  }
+
+  .nl-site-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+  }
+
+  .nl-site-actions a,
+  .nl-site-actions span {
+    min-height: 36px !important;
+    font-size: 12px !important;
+  }
+
+  .nl-site-footer {
+    display: none !important;
+  }
+
+  .nl-page-content {
+    padding-bottom: 66px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .nl-mobile-bottom-nav {
+    display: none !important;
+  }
+}

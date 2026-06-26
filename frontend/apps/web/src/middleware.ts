@@ -47,11 +47,12 @@ export function middleware(request: NextRequest) {
   const memberPaths = ['/tai-khoan', '/da-luu', '/lich-su-dat-cho', '/dat-cho', '/gui-hoa-don', '/vi-uu-dai'];
   const isMemberPath = memberPaths.some(p => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith('/partner');
-  const isAdminPath = pathname.startsWith('/admin');
+  const isAdminLoginPath = pathname === '/admin/dang-nhap';
+  const isAdminPath = pathname.startsWith('/admin') && !isAdminLoginPath;
 
   // Protect paths requiring authentication
   if ((isMemberPath || isPartnerPath || isAdminPath) && !token) {
-    const loginUrl = new URL('/dang-nhap', request.url);
+    const loginUrl = new URL(isPartnerPath ? '/dang-nhap-doi-tac' : isAdminPath ? '/admin/dang-nhap' : '/dang-nhap', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
