@@ -64,6 +64,7 @@ export class UsersService {
     if (
       !user ||
       user.deletedAt ||
+      user.status !== 'ACTIVE' ||
       !(await this.passwordService.verify(password, user.passwordHash))
     ) {
       throw new UnauthorizedException('Invalid email or password');

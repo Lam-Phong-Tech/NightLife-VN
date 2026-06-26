@@ -23,6 +23,9 @@ describe('StorageService', () => {
       return values[key] ?? fallback;
     }),
   } as unknown as jest.Mocked<ConfigService>;
+  const accessService = {
+    ensureStoreAccess: jest.fn(),
+  };
 
   const file = {
     filename: 'stored-image',
@@ -36,7 +39,7 @@ describe('StorageService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new StorageService(configService, prisma);
+    service = new StorageService(configService, prisma, accessService as never);
   });
 
   it('stores local media metadata with relation ids and public access', async () => {
@@ -89,5 +92,30 @@ describe('StorageService', () => {
         role: 'USER',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows a partner to open protected media from an accessible store', async () => {
+    prisma.media.findUnique.mockResolvedValue({
+      access: MediaAccess.PROTECTED,
+      ownerId: 'owner-1',
+      storeId: 'store-1',
+      mimeType: 'image/png',
+      storageKey: 'stored-image',
+    } as never);
+
+    await expect(
+      service.resolveProtectedLocalFile('stored-image', {
+        id: 'partner-1',
+        role: 'PARTNER',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        mediaFile: expect.objectContaining({ storeId: 'store-1' }),
+      }),
+    );
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+    );
   });
 });

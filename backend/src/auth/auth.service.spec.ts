@@ -83,4 +83,26 @@ describe('AuthService', () => {
       tier: user.tier,
     });
   });
+
+  it('logs in through a role-specific portal only when the role matches', async () => {
+    usersService.validateCredentials.mockResolvedValue(user as never);
+
+    await expect(
+      service.loginAs('PARTNER', {
+        email: user.email,
+        password: 'Str0ngPass!',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accessToken: 'jwt-token',
+      }),
+    );
+
+    await expect(
+      service.loginAs('ADMIN', {
+        email: user.email,
+        password: 'Str0ngPass!',
+      }),
+    ).rejects.toThrow('This account is not a ADMIN account');
+  });
 });

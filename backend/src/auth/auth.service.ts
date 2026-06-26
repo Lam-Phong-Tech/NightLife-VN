@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -26,6 +26,19 @@ export class AuthService {
       dto.email,
       dto.password,
     );
+
+    return this.toAuthResponse(user);
+  }
+
+  async loginAs(role: 'USER' | 'PARTNER' | 'ADMIN', dto: LoginDto) {
+    const user = await this.usersService.validateCredentials(
+      dto.email,
+      dto.password,
+    );
+
+    if (user.role !== role) {
+      throw new ForbiddenException(`This account is not a ${role} account`);
+    }
 
     return this.toAuthResponse(user);
   }
