@@ -35,7 +35,7 @@ export default function Page() {
 
     return (
       <React.Fragment>
-        <div className="block md:hidden">
+        <div className="block md:hidden cast-list-mobile-shell">
 
 <>
 <>
@@ -45,7 +45,7 @@ export default function Page() {
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div className="cast-list-mobile" style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#0c0c0f","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"background":"#fff","padding":"8px 18px 6px"}}><h2 style={{"fontSize":"19px","fontWeight":"800"}}>Tìm Cast</h2><p style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"2px"}}><b style={{"color":"#1f1d29"}}>{count}</b> cast đang hoạt động</p></div>
     <div className="hscroll" style={{"padding":"10px 18px 12px","display":"flex","gap":"7px","overflowX":"auto","background":"#fff","borderBottom":"1px solid #ececec"}}>
@@ -62,7 +62,7 @@ export default function Page() {
       </React.Fragment>))}
     </div>
 
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
+    <div className="nl-generated-bottom-nav" style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
       <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
       <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Cast</span></Link>
       <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></Link>

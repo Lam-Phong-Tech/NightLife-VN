@@ -41,7 +41,6 @@ export default function Page({ params }: { params: MockItem }) {
       ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
       : 'https://img.icons8.com/ios/100/D4B26A/like.png';
     const cBorn = 2002;
-    const book = () => window.location.href = '/dat-cho';
     const mainBg = "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isVideo = false;
     const cJp = false;
@@ -52,7 +51,7 @@ export default function Page({ params }: { params: MockItem }) {
 
     return (
       <React.Fragment>
-        <div className="block md:hidden">
+        <div className="block md:hidden cast-detail-mobile-shell">
 
 <>
 <>
@@ -62,7 +61,7 @@ export default function Page({ params }: { params: MockItem }) {
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div className="cast-detail-mobile" style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#0c0c0f","fontFamily":"'Inter',sans-serif"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"position":"relative","height":"300px","background":mainBg}}>
       <Link href="/danh-sach-cast" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</Link>
@@ -86,7 +85,7 @@ export default function Page({ params }: { params: MockItem }) {
 
     <div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
       <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Phí cast từ</div><div style={{"fontSize":"16px","fontWeight":"800"}}>500K<span style={{"fontSize":"11px","color":"#8a879a"}}>/giờ</span></div></div>
-      <div className="btn" onClick={book} style={{"flex":"1","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"14px"}}>Đặt theo cast</div>
+      <Link href="/dat-cho" className="btn" style={{"flex":"1","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"900","fontSize":"14px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center"}}>Đặt theo cast</Link>
     </div>
   </div>
 </div>
@@ -154,7 +153,7 @@ export default function Page({ params }: { params: MockItem }) {
 
         <div style={{"marginTop":"20px","background":"#fff","border":"1px solid #ececec","borderRadius":"16px","padding":"18px","display":"flex","alignItems":"center","gap":"16px","boxShadow":"0 6px 20px rgba(40,20,60,.06)"}}>
           <div style={{"flex":"1"}}><div style={{"fontSize":"13px","color":"#8a879a"}}>Đặt theo cast tại</div><div style={{"fontSize":"16px","fontWeight":"700"}}>Club Lumière · Tây Hồ</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"3px"}}>Phí cast từ 500.000đ / giờ · Admin xác nhận lịch</div></div>
-          <div onClick={book} className="btn" style={{"background":"#6d28d9","color":"#fff","borderRadius":"11px","padding":"14px 26px","fontWeight":"700","fontSize":"14px"}}>Đặt theo cast</div>
+          <Link href="/dat-cho" className="btn" style={{"background":"#6d28d9","color":"#fff","borderRadius":"11px","padding":"14px 26px","fontWeight":"700","fontSize":"14px","textDecoration":"none","display":"inline-flex","alignItems":"center","justifyContent":"center"}}>Đặt theo cast</Link>
         </div>
       </div>
     </div>
