@@ -1,45 +1,53 @@
 "use client";
-import { MockItem } from "@/types";
+
 import { clearAuthSession, getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
   CalendarDays,
   ChevronRight,
   Crown,
   FileText,
-  Gift,
   Heart,
-  Home,
   Languages,
   LogOut,
   Percent,
-  Search,
-  Ticket,
+  ShieldCheck,
+  Star,
   UserRound,
+  WalletCards,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
-const accountIconStyle = {
-  width: "36px",
-  height: "36px",
-  borderRadius: "12px",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flex: "none",
-  marginRight: "16px",
-  border: "1px solid rgba(212,178,106,.18)",
-  background: "rgba(212,178,106,.1)",
-  color: "#d4b26a",
-} as const;
+const colors = {
+  bg: "#0c0c0f",
+  panel: "rgba(255,255,255,.045)",
+  panelStrong: "rgba(255,255,255,.07)",
+  border: "rgba(212,178,106,.22)",
+  borderStrong: "rgba(212,178,106,.34)",
+  text: "#f3f0ea",
+  muted: "#b6b1a6",
+  dim: "#8c8679",
+  gold: "#d4b26a",
+  goldPale: "#f0dda8",
+  onGold: "#241a0a",
+  danger: "#ff6b8b",
+  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
+};
 
-const dangerIconStyle = {
-  ...accountIconStyle,
-  border: "1px solid rgba(225,29,72,.2)",
-  background: "rgba(225,29,72,.1)",
-  color: "#e11d48",
-} as const;
+const stats = [
+  { label: "Đặt chỗ", value: "12", icon: CalendarDays },
+  { label: "Mã trong ví", value: "5", icon: WalletCards },
+  { label: "Hóa đơn", value: "8", icon: FileText },
+];
+
+const menuItems = [
+  { title: "Lịch sử đặt chỗ", desc: "Theo dõi yêu cầu và trạng thái xác nhận", href: "/lich-su-dat-cho", icon: CalendarDays },
+  { title: "Ví ưu đãi", desc: "Coupon đã lưu và mã sắp hết hạn", href: "/vi-uu-dai", icon: Percent },
+  { title: "Hóa đơn của tôi", desc: "Gửi hóa đơn để tích điểm thành viên", href: "/gui-hoa-don", icon: FileText },
+  { title: "Quán & Cast đã lưu", desc: "Danh sách yêu thích để đặt lại nhanh", href: "/da-luu", icon: Heart },
+  { title: "Ngôn ngữ", desc: "Tiếng Việt · 日本語", href: "#", icon: Languages },
+  { title: "Bảo mật tài khoản", desc: "Trạng thái đăng nhập và quyền truy cập", href: "#", icon: ShieldCheck },
+];
 
 export default function Page() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -48,997 +56,172 @@ export default function Page() {
     setAuthUser(getAuthUser());
   }, []);
 
+  const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Demo Member";
+  const phone = authUser?.phone || "0912 345 678";
+  const tier = authUser?.tier || "VIP";
+
   const logout = () => {
     clearAuthSession();
   };
 
-  // Mock data arrays for loops
-  const menu: MockItem[] = Array(5).fill({
-    name: "Club Lumière",
-    area: "Tây Hồ",
-    catLabel: "Bar Lounge",
-    rating: 4.9,
-    img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
-    grad: "linear-gradient(140deg, #d6336c, #7b2d6b)",
-    price: "1.2tr",
-    tag: "-20%",
-    label: "Tất cả",
-    style: { background: "#f3f2f5", color: "#5b5870" },
-    date: "12/10",
-    time: "21:00",
-    code: "NIGHT10",
-    st: "Hoàn tất",
-    favIcon: "https://img.icons8.com/ios/100/FFFFFF/like.png",
-    favIconDark: "https://img.icons8.com/ios/100/1f1d29/like.png",
-    mainBg:
-      "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-    open: () => console.log("Navigate"),
-  });
-
-  // Standalone mock variables
-  const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Khách lẻ";
-  const phone = authUser?.phone || authUser?.email || "—";
-  const tier: MockItem | undefined = undefined;
-  const points: MockItem | undefined = undefined;
-  const need: MockItem | undefined = undefined;
-  const nextTier: MockItem | undefined = undefined;
-
   return (
-    <React.Fragment>
-      <div className="block md:hidden">
-        <>
-          <></>
-
-          <div
-            style={{
-              width: "100%",
-              minHeight: "100vh",
-              boxSizing: "border-box",
-              padding: "0px",
-              background: "#e7e5df",
-              fontFamily: "'Inter',sans-serif",
-            }}
-          >
-            <div
+    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 54px" }}>
+        <div className="nl-account-layout">
+          <aside style={{ display: "grid", gap: 16 }}>
+            <section
               style={{
-                margin: "0 auto",
-                width: "100%",
-                background: "#f5f4f2",
-                borderRadius: "0px",
-                overflow: "hidden",
-                boxShadow: "0 12px 40px rgba(0,0,0,.16)",
-                color: "#1f1d29",
-                border: "1px solid #e3e0da",
+                border: `1px solid ${colors.borderStrong}`,
+                borderRadius: 22,
+                padding: 20,
+                background:
+                  "radial-gradient(circle at 82% 12%,rgba(255,255,255,.22),transparent 24%), linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#9c742c)",
+                color: colors.onGold,
               }}
             >
-              <div style={{ padding: "14px 18px", background: "#fff" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div
                   style={{
-                    background: "linear-gradient(135deg,#6d28d9,#3a1f6e)",
-                    borderRadius: "16px",
-                    padding: "18px",
-                    color: "#fff",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "50%",
-                        background:
-                          "url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=70') center/cover",
-                        border: "2px solid rgba(255,255,255,.5)",
-                      }}
-                    ></span>
-                    <div style={{ flex: "1" }}>
-                      <div style={{ fontSize: "16px", fontWeight: "800" }}>{name}</div>
-                      <div style={{ fontSize: "11.5px", color: "#e7d9ff" }}>{phone}</div>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: "700",
-                        background: "#ffd24d",
-                        color: "#5a3d00",
-                        borderRadius: "9px",
-                        padding: "4px 9px",
-                      }}
-                    >
-                      Hạng {tier}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "14px",
-                      background: "rgba(255,255,255,.14)",
-                      borderRadius: "11px",
-                      padding: "12px",
-                    }}
-                  >
-                    <div
-                      style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}
-                    >
-                      <span style={{ color: "#e7d9ff" }}>Điểm thưởng</span>
-                      <span style={{ fontWeight: "800" }}>{points}</span>
-                    </div>
-                    <div
-                      style={{
-                        height: "6px",
-                        background: "rgba(255,255,255,.25)",
-                        borderRadius: "3px",
-                        marginTop: "8px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "62%",
-                          height: "100%",
-                          background: "#ffd24d",
-                          borderRadius: "3px",
-                        }}
-                      ></div>
-                    </div>
-                    <div style={{ fontSize: "10.5px", color: "#e7d9ff", marginTop: "6px" }}>
-                      Cần thêm {need} điểm lên hạng {nextTier}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ padding: "0 18px", display: "flex", flexDirection: "column" }}>
-                {menu?.map((m, index) => (
-                  <React.Fragment key={index}>
-                    <a
-                      href={m.href}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "13px 4px",
-                        borderBottom: "1px solid #ececec",
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: "36px",
-                          height: "36px",
-                          borderRadius: "10px",
-                          background: "#f1ebff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flex: "none",
-                        }}
-                      >
-                        <CalendarDays size={18} strokeWidth={2.2} color="#6d28d9" />
-                      </span>
-                      <div style={{ flex: "1" }}>
-                        <div style={{ fontSize: "13.5px", fontWeight: "600" }}>{m.title}</div>
-                        <div style={{ fontSize: "10.5px", color: "#8a879a", marginTop: "1px" }}>
-                          {m.sub}
-                        </div>
-                      </div>
-                      <ChevronRight size={16} color="#b6b3c0" />
-                    </a>
-                  </React.Fragment>
-                ))}
-                <Link
-                  href="/dang-nhap"
-                  onClick={logout}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "14px 4px",
-                    color: "#b03a4a",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: "#fbe4e7",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flex: "none",
-                    }}
-                  >
-                    <LogOut size={18} strokeWidth={2.2} />
-                  </span>
-                  <div style={{ flex: "1", fontSize: "13.5px", fontWeight: "600" }}>Đăng xuất</div>
-                </Link>
-              </div>
-
-              <div
-                style={{
-                  height: "64px",
-                  background: "#fff",
-                  borderTop: "1px solid #ececec",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-around",
-                  paddingBottom: "6px",
-                  marginTop: "8px",
-                }}
-              >
-                <Link
-                  href="/"
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  <Home size={21} color="#b6b3c0" strokeWidth={2.1} />
-                  <span style={{ fontSize: "10px", color: "#b6b3c0" }}>Trang chủ</span>
-                </Link>
-                <Link
-                  href="/danh-sach-cast"
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  <Search size={21} color="#b6b3c0" strokeWidth={2.1} />
-                  <span style={{ fontSize: "10px", color: "#b6b3c0" }}>Cast</span>
-                </Link>
-                <Link
-                  href="/uu-dai"
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  <Gift size={21} color="#b6b3c0" strokeWidth={2.1} />
-                  <span style={{ fontSize: "10px", color: "#b6b3c0" }}>Ưu đãi</span>
-                </Link>
-                <Link
-                  href="/lich-su-dat-cho"
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  <Ticket size={21} color="#b6b3c0" strokeWidth={2.1} />
-                  <span style={{ fontSize: "10px", color: "#b6b3c0" }}>Đặt chỗ</span>
-                </Link>
-                <Link
-                  href="/tai-khoan"
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "3px",
-                  }}
-                >
-                  <UserRound size={21} color="#6D28D9" strokeWidth={2.3} />
-                  <span style={{ fontSize: "10px", color: "#6d28d9", fontWeight: "600" }}>
-                    Tài khoản
-                  </span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </>
-      </div>
-      <div className="hidden md:block">
-        <>
-          <></>
-
-          <div
-            style={{
-              width: "100%",
-              minWidth: "100%",
-              minHeight: "100vh",
-              boxSizing: "border-box",
-              padding: "0px",
-              background: "#e7e5df",
-              fontFamily: "'Inter',sans-serif",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                margin: "0 auto",
-                background: "#f5f4f2",
-                borderRadius: "16px",
-                overflow: "hidden",
-                boxShadow: "0 12px 40px rgba(0,0,0,.10)",
-                color: "#1f1d29",
-              }}
-            >
-              {/* header */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "18px 34px",
-                  background: "#fff",
-                  borderBottom: "1px solid #ececec",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "34px" }}>
-                  <Link href="/" style={{ fontWeight: "800", fontSize: "22px", color: "#6d28d9" }}>
-                    nightlife<span style={{ color: "#1f1d29" }}>.hn</span>
-                  </Link>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "24px",
-                      fontSize: "14.5px",
-                      color: "#5b5870",
-                      fontWeight: "500",
-                    }}
-                  >
-                    <Link href="/" className="lk">
-                      Trang chủ
-                    </Link>
-                    <Link href="/danh-sach-quan" className="lk">
-                      Tìm quán
-                    </Link>
-                    <Link href="/danh-sach-cast" className="lk">
-                      Cast
-                    </Link>
-                    <Link href="/xep-hang" className="lk">
-                      Bảng xếp hạng
-                    </Link>
-                    <Link href="/uu-dai" className="lk">
-                      Ưu đãi
-                    </Link>
-                    <Link href="/blog" className="lk">
-                      Blog
-                    </Link>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                  <div
-                    style={{
-                      fontSize: "13.5px",
-                      color: "#6d28d9",
-                      background: "#f1ebff",
-                      borderRadius: "20px",
-                      padding: "8px 14px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    VI · 日本語
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "13.5px",
-                      color: "#fff",
-                      background: "#6d28d9",
-                      borderRadius: "20px",
-                      padding: "8px 16px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {name}
-                  </div>
-                </div>
-              </div>
-
-              {/* content layout */}
-              <div style={{ display: "flex", gap: "24px", padding: "30px 34px 40px" }}>
-                {/* left column */}
-                <div
-                  style={{
-                    width: "380px",
+                    width: 58,
+                    height: 58,
+                    borderRadius: "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#141417",
+                    color: colors.goldPale,
+                    border: "2px solid rgba(36,26,10,.18)",
                     flex: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
                   }}
                 >
-                  {/* profile card */}
-                  <div
-                    style={{
-                      background:
-                        "linear-gradient(rgba(58,31,110,0.4),rgba(58,31,110,0.8)),url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80') center/cover",
-                      borderRadius: "18px",
-                      padding: "26px",
-                      color: "#fff",
-                      boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                      <span
-                        style={{
-                          width: "64px",
-                          height: "64px",
-                          borderRadius: "50%",
-                          background:
-                            "url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=70') center/cover",
-                          border: "2px solid rgba(255,255,255,0.8)",
-                        }}
-                      ></span>
-                      <div>
-                        <div style={{ fontSize: "20px", fontWeight: "800" }}>{name}</div>
-                        <div style={{ fontSize: "13px", color: "#e7d9ff", marginTop: "4px" }}>
-                          {phone}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        marginTop: "24px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        background: "rgba(255,255,255,0.15)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        padding: "8px 16px",
-                        borderRadius: "20px",
-                        fontSize: "13.5px",
-                        fontWeight: "700",
-                      }}
-                    >
-                      <Crown size={16} strokeWidth={2.4} style={{ color: "#ffd24d" }} /> Hạng VIP · giảm
-                      10%
-                    </div>
-                  </div>
-
-                  {/* points card */}
-                  <div
-                    style={{
-                      background: "#fff",
-                      borderRadius: "18px",
-                      padding: "26px",
-                      boxShadow: "0 4px 15px rgba(0,0,0,0.04)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <div style={{ fontSize: "14px", color: "#8a879a", fontWeight: "500" }}>
-                        Điểm thưởng
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#8a879a" }}>Hạn: 06/2027</div>
-                    </div>
-                    <div style={{ marginTop: "8px" }}>
-                      <span
-                        style={{
-                          fontSize: "38px",
-                          fontWeight: "800",
-                          color: "#6d28d9",
-                          lineHeight: "1",
-                        }}
-                      >
-                        156
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "15px",
-                          color: "#5b5870",
-                          fontWeight: "600",
-                          marginLeft: "4px",
-                        }}
-                      >
-                        điểm
-                      </span>
-                    </div>
-
-                    <div style={{ marginTop: "20px" }}>
-                      <div style={{ fontSize: "13px", color: "#5b5870", marginBottom: "8px" }}>
-                        Còn 44 điểm để giữ hạng VIP năm sau
-                      </div>
-                      <div
-                        style={{
-                          height: "8px",
-                          background: "#f1ebff",
-                          borderRadius: "4px",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "78%",
-                            height: "100%",
-                            background: "#6d28d9",
-                            borderRadius: "4px",
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div
-                      className="row"
-                      style={{
-                        marginTop: "24px",
-                        background: "#6d28d9",
-                        color: "#fff",
-                        textAlign: "center",
-                        padding: "14px",
-                        borderRadius: "12px",
-                        fontWeight: "700",
-                        fontSize: "15px",
-                      }}
-                    >
-                      Đổi quà / voucher
-                    </div>
-                    <div
-                      style={{
-                        textAlign: "center",
-                        fontSize: "11.5px",
-                        color: "#8a879a",
-                        marginTop: "12px",
-                      }}
-                    >
-                      1.000.000đ trên hóa đơn = 10 điểm · điểm có hạn 1 năm
-                    </div>
-                  </div>
+                  <UserRound size={28} />
                 </div>
-
-                {/* right column */}
-                <div style={{ flex: "1", display: "flex", flexDirection: "column", gap: "20px" }}>
-                  {/* stats row */}
-                  <div style={{ display: "flex", gap: "20px" }}>
-                    <div
-                      style={{
-                        flex: "1",
-                        background: "#fff",
-                        borderRadius: "16px",
-                        padding: "24px",
-                        textAlign: "center",
-                        boxShadow: "0 4px 15px rgba(0,0,0,0.04)",
-                      }}
-                    >
-                      <div style={{ fontSize: "26px", fontWeight: "800", color: "#1f1d29" }}>
-                        12
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#8a879a", marginTop: "4px" }}>
-                        Đặt chỗ
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        flex: "1",
-                        background: "#fff",
-                        borderRadius: "16px",
-                        padding: "24px",
-                        textAlign: "center",
-                        boxShadow: "0 4px 15px rgba(0,0,0,0.04)",
-                      }}
-                    >
-                      <div style={{ fontSize: "26px", fontWeight: "800", color: "#1f1d29" }}>5</div>
-                      <div style={{ fontSize: "13px", color: "#8a879a", marginTop: "4px" }}>
-                        Mã trong ví
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        flex: "1",
-                        background: "#fff",
-                        borderRadius: "16px",
-                        padding: "24px",
-                        textAlign: "center",
-                        boxShadow: "0 4px 15px rgba(0,0,0,0.04)",
-                      }}
-                    >
-                      <div style={{ fontSize: "26px", fontWeight: "800", color: "#1f1d29" }}>8</div>
-                      <div style={{ fontSize: "13px", color: "#8a879a", marginTop: "4px" }}>
-                        Hóa đơn
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* menu list */}
-                  <div
-                    style={{
-                      background: "#fff",
-                      borderRadius: "16px",
-                      boxShadow: "0 4px 15px rgba(0,0,0,0.04)",
-                      padding: "8px 0",
-                    }}
-                  >
-                    <Link
-                      href="/lich-su-dat-cho"
-                      className="row"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "18px 24px",
-                        borderBottom: "1px solid #f8f8f8",
-                      }}
-                    >
-                      <span style={accountIconStyle}>
-                        <CalendarDays size={18} strokeWidth={2.2} />
-                      </span>
-                      <span
-                        style={{ flex: "1", fontSize: "15px", fontWeight: "600", color: "#1f1d29" }}
-                      >
-                        Lịch sử đặt chỗ
-                      </span>
-                      <ChevronRight size={18} color="#b6b3c0" />
-                    </Link>
-                    <Link
-                      href="/vi-uu-dai"
-                      className="row"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "18px 24px",
-                        borderBottom: "1px solid #f8f8f8",
-                      }}
-                    >
-                      <span style={accountIconStyle}>
-                        <Percent size={18} strokeWidth={2.4} />
-                      </span>
-                      <span
-                        style={{ flex: "1", fontSize: "15px", fontWeight: "600", color: "#1f1d29" }}
-                      >
-                        Ví ưu đãi
-                      </span>
-                      <ChevronRight size={18} color="#b6b3c0" />
-                    </Link>
-                    <Link
-                      href="/gui-hoa-don"
-                      className="row"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "18px 24px",
-                        borderBottom: "1px solid #f8f8f8",
-                      }}
-                    >
-                      <span style={accountIconStyle}>
-                        <FileText size={18} strokeWidth={2.2} />
-                      </span>
-                      <span
-                        style={{ flex: "1", fontSize: "15px", fontWeight: "600", color: "#1f1d29" }}
-                      >
-                        Hóa đơn của tôi
-                      </span>
-                      <ChevronRight size={18} color="#b6b3c0" />
-                    </Link>
-                    <Link
-                      href="/da-luu"
-                      className="row"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "18px 24px",
-                        borderBottom: "1px solid #f8f8f8",
-                      }}
-                    >
-                      <span style={accountIconStyle}>
-                        <Heart size={18} strokeWidth={2.2} />
-                      </span>
-                      <span
-                        style={{ flex: "1", fontSize: "15px", fontWeight: "600", color: "#1f1d29" }}
-                      >
-                        Quán & Cast đã lưu
-                      </span>
-                      <ChevronRight size={18} color="#b6b3c0" />
-                    </Link>
-                    <a
-                      href="#"
-                      className="row"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "18px 24px",
-                        borderBottom: "1px solid #f8f8f8",
-                      }}
-                    >
-                      <span style={accountIconStyle}>
-                        <Languages size={18} strokeWidth={2.2} />
-                      </span>
-                      <span
-                        style={{ flex: "1", fontSize: "15px", fontWeight: "600", color: "#1f1d29" }}
-                      >
-                        Ngôn ngữ
-                      </span>
-                      <span style={{ color: "#8a879a", fontSize: "14px" }}>
-                        Tiếng Việt · 日本語
-                      </span>
-                    </a>
-                    <Link
-                      href="/dang-nhap"
-                      onClick={logout}
-                      className="row"
-                      style={{ display: "flex", alignItems: "center", padding: "18px 24px" }}
-                    >
-                      <span style={dangerIconStyle}>
-                        <LogOut size={18} strokeWidth={2.2} />
-                      </span>
-                      <span
-                        style={{ flex: "1", fontSize: "15px", fontWeight: "600", color: "#e11d48" }}
-                      >
-                        Đăng xuất
-                      </span>
-                    </Link>
-                  </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h1 style={{ fontSize: 22, fontWeight: 950, lineHeight: 1.05 }}>{name}</h1>
+                  <p style={{ marginTop: 5, fontSize: 13, color: "rgba(36,26,10,.75)", fontWeight: 800 }}>
+                    {phone}
+                  </p>
                 </div>
+                <span style={{ borderRadius: 999, background: colors.onGold, color: colors.goldPale, padding: "7px 10px", fontSize: 11, fontWeight: 950 }}>
+                  {tier}
+                </span>
               </div>
-            </div>
-          </div>
-        </>
 
-        <div
-          style={{
-            background: "#fff",
-            borderTop: "1px solid #ececec",
-            padding: "60px 0 20px",
-            fontFamily: "'Inter',sans-serif",
-            color: "#5b5870",
-          }}
-        >
-          <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 34px" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: "40px",
-                marginBottom: "60px",
-              }}
-            >
-              <div style={{ maxWidth: "300px" }}>
-                <Link
-                  href="/"
-                  style={{
-                    fontWeight: "800",
-                    fontSize: "28px",
-                    color: "#6d28d9",
-                    textDecoration: "none",
-                  }}
-                >
-                  nightlife<span style={{ color: "#1f1d29" }}>.hn</span>
-                </Link>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    color: "#5b5870",
-                    marginTop: "16px",
-                    lineHeight: "1.6",
-                  }}
-                >
-                  Khám phá cuộc sống về đêm tại Việt Nam
+              <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
+                  <span>Điểm thưởng</span>
+                  <span>156 / 250</span>
                 </div>
-                <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-                  <a
-                    href="#"
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: "#f5f4f2",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#5b5870",
-                    }}
-                  >
-                    <Image
-                      width={100}
-                      height={100}
-                      src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png"
-                      style={{ width: "18px", height: "18px" }}
-                      alt="FB"
-                    />
-                  </a>
-                  <a
-                    href="#"
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: "#f5f4f2",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#5b5870",
-                    }}
-                  >
-                    <Image
-                      width={100}
-                      height={100}
-                      src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png"
-                      style={{ width: "18px", height: "18px" }}
-                      alt="TikTok"
-                    />
-                  </a>
-                  <a
-                    href="#"
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: "#f5f4f2",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#5b5870",
-                    }}
-                  >
-                    <Image
-                      width={100}
-                      height={100}
-                      src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png"
-                      style={{ width: "18px", height: "18px" }}
-                      alt="IG"
-                    />
-                  </a>
-                  <a
-                    href="#"
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: "#f5f4f2",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#5b5870",
-                    }}
-                  >
-                    <Image
-                      width={100}
-                      height={100}
-                      src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png"
-                      style={{ width: "18px", height: "18px" }}
-                      alt="YT"
-                    />
-                  </a>
+                <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
+                  <div style={{ width: "62%", height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
                 </div>
+                <p style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
+                  Cần thêm 94 điểm để lên hạng Premium+
+                </p>
               </div>
-              <div
+            </section>
+
+            <section style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
+                <Crown size={18} />
+                Quyền lợi thành viên
+              </div>
+              <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+                <Benefit icon={<Star size={15} />} text="Ưu tiên xác nhận bàn VIP" />
+                <Benefit icon={<Percent size={15} />} text="Nhận coupon riêng theo hạng" />
+                <Benefit icon={<CalendarDays size={15} />} text="Lưu lịch đặt chỗ và đặt lại nhanh" />
+              </div>
+            </section>
+          </aside>
+
+          <div style={{ display: "grid", gap: 16 }}>
+            <section className="nl-account-stat-grid">
+              {stats.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 13, display: "grid", placeItems: "center", background: "rgba(212,178,106,.11)", color: colors.gold }}>
+                      <Icon size={20} />
+                    </div>
+                    <div style={{ marginTop: 14, fontSize: 28, fontWeight: 950, color: colors.goldPale }}>{item.value}</div>
+                    <div style={{ marginTop: 3, color: colors.muted, fontSize: 13 }}>{item.label}</div>
+                  </div>
+                );
+              })}
+            </section>
+
+            <section style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, overflow: "hidden" }}>
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "44px minmax(0,1fr) auto",
+                      alignItems: "center",
+                      gap: 14,
+                      padding: "15px 16px",
+                      borderBottom: `1px solid ${colors.border}`,
+                      color: colors.text,
+                      textDecoration: "none",
+                    }}
+                  >
+                    <span style={accountIconStyle}>
+                      <Icon size={19} />
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <strong style={{ display: "block", fontSize: 14.5, fontWeight: 900 }}>{item.title}</strong>
+                      <small style={{ display: "block", marginTop: 4, color: colors.muted, fontSize: 12 }}>{item.desc}</small>
+                    </span>
+                    <ChevronRight size={18} color={colors.dim} />
+                  </Link>
+                );
+              })}
+              <Link
+                href="/dang-nhap"
+                onClick={logout}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  flex: "1",
-                  maxWidth: "600px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  <Link href="/danh-sach-quan" className="lk" style={{ color: "#1f1d29" }}>
-                    Tìm quán
-                  </Link>
-                  <Link href="/uu-dai" className="lk" style={{ color: "#1f1d29" }}>
-                    Ưu đãi
-                  </Link>
-                  <Link href="/blog" className="lk" style={{ color: "#1f1d29" }}>
-                    Blog
-                  </Link>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  <Link href="/danh-sach-cast" className="lk" style={{ color: "#1f1d29" }}>
-                    Cast
-                  </Link>
-                  <Link href="/tour" className="lk" style={{ color: "#1f1d29" }}>
-                    Tour
-                  </Link>
-                  <Link href="/dang-ky-doi-tac" className="lk" style={{ color: "#1f1d29" }}>
-                    Đăng ký đối tác
-                  </Link>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  <Link href="/xep-hang" className="lk" style={{ color: "#1f1d29" }}>
-                    Bảng xếp hạng
-                  </Link>
-                  <Link href="/legal" className="lk" style={{ color: "#1f1d29" }}>
-                    Chính sách BM
-                  </Link>
-                  <Link href="/legal" className="lk" style={{ color: "#1f1d29" }}>
-                    Điều khoản DV
-                  </Link>
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                background: "#fef1f2",
-                border: "1px solid #fecdd3",
-                borderRadius: "12px",
-                padding: "16px 20px",
-                color: "#be123c",
-                fontSize: "13.5px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                marginBottom: "40px",
-                textAlign: "center",
-              }}
-            >
-              <Image
-                width={100}
-                height={100}
-                src="https://img.icons8.com/color/96/high-importance--v1.png"
-                style={{ width: "20px", height: "20px" }}
-                alt="!"
-              />
-              <span>
-                <b style={{ fontWeight: "700" }}>Cảnh báo:</b> Website này chỉ dành cho người{" "}
-                <b style={{ fontWeight: "700" }}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng,
-                bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.
-              </span>
-            </div>
-            <div
-              style={{
-                borderTop: "1px solid #ececec",
-                paddingTop: "24px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                fontSize: "12px",
-                color: "#9a98a6",
-                position: "relative",
-              }}
-            >
-              <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-              <div>v2.0.0 • Nightlife Platform</div>
-              <div
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                style={{
-                  position: "absolute",
-                  right: "0",
-                  top: "24px",
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "50%",
-                  background: "#fb4b81",
-                  color: "#fff",
-                  display: "flex",
+                  display: "grid",
+                  gridTemplateColumns: "44px minmax(0,1fr) auto",
                   alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(251,75,129,.3)",
+                  gap: 14,
+                  padding: "15px 16px",
+                  color: colors.danger,
+                  textDecoration: "none",
                 }}
               >
-                <Image
-                  width={100}
-                  height={100}
-                  src="https://img.icons8.com/ios-filled/100/ffffff/up.png"
-                  style={{ width: "24px", height: "24px" }}
-                  alt="Top"
-                />
-              </div>
-            </div>
+                <span style={{ ...accountIconStyle, color: colors.danger, background: "rgba(255,107,139,.1)", borderColor: "rgba(255,107,139,.24)" }}>
+                  <LogOut size={19} />
+                </span>
+                <strong style={{ fontSize: 14.5, fontWeight: 900 }}>Đăng xuất</strong>
+                <ChevronRight size={18} color={colors.danger} />
+              </Link>
+            </section>
           </div>
         </div>
-      </div>
-    </React.Fragment>
+      </section>
+    </main>
   );
 }
+
+function Benefit({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9, color: colors.muted, fontSize: 13 }}>
+      <span style={{ color: colors.gold }}>{icon}</span>
+      {text}
+    </div>
+  );
+}
+
+const accountIconStyle: React.CSSProperties = {
+  width: 44,
+  height: 44,
+  borderRadius: 14,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: `1px solid ${colors.border}`,
+  background: "rgba(212,178,106,.1)",
+  color: colors.gold,
+};

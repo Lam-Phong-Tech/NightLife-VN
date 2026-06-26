@@ -13,7 +13,6 @@ const colors = {
   borderStrong: "rgba(212,178,106,.34)",
   text: "#f3f0ea",
   muted: "#b6b1a6",
-  dim: "#8c8679",
   gold: "#d4b26a",
   goldPale: "#f0dda8",
   onGold: "#241a0a",
@@ -32,10 +31,10 @@ export default function Page() {
 
   return (
     <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <section style={{ maxWidth: "1120px", margin: "0 auto", padding: "26px 22px 54px" }}>
-        <Link href="/stores/club-lumiere" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.muted, fontSize: 13, fontWeight: 700 }}>
+      <section style={{ maxWidth: "1120px", margin: "0 auto", padding: "24px 18px 54px" }}>
+        <Link href="/stores/club-lumiere" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.muted, fontSize: 13, fontWeight: 800 }}>
           <ChevronLeft size={17} />
-          Club Lumiere
+          Club Lumière
         </Link>
 
         <div className="nl-booking-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 22, marginTop: 18 }}>
@@ -51,8 +50,8 @@ export default function Page() {
                   "linear-gradient(180deg,rgba(12,12,15,.12),rgba(12,12,15,.9)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
               }}
             >
-              <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 800, letterSpacing: ".16em" }}>YEU CAU DAT CHO</span>
-              <h1 style={{ marginTop: 8, fontSize: 34, lineHeight: 1.08, fontWeight: 900 }}>Đặt bàn tại Club Lumiere</h1>
+              <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 900, letterSpacing: ".16em" }}>YÊU CẦU ĐẶT CHỖ</span>
+              <h1 style={{ marginTop: 8, fontSize: "clamp(26px,4vw,36px)", lineHeight: 1.08, fontWeight: 950 }}>Đặt bàn tại Club Lumière</h1>
               <p style={{ marginTop: 10, color: colors.muted, maxWidth: 620, fontSize: 14, lineHeight: 1.6 }}>
                 Gửi yêu cầu cho admin xác nhận với quán. Không thu cọc, không thanh toán online.
               </p>
@@ -75,7 +74,7 @@ export default function Page() {
                       padding: "11px 14px",
                       background: mode === value ? colors.goldGrad : "transparent",
                       color: mode === value ? colors.onGold : colors.muted,
-                      fontWeight: 800,
+                      fontWeight: 900,
                       cursor: "pointer",
                     }}
                   >
@@ -85,7 +84,9 @@ export default function Page() {
               </div>
 
               <div style={{ color: colors.goldPale, background: "rgba(212,178,106,.09)", border: `1px solid ${colors.border}`, borderRadius: 12, padding: "11px 13px", fontSize: 13 }}>
-                {mode === "guest" ? "Guest: giữ mã 24 giờ, admin xác nhận qua điện thoại." : "Hội viên: lưu lịch đặt chỗ và nhận ưu đãi tốt hơn."}
+                {mode === "guest"
+                  ? "Guest: giữ mã 24 giờ, admin xác nhận qua điện thoại."
+                  : "Hội viên: lưu lịch đặt chỗ và nhận ưu đãi tốt hơn."}
               </div>
 
               <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -100,7 +101,7 @@ export default function Page() {
                   <Label>Số khách</Label>
                   <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", background: colors.panelStrong }}>
                     <button type="button" onClick={() => setGuests((value) => Math.max(1, value - 1))} style={stepButtonStyle}><Minus size={15} /></button>
-                    <span style={{ fontWeight: 800 }}>{guests} người</span>
+                    <span style={{ fontWeight: 900 }}>{guests} người</span>
                     <button type="button" onClick={() => setGuests((value) => value + 1)} style={{ ...stepButtonStyle, background: colors.gold, color: colors.onGold }}><Plus size={15} /></button>
                   </div>
                 </div>
@@ -122,7 +123,7 @@ export default function Page() {
                         borderRadius: 999,
                         padding: "8px 12px",
                         fontSize: 12,
-                        fontWeight: 800,
+                        fontWeight: 900,
                         cursor: "pointer",
                       }}
                     >
@@ -140,18 +141,18 @@ export default function Page() {
                 />
               </div>
 
-              <button type="button" onClick={submit} style={{ border: 0, borderRadius: 14, background: colors.goldGrad, color: colors.onGold, padding: "15px 18px", fontWeight: 900, fontSize: 15, cursor: "pointer" }}>
+              <button type="button" onClick={submit} style={{ border: 0, borderRadius: 14, background: colors.goldGrad, color: colors.onGold, padding: "15px 18px", fontWeight: 950, fontSize: 15, cursor: "pointer" }}>
                 Gửi yêu cầu đặt chỗ
               </button>
             </div>
           </div>
 
           <aside style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 20, height: "fit-content", position: "sticky", top: 104 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 900 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
               <Sparkles size={18} />
               Tóm tắt
             </div>
-            <Summary label="Quán" value="Club Lumiere" />
+            <Summary label="Quán" value="Club Lumière" />
             <Summary label="Khu vực" value="Tây Hồ" />
             <Summary label="Thời gian" value="T6 - 21/06 · 21:00" />
             <Summary label="Số khách" value={`${guests} người`} />
@@ -167,7 +168,7 @@ export default function Page() {
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <label style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}>{children}</label>;
+  return <label style={{ color: colors.muted, fontSize: 12.5, fontWeight: 900 }}>{children}</label>;
 }
 
 function Field({ label, placeholder }: { label: string; placeholder: string }) {
@@ -183,7 +184,7 @@ function ReadOnlyField({ icon, label, value }: { icon: React.ReactNode; label: s
   return (
     <div>
       <Label>{label}</Label>
-      <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, color: colors.text, padding: "0 14px", display: "flex", alignItems: "center", gap: 9, fontSize: 14, fontWeight: 700 }}>
+      <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, color: colors.text, padding: "0 14px", display: "flex", alignItems: "center", gap: 9, fontSize: 14, fontWeight: 800 }}>
         <span style={{ color: colors.gold }}>{icon}</span>
         {value}
       </div>
@@ -195,7 +196,7 @@ function Summary({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 15, color: colors.text, fontSize: 13 }}>
       <span style={{ color: colors.muted }}>{label}</span>
-      <span style={{ fontWeight: 800, textAlign: "right" }}>{value}</span>
+      <span style={{ fontWeight: 900, textAlign: "right" }}>{value}</span>
     </div>
   );
 }

@@ -578,9 +578,37 @@ textarea::placeholder {
 
   .nl-booking-layout,
   .nl-booking-form-grid,
+  .nl-booking-history-card,
+  .nl-member-page-head,
+  .nl-account-layout,
+  .nl-account-stat-grid,
   .nl-login-shell,
   .nl-login-metrics {
     grid-template-columns: 1fr !important;
+  }
+
+  .nl-booking-history-card {
+    align-items: start !important;
+  }
+
+  .nl-booking-history-card > div:first-child {
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 14px !important;
+  }
+
+  .nl-booking-meta-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .nl-booking-actions {
+    grid-column: 1 / -1 !important;
+    justify-content: stretch !important;
+  }
+
+  .nl-booking-actions a,
+  .nl-booking-actions button {
+    flex: 1 !important;
   }
 
   .nl-booking-layout aside {
@@ -730,6 +758,33 @@ textarea::placeholder {
 }
 
 @media (min-width: 768px) {
+  .nl-member-page-head {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    gap: 24px !important;
+  }
+
+  .nl-booking-meta-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px 14px !important;
+    margin-top: 10px !important;
+  }
+
+  .nl-account-layout {
+    display: grid !important;
+    grid-template-columns: 360px minmax(0, 1fr) !important;
+    gap: 20px !important;
+    align-items: start !important;
+  }
+
+  .nl-account-stat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
   .nl-page-content .block.md\:hidden {
     display: none !important;
   }
@@ -740,5 +795,20 @@ textarea::placeholder {
 
   .nl-mobile-bottom-nav {
     display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .nl-member-page-head,
+  .nl-account-layout,
+  .nl-account-stat-grid {
+    display: grid !important;
+    gap: 14px !important;
+  }
+
+  .nl-booking-meta-grid {
+    display: grid !important;
+    gap: 7px !important;
+    margin-top: 10px !important;
   }
 }

@@ -273,7 +273,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             display: isMobile ? "grid" : "flex",
             gridTemplateColumns: isMobile
               ? authUser
-                ? "auto minmax(0,1fr) auto"
+                ? "auto minmax(0,128px) minmax(112px,1fr)"
                 : "auto auto minmax(0,1fr)"
               : undefined,
             alignItems: "center",
@@ -329,7 +329,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               title="Xem thông tin tài khoản"
               style={{
                 minHeight: isMobile ? "36px" : "38px",
-                maxWidth: isMobile ? "150px" : "190px",
+                height: isMobile ? "36px" : "38px",
+                maxWidth: isMobile ? "128px" : "190px",
                 borderRadius: "19px",
                 padding: isMobile ? "0 12px" : "0 15px",
                 border: `1px solid ${colors.borderGold32}`,
@@ -339,6 +340,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
+                lineHeight: 1,
                 fontSize: isMobile ? "12px" : "13px",
                 fontWeight: 800,
                 textDecoration: "none",
@@ -347,8 +349,10 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 minWidth: 0,
               }}
             >
-              <UserRound size={16} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</span>
+              <UserRound size={16} style={{ flex: "none" }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1 }}>
+                {displayName}
+              </span>
             </Link>
           ) : null}
           <Link
