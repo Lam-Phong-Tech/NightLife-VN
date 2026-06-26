@@ -21,7 +21,7 @@ export function MobileSimulator() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#d4b26a] opacity-[0.04] rounded-full blur-[100px] pointer-events-none" />
 
       {/* Top action bar to exit simulator */}
-      <div className="absolute top-6 left-0 right-0 flex justify-center z-20">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 lg:left-10 lg:translate-x-0 z-20">
         <div className="bg-[rgba(8,8,11,0.8)] backdrop-blur-md border border-[rgba(212,178,106,0.2)] rounded-full px-6 py-2.5 flex items-center gap-4 shadow-lg">
           <span className="text-[#8c8679] text-sm font-medium">Chế độ giả lập Mobile</span>
           <div className="w-[1px] h-4 bg-[rgba(212,178,106,0.2)]" />
