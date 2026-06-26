@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { SiteChrome } from "@/components/layout/SiteChrome";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -28,7 +29,9 @@ export default function RootLayout({
         <Script src="/theme.js" strategy="beforeInteractive" />
         <Script src="/support.js" strategy="beforeInteractive" />
       </head>
-      <body>{children}</body>
+      <body>
+        <SiteChrome>{children}</SiteChrome>
+      </body>
     </html>
   );
 }

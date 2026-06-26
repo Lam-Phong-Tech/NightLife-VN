@@ -2,6 +2,10 @@
 
 Monorepo TypeScript dùng **pnpm workspaces** + **Turborepo**, app web viết bằng **Next.js 16 (App Router)** + **Tailwind CSS v4**.
 
+## 🎨 Nguyên tắc giao diện
+
+Khi dựng hoặc chỉnh sửa giao diện, dùng [Design Guideline](../docs/design-guideline.md) làm nguồn chuẩn cho màu sắc, typography, spacing, component, ảnh và checklist trước khi ship màn hình. Mọi UI mới cần bám theo Phương án A: dark mode ấm, gold premium là điểm nhấn chính, neon chỉ dùng rất tiết chế.
+
 ## 📁 Cấu trúc
 
 ```
