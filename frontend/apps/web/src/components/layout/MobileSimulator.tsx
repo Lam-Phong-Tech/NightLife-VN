@@ -1,0 +1,65 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Monitor } from "lucide-react";
+import Link from "next/link";
+
+export function MobileSimulator() {
+  const [iframeSrc, setIframeSrc] = useState<string>("");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Set the initial iframe src to match the current URL exactly
+    setIframeSrc(window.location.pathname + window.location.search);
+  }, [pathname, searchParams]);
+
+  return (
+    <div className="min-h-screen bg-[#060608] flex flex-col items-center justify-center p-4 sm:p-8 font-sans relative overflow-hidden">
+      {/* Background ambient glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#d4b26a] opacity-[0.04] rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Top action bar to exit simulator */}
+      <div className="absolute top-6 left-0 right-0 flex justify-center z-20">
+        <div className="bg-[rgba(8,8,11,0.8)] backdrop-blur-md border border-[rgba(212,178,106,0.2)] rounded-full px-6 py-2.5 flex items-center gap-4 shadow-lg">
+          <span className="text-[#8c8679] text-sm font-medium">Chế độ giả lập Mobile</span>
+          <div className="w-[1px] h-4 bg-[rgba(212,178,106,0.2)]" />
+          <Link
+            href="/chon-giao-dien"
+            className="flex items-center gap-2 text-[#d4b26a] hover:text-[#f0dda8] transition-colors text-sm font-bold"
+          >
+            <Monitor size={16} />
+            <span>Thoát giả lập</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* The Phone Frame */}
+      <div className="relative z-10 w-full max-w-[390px] h-[844px] max-h-[90vh] bg-black rounded-[3rem] border-[8px] border-[#1a1a1f] shadow-[0_0_0_1px_rgba(255,255,255,0.05),_0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-4 ring-[#0c0c0f]">
+        
+        {/* Hardware details: Notch/Dynamic Island */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[30px] bg-[#1a1a1f] rounded-b-3xl z-20 flex justify-center items-center">
+           <div className="w-[60px] h-[6px] bg-black rounded-full" />
+        </div>
+
+        {/* Iframe Content */}
+        {iframeSrc ? (
+          <iframe
+            src={iframeSrc}
+            className="w-full h-full border-none bg-[#0c0c0f]"
+            title="Mobile Simulator"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          />
+        ) : (
+          <div className="w-full h-full bg-[#0c0c0f] flex items-center justify-center text-[#8c8679]">
+            Đang tải giả lập...
+          </div>
+        )}
+        
+        {/* Hardware details: Home indicator */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[120px] h-[4px] bg-white/20 rounded-full z-20" />
+      </div>
+    </div>
+  );
+}

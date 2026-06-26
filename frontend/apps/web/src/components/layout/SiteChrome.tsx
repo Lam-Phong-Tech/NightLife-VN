@@ -5,6 +5,7 @@ import { CalendarDays, Home, Search, Ticket, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { MobileSimulator } from "./MobileSimulator";
 
 const colors = {
   bg: "#0c0c0f",
@@ -56,6 +57,7 @@ function isActive(pathname: string, href: string) {
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const [isMobile, setIsMobile] = useState(false);
+  const [shouldSimulate, setShouldSimulate] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
@@ -67,11 +69,24 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     const match = document.cookie.match(new RegExp('(^| )device_preference=([^;]+)'));
     const preference = match ? match[2] : null;
 
+    let isIframe = false;
+    try {
+      isIframe = window.top !== window.self;
+    } catch (e) {
+      isIframe = true;
+    }
+
     if (preference === 'mobile') {
       setIsMobile(true);
+      if (window.innerWidth > 767 && !isIframe) {
+        setShouldSimulate(true);
+      } else {
+        setShouldSimulate(false);
+      }
       return;
     } else if (preference === 'desktop') {
       setIsMobile(false);
+      setShouldSimulate(false);
       return;
     }
 
@@ -160,6 +175,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       observer.disconnect();
     };
   }, [pathname]);
+
+  if (shouldSimulate) return <MobileSimulator />;
 
   if (hideChrome) return <>{children}</>;
 
