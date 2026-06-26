@@ -31,7 +31,7 @@ jobs:
           printf '%s\n' "$ENV_FILE_CONTENT" > .env
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile --prod=false || pnpm install --prod=false
+        run: pnpm install --no-frozen-lockfile --prod=false || pnpm install --prod=false
 
       - name: Generate Prisma Client
         run: npx prisma generate
@@ -60,7 +60,7 @@ jobs:
           script: |
             cd /var/www/api.demonightlight.nentangso.site
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
-            pnpm install --prod --frozen-lockfile || pnpm install --prod
+            pnpm install --prod --no-frozen-lockfile || pnpm install --prod
             npx prisma generate
             npx prisma db push --accept-data-loss
             PORT=3012 pm2 restart app-api.demonightlight.nentangso.site --update-env || PORT=3012 pm2 start pnpm --name "app-api.demonightlight.nentangso.site" -- run start:prod
