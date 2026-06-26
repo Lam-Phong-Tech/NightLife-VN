@@ -17,7 +17,11 @@ export default function DeviceSelectionPage() {
     
     // Simulate a tiny delay for the animation to play out
     setTimeout(() => {
-      window.location.href = '/';
+      if (window.top) {
+        window.top.location.href = '/';
+      } else {
+        window.location.href = '/';
+      }
     }, 500);
   };
 

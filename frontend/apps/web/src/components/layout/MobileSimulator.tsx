@@ -26,7 +26,10 @@ export function MobileSimulator() {
           <span className="text-[#8c8679] text-sm font-medium">Chế độ giả lập Mobile</span>
           <div className="w-[1px] h-4 bg-[rgba(212,178,106,0.2)]" />
           <button
-            onClick={() => { window.location.href = '/chon-giao-dien'; }}
+            onClick={() => {
+              document.cookie = 'device_preference=; path=/; max-age=0';
+              window.location.href = '/chon-giao-dien';
+            }}
             className="flex items-center gap-2 text-[#d4b26a] hover:text-[#f0dda8] transition-colors text-sm font-bold cursor-pointer"
           >
             <Monitor size={16} />
