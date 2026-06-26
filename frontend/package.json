@@ -14,9 +14,11 @@
     "check-types": "turbo run check-types",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\""
   },
+  "dependencies": {
+    "turbo": "2.9.18"
+  },
   "devDependencies": {
     "prettier": "3.8.4",
-    "turbo": "2.9.18",
     "typescript": "6.0.3"
   },
   "pnpm": {
