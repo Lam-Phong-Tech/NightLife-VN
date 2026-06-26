@@ -25,23 +25,20 @@ export function MobileSimulator() {
         <div className="bg-[rgba(8,8,11,0.8)] backdrop-blur-md border border-[rgba(212,178,106,0.2)] rounded-full px-6 py-2.5 flex items-center gap-4 shadow-lg">
           <span className="text-[#8c8679] text-sm font-medium">Chế độ giả lập Mobile</span>
           <div className="w-[1px] h-4 bg-[rgba(212,178,106,0.2)]" />
-          <Link
-            href="/chon-giao-dien"
-            className="flex items-center gap-2 text-[#d4b26a] hover:text-[#f0dda8] transition-colors text-sm font-bold"
+          <button
+            onClick={() => { window.location.href = '/chon-giao-dien'; }}
+            className="flex items-center gap-2 text-[#d4b26a] hover:text-[#f0dda8] transition-colors text-sm font-bold cursor-pointer"
           >
             <Monitor size={16} />
             <span>Thoát giả lập</span>
-          </Link>
+          </button>
         </div>
       </div>
 
       {/* The Phone Frame */}
       <div className="relative z-10 w-full max-w-[390px] h-[844px] max-h-[90vh] bg-black rounded-[3rem] border-[8px] border-[#1a1a1f] shadow-[0_0_0_1px_rgba(255,255,255,0.05),_0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-4 ring-[#0c0c0f]">
         
-        {/* Hardware details: Notch/Dynamic Island */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[30px] bg-[#1a1a1f] rounded-b-3xl z-20 flex justify-center items-center">
-           <div className="w-[60px] h-[6px] bg-black rounded-full" />
-        </div>
+
 
         {/* Iframe Content */}
         {iframeSrc ? (
