@@ -15,7 +15,7 @@ interface ContentSeed {
   type: 'BLOG' | 'POLICY';
   excerpt: string | null;
   body: string;
-  metadata: Record<string, unknown>;
+  metadata: any;
 }
 
 const CONTENTS: ContentSeed[] = [
