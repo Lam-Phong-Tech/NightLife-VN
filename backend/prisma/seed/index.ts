@@ -1,0 +1,52 @@
+import { PrismaClient } from '@prisma/client';
+import { seedRoles } from './00-roles';
+import { seedUsers } from './01-users';
+import { seedAreas } from './02-areas';
+import { seedPartners } from './03-partners';
+import { seedStores } from './04-stores';
+import { seedCasts } from './05-casts';
+import { seedMedia } from './06-media';
+import { seedCoupons } from './07-coupons';
+import { seedCommissions } from './08-commissions';
+import { seedContents } from './09-contents';
+import { seedRankings } from './10-rankings';
+
+export async function seedAll(prisma: PrismaClient, passwordHash: string) {
+  console.log('🌱 NightLife Vietnam — Seed Data v1.0\n');
+  console.log('═══════════════════════════════════════');
+
+  const roles = await seedRoles(prisma);
+  const users = await seedUsers(prisma, passwordHash, roles);
+  const areas = await seedAreas(prisma);
+  const partners = await seedPartners(prisma, users);
+  const stores = await seedStores(prisma, users, areas, partners);
+  const casts = await seedCasts(prisma, stores);
+  await seedMedia(prisma, stores, casts);
+  await seedCoupons(prisma, stores);
+  await seedCommissions(prisma, stores, users);
+  await seedContents(prisma, users);
+  await seedRankings(prisma, stores, casts, users);
+
+  console.log('═══════════════════════════════════════');
+  console.log('\n✅ Seed completed successfully!\n');
+
+  console.log('📋 Summary:');
+  console.log('  • Roles: 3 (admin, partner, operator)');
+  console.log('  • Users: 5 (1 admin, 2 partners, 1 member, 1 VIP)');
+  console.log('  • Areas: 6 (HCM: Q1/Q3/Q7, HN: Hoàn Kiếm/Tây Hồ/Cầu Giấy)');
+  console.log('  • Stores: 10 (5 HCM + 5 HN)');
+  console.log('  • Casts: 20 (2 per store)');
+  console.log('  • Media: 40 placeholders');
+  console.log('  • Coupons: 5 (3 PERCENT + 2 FIXED)');
+  console.log('  • Commission Configs: 10');
+  console.log('  • Contents: 5 (3 blogs + 2 policies)');
+  console.log('  • Rankings: 10 (5 casts + 5 stores)');
+  console.log('');
+  console.log('🔑 Login credentials:');
+  console.log('  All accounts use password: Str0ngPass!');
+  console.log('  • admin@nightlife.vn    (ADMIN / VIP)');
+  console.log('  • partner1@nightlife.vn (PARTNER / PREMIUM)');
+  console.log('  • partner2@nightlife.vn (PARTNER / PREMIUM)');
+  console.log('  • member@nightlife.vn   (USER / FREE)');
+  console.log('  • vip@nightlife.vn      (USER / VIP)');
+}
