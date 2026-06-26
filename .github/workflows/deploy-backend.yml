@@ -24,11 +24,6 @@ jobs:
       - name: Enable Corepack (pnpm)
         run: corepack enable
 
-      - name: Tạo file .env từ Github Secret
-        env:
-          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_BACKEND }}
-        run: |
-          printf '%s\n' "$ENV_FILE_CONTENT" > .env
 
       - name: Install Dependencies
         run: pnpm install --no-frozen-lockfile --prod=false || pnpm install --prod=false
