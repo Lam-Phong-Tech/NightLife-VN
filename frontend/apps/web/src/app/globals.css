@@ -310,7 +310,9 @@ textarea::placeholder {
 .nl-page-content [style*="borderTop"][style*="Nightlife Platform"],
 .nl-page-content .block.md\:hidden [style*="height: 64px"][style*="justify-content: space-around"],
 .nl-page-content .block.md\:hidden [style*="height:64px"][style*="justify-content:space-around"],
-.nl-page-content .block.md\:hidden [style*="height:64px"][style*="background:#fff"][style*="justify-content:space-around"] {
+.nl-page-content .block.md\:hidden [style*="height:64px"][style*="background:#fff"][style*="justify-content:space-around"],
+.nl-page-content .nl-generated-bottom-nav,
+.nl-page-content .nl-generated-footer {
   display: none !important;
 }
 
@@ -609,14 +611,25 @@ textarea::placeholder {
 
   .nl-site-actions {
     width: 100% !important;
-    justify-content: flex-end !important;
+    display: grid !important;
+    grid-template-columns: auto auto minmax(0, 1fr) !important;
+    justify-content: stretch !important;
     gap: 8px !important;
+    min-width: 0 !important;
   }
 
   .nl-site-actions a,
   .nl-site-actions span {
     min-height: 36px !important;
     font-size: 12px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+
+  .nl-site-actions a:last-child {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .nl-site-footer {
@@ -656,9 +669,75 @@ textarea::placeholder {
     min-height: 54px !important;
     border-radius: 14px !important;
   }
+
+  .nl-page-content .block.md\:hidden {
+    display: block !important;
+  }
+
+  .nl-page-content .hidden.md\:block {
+    display: none !important;
+  }
+
+  .store-detail-mobile,
+  .cast-detail-mobile,
+  .cast-list-mobile {
+    background: #0c0c0f !important;
+    color: #f3f0ea !important;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .store-detail-mobile > div,
+  .cast-detail-mobile > div,
+  .cast-list-mobile > div {
+    background: #111114 !important;
+    color: #f3f0ea !important;
+    border-color: rgba(212, 178, 106, 0.18) !important;
+    box-shadow: none !important;
+  }
+
+  .store-detail-mobile > div > div,
+  .cast-detail-mobile > div > div,
+  .cast-list-mobile > div > div {
+    border-color: rgba(212, 178, 106, 0.16) !important;
+  }
+
+  .cast-list-mobile > div > div:first-child,
+  .cast-list-mobile > div > div:nth-child(2),
+  .cast-detail-mobile > div > div:not(:first-child) {
+    background: #141417 !important;
+    color: #f3f0ea !important;
+  }
+
+  .cast-list-mobile a,
+  .cast-detail-mobile a,
+  .store-detail-mobile a {
+    position: relative;
+    z-index: 1;
+  }
+
+  .store-detail-mobile > div > div:last-child,
+  .cast-detail-mobile > div > div:last-child {
+    background: #141417 !important;
+    border-top: 1px solid rgba(212, 178, 106, 0.18) !important;
+  }
+
+  .store-detail-mobile > div > div:last-child a,
+  .cast-detail-mobile > div > div:last-child a {
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a) !important;
+    color: #241a0a !important;
+    font-weight: 900 !important;
+  }
 }
 
 @media (min-width: 768px) {
+  .nl-page-content .block.md\:hidden {
+    display: none !important;
+  }
+
+  .nl-page-content .hidden.md\:block {
+    display: block !important;
+  }
+
   .nl-mobile-bottom-nav {
     display: none !important;
   }

@@ -65,34 +65,23 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
 
   useEffect(() => {
-    // Check cookie first
-    const match = document.cookie.match(new RegExp('(^| )device_preference=([^;]+)'));
-    const preference = match ? match[2] : null;
-
-    let isIframe = false;
-    try {
-      isIframe = window.top !== window.self;
-    } catch (e) {
-      isIframe = true;
-    }
-
-    if (preference === 'mobile') {
-      setIsMobile(true);
-      if (window.innerWidth > 767 && !isIframe) {
-        setShouldSimulate(true);
-      } else {
-        setShouldSimulate(false);
-      }
-      return;
-    } else if (preference === 'desktop') {
-      setIsMobile(false);
-      setShouldSimulate(false);
-      return;
-    }
-
-    // Fallback to media query if no preference is set
     const media = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(media.matches);
+    const update = () => {
+      const match = document.cookie.match(new RegExp("(^| )device_preference=([^;]+)"));
+      const preference = match ? match[2] : null;
+      const viewportIsMobile = media.matches;
+      let isIframe = false;
+
+      try {
+        isIframe = window.top !== window.self;
+      } catch {
+        isIframe = true;
+      }
+
+      setIsMobile(preference === "mobile" || media.matches);
+      setShouldSimulate(preference === "mobile" && !viewportIsMobile && !isIframe);
+    };
+
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
@@ -197,7 +186,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           borderBottom: `1px solid ${colors.borderGold12}`,
           background: colors.bg,
           display: "flex",
-          alignItems: "center",
+          alignItems: isMobile ? "flex-start" : "center",
           justifyContent: "space-between",
           gap: isMobile ? "10px" : "24px",
           flexWrap: isMobile ? "wrap" : "nowrap",
@@ -206,7 +195,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           zIndex: 50,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "34px", minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "34px",
+            minWidth: 0,
+            width: isMobile ? "100%" : "auto",
+          }}
+        >
           <Link
             href="/"
             style={{
@@ -273,11 +270,17 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           className="nl-site-actions"
           style={{
             width: isMobile ? "100%" : "auto",
-            display: "flex",
+            display: isMobile ? "grid" : "flex",
+            gridTemplateColumns: isMobile
+              ? authUser
+                ? "auto minmax(0,1fr) auto"
+                : "auto auto minmax(0,1fr)"
+              : undefined,
             alignItems: "center",
-            justifyContent: isMobile ? "flex-end" : "flex-start",
+            justifyContent: isMobile ? "stretch" : "flex-start",
             gap: isMobile ? "8px" : "14px",
-            flex: "none",
+            flex: isMobile ? "1 1 100%" : "none",
+            minWidth: 0,
           }}
         >
           <span
@@ -290,8 +293,10 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               background: "rgba(255,255,255,.04)",
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               fontSize: isMobile ? "11.5px" : "12px",
               fontWeight: 700,
+              whiteSpace: "nowrap",
             }}
           >
             VI / JP
@@ -304,6 +309,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 fontSize: isMobile ? "12px" : "13px",
                 fontWeight: 600,
                 textDecoration: "none",
+                minHeight: isMobile ? "36px" : undefined,
+                padding: isMobile ? "0 10px" : undefined,
+                borderRadius: isMobile ? "18px" : undefined,
+                border: isMobile ? `1px solid ${colors.borderGold22}` : undefined,
+                background: isMobile ? "rgba(255,255,255,.035)" : undefined,
+                display: isMobile ? "inline-flex" : undefined,
+                alignItems: isMobile ? "center" : undefined,
+                justifyContent: isMobile ? "center" : undefined,
+                whiteSpace: "nowrap",
               }}
             >
               Đăng nhập
@@ -323,12 +337,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 background: "rgba(212,178,106,.1)",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "8px",
                 fontSize: isMobile ? "12px" : "13px",
                 fontWeight: 800,
                 textDecoration: "none",
                 overflow: "hidden",
                 whiteSpace: "nowrap",
+                minWidth: 0,
               }}
             >
               <UserRound size={16} />
@@ -345,12 +361,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               color: colors.onGold,
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               fontSize: isMobile ? "12px" : "13px",
               fontWeight: 800,
               textDecoration: "none",
+              whiteSpace: "nowrap",
+              minWidth: 0,
             }}
           >
-            Đăng ký đối tác
+            {isMobile ? "Đối tác" : "Đăng ký đối tác"}
           </Link>
         </div>
       </header>

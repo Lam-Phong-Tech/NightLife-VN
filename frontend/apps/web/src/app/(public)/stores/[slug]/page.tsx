@@ -94,7 +94,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
 
     return (
       <React.Fragment>
-        <div className="block md:hidden">
+        <div className="block md:hidden store-detail-mobile-shell">
 
 <>
 <>
@@ -104,9 +104,9 @@ export default function Page({ params }: { params: { slug?: string, [key: string
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div className="store-detail-mobile" style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#0c0c0f","fontFamily":"'Inter',sans-serif"}}>
 
-  <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
+  <div style={{"margin":"0 auto","width":"100%","background":"#111114","borderRadius":"0px","overflow":"hidden","boxShadow":"none","color":"#f3f0ea","border":"1px solid rgba(212,178,106,.18)"}}>
     {/* hero */}
     <div style={{"position":"relative","height":"200px","background":mainBg}}>
       <Link href="/danh-sach-quan" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</Link>
@@ -118,7 +118,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
       {thumbs?.map((t, index) => (<React.Fragment key={index}><span className="btn" onClick={t.pick} style={{"width":"60px","height":"46px","flex":"none","borderRadius":"9px","background":t.bg}}></span></React.Fragment>))}
     </div>
 
-    <div style={{"background":"#fff","padding":"14px 18px 14px"}}>
+    <div style={{"background":"#141417","padding":"14px 18px 14px"}}>
       <h2 style={{"fontSize":"20px","fontWeight":"800"}}>{vName}</h2>
       <div style={{"display":"flex","alignItems":"center","gap":"10px","marginTop":"6px","fontSize":"12.5px","color":"#5b5870"}}><span style={{"color":"#e8923a","fontWeight":"600"}}>★ {vRating}</span><span style={{"color":"#a8a5b4"}}>({vReviews})</span> · {vArea}, Hà Nội</div>
       <div style={{"display":"flex","gap":"7px","marginTop":"11px","flexWrap":"wrap"}}><span style={{"fontSize":"11px","background":"#f1ebff","color":"#6d28d9","borderRadius":"12px","padding":"4px 10px","fontWeight":"600"}}>{vCat}</span><span style={{"fontSize":"11px","background":"#e6f7ee","color":"#1f8a52","borderRadius":"12px","padding":"4px 10px"}}>● Đang mở</span><span style={{"fontSize":"11px","background":"#f3f2f5","color":"#5b5870","borderRadius":"12px","padding":"4px 10px"}}>Tiếng Nhật</span></div>
@@ -128,10 +128,10 @@ export default function Page({ params }: { params: { slug?: string, [key: string
         {tabs?.map((t, index) => (<React.Fragment key={index}><span className="btn" onClick={t.pick} style={{ ...{"whiteSpace":"nowrap"}, ...t.style }}>{t.label}</span></React.Fragment>))}
       </div>
 
-      <><p style={{"fontSize":"12.5px","lineHeight":"1.65","color":"#3a384a","marginTop":"13px"}}>{vName} là lounge bar cao cấp khu {vArea} — không gian sang trọng, phòng VIP riêng tư, đội ngũ cast tuyển chọn kỹ, phục vụ khách Nhật với nhân viên thông thạo tiếng Nhật.</p></>
-      <><div style={{"marginTop":"13px","background":"#faf9fb","border":"1px solid #ececec","borderRadius":"12px","overflow":"hidden","fontSize":"12.5px"}}><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid #f1f0f3"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"600"}}>1.200.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid #f1f0f3"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"600"}}>3.500.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"600"}}>từ 500.000đ</span></div></div></>
+      <><p style={{"fontSize":"12.5px","lineHeight":"1.65","color":"#d8d1c1","marginTop":"13px"}}>{vName} là lounge bar cao cấp khu {vArea} — không gian sang trọng, phòng VIP riêng tư, đội ngũ cast tuyển chọn kỹ, phục vụ khách Nhật với nhân viên thông thạo tiếng Nhật.</p></>
+      <><div style={{"marginTop":"13px","background":"#19191d","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","fontSize":"12.5px","color":"#f3f0ea"}}><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>1.200.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>3.500.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 500.000đ</span></div></div></>
       <><div className="hscroll" style={{"marginTop":"13px","display":"flex","gap":"9px","overflowX":"auto"}}>{cast?.map((c, index) => (<React.Fragment key={index}><div style={{"width":"84px","flex":"none","borderRadius":"11px","overflow":"hidden","position":"relative","height":"108px","background":c.img}}><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"7px","background":"linear-gradient(0deg,rgba(20,8,16,.8),transparent)","color":"#fff","fontSize":"11px","fontWeight":"600"}}>{c.name}</div></div></React.Fragment>))}</div></>
-      <><div style={{"marginTop":"13px","display":"flex","flexDirection":"column","gap":"10px"}}><div style={{"background":"#faf9fb","border":"1px solid #ececec","borderRadius":"12px","padding":"12px"}}><div style={{"display":"flex","alignItems":"center","gap":"9px"}}><span style={{"width":"28px","height":"28px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=160&q=70') center/cover"}}></span><div><div style={{"fontSize":"12.5px","fontWeight":"600"}}>Tanaka K.</div><div style={{"fontSize":"10px","color":"#e8923a"}}>★★★★★</div></div></div><p style={{"fontSize":"12px","color":"#3a384a","marginTop":"7px","lineHeight":"1.5"}}>Không gian đẹp, nhân viên nói tiếng Nhật rất tốt.</p></div></div></>
+      <><div style={{"marginTop":"13px","display":"flex","flexDirection":"column","gap":"10px"}}><div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"12px"}}><div style={{"display":"flex","alignItems":"center","gap":"9px"}}><span style={{"width":"28px","height":"28px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=160&q=70') center/cover"}}></span><div><div style={{"fontSize":"12.5px","fontWeight":"700","color":"#f3f0ea"}}>Tanaka K.</div><div style={{"fontSize":"10px","color":"#f0c767"}}>★★★★★</div></div></div><p style={{"fontSize":"12px","color":"#d8d1c1","marginTop":"7px","lineHeight":"1.5"}}>Không gian đẹp, nhân viên nói tiếng Nhật rất tốt.</p></div></div></>
 
 
       {/* booking selectors */}
@@ -143,9 +143,9 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     </div>
 
     {/* sticky CTA */}
-    <div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
+    <div style={{"background":"#141417","borderTop":"1px solid rgba(212,178,106,.18)","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
       <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Đặt bàn từ</div><div style={{"fontSize":"16px","fontWeight":"800"}}>{vPriceShort}</div></div>
-      <Link href={bookingHref} className="btn" style={{"flex":"1","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"14px","textDecoration":"none"}}>Đặt chỗ ngay</Link>
+      <Link href={bookingHref} className="btn" style={{"flex":"1","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"900","fontSize":"14px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center"}}>Đặt chỗ ngay</Link>
     </div>
   </div>
 </div>

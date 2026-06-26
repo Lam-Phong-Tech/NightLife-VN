@@ -55,7 +55,7 @@ export default function Page() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+    <main className="nl-login-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
       <div className="nl-login-shell" style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "minmax(0,1.05fr) minmax(0,.95fr)" }}>
         <section
           className="nl-login-visual"
@@ -101,7 +101,7 @@ export default function Page() {
               Quay về trang chủ
             </Link>
 
-            <div style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 22, boxShadow: "0 22px 60px rgba(0,0,0,.32)" }}>
+            <div className="nl-login-card" style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 22, boxShadow: "0 22px 60px rgba(0,0,0,.32)" }}>
               <div style={{ display: "flex", background: colors.panelStrong, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 5 }}>
                 <Tab active={!isReg} label="Đăng nhập" onClick={() => setIsReg(false)} />
                 <Tab active={isReg} label="Đăng ký" onClick={() => setIsReg(true)} />
@@ -141,6 +141,66 @@ export default function Page() {
           </div>
         </section>
       </div>
+      <style jsx global>{`
+        @media (max-width: 767px) {
+          .nl-login-page {
+            overflow-x: hidden;
+          }
+
+          .nl-login-page .nl-login-shell {
+            display: block !important;
+            min-height: 100vh !important;
+          }
+
+          .nl-login-page .nl-login-visual {
+            min-height: 300px !important;
+            padding: 22px 20px !important;
+            justify-content: space-between !important;
+          }
+
+          .nl-login-page .nl-login-visual h1 {
+            max-width: 330px !important;
+            font-size: 34px !important;
+            line-height: 1.08 !important;
+            margin-top: 18px !important;
+          }
+
+          .nl-login-page .nl-login-visual p {
+            max-width: 320px !important;
+            font-size: 13.5px !important;
+            line-height: 1.55 !important;
+          }
+
+          .nl-login-page .nl-login-metrics {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            margin-top: 18px !important;
+          }
+
+          .nl-login-page .nl-login-metrics > div {
+            min-width: 0 !important;
+            padding: 10px !important;
+            border-radius: 12px !important;
+          }
+
+          .nl-login-page .nl-login-metrics > div > div:nth-child(2) {
+            font-size: 18px !important;
+          }
+
+          .nl-login-page .nl-login-form-section {
+            min-height: auto !important;
+            padding: 20px !important;
+            align-items: flex-start !important;
+          }
+
+          .nl-login-page .nl-login-card {
+            width: 100% !important;
+            padding: 18px !important;
+            border-radius: 16px !important;
+            background: rgba(255, 255, 255, 0.055) !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
