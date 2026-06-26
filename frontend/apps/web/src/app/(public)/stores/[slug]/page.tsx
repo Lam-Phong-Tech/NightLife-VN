@@ -144,7 +144,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     </div>
 
     {/* sticky CTA */}
-    <div style={{"background":"#141417","borderTop":"1px solid rgba(212,178,106,.18)","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
+    <div className="store-mobile-cta" style={{"background":"#141417","borderTop":"1px solid rgba(212,178,106,.18)","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
       <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Đặt bàn từ</div><div style={{"fontSize":"16px","fontWeight":"800"}}>{vPriceShort}</div></div>
       <Link href={bookingHref} className="btn" style={{"flex":"1","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"900","fontSize":"14px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center"}}>Đặt chỗ ngay</Link>
     </div>
@@ -153,7 +153,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
 <style jsx global>{`
   @media (max-width: 767px) {
     .nl-page-content:has(.store-detail-mobile) {
-      padding-bottom: 0 !important;
+      padding-bottom: calc(150px + env(safe-area-inset-bottom)) !important;
     }
 
     .nl-page-content .store-detail-mobile-shell,
@@ -172,6 +172,15 @@ export default function Page({ params }: { params: { slug?: string, [key: string
       min-height: 100svh !important;
       border: 0 !important;
       box-shadow: none !important;
+    }
+
+    .nl-page-content .store-mobile-cta {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: calc(74px + env(safe-area-inset-bottom)) !important;
+      z-index: 70 !important;
+      box-shadow: 0 -18px 36px rgba(0, 0, 0, 0.28) !important;
     }
   }
 `}</style>
