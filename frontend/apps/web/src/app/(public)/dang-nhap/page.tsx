@@ -84,11 +84,6 @@ export default function Page() {
             <p style={{ marginTop: 16, maxWidth: 500, color: colors.muted, fontSize: 15, lineHeight: 1.7 }}>
               Lưu quán, nhận mã ưu đãi, theo dõi trạng thái đặt chỗ và sử dụng ví coupon khi đến quán.
             </p>
-            <div className="nl-login-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12, maxWidth: 540, marginTop: 28 }}>
-              <Metric icon={<Ticket size={18} />} value="30%" label="ưu đãi hot" />
-              <Metric icon={<ShieldCheck size={18} />} value="24h" label="giữ mã guest" />
-              <Metric icon={<LogIn size={18} />} value="1 chạm" label="đặt lại lịch" />
-            </div>
           </div>
 
           <div style={{ color: colors.muted, fontSize: 12 }}>© 2026 Vietyoru</div>
@@ -137,6 +132,11 @@ export default function Page() {
               <div style={{ marginTop: 22, borderTop: `1px solid ${colors.border}`, paddingTop: 18, color: colors.muted, fontSize: 13, lineHeight: 1.6 }}>
                 Bạn là chủ quán? <Link href="/dang-ky-doi-tac" style={{ color: colors.gold, fontWeight: 900 }}>Đăng ký đối tác</Link>
               </div>
+            </div>
+            <div className="nl-login-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12, marginTop: 16 }}>
+              <Metric icon={<Ticket size={18} />} value="30%" label="ưu đãi hot" />
+              <Metric icon={<ShieldCheck size={18} />} value="24h" label="giữ mã guest" />
+              <Metric icon={<LogIn size={18} />} value="1 chạm" label="đặt lại lịch" />
             </div>
           </div>
         </section>
