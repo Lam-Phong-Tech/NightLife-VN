@@ -1,6 +1,10 @@
+"use client";
+
 import Link from 'next/link';
 import { BarChart3, Bell, Camera, CheckCircle2, FileClock, Home, LogOut, QrCode, TicketCheck, UsersRound } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ApiError, apiClient } from '@/lib/api/client';
+import { clearAuthSession } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -22,11 +26,42 @@ const colors = {
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
 };
 
-const metrics = [
-  { label: 'Đặt chỗ tại quán', value: '24', sub: '+12% so với tuần trước', icon: TicketCheck },
-  { label: 'Lượt xem trang', value: '1.860', sub: '+8% trong 7 ngày', icon: BarChart3 },
-  { label: 'Số khách đến', value: '96', sub: 'Dữ liệu tổng hợp', icon: UsersRound },
-];
+type PartnerStore = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+};
+
+type PartnerCoupon = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  usedCount: number;
+  usageLimit: number | null;
+};
+
+type PartnerBooking = {
+  id: string;
+  status: string;
+  scheduledAt: string;
+  partySize: number;
+  totalVnd: number | null;
+  store: { name: string };
+};
+
+type PartnerBill = {
+  id: string;
+  billNumber: string | null;
+  status: string;
+  totalVnd: number | null;
+  discountVnd: number | null;
+  submittedAt: string | null;
+  store: { name: string };
+  coupon?: { code: string; name: string } | null;
+};
+
 
 const rows = [
   ['NL-HH30-7K2A', 'Happy Hour -30% · Bàn thường', '21:42 · hôm nay', '-720.000đ'],
@@ -35,6 +70,75 @@ const rows = [
 ];
 
 export default function PartnerPage() {
+  const [stores, setStores] = useState<PartnerStore[]>([]);
+  const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);
+  const [bookings, setBookings] = useState<PartnerBooking[]>([]);
+  const [bills, setBills] = useState<PartnerBill[]>([]);
+  const [statusMessage, setStatusMessage] = useState('Dang tai du lieu phan quyen theo store...');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPartnerData = async () => {
+      try {
+        const [storeData, couponData, bookingData, billData] = await Promise.all([
+          apiClient<PartnerStore[]>('/partner/stores'),
+          apiClient<PartnerCoupon[]>('/partner/coupons'),
+          apiClient<PartnerBooking[]>('/partner/bookings'),
+          apiClient<PartnerBill[]>('/partner/bills'),
+        ]);
+
+        if (!isMounted) return;
+
+        setStores(storeData);
+        setCoupons(couponData);
+        setBookings(bookingData);
+        setBills(billData);
+        setStatusMessage('Du lieu dang hien thi theo store scope cua token PARTNER.');
+      } catch (error) {
+        if (!isMounted) return;
+
+        if (error instanceof ApiError && [401, 403].includes(error.status)) {
+          clearAuthSession();
+          window.location.href = '/dang-nhap-doi-tac?redirect=/partner';
+          return;
+        }
+
+        setStatusMessage('Chua ket noi duoc backend. Kiem tra backend/NEXT_PUBLIC_API_URL.');
+      }
+    };
+
+    loadPartnerData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const storeName = stores[0]?.name ?? 'Partner store';
+  const scopedRows = bills.length
+    ? bills.slice(0, 4).map((bill) => [
+        bill.billNumber ?? bill.id.slice(0, 8),
+        `${bill.coupon?.name ?? 'Hoa don'} · ${bill.store.name}`,
+        bill.submittedAt ? new Date(bill.submittedAt).toLocaleString('vi-VN') : bill.status,
+        `${(bill.discountVnd ?? bill.totalVnd ?? 0).toLocaleString('vi-VN')}đ`,
+      ])
+    : rows;
+
+  const metrics = useMemo(
+    () => [
+      { label: 'Dat cho trong scope', value: String(bookings.length), sub: `${stores.length} quan duoc phep truy cap`, icon: TicketCheck },
+      { label: 'Coupon cua quan', value: String(coupons.length), sub: `${coupons.reduce((sum, item) => sum + item.usedCount, 0)} luot da dung`, icon: BarChart3 },
+      { label: 'Bill doi soat', value: String(bills.length), sub: 'Lay tu endpoint partner/bills', icon: UsersRound },
+    ],
+    [bills.length, bookings.length, coupons, stores.length],
+  );
+
+  const logout = () => {
+    clearAuthSession();
+    window.location.href = '/dang-nhap-doi-tac';
+  };
+
   return (
     <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0,1fr)', minHeight: '100vh' }}>
@@ -116,7 +220,7 @@ export default function PartnerPage() {
               }}
             />
             <span>
-              <span style={{ display: 'block', fontSize: '13px', fontWeight: 700 }}>Club Lumiere</span>
+              <span style={{ display: 'block', fontSize: '13px', fontWeight: 700 }}>{storeName}</span>
               <span style={{ display: 'block', marginTop: '2px', fontSize: '11px', color: colors.muted }}>Đối tác test</span>
             </span>
           </div>
@@ -135,7 +239,7 @@ export default function PartnerPage() {
           >
             <div>
               <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.7px', color: colors.gold }}>TỔNG QUAN ĐỐI TÁC</div>
-              <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>Club Lumiere</h1>
+              <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>{storeName}</h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span
@@ -169,8 +273,9 @@ export default function PartnerPage() {
               >
                 <Bell size={17} />
               </span>
-              <Link
-                href="/dang-nhap-doi-tac"
+              <button
+                type="button"
+                onClick={logout}
                 style={{
                   height: '38px',
                   borderRadius: '11px',
@@ -183,12 +288,13 @@ export default function PartnerPage() {
                   textDecoration: 'none',
                   fontSize: '12px',
                   fontWeight: 700,
+                  background: 'transparent',
+                  cursor: 'pointer',
                 }}
               >
                 <LogOut size={15} />
-                Đăng xuất
-              </Link>
-            </div>
+                Dang xuat
+              </button>            </div>
           </header>
 
           <div style={{ padding: '26px 30px 34px' }}>
@@ -266,7 +372,7 @@ export default function PartnerPage() {
                   <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
                 </div>
                 <div style={{ display: 'grid', gap: '10px' }}>
-                  {rows.map(([code, service, time, value]) => (
+                  {scopedRows.map(([code, service, time, value]) => (
                     <div
                       key={code}
                       style={{
@@ -301,6 +407,8 @@ export default function PartnerPage() {
               }}
             >
               Đối tác chỉ xem dữ liệu tổng hợp của riêng quán. Thông tin khách chi tiết không hiển thị trên cổng đối tác.
+              <br />
+              {statusMessage}
             </div>
           </div>
         </section>

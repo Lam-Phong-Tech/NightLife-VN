@@ -1,206 +1,214 @@
 "use client";
-import { MockItem } from '@/types';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
 
-  export default function Page() {
-    
-    
-    
-    // Mock data arrays for loops
-    const couponItems: MockItem[] = [
-          { label: 'Happy Hour −30%', style: { background: '#6d28d9', color: '#fff', borderRadius: '16px', padding: '5px 12px', fontWeight: 600, fontSize: '12px' } },
-          { label: 'Combo VIP 2+1', style: { background: '#fff', color: '#5b5870', border: '1px solid #ececec', borderRadius: '16px', padding: '4px 12px', fontWeight: 600, fontSize: '12px' } },
-          { label: 'Welcome −8%', style: { background: '#fff', color: '#5b5870', border: '1px solid #ececec', borderRadius: '16px', padding: '4px 12px', fontWeight: 600, fontSize: '12px' } },
-          { label: 'Không dùng mã', style: { background: '#fff', color: '#5b5870', border: '1px solid #ececec', borderRadius: '16px', padding: '4px 12px', fontWeight: 600, fontSize: '12px' } }
-        ];
-    
-    // Standalone mock variables
-    const vName = 'Club Lumière';
-    const pickGuest: any = undefined;
-    const sGuest: React.CSSProperties = { flex: 1, textAlign: 'center', background: '#f1ebff', color: '#6d28d9', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
-    const pickMember: any = undefined;
-    const sMember: React.CSSProperties = { flex: 1, textAlign: 'center', background: 'transparent', color: '#8a879a', borderRadius: '10px', padding: '10px 14px', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer' };
-    const discountNote = 'Guest: giảm 5% · hạn mã 24 giờ. Đăng nhập để nhận tới 10%.';
-    const vArea = 'Tây Hồ';
-    const vCat = 'Bar Lounge';
-    const castName = 'Rina - 21';
-    const date = 'T6 - 21/06';
-    const time = '21:00';
-    const dec: MockItem | undefined = undefined;
-    const guests = 4;
-    const inc: MockItem | undefined = undefined;
-    const submit = () => window.location.href = '/xac-nhan';
-    const coupon = 'Happy Hour -30%';
-    const discountPct = '5%';
-    const vImg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { CalendarDays, ChevronLeft, Clock, Minus, Plus, Sparkles, UsersRound } from "lucide-react";
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+const colors = {
+  bg: "#0c0c0f",
+  panel: "rgba(255,255,255,.045)",
+  panelStrong: "rgba(255,255,255,.07)",
+  border: "rgba(212,178,106,.22)",
+  borderStrong: "rgba(212,178,106,.34)",
+  text: "#f3f0ea",
+  muted: "#b6b1a6",
+  dim: "#8c8679",
+  gold: "#d4b26a",
+  goldPale: "#f0dda8",
+  onGold: "#241a0a",
+  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
+};
 
-<>
-<>
+const couponItems = ["Happy Hour -30%", "Combo VIP 2+1", "Welcome -8%", "Không dùng mã"] as const;
 
+export default function Page() {
+  const router = useRouter();
+  const [mode, setMode] = useState<"guest" | "member">("guest");
+  const [guests, setGuests] = useState(4);
+  const [coupon, setCoupon] = useState<(typeof couponItems)[number]>(couponItems[0]);
 
+  const submit = () => router.push("/xac-nhan");
 
+  return (
+    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+      <section style={{ maxWidth: "1120px", margin: "0 auto", padding: "26px 22px 54px" }}>
+        <Link href="/stores/club-lumiere" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.muted, fontSize: 13, fontWeight: 700 }}>
+          <ChevronLeft size={17} />
+          Club Lumiere
+        </Link>
 
-</>
+        <div className="nl-booking-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 22, marginTop: 18 }}>
+          <div style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, overflow: "hidden" }}>
+            <div
+              style={{
+                minHeight: 178,
+                padding: 24,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                background:
+                  "linear-gradient(180deg,rgba(12,12,15,.12),rgba(12,12,15,.9)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
+              }}
+            >
+              <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 800, letterSpacing: ".16em" }}>YEU CAU DAT CHO</span>
+              <h1 style={{ marginTop: 8, fontSize: 34, lineHeight: 1.08, fontWeight: 900 }}>Đặt bàn tại Club Lumiere</h1>
+              <p style={{ marginTop: 10, color: colors.muted, maxWidth: 620, fontSize: 14, lineHeight: 1.6 }}>
+                Gửi yêu cầu cho admin xác nhận với quán. Không thu cọc, không thanh toán online.
+              </p>
+            </div>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+            <div style={{ padding: 22, display: "grid", gap: 18 }}>
+              <div style={{ display: "flex", gap: 8, background: colors.panelStrong, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 5, maxWidth: 420 }}>
+                {[
+                  ["guest", "Đặt nhanh"],
+                  ["member", "Hội viên"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setMode(value as "guest" | "member")}
+                    style={{
+                      flex: 1,
+                      border: 0,
+                      borderRadius: 10,
+                      padding: "11px 14px",
+                      background: mode === value ? colors.goldGrad : "transparent",
+                      color: mode === value ? colors.onGold : colors.muted,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
 
-  <div style={{"margin":"0 auto","width":"100%","background":"#ffffff","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"background":"#fff","padding":"8px 18px 12px","display":"flex","alignItems":"center","gap":"12px","borderBottom":"1px solid #ececec"}}><Link href="/stores/club-lumiere" style={{"fontSize":"22px","color":"#5b5870","lineHeight":"1"}}>‹</Link><span style={{"fontWeight":"800","fontSize":"16px"}}>Đặt chỗ</span></div>
+              <div style={{ color: colors.goldPale, background: "rgba(212,178,106,.09)", border: `1px solid ${colors.border}`, borderRadius: 12, padding: "11px 13px", fontSize: 13 }}>
+                {mode === "guest" ? "Guest: giữ mã 24 giờ, admin xác nhận qua điện thoại." : "Hội viên: lưu lịch đặt chỗ và nhận ưu đãi tốt hơn."}
+              </div>
 
-    <div style={{"padding":"14px 18px"}}>
-      <div style={{"border":"1px solid #ececec","borderRadius":"12px","padding":"11px","display":"flex","alignItems":"center","gap":"10px"}}><span style={{"width":"38px","height":"38px","borderRadius":"9px","background":vImg,"flex":"none"}}></span><div><div style={{"fontSize":"13.5px","fontWeight":"600"}}>{vName}</div><div style={{"fontSize":"11px","color":"#8a879a"}}>{vArea} · Cast: {castName}</div></div></div>
+              <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Field label="Họ tên" placeholder="Nguyễn Văn A" />
+                <Field label="Số điện thoại" placeholder="0912 345 678" />
+                <ReadOnlyField icon={<CalendarDays size={16} />} label="Ngày" value="T6 - 21/06" />
+                <ReadOnlyField icon={<Clock size={16} />} label="Giờ" value="21:00" />
+              </div>
 
-      <div style={{"display":"flex","gap":"6px","background":"#f3f2f5","borderRadius":"12px","padding":"4px","marginTop":"12px"}}>
-        <div onClick={pickGuest} style={sGuest}>Guest</div>
-        <div onClick={pickMember} style={sMember}>Hội viên</div>
-      </div>
-      <div style={{"marginTop":"10px","fontSize":"11.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"9px","padding":"8px 11px"}}>{discountNote}</div>
+              <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <Label>Số khách</Label>
+                  <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", background: colors.panelStrong }}>
+                    <button type="button" onClick={() => setGuests((value) => Math.max(1, value - 1))} style={stepButtonStyle}><Minus size={15} /></button>
+                    <span style={{ fontWeight: 800 }}>{guests} người</span>
+                    <button type="button" onClick={() => setGuests((value) => value + 1)} style={{ ...stepButtonStyle, background: colors.gold, color: colors.onGold }}><Plus size={15} /></button>
+                  </div>
+                </div>
+                <ReadOnlyField icon={<UsersRound size={16} />} label="Cast tham chiếu" value="Rina - 21" />
+              </div>
 
-      <div style={{"display":"flex","flexDirection":"column","gap":"11px","marginTop":"14px"}}>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Họ tên</label><input id="bk-name" placeholder="Nguyễn Văn A" style={{"marginTop":"5px","width":"100%","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#1f1d29"}} /></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Số điện thoại</label><input id="bk-phone" placeholder="0912 345 678" style={{"marginTop":"5px","width":"100%","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#1f1d29"}} /></div>
-        <div style={{"display":"flex","gap":"10px"}}>
-          <div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Ngày</label><div style={{"marginTop":"5px","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"12px","color":"#3a384a"}}>{date}</div></div>
-          <div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Giờ</label><div style={{"marginTop":"5px","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"12px","color":"#3a384a"}}>{time}</div></div>
-          <div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Số người</label><div style={{"marginTop":"5px","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"7px 8px","fontSize":"12px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}><span className="btn" onClick={dec} style={{"width":"24px","height":"24px","borderRadius":"7px","background":"#f3f2f5","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800"}}>−</span><span style={{"fontWeight":"700"}}>{guests}</span><span className="btn" onClick={inc} style={{"width":"24px","height":"24px","borderRadius":"7px","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800"}}>+</span></div></div>
-        </div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Mã giảm giá</label><div className="hscroll" style={{"marginTop":"5px","display":"flex","gap":"7px","overflowX":"auto"}}>{couponItems?.map((c, index) => (<React.Fragment key={index}><span className="btn" onClick={c.pick} style={c.style}>{c.label}</span></React.Fragment>))}</div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Ghi chú</label><textarea id="bk-note" placeholder="Yêu cầu phòng VIP, nhân viên nói tiếng Nhật…" style={{"marginTop":"5px","width":"100%","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#1f1d29","minHeight":"54px","resize":"vertical"}}></textarea></div>
-      </div>
-    </div>
+              <div>
+                <Label>Mã ưu đãi</Label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                  {couponItems.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setCoupon(item)}
+                      style={{
+                        border: `1px solid ${coupon === item ? colors.gold : colors.border}`,
+                        background: coupon === item ? colors.goldGrad : colors.panelStrong,
+                        color: coupon === item ? colors.onGold : colors.muted,
+                        borderRadius: 999,
+                        padding: "8px 12px",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-    <div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"13px 18px 20px","display":"flex","alignItems":"center","gap":"12px"}}>
-      <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Ưu đãi</div><div style={{"fontSize":"16px","fontWeight":"800","color":"#6d28d9"}}>{discountPct}</div></div>
-      <div className="btn" onClick={submit} style={{"flex":"1","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"14px"}}>Gửi yêu cầu</div>
-    </div>
-  </div>
-</div>
-</>
+              <div>
+                <Label>Ghi chú</Label>
+                <textarea
+                  placeholder="Yêu cầu phòng VIP, nhân viên nói tiếng Nhật..."
+                  style={{ marginTop: 7, width: "100%", minHeight: 86, resize: "vertical", border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, color: colors.text, padding: "13px 14px", fontSize: 14, outline: "none" }}
+                />
+              </div>
 
-
-</div>
-        <div className="hidden md:block">
-
-<>
-<>
-
-
-
-
-</>
-
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-
-  <div style={{"width":"100%","background":"#ffffff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div></div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</Link><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
-    </div>
-    <div style={{"padding":"18px 34px 0","fontSize":"12.5px","color":"#8a879a"}}><Link href="/" className="lk">Trang chủ</Link> › <Link href="/stores/club-lumiere" className="lk">{vName}</Link> › <span style={{"color":"#1f1d29"}}>Đặt chỗ</span></div>
-
-    <div style={{"display":"flex","gap":"24px","padding":"20px 34px 32px"}}>
-      {/* form */}
-      <div style={{"flex":"1"}}>
-        <h2 style={{"fontSize":"24px","fontWeight":"800"}}>Đặt chỗ</h2>
-        <p style={{"fontSize":"13.5px","color":"#5b5870","marginTop":"6px"}}>Gửi yêu cầu — Admin sẽ liên hệ xác nhận với bạn &amp; quán. Không thu cọc / thanh toán online.</p>
-
-        <div style={{"display":"flex","gap":"8px","background":"#f3f2f5","borderRadius":"12px","padding":"4px","marginTop":"18px","maxWidth":"380px"}}>
-          <div onClick={pickGuest} style={sGuest}>Đặt nhanh (Guest)</div>
-          <div onClick={pickMember} style={sMember}>Đăng nhập hội viên</div>
-        </div>
-        <div style={{"marginTop":"10px","fontSize":"12.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"10px","padding":"10px 14px","display":"flex","alignItems":"center","gap":"8px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/gift.png" style={{"width":"18px","height":"18px","display":"inline-block"}} alt="" />{discountNote}</div>
-
-        <div style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px","marginTop":"18px"}}>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Quán</label><div style={{"marginTop":"7px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"11px 13px","display":"flex","alignItems":"center","gap":"11px"}}><span style={{"width":"36px","height":"36px","borderRadius":"9px","background":vImg,"flex":"none"}}></span><div><div style={{"fontSize":"13.5px","fontWeight":"600"}}>{vName}</div><div style={{"fontSize":"11.5px","color":"#8a879a"}}>{vArea} · {vCat}</div></div></div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Cast tham chiếu (nếu đặt theo cast)</label><div style={{"marginTop":"7px","border":"1px dashed #d9c9f7","borderRadius":"11px","padding":"11px 13px","display":"flex","alignItems":"center","gap":"10px","background":"#faf7ff"}}><span style={{"width":"30px","height":"30px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=70') center/cover","flex":"none"}}></span><span style={{"fontSize":"13px","fontWeight":"600","color":"#6d28d9"}}>{castName}</span><span style={{"marginLeft":"auto","fontSize":"12px","color":"#8a879a"}}>Bỏ chọn ✕</span></div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Họ tên</label><input id="bk-name" placeholder="Nguyễn Văn A" style={{"marginTop":"7px","width":"100%","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#1f1d29"}} /></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Số điện thoại</label><input id="bk-phone" placeholder="0912 345 678" style={{"marginTop":"7px","width":"100%","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#1f1d29"}} /></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Ngày</label><div style={{"marginTop":"7px","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","gap":"9px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/calendar.png" style={{"width":"17px","height":"17px","display":"inline-block"}} alt="" />{date}</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Khung giờ</label><div style={{"marginTop":"7px","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","gap":"9px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/clock.png" style={{"width":"17px","height":"17px","display":"inline-block"}} alt="" />{time}</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Số người</label><div style={{"marginTop":"7px","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"8px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}><span className="btn" onClick={dec} style={{"width":"30px","height":"30px","borderRadius":"8px","background":"#f3f2f5","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"17px"}}>−</span><span style={{"fontWeight":"600"}}>{guests} người</span><span className="btn" onClick={inc} style={{"width":"30px","height":"30px","borderRadius":"8px","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"17px"}}>+</span></div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Mã giảm giá</label><div style={{"marginTop":"7px","display":"flex","gap":"8px","flexWrap":"wrap"}}>{couponItems?.map((c, index) => (<React.Fragment key={index}><span onClick={c.pick} style={c.style}>{c.label}</span></React.Fragment>))}</div></div>
-          <div style={{"gridColumn":"span 2"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Ghi chú</label><textarea id="bk-note" placeholder="Yêu cầu phòng VIP, có nhân viên nói tiếng Nhật…" style={{"marginTop":"7px","width":"100%","background":"#ffffff","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#1f1d29","minHeight":"64px","resize":"vertical"}}></textarea></div>
-        </div>
-        <div onClick={submit} className="btn" style={{"marginTop":"18px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"15px"}}>Gửi yêu cầu đặt chỗ</div>
-        <div style={{"marginTop":"10px","fontSize":"12px","color":"#8a879a","textAlign":"center"}}>Yêu cầu sẽ gửi tới Admin qua Telegram để điều phối với quán.</div>
-      </div>
-
-      {/* summary */}
-      <div style={{"width":"300px","flex":"none"}}>
-        <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","padding":"20px","boxShadow":"0 6px 20px rgba(40,20,60,.07)","position":"sticky","top":"20px"}}>
-          <div style={{"fontWeight":"700","fontSize":"15px"}}>Tóm tắt</div>
-          <div style={{"marginTop":"14px","display":"flex","flexDirection":"column","gap":"10px","fontSize":"13px","color":"#3a384a"}}>
-            <div style={{"display":"flex","justifyContent":"space-between"}}><span style={{"color":"#8a879a"}}>Quán</span><span style={{"fontWeight":"600"}}>{vName}</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between"}}><span style={{"color":"#8a879a"}}>Cast</span><span style={{"fontWeight":"600"}}>{castName}</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between"}}><span style={{"color":"#8a879a"}}>Thời gian</span><span style={{"fontWeight":"600"}}>{date} · {time}</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between"}}><span style={{"color":"#8a879a"}}>Số người</span><span style={{"fontWeight":"600"}}>{guests}</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between"}}><span style={{"color":"#8a879a"}}>Mã giảm</span><span style={{"fontWeight":"600"}}>{coupon}</span></div>
+              <button type="button" onClick={submit} style={{ border: 0, borderRadius: 14, background: colors.goldGrad, color: colors.onGold, padding: "15px 18px", fontWeight: 900, fontSize: 15, cursor: "pointer" }}>
+                Gửi yêu cầu đặt chỗ
+              </button>
+            </div>
           </div>
-          <div style={{"height":"1px","background":"#ececec","margin":"14px 0"}}></div>
-          <div style={{"display":"flex","justifyContent":"space-between","alignItems":"center"}}><span style={{"fontSize":"13px","color":"#8a879a"}}>Ưu đãi áp dụng</span><span style={{"fontSize":"15px","fontWeight":"800","color":"#6d28d9"}}>{discountPct}</span></div>
-          <div style={{"marginTop":"14px","fontSize":"12px","color":"#8a879a","lineHeight":"1.6"}}>Giá hiển thị tại quán chỉ để tham khảo — không đặt món/thanh toán trên web.</div>
+
+          <aside style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 20, height: "fit-content", position: "sticky", top: 104 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 900 }}>
+              <Sparkles size={18} />
+              Tóm tắt
+            </div>
+            <Summary label="Quán" value="Club Lumiere" />
+            <Summary label="Khu vực" value="Tây Hồ" />
+            <Summary label="Thời gian" value="T6 - 21/06 · 21:00" />
+            <Summary label="Số khách" value={`${guests} người`} />
+            <Summary label="Ưu đãi" value={coupon} />
+            <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${colors.border}`, color: colors.muted, fontSize: 12.5, lineHeight: 1.6 }}>
+              Admin sẽ liên hệ xác nhận sau khi bạn gửi yêu cầu.
+            </div>
+          </aside>
         </div>
+      </section>
+    </main>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}>{children}</label>;
+}
+
+function Field({ label, placeholder }: { label: string; placeholder: string }) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <input placeholder={placeholder} style={{ marginTop: 7, width: "100%", height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, color: colors.text, padding: "0 14px", fontSize: 14, outline: "none" }} />
+    </div>
+  );
+}
+
+function ReadOnlyField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, color: colors.text, padding: "0 14px", display: "flex", alignItems: "center", gap: 9, fontSize: 14, fontWeight: 700 }}>
+        <span style={{ color: colors.gold }}>{icon}</span>
+        {value}
       </div>
     </div>
-  </div>
-</div>
-</>
+  );
+}
 
-
-
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
-  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-      <div style={{"maxWidth":"300px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
-        </div>
-      </div>
-      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-        </div>
-      </div>
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 15, color: colors.text, fontSize: 13 }}>
+      <span style={{ color: colors.muted }}>{label}</span>
+      <span style={{ fontWeight: 800, textAlign: "right" }}>{value}</span>
     </div>
-    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-    </div>
-    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-      <div>v2.0.0 • Nightlife Platform</div>
-      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-      </React.Fragment>
-    );
-  }
-  
+  );
+}
 
+const stepButtonStyle: React.CSSProperties = {
+  width: 30,
+  height: 30,
+  borderRadius: 9,
+  border: 0,
+  background: "rgba(255,255,255,.08)",
+  color: colors.text,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+};

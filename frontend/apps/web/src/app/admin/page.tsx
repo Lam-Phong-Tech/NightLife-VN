@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 import {
   BarChart3,
@@ -18,7 +20,9 @@ import {
   UsersRound,
   type LucideIcon,
 } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ApiError, apiClient } from '@/lib/api/client';
+import { clearAuthSession } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -37,6 +41,36 @@ const colors = {
   goldBright: '#e3c27e',
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
   neonPink: '#e0729e',
+};
+
+type AdminStore = {
+  id: string;
+  name: string;
+  status: string;
+};
+
+type AdminBooking = {
+  id: string;
+  status: string;
+  scheduledAt: string;
+  partySize: number;
+  store: { name: string };
+  user?: { displayName: string | null } | null;
+  guest?: { displayName: string | null; phone: string | null } | null;
+};
+
+type SensitiveBill = {
+  id: string;
+  billNumber: string | null;
+  status: string;
+  totalVnd: number | null;
+  paidVnd: number | null;
+  commissionAmountVnd: number | null;
+  pointsEarned: number | null;
+  submittedAt: string | null;
+  store: { name: string };
+  user?: { email: string; displayName: string | null; phone: string | null } | null;
+  guest?: { email: string | null; displayName: string | null; phone: string | null } | null;
 };
 
 type AdminNavItem = {
@@ -76,13 +110,6 @@ const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
   },
 ];
 
-const stats = [
-  { icon: Building2, label: 'Quán', value: '124', note: '+4 mới tuần này' },
-  { icon: UsersRound, label: 'Cast', value: '356', note: '+12 mới' },
-  { icon: CalendarCheck, label: 'Booking mới', value: '18', note: 'cần điều phối', hot: true },
-  { icon: ReceiptText, label: 'Bill chờ duyệt', value: '7', note: 'chờ duyệt', hot: true },
-  { icon: BarChart3, label: 'Doanh thu T6', value: '182tr', note: '+16%' },
-];
 
 const recentBookings = [
   ['Minh H.', 'Club Lumiere', '4', '21:30', 'Mới'],
@@ -92,6 +119,85 @@ const recentBookings = [
 ];
 
 export default function AdminDashboardPage() {
+  const [stores, setStores] = useState<AdminStore[]>([]);
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
+  const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
+  const [statusMessage, setStatusMessage] = useState('Dang tai du lieu admin...');
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  const loadAdminData = async () => {
+    try {
+      const [storeData, bookingData, billData] = await Promise.all([
+        apiClient<AdminStore[]>('/partner/stores'),
+        apiClient<AdminBooking[]>('/partner/bookings'),
+        apiClient<SensitiveBill[]>('/admin/sensitive-bills'),
+      ]);
+
+      setStores(storeData);
+      setBookings(bookingData);
+      setSensitiveBills(billData);
+      setStatusMessage('Admin dang xem va duyet du lieu nhay cam bang token ADMIN.');
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        clearAuthSession();
+        window.location.href = '/admin/dang-nhap?redirect=/admin';
+        return;
+      }
+
+      setStatusMessage('Chua ket noi duoc backend. Kiem tra backend/NEXT_PUBLIC_API_URL.');
+    }
+  };
+
+  useEffect(() => {
+    void Promise.resolve().then(loadAdminData);
+  }, []);
+
+  const stats = useMemo(
+    () => [
+      { icon: Building2, label: 'Quan', value: String(stores.length), note: 'lay tu store scope admin' },
+      { icon: UsersRound, label: 'Khach/booking', value: String(bookings.length), note: 'admin xem toan he thong' },
+      { icon: CalendarCheck, label: 'Booking moi', value: String(bookings.filter((item) => item.status !== 'CANCELLED').length), note: 'can dieu phoi', hot: true },
+      { icon: ReceiptText, label: 'Bill cho duyet', value: String(sensitiveBills.length), note: 'du lieu nhay cam', hot: true },
+      {
+        icon: BarChart3,
+        label: 'Tong gia tri bill',
+        value: `${Math.round(sensitiveBills.reduce((sum, item) => sum + (item.totalVnd ?? 0), 0) / 1000000)}tr`,
+        note: 'tu sensitive-bills',
+      },
+    ],
+    [bookings, sensitiveBills, stores.length],
+  );
+
+  const adminBookingRows = bookings.length
+    ? bookings.slice(0, 5).map((booking) => [
+        booking.user?.displayName ?? booking.guest?.displayName ?? booking.guest?.phone ?? 'Guest',
+        booking.store.name,
+        String(booking.partySize),
+        new Date(booking.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        booking.status,
+      ])
+    : recentBookings;
+
+  const reviewBill = async (billId: string, approve: boolean) => {
+    setReviewingId(billId);
+
+    try {
+      await apiClient(`/admin/sensitive-bills/${billId}/review`, {
+        method: 'PATCH',
+        data: approve ? { approve: true } : { approve: false, rejectReason: 'Rejected from admin dashboard' },
+      });
+
+      await loadAdminData();
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const logout = () => {
+    clearAuthSession();
+    window.location.href = '/admin/dang-nhap';
+  };
+
   return (
     <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "'Inter', sans-serif" }}>
       <div style={{ display: 'grid', gridTemplateColumns: '264px minmax(0,1fr)', minHeight: '100vh' }}>
@@ -183,9 +289,9 @@ export default function AdminDashboardPage() {
               <span style={{ display: 'block', fontSize: '13px', fontWeight: 700 }}>Admin Test</span>
               <span style={{ display: 'block', marginTop: '2px', fontSize: '11px', color: colors.muted }}>Quản trị viên</span>
             </span>
-            <Link href="/admin/dang-nhap" title="Đăng xuất" style={{ color: colors.gold }}>
+            <button type="button" onClick={logout} title="Đăng xuất" style={{ color: colors.gold, background: 'transparent', border: 0, cursor: 'pointer' }}>
               <LogOut size={18} />
-            </Link>
+            </button>
           </div>
         </aside>
 
@@ -246,7 +352,7 @@ export default function AdminDashboardPage() {
               }}
             >
               <ShieldCheck size={18} color={colors.gold} />
-              Đang chờ xử lý: <b style={{ color: colors.goldBright }}>7 hóa đơn</b>, <b style={{ color: colors.goldBright }}>3 hồ sơ đối tác</b> và <b style={{ color: colors.goldBright }}>18 yêu cầu đặt chỗ</b> mới.
+              Admin scope: <b style={{ color: colors.goldBright }}>{sensitiveBills.length} bill nhay cam</b>, <b style={{ color: colors.goldBright }}>{stores.length} quan</b>, <b style={{ color: colors.goldBright }}>{bookings.length} booking</b>. {statusMessage}
               <span style={{ marginLeft: 'auto', color: colors.gold, fontWeight: 800 }}>Xử lý ngay</span>
             </div>
 
@@ -310,6 +416,38 @@ export default function AdminDashboardPage() {
             <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
                 <div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Bill nhay cam cho duyet</h2>
+                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>ADMIN SENSITIVE REVIEW</div>
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                <span>Bill</span><span>Quan</span><span>Khach</span><span>Tong tien</span><span>Duyet</span>
+              </div>
+              {(sensitiveBills.length ? sensitiveBills : []).map((bill) => (
+                <div key={bill.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${colors.borderSoft}`, fontSize: '13px', gap: '10px' }}>
+                  <span style={{ fontWeight: 800, color: colors.gold }}>{bill.billNumber ?? bill.id.slice(0, 8)}</span>
+                  <span>{bill.store.name}</span>
+                  <span>{bill.user?.displayName ?? bill.guest?.displayName ?? bill.user?.email ?? bill.guest?.phone ?? 'Guest'}</span>
+                  <span>{(bill.totalVnd ?? 0).toLocaleString('vi-VN')}đ</span>
+                  <span style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" disabled={reviewingId === bill.id} onClick={() => reviewBill(bill.id, true)} style={{ border: 0, borderRadius: '9px', padding: '8px 10px', background: colors.goldGrad, color: colors.onGold, fontWeight: 800, cursor: 'pointer' }}>
+                      Duyet
+                    </button>
+                    <button type="button" disabled={reviewingId === bill.id} onClick={() => reviewBill(bill.id, false)} style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '9px', padding: '8px 10px', background: colors.surface2, color: colors.neonPink, fontWeight: 800, cursor: 'pointer' }}>
+                      Tu choi
+                    </button>
+                  </span>
+                </div>
+              ))}
+              {!sensitiveBills.length ? (
+                <div style={{ padding: '16px 20px', color: colors.muted, fontSize: '13px' }}>Khong co bill nhay cam dang cho duyet, hoac backend chua co du lieu seed.</div>
+              ) : null}
+            </article>
+
+            <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                <div>
                   <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Yêu cầu đặt chỗ gần đây</h2>
                   <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>RECENT BOOKINGS</div>
                 </div>
@@ -318,7 +456,7 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
                 <span>Khách</span><span>Quán / Cast</span><span>Số người</span><span>Khung giờ</span><span>Trạng thái</span>
               </div>
-              {recentBookings.map(([guest, place, people, time, status]) => (
+              {adminBookingRows.map(([guest, place, people, time, status]) => (
                 <div key={`${guest}-${time}`} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${colors.borderSoft}`, fontSize: '13px' }}>
                   <span style={{ fontWeight: 700 }}>{guest}</span>
                   <span>{place}</span>

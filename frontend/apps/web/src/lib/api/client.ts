@@ -11,7 +11,9 @@ interface RequestOptions extends RequestInit {
 }
 
 const getBaseUrl = () => {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+  return baseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 };
 
 const getAuthToken = () => {

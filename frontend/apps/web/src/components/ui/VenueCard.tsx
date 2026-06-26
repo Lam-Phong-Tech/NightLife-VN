@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Venue } from '@/types';
+import { PlaceholderMedia } from './MediaPlaceholder';
 
 interface VenueCardProps {
   venue: Venue;
@@ -18,7 +19,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({ venue, onClick, onFavClick
   const content = (
     <div onClick={onClick} className="card" style={{ background: 'rgba(255,255,255,.045)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 18px 40px rgba(0,0,0,.22)', cursor: 'pointer', display: variant === 'horizontal' ? 'flex' : 'block', gap: variant === 'horizontal' ? '12px' : '0', color: '#f3f0ea' }}>
       <div style={{ height: variant === 'horizontal' ? 'auto' : '118px', width: variant === 'horizontal' ? '108px' : 'auto', position: 'relative', flex: 'none' }}>
-        <div style={{ width: '100%', height: '100%', background: venue.img }} />
+        <PlaceholderMedia src={venue.img} alt={venue.name || 'Địa điểm'} label="Ảnh quán" style={{ width: '100%', height: '100%' }} />
         {venue.hasBadge && (
           <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(12,12,15,.72)', color: '#f0dda8', border: '1px solid rgba(212,178,106,.22)', fontSize: '10.5px', fontWeight: '700', borderRadius: '14px', padding: '3px 9px' }}>{venue.badgeText}</span>
         )}

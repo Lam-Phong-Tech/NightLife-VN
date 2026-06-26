@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { ArrowLeft, BadgeCheck, Building2, Eye, LockKeyhole, LogIn, QrCode, ShieldCheck } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import { loginPartner } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { setAuthSession } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -24,9 +27,9 @@ const colors = {
 };
 
 const testAccount = {
-  email: 'partner@test.vn',
-  password: 'Partner@123',
-  store: 'Club Lumiere',
+  email: 'partner@nightlife.vn',
+  password: 'Str0ngPass!',
+  store: 'Demo NightLife Store',
 };
 
 function Logo({ compact = false }: { compact?: boolean }) {
@@ -56,22 +59,32 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
   const [email, setEmail] = useState(testAccount.email);
   const [password, setPassword] = useState(testAccount.password);
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const redirectTo = useMemo(() => {
     if (typeof window === 'undefined') return '/partner';
     return new URLSearchParams(window.location.search).get('redirect') || '/partner';
   }, []);
 
-  const submit = () => {
-    if (email.trim() !== testAccount.email || password !== testAccount.password) {
-      setMessage('Tài khoản test chưa đúng. Dùng partner@test.vn / Partner@123.');
-      return;
-    }
+  const submit = async () => {
+    setIsSubmitting(true);
+    setMessage('');
 
-    document.cookie = 'auth_token=partner-test-session; path=/; max-age=86400; SameSite=Lax';
-    document.cookie = 'user_role=partner; path=/; max-age=86400; SameSite=Lax';
-    document.cookie = 'partner_store=Club%20Lumiere; path=/; max-age=86400; SameSite=Lax';
-    window.location.href = redirectTo;
+    try {
+      const session = await loginPartner({
+        email: email.trim(),
+        password,
+      });
+
+      setAuthSession(session);
+      window.location.href = redirectTo;
+    } catch (error) {
+      const detail = error instanceof ApiError ? error.message : 'Khong ket noi duoc API dang nhap.';
+      setMessage(`${detail} Tai khoan seed: partner@nightlife.vn / Str0ngPass!`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
 
   return (
     <main
@@ -316,6 +329,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
           <button
             type="button"
             onClick={submit}
+            disabled={isSubmitting}
             style={{
               width: '100%',
               minHeight: '44px',
@@ -330,11 +344,12 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              cursor: 'pointer',
+              cursor: isSubmitting ? 'wait' : 'pointer',
+              opacity: isSubmitting ? 0.72 : 1,
             }}
           >
             <LogIn size={16} />
-            Vào cổng đối tác
+            {isSubmitting ? 'Dang xac thuc...' : 'Vào cổng đối tác'}
           </button>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', marginTop: '14px' }}>
@@ -342,7 +357,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
               { icon: Building2, text: testAccount.store },
               { icon: QrCode, text: 'Quét mã và đối soát' },
               { icon: ShieldCheck, text: 'Không xem dữ liệu khách chi tiết' },
-              { icon: LockKeyhole, text: 'Role partner qua cookie test' },
+              { icon: LockKeyhole, text: 'Role PARTNER qua JWT backend' },
             ].map((item) => {
               const Icon = item.icon;
               return (

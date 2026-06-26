@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={cn("font-sans", geist.variable)}>
+    <html lang="vi">
       <head>
         <Script src="/shared.js" strategy="beforeInteractive" />
         <Script src="/theme.js" strategy="beforeInteractive" />

@@ -1,158 +1,373 @@
 "use client";
-import { MockItem } from '@/types';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
 
-  export default function Page() {
-    
-    
-    
-    // Mock data arrays for loops
-    const tabs: MockItem[] = [
-          { label: 'Đang giữ chỗ', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} },
-          { label: 'Đã sử dụng', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} },
-          { label: 'Hết hạn', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }, pick: () => {} }
-        ];
-    const list: MockItem[] = [
-          { title: 'Happy Hour -30%', place: 'KTV Hoàng Gia · Kim Mã', expiry: 'Còn 22:13:56', value: '-30%', label: 'Chờ duyệt', color: '#c0246a', bg: '#fce4ef', dim: false },
-          { title: 'Combo phòng VIP', place: 'Diamond Bar · Quận 3', expiry: 'Hôm nay', value: '1.2tr', label: 'Đã xác nhận', color: '#177544', bg: '#e6f7ee', dim: false }
-        ];
-    
-    // Standalone mock variables
-    const empty = false;
+import { Clock3, QrCode, ShieldCheck, TicketCheck, WalletCards } from "lucide-react";
+import Image from "next/image";
+import React, { useState } from "react";
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+type CouponStatus = "held" | "used" | "expired";
 
-<>
-<>
+type Coupon = {
+  id: string;
+  title: string;
+  place: string;
+  expiry: string;
+  value: string;
+  status: CouponStatus;
+  statusLabel: string;
+  badgeColor: string;
+  badgeBg: string;
+  dim?: boolean;
+};
 
+const colors = {
+  bg: "#0c0c0f",
+  panel: "#151518",
+  panel2: "#111113",
+  border: "rgba(212,178,106,.24)",
+  borderStrong: "rgba(212,178,106,.36)",
+  text: "#f7f2e8",
+  text2: "#d8d1c1",
+  muted: "#9b9488",
+  gold: "#d4b26a",
+  goldPale: "#f2dfaa",
+  onGold: "#241a0a",
+  goldGrad: "linear-gradient(135deg,#fff1bf 0%,#e4bf63 52%,#c09035 100%)",
+};
 
+const tabs: Array<{ key: CouponStatus; label: string }> = [
+  { key: "held", label: "Đang giữ chỗ" },
+  { key: "used", label: "Đã sử dụng" },
+  { key: "expired", label: "Hết hạn" },
+];
 
+const coupons: Coupon[] = [
+  {
+    id: "NL-HH30-7K2A",
+    title: "Happy Hour -30%",
+    place: "KTV Hoàng Gia · Kim Mã",
+    expiry: "Còn 22:13:56",
+    value: "-30%",
+    status: "held",
+    statusLabel: "Chờ duyệt",
+    badgeColor: "#f9a8d4",
+    badgeBg: "rgba(236,72,153,.16)",
+  },
+  {
+    id: "NL-VIP-12TR",
+    title: "Combo phòng VIP",
+    place: "Diamond Bar · Quận 3",
+    expiry: "Hôm nay",
+    value: "1.2tr",
+    status: "held",
+    statusLabel: "Đã xác nhận",
+    badgeColor: "#a7f3d0",
+    badgeBg: "rgba(16,185,129,.16)",
+  },
+];
 
-</>
-
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"background":"#fff","padding":"8px 18px 8px"}}><h2 style={{"fontSize":"19px","fontWeight":"800"}}>Ví ưu đãi</h2></div>
-    <div className="hscroll" style={{"padding":"0 18px 12px","display":"flex","gap":"7px","overflowX":"auto","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      {tabs?.map((t, index) => (<React.Fragment key={index}><div onClick={t.pick} style={t.style}>{t.label}</div></React.Fragment>))}
-    </div>
-    <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"11px"}}>
-      {list?.map((c, index) => (<React.Fragment key={index}>
-        <div style={{ ...{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}, ...(c.dim ? { opacity: 0.5 } : {}) }}>
-          <div style={{"padding":"13px","display":"flex","gap":"12px","alignItems":"center"}}>
-            <div style={{"width":"58px","height":"58px","borderRadius":"11px","border":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><Image width={100} height={100} src="https://img.icons8.com/ios/200/000000/qr-code.png" style={{"width":"46px","height":"46px","display":"inline-block"}} alt="" /></div>
-            <div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>{c.title}</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"2px"}}>{c.place}</div><span style={{"display":"inline-block","marginTop":"6px","fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"3px 8px","color":c.color,"background":c.bg}}>{c.label}</span></div>
-            <span style={{"fontSize":"13px","color":"#6d28d9","fontWeight":"800"}}>{c.value}</span>
+function CouponCard({ coupon }: { coupon: Coupon }) {
+  return (
+    <article
+      style={{
+        minHeight: "186px",
+        background:
+          "linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015)), #141416",
+        border: `1px solid ${colors.border}`,
+        borderRadius: "18px",
+        overflow: "hidden",
+        boxShadow: "0 18px 46px rgba(0,0,0,.24)",
+        opacity: coupon.dim ? 0.5 : 1,
+      }}
+    >
+      <div
+        style={{
+          padding: "20px",
+          display: "flex",
+          alignItems: "center",
+          gap: "18px",
+        }}
+      >
+        <div
+          style={{
+            width: "82px",
+            height: "82px",
+            borderRadius: "14px",
+            border: `1px solid ${colors.borderStrong}`,
+            background: "rgba(244,238,222,.96)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "none",
+          }}
+        >
+          <Image
+            width={76}
+            height={76}
+            src="https://img.icons8.com/ios/200/000000/qr-code.png"
+            style={{ width: "62px", height: "62px", display: "block" }}
+            alt="QR"
+          />
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <h2
+              style={{
+                margin: 0,
+                color: colors.text,
+                fontSize: "18px",
+                lineHeight: 1.25,
+                fontWeight: 800,
+              }}
+            >
+              {coupon.title}
+            </h2>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: "28px",
+                borderRadius: "10px",
+                padding: "0 11px",
+                color: coupon.badgeColor,
+                background: coupon.badgeBg,
+                fontSize: "12px",
+                fontWeight: 800,
+              }}
+            >
+              {coupon.statusLabel}
+            </span>
           </div>
-          <div style={{"borderTop":"1px dashed #e2e0e8","padding":"9px 13px","fontSize":"10.5px","color":"#8a879a"}}>{c.expiry}</div>
-        </div>
-      </React.Fragment>))}
-      <><div style={{"textAlign":"center","color":"#8a879a","fontSize":"13px","padding":"28px 0"}}>Không có mã ở mục này.</div></>
-    </div>
-
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
-      <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></Link>
-      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/6D28D9/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Ưu đãi</span></Link>
-      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
-      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></Link>
-    </div>
-  </div>
-</div>
-</>
-
-
-</div>
-        <div className="hidden md:block">
-
-<>
-<>
-
-
-
-
-</>
-
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div></div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/tai-khoan" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Tài khoản</Link></div>
-    </div>
-
-    <div style={{"padding":"26px 34px 8px"}}><h2 style={{"fontSize":"24px","fontWeight":"800"}}>Ví ưu đãi của tôi</h2><p style={{"fontSize":"13px","color":"#5b5870","marginTop":"5px"}}>Quản lý mã giảm giá đã lấy — đưa cho nhân viên quán quét khi tới nơi.</p></div>
-    <div style={{"padding":"14px 34px 0","display":"flex","gap":"9px","flexWrap":"wrap"}}>
-      {tabs?.map((t, index) => (<React.Fragment key={index}><div onClick={t.pick} style={t.style}>{t.label}</div></React.Fragment>))}
-    </div>
-    <div style={{"padding":"18px 34px 32px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"16px"}}>
-      {list?.map((c, index) => (<React.Fragment key={index}>
-        <div style={{ ...{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}, ...(c.dim ? { opacity: 0.5 } : {}) }}>
-          <div style={{"padding":"16px","display":"flex","gap":"14px","alignItems":"center"}}>
-            <div style={{"width":"72px","height":"72px","borderRadius":"12px","border":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"center","flex":"none"}}><Image width={100} height={100} src="https://img.icons8.com/ios/200/000000/qr-code.png" style={{"width":"58px","height":"58px","display":"inline-block"}} alt="" /></div>
-            <div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"700","fontSize":"15px"}}>{c.title}</div><div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"3px"}}>{c.place}</div><span style={{"display":"inline-block","marginTop":"8px","fontSize":"11px","fontWeight":"700","borderRadius":"9px","padding":"4px 10px","color":c.color,"background":c.bg}}>{c.label}</span></div>
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: colors.text2,
+              fontSize: "13.5px",
+              lineHeight: 1.5,
+            }}
+          >
+            {coupon.place}
+          </p>
+          <div
+            style={{
+              marginTop: "14px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              color: colors.muted,
+              fontSize: "12.5px",
+              fontWeight: 600,
+            }}
+          >
+            <QrCode size={15} color={colors.gold} />
+            {coupon.id}
           </div>
-          <div style={{"borderTop":"1px dashed #e2e0e8","padding":"11px 16px","display":"flex","alignItems":"center","justifyContent":"space-between","fontSize":"12px","color":"#8a879a"}}><span>{c.expiry}</span><span style={{"color":"#6d28d9","fontWeight":"600"}}>{c.value}</span></div>
-        </div>
-      </React.Fragment>))}
-      <><div style={{"gridColumn":"span 3","textAlign":"center","color":"#8a879a","fontSize":"14px","padding":"36px 0"}}>Không có mã ở mục này.</div></>
-    </div>
-  </div>
-</div>
-</>
-
-
-
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
-  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-      <div style={{"maxWidth":"300px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
         </div>
       </div>
-      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-        </div>
-      </div>
-    </div>
-    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-    </div>
-    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-      <div>v2.0.0 • Nightlife Platform</div>
-      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-      </React.Fragment>
-    );
-  }
-  
 
+      <div
+        style={{
+          borderTop: `1px dashed ${colors.borderStrong}`,
+          padding: "14px 20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "16px",
+          color: colors.text2,
+          fontSize: "13px",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+          <Clock3 size={16} color={colors.gold} />
+          {coupon.expiry}
+        </span>
+        <strong style={{ color: colors.goldPale, fontSize: "16px" }}>{coupon.value}</strong>
+      </div>
+    </article>
+  );
+}
+
+export default function Page() {
+  const [activeTab, setActiveTab] = useState<CouponStatus>("held");
+  const visibleCoupons = coupons.filter((coupon) => coupon.status === activeTab);
+
+  return (
+    <main
+      style={{
+        minHeight: "calc(100vh - 82px)",
+        background:
+          "radial-gradient(circle at 12% 0%,rgba(212,178,106,.12),transparent 30%), linear-gradient(180deg,#121216 0%,#0c0c0f 100%)",
+        color: colors.text,
+        fontFamily: "var(--nl-font-sans)",
+        padding: "42px clamp(18px,3.2vw,48px) 58px",
+      }}
+    >
+      <section
+        style={{
+          width: "100%",
+          maxWidth: "none",
+          margin: "0 auto",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            gap: "24px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                minHeight: "32px",
+                borderRadius: "16px",
+                padding: "0 12px",
+                border: `1px solid ${colors.border}`,
+                color: colors.goldPale,
+                background: "rgba(212,178,106,.09)",
+                fontSize: "12px",
+                fontWeight: 800,
+                textTransform: "uppercase",
+              }}
+            >
+              <WalletCards size={15} />
+              Ví ưu đãi
+            </div>
+            <h1
+              style={{
+                margin: "18px 0 0",
+                fontSize: "clamp(28px,3.2vw,44px)",
+                lineHeight: 1.08,
+                fontWeight: 900,
+              }}
+            >
+              Ví ưu đãi của tôi
+            </h1>
+            <p
+              style={{
+                margin: "12px 0 0",
+                maxWidth: "720px",
+                color: colors.text2,
+                fontSize: "15px",
+                lineHeight: 1.7,
+              }}
+            >
+              Quản lý mã giảm giá đã lấy, giữ mã đang chờ và đưa cho nhân viên quán quét khi tới
+              nơi.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2,minmax(132px,1fr))",
+              gap: "12px",
+              width: "min(360px,100%)",
+            }}
+          >
+            <div
+              style={{
+                minHeight: "82px",
+                borderRadius: "16px",
+                border: `1px solid ${colors.border}`,
+                background: "rgba(255,255,255,.035)",
+                padding: "14px",
+              }}
+            >
+              <TicketCheck size={19} color={colors.gold} />
+              <div style={{ marginTop: "8px", color: colors.text, fontSize: "22px", fontWeight: 900 }}>
+                {coupons.length}
+              </div>
+              <div style={{ color: colors.muted, fontSize: "12px" }}>mã trong ví</div>
+            </div>
+            <div
+              style={{
+                minHeight: "82px",
+                borderRadius: "16px",
+                border: `1px solid ${colors.border}`,
+                background: "rgba(255,255,255,.035)",
+                padding: "14px",
+              }}
+            >
+              <ShieldCheck size={19} color={colors.gold} />
+              <div style={{ marginTop: "8px", color: colors.text, fontSize: "22px", fontWeight: 900 }}>
+                24h
+              </div>
+              <div style={{ color: colors.muted, fontSize: "12px" }}>giữ mã guest</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: "28px",
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
+          {tabs.map((tab) => {
+            const active = tab.key === activeTab;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  minHeight: "42px",
+                  borderRadius: "21px",
+                  padding: "0 18px",
+                  border: `1px solid ${active ? "rgba(244,223,168,.62)" : colors.border}`,
+                  background: active ? colors.goldGrad : "rgba(255,255,255,.035)",
+                  color: active ? colors.onGold : colors.text2,
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          style={{
+            marginTop: "22px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(min(430px,100%),1fr))",
+            gap: "20px",
+          }}
+        >
+          {visibleCoupons.map((coupon) => (
+            <CouponCard key={coupon.id} coupon={coupon} />
+          ))}
+        </div>
+
+        {visibleCoupons.length === 0 ? (
+          <div
+            style={{
+              marginTop: "22px",
+              minHeight: "180px",
+              borderRadius: "18px",
+              border: `1px dashed ${colors.borderStrong}`,
+              background: "rgba(255,255,255,.025)",
+              color: colors.muted,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              fontSize: "15px",
+            }}
+          >
+            Không có mã ở mục này.
+          </div>
+        ) : null}
+      </section>
+    </main>
+  );
+}

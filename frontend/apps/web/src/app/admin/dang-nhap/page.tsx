@@ -12,6 +12,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import { loginAdmin } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { setAuthSession } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -32,28 +35,38 @@ const colors = {
 };
 
 const testAccount = {
-  email: 'admin@test.vn',
-  password: 'Admin@123',
+  email: 'admin@nightlife.vn',
+  password: 'Str0ngPass!',
 };
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState(testAccount.email);
   const [password, setPassword] = useState(testAccount.password);
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const redirectTo = useMemo(() => {
     if (typeof window === 'undefined') return '/admin';
     return new URLSearchParams(window.location.search).get('redirect') || '/admin';
   }, []);
 
-  const submit = () => {
-    if (email.trim() !== testAccount.email || password !== testAccount.password) {
-      setMessage('Tài khoản test chưa đúng. Dùng admin@test.vn / Admin@123.');
-      return;
-    }
+  const submit = async () => {
+    setIsSubmitting(true);
+    setMessage('');
 
-    document.cookie = 'auth_token=admin-test-session; path=/; max-age=86400; SameSite=Lax';
-    document.cookie = 'user_role=admin; path=/; max-age=86400; SameSite=Lax';
-    window.location.href = redirectTo;
+    try {
+      const session = await loginAdmin({
+        email: email.trim(),
+        password,
+      });
+
+      setAuthSession(session);
+      window.location.href = redirectTo;
+    } catch (error) {
+      const detail = error instanceof ApiError ? error.message : 'Khong ket noi duoc API dang nhap.';
+      setMessage(`${detail} Tai khoan seed: admin@nightlife.vn / Str0ngPass!`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -229,6 +242,7 @@ export default function AdminLoginPage() {
           <button
             type="button"
             onClick={submit}
+            disabled={isSubmitting}
             style={{
               width: '100%',
               minHeight: '44px',
@@ -243,11 +257,12 @@ export default function AdminLoginPage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              cursor: 'pointer',
+              cursor: isSubmitting ? 'wait' : 'pointer',
+              opacity: isSubmitting ? 0.72 : 1,
             }}
           >
             <LogIn size={16} />
-            Vào trang admin
+            {isSubmitting ? 'Dang xac thuc...' : 'Vào trang admin'}
           </button>
 
           <div style={{ marginTop: '18px', color: colors.muted, textAlign: 'center', fontSize: '11.5px' }}>

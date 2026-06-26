@@ -17,7 +17,7 @@ function parseJwtPayload(token: string) {
         .join('')
     );
     return JSON.parse(jsonPayload);
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -31,15 +31,15 @@ export function middleware(request: NextRequest) {
     ? authHeader.substring(7) 
     : request.cookies.get('auth_token')?.value;
 
-  let userRole = 'public';
+  let userRole = 'PUBLIC';
   
   if (token) {
     const payload = parseJwtPayload(token);
     if (payload && payload.role) {
-      userRole = payload.role;
+      userRole = String(payload.role).toUpperCase();
     } else {
       // Fallback to cookie for development if token is not a valid JWT
-      userRole = request.cookies.get('user_role')?.value || 'public';
+      userRole = (request.cookies.get('user_role')?.value || 'PUBLIC').toUpperCase();
     }
   }
 
@@ -58,12 +58,12 @@ export function middleware(request: NextRequest) {
   }
 
   // Protect admin routes
-  if (isAdminPath && userRole !== 'admin') {
+  if (isAdminPath && userRole !== 'ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Protect partner routes
-  if (isPartnerPath && userRole !== 'partner' && userRole !== 'admin') {
+  if (isPartnerPath && userRole !== 'PARTNER' && userRole !== 'ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
