@@ -3,6 +3,7 @@ import { Venue, Cast, FAQ, MockItem } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useState } from 'react';
+import { ChevronLeft, Heart, Play } from 'lucide-react';
 
 export default function Page({ params }: { params: { slug?: string, [key: string]: unknown } }) {
   const [activeRankTab, setActiveRankTab] = useState('quan');
@@ -104,14 +105,14 @@ export default function Page({ params }: { params: { slug?: string, [key: string
 
 </>
 
-<div className="store-detail-mobile" style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#0c0c0f","fontFamily":"'Inter',sans-serif"}}>
+<div className="store-detail-mobile" style={{"width":"100%","minHeight":"100svh","boxSizing":"border-box","padding":"0px","background":"#0c0c0f","fontFamily":"'Inter',sans-serif"}}>
 
-  <div style={{"margin":"0 auto","width":"100%","background":"#111114","borderRadius":"0px","overflow":"hidden","boxShadow":"none","color":"#f3f0ea","border":"1px solid rgba(212,178,106,.18)"}}>
+  <div style={{"margin":"0","width":"100%","minHeight":"100svh","background":"#111114","borderRadius":"0px","overflow":"hidden","boxShadow":"none","color":"#f3f0ea","border":"0"}}>
     {/* hero */}
     <div style={{"position":"relative","height":"200px","background":mainBg}}>
-      <Link href="/danh-sach-quan" style={{"position":"absolute","top":"12px","left":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","color":"#1f1d29"}}>‹</Link>
-      <span className="btn" onClick={toggleFav} style={{"position":"absolute","top":"12px","right":"14px","width":"34px","height":"34px","borderRadius":"50%","background":"rgba(255,255,255,.92)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src={favIconDark} style={{"width":"17px","height":"17px","display":"inline-block"}} alt="" /></span>
-      <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"46px","height":"46px","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/6D28D9/play.png" style={{"width":"18px","height":"18px","marginLeft":"2px","display":"inline-block"}} alt="" /></span>
+      <Link href="/danh-sach-quan" aria-label="Quay lại danh sách quán" style={{"position":"absolute","top":"14px","left":"14px","width":"42px","height":"42px","borderRadius":"50%","background":"rgba(255,255,255,.94)","display":"flex","alignItems":"center","justifyContent":"center","color":"#241a0a","boxShadow":"0 10px 24px rgba(0,0,0,.22)","zIndex":2}}><ChevronLeft size={23} strokeWidth={2.5} /></Link>
+      <button type="button" aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"} className="btn" onClick={toggleFav} style={{"position":"absolute","top":"14px","right":"14px","width":"42px","height":"42px","border":"0","borderRadius":"50%","background":"rgba(255,255,255,.94)","display":"flex","alignItems":"center","justifyContent":"center","color":isFavorite ? "#e0729e" : "#241a0a","boxShadow":"0 10px 24px rgba(0,0,0,.22)","zIndex":2}}><Heart size={21} strokeWidth={2.2} fill={isFavorite ? "#e0729e" : "none"} /></button>
+      <button type="button" aria-label="Xem video quán" style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","border":"0","borderRadius":"50%","background":"rgba(255,255,255,.9)","display":"flex","alignItems":"center","justifyContent":"center","color":"#d4b26a","boxShadow":"0 12px 30px rgba(0,0,0,.28)"}}><Play size={23} fill="#d4b26a" style={{"marginLeft":"3px"}} /></button>
     </div>
     {/* thumbnails */}
     <div className="hscroll" style={{"display":"flex","gap":"8px","padding":"10px 18px 0","overflowX":"auto"}}>
@@ -149,6 +150,31 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     </div>
   </div>
 </div>
+<style jsx global>{`
+  @media (max-width: 767px) {
+    .nl-page-content:has(.store-detail-mobile) {
+      padding-bottom: 0 !important;
+    }
+
+    .nl-page-content .store-detail-mobile-shell,
+    .nl-page-content .store-detail-mobile {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      min-height: 100svh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #0c0c0f !important;
+      overflow-x: hidden !important;
+    }
+
+    .nl-page-content .store-detail-mobile > div {
+      width: 100% !important;
+      min-height: 100svh !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+  }
+`}</style>
 </>
 
 
