@@ -3,11 +3,14 @@
 import React, { type CSSProperties, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  BookOpen,
   CalendarDays,
   Crown,
   Heart,
   MapPin,
+  Newspaper,
   Play,
+  Route,
   Search,
   SlidersHorizontal,
   Star,
@@ -61,6 +64,27 @@ const serviceTabs = [
 const rankTabs = [
   { id: "quan", label: "Quán" },
   { id: "cast", label: "Cast" },
+];
+
+const contentPlaceholders = [
+  {
+    title: "Tour đêm",
+    desc: "Gợi ý lịch trình bar, lounge và ăn khuya theo khu vực.",
+    href: "/tour",
+    icon: Route,
+  },
+  {
+    title: "Blog",
+    desc: "Bài viết kinh nghiệm chọn quán, ưu đãi và xu hướng nightlife.",
+    href: "/blog",
+    icon: Newspaper,
+  },
+  {
+    title: "Guide",
+    desc: "Hướng dẫn đặt chỗ, lấy mã coupon và gửi hóa đơn.",
+    href: "/huong-dan",
+    icon: BookOpen,
+  },
 ];
 
 type RankedItem = {
@@ -449,6 +473,56 @@ function VideoCard({ item, compact = false }: { item: (typeof hotVideos)[number]
   );
 }
 
+function ContentPlaceholderCard({
+  item,
+  compact = false,
+}: {
+  item: (typeof contentPlaceholders)[number];
+  compact?: boolean;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      style={{
+        minWidth: compact ? "172px" : "0",
+        display: "block",
+        borderRadius: "17px",
+        border: `1px solid ${colors.line}`,
+        background: "rgba(255,255,255,.045)",
+        color: colors.text,
+        padding: compact ? "14px" : "18px",
+      }}
+    >
+      <span
+        style={{
+          width: compact ? 40 : 46,
+          height: compact ? 40 : 46,
+          borderRadius: "14px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: colors.goldSoft,
+          background: "rgba(212,178,106,.12)",
+          border: `1px solid ${colors.line}`,
+        }}
+      >
+        <Icon size={compact ? 20 : 23} />
+      </span>
+      <div style={{ marginTop: "12px", fontSize: compact ? "14px" : "16px", fontWeight: 900 }}>
+        {item.title}
+      </div>
+      <p style={{ marginTop: "6px", color: colors.muted, fontSize: "12px", lineHeight: 1.5 }}>
+        {item.desc}
+      </p>
+      <div style={{ marginTop: "12px", color: colors.gold, fontSize: "12px", fontWeight: 900 }}>
+        Xem placeholder
+      </div>
+    </Link>
+  );
+}
+
 function TabSwitch({
   items,
   active,
@@ -563,6 +637,13 @@ export default function Page() {
               </div>
             </section>
 
+            <section style={{ marginTop: "22px" }}>
+              <SectionHeading title="Tour / Blog / Guide" />
+              <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
+                {contentPlaceholders.map((item) => <ContentPlaceholderCard key={item.href} item={item} compact />)}
+              </div>
+            </section>
+
             <section style={{ marginTop: "22px", paddingBottom: "22px" }}>
               <SectionHeading title="Video Hot" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
@@ -625,6 +706,13 @@ export default function Page() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {svc.map((item) => <ServiceCard key={item.name} item={item} />)}
+              </div>
+            </section>
+
+            <section style={{ marginTop: "34px" }}>
+              <SectionHeading title="Tour / Blog / Guide" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                {contentPlaceholders.map((item) => <ContentPlaceholderCard key={item.href} item={item} />)}
               </div>
             </section>
 
