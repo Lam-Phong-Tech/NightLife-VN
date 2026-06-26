@@ -17,8 +17,7 @@ export default function DeviceSelectionPage() {
     
     // Simulate a tiny delay for the animation to play out
     setTimeout(() => {
-      router.push('/');
-      router.refresh();
+      window.location.href = '/';
     }, 500);
   };
 
