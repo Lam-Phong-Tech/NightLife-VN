@@ -8,12 +8,24 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import type * as express from 'express';
 import { AuthenticatedUser } from '../access/access.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import {
+  AdminSensitiveBillsContract,
+  ClaimGuestCouponContract,
+  MemberBookingsContract,
+  MemberCouponIssuesContract,
+  PartnerBillsContract,
+  PartnerBookingsContract,
+  PartnerCouponsContract,
+  PartnerStoresContract,
+  PublicCouponsContract,
+  ReviewSensitiveBillContract,
+} from './nightlife-data.contract';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
@@ -27,11 +39,13 @@ type RequestWithUser = express.Request & {
 export class NightlifeDataController {
   constructor(private readonly nightlifeDataService: NightlifeDataService) {}
 
+  @PublicCouponsContract()
   @Get('coupons')
   listPublicCoupons() {
     return this.nightlifeDataService.listPublicCoupons();
   }
 
+  @ClaimGuestCouponContract()
   @Post('coupons/:couponId/guest-claims')
   claimGuestCoupon(
     @Param('couponId') couponId: string,
@@ -40,7 +54,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.claimGuestCoupon(couponId, dto);
   }
 
-  @ApiBearerAuth()
+  @PartnerStoresContract()
   @Roles('PARTNER', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('partner/stores')
@@ -48,7 +62,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPartnerStores(request.user);
   }
 
-  @ApiBearerAuth()
+  @PartnerCouponsContract()
   @Roles('PARTNER', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('partner/coupons')
@@ -56,7 +70,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPartnerCoupons(request.user);
   }
 
-  @ApiBearerAuth()
+  @PartnerBookingsContract()
   @Roles('PARTNER', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('partner/bookings')
@@ -64,7 +78,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPartnerBookings(request.user);
   }
 
-  @ApiBearerAuth()
+  @PartnerBillsContract()
   @Roles('PARTNER', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('partner/bills')
@@ -72,21 +86,21 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPartnerBills(request.user);
   }
 
-  @ApiBearerAuth()
+  @MemberBookingsContract()
   @UseGuards(JwtAuthGuard)
   @Get('member/bookings')
   listMemberBookings(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberBookings(request.user.id);
   }
 
-  @ApiBearerAuth()
+  @MemberCouponIssuesContract()
   @UseGuards(JwtAuthGuard)
   @Get('member/coupon-issues')
   listMemberCouponIssues(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberCouponIssues(request.user.id);
   }
 
-  @ApiBearerAuth()
+  @AdminSensitiveBillsContract()
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/sensitive-bills')
@@ -94,7 +108,7 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listSensitiveBillsForAdmin();
   }
 
-  @ApiBearerAuth()
+  @ReviewSensitiveBillContract()
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/sensitive-bills/:billId/review')

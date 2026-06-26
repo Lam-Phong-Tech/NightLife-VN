@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { UnprocessableEntityException } from '@nestjs/common';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NightlifeDataService } from './nightlife-data.service';
@@ -94,12 +94,13 @@ describe('NightlifeDataService', () => {
 
     await service.claimGuestCoupon('coupon-1', {
       email: 'GUEST@example.com',
+      phone: '+84901234567',
     });
 
     expect(prisma.guest.create).toHaveBeenCalledWith({
       data: {
         displayName: undefined,
-        phone: undefined,
+        phone: '+84901234567',
         email: 'guest@example.com',
       },
       select: { id: true },
@@ -123,7 +124,7 @@ describe('NightlifeDataService', () => {
     } as never);
 
     await expect(
-      service.claimGuestCoupon('coupon-1', {}),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+      service.claimGuestCoupon('coupon-1', { phone: '+84901234567' }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 });
