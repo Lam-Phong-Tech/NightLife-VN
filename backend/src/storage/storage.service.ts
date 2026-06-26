@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { MediaAccess, MediaType } from '@prisma/client';
+import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type UploadedFile = {
@@ -40,6 +41,7 @@ export class StorageService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly accessService: AccessService,
   ) {}
 
   onModuleInit() {
@@ -107,11 +109,32 @@ export class StorageService implements OnModuleInit {
     const resolvedFile = await this.resolveLocalFile(storageKey);
     const mediaFile = resolvedFile.mediaFile;
 
+    if (mediaFile.access !== MediaAccess.PROTECTED) {
+      return resolvedFile;
+    }
+
     if (
-      mediaFile.access === MediaAccess.PROTECTED &&
-      mediaFile.ownerId !== user.id &&
-      !['ADMIN', 'PARTNER', 'STAFF'].includes(user.role ?? '')
+      mediaFile.ownerId === user.id ||
+      ['ADMIN', 'STAFF'].includes(user.role ?? '')
     ) {
+      return resolvedFile;
+    }
+
+    if (user.role === 'PARTNER') {
+      const relatedStoreId =
+        mediaFile.storeId ??
+        mediaFile.booking?.storeId ??
+        mediaFile.bill?.storeId ??
+        mediaFile.cast?.storeId ??
+        mediaFile.content?.storeId;
+
+      if (relatedStoreId) {
+        await this.accessService.ensureStoreAccess(user, relatedStoreId);
+        return resolvedFile;
+      }
+    }
+
+    if (mediaFile.ownerId !== user.id) {
       throw new ForbiddenException('You cannot access this media file');
     }
 
@@ -121,6 +144,12 @@ export class StorageService implements OnModuleInit {
   private async resolveLocalFile(storageKey: string) {
     const mediaFile = await this.prisma.media.findUnique({
       where: { storageKey },
+      include: {
+        booking: { select: { storeId: true } },
+        bill: { select: { storeId: true } },
+        cast: { select: { storeId: true } },
+        content: { select: { storeId: true } },
+      },
     });
     if (!mediaFile) {
       throw new NotFoundException('Media file not found');

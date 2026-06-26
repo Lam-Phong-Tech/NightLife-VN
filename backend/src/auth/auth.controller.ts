@@ -21,6 +21,21 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('login/member')
+  loginMember(@Body() dto: LoginDto) {
+    return this.authService.loginAs('USER', dto);
+  }
+
+  @Post('login/partner')
+  loginPartner(@Body() dto: LoginDto) {
+    return this.authService.loginAs('PARTNER', dto);
+  }
+
+  @Post('login/admin')
+  loginAdmin(@Body() dto: LoginDto) {
+    return this.authService.loginAs('ADMIN', dto);
+  }
+
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
