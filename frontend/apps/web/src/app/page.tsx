@@ -3,13 +3,10 @@
 import React, { type CSSProperties, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Bell,
   CalendarDays,
   Crown,
   Heart,
   MapPin,
-  Martini,
-  MessageCircle,
   Play,
   Search,
   SlidersHorizontal,
@@ -31,6 +28,7 @@ import {
   spaData,
   svcData,
 } from "@/lib/mock-data";
+import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 
 const colors = {
   shell: "#f0eee9",
@@ -53,14 +51,6 @@ const categoryItems = [
   { label: "Spa", icon: Waves, href: "/danh-sach-quan" },
   { label: "Ranking", icon: Crown, href: "/xep-hang" },
   { label: "VIP", icon: Star, href: "/dang-nhap", featured: true },
-];
-
-const navItems = [
-  { label: "Trang chủ", href: "/", icon: Martini, active: true },
-  { label: "Cast", href: "/danh-sach-cast", icon: UserRound },
-  { label: "Ưu đãi", href: "/uu-dai", icon: Ticket },
-  { label: "Đặt chỗ", href: "/lich-su-dat-cho", icon: CalendarDays },
-  { label: "Tài khoản", href: "/tai-khoan", icon: UserRound },
 ];
 
 const serviceTabs = [
@@ -116,58 +106,9 @@ const pillStyle: CSSProperties = {
 };
 
 function HeaderBar({ desktop = false }: { desktop?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "18px",
-        padding: desktop ? "22px 38px" : "18px 18px 10px",
-      }}
-    >
-      <Link href="/" style={{ lineHeight: 1, color: colors.goldSoft }}>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: desktop ? "32px" : "28px", fontWeight: 800 }}>
-          Vietyoru
-        </div>
-        <div style={{ marginTop: "5px", color: colors.dim, fontSize: "9px", letterSpacing: ".42em" }}>
-          VIETNAM NIGHTLIFE GUIDE
-        </div>
-      </Link>
-
-      {desktop ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "22px", color: colors.muted, fontSize: "14px" }}>
-          <Link href="/danh-sach-quan">Tìm quán</Link>
-          <Link href="/danh-sach-cast">Cast</Link>
-          <Link href="/uu-dai">Ưu đãi</Link>
-          <Link href="/xep-hang">Ranking</Link>
-          <Link href="/blog">Blog</Link>
-        </div>
-      ) : null}
-
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <button aria-label="Tin nhắn" style={circleButtonStyle}>
-          <MessageCircle size={18} />
-        </button>
-        <button aria-label="Thông báo" style={circleButtonStyle}>
-          <Bell size={18} />
-        </button>
-      </div>
-    </div>
-  );
+  void desktop;
+  return null;
 }
-
-const circleButtonStyle: CSSProperties = {
-  width: "42px",
-  height: "42px",
-  borderRadius: "50%",
-  border: `1px solid ${colors.line}`,
-  background: "rgba(255,255,255,.03)",
-  color: colors.gold,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
 
 function SearchPanel() {
   return (
@@ -250,11 +191,16 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         flexDirection: "column",
         justifyContent: "flex-end",
         padding: desktop ? "34px" : "18px",
-        background: event.img,
         color: "#fff",
         boxShadow: "0 22px 42px rgba(0,0,0,.36)",
       }}
     >
+      <PlaceholderMedia
+        src={event.img}
+        alt={"title" in event ? event.title : "Sự kiện"}
+        label="Ảnh sự kiện"
+        style={{ position: "absolute", inset: 0, borderRadius: "inherit" }}
+      />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />
       <div style={{ position: "relative", zIndex: 1 }}>
         <span
@@ -358,11 +304,16 @@ function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number];
         color: colors.text,
       }}
     >
-      <div style={{ height: compact ? "112px" : "156px", position: "relative", background: item.img }}>
+      <PlaceholderMedia
+        src={item.img}
+        alt={item.name ?? "Địa điểm"}
+        label="Ảnh quán"
+        style={{ height: compact ? "112px" : "156px", position: "relative" }}
+      >
         <span style={{ position: "absolute", top: 10, right: 10, width: 30, height: 30, borderRadius: "50%", background: "rgba(12,12,15,.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Heart size={15} color="#fff" />
         </span>
-      </div>
+      </PlaceholderMedia>
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
@@ -393,7 +344,12 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
         background: "rgba(255,255,255,.045)",
       }}
     >
-      <div style={{ height: compact ? "62px" : "82px", borderRadius: "13px", background: item.img }} />
+      <PlaceholderMedia
+        src={item.img}
+        alt={item.title ?? "Coupon"}
+        label="Ảnh ưu đãi"
+        style={{ height: compact ? "62px" : "82px", borderRadius: "13px" }}
+      />
       <div style={{ minWidth: 0 }}>
         <div style={{ color: colors.goldSoft, fontSize: compact ? "18px" : "22px", fontWeight: 900 }}>{item.value}</div>
         <div style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
@@ -421,7 +377,12 @@ function RankingRow({ item }: { item: RankedItem }) {
       <span style={{ width: 32, height: 32, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", background: item.crown ?? colors.gold, color: item.numColor ?? "#241a0a", fontWeight: 900 }}>
         {item.rank}
       </span>
-      <span style={{ width: 46, height: 46, borderRadius: "50%", background: item.img ?? "rgba(255,255,255,.08)" }} />
+      <PlaceholderMedia
+        src={item.img}
+        alt={item.name ?? "Xếp hạng"}
+        label=""
+        style={{ width: 46, height: 46, borderRadius: "50%", flex: "none" }}
+      />
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "3px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
@@ -432,9 +393,16 @@ function RankingRow({ item }: { item: RankedItem }) {
 }
 
 function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]; compact?: boolean }) {
+  const slug = item.name
+    ?.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "club-lumiere";
+
   return (
     <Link
-      href="/danh-sach-quan"
+      href={`/stores/${slug}`}
       style={{
         overflow: "hidden",
         borderRadius: "17px",
@@ -443,11 +411,16 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
         color: colors.text,
       }}
     >
-      <div style={{ height: compact ? "92px" : "132px", position: "relative", background: item.grad }}>
+      <PlaceholderMedia
+        src={item.grad}
+        alt={item.name ?? "Dịch vụ"}
+        label="Ảnh dịch vụ"
+        style={{ height: compact ? "92px" : "132px", position: "relative" }}
+      >
         <span style={{ position: "absolute", top: 10, left: 10, ...pillStyle, background: "rgba(12,12,15,.66)", color: colors.goldSoft }}>
           {item.badgeText}
         </span>
-      </div>
+      </PlaceholderMedia>
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
@@ -460,12 +433,17 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
 function VideoCard({ item, compact = false }: { item: (typeof hotVideos)[number]; compact?: boolean }) {
   return (
     <Link href="/stores/club-lumiere" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
-      <div style={{ height: compact ? "96px" : "138px", borderRadius: "16px", background: item.img, position: "relative", overflow: "hidden" }}>
+      <PlaceholderMedia
+        src={item.img}
+        alt={item.name ?? "Video"}
+        label="Ảnh video"
+        style={{ height: compact ? "96px" : "138px", borderRadius: "16px", position: "relative" }}
+      >
         <span style={{ position: "absolute", inset: 0, background: "rgba(12,12,15,.22)" }} />
         <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(243,240,234,.92)", color: colors.ink }}>
           <Play size={17} fill={colors.ink} />
         </span>
-      </div>
+      </PlaceholderMedia>
       <div style={{ marginTop: "9px", fontSize: "13px", fontWeight: 800 }}>{item.name.split("·")[0]}</div>
     </Link>
   );
@@ -505,32 +483,7 @@ function TabSwitch({
 }
 
 function BottomNav() {
-  return (
-    <div
-      style={{
-        position: "sticky",
-        bottom: 0,
-        zIndex: 5,
-        height: "68px",
-        display: "grid",
-        gridTemplateColumns: "repeat(5,1fr)",
-        alignItems: "center",
-        background: "rgba(8,8,11,.95)",
-        borderTop: `1px solid ${colors.line}`,
-        backdropFilter: "blur(16px)",
-      }}
-    >
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <Link key={item.label} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", color: item.active ? colors.gold : colors.dim }}>
-            <Icon size={20} />
-            <span style={{ fontSize: "10px", fontWeight: item.active ? 800 : 600 }}>{item.label}</span>
-          </Link>
-        );
-      })}
-    </div>
-  );
+  return null;
 }
 
 export default function Page() {

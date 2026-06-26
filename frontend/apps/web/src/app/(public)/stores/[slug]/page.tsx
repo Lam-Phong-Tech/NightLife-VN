@@ -56,7 +56,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     const dec: (() => void) | undefined = undefined;
     const guests = 4;
     const inc: (() => void) | undefined = undefined;
-    const book = () => console.log('Navigate');
+    const bookingHref = '/dat-cho';
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isIntro = true;
     const isPrice: boolean | undefined = undefined;
@@ -118,7 +118,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     {/* sticky CTA */}
     <div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
       <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Đặt bàn từ</div><div style={{"fontSize":"16px","fontWeight":"800"}}>{vPriceShort}</div></div>
-      <div className="btn" onClick={book} style={{"flex":"1","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"14px"}}>Đặt chỗ ngay</div>
+      <Link href={bookingHref} className="btn" style={{"flex":"1","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"14px","textDecoration":"none"}}>Đặt chỗ ngay</Link>
     </div>
   </div>
 </div>
@@ -223,7 +223,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
             <span style={{"fontWeight":"700","fontSize":"15px"}}>{guests} người</span>
             <span className="btn" onClick={inc} style={{"width":"32px","height":"32px","borderRadius":"9px","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"18px"}}>+</span>
           </div>
-          <div onClick={book} className="btn" style={{"marginTop":"16px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"13px","fontWeight":"700","fontSize":"14px"}}>Đặt chỗ ngay</div>
+          <Link href={bookingHref} className="btn" style={{"display":"block","marginTop":"16px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"13px","fontWeight":"700","fontSize":"14px","textDecoration":"none"}}>Đặt chỗ ngay</Link>
           <div className="btn" style={{"marginTop":"10px","border":"1px solid #ececec","color":"#6d28d9","textAlign":"center","borderRadius":"11px","padding":"12px","fontWeight":"600","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"8px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/6D28D9/phone.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" />Gọi trực tiếp</div>
         </div>
       </div>

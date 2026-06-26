@@ -17,7 +17,7 @@ function parseJwtPayload(token: string) {
         .join('')
     );
     return JSON.parse(jsonPayload);
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -31,15 +31,15 @@ export function middleware(request: NextRequest) {
     ? authHeader.substring(7) 
     : request.cookies.get('auth_token')?.value;
 
-  let userRole = 'public';
+  let userRole = 'PUBLIC';
   
   if (token) {
     const payload = parseJwtPayload(token);
     if (payload && payload.role) {
-      userRole = payload.role;
+      userRole = String(payload.role).toUpperCase();
     } else {
       // Fallback to cookie for development if token is not a valid JWT
-      userRole = request.cookies.get('user_role')?.value || 'public';
+      userRole = (request.cookies.get('user_role')?.value || 'PUBLIC').toUpperCase();
     }
   }
 
@@ -47,22 +47,23 @@ export function middleware(request: NextRequest) {
   const memberPaths = ['/tai-khoan', '/da-luu', '/lich-su-dat-cho', '/dat-cho', '/gui-hoa-don', '/vi-uu-dai'];
   const isMemberPath = memberPaths.some(p => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith('/partner');
-  const isAdminPath = pathname.startsWith('/admin');
+  const isAdminLoginPath = pathname === '/admin/dang-nhap';
+  const isAdminPath = pathname.startsWith('/admin') && !isAdminLoginPath;
 
   // Protect paths requiring authentication
   if ((isMemberPath || isPartnerPath || isAdminPath) && !token) {
-    const loginUrl = new URL('/dang-nhap', request.url);
+    const loginUrl = new URL(isPartnerPath ? '/dang-nhap-doi-tac' : isAdminPath ? '/admin/dang-nhap' : '/dang-nhap', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // Protect admin routes
-  if (isAdminPath && userRole !== 'admin') {
+  if (isAdminPath && userRole !== 'ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Protect partner routes
-  if (isPartnerPath && userRole !== 'partner' && userRole !== 'admin') {
+  if (isPartnerPath && userRole !== 'PARTNER' && userRole !== 'ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

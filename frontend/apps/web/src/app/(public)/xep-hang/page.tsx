@@ -1,170 +1,515 @@
 "use client";
-import { Venue, Cast, FAQ } from '@/types';
-import Image from 'next/image';
+
 import Link from 'next/link';
-import React, { useState } from 'react';
-import { MockItem } from '@/types';
+import React, { useMemo, useState } from 'react';
 
-  export default function Page() {
-    
-    
-    
-    // Mock data arrays for loops
-    const areas: MockItem[] = [
-          { label: 'Tất cả', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } },
-          { label: 'Hà Nội', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } },
-          { label: 'TP.HCM', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' } }
-        ];
-    const list: Venue[] = [
-          { rank: 1, numColor: '#713f12', crown: 'linear-gradient(140deg, #fef08a, #eab308)', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Club Lumière', area: 'Tây Hồ · HN', metric: '12.4k lượt', open: () => window.location.href = '/stores/club-lumiere' },
-          { rank: 2, numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sora Lounge', area: 'Quận 1 · HCM', metric: '11.8k lượt', open: () => window.location.href = '/stores/club-lumiere' },
-          { rank: 3, numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'KTV Hoàng Gia', area: 'Kim Mã · HN', metric: '9.7k lượt', open: () => window.location.href = '/stores/club-lumiere' },
-          { rank: 4, numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)', img: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Diamond Bar', area: 'Quận 3 · HCM', metric: '8.9k lượt', open: () => window.location.href = '/stores/club-lumiere' },
-          { rank: 5, numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=150&q=70') center/cover", name: 'Sakura Lounge', area: 'Trúc Bạch · HN', metric: '8.1k lượt', open: () => window.location.href = '/stores/club-lumiere' }
-        ];
-    
-    // Standalone mock variables
-    const typeLabel = "Quán";
-    const pickCast = () => {};
-    const segCast = { background: 'transparent', color: '#8a879a', borderRadius: '16px', padding: '4px 14px', fontWeight: 600, fontSize: '13px' };
-    const pickQuan = () => {};
-    const segQuan = { background: '#fff', color: '#6d28d9', borderRadius: '16px', padding: '4px 14px', fontWeight: 600, fontSize: '13px', boxShadow: '0 2px 6px rgba(0,0,0,.08)' };
+type RankingKind = 'quan' | 'cast';
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+type RankingItem = {
+  rank: number;
+  numColor: string;
+  crown: string;
+  image: string;
+  name: string;
+  area: string;
+  metric: string;
+  href: string;
+};
 
-<>
-<>
+const storeRankings: RankingItem[] = [
+  {
+    rank: 1,
+    numColor: '#713f12',
+    crown: 'linear-gradient(140deg, #fef08a, #eab308)',
+    image: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Club Lumière',
+    area: 'Tây Hồ - HN',
+    metric: '12.4k lượt',
+    href: '/stores/club-lumiere',
+  },
+  {
+    rank: 2,
+    numColor: '#1e293b',
+    crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)',
+    image: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Sora Lounge',
+    area: 'Quận 1 - HCM',
+    metric: '11.8k lượt',
+    href: '/stores/sora-lounge',
+  },
+  {
+    rank: 3,
+    numColor: '#451a03',
+    crown: 'linear-gradient(140deg, #fed7aa, #b45309)',
+    image: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'KTV Hoàng Gia',
+    area: 'Kim Mã - HN',
+    metric: '9.7k lượt',
+    href: '/stores/ktv-hoang-gia',
+  },
+  {
+    rank: 4,
+    numColor: '#064e3b',
+    crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)',
+    image: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Diamond Bar',
+    area: 'Quận 3 - HCM',
+    metric: '8.9k lượt',
+    href: '/stores/diamond-bar',
+  },
+  {
+    rank: 5,
+    numColor: '#1e3a8a',
+    crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)',
+    image: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Sakura Lounge',
+    area: 'Trúc Bạch - HN',
+    metric: '8.1k lượt',
+    href: '/stores/sakura-lounge',
+  },
+];
 
+const castRankings: RankingItem[] = [
+  {
+    rank: 1,
+    numColor: '#713f12',
+    crown: 'linear-gradient(140deg, #fef08a, #eab308)',
+    image: "url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Michi',
+    area: '23 tuổi - Nổi tiếng Nhật',
+    metric: '4.9 sao',
+    href: '/casts/michi',
+  },
+  {
+    rank: 2,
+    numColor: '#1e293b',
+    crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)',
+    image: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Yuki',
+    area: '24 tuổi - Phong cách đẹp',
+    metric: '4.8 sao',
+    href: '/casts/yuki',
+  },
+  {
+    rank: 3,
+    numColor: '#451a03',
+    crown: 'linear-gradient(140deg, #fed7aa, #b45309)',
+    image: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Rina',
+    area: '21 tuổi - Trong độ tuổi 20',
+    metric: '4.7 sao',
+    href: '/casts/rina',
+  },
+  {
+    rank: 4,
+    numColor: '#064e3b',
+    crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)',
+    image: "url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Hana',
+    area: '22 tuổi - Tiếng Anh',
+    metric: '4.7 sao',
+    href: '/casts/hana',
+  },
+  {
+    rank: 5,
+    numColor: '#1e3a8a',
+    crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)',
+    image: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Aiko',
+    area: '25 tuổi - Hà Nội',
+    metric: '4.6 sao',
+    href: '/casts/aiko',
+  },
+];
 
+const areas = ['Tất cả', 'Hà Nội', 'TP.HCM'];
 
+export default function Page() {
+  const [rankingType, setRankingType] = useState<RankingKind>('quan');
 
-</>
+  const list = rankingType === 'quan' ? storeRankings : castRankings;
+  const title = rankingType === 'quan' ? 'Quán' : 'Cast';
+  const pageStyle: React.CSSProperties = {
+    width: '100%',
+    minHeight: '100vh',
+    padding: '40px 42px 56px',
+    background: '#101014',
+    color: '#f8f3e7',
+    fontFamily: 'var(--nl-font-sans)',
+  };
+  const headStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'end',
+    justifyContent: 'space-between',
+    gap: '24px',
+    marginBottom: '30px',
+  };
+  const titleStyle: React.CSSProperties = {
+    margin: 0,
+    fontSize: '32px',
+    lineHeight: 1.15,
+    fontWeight: 900,
+    color: '#fff8e6',
+  };
+  const subTitleStyle: React.CSSProperties = {
+    margin: '10px 0 0',
+    color: '#c7bd9e',
+    fontSize: '15px',
+  };
+  const tabWrapStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '4px',
+    border: '1px solid rgba(222, 181, 92, 0.28)',
+    borderRadius: '20px',
+    background: '#141418',
+  };
+  const filterWrapStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '26px',
+  };
+  const inactiveButtonStyle: React.CSSProperties = {
+    border: '1px solid rgba(222, 181, 92, 0.25)',
+    borderRadius: '18px',
+    padding: '10px 20px',
+    color: '#ddd0af',
+    background: 'transparent',
+    fontWeight: 800,
+    cursor: 'pointer',
+    font: 'inherit',
+  };
+  const activeButtonStyle: React.CSSProperties = {
+    ...inactiveButtonStyle,
+    color: '#17130b',
+    background: 'linear-gradient(135deg, #f4d989, #d1a944)',
+  };
+  const listStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+  };
+  const rowStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '54px 70px 1fr auto 24px',
+    alignItems: 'center',
+    gap: '18px',
+    width: '100%',
+    minHeight: '108px',
+    padding: '18px 22px',
+    border: '1px solid rgba(222, 181, 92, 0.22)',
+    borderRadius: '16px',
+    background: '#141418',
+    color: '#f8f3e7',
+    textDecoration: 'none',
+    boxShadow: '0 14px 34px rgba(0, 0, 0, 0.18)',
+  };
+  const rankBadgeStyle: React.CSSProperties = {
+    width: '54px',
+    height: '54px',
+    borderRadius: '14px',
+    display: 'grid',
+    placeItems: 'center',
+    fontSize: '22px',
+    fontWeight: 900,
+  };
+  const rankAvatarStyle: React.CSSProperties = {
+    width: '70px',
+    height: '70px',
+    borderRadius: '50%',
+    border: '1px solid rgba(244, 217, 137, 0.25)',
+  };
+  const rankCopyStyle: React.CSSProperties = {
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  };
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"background":"#fff","padding":"8px 18px 8px"}}><h2 style={{"fontSize":"19px","fontWeight":"800"}}>Xếp hạng {typeLabel}</h2><p style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>Tháng 6/2026 · Top 5</p></div>
-    <div className="hscroll" style={{"padding":"8px 18px 8px","display":"flex","gap":"7px","overflowX":"auto","background":"#fff"}}>
-      {areas?.map((a, index) => (<React.Fragment key={index}><div onClick={a.pick} style={a.style}>{a.label}</div></React.Fragment>))}
-    </div>
-    <div style={{"padding":"0 18px 12px","background":"#fff","borderBottom":"1px solid #ececec"}}><div style={{"display":"flex","gap":"6px","background":"#f3f2f5","borderRadius":"14px","padding":"4px"}}><div onClick={pickCast} style={segCast}>Cast</div><div onClick={pickQuan} style={segQuan}>Quán</div></div></div>
+  const tabs = useMemo(
+    () => [
+      { key: 'cast' as const, label: 'Cast' },
+      { key: 'quan' as const, label: 'Quan' },
+    ],
+    [],
+  );
 
-    <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"9px"}}>
-      {list?.map((r, index) => (<React.Fragment key={index}>
-        <div onClick={r.open} style={{"display":"flex","alignItems":"center","gap":"11px","background":"#fff","border":"1px solid #ececec","borderRadius":"13px","padding":"10px 12px","cursor":"pointer"}}>
-          <span style={{"width":"32px","height":"32px","borderRadius":"9px","flex":"none","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"14px","color":r.numColor,"background":r.crown}}>{r.rank}</span>
-          <span style={{"width":"44px","height":"44px","borderRadius":"50%","flex":"none","background":r.img}}></span>
-          <div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"700","fontSize":"14px"}}>{r.name}</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>{r.area}</div></div>
-          <span style={{"fontSize":"11px","color":"#6d28d9","fontWeight":"700"}}>{r.metric}</span>
+  return (
+    <main className="ranking-page" style={pageStyle}>
+      <section className="ranking-head" style={headStyle}>
+        <div>
+          <h1 style={titleStyle}>Bảng xếp hạng {title}</h1>
+          <p style={subTitleStyle}>Kỳ tháng 6/2026 - cập nhật 21/06 - giới hạn Top 5</p>
         </div>
-      </React.Fragment>))}
-    </div>
 
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
-      <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></Link>
-      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></Link>
-      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
-      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></Link>
-    </div>
-  </div>
-</div>
-</>
+        <div className="ranking-tabs" aria-label="Chuyển bảng xếp hạng" style={tabWrapStyle}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              className={rankingType === tab.key ? 'active' : ''}
+              style={rankingType === tab.key ? activeButtonStyle : inactiveButtonStyle}
+              onClick={() => setRankingType(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-
-</div>
-        <div className="hidden md:block">
-
-<>
-<>
-
-
-
-
-</>
-
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" style={{"color":"#6d28d9","fontWeight":600}}>Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div></div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/tai-khoan" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Tài khoản</Link></div>
-    </div>
-
-    <div style={{"padding":"26px 34px 8px"}}><h2 style={{"fontSize":"24px","fontWeight":"800"}}>Bảng xếp hạng {typeLabel}</h2><p style={{"fontSize":"13px","color":"#5b5870","marginTop":"5px"}}>Kỳ tháng 6/2026 · cập nhật 21/06 · giới hạn Top 5</p></div>
-
-    <div style={{"padding":"14px 34px 0","display":"flex","alignItems":"center","gap":"10px","flexWrap":"wrap"}}>
-      {areas?.map((a, index) => (<React.Fragment key={index}><div onClick={a.pick} style={a.style}>{a.label}</div></React.Fragment>))}
-      <div style={{"marginLeft":"auto","display":"flex","gap":"8px","background":"#fff","border":"1px solid #ececec","borderRadius":"18px","padding":"4px"}}>
-        <div onClick={pickCast} style={segCast}>Cast</div>
-        <div onClick={pickQuan} style={segQuan}>Quán</div>
+      <div className="ranking-filters" aria-label="Lọc khu vực" style={filterWrapStyle}>
+        {areas.map((area, index) => (
+          <button key={area} type="button" className={index === 0 ? 'active' : ''} style={index === 0 ? activeButtonStyle : inactiveButtonStyle}>
+            {area}
+          </button>
+        ))}
       </div>
-    </div>
 
-    <div style={{"padding":"18px 34px 32px","display":"flex","flexDirection":"column","gap":"12px"}}>
-      {list?.map((r, index) => (<React.Fragment key={index}>
-        <div onClick={r.open} className="card" style={{"display":"flex","alignItems":"center","gap":"16px","background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"14px 16px","boxShadow":"0 3px 12px rgba(40,20,60,.05)"}}>
-          <span style={{"width":"42px","height":"42px","borderRadius":"12px","flex":"none","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"18px","color":r.numColor,"background":r.crown}}>{r.rank}</span>
-          <span style={{"width":"56px","height":"56px","borderRadius":"50%","flex":"none","background":r.img}}></span>
-          <div style={{"flex":"1"}}><div style={{"fontWeight":"700","fontSize":"16px"}}>{r.name}</div><div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"2px"}}>{r.area}</div></div>
-          <div style={{"fontSize":"13px","color":"#6d28d9","fontWeight":"700"}}>{r.metric}</div>
-          <Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/chevron-right.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" />
-        </div>
-      </React.Fragment>))}
-    </div>
-  </div>
-</div>
-</>
+      <section className="ranking-list" aria-label={`Bảng xếp hạng ${title}`} style={listStyle}>
+        {list.map((item) => (
+          <Link key={`${rankingType}-${item.rank}`} href={item.href} className="ranking-row" style={rowStyle}>
+            <span className="rank-badge" style={{ ...rankBadgeStyle, color: item.numColor, background: item.crown }}>
+              {item.rank}
+            </span>
+            <span className="rank-avatar" style={{ ...rankAvatarStyle, background: item.image }} />
+            <span className="rank-copy" style={rankCopyStyle}>
+              <strong style={{ color: '#fff8e6', fontSize: '20px' }}>{item.name}</strong>
+              <small style={{ color: '#c7bd9e', fontSize: '15px' }}>{item.area}</small>
+            </span>
+            <span className="rank-metric" style={{ color: '#f1ce69', fontWeight: 900, whiteSpace: 'nowrap' }}>
+              {item.metric}
+            </span>
+            <span className="rank-arrow" aria-hidden="true" style={{ color: '#8f8877', fontSize: '36px', lineHeight: 1 }}>
+              ›
+            </span>
+          </Link>
+        ))}
+      </section>
 
+      <style jsx global>{`
+        .ranking-page {
+          width: 100%;
+          min-height: 100vh;
+          padding: 40px 42px 56px;
+          background: #101014;
+          color: #f8f3e7;
+          font-family: var(--nl-font-sans);
+        }
 
+        .ranking-head {
+          display: flex;
+          align-items: end;
+          justify-content: space-between;
+          gap: 24px;
+          margin-bottom: 30px;
+        }
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
-  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-      <div style={{"maxWidth":"300px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
-        </div>
-      </div>
-      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-        </div>
-      </div>
-    </div>
-    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-    </div>
-    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-      <div>v2.0.0 • Nightlife Platform</div>
-      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-      </React.Fragment>
-    );
-  }
-  
+        h1 {
+          margin: 0;
+          font-size: 32px;
+          line-height: 1.15;
+          font-weight: 900;
+          color: #fff8e6;
+        }
 
+        p {
+          margin: 10px 0 0;
+          color: #c7bd9e;
+          font-size: 15px;
+        }
+
+        .ranking-tabs,
+        .ranking-filters {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .ranking-tabs {
+          padding: 4px;
+          border: 1px solid rgba(222, 181, 92, 0.28);
+          border-radius: 20px;
+          background: #141418;
+        }
+
+        button {
+          border: 0;
+          cursor: pointer;
+          font: inherit;
+        }
+
+        .ranking-tabs button,
+        .ranking-filters button {
+          border-radius: 18px;
+          padding: 10px 20px;
+          color: #ddd0af;
+          background: transparent;
+          font-weight: 800;
+        }
+
+        .ranking-tabs button.active,
+        .ranking-filters button.active {
+          color: #17130b;
+          background: linear-gradient(135deg, #f4d989, #d1a944);
+        }
+
+        .ranking-filters {
+          margin-bottom: 26px;
+        }
+
+        .ranking-filters button {
+          border: 1px solid rgba(222, 181, 92, 0.25);
+        }
+
+        .ranking-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .ranking-row {
+          display: grid;
+          grid-template-columns: 54px 70px 1fr auto 24px;
+          align-items: center;
+          gap: 18px;
+          min-height: 108px;
+          padding: 18px 22px;
+          border: 1px solid rgba(222, 181, 92, 0.22);
+          border-radius: 16px;
+          background: #141418;
+          color: inherit;
+          text-decoration: none;
+          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+          transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+        }
+
+        .ranking-row:hover {
+          transform: translateY(-2px);
+          border-color: rgba(244, 217, 137, 0.55);
+          background: #17171c;
+        }
+
+        .rank-badge {
+          width: 54px;
+          height: 54px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          font-size: 22px;
+          font-weight: 900;
+        }
+
+        .rank-avatar {
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          border: 1px solid rgba(244, 217, 137, 0.25);
+        }
+
+        .rank-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .rank-copy strong {
+          color: #fff8e6;
+          font-size: 20px;
+        }
+
+        .rank-copy small {
+          color: #c7bd9e;
+          font-size: 15px;
+        }
+
+        .rank-metric {
+          color: #f1ce69;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+
+        .rank-arrow {
+          color: #8f8877;
+          font-size: 36px;
+          line-height: 1;
+        }
+
+        @media (max-width: 767px) {
+          .ranking-page {
+            padding: 22px 16px 36px;
+          }
+
+          .ranking-head {
+            align-items: stretch;
+            flex-direction: column;
+            margin-bottom: 18px;
+          }
+
+          h1 {
+            font-size: 25px;
+          }
+
+          p {
+            font-size: 13px;
+          }
+
+          .ranking-tabs {
+            align-self: stretch;
+          }
+
+          .ranking-tabs button {
+            flex: 1;
+          }
+
+          .ranking-filters {
+            overflow-x: auto;
+            padding-bottom: 3px;
+          }
+
+          .ranking-filters button {
+            flex: none;
+          }
+
+          .ranking-row {
+            grid-template-columns: 42px 52px 1fr;
+            gap: 12px;
+            min-height: 88px;
+            padding: 14px;
+          }
+
+          .rank-badge {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 18px;
+          }
+
+          .rank-avatar {
+            width: 52px;
+            height: 52px;
+          }
+
+          .rank-copy strong {
+            font-size: 16px;
+          }
+
+          .rank-copy small {
+            font-size: 12px;
+          }
+
+          .rank-metric {
+            grid-column: 3;
+            font-size: 12px;
+          }
+
+          .rank-arrow {
+            display: none;
+          }
+        }
+      `}</style>
+    </main>
+  );
+}

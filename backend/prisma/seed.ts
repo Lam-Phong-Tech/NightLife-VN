@@ -49,6 +49,24 @@ async function main() {
     },
   });
 
+  const member = await prisma.user.upsert({
+    where: { email: 'member@nightlife.vn' },
+    update: {
+      displayName: 'Demo Member',
+      role: 'USER',
+      tier: 'FREE',
+      status: 'ACTIVE',
+    },
+    create: {
+      email: 'member@nightlife.vn',
+      passwordHash,
+      displayName: 'Demo Member',
+      role: 'USER',
+      tier: 'FREE',
+      status: 'ACTIVE',
+    },
+  });
+
   await prisma.store.upsert({
     where: { slug: 'demo-nightlife-store' },
     update: {
@@ -70,6 +88,7 @@ async function main() {
 
   console.log({
     admin: admin.email,
+    member: member.email,
     partner: partner.email,
     password: 'Str0ngPass!',
     store: 'demo-nightlife-store',

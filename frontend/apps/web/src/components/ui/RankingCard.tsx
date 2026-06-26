@@ -1,5 +1,6 @@
 import React from 'react';
 import { Venue, Cast } from '@/types/index';
+import { PlaceholderMedia } from './MediaPlaceholder';
 
 interface RankingCardProps {
   item: Venue | Cast;
@@ -49,14 +50,11 @@ export const RankingCard: React.FC<RankingCardProps> = ({ item, onClick, style }
       >
         {ranked.rank}
       </span>
-      <span
-        style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '50%',
-          flex: 'none',
-          background: ranked.img
-        }}
+      <PlaceholderMedia
+        src={ranked.img}
+        alt={ranked.name || 'Xếp hạng'}
+        label=""
+        style={{ width: '38px', height: '38px', borderRadius: '50%', flex: 'none' }}
       />
       <div style={{ flex: '1', minWidth: '0' }}>
         <div style={{ fontWeight: '700', fontSize: '13px' }}>{ranked.name}</div>

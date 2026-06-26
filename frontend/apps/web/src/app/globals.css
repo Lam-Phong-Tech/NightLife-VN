@@ -17,6 +17,7 @@
 
 :root {
   color-scheme: dark;
+  --nl-font-sans: "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -54,7 +55,7 @@
 body {
   background-color: var(--color-night-900);
   color: #ededed;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--nl-font-sans);
 }
 
 @theme inline {
@@ -149,6 +150,7 @@ body {
 /* Premium dark/gold theme override for generated prototype pages. */
 :root {
   --nl-bg: #0c0c0f;
+  --nl-font-sans: "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --nl-surface: #141417;
   --nl-surface-soft: rgba(255, 255, 255, 0.045);
   --nl-surface-strong: rgba(255, 255, 255, 0.075);
@@ -164,6 +166,12 @@ html,
 body {
   background: var(--nl-bg) !important;
   color: var(--nl-text) !important;
+  font-family: var(--nl-font-sans) !important;
+}
+
+body,
+body * {
+  font-family: var(--nl-font-sans) !important;
 }
 
 body > div {
@@ -280,4 +288,317 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: var(--nl-muted) !important;
+}
+
+/* Shared chrome owns navigation/footer. Hide generated legacy nav/footer fragments. */
+.nl-page-content .hidden.md\:block [style*="justify-content: space-between"][style*="padding: 18px 34px"][style*="border-bottom"],
+.nl-page-content .hidden.md\:block [style*="justify-content: space-between"][style*="padding: 18px 34px"][style*="borderBottom"],
+.nl-page-content .hidden.md\:block [style*="justify-content:space-between"][style*="padding:18px 34px"][style*="background:#fff"],
+.nl-page-content .hidden.md\:block [style*="nightlife"][style*=".hn"],
+.nl-page-content [style*="padding: 60px 0px 20px"],
+.nl-page-content [style*="padding: 60px 0 20px"],
+.nl-page-content [style*="padding:60px 0 20px"],
+.nl-page-content [style*="padding:60px 0px 20px"],
+.nl-page-content [style*="border-top"][style*="Nightlife Platform"],
+.nl-page-content [style*="borderTop"][style*="Nightlife Platform"],
+.nl-page-content .block.md\:hidden [style*="height: 64px"][style*="justify-content: space-around"],
+.nl-page-content .block.md\:hidden [style*="height:64px"][style*="justify-content:space-around"],
+.nl-page-content .block.md\:hidden [style*="height:64px"][style*="background:#fff"][style*="justify-content:space-around"] {
+  display: none !important;
+}
+
+.nl-page-content .block.md\:hidden > div,
+.nl-page-content .hidden.md\:block > div {
+  background: var(--nl-bg) !important;
+}
+
+.nl-page-content .hidden.md\:block > div > div,
+.nl-page-content .block.md\:hidden > div > div {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.nl-page-content a {
+  text-decoration: none;
+}
+
+.nl-media-fallback {
+  position: relative !important;
+  overflow: hidden !important;
+  background: linear-gradient(135deg, #19191d, #2a2418) !important;
+}
+
+.nl-media-fallback::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(212, 178, 106, 0.26), transparent 26%),
+    radial-gradient(circle at 82% 70%, rgba(255, 255, 255, 0.08), transparent 24%) !important;
+  pointer-events: none !important;
+}
+
+.nl-media-fallback::after {
+  content: "Chưa có ảnh" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 0 !important;
+  color: var(--nl-gold-soft) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+.nl-media-fallback > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ranking page: keep Next Link rows as full-width cards even when prototype/global styles compete. */
+.nl-page-content .ranking-page {
+  width: 100% !important;
+  min-height: 100vh !important;
+  padding: 40px 42px 56px !important;
+  background: #101014 !important;
+  color: #f8f3e7 !important;
+  font-family: var(--nl-font-sans) !important;
+}
+
+.nl-page-content .ranking-head {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+  margin-bottom: 30px !important;
+}
+
+.nl-page-content .ranking-tabs,
+.nl-page-content .ranking-filters {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.nl-page-content .ranking-tabs {
+  padding: 4px !important;
+  border: 1px solid rgba(222, 181, 92, 0.28) !important;
+  border-radius: 20px !important;
+  background: #141418 !important;
+}
+
+.nl-page-content .ranking-filters {
+  margin-bottom: 26px !important;
+}
+
+.nl-page-content .ranking-tabs button,
+.nl-page-content .ranking-filters button {
+  border: 1px solid rgba(222, 181, 92, 0.25) !important;
+  border-radius: 18px !important;
+  padding: 10px 20px !important;
+  color: #ddd0af !important;
+  background: transparent !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+}
+
+.nl-page-content .ranking-tabs button.active,
+.nl-page-content .ranking-filters button.active {
+  color: #17130b !important;
+  background: linear-gradient(135deg, #f4d989, #d1a944) !important;
+}
+
+.nl-page-content .ranking-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+}
+
+.nl-page-content a.ranking-row {
+  display: grid !important;
+  grid-template-columns: 54px 70px 1fr auto 24px !important;
+  align-items: center !important;
+  gap: 18px !important;
+  width: 100% !important;
+  min-height: 108px !important;
+  padding: 18px 22px !important;
+  border: 1px solid rgba(222, 181, 92, 0.22) !important;
+  border-radius: 16px !important;
+  background: #141418 !important;
+  color: #f8f3e7 !important;
+  text-decoration: none !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18) !important;
+}
+
+.nl-page-content .rank-badge {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 14px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+}
+
+.nl-page-content .rank-avatar {
+  width: 70px !important;
+  height: 70px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(244, 217, 137, 0.25) !important;
+}
+
+.nl-page-content .rank-copy {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.nl-page-content .rank-copy strong {
+  color: #fff8e6 !important;
+  font-size: 20px !important;
+}
+
+.nl-page-content .rank-copy small {
+  color: #c7bd9e !important;
+  font-size: 15px !important;
+}
+
+.nl-page-content .rank-metric {
+  color: #f1ce69 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.nl-page-content .rank-arrow {
+  color: #8f8877 !important;
+  font-size: 36px !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 767px) {
+  .nl-page-content .ranking-page {
+    padding: 22px 16px 36px !important;
+  }
+
+  .nl-page-content .ranking-head {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    margin-bottom: 18px !important;
+  }
+
+  .nl-page-content .ranking-tabs {
+    align-self: stretch !important;
+  }
+
+  .nl-page-content .ranking-tabs button {
+    flex: 1 !important;
+  }
+
+  .nl-page-content .ranking-filters {
+    overflow-x: auto !important;
+    padding-bottom: 3px !important;
+  }
+
+  .nl-page-content .ranking-filters button {
+    flex: none !important;
+  }
+
+  .nl-page-content a.ranking-row {
+    grid-template-columns: 42px 52px 1fr !important;
+    gap: 12px !important;
+    min-height: 88px !important;
+    padding: 14px !important;
+  }
+
+  .nl-page-content .rank-badge {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    font-size: 18px !important;
+  }
+
+  .nl-page-content .rank-avatar {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .nl-page-content .rank-copy strong {
+    font-size: 16px !important;
+  }
+
+  .nl-page-content .rank-copy small {
+    font-size: 12px !important;
+  }
+
+  .nl-page-content .rank-metric {
+    grid-column: 3 !important;
+    font-size: 12px !important;
+  }
+
+  .nl-page-content .rank-arrow {
+    display: none !important;
+  }
+
+  .nl-booking-layout,
+  .nl-booking-form-grid,
+  .nl-login-shell,
+  .nl-login-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .nl-booking-layout aside {
+    position: static !important;
+  }
+
+  .nl-login-visual {
+    min-height: 360px !important;
+    padding: 24px !important;
+  }
+
+  .nl-login-form-section {
+    min-height: auto !important;
+    padding: 22px !important;
+    align-items: flex-start !important;
+  }
+
+  .nl-site-header {
+    min-height: auto !important;
+    padding: 13px 18px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .nl-site-nav-links {
+    display: none !important;
+  }
+
+  .nl-site-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+  }
+
+  .nl-site-actions a,
+  .nl-site-actions span {
+    min-height: 36px !important;
+    font-size: 12px !important;
+  }
+
+  .nl-site-footer {
+    display: none !important;
+  }
+
+  .nl-page-content {
+    padding-bottom: 66px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .nl-mobile-bottom-nav {
+    display: none !important;
+  }
 }
