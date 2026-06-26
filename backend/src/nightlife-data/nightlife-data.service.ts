@@ -1,7 +1,7 @@
 import {
-  ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
@@ -79,7 +79,9 @@ export class NightlifeDataService {
     }
 
     if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new ForbiddenException('Coupon usage limit has been reached');
+      throw new UnprocessableEntityException(
+        'Coupon usage limit has been reached',
+      );
     }
 
     const guest = await this.prisma.guest.create({
@@ -337,11 +339,15 @@ export class NightlifeDataService {
         id: billId,
         deletedAt: null,
       },
-      select: { id: true },
+      select: { id: true, status: true },
     });
 
     if (!bill) {
       throw new NotFoundException('Bill not found');
+    }
+
+    if (bill.status === 'VERIFIED') {
+      throw new UnprocessableEntityException('Bill has already been verified');
     }
 
     const now = new Date();

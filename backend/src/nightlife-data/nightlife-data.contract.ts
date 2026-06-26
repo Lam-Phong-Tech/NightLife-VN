@@ -1,0 +1,373 @@
+import { applyDecorators } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiUnauthorizedResponse,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
+import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { ReviewBillDto } from './dto/review-bill.dto';
+
+const badRequestExample = {
+  statusCode: 400,
+  message: ['email must be an email'],
+  error: 'Bad Request',
+};
+
+const unauthorizedExample = {
+  statusCode: 401,
+  message: 'Unauthorized',
+};
+
+const forbiddenExample = {
+  statusCode: 403,
+  message: 'Forbidden resource',
+  error: 'Forbidden',
+};
+
+const notFoundExample = {
+  statusCode: 404,
+  message: 'Coupon not found',
+  error: 'Not Found',
+};
+
+const unprocessableExample = {
+  statusCode: 422,
+  message: 'Coupon usage limit has been reached',
+  error: 'Unprocessable Entity',
+};
+
+const couponExample = {
+  id: 'coupon_01',
+  code: 'WELCOME20',
+  name: 'Welcome 20%',
+  description: '20% off for first booking',
+  discountType: 'PERCENT',
+  discountValue: 20,
+  maxDiscountVnd: 200000,
+  minSpendVnd: 1000000,
+  startsAt: '2026-06-01T00:00:00.000Z',
+  endsAt: '2026-07-01T00:00:00.000Z',
+  store: {
+    id: 'store_01',
+    name: 'Luna Lounge',
+    slug: 'luna-lounge',
+    category: 'LOUNGE',
+    city: 'Ho Chi Minh City',
+    district: 'District 1',
+  },
+};
+
+const guestClaimExample = {
+  issue: {
+    id: 'issue_01',
+    code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+    status: 'ISSUED',
+    expiresAt: '2026-07-01T00:00:00.000Z',
+    createdAt: '2026-06-26T10:00:00.000Z',
+    coupon: {
+      id: 'coupon_01',
+      code: 'WELCOME20',
+      name: 'Welcome 20%',
+    },
+  },
+  guest: { id: 'guest_01' },
+};
+
+const partnerStoreExample = {
+  id: 'store_01',
+  name: 'Luna Lounge',
+  slug: 'luna-lounge',
+  category: 'LOUNGE',
+  status: 'ACTIVE',
+  city: 'Ho Chi Minh City',
+  district: 'District 1',
+  createdAt: '2026-06-01T00:00:00.000Z',
+};
+
+const partnerCouponExample = {
+  id: 'coupon_01',
+  storeId: 'store_01',
+  code: 'WELCOME20',
+  name: 'Welcome 20%',
+  status: 'ACTIVE',
+  usedCount: 12,
+  usageLimit: 100,
+  startsAt: '2026-06-01T00:00:00.000Z',
+  endsAt: '2026-07-01T00:00:00.000Z',
+  store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+};
+
+const bookingExample = {
+  id: 'booking_01',
+  storeId: 'store_01',
+  status: 'CONFIRMED',
+  scheduledAt: '2026-06-30T13:00:00.000Z',
+  partySize: 4,
+  subtotalVnd: 2000000,
+  discountVnd: 200000,
+  totalVnd: 1800000,
+  store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  coupon: { id: 'coupon_01', code: 'WELCOME20', name: 'Welcome 20%' },
+  user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'GOLD' },
+  guest: null,
+};
+
+const billExample = {
+  id: 'bill_01',
+  storeId: 'store_01',
+  billNumber: 'BILL-2026-0001',
+  status: 'SUBMITTED',
+  subtotalVnd: 2000000,
+  discountVnd: 200000,
+  totalVnd: 1800000,
+  submittedAt: '2026-06-26T10:00:00.000Z',
+  verifiedAt: null,
+  rejectedAt: null,
+  rejectReason: null,
+  store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  booking: {
+    id: 'booking_01',
+    status: 'CONFIRMED',
+    scheduledAt: '2026-06-30T13:00:00.000Z',
+  },
+  coupon: { id: 'coupon_01', code: 'WELCOME20', name: 'Welcome 20%' },
+};
+
+const memberCouponIssueExample = {
+  id: 'issue_01',
+  code: 'MEMBER-2026-0001',
+  status: 'ISSUED',
+  expiresAt: '2026-07-01T00:00:00.000Z',
+  usedAt: null,
+  coupon: {
+    id: 'coupon_01',
+    code: 'WELCOME20',
+    name: 'Welcome 20%',
+    store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  },
+};
+
+const sensitiveBillExample = {
+  ...billExample,
+  serviceChargeVnd: 100000,
+  taxVnd: 180000,
+  paidVnd: 2080000,
+  commissionAmountVnd: 180000,
+  pointsEarned: 180,
+  discountRuleSnapshot: { type: 'PERCENT', value: 10 },
+  commissionRuleSnapshot: { rate: 0.1 },
+  pointRuleSnapshot: { vndPerPoint: 10000 },
+  user: {
+    id: 'user_01',
+    email: 'member@example.com',
+    displayName: 'Minh Nguyen',
+    phone: '+84901234567',
+    tier: 'GOLD',
+  },
+  guest: null,
+  media: [
+    {
+      id: 'media_01',
+      storageKey: 'bills/bill_01.jpg',
+      originalName: 'receipt.jpg',
+      mimeType: 'image/jpeg',
+      access: 'PROTECTED',
+      url: null,
+    },
+  ],
+};
+
+const reviewedBillExample = {
+  id: 'bill_01',
+  status: 'VERIFIED',
+  verifiedAt: '2026-06-26T10:15:00.000Z',
+  rejectedAt: null,
+  rejectReason: null,
+  reviewedById: 'admin_01',
+};
+
+export function PublicCouponsContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public action: list active coupons',
+      description: 'Auth guard: none. Returns public coupon data only.',
+    }),
+    ApiOkResponse({
+      description: 'Active public coupons.',
+      schema: { example: [couponExample] },
+    }),
+  );
+}
+
+export function ClaimGuestCouponContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Coupon action: guest claims a public coupon',
+      description: 'Auth guard: none. Creates a guest and coupon issue.',
+    }),
+    ApiParam({ name: 'couponId', example: 'coupon_01' }),
+    ApiBody({ type: ClaimGuestCouponDto }),
+    ApiCreatedResponse({
+      description: 'Guest coupon issue created.',
+      schema: { example: guestClaimExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Coupon does not exist or is not claimable.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Coupon exists but cannot be claimed.',
+      schema: { example: unprocessableExample },
+    }),
+  );
+}
+
+export function PartnerStoresContract() {
+  return guardedListContract(
+    'Partner action: list own stores',
+    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN).',
+    partnerStoreExample,
+  );
+}
+
+export function PartnerCouponsContract() {
+  return guardedListContract(
+    'Partner action: list own coupons',
+    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN).',
+    partnerCouponExample,
+  );
+}
+
+export function PartnerBookingsContract() {
+  return guardedListContract(
+    'Booking action: partner lists bookings',
+    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN).',
+    bookingExample,
+  );
+}
+
+export function PartnerBillsContract() {
+  return guardedListContract(
+    'Bill action: partner lists bills',
+    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN).',
+    billExample,
+  );
+}
+
+export function MemberBookingsContract() {
+  return guardedListContract(
+    'Booking action: member lists own bookings',
+    'Auth guard: JwtAuthGuard.',
+    {
+      ...bookingExample,
+      storeId: undefined,
+      user: undefined,
+      guest: undefined,
+    },
+  );
+}
+
+export function MemberCouponIssuesContract() {
+  return guardedListContract(
+    'Coupon action: member lists own coupon issues',
+    'Auth guard: JwtAuthGuard.',
+    memberCouponIssueExample,
+  );
+}
+
+export function AdminSensitiveBillsContract() {
+  return guardedListContract(
+    'Admin action: list sensitive bill reviews',
+    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN).',
+    sensitiveBillExample,
+  );
+}
+
+export function ReviewSensitiveBillContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin action: review a sensitive bill',
+      description: 'Auth guard: JwtAuthGuard + RolesGuard(ADMIN).',
+    }),
+    ApiParam({ name: 'billId', example: 'bill_01' }),
+    ApiBody({ type: ReviewBillDto }),
+    ApiOkResponse({
+      description: 'Bill review result.',
+      schema: { example: reviewedBillExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid request body.',
+      schema: {
+        example: {
+          statusCode: 400,
+          message: ['rejectReason should not be empty when approve is false'],
+          error: 'Bad Request',
+        },
+      },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Bill does not exist or was deleted.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Bill not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Bill exists but cannot be reviewed in the requested state.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Bill has already been verified',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
+function guardedListContract(
+  summary: string,
+  description: string,
+  example: Record<string, unknown>,
+) {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({ summary, description }),
+    ApiOkResponse({
+      description: 'List response.',
+      schema: { example: [example] },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user does not have the required role.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}

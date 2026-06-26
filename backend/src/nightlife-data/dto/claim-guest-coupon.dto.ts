@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class ClaimGuestCouponDto {
   @ApiPropertyOptional({ example: 'Guest Name' })
@@ -7,10 +7,13 @@ export class ClaimGuestCouponDto {
   @IsString()
   displayName?: string;
 
-  @ApiPropertyOptional({ example: '+84901234567' })
-  @IsOptional()
+  @ApiProperty({
+    example: '+84901234567',
+    description: 'Guest phone used to identify the coupon claim.',
+  })
+  @IsNotEmpty()
   @IsString()
-  phone?: string;
+  phone: string;
 
   @ApiPropertyOptional({ example: 'guest@example.com' })
   @IsOptional()
