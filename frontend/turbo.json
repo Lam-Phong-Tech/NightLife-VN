@@ -8,9 +8,9 @@
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "start": {
-      "dependsOn": ["build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["PORT"]
     },
     "lint": {
       "dependsOn": ["^lint"]

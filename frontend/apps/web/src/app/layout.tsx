@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
 import { SiteChrome } from "@/components/layout/SiteChrome";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 // metadata: Next.js đọc object này để sinh ra thẻ <title>, <meta> trong <head>.
 // Đây là tính năng của App Router (không cần tự viết thẻ <head>).
