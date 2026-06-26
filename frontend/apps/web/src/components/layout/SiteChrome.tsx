@@ -386,13 +386,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           right: 0,
           bottom: 0,
           zIndex: 60,
-          height: "66px",
+          height: "calc(74px + env(safe-area-inset-bottom))",
           background: colors.navBg,
           borderTop: `1px solid ${colors.borderGold22}`,
           display: "grid",
           gridTemplateColumns: "repeat(5,1fr)",
           alignItems: "center",
-          paddingBottom: "6px",
+          padding: "6px 8px calc(8px + env(safe-area-inset-bottom))",
           backdropFilter: "blur(16px)",
         }}
         className="nl-mobile-bottom-nav"
@@ -409,10 +409,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "4px",
+                minHeight: "54px",
+                borderRadius: "14px",
+                background: active ? "rgba(212,178,106,.1)" : "transparent",
                 textDecoration: "none",
                 fontSize: "9.5px",
                 fontWeight: active ? 700 : 500,
+                touchAction: "manipulation",
               }}
             >
               <Icon size={21} />

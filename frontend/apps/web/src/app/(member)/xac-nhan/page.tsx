@@ -73,6 +73,7 @@ export default function Page() {
     >
       <section style={{ width: "100%", maxWidth: "none", margin: "0 auto" }}>
         <div
+          className="confirm-alert"
           style={{
             borderRadius: "20px",
             border: "1px solid rgba(34,197,94,.32)",
@@ -151,6 +152,7 @@ export default function Page() {
               }}
             >
               <div
+                className="confirm-venue-head"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -171,7 +173,7 @@ export default function Page() {
                     border: `1px solid ${colors.borderStrong}`,
                   }}
                 />
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="confirm-venue-info" style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: colors.text, fontSize: "20px", fontWeight: 900 }}>
                     {booking.venueName}
                   </div>
@@ -190,6 +192,7 @@ export default function Page() {
                   </div>
                 </div>
                 <span
+                  className="confirm-status"
                   style={{
                     minHeight: "34px",
                     borderRadius: "17px",
@@ -209,6 +212,7 @@ export default function Page() {
               </div>
 
               <div
+                className="confirm-detail-grid"
                 style={{
                   padding: "22px 20px",
                   display: "grid",
@@ -229,6 +233,7 @@ export default function Page() {
             </article>
 
             <div
+              className="confirm-note"
               style={{
                 marginTop: "20px",
                 background: "linear-gradient(135deg,rgba(212,178,106,.14),rgba(212,178,106,.055))",
@@ -290,6 +295,7 @@ export default function Page() {
           </div>
 
           <aside
+            className="confirm-voucher"
             style={{
               borderRadius: "22px",
               border: `1px solid ${colors.border}`,
@@ -427,7 +433,51 @@ export default function Page() {
 
         @media (max-width: 640px) {
           main {
-            padding-bottom: 96px !important;
+            padding: 24px 18px calc(124px + env(safe-area-inset-bottom)) !important;
+            overflow-x: hidden !important;
+          }
+
+          .confirm-alert {
+            align-items: flex-start !important;
+            border-radius: 18px !important;
+            padding: 18px !important;
+          }
+
+          .confirm-layout {
+            gap: 22px !important;
+            margin-top: 24px !important;
+          }
+
+          .confirm-venue-head {
+            align-items: flex-start !important;
+            gap: 12px !important;
+            padding: 16px !important;
+            flex-wrap: wrap !important;
+          }
+
+          .confirm-venue-info {
+            flex: 1 1 calc(100% - 82px) !important;
+          }
+
+          .confirm-status {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+
+          .confirm-detail-grid {
+            grid-template-columns: 1fr !important;
+            gap: 18px !important;
+            padding: 18px 16px !important;
+          }
+
+          .confirm-note {
+            padding: 16px !important;
+            font-size: 13px !important;
+            line-height: 1.65 !important;
+          }
+
+          .confirm-voucher {
+            margin-bottom: 16px !important;
           }
         }
       `}</style>

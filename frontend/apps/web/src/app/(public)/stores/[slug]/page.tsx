@@ -8,6 +8,29 @@ export default function Page({ params }: { params: { slug?: string, [key: string
   const [activeRankTab, setActiveRankTab] = useState('quan');
   const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
   const [isReg, setIsReg] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [guestCount, setGuestCount] = useState(4);
+  const [activeStoreTab, setActiveStoreTab] = useState(0);
+  const [selectedDateIndex, setSelectedDateIndex] = useState(0);
+  const [selectedTimeIndex, setSelectedTimeIndex] = useState(1);
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    color: active ? '#d4b26a' : '#8a879a',
+    fontWeight: active ? 800 : 600,
+    borderBottom: active ? '2px solid #d4b26a' : '2px solid transparent',
+    paddingBottom: '12px',
+    cursor: 'pointer',
+  });
+  const slotStyle = (active: boolean): React.CSSProperties => ({
+    background: active ? '#d4b26a' : 'rgba(255,255,255,.045)',
+    color: active ? '#241a0a' : '#d8d1c1',
+    border: active ? '1px solid #d4b26a' : '1px solid rgba(212,178,106,.24)',
+    borderRadius: '18px',
+    padding: '8px 14px',
+    fontWeight: 700,
+    fontSize: '12px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  });
   const thumbs: MockItem[] = [
     { bg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover" },
     { bg: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover" },
@@ -15,11 +38,11 @@ export default function Page({ params }: { params: { slug?: string, [key: string
           { bg: "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=360&q=70') center/cover" }
         ];
     const tabs: MockItem[] = [
-          { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
-          { label: 'Bảng giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
-          { label: 'Cast', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
-          { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } },
-          { label: 'Bản đồ', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
+          { label: 'Giới thiệu', style: tabStyle(activeStoreTab === 0), pick: () => setActiveStoreTab(0) },
+          { label: 'Bảng giá', style: tabStyle(activeStoreTab === 1), pick: () => setActiveStoreTab(1) },
+          { label: 'Cast', style: tabStyle(activeStoreTab === 2), pick: () => setActiveStoreTab(2) },
+          { label: 'Đánh giá', style: tabStyle(activeStoreTab === 3), pick: () => setActiveStoreTab(3) },
+          { label: 'Bản đồ', style: tabStyle(activeStoreTab === 4), pick: () => setActiveStoreTab(4) }
         ];
     const cast: Cast[] = Array(5).fill({
         name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
@@ -33,15 +56,15 @@ export default function Page({ params }: { params: { slug?: string, [key: string
         open: () => console.log('Navigate')
       });
     const dates: MockItem[] = [
-          { label: 'T6 · 21/06', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
-          { label: 'T7 · 22/06', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
-          { label: 'CN · 23/06', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } }
+          { label: 'T6 · 21/06', style: slotStyle(selectedDateIndex === 0), pick: () => setSelectedDateIndex(0) },
+          { label: 'T7 · 22/06', style: slotStyle(selectedDateIndex === 1), pick: () => setSelectedDateIndex(1) },
+          { label: 'CN · 23/06', style: slotStyle(selectedDateIndex === 2), pick: () => setSelectedDateIndex(2) }
         ];
     const times: MockItem[] = [
-          { label: '20:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
-          { label: '21:00', style: { background: '#6d28d9', color: '#fff', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
-          { label: '22:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } },
-          { label: '23:00', style: { background: '#fff', border: '1px solid #ececec', color: '#5b5870', borderRadius: '18px', padding: '6px 14px', fontWeight: 600, fontSize: '12px' } }
+          { label: '20:00', style: slotStyle(selectedTimeIndex === 0), pick: () => setSelectedTimeIndex(0) },
+          { label: '21:00', style: slotStyle(selectedTimeIndex === 1), pick: () => setSelectedTimeIndex(1) },
+          { label: '22:00', style: slotStyle(selectedTimeIndex === 2), pick: () => setSelectedTimeIndex(2) },
+          { label: '23:00', style: slotStyle(selectedTimeIndex === 3), pick: () => setSelectedTimeIndex(3) }
         ];
     
     // Standalone mock variables
@@ -50,20 +73,24 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     const vRating = 4.9;
     const vReviews = 312;
     const vCat = 'Bar Lounge';
-    const toggleFav: (() => void) | undefined = undefined;
-    const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
+    const toggleFav = () => setIsFavorite((value) => !value);
+    const favIcon = isFavorite
+      ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
+      : 'https://img.icons8.com/ios/100/D4B26A/like.png';
     const vPrice = 'từ 1.2tr';
-    const dec: (() => void) | undefined = undefined;
-    const guests = 4;
-    const inc: (() => void) | undefined = undefined;
+    const dec = () => setGuestCount((value) => Math.max(1, value - 1));
+    const guests = guestCount;
+    const inc = () => setGuestCount((value) => Math.min(20, value + 1));
     const bookingHref = '/dat-cho';
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isIntro = true;
     const isPrice: boolean | undefined = undefined;
     const isCast = false;
     const isReview: boolean | undefined = undefined;
-    const favIconDark = 'https://img.icons8.com/ios/100/1f1d29/like.png';
-    const vPriceShort: string | undefined = undefined;
+    const favIconDark = isFavorite
+      ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
+      : 'https://img.icons8.com/ios/100/1f1d29/like.png';
+    const vPriceShort = vPrice;
 
     return (
       <React.Fragment>

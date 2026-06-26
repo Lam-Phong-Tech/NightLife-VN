@@ -5,9 +5,16 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 
 export default function Page({ params }: { params: MockItem }) {
-    
-    
-    
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
+    const tabStyle = (active: boolean): React.CSSProperties => ({
+      color: active ? '#d4b26a' : '#8a879a',
+      fontWeight: active ? 800 : 600,
+      borderBottom: active ? '2px solid #d4b26a' : '2px solid transparent',
+      paddingBottom: '12px',
+      cursor: 'pointer',
+    });
+
     // Mock data arrays for loops
     const album: MockItem[] = [
           { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: false },
@@ -18,8 +25,8 @@ export default function Page({ params }: { params: MockItem }) {
           { bg: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=360&q=70') center/cover", isVideo: true }
         ];
     const tabs: MockItem[] = [
-          { label: 'Giới thiệu', style: { color: '#6d28d9', fontWeight: 700, borderBottom: '2px solid #6d28d9', paddingBottom: '12px', cursor: 'pointer' } },
-          { label: 'Đánh giá', style: { color: '#8a879a', fontWeight: 500, borderBottom: '2px solid transparent', paddingBottom: '12px', cursor: 'pointer' } }
+          { label: 'Giới thiệu', style: tabStyle(activeTab === 0), pick: () => setActiveTab(0) },
+          { label: 'Đánh giá', style: tabStyle(activeTab === 1), pick: () => setActiveTab(1) }
         ];
     
     // Standalone mock variables
@@ -29,15 +36,19 @@ export default function Page({ params }: { params: MockItem }) {
     const cArea = 'Kim Mã';
     const cLang = 'Việt · Anh';
     const cDesc = 'Phong cách đẹp';
-    const toggleFav: MockItem | undefined = undefined;
-    const favIcon = 'https://img.icons8.com/ios/100/6D28D9/like.png';
+    const toggleFav = () => setIsFavorite((value) => !value);
+    const favIcon = isFavorite
+      ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
+      : 'https://img.icons8.com/ios/100/D4B26A/like.png';
     const cBorn = 2002;
     const book = () => window.location.href = '/dat-cho';
     const mainBg = "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80') center/cover";
     const isVideo = false;
     const cJp = false;
     const isIntro = true;
-    const favIconDark = 'https://img.icons8.com/ios/100/1f1d29/like.png';
+    const favIconDark = isFavorite
+      ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
+      : 'https://img.icons8.com/ios/100/1f1d29/like.png';
 
     return (
       <React.Fragment>

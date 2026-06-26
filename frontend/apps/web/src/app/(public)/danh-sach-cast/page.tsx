@@ -10,10 +10,23 @@ import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 
 export default function Page() {
-  
-  
-  
-  const filters = castFilters;
+  const [activeFilter, setActiveFilter] = useState(0);
+  const filterStyle = (active: boolean): React.CSSProperties => ({
+    background: active ? '#d4b26a' : 'rgba(255,255,255,.045)',
+    color: active ? '#241a0a' : '#d8d1c1',
+    border: active ? '1px solid #d4b26a' : '1px solid rgba(212,178,106,.24)',
+    borderRadius: '16px',
+    padding: '9px 14px',
+    fontWeight: 700,
+    fontSize: '12.5px',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+  });
+  const filters = castFilters.map((item, index) => ({
+    ...item,
+    style: filterStyle(index === activeFilter),
+    pick: () => setActiveFilter(index),
+  }));
   const cards = castCards;
   const castHref = (name?: string) => `/casts/${(name || 'cast').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'cast'}`;
     

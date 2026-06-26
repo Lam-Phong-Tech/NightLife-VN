@@ -12,6 +12,19 @@ import { SearchBar } from '@/components/ui/SearchBar';
 
 export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
+  const [activeCat, setActiveCat] = useState(0);
+  const [activeArea, setActiveArea] = useState(0);
+  const filterStyle = (active: boolean): React.CSSProperties => ({
+    background: active ? '#d4b26a' : 'rgba(255,255,255,.045)',
+    color: active ? '#241a0a' : '#d8d1c1',
+    border: active ? '1px solid #d4b26a' : '1px solid rgba(212,178,106,.24)',
+    borderRadius: '16px',
+    padding: '9px 14px',
+    fontWeight: 700,
+    fontSize: '12.5px',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+  });
   
   
   React.useEffect(() => {
@@ -21,6 +34,16 @@ export default function Page() {
   }, []);
     
   const count = 9;
+  const categoryFilters = cats.map((item, index) => ({
+    ...item,
+    style: filterStyle(index === activeCat),
+    pick: () => setActiveCat(index),
+  }));
+  const areaFilters = areas.map((item, index) => ({
+    ...item,
+    style: filterStyle(index === activeArea),
+    pick: () => setActiveArea(index),
+  }));
 
   return (
     <React.Fragment>
@@ -42,13 +65,13 @@ export default function Page() {
 
             {/* filter chips */}
             <div className="hscroll" style={{ padding: '12px 18px 4px', display: 'flex', gap: '7px', overflowX: 'auto', background: '#fff' }}>
-              {cats?.map((c, index) => (
-                <div key={index} style={c.style}>{c.label}</div>
+              {categoryFilters?.map((c, index) => (
+                <div key={index} onClick={c.pick} style={c.style}>{c.label}</div>
               ))}
             </div>
             <div className="hscroll" style={{ padding: '8px 18px 12px', display: 'flex', gap: '7px', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #ececec' }}>
-              {areas?.map((a, index) => (
-                <div key={index} style={a.style}>{a.label}</div>
+              {areaFilters?.map((a, index) => (
+                <div key={index} onClick={a.pick} style={a.style}>{a.label}</div>
               ))}
             </div>
 
@@ -99,15 +122,15 @@ export default function Page() {
                 
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#8a879a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '12px' }}>Loại hình</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                  {cats?.map((c, index) => (
-                    <div key={index} style={c.style}>{c.label}</div>
+                  {categoryFilters?.map((c, index) => (
+                    <div key={index} onClick={c.pick} style={c.style}>{c.label}</div>
                   ))}
                 </div>
                 
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#8a879a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '12px' }}>Khu vực</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                  {areas?.map((a, index) => (
-                    <div key={index} style={a.style}>{a.label}</div>
+                  {areaFilters?.map((a, index) => (
+                    <div key={index} onClick={a.pick} style={a.style}>{a.label}</div>
                   ))}
                 </div>
               </div>
