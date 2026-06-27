@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Star,
   UserRound,
-  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -33,12 +32,6 @@ const colors = {
   danger: "#ff6b8b",
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
-
-const stats = [
-  { label: "Đặt chỗ", value: "12", icon: CalendarDays },
-  { label: "Mã trong ví", value: "5", icon: WalletCards },
-  { label: "Hóa đơn", value: "8", icon: FileText },
-];
 
 const menuItems = [
   { title: "Lịch sử đặt chỗ", desc: "Theo dõi yêu cầu và trạng thái xác nhận", href: "/lich-su-dat-cho", icon: CalendarDays },
@@ -133,21 +126,6 @@ export default function Page() {
           </aside>
 
           <div style={{ display: "grid", gap: 16 }}>
-            <section className="nl-account-stat-grid">
-              {stats.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 13, display: "grid", placeItems: "center", background: "rgba(212,178,106,.11)", color: colors.gold }}>
-                      <Icon size={20} />
-                    </div>
-                    <div style={{ marginTop: 14, fontSize: 28, fontWeight: 950, color: colors.goldPale }}>{item.value}</div>
-                    <div style={{ marginTop: 3, color: colors.muted, fontSize: 13 }}>{item.label}</div>
-                  </div>
-                );
-              })}
-            </section>
-
             <section style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, overflow: "hidden" }}>
               {menuItems.map((item) => {
                 const Icon = item.icon;
