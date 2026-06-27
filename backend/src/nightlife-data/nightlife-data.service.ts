@@ -15,6 +15,9 @@ import { ReviewBillDto } from './dto/review-bill.dto';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_PUBLIC_LIMIT = 24;
 const MAX_PUBLIC_LIMIT = 100;
+const DEFAULT_PUBLIC_PAGE = 1;
+const MAX_PUBLIC_OFFSET = 10000;
+const MAX_PUBLIC_SORT_WINDOW = 500;
 const MVP_CITY_CODES = ['hn', 'hcm'] as const;
 
 const CITY_ALIASES: Record<string, string> = {
@@ -62,6 +65,25 @@ type Coordinates = {
   lng: number;
 };
 
+type PublicSort = 'newest' | 'nearest' | 'priority';
+
+type PublicPagination = {
+  limit: number;
+  offset: number;
+  page: number;
+};
+
+type PublicSortableItem = {
+  id: string;
+  createdAt: Date | string;
+  distanceKm: number | null;
+};
+
+type RankingScore = {
+  pinRank: number | null;
+  manualScore: number;
+};
+
 @Injectable()
 export class NightlifeDataService {
   constructor(
@@ -98,212 +120,254 @@ export class NightlifeDataService {
 
   async listPublicStores(query: PublicDiscoveryQueryDto = {}) {
     const coordinates = this.parseCoordinates(query);
-    const limit = this.resolveLimit(query.limit);
-    const stores = await this.prisma.store.findMany({
-      where: this.buildPublicStoreWhere(query, { includeCastName: true }),
-      orderBy: { createdAt: 'desc' },
-      take: coordinates ? MAX_PUBLIC_LIMIT : limit,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        category: true,
-        description: true,
-        address: true,
-        city: true,
-        district: true,
-        latitude: true,
-        longitude: true,
-        area: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            city: true,
-            district: true,
+    const pagination = this.resolvePagination(query);
+    const sort = this.resolveSort(query.sort, coordinates);
+    const readArgs = this.resolvePublicReadArgs(sort, pagination);
+    const where = this.buildPublicStoreWhere(query, { includeCastName: true });
+    const [total, stores] = await Promise.all([
+      this.prisma.store.count({ where }),
+      this.prisma.store.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        ...readArgs,
+        select: {
+          id: true,
+          createdAt: true,
+          name: true,
+          slug: true,
+          category: true,
+          description: true,
+          address: true,
+          city: true,
+          district: true,
+          latitude: true,
+          longitude: true,
+          area: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              city: true,
+              district: true,
+            },
+          },
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              url: true,
+            },
           },
         },
-        media: {
-          where: {
-            deletedAt: null,
-            access: 'PUBLIC',
-            status: 'READY',
-            type: 'IMAGE',
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            url: true,
-          },
-        },
-      },
-    });
+      }),
+    ]);
 
-    return this.sortByDistance(
-      stores.map((store) => ({
-        id: store.id,
-        name: store.name,
-        slug: store.slug,
-        category: store.category,
-        description: store.description,
-        address: store.address,
-        city: store.city,
-        cityCode: store.area?.code
-          ? this.cityCodeFromAreaCode(store.area.code)
-          : this.normalizeCityCode(store.city),
-        district: store.district,
-        area: store.area
-          ? {
-              id: store.area.id,
-              code: store.area.code,
-              name: store.area.name,
-              city: store.area.city,
-              district: store.area.district,
-              cityCode: this.cityCodeFromAreaCode(store.area.code),
-            }
-          : null,
-        latitude: this.toNumber(store.latitude),
-        longitude: this.toNumber(store.longitude),
-        thumbnailUrl: store.media[0]?.url ?? null,
-        distanceKm: this.calculateDistanceKm(
-          coordinates,
-          store.latitude,
-          store.longitude,
-        ),
-      })),
-    ).slice(0, limit);
+    const mappedStores = stores.map((store) => ({
+      id: store.id,
+      createdAt: store.createdAt,
+      name: store.name,
+      slug: store.slug,
+      category: store.category,
+      description: store.description,
+      address: store.address,
+      city: store.city,
+      cityCode: store.area?.code
+        ? this.cityCodeFromAreaCode(store.area.code)
+        : this.normalizeCityCode(store.city),
+      district: store.district,
+      area: store.area
+        ? {
+            id: store.area.id,
+            code: store.area.code,
+            name: store.area.name,
+            city: store.area.city,
+            district: store.area.district,
+            cityCode: this.cityCodeFromAreaCode(store.area.code),
+          }
+        : null,
+      latitude: this.toNumber(store.latitude),
+      longitude: this.toNumber(store.longitude),
+      thumbnailUrl: store.media[0]?.url ?? null,
+      distanceKm: this.calculateDistanceKm(
+        coordinates,
+        store.latitude,
+        store.longitude,
+      ),
+    }));
+    const rankedStores =
+      sort === 'priority'
+        ? await this.loadRankingMap(
+            'STORE',
+            mappedStores.map((store) => store.id),
+          )
+        : new Map<string, RankingScore>();
+    const data = this.finalizePublicItems(
+      mappedStores,
+      sort,
+      pagination,
+      rankedStores,
+    );
+
+    return this.buildPublicListResponse(data, total, pagination, sort);
   }
 
   async listPublicCasts(query: PublicDiscoveryQueryDto = {}) {
     const coordinates = this.parseCoordinates(query);
-    const limit = this.resolveLimit(query.limit);
+    const pagination = this.resolvePagination(query);
+    const sort = this.resolveSort(query.sort, coordinates);
+    const readArgs = this.resolvePublicReadArgs(sort, pagination);
     const searchTerm = this.cleanText(query.q);
     const searchToken = this.normalizeToken(searchTerm);
     const language = this.normalizeToken(query.language);
     const tag = this.normalizeToken(query.tag);
-    const casts = await this.prisma.cast.findMany({
-      where: {
-        deletedAt: null,
-        status: 'ACTIVE',
-        isPublic: true,
-        store: this.buildPublicStoreWhere(query, { includeTextSearch: false }),
-        ...(language ? { languages: { has: language } } : {}),
-        ...(tag ? { tags: { has: tag } } : {}),
-        ...(searchTerm
-          ? {
-              OR: [
-                { stageName: this.containsInsensitive(searchTerm) },
-                { publicAlias: this.containsInsensitive(searchTerm) },
-                { publicHeadline: this.containsInsensitive(searchTerm) },
-                { bio: this.containsInsensitive(searchTerm) },
-                { publicBio: this.containsInsensitive(searchTerm) },
-                ...(searchToken
-                  ? [
-                      { tags: { has: searchToken } },
-                      { languages: { has: searchToken } },
-                    ]
-                  : []),
-                {
-                  store: {
-                    name: this.containsInsensitive(searchTerm),
-                    deletedAt: null,
-                    status: 'ACTIVE',
-                  },
+    const where: Prisma.CastWhereInput = {
+      deletedAt: null,
+      status: 'ACTIVE',
+      isPublic: true,
+      store: this.buildPublicStoreWhere(query, { includeTextSearch: false }),
+      ...(language ? { languages: { has: language } } : {}),
+      ...(tag ? { tags: { has: tag } } : {}),
+      ...(searchTerm
+        ? {
+            OR: [
+              { stageName: this.containsInsensitive(searchTerm) },
+              { publicAlias: this.containsInsensitive(searchTerm) },
+              { publicHeadline: this.containsInsensitive(searchTerm) },
+              { bio: this.containsInsensitive(searchTerm) },
+              { publicBio: this.containsInsensitive(searchTerm) },
+              ...(searchToken
+                ? [
+                    { tags: { has: searchToken } },
+                    { languages: { has: searchToken } },
+                  ]
+                : []),
+              {
+                store: {
+                  name: this.containsInsensitive(searchTerm),
+                  deletedAt: null,
+                  status: 'ACTIVE',
                 },
-              ],
-            }
-          : {}),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: coordinates ? MAX_PUBLIC_LIMIT : limit,
-      select: {
-        id: true,
-        slug: true,
-        stageName: true,
-        publicAlias: true,
-        publicHeadline: true,
-        tags: true,
-        languages: true,
-        hourlyRateVnd: true,
-        store: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            category: true,
-            city: true,
-            district: true,
-            latitude: true,
-            longitude: true,
-            area: {
-              select: {
-                id: true,
-                code: true,
-                name: true,
-                city: true,
-                district: true,
+              },
+            ],
+          }
+        : {}),
+    };
+    const [total, casts] = await Promise.all([
+      this.prisma.cast.count({ where }),
+      this.prisma.cast.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        ...readArgs,
+        select: {
+          id: true,
+          createdAt: true,
+          slug: true,
+          stageName: true,
+          publicAlias: true,
+          publicHeadline: true,
+          tags: true,
+          languages: true,
+          hourlyRateVnd: true,
+          store: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              category: true,
+              city: true,
+              district: true,
+              latitude: true,
+              longitude: true,
+              area: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  city: true,
+                  district: true,
+                },
               },
             },
           },
-        },
-        media: {
-          where: {
-            deletedAt: null,
-            access: 'PUBLIC',
-            status: 'READY',
-            type: 'IMAGE',
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              url: true,
+            },
           },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            url: true,
-          },
         },
-      },
-    });
+      }),
+    ]);
 
-    return this.sortByDistance(
-      casts.map((cast) => ({
-        id: cast.id,
-        slug: cast.slug,
-        stageName: cast.stageName,
-        name: cast.publicAlias ?? cast.stageName,
-        publicAlias: cast.publicAlias,
-        publicHeadline: cast.publicHeadline,
-        tags: cast.tags,
-        languages: cast.languages,
-        hourlyRateVnd: cast.hourlyRateVnd,
-        thumbnailUrl: cast.media[0]?.url ?? null,
-        distanceKm: this.calculateDistanceKm(
-          coordinates,
-          cast.store.latitude,
-          cast.store.longitude,
-        ),
-        store: {
-          id: cast.store.id,
-          name: cast.store.name,
-          slug: cast.store.slug,
-          category: cast.store.category,
-          city: cast.store.city,
-          cityCode: cast.store.area?.code
-            ? this.cityCodeFromAreaCode(cast.store.area.code)
-            : this.normalizeCityCode(cast.store.city),
-          district: cast.store.district,
-          area: cast.store.area
-            ? {
-                id: cast.store.area.id,
-                code: cast.store.area.code,
-                name: cast.store.area.name,
-                city: cast.store.area.city,
-                district: cast.store.area.district,
-                cityCode: this.cityCodeFromAreaCode(cast.store.area.code),
-              }
-            : null,
-          latitude: this.toNumber(cast.store.latitude),
-          longitude: this.toNumber(cast.store.longitude),
-        },
-      })),
-    ).slice(0, limit);
+    const mappedCasts = casts.map((cast) => ({
+      id: cast.id,
+      createdAt: cast.createdAt,
+      slug: cast.slug,
+      stageName: cast.stageName,
+      name: cast.publicAlias ?? cast.stageName,
+      publicAlias: cast.publicAlias,
+      publicHeadline: cast.publicHeadline,
+      tags: cast.tags,
+      languages: cast.languages,
+      hourlyRateVnd: cast.hourlyRateVnd,
+      thumbnailUrl: cast.media[0]?.url ?? null,
+      distanceKm: this.calculateDistanceKm(
+        coordinates,
+        cast.store.latitude,
+        cast.store.longitude,
+      ),
+      store: {
+        id: cast.store.id,
+        name: cast.store.name,
+        slug: cast.store.slug,
+        category: cast.store.category,
+        city: cast.store.city,
+        cityCode: cast.store.area?.code
+          ? this.cityCodeFromAreaCode(cast.store.area.code)
+          : this.normalizeCityCode(cast.store.city),
+        district: cast.store.district,
+        area: cast.store.area
+          ? {
+              id: cast.store.area.id,
+              code: cast.store.area.code,
+              name: cast.store.area.name,
+              city: cast.store.area.city,
+              district: cast.store.area.district,
+              cityCode: this.cityCodeFromAreaCode(cast.store.area.code),
+            }
+          : null,
+        latitude: this.toNumber(cast.store.latitude),
+        longitude: this.toNumber(cast.store.longitude),
+      },
+    }));
+    const rankedCasts =
+      sort === 'priority'
+        ? await this.loadRankingMap(
+            'CAST',
+            mappedCasts.map((cast) => cast.id),
+          )
+        : new Map<string, RankingScore>();
+    const data = this.finalizePublicItems(
+      mappedCasts,
+      sort,
+      pagination,
+      rankedCasts,
+    );
+
+    return this.buildPublicListResponse(data, total, pagination, sort);
   }
 
   listPublicCoupons() {
@@ -994,11 +1058,13 @@ export class NightlifeDataService {
     query: PublicDiscoveryQueryDto,
     options: { includeTextSearch?: boolean; includeCastName?: boolean } = {},
   ): Prisma.StoreWhereInput {
+    const now = new Date();
     const searchTerm = this.cleanText(query.q);
     const cityCode = this.normalizeCityCode(query.city, { strict: true });
     const area = this.cleanText(query.area);
     const areaCode = this.normalizeToken(area);
     const category = this.normalizeCategory(query.category, { strict: true });
+    const hasActiveCoupon = this.parseBooleanFlag(query.hasActiveCoupon);
     const and: Prisma.StoreWhereInput[] = [
       {
         area: {
@@ -1072,6 +1138,14 @@ export class NightlifeDataService {
       });
     }
 
+    if (hasActiveCoupon) {
+      and.push({
+        coupons: {
+          some: this.buildActiveCouponWhere(now),
+        },
+      });
+    }
+
     return {
       deletedAt: null,
       status: 'ACTIVE',
@@ -1090,6 +1164,26 @@ export class NightlifeDataService {
         code: { startsWith: `${code}-` },
       })),
     };
+  }
+
+  private resolvePagination(query: PublicDiscoveryQueryDto): PublicPagination {
+    const limit = this.resolveLimit(query.limit);
+    const hasOffset =
+      query.offset !== undefined &&
+      query.offset !== null &&
+      query.offset !== '';
+    const page = hasOffset ? DEFAULT_PUBLIC_PAGE : this.resolvePage(query.page);
+    const offset = hasOffset
+      ? this.resolveOffset(query.offset)
+      : (page - 1) * limit;
+
+    if (offset > MAX_PUBLIC_OFFSET) {
+      throw new BadRequestException(
+        `offset must be less than or equal to ${MAX_PUBLIC_OFFSET}`,
+      );
+    }
+
+    return { limit, offset, page };
   }
 
   private resolveLimit(limit?: string | number) {
@@ -1111,9 +1205,234 @@ export class NightlifeDataService {
     return Math.floor(parsed);
   }
 
+  private resolvePage(page?: string | number) {
+    if (page === undefined || page === null || page === '') {
+      return DEFAULT_PUBLIC_PAGE;
+    }
+
+    const parsed = Number(page);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new BadRequestException('page must be a positive number');
+    }
+
+    return Math.floor(parsed);
+  }
+
+  private resolveOffset(offset?: string | number) {
+    if (offset === undefined || offset === null || offset === '') {
+      return 0;
+    }
+
+    const parsed = Number(offset);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      throw new BadRequestException('offset must be zero or a positive number');
+    }
+
+    return Math.floor(parsed);
+  }
+
+  private resolveSort(
+    value: string | undefined,
+    coordinates: Coordinates | null,
+  ): PublicSort {
+    const token = this.normalizeToken(value);
+
+    if (!token) {
+      return coordinates ? 'nearest' : 'newest';
+    }
+
+    const sort = token === 'ranking' ? 'priority' : token;
+    if (!['newest', 'nearest', 'priority'].includes(sort)) {
+      throw new BadRequestException(
+        'sort must be one of newest, nearest, priority',
+      );
+    }
+
+    if (sort === 'nearest' && !coordinates) {
+      throw new BadRequestException('sort=nearest requires lat and lng');
+    }
+
+    return sort as PublicSort;
+  }
+
+  private resolvePublicReadArgs(
+    sort: PublicSort,
+    pagination: PublicPagination,
+  ): { skip?: number; take: number } {
+    if (sort === 'newest') {
+      return { skip: pagination.offset, take: pagination.limit };
+    }
+
+    const readWindow = pagination.offset + pagination.limit;
+    if (readWindow > MAX_PUBLIC_SORT_WINDOW) {
+      throw new BadRequestException(
+        `sort=${sort} supports offset + limit up to ${MAX_PUBLIC_SORT_WINDOW}`,
+      );
+    }
+
+    return { take: readWindow };
+  }
+
+  private buildPublicListResponse<T>(
+    data: T[],
+    total: number,
+    pagination: PublicPagination,
+    sort: PublicSort,
+  ) {
+    return {
+      data,
+      meta: {
+        total,
+        page: pagination.page,
+        limit: pagination.limit,
+        offset: pagination.offset,
+        hasMore: pagination.offset + data.length < total,
+        sort,
+      },
+    };
+  }
+
+  private finalizePublicItems<T extends PublicSortableItem>(
+    items: T[],
+    sort: PublicSort,
+    pagination: PublicPagination,
+    rankings: Map<string, RankingScore>,
+  ) {
+    const sortedItems =
+      sort === 'newest'
+        ? items
+        : this.sortPublicItems(items, sort, rankings).slice(
+            pagination.offset,
+            pagination.offset + pagination.limit,
+          );
+
+    return sortedItems.map(({ createdAt: _createdAt, ...item }) => item);
+  }
+
+  private sortPublicItems<T extends PublicSortableItem>(
+    items: T[],
+    sort: PublicSort,
+    rankings: Map<string, RankingScore>,
+  ) {
+    if (sort === 'nearest') {
+      return this.sortByDistance(items);
+    }
+
+    if (sort === 'priority') {
+      return [...items].sort((first, second) => {
+        const firstRank = rankings.get(first.id);
+        const secondRank = rankings.get(second.id);
+        const firstPin = firstRank?.pinRank ?? Number.POSITIVE_INFINITY;
+        const secondPin = secondRank?.pinRank ?? Number.POSITIVE_INFINITY;
+
+        if (firstPin !== secondPin) {
+          return firstPin - secondPin;
+        }
+
+        const scoreDiff =
+          (secondRank?.manualScore ?? 0) - (firstRank?.manualScore ?? 0);
+        if (scoreDiff !== 0) {
+          return scoreDiff;
+        }
+
+        return (
+          this.createdAtMs(second.createdAt) - this.createdAtMs(first.createdAt)
+        );
+      });
+    }
+
+    return [...items].sort(
+      (first, second) =>
+        this.createdAtMs(second.createdAt) - this.createdAtMs(first.createdAt),
+    );
+  }
+
+  private async loadRankingMap(
+    targetType: 'STORE' | 'CAST',
+    targetIds: string[],
+  ) {
+    if (!targetIds.length) {
+      return new Map<string, RankingScore>();
+    }
+
+    const now = new Date();
+    const configs = await this.prisma.rankingConfig.findMany({
+      where: {
+        targetType,
+        targetId: { in: targetIds },
+        status: 'ACTIVE',
+        deletedAt: null,
+        AND: [
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        ],
+      },
+      orderBy: [
+        { pinRank: 'asc' },
+        { manualScore: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+      select: {
+        targetId: true,
+        manualScore: true,
+        pinRank: true,
+      },
+    });
+    const rankingMap = new Map<string, RankingScore>();
+
+    configs.forEach((config) => {
+      if (!rankingMap.has(config.targetId)) {
+        rankingMap.set(config.targetId, {
+          pinRank: config.pinRank,
+          manualScore: config.manualScore,
+        });
+      }
+    });
+
+    return rankingMap;
+  }
+
+  private buildActiveCouponWhere(now: Date): Prisma.CouponWhereInput {
+    return {
+      status: 'ACTIVE',
+      deletedAt: null,
+      startsAt: { lte: now },
+      OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+    };
+  }
+
+  private parseBooleanFlag(value?: string | boolean | null) {
+    if (value === undefined || value === null || value === '') {
+      return false;
+    }
+
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    const token = value.toLowerCase();
+    if (token === 'true' || token === '1') {
+      return true;
+    }
+
+    if (token === 'false' || token === '0') {
+      return false;
+    }
+
+    throw new BadRequestException('hasActiveCoupon must be true or false');
+  }
+
+  private createdAtMs(value: Date | string) {
+    const date = value instanceof Date ? value : new Date(value);
+
+    return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+  }
+
   private parseCoordinates(query: PublicDiscoveryQueryDto): Coordinates | null {
-    const hasLat = query.lat !== undefined && query.lat !== null && query.lat !== '';
-    const hasLng = query.lng !== undefined && query.lng !== null && query.lng !== '';
+    const hasLat =
+      query.lat !== undefined && query.lat !== null && query.lat !== '';
+    const hasLng =
+      query.lng !== undefined && query.lng !== null && query.lng !== '';
 
     if (!hasLat && !hasLng) {
       return null;
@@ -1201,7 +1520,8 @@ export class NightlifeDataService {
       return undefined;
     }
 
-    const cityCode = CITY_ALIASES[token] ?? CITY_ALIASES[token.replace(/-/g, ' ')];
+    const cityCode =
+      CITY_ALIASES[token] ?? CITY_ALIASES[token.replace(/-/g, ' ')];
 
     if (cityCode === 'all') {
       return undefined;

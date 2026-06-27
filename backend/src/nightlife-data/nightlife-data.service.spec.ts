@@ -24,11 +24,16 @@ describe('NightlifeDataService', () => {
     },
     store: {
       findMany: jest.fn(),
+      count: jest.fn(),
     },
     area: {
       findMany: jest.fn(),
     },
     cast: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+    },
+    rankingConfig: {
       findMany: jest.fn(),
     },
     booking: {
@@ -54,6 +59,9 @@ describe('NightlifeDataService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.store.count.mockResolvedValue(1 as never);
+    prisma.cast.count.mockResolvedValue(1 as never);
+    prisma.rankingConfig.findMany.mockResolvedValue([] as never);
     service = new NightlifeDataService(prisma, accessService);
   });
 
@@ -69,14 +77,12 @@ describe('NightlifeDataService', () => {
       },
     ] as never);
 
-    await expect(service.listPublicAreas({ city: 'hcm' })).resolves.toEqual(
-      [
-        expect.objectContaining({
-          code: 'hcm-q1',
-          cityCode: 'hcm',
-        }),
-      ],
-    );
+    await expect(service.listPublicAreas({ city: 'hcm' })).resolves.toEqual([
+      expect.objectContaining({
+        code: 'hcm-q1',
+        cityCode: 'hcm',
+      }),
+    ]);
     expect(prisma.area.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -92,6 +98,7 @@ describe('NightlifeDataService', () => {
     prisma.store.findMany.mockResolvedValue([
       {
         id: 'store-neon',
+        createdAt: new Date('2026-06-20T00:00:00.000Z'),
         name: 'Neon Club',
         slug: 'neon-club',
         category: 'CLUB',
@@ -121,7 +128,7 @@ describe('NightlifeDataService', () => {
       lng: '105.82',
     });
 
-    expect(result).toEqual([
+    expect(result.data).toEqual([
       expect.objectContaining({
         slug: 'neon-club',
         category: 'CLUB',
@@ -129,6 +136,16 @@ describe('NightlifeDataService', () => {
         distanceKm: expect.any(Number),
       }),
     ]);
+    expect(result.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        page: 1,
+        limit: 24,
+        offset: 0,
+        hasMore: false,
+        sort: 'nearest',
+      }),
+    );
     expect(prisma.store.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -160,6 +177,7 @@ describe('NightlifeDataService', () => {
     prisma.store.findMany.mockResolvedValue([
       {
         id: 'far-store',
+        createdAt: new Date('2026-06-18T00:00:00.000Z'),
         name: 'Far Store',
         slug: 'far-store',
         category: 'BAR',
@@ -180,6 +198,7 @@ describe('NightlifeDataService', () => {
       },
       {
         id: 'near-store',
+        createdAt: new Date('2026-06-19T00:00:00.000Z'),
         name: 'Near Store',
         slug: 'near-store',
         category: 'CLUB',
@@ -205,16 +224,149 @@ describe('NightlifeDataService', () => {
       lng: '105.8221',
     });
 
-    expect(result.map((store) => store.slug)).toEqual([
+    expect(result.data.map((store) => store.slug)).toEqual([
       'near-store',
       'far-store',
     ]);
+  });
+
+  it('filters public stores by active coupons and returns pagination metadata', async () => {
+    prisma.store.count.mockResolvedValue(3 as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-coupon',
+        createdAt: new Date('2026-06-21T00:00:00.000Z'),
+        name: 'Coupon Store',
+        slug: 'coupon-store',
+        category: 'BAR',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Hoan Kiem',
+        latitude: null,
+        longitude: null,
+        area: {
+          id: 'area-hn',
+          code: 'hn-hoankiem',
+          name: 'Hoan Kiem',
+          city: 'Ha Noi',
+          district: 'Hoan Kiem',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({
+      hasActiveCoupon: 'true',
+      limit: '1',
+      page: '2',
+      sort: 'newest',
+    });
+
+    expect(result.meta).toEqual({
+      total: 3,
+      page: 2,
+      limit: 1,
+      offset: 1,
+      hasMore: true,
+      sort: 'newest',
+    });
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 1,
+        take: 1,
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              coupons: {
+                some: expect.objectContaining({
+                  status: 'ACTIVE',
+                  deletedAt: null,
+                  startsAt: expect.objectContaining({ lte: expect.any(Date) }),
+                  OR: expect.any(Array),
+                }),
+              },
+            }),
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('sorts public stores by manual priority ranking', async () => {
+    prisma.store.count.mockResolvedValue(2 as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-low',
+        createdAt: new Date('2026-06-22T00:00:00.000Z'),
+        name: 'Low Priority Store',
+        slug: 'low-priority-store',
+        category: 'BAR',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Hoan Kiem',
+        latitude: null,
+        longitude: null,
+        area: {
+          id: 'area-hn',
+          code: 'hn-hoankiem',
+          name: 'Hoan Kiem',
+          city: 'Ha Noi',
+          district: 'Hoan Kiem',
+        },
+        media: [],
+      },
+      {
+        id: 'store-top',
+        createdAt: new Date('2026-06-19T00:00:00.000Z'),
+        name: 'Top Priority Store',
+        slug: 'top-priority-store',
+        category: 'CLUB',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        latitude: null,
+        longitude: null,
+        area: {
+          id: 'area-near',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [],
+      },
+    ] as never);
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      { targetId: 'store-top', manualScore: 50, pinRank: 1 },
+      { targetId: 'store-low', manualScore: 1, pinRank: null },
+    ] as never);
+
+    const result = await service.listPublicStores({ sort: 'priority' });
+
+    expect(result.data.map((store) => store.slug)).toEqual([
+      'top-priority-store',
+      'low-priority-store',
+    ]);
+    expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          targetType: 'STORE',
+          targetId: { in: ['store-low', 'store-top'] },
+          status: 'ACTIVE',
+          deletedAt: null,
+        }),
+      }),
+    );
   });
 
   it('searches public casts by cast or store name and store filters', async () => {
     prisma.cast.findMany.mockResolvedValue([
       {
         id: 'cast-mika',
+        createdAt: new Date('2026-06-20T00:00:00.000Z'),
         slug: 'mika-harbor-ktv',
         stageName: 'Mika',
         publicAlias: 'Mika',
@@ -253,7 +405,7 @@ describe('NightlifeDataService', () => {
       lng: '106.722',
     });
 
-    expect(result).toEqual([
+    expect(result.data).toEqual([
       expect.objectContaining({
         slug: 'mika-harbor-ktv',
         name: 'Mika',
@@ -265,6 +417,12 @@ describe('NightlifeDataService', () => {
         }),
       }),
     ]);
+    expect(result.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        sort: 'nearest',
+      }),
+    );
     expect(prisma.cast.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({

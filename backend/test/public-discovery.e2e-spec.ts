@@ -13,8 +13,9 @@ describe('Public discovery listing API (e2e)', () => {
   let app: INestApplication;
   const prisma = {
     area: { findMany: jest.fn() },
-    store: { findMany: jest.fn() },
-    cast: { findMany: jest.fn() },
+    store: { findMany: jest.fn(), count: jest.fn() },
+    cast: { findMany: jest.fn(), count: jest.fn() },
+    rankingConfig: { findMany: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -32,6 +33,7 @@ describe('Public discovery listing API (e2e)', () => {
     prisma.store.findMany.mockResolvedValue([
       {
         id: 'store-neon',
+        createdAt: new Date('2026-06-20T00:00:00.000Z'),
         name: 'Neon Club',
         slug: 'neon-club',
         category: 'CLUB',
@@ -54,6 +56,7 @@ describe('Public discovery listing API (e2e)', () => {
     prisma.cast.findMany.mockResolvedValue([
       {
         id: 'cast-mika',
+        createdAt: new Date('2026-06-20T00:00:00.000Z'),
         slug: 'mika-golden-ktv',
         stageName: 'Mika',
         publicAlias: 'Mika',
@@ -81,6 +84,9 @@ describe('Public discovery listing API (e2e)', () => {
         },
       },
     ]);
+    prisma.store.count.mockResolvedValue(1);
+    prisma.cast.count.mockResolvedValue(1);
+    prisma.rankingConfig.findMany.mockResolvedValue([]);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [NightlifeDataController],
@@ -142,9 +148,19 @@ describe('Public discovery listing API (e2e)', () => {
       })
       .expect(200);
 
-    expect(response.body).toEqual([
+    expect(response.body.data).toEqual([
       expect.objectContaining({ slug: 'neon-club', category: 'CLUB' }),
     ]);
+    expect(response.body.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        page: 1,
+        limit: 20,
+        offset: 0,
+        hasMore: false,
+        sort: 'nearest',
+      }),
+    );
     expect(prisma.store.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -152,7 +168,7 @@ describe('Public discovery listing API (e2e)', () => {
           status: 'ACTIVE',
           category: 'CLUB',
         }),
-        take: 100,
+        take: 20,
       }),
     );
   });
@@ -169,12 +185,20 @@ describe('Public discovery listing API (e2e)', () => {
       })
       .expect(200);
 
-    expect(response.body).toEqual([
+    expect(response.body.data).toEqual([
       expect.objectContaining({
         slug: 'mika-golden-ktv',
         languages: ['ja', 'vi'],
       }),
     ]);
+    expect(response.body.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        page: 1,
+        hasMore: false,
+        sort: 'newest',
+      }),
+    );
     expect(prisma.cast.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -227,5 +251,15 @@ describe('Public discovery listing API (e2e)', () => {
       .expect(400);
 
     expect(prisma.store.findMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects nearest sort without coordinates', async () => {
+    await request(app.getHttpServer())
+      .get('/stores')
+      .query({ sort: 'nearest' })
+      .expect(400);
+
+    expect(prisma.store.findMany).not.toHaveBeenCalled();
+    expect(prisma.store.count).not.toHaveBeenCalled();
   });
 });

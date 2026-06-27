@@ -14,6 +14,10 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import {
+  PublicCastListResponseDto,
+  PublicStoreListResponseDto,
+} from './dto/public-discovery-response.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 
 const badRequestExample = {
@@ -106,6 +110,18 @@ const storeExample = {
   distanceKm: 1.4,
 };
 
+const storeListExample = {
+  data: [storeExample],
+  meta: {
+    total: 42,
+    page: 1,
+    limit: 24,
+    offset: 0,
+    hasMore: true,
+    sort: 'nearest',
+  },
+};
+
 const castExample = {
   id: 'cast_01',
   slug: 'yuna-neon',
@@ -136,6 +152,18 @@ const castExample = {
     },
     latitude: 21.063,
     longitude: 105.822,
+  },
+};
+
+const castListExample = {
+  data: [castExample],
+  meta: {
+    total: 18,
+    page: 1,
+    limit: 24,
+    offset: 0,
+    hasMore: false,
+    sort: 'newest',
   },
 };
 
@@ -358,12 +386,13 @@ export function PublicStoresContract() {
     ApiOperation({
       summary: 'Public discovery: search active stores',
       description:
-        'Auth guard: none. Filters by name, category, city, area, and sorts nearest first when lat/lng are provided.',
+        'Auth guard: none. Filters by name, category, city, area, active coupon, and supports newest, nearest, or priority sort. Nearest sort requires lat/lng.',
     }),
     publicDiscoveryQueries(),
     ApiOkResponse({
       description: 'Active stores matching the discovery filters.',
-      schema: { example: [storeExample] },
+      type: PublicStoreListResponseDto,
+      schema: { example: storeListExample },
     }),
     ApiBadRequestResponse({
       description: 'Invalid discovery filter.',
@@ -377,12 +406,13 @@ export function PublicCastsContract() {
     ApiOperation({
       summary: 'Public discovery: search active casts',
       description:
-        'Auth guard: none. Filters by cast/store name, store category, city, area, language, and tag. P0 cast listing does not require nearest-first UI.',
+        'Auth guard: none. Filters by cast/store name, store category, city, area, active coupon, language, and tag. Supports newest, nearest, or priority sort.',
     }),
     publicDiscoveryQueries({ includeCastFilters: true }),
     ApiOkResponse({
       description: 'Active public casts matching the discovery filters.',
-      schema: { example: [castExample] },
+      type: PublicCastListResponseDto,
+      schema: { example: castListExample },
     }),
     ApiBadRequestResponse({
       description: 'Invalid discovery filter.',
@@ -709,7 +739,23 @@ function publicDiscoveryQueries(
       description: 'Longitude for nearest-first suggestions.',
       example: '105.822',
     }),
+    ApiQuery({
+      name: 'hasActiveCoupon',
+      required: false,
+      description:
+        'When true, only returns stores or casts attached to a store with an active coupon window.',
+      example: 'true',
+    }),
+    ApiQuery({
+      name: 'sort',
+      required: false,
+      description:
+        'Sort mode: newest, nearest, priority. Alias ranking maps to priority.',
+      example: 'priority',
+    }),
     ApiQuery({ name: 'limit', required: false, example: '24' }),
+    ApiQuery({ name: 'page', required: false, example: '1' }),
+    ApiQuery({ name: 'offset', required: false, example: '0' }),
   ];
 
   if (options.includeCastFilters) {
