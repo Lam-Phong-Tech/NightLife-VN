@@ -5,6 +5,8 @@ export type DiscoveryParams = {
   city?: string;
   area?: string;
   category?: string;
+  language?: string;
+  tag?: string;
   lat?: number;
   lng?: number;
   limit?: number;
@@ -66,6 +68,8 @@ const toParams = (params: DiscoveryParams = {}) => {
   return searchParams;
 };
 
+const p0CityCodes = new Set(['hn', 'hcm']);
+
 const demoAreas: PublicArea[] = [
   {
     id: 'area-hn-hoan-kiem',
@@ -100,36 +104,12 @@ const demoAreas: PublicArea[] = [
     district: 'Quan 3',
   },
   {
-    id: 'area-dn-hai-chau',
-    code: 'dn-hai-chau',
-    name: 'Hai Chau',
-    city: 'Da Nang',
-    cityCode: 'dn',
-    district: 'Hai Chau',
-  },
-  {
-    id: 'area-dn-son-tra',
-    code: 'dn-son-tra',
-    name: 'Son Tra',
-    city: 'Da Nang',
-    cityCode: 'dn',
-    district: 'Son Tra',
-  },
-  {
-    id: 'area-hp-hong-bang',
-    code: 'hp-hong-bang',
-    name: 'Hong Bang',
-    city: 'Hai Phong',
-    cityCode: 'hp',
-    district: 'Hong Bang',
-  },
-  {
-    id: 'area-hp-ngo-quyen',
-    code: 'hp-ngo-quyen',
-    name: 'Ngo Quyen',
-    city: 'Hai Phong',
-    cityCode: 'hp',
-    district: 'Ngo Quyen',
+    id: 'area-hcm-q7',
+    code: 'hcm-q7',
+    name: 'Quan 7',
+    city: 'TP.HCM',
+    cityCode: 'hcm',
+    district: 'Quan 7',
   },
 ];
 
@@ -161,6 +141,21 @@ const demoStores: PublicStore[] = [
     areaCode: 'hn-hoan-kiem',
     latitude: 21.0279,
     longitude: 105.8522,
+    thumbnailUrl: null,
+  }),
+  buildStore({
+    id: 'store-jade-casino-hoan-kiem',
+    name: 'Jade Casino Hoan Kiem',
+    slug: 'jade-casino-hoan-kiem',
+    category: 'CASINO',
+    description: 'Casino lounge tai Hoan Kiem, co ban VIP va do uong dem.',
+    address: '88 Ly Thuong Kiet, Hoan Kiem',
+    city: 'Ha Noi',
+    cityCode: 'hn',
+    district: 'Hoan Kiem',
+    areaCode: 'hn-hoan-kiem',
+    latitude: 21.0245,
+    longitude: 105.8485,
     thumbnailUrl: null,
   }),
   buildStore({
@@ -212,8 +207,8 @@ const demoStores: PublicStore[] = [
     id: 'store-sakura-lounge-q3',
     name: 'Sakura Lounge Quan 3',
     slug: 'sakura-lounge-quan-3',
-    category: 'LOUNGE',
-    description: 'Lounge yen tinh, phu hop tiep khach va booking cast.',
+    category: 'GIRLS_BAR',
+    description: 'Girls bar phong cach nhat tai Quan 3, phu hop booking cast.',
     address: '18 Vo Van Tan, Quan 3',
     city: 'TP.HCM',
     cityCode: 'hcm',
@@ -224,63 +219,33 @@ const demoStores: PublicStore[] = [
     thumbnailUrl: null,
   }),
   buildStore({
-    id: 'store-dragon-rooftop-dn',
-    name: 'Dragon Rooftop Da Nang',
-    slug: 'dragon-rooftop-da-nang',
-    category: 'CLUB',
-    description: 'Club rooftop gan song Han, nhac soi dong cuoi tuan.',
-    address: '30 Bach Dang, Hai Chau',
-    city: 'Da Nang',
-    cityCode: 'dn',
-    district: 'Hai Chau',
-    areaCode: 'dn-hai-chau',
-    latitude: 16.068,
-    longitude: 108.2247,
-    thumbnailUrl: null,
-  }),
-  buildStore({
-    id: 'store-son-tra-lounge',
-    name: 'Son Tra Sea Lounge',
-    slug: 'son-tra-sea-lounge',
-    category: 'LOUNGE',
-    description: 'Lounge gan bien My Khe, khong gian mo va am nhac nhe.',
-    address: '11 Vo Nguyen Giap, Son Tra',
-    city: 'Da Nang',
-    cityCode: 'dn',
-    district: 'Son Tra',
-    areaCode: 'dn-son-tra',
-    latitude: 16.0789,
-    longitude: 108.2475,
-    thumbnailUrl: null,
-  }),
-  buildStore({
-    id: 'store-harbor-ktv-hp',
-    name: 'Harbor KTV Hai Phong',
-    slug: 'harbor-ktv-hai-phong',
+    id: 'store-golden-ktv-q7',
+    name: 'Golden Voice KTV Quan 7',
+    slug: 'golden-voice-ktv-quan-7',
     category: 'KARAOKE',
-    description: 'Karaoke/KTV phong VIP tai Hong Bang, phu hop tiec nhom.',
-    address: '9 Tran Phu, Hong Bang',
-    city: 'Hai Phong',
-    cityCode: 'hp',
-    district: 'Hong Bang',
-    areaCode: 'hp-hong-bang',
-    latitude: 20.8561,
-    longitude: 106.6822,
+    description: 'Karaoke/KTV phong VIP tai Quan 7, phu hop tiec nhom.',
+    address: '67 Nguyen Thi Thap, Quan 7',
+    city: 'TP.HCM',
+    cityCode: 'hcm',
+    district: 'Quan 7',
+    areaCode: 'hcm-q7',
+    latitude: 10.7385,
+    longitude: 106.7219,
     thumbnailUrl: null,
   }),
   buildStore({
-    id: 'store-opera-spa-hp',
-    name: 'Opera Spa Ngo Quyen',
-    slug: 'opera-spa-ngo-quyen',
-    category: 'SPA',
-    description: 'Spa thu gian tai Ngo Quyen, co goi cham soc sau tiec.',
-    address: '22 Lach Tray, Ngo Quyen',
-    city: 'Hai Phong',
-    cityCode: 'hp',
-    district: 'Ngo Quyen',
-    areaCode: 'hp-ngo-quyen',
-    latitude: 20.8448,
-    longitude: 106.6945,
+    id: 'store-lotus-massage-q3',
+    name: 'Lotus Massage Spa Quan 3',
+    slug: 'lotus-massage-spa-quan-3',
+    category: 'MASSAGE_SPA',
+    description: 'Massage spa mo muon tai Quan 3, co goi thu gian sau tiec.',
+    address: '12 Nguyen Dinh Chieu, Quan 3',
+    city: 'TP.HCM',
+    cityCode: 'hcm',
+    district: 'Quan 3',
+    areaCode: 'hcm-q3',
+    latitude: 10.7829,
+    longitude: 106.691,
     thumbnailUrl: null,
   }),
 ];
@@ -371,56 +336,30 @@ const demoCasts: PublicCast[] = [
     storeSlug: 'sakura-lounge-quan-3',
   }),
   buildCast({
-    id: 'cast-lina-dragon',
-    slug: 'lina-dragon-rooftop',
-    stageName: 'Lina',
-    name: 'Lina',
-    publicAlias: 'Lina Dragon',
-    publicHeadline: 'Club host gan song Han',
-    tags: ['club', 'danang', 'party'],
-    languages: ['vi', 'en'],
-    hourlyRateVnd: 860000,
-    thumbnailUrl: null,
-    storeSlug: 'dragon-rooftop-da-nang',
-  }),
-  buildCast({
-    id: 'cast-nami-son-tra',
-    slug: 'nami-son-tra-sea-lounge',
-    stageName: 'Nami',
-    name: 'Nami',
-    publicAlias: 'Nami Sea',
-    publicHeadline: 'Sea lounge host gan My Khe',
-    tags: ['lounge', 'beach', 'chill'],
-    languages: ['vi', 'en'],
-    hourlyRateVnd: 760000,
-    thumbnailUrl: null,
-    storeSlug: 'son-tra-sea-lounge',
-  }),
-  buildCast({
-    id: 'cast-mika-harbor-ktv',
-    slug: 'mika-harbor-ktv',
+    id: 'cast-mika-golden-ktv',
+    slug: 'mika-golden-ktv',
     stageName: 'Mika',
     name: 'Mika',
-    publicAlias: 'Mika Harbor',
-    publicHeadline: 'KTV host cho tiec nhom Hai Phong',
+    publicAlias: 'Mika KTV',
+    publicHeadline: 'KTV host cho tiec nhom Quan 7',
     tags: ['ktv', 'karaoke', 'group'],
     languages: ['vi', 'ja'],
     hourlyRateVnd: 820000,
     thumbnailUrl: null,
-    storeSlug: 'harbor-ktv-hai-phong',
+    storeSlug: 'golden-voice-ktv-quan-7',
   }),
   buildCast({
-    id: 'cast-sumi-opera-spa',
-    slug: 'sumi-opera-spa',
+    id: 'cast-sumi-lotus-massage',
+    slug: 'sumi-lotus-massage-spa',
     stageName: 'Sumi',
     name: 'Sumi',
     publicAlias: 'Sumi Spa',
-    publicHeadline: 'Spa coordinator khu Ngo Quyen',
-    tags: ['spa', 'relax', 'wellness'],
+    publicHeadline: 'Massage spa coordinator Quan 3',
+    tags: ['massage-spa', 'relax', 'wellness'],
     languages: ['vi'],
     hourlyRateVnd: 680000,
     thumbnailUrl: null,
-    storeSlug: 'opera-spa-ngo-quyen',
+    storeSlug: 'lotus-massage-spa-quan-3',
   }),
 ];
 
@@ -461,12 +400,15 @@ const matchesCity = (
 ) => {
   const normalizedCity = normalize(city);
 
-  if (!normalizedCity) {
+  if (!normalizedCity || normalizedCity === 'all') {
     return true;
   }
 
   return [item.cityCode, item.city].some((value) => normalize(value) === normalizedCity);
 };
+
+const isP0City = (item: Pick<PublicStore | PublicArea, 'city' | 'cityCode'>) =>
+  p0CityCodes.has(normalize(item.cityCode));
 
 const matchesCategory = (category: string | undefined, store: PublicStore) => {
   const normalizedCategory = normalize(category);
@@ -484,6 +426,21 @@ const matchesArea = (area: string | undefined, store: PublicStore) => {
   return [store.area?.code, store.area?.name, store.district].some(
     (value) => normalize(value) === normalizedArea,
   );
+};
+
+const matchesLanguage = (language: string | undefined, cast: PublicCast) => {
+  const normalizedLanguage = normalize(language);
+
+  return (
+    !normalizedLanguage ||
+    cast.languages.some((item) => normalize(item) === normalizedLanguage)
+  );
+};
+
+const matchesTag = (tag: string | undefined, cast: PublicCast) => {
+  const normalizedTag = normalize(tag);
+
+  return !normalizedTag || cast.tags.some((item) => normalize(item) === normalizedTag);
 };
 
 const distanceKm = (from: Required<Pick<DiscoveryParams, 'lat' | 'lng'>>, store: PublicStore) => {
@@ -537,10 +494,11 @@ const limitItems = <T>(items: T[], limit: number | undefined) =>
     : items;
 
 const getFallbackAreas = (params: Pick<DiscoveryParams, 'city'> = {}) =>
-  demoAreas.filter((area) => matchesCity(params.city, area));
+  demoAreas.filter(isP0City).filter((area) => matchesCity(params.city, area));
 
 const getFallbackStores = (params: DiscoveryParams = {}) => {
   const stores = demoStores
+    .filter(isP0City)
     .filter((store) => matchesCity(params.city, store))
     .filter((store) => matchesCategory(params.category, store))
     .filter((store) => matchesArea(params.area, store))
@@ -565,9 +523,12 @@ const getFallbackStores = (params: DiscoveryParams = {}) => {
 
 const getFallbackCasts = (params: DiscoveryParams = {}) => {
   const casts = demoCasts
+    .filter((cast) => isP0City(cast.store))
     .filter((cast) => matchesCity(params.city, cast.store))
     .filter((cast) => matchesCategory(params.category, cast.store))
     .filter((cast) => matchesArea(params.area, cast.store))
+    .filter((cast) => matchesLanguage(params.language, cast))
+    .filter((cast) => matchesTag(params.tag, cast))
     .filter((cast) =>
       matchesQuery(params.q, [
         cast.name,

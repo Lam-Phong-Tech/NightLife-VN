@@ -24,6 +24,16 @@ export class PublicDiscoveryQueryDto {
   category?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(16)
+  language?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  tag?: string;
+
+  @IsOptional()
   @Matches(decimalNumberPattern)
   lat?: string;
 

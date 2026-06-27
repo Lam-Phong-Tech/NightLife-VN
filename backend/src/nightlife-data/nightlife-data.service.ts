@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -14,8 +15,12 @@ import { ReviewBillDto } from './dto/review-bill.dto';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_PUBLIC_LIMIT = 24;
 const MAX_PUBLIC_LIMIT = 100;
+const MVP_CITY_CODES = ['hn', 'hcm'] as const;
 
 const CITY_ALIASES: Record<string, string> = {
+  all: 'all',
+  'tat-ca': 'all',
+  'tong-hop': 'all',
   hn: 'hn',
   hanoi: 'hn',
   'ha-noi': 'hn',
@@ -30,29 +35,26 @@ const CITY_ALIASES: Record<string, string> = {
   saigon: 'hcm',
   sai_gon: 'hcm',
   'sai-gon': 'hcm',
-  dn: 'dn',
-  danang: 'dn',
-  'da-nang': 'dn',
-  'da nang': 'dn',
-  hp: 'hp',
-  haiphong: 'hp',
-  'hai-phong': 'hp',
-  'hai phong': 'hp',
 };
 
 const CATEGORY_ALIASES: Record<string, StoreCategory> = {
   bar: 'BAR',
   club: 'CLUB',
   lounge: 'LOUNGE',
+  'girls-bar': 'GIRLS_BAR',
+  girlsbar: 'GIRLS_BAR',
+  hostess: 'GIRLS_BAR',
+  'hostess-bar': 'GIRLS_BAR',
   karaoke: 'KARAOKE',
   'karaoke-ktv': 'KARAOKE',
   ktv: 'KARAOKE',
+  'massage-spa': 'MASSAGE_SPA',
+  massage: 'MASSAGE_SPA',
+  spa: 'MASSAGE_SPA',
   restaurant: 'RESTAURANT',
   nhahang: 'RESTAURANT',
   'nha-hang': 'RESTAURANT',
-  spa: 'SPA',
-  event: 'EVENT',
-  other: 'OTHER',
+  casino: 'CASINO',
 };
 
 type Coordinates = {
@@ -68,11 +70,11 @@ export class NightlifeDataService {
   ) {}
 
   async listPublicAreas(query: PublicDiscoveryQueryDto = {}) {
-    const cityCode = this.normalizeCityCode(query.city);
+    const cityCode = this.normalizeCityCode(query.city, { strict: true });
     const where: Prisma.AreaWhereInput = {
       deletedAt: null,
       status: 'ACTIVE',
-      ...(cityCode ? { code: { startsWith: `${cityCode}-` } } : {}),
+      ...this.buildMvpAreaCodeWhere(cityCode),
     };
 
     const areas = await this.prisma.area.findMany({
@@ -176,12 +178,17 @@ export class NightlifeDataService {
     const coordinates = this.parseCoordinates(query);
     const limit = this.resolveLimit(query.limit);
     const searchTerm = this.cleanText(query.q);
+    const searchToken = this.normalizeToken(searchTerm);
+    const language = this.normalizeToken(query.language);
+    const tag = this.normalizeToken(query.tag);
     const casts = await this.prisma.cast.findMany({
       where: {
         deletedAt: null,
         status: 'ACTIVE',
         isPublic: true,
         store: this.buildPublicStoreWhere(query, { includeTextSearch: false }),
+        ...(language ? { languages: { has: language } } : {}),
+        ...(tag ? { tags: { has: tag } } : {}),
         ...(searchTerm
           ? {
               OR: [
@@ -190,6 +197,12 @@ export class NightlifeDataService {
                 { publicHeadline: this.containsInsensitive(searchTerm) },
                 { bio: this.containsInsensitive(searchTerm) },
                 { publicBio: this.containsInsensitive(searchTerm) },
+                ...(searchToken
+                  ? [
+                      { tags: { has: searchToken } },
+                      { languages: { has: searchToken } },
+                    ]
+                  : []),
                 {
                   store: {
                     name: this.containsInsensitive(searchTerm),
@@ -982,11 +995,21 @@ export class NightlifeDataService {
     options: { includeTextSearch?: boolean; includeCastName?: boolean } = {},
   ): Prisma.StoreWhereInput {
     const searchTerm = this.cleanText(query.q);
-    const cityCode = this.normalizeCityCode(query.city);
+    const cityCode = this.normalizeCityCode(query.city, { strict: true });
     const area = this.cleanText(query.area);
     const areaCode = this.normalizeToken(area);
-    const category = this.normalizeCategory(query.category);
-    const and: Prisma.StoreWhereInput[] = [];
+    const category = this.normalizeCategory(query.category, { strict: true });
+    const and: Prisma.StoreWhereInput[] = [
+      {
+        area: {
+          is: {
+            deletedAt: null,
+            status: 'ACTIVE',
+            ...this.buildMvpAreaCodeWhere(cityCode),
+          },
+        },
+      },
+    ];
 
     if (options.includeTextSearch !== false && searchTerm) {
       const textFilters: Prisma.StoreWhereInput[] = [
@@ -1012,18 +1035,6 @@ export class NightlifeDataService {
       }
 
       and.push({ OR: textFilters });
-    }
-
-    if (cityCode) {
-      and.push({
-        area: {
-          is: {
-            code: { startsWith: `${cityCode}-` },
-            deletedAt: null,
-            status: 'ACTIVE',
-          },
-        },
-      });
     }
 
     if (area) {
@@ -1069,18 +1080,47 @@ export class NightlifeDataService {
     };
   }
 
-  private resolveLimit(limit?: string) {
-    const parsed = Number(limit);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+  private buildMvpAreaCodeWhere(cityCode?: string): Prisma.AreaWhereInput {
+    if (cityCode) {
+      return { code: { startsWith: `${cityCode}-` } };
+    }
+
+    return {
+      OR: MVP_CITY_CODES.map((code) => ({
+        code: { startsWith: `${code}-` },
+      })),
+    };
+  }
+
+  private resolveLimit(limit?: string | number) {
+    if (limit === undefined || limit === null || limit === '') {
       return DEFAULT_PUBLIC_LIMIT;
     }
 
-    return Math.min(Math.floor(parsed), MAX_PUBLIC_LIMIT);
+    const parsed = Number(limit);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new BadRequestException('limit must be a positive number');
+    }
+
+    if (parsed > MAX_PUBLIC_LIMIT) {
+      throw new BadRequestException(
+        `limit must be less than or equal to ${MAX_PUBLIC_LIMIT}`,
+      );
+    }
+
+    return Math.floor(parsed);
   }
 
   private parseCoordinates(query: PublicDiscoveryQueryDto): Coordinates | null {
-    if (!query.lat || !query.lng) {
+    const hasLat = query.lat !== undefined && query.lat !== null && query.lat !== '';
+    const hasLng = query.lng !== undefined && query.lng !== null && query.lng !== '';
+
+    if (!hasLat && !hasLng) {
       return null;
+    }
+
+    if (!hasLat || !hasLng) {
+      throw new BadRequestException('lat and lng must be provided together');
     }
 
     const lat = Number(query.lat);
@@ -1094,7 +1134,7 @@ export class NightlifeDataService {
       lng < -180 ||
       lng > 180
     ) {
-      return null;
+      throw new BadRequestException('lat/lng must be valid coordinates');
     }
 
     return { lat, lng };
@@ -1152,20 +1192,36 @@ export class NightlifeDataService {
     return value?.trim() ?? '';
   }
 
-  private normalizeCityCode(value?: string | null) {
+  private normalizeCityCode(
+    value?: string | null,
+    options: { strict?: boolean } = {},
+  ) {
     const token = this.normalizeToken(value);
     if (!token) {
       return undefined;
     }
 
-    return CITY_ALIASES[token] ?? CITY_ALIASES[token.replace(/-/g, ' ')];
+    const cityCode = CITY_ALIASES[token] ?? CITY_ALIASES[token.replace(/-/g, ' ')];
+
+    if (cityCode === 'all') {
+      return undefined;
+    }
+
+    if (!cityCode && options.strict) {
+      throw new BadRequestException('city must be hn, hcm, or all');
+    }
+
+    return cityCode;
   }
 
   private cityCodeFromAreaCode(code: string) {
     return code.split('-')[0] || undefined;
   }
 
-  private normalizeCategory(value?: string | null): StoreCategory | undefined {
+  private normalizeCategory(
+    value?: string | null,
+    options: { strict?: boolean } = {},
+  ): StoreCategory | undefined {
     const token = this.normalizeToken(value);
     const upperValue = value?.trim().toUpperCase();
 
@@ -1173,11 +1229,23 @@ export class NightlifeDataService {
       return undefined;
     }
 
+    if (upperValue === 'SPA') {
+      return 'MASSAGE_SPA';
+    }
+
     if (upperValue && this.isStoreCategory(upperValue)) {
       return upperValue;
     }
 
-    return CATEGORY_ALIASES[token];
+    const category = CATEGORY_ALIASES[token];
+
+    if (!category && options.strict) {
+      throw new BadRequestException(
+        'category must be one of BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO',
+      );
+    }
+
+    return category;
   }
 
   private isStoreCategory(value: string): value is StoreCategory {
@@ -1185,11 +1253,11 @@ export class NightlifeDataService {
       'BAR',
       'CLUB',
       'LOUNGE',
+      'GIRLS_BAR',
       'KARAOKE',
+      'MASSAGE_SPA',
       'RESTAURANT',
-      'SPA',
-      'EVENT',
-      'OTHER',
+      'CASINO',
     ].includes(value);
   }
 

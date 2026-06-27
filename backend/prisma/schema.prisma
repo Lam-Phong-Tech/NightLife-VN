@@ -51,11 +51,11 @@ enum StoreCategory {
   BAR
   CLUB
   LOUNGE
+  GIRLS_BAR
   KARAOKE
+  MASSAGE_SPA
   RESTAURANT
-  SPA
-  EVENT
-  OTHER
+  CASINO
 }
 
 enum AreaStatus {
@@ -412,7 +412,7 @@ model Store {
   area              Area?              @relation(fields: [areaId], references: [id], onDelete: SetNull)
   name              String
   slug              String             @unique
-  category          StoreCategory      @default(OTHER)
+  category          StoreCategory
   description       String?
   address           String?
   city              String             @default("Ho Chi Minh City")

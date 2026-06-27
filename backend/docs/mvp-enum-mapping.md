@@ -49,11 +49,15 @@ The seed writes the DB-driven permission matrix into `permissions` and `role_per
 - `BAR`: bar/pub venue.
 - `CLUB`: nightlife club.
 - `LOUNGE`: lounge venue.
+- `GIRLS_BAR`: girls bar or hostess-bar venue.
 - `KARAOKE`: karaoke venue.
+- `MASSAGE_SPA`: massage/spa venue.
 - `RESTAURANT`: restaurant venue.
-- `SPA`: spa/service venue.
-- `EVENT`: event-focused venue.
-- `OTHER`: fallback category while onboarding.
+- `CASINO`: casino venue.
+
+Public discovery accepts legacy aliases such as `spa` and `massage-spa` and maps
+them to `MASSAGE_SPA`. The persisted enum intentionally matches the BA P0
+taxonomy; no `EVENT`, `OTHER`, or plain `SPA` category is used in P0.
 
 ## CouponIssue Scan Actor
 

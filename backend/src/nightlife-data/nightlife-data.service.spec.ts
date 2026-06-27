@@ -60,20 +60,20 @@ describe('NightlifeDataService', () => {
   it('lists public areas for supported city filters', async () => {
     prisma.area.findMany.mockResolvedValue([
       {
-        id: 'area-dn',
-        code: 'dn-haichau',
-        name: 'Hai Chau',
-        city: 'Da Nang',
-        district: 'Hai Chau',
-        ward: 'Thach Thang',
+        id: 'area-hcm',
+        code: 'hcm-q1',
+        name: 'Quan 1',
+        city: 'Ho Chi Minh',
+        district: 'Quan 1',
+        ward: 'Ben Nghe',
       },
     ] as never);
 
-    await expect(service.listPublicAreas({ city: 'da-nang' })).resolves.toEqual(
+    await expect(service.listPublicAreas({ city: 'hcm' })).resolves.toEqual(
       [
         expect.objectContaining({
-          code: 'dn-haichau',
-          cityCode: 'dn',
+          code: 'hcm-q1',
+          cityCode: 'hcm',
         }),
       ],
     );
@@ -82,7 +82,7 @@ describe('NightlifeDataService', () => {
         where: {
           deletedAt: null,
           status: 'ACTIVE',
-          code: { startsWith: 'dn-' },
+          code: { startsWith: 'hcm-' },
         },
       }),
     );
@@ -224,20 +224,20 @@ describe('NightlifeDataService', () => {
         hourlyRateVnd: 430000,
         media: [],
         store: {
-          id: 'store-hp',
-          name: 'Harbor KTV Hai Phong',
-          slug: 'harbor-ktv-hai-phong',
+          id: 'store-hcm',
+          name: 'Golden Voice KTV Quan 7',
+          slug: 'golden-voice-ktv-quan-7',
           category: 'KARAOKE',
-          city: 'Hai Phong',
-          district: 'Hong Bang',
-          latitude: '20.8644',
-          longitude: '106.6838',
+          city: 'Ho Chi Minh',
+          district: 'Quan 7',
+          latitude: '10.7385',
+          longitude: '106.7219',
           area: {
-            id: 'area-hp',
-            code: 'hp-hongbang',
-            name: 'Hong Bang',
-            city: 'Hai Phong',
-            district: 'Hong Bang',
+            id: 'area-hcm',
+            code: 'hcm-q7',
+            name: 'Quan 7',
+            city: 'Ho Chi Minh',
+            district: 'Quan 7',
           },
         },
       },
@@ -245,10 +245,12 @@ describe('NightlifeDataService', () => {
 
     const result = await service.listPublicCasts({
       q: 'mika',
-      city: 'hp',
+      city: 'hcm',
       category: 'ktv',
-      lat: '20.864',
-      lng: '106.684',
+      language: 'ja',
+      tag: 'ktv',
+      lat: '10.738',
+      lng: '106.722',
     });
 
     expect(result).toEqual([
@@ -257,9 +259,9 @@ describe('NightlifeDataService', () => {
         name: 'Mika',
         distanceKm: expect.any(Number),
         store: expect.objectContaining({
-          slug: 'harbor-ktv-hai-phong',
+          slug: 'golden-voice-ktv-quan-7',
           category: 'KARAOKE',
-          cityCode: 'hp',
+          cityCode: 'hcm',
         }),
       }),
     ]);
@@ -269,6 +271,8 @@ describe('NightlifeDataService', () => {
           deletedAt: null,
           status: 'ACTIVE',
           isPublic: true,
+          languages: { has: 'ja' },
+          tags: { has: 'ktv' },
           store: expect.objectContaining({
             deletedAt: null,
             status: 'ACTIVE',

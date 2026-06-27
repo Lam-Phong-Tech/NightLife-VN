@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState } from 'react';
 
-export default function Page({ params }: { params: MockItem }) {
+export default function Page({ params }: { params: Promise<{ slug?: string }> }) {
+    void params;
     const [isFavorite, setIsFavorite] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const tabStyle = (active: boolean): React.CSSProperties => ({
@@ -42,9 +43,6 @@ export default function Page({ params }: { params: MockItem }) {
       : 'https://img.icons8.com/ios/100/D4B26A/like.png';
     const cBorn = 2002;
     const mainBg = "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80') center/cover";
-    const isVideo = false;
-    const cJp = false;
-    const isIntro = true;
     const favIconDark = isFavorite
       ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
       : 'https://img.icons8.com/ios/100/1f1d29/like.png';

@@ -22,6 +22,12 @@ const badRequestExample = {
   error: 'Bad Request',
 };
 
+const publicDiscoveryBadRequestExample = {
+  statusCode: 400,
+  message: 'city must be hn, hcm, or all',
+  error: 'Bad Request',
+};
+
 const unauthorizedExample = {
   statusCode: 401,
   message: 'Unauthorized',
@@ -328,12 +334,21 @@ export function PublicAreasContract() {
     ApiOperation({
       summary: 'Public discovery: list active areas',
       description:
-        'Auth guard: none. Supports city aliases such as hn, hcm, dn, hp.',
+        'Auth guard: none. P0 supports hn, hcm, and all only. Da Nang/Hai Phong seed data is reserved for later phases and is not rendered by P0 public listing.',
     }),
-    ApiQuery({ name: 'city', required: false, example: 'hn' }),
+    ApiQuery({
+      name: 'city',
+      required: false,
+      description: 'P0 city code or alias: hn, hcm, all.',
+      example: 'hn',
+    }),
     ApiOkResponse({
       description: 'Active areas used by public store and cast filters.',
       schema: { example: [areaExample] },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid city filter.',
+      schema: { example: publicDiscoveryBadRequestExample },
     }),
   );
 }
@@ -350,6 +365,10 @@ export function PublicStoresContract() {
       description: 'Active stores matching the discovery filters.',
       schema: { example: [storeExample] },
     }),
+    ApiBadRequestResponse({
+      description: 'Invalid discovery filter.',
+      schema: { example: publicDiscoveryBadRequestExample },
+    }),
   );
 }
 
@@ -358,12 +377,16 @@ export function PublicCastsContract() {
     ApiOperation({
       summary: 'Public discovery: search active casts',
       description:
-        'Auth guard: none. Filters by cast/store name, store category, city, area, and sorts nearest first when lat/lng are provided.',
+        'Auth guard: none. Filters by cast/store name, store category, city, area, language, and tag. P0 cast listing does not require nearest-first UI.',
     }),
-    publicDiscoveryQueries(),
+    publicDiscoveryQueries({ includeCastFilters: true }),
     ApiOkResponse({
       description: 'Active public casts matching the discovery filters.',
       schema: { example: [castExample] },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid discovery filter.',
+      schema: { example: publicDiscoveryBadRequestExample },
     }),
   );
 }
@@ -649,13 +672,16 @@ export function ReviewSensitiveBillContract() {
   );
 }
 
-function publicDiscoveryQueries() {
-  return applyDecorators(
+function publicDiscoveryQueries(
+  options: { includeCastFilters?: boolean } = {},
+) {
+  const decorators = [
     ApiQuery({ name: 'q', required: false, example: 'neon' }),
     ApiQuery({
       name: 'city',
       required: false,
-      description: 'City code or alias: hn, hcm, dn, hp.',
+      description:
+        'P0 city code or alias: hn, hcm, all. Da Nang/Hai Phong are later-phase data and are not returned by P0 listing.',
       example: 'hn',
     }),
     ApiQuery({
@@ -667,8 +693,9 @@ function publicDiscoveryQueries() {
     ApiQuery({
       name: 'category',
       required: false,
-      description: 'Store category such as BAR, CLUB, LOUNGE, KARAOKE.',
-      example: 'CLUB',
+      description:
+        'P0 category: BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Alias massage-spa maps to MASSAGE_SPA.',
+      example: 'GIRLS_BAR',
     }),
     ApiQuery({
       name: 'lat',
@@ -683,7 +710,26 @@ function publicDiscoveryQueries() {
       example: '105.822',
     }),
     ApiQuery({ name: 'limit', required: false, example: '24' }),
-  );
+  ];
+
+  if (options.includeCastFilters) {
+    decorators.push(
+      ApiQuery({
+        name: 'language',
+        required: false,
+        description: 'Cast language filter, for example ja, vi, or en.',
+        example: 'ja',
+      }),
+      ApiQuery({
+        name: 'tag',
+        required: false,
+        description: 'Cast tag/keyword filter, for example ktv or vip.',
+        example: 'ktv',
+      }),
+    );
+  }
+
+  return applyDecorators(...decorators);
 }
 
 function guardedListContract(

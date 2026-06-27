@@ -32,8 +32,6 @@ const cityOptions = [
   { value: '', label: 'Tất cả' },
   { value: 'hn', label: 'HN' },
   { value: 'hcm', label: 'HCM' },
-  { value: 'dn', label: 'ĐN' },
-  { value: 'hp', label: 'HP' },
 ];
 
 const categoryOptions = [
@@ -41,27 +39,27 @@ const categoryOptions = [
   { value: 'BAR', label: 'Bar' },
   { value: 'CLUB', label: 'Club' },
   { value: 'LOUNGE', label: 'Lounge' },
+  { value: 'GIRLS_BAR', label: 'Girls Bar' },
   { value: 'KARAOKE', label: 'Karaoke / KTV' },
+  { value: 'MASSAGE_SPA', label: 'Massage / Spa' },
   { value: 'RESTAURANT', label: 'Nhà hàng' },
-  { value: 'SPA', label: 'Spa' },
+  { value: 'CASINO', label: 'Casino' },
 ];
 
 const categoryLabels: Record<string, string> = {
   BAR: 'Bar',
   CLUB: 'Club',
   LOUNGE: 'Lounge',
+  GIRLS_BAR: 'Girls Bar',
   KARAOKE: 'Karaoke / KTV',
+  MASSAGE_SPA: 'Massage / Spa',
   RESTAURANT: 'Nhà hàng',
-  SPA: 'Spa',
-  EVENT: 'Sự kiện',
-  OTHER: 'Khác',
+  CASINO: 'Casino',
 };
 
 const cityLabels: Record<string, string> = {
   hn: 'Hà Nội',
   hcm: 'TP.HCM',
-  dn: 'Đà Nẵng',
-  hp: 'Hải Phòng',
 };
 
 const pageStyle: CSSProperties = {
@@ -101,9 +99,13 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleCityChange = (nextCity: string) => {
+    setCity(nextCity);
+    setArea('');
+  };
+
   useEffect(() => {
     let cancelled = false;
-    setArea('');
 
     discoveryApi
       .listAreas({ city })
@@ -121,10 +123,10 @@ export default function Page() {
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
 
     const timer = window.setTimeout(() => {
+      setIsLoading(true);
+      setError(null);
       discoveryApi
         .listCasts({
           q: query,
@@ -209,7 +211,7 @@ export default function Page() {
                 label="Thành phố"
                 options={cityOptions}
                 value={city}
-                onChange={setCity}
+                onChange={handleCityChange}
               />
               <FilterRow
                 label="Loại hình"

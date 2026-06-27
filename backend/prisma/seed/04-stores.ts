@@ -33,7 +33,15 @@ function restaurantSchedule() {
 interface StoreSeed {
   slug: string;
   name: string;
-  category: 'BAR' | 'CLUB' | 'LOUNGE' | 'KARAOKE' | 'RESTAURANT' | 'SPA';
+  category:
+    | 'BAR'
+    | 'CLUB'
+    | 'LOUNGE'
+    | 'GIRLS_BAR'
+    | 'KARAOKE'
+    | 'MASSAGE_SPA'
+    | 'RESTAURANT'
+    | 'CASINO';
   description: string;
   address: string;
   city: string;
@@ -90,7 +98,7 @@ const STORES: StoreSeed[] = [
   {
     slug: 'sakura-lounge',
     name: 'サクラ・ラウンジ — Sakura Lounge',
-    category: 'LOUNGE',
+    category: 'GIRLS_BAR',
     description:
       '🇯🇵 日本式のおもてなしとベトナムの活気が融合したプレミアムラウンジ。個室VIPルーム、日本酒と焼酎の豊富なセレクション。\n\n' +
       '🇬🇧 A premium lounge blending Japanese hospitality with Vietnamese vibrancy. Private VIP rooms, extensive sake and shochu selection.\n\n' +
@@ -144,6 +152,24 @@ const STORES: StoreSeed[] = [
     mapUrl: 'https://maps.google.com/?q=10.7835,106.692',
     openingHours: restaurantSchedule(),
   },
+  {
+    slug: 'lotus-massage-spa',
+    name: 'Lotus Massage Spa',
+    category: 'MASSAGE_SPA',
+    description:
+      'Late-night massage spa in District 3 with quiet private rooms, sauna, and wellness packages for after-party recovery.\n\n' +
+      'Massage spa Quan 3, co phong rieng yen tinh, xong hoi va goi thu gian sau buoi toi.',
+    address: '12 Nguyen Dinh Chieu, Quan 3, TP.HCM',
+    city: 'Há»“ ChÃ­ Minh',
+    district: 'Quáº­n 3',
+    areaCode: 'hcm-q3',
+    partnerKey: 'partner1',
+    phone: '+84283456015',
+    latitude: 10.7829,
+    longitude: 106.691,
+    mapUrl: 'https://maps.google.com/?q=10.7829,106.691',
+    openingHours: restaurantSchedule(),
+  },
 
   // ═══════════════ HÀ NỘI (5 stores) ═══════════════
   {
@@ -187,7 +213,7 @@ const STORES: StoreSeed[] = [
   {
     slug: 'jade-lounge',
     name: 'ジェイド・ラウンジ — Jade Lounge',
-    category: 'LOUNGE',
+    category: 'CASINO',
     description:
       '🇯🇵 翡翠をテーマにした高級ラウンジ。ホアンキエム湖を一望するテラス席、プレミアムウイスキーバー、完全個室あり。\n\n' +
       '🇬🇧 A jade-themed luxury lounge. Terrace seating overlooking Hoàn Kiếm Lake, premium whisky bar, fully private rooms available.\n\n' +
@@ -302,7 +328,7 @@ const STORES: StoreSeed[] = [
   {
     slug: 'opera-spa-hai-phong',
     name: 'Opera Spa Hải Phòng',
-    category: 'SPA',
+    category: 'MASSAGE_SPA',
     description:
       'Late-night wellness spa near the Opera House with massage, sauna, and premium quiet rooms.\n\n' +
       'Spa mở muộn gần Nhà hát Lớn, có massage, xông hơi và phòng riêng cao cấp.',
@@ -373,6 +399,6 @@ export async function seedStores(
     });
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} stores (HCM/HN/DN/HP, categories: BAR/CLUB/LOUNGE/KARAOKE/RESTAURANT/SPA)`);
+  console.log(`     ✓ ${Object.keys(result).length} stores (P0 taxonomy + DN/HP later-phase seeds)`);
   return result;
 }

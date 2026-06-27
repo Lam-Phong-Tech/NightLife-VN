@@ -1,8 +1,8 @@
 import { PrismaClient, Area } from '@prisma/client';
 
 /**
- * 6 Areas: 3 districts in HCM + 3 districts in HN.
- * Satisfies acceptance criteria: ≥ 3 thành phố/khu vực.
+ * P0 public listing renders HCM/HN only.
+ * DN/HP areas below are later-phase seed data and are filtered out by P0 APIs.
  */
 const AREAS = [
   // ── Hồ Chí Minh ──
@@ -108,6 +108,6 @@ export async function seedAreas(
     });
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} areas (HCM/HN/DN/HP)`);
+  console.log(`     ✓ ${Object.keys(result).length} areas (HCM/HN P0 + DN/HP later-phase seeds)`);
   return result;
 }
