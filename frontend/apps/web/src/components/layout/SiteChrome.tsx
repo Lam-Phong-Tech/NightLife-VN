@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Home, Search, Ticket, UserRound, Globe, MessageCircle } from "lucide-react";
+import { CalendarDays, Home, Search, Ticket, UserRound, Globe, MessageCircle, LogIn } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
@@ -181,15 +181,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       <header
         className="nl-site-header"
         style={{
-          minHeight: "82px",
-          padding: isMobile ? "13px 18px 10px" : "18px 34px",
+          minHeight: isMobile ? "56px" : "82px",
+          padding: isMobile ? "0 16px" : "18px 34px",
           borderBottom: `1px solid ${colors.borderGold12}`,
           background: colors.bg,
           display: "flex",
-          alignItems: isMobile ? "flex-start" : "center",
+          alignItems: "center",
           justifyContent: "space-between",
-          gap: isMobile ? "10px" : "24px",
-          flexWrap: isMobile ? "wrap" : "nowrap",
+          gap: isMobile ? "12px" : "24px",
+          flexWrap: "nowrap",
           position: "sticky",
           top: 0,
           zIndex: 50,
@@ -201,7 +201,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             alignItems: "center",
             gap: "34px",
             minWidth: 0,
-            width: isMobile ? "100%" : "auto",
+            flex: isMobile ? "1 1 0%" : undefined,
           }}
         >
           <Link
@@ -215,7 +215,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           >
             <span
               style={{
-                fontSize: "26px",
+                fontSize: isMobile ? "22px" : "26px",
                 fontWeight: 800,
                 lineHeight: 1,
                 background: colors.goldGrad,
@@ -228,8 +228,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             </span>
             <span
               style={{
-                marginTop: "4px",
-                fontSize: "8.5px",
+                marginTop: "3px",
+                fontSize: isMobile ? "7px" : "8.5px",
                 letterSpacing: "3.6px",
                 color: colors.goldPale,
                 opacity: 0.72,
@@ -266,47 +266,40 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           ) : null}
         </div>
 
-        <div
-          className="nl-site-actions"
-          style={{
-            width: isMobile ? "100%" : "auto",
-            display: isMobile ? "grid" : "flex",
-            gridTemplateColumns: isMobile ? "auto auto minmax(0,1fr)" : undefined,
-            alignItems: "center",
-            justifyContent: isMobile ? "stretch" : "flex-start",
-            gap: isMobile ? "8px" : "14px",
-            flex: isMobile ? "1 1 100%" : "none",
-            minWidth: 0,
-          }}
-        >
-          <span
+        {isMobile ? (
+          /* ── Mobile: 3 icon buttons ── */
+          <div
+            className="nl-site-actions"
             style={{
-              minHeight: isMobile ? "36px" : "38px",
-              padding: isMobile ? "0 10px" : "0 11px",
-              borderRadius: "19px",
-              border: `1px solid ${colors.borderGold32}`,
-              color: colors.gold,
-              background: isMobile ? "transparent" : "rgba(255,255,255,.04)",
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              gap: isMobile ? "6px" : undefined,
-              fontSize: isMobile ? "11.5px" : "12px",
-              fontWeight: 700,
-              whiteSpace: "nowrap",
+              gap: "8px",
+              flex: "none",
             }}
           >
-            {isMobile ? (
-              <>
-                <Globe size={14} />
-                <span>VI</span>
-              </>
-            ) : (
-              "VI / JP"
-            )}
-          </span>
-          
-          {isMobile && (
+            {/* Globe / Language */}
+            <span
+              style={{
+                minHeight: "36px",
+                padding: "0 10px",
+                borderRadius: "18px",
+                border: `1px solid ${colors.borderGold32}`,
+                color: colors.gold,
+                background: "transparent",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "5px",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <Globe size={14} />
+              <span>VI</span>
+            </span>
+
+            {/* Chat */}
             <Link
               href="#"
               style={{
@@ -319,107 +312,115 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 alignItems: "center",
                 justifyContent: "center",
                 background: "transparent",
-                flex: "none",
+                textDecoration: "none",
               }}
             >
               <MessageCircle size={16} />
             </Link>
-          )}
 
-          {!authUser ? (
+            {/* Login / User */}
             <Link
-              href="/dang-nhap"
-              style={
-                isMobile
-                  ? {
-                      minHeight: "36px",
-                      borderRadius: "18px",
-                      background: colors.goldGrad,
-                      color: colors.onGold,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12px",
-                      fontWeight: 800,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                      width: "100%",
-                    }
-                  : {
-                      color: colors.text2,
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                    }
-              }
+              href={authUser ? "/tai-khoan" : "/dang-nhap"}
+              style={{
+                minHeight: "36px",
+                width: "36px",
+                borderRadius: "18px",
+                border: `1px solid ${colors.borderGold32}`,
+                color: colors.gold,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "transparent",
+                textDecoration: "none",
+              }}
             >
-              Đăng nhập
+              {authUser ? <UserRound size={16} /> : <LogIn size={16} />}
             </Link>
-          ) : (
-            <Link
-              href="/tai-khoan"
-              title="Xem thông tin tài khoản"
-              style={
-                isMobile
-                  ? {
-                      minHeight: "36px",
-                      height: "36px",
-                      borderRadius: "18px",
-                      padding: "0 12px",
-                      background: colors.goldGrad,
-                      color: colors.onGold,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      fontSize: "12px",
-                      fontWeight: 800,
-                      textDecoration: "none",
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                      width: "100%",
-                    }
-                  : {
-                      minHeight: "38px",
-                      height: "38px",
-                      maxWidth: "190px",
-                      borderRadius: "19px",
-                      padding: "0 15px",
-                      border: `1px solid ${colors.borderGold32}`,
-                      color: colors.goldPale,
-                      background: "rgba(212,178,106,.1)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                      lineHeight: "normal",
-                      fontSize: "13px",
-                      fontWeight: 800,
-                      textDecoration: "none",
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                      minWidth: 0,
-                    }
-              }
+          </div>
+        ) : (
+          /* ── Desktop: text buttons ── */
+          <div
+            className="nl-site-actions"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              flex: "none",
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                minHeight: "38px",
+                padding: "0 11px",
+                borderRadius: "19px",
+                border: `1px solid ${colors.borderGold32}`,
+                color: colors.gold,
+                background: "rgba(255,255,255,.04)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "12px",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
             >
-              <UserRound size={isMobile ? 14 : 16} style={{ flex: "none" }} />
-              <span
+              VI / JP
+            </span>
+            {!authUser ? (
+              <Link
+                href="/dang-nhap"
                 style={{
-                  height: "100%",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: "normal",
-                  paddingTop: "1px",
+                  color: colors.text2,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  textDecoration: "none",
                 }}
               >
-                {displayName}
-              </span>
-            </Link>
-          )}
-          
-          {!isMobile && (
+                Đăng nhập
+              </Link>
+            ) : (
+              <Link
+                href="/tai-khoan"
+                title="Xem thông tin tài khoản"
+                style={{
+                  minHeight: "38px",
+                  height: "38px",
+                  maxWidth: "190px",
+                  borderRadius: "19px",
+                  padding: "0 15px",
+                  border: `1px solid ${colors.borderGold32}`,
+                  color: colors.goldPale,
+                  background: "rgba(212,178,106,.1)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  lineHeight: "normal",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                  textDecoration: "none",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                }}
+              >
+                <UserRound size={16} style={{ flex: "none" }} />
+                <span
+                  style={{
+                    height: "100%",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    lineHeight: "normal",
+                    paddingTop: "1px",
+                  }}
+                >
+                  {displayName}
+                </span>
+              </Link>
+            )}
             <Link
               href="/dang-ky-doi-tac"
               style={{
@@ -440,8 +441,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             >
               Đăng ký đối tác
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </header>
 
       <div className="nl-page-content">{children}</div>
