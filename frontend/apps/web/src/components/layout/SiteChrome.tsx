@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Home, Search, Ticket, UserRound } from "lucide-react";
+import { CalendarDays, Home, Search, Ticket, UserRound, Globe, MessageCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
@@ -271,11 +271,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           style={{
             width: isMobile ? "100%" : "auto",
             display: isMobile ? "grid" : "flex",
-            gridTemplateColumns: isMobile
-              ? authUser
-                ? "auto minmax(0,128px) minmax(112px,1fr)"
-                : "auto auto minmax(0,1fr)"
-              : undefined,
+            gridTemplateColumns: isMobile ? "auto auto minmax(0,1fr)" : undefined,
             alignItems: "center",
             justifyContent: isMobile ? "stretch" : "flex-start",
             gap: isMobile ? "8px" : "14px",
@@ -290,66 +286,123 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               borderRadius: "19px",
               border: `1px solid ${colors.borderGold32}`,
               color: colors.gold,
-              background: "rgba(255,255,255,.04)",
+              background: isMobile ? "transparent" : "rgba(255,255,255,.04)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
+              gap: isMobile ? "6px" : undefined,
               fontSize: isMobile ? "11.5px" : "12px",
               fontWeight: 700,
               whiteSpace: "nowrap",
             }}
           >
-            VI / JP
+            {isMobile ? (
+              <>
+                <Globe size={14} />
+                <span>VI</span>
+              </>
+            ) : (
+              "VI / JP"
+            )}
           </span>
-          {!authUser ? (
+          
+          {isMobile && (
             <Link
-              href="/dang-nhap"
+              href="#"
               style={{
-                color: colors.text2,
-                fontSize: isMobile ? "12px" : "13px",
-                fontWeight: 600,
-                textDecoration: "none",
-                minHeight: isMobile ? "36px" : undefined,
-                padding: isMobile ? "0 10px" : undefined,
-                borderRadius: isMobile ? "18px" : undefined,
-                border: isMobile ? `1px solid ${colors.borderGold22}` : undefined,
-                background: isMobile ? "rgba(255,255,255,.035)" : undefined,
-                display: isMobile ? "inline-flex" : undefined,
-                alignItems: isMobile ? "center" : undefined,
-                justifyContent: isMobile ? "center" : undefined,
-                whiteSpace: "nowrap",
-              }}
-            >
-              Đăng nhập
-            </Link>
-          ) : null}
-          {authUser ? (
-            <Link
-              href="/tai-khoan"
-              title="Xem thông tin tài khoản"
-              style={{
-                minHeight: isMobile ? "36px" : "38px",
-                height: isMobile ? "36px" : "38px",
-                maxWidth: isMobile ? "128px" : "190px",
-                borderRadius: "19px",
-                padding: isMobile ? "0 12px" : "0 15px",
+                minHeight: "36px",
+                width: "36px",
+                borderRadius: "18px",
                 border: `1px solid ${colors.borderGold32}`,
-                color: colors.goldPale,
-                background: "rgba(212,178,106,.1)",
+                color: colors.gold,
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
-                lineHeight: "normal",
-                fontSize: isMobile ? "12px" : "13px",
-                fontWeight: 800,
-                textDecoration: "none",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                minWidth: 0,
+                background: "transparent",
+                flex: "none",
               }}
             >
-              <UserRound size={16} style={{ flex: "none" }} />
+              <MessageCircle size={16} />
+            </Link>
+          )}
+
+          {!authUser ? (
+            <Link
+              href="/dang-nhap"
+              style={
+                isMobile
+                  ? {
+                      minHeight: "36px",
+                      borderRadius: "18px",
+                      background: colors.goldGrad,
+                      color: colors.onGold,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }
+                  : {
+                      color: colors.text2,
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }
+              }
+            >
+              Đăng nhập
+            </Link>
+          ) : (
+            <Link
+              href="/tai-khoan"
+              title="Xem thông tin tài khoản"
+              style={
+                isMobile
+                  ? {
+                      minHeight: "36px",
+                      height: "36px",
+                      borderRadius: "18px",
+                      padding: "0 12px",
+                      background: colors.goldGrad,
+                      color: colors.onGold,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      textDecoration: "none",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      width: "100%",
+                    }
+                  : {
+                      minHeight: "38px",
+                      height: "38px",
+                      maxWidth: "190px",
+                      borderRadius: "19px",
+                      padding: "0 15px",
+                      border: `1px solid ${colors.borderGold32}`,
+                      color: colors.goldPale,
+                      background: "rgba(212,178,106,.1)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      lineHeight: "normal",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      textDecoration: "none",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      minWidth: 0,
+                    }
+              }
+            >
+              <UserRound size={isMobile ? 14 : 16} style={{ flex: "none" }} />
               <span
                 style={{
                   height: "100%",
@@ -364,27 +417,30 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 {displayName}
               </span>
             </Link>
-          ) : null}
-          <Link
-            href="/dang-ky-doi-tac"
-            style={{
-              minHeight: isMobile ? "36px" : "38px",
-              borderRadius: "19px",
-              padding: isMobile ? "0 12px" : "0 16px",
-              background: colors.goldGrad,
-              color: colors.onGold,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: isMobile ? "12px" : "13px",
-              fontWeight: 800,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-              minWidth: 0,
-            }}
-          >
-            {isMobile ? "Đối tác" : "Đăng ký đối tác"}
-          </Link>
+          )}
+          
+          {!isMobile && (
+            <Link
+              href="/dang-ky-doi-tac"
+              style={{
+                minHeight: "38px",
+                borderRadius: "19px",
+                padding: "0 16px",
+                background: colors.goldGrad,
+                color: colors.onGold,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "13px",
+                fontWeight: 800,
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+                minWidth: 0,
+              }}
+            >
+              Đăng ký đối tác
+            </Link>
+          )}
         </div>
       </header>
 
