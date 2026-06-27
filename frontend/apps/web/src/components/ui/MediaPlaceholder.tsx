@@ -1,7 +1,7 @@
 "use client";
 
 import { ImageOff } from "lucide-react";
-import React, { type CSSProperties, useRef, useMemo, useState } from "react";
+import React, { type CSSProperties, useMemo, useState } from "react";
 
 type PlaceholderMediaProps = {
   src?: string | null;
@@ -37,12 +37,12 @@ export function PlaceholderMedia({
   children,
 }: PlaceholderMediaProps) {
   const imageSrc = useMemo(() => getImageUrlFromCss(src), [src]);
-  const prevImageSrc = useRef(imageSrc);
+  const [prevImageSrc, setPrevImageSrc] = useState(imageSrc);
   const [failed, setFailed] = useState(false);
 
   // Reset failed state when imageSrc changes (during render, not in effect)
-  if (prevImageSrc.current !== imageSrc) {
-    prevImageSrc.current = imageSrc;
+  if (prevImageSrc !== imageSrc) {
+    setPrevImageSrc(imageSrc);
     if (failed) setFailed(false);
   }
 

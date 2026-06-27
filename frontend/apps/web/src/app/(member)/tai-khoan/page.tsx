@@ -16,7 +16,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 const colors = {
   bg: "#0c0c0f",
@@ -50,7 +50,7 @@ const menuItems = [
 ];
 
 export default function Page() {
-  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+  const [authUser] = useState<AuthUser | null>(() => {
     if (typeof window === "undefined") return null;
     return getAuthUser();
   });
