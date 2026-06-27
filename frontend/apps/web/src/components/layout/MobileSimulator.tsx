@@ -3,16 +3,22 @@
 import React, { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Monitor } from "lucide-react";
-import Link from "next/link";
 
 export function MobileSimulator() {
-  const [iframeSrc, setIframeSrc] = useState<string>("");
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const currentSrc = typeof window !== "undefined"
+    ? window.location.pathname + window.location.search
+    : "";
+  const [iframeSrc, setIframeSrc] = useState(currentSrc);
 
   useEffect(() => {
-    // Set the initial iframe src to match the current URL exactly
-    setIframeSrc(window.location.pathname + window.location.search);
+    // Sync iframe src when route changes
+    const newSrc = window.location.pathname + window.location.search;
+    if (newSrc !== iframeSrc) {
+      setIframeSrc(newSrc);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams]);
 
   return (
