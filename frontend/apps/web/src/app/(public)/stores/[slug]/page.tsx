@@ -114,6 +114,8 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     const bookingHref = '/dat-cho';
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const vPriceShort = vPrice;
+    const mapEmbedSrc = 'https://www.google.com/maps?q=Club%20Lumiere%20Tay%20Ho%20Hanoi&output=embed';
+    const locationNote = 'Gần hồ Tây, thuận tiện gọi xe sau 22:00. Admin sẽ gửi vị trí chi tiết sau khi xác nhận đặt chỗ.';
 
     return (
       <React.Fragment>
@@ -193,11 +195,14 @@ export default function Page({ params }: { params: { slug?: string, [key: string
       ) : null}
       {activeStoreTab === 4 ? (
         <div style={{"marginTop":"13px","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","background":"#19191d"}}>
-          <div style={{"height":"150px","position":"relative","background":"linear-gradient(135deg,#202026,#141417)"}}>
-            <span style={{"position":"absolute","inset":"18px","border":"1px dashed rgba(212,178,106,.28)","borderRadius":"12px"}}></span>
-            <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"42px","height":"42px","borderRadius":"50%","background":"#d4b26a","color":"#241a0a","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"900"}}>★</span>
-          </div>
-          <div style={{"padding":"12px","fontSize":"12.5px","lineHeight":"1.55","color":"#d8d1c1"}}><div style={{"fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div><div style={{"marginTop":"4px"}}>Gần hồ Tây, thuận tiện gọi xe sau 22:00. Admin sẽ gửi vị trí chi tiết sau khi xác nhận đặt chỗ.</div><div style={{"marginTop":"8px","display":"grid","gap":"4px","fontSize":"11.5px"}}><span>Giờ mở cửa: 18:00 - 02:00</span><span>Bãi xe: hỗ trợ tại cửa quán</span></div></div>
+          <iframe
+            title={`${vName} Google Map`}
+            src={mapEmbedSrc}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            style={{"display":"block","width":"100%","height":"178px","border":"0","background":"#19191d"}}
+          />
+          <div style={{"padding":"12px","fontSize":"12.5px","lineHeight":"1.55","color":"#d8d1c1"}}><div style={{"fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div><div style={{"marginTop":"4px"}}>{locationNote}</div><div style={{"marginTop":"8px","display":"grid","gap":"4px","fontSize":"11.5px"}}><span>Giờ mở cửa: 18:00 - 02:00</span><span>Gửi vị trí: sau khi admin xác nhận đơn đặt</span><span>Bãi xe: hỗ trợ tại cửa quán</span></div></div>
         </div>
       ) : null}
 
@@ -333,6 +338,16 @@ export default function Page({ params }: { params: { slug?: string, [key: string
                 </div>
               </div>
             </div>
+            <div style={{"marginTop":"14px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px"}}>
+              <div style={{"background":"rgba(212,178,106,.09)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"16px","fontSize":"13px","lineHeight":"1.65","color":"#d8d1c1"}}>
+                <div style={{"fontSize":"14px","fontWeight":"900","color":"#f0dda8"}}>Gợi ý trải nghiệm</div>
+                <p style={{"marginTop":"10px"}}>Phù hợp tiếp khách VIP, nhóm nhỏ muốn phòng riêng, hoặc khách Nhật cần hỗ trợ ngôn ngữ trong suốt buổi tối.</p>
+              </div>
+              <div style={{"background":"rgba(255,255,255,.045)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"16px","fontSize":"13px","lineHeight":"1.65","color":"#d8d1c1"}}>
+                <div style={{"fontSize":"14px","fontWeight":"900","color":"#f0dda8"}}>Thông tin vận hành</div>
+                <div style={{"marginTop":"10px","display":"grid","gap":"7px"}}><div><b>Giờ mở cửa:</b> 18:00 - 02:00</div><div><b>Gửi vị trí:</b> sau khi admin xác nhận đơn đặt</div><div><b>Bãi xe:</b> hỗ trợ tại cửa quán</div></div>
+              </div>
+            </div>
           </>
         ) : null}
 
@@ -372,14 +387,16 @@ export default function Page({ params }: { params: { slug?: string, [key: string
 
         {activeStoreTab === 4 ? (
           <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"1.2fr .8fr","gap":"14px"}}>
-            <div style={{"minHeight":"260px","borderRadius":"16px","border":"1px solid #ececec","overflow":"hidden","position":"relative","background":"linear-gradient(135deg,#ece9f5,#d8cfb8)"}}>
-              <span style={{"position":"absolute","left":"12%","right":"12%","top":"32%","height":"2px","background":"rgba(109,40,217,.34)","transform":"rotate(-12deg)"}}></span>
-              <span style={{"position":"absolute","left":"24%","right":"18%","top":"58%","height":"2px","background":"rgba(109,40,217,.24)","transform":"rotate(18deg)"}}></span>
-              <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","boxShadow":"0 14px 30px rgba(109,40,217,.28)"}}>VIP</span>
-            </div>
+            <iframe
+              title={`${vName} Google Map`}
+              src={mapEmbedSrc}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              style={{"display":"block","width":"100%","minHeight":"260px","border":"0","borderRadius":"16px","background":"#19191d"}}
+            />
             <div style={{"background":"rgba(255,255,255,.045)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"18px","fontSize":"13.5px","lineHeight":"1.65","color":"#d8d1c1"}}>
               <div style={{"fontSize":"16px","fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div>
-              <p style={{"marginTop":"10px"}}>Khu vực trung tâm Tây Hồ, phù hợp di chuyển bằng taxi sau giờ cao điểm.</p>
+              <p style={{"marginTop":"10px"}}>{locationNote}</p>
               <div style={{"marginTop":"14px","display":"grid","gap":"8px"}}><div><b>Giờ mở cửa:</b> 18:00 - 02:00</div><div><b>Gửi vị trí:</b> sau khi admin xác nhận đơn đặt</div><div><b>Bãi xe:</b> hỗ trợ tại cửa quán</div></div>
             </div>
           </div>

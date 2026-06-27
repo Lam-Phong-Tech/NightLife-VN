@@ -224,14 +224,14 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
     <Link
       href="/stores/club-lumiere"
       style={{
-        minHeight: desktop ? "310px" : "172px",
+        minHeight: desktop ? "310px" : "208px",
         borderRadius: desktop ? "26px" : "18px",
         overflow: "hidden",
         position: "relative",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
-        padding: desktop ? "34px" : "18px",
+        padding: desktop ? "34px" : "18px 18px 42px",
         color: "#fff",
         boxShadow: "0 22px 42px rgba(0,0,0,.36)",
       }}
@@ -274,19 +274,21 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         <h1 style={{ maxWidth: desktop ? "620px" : "260px", marginTop: "8px", fontSize: desktop ? "48px" : "25px", lineHeight: 1.05, fontWeight: 900 }}>
           {event.title}
         </h1>
-        <div style={{ marginTop: desktop ? "22px" : "18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-          <span style={{ fontSize: desktop ? "15px" : "12px" }}>{event.desc}</span>
+        <div style={{ marginTop: desktop ? "22px" : "16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+          <span style={{ maxWidth: desktop ? "none" : "168px", fontSize: desktop ? "15px" : "12px", lineHeight: 1.35 }}>{event.desc}</span>
           <span
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
+              flex: "none",
               borderRadius: "999px",
               background: `linear-gradient(135deg,${colors.goldSoft},${colors.gold})`,
               color: "#241a0a",
               padding: desktop ? "13px 22px" : "10px 16px",
               fontSize: "13px",
               fontWeight: 800,
+              whiteSpace: "nowrap",
             }}
           >
             {event.btnText}
@@ -298,7 +300,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         style={{
           position: "absolute",
           left: "50%",
-          bottom: desktop ? "18px" : "10px",
+          bottom: desktop ? "18px" : "16px",
           zIndex: 2,
           display: "flex",
           gap: "6px",
@@ -306,15 +308,24 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         }}
       >
         {banners.map((banner, index) => (
-          <button
+          <span
             key={banner.title}
-            type="button"
+            role="button"
+            tabIndex={0}
             aria-label={`Banner ${index + 1}`}
             onClick={(event) => {
               event.preventDefault();
               setActiveBanner(index);
             }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setActiveBanner(index);
+              }
+            }}
             style={{
+              display: "block",
+              flex: "0 0 auto",
               width: activeBanner === index ? 22 : 5,
               height: 5,
               border: 0,
