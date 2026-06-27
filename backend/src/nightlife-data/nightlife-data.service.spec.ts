@@ -22,6 +22,12 @@ describe('NightlifeDataService', () => {
     store: {
       findMany: jest.fn(),
     },
+    area: {
+      findMany: jest.fn(),
+    },
+    cast: {
+      findMany: jest.fn(),
+    },
     booking: {
       findMany: jest.fn(),
       update: jest.fn(),
@@ -46,6 +52,229 @@ describe('NightlifeDataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new NightlifeDataService(prisma, accessService);
+  });
+
+  it('lists public areas for supported city filters', async () => {
+    prisma.area.findMany.mockResolvedValue([
+      {
+        id: 'area-dn',
+        code: 'dn-haichau',
+        name: 'Hai Chau',
+        city: 'Da Nang',
+        district: 'Hai Chau',
+        ward: 'Thach Thang',
+      },
+    ] as never);
+
+    await expect(service.listPublicAreas({ city: 'da-nang' })).resolves.toEqual([
+      expect.objectContaining({
+        code: 'dn-haichau',
+        cityCode: 'dn',
+      }),
+    ]);
+    expect(prisma.area.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          code: { startsWith: 'dn-' },
+        },
+      }),
+    );
+  });
+
+  it('searches public stores by name with category and area filters', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-neon',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'CLUB',
+        description: 'EDM club',
+        address: 'Tay Ho',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        latitude: '21.063',
+        longitude: '105.822',
+        area: {
+          id: 'area-hn',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [{ url: 'https://example.com/neon.jpg' }],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({
+      q: 'neon',
+      city: 'hn',
+      area: 'hn-tayho',
+      category: 'club',
+      lat: '21.06',
+      lng: '105.82',
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        slug: 'neon-club',
+        category: 'CLUB',
+        cityCode: 'hn',
+        distanceKm: expect.any(Number),
+      }),
+    ]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          category: 'CLUB',
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                { name: { contains: 'neon', mode: 'insensitive' } },
+              ]),
+            }),
+            {
+              area: {
+                is: {
+                  code: { startsWith: 'hn-' },
+                  deletedAt: null,
+                  status: 'ACTIVE',
+                },
+              },
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('sorts public stores nearest first when coordinates are provided', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'far-store',
+        name: 'Far Store',
+        slug: 'far-store',
+        category: 'BAR',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Hoan Kiem',
+        latitude: '21.0245',
+        longitude: '105.8485',
+        area: {
+          id: 'area-far',
+          code: 'hn-hoankiem',
+          name: 'Hoan Kiem',
+          city: 'Ha Noi',
+          district: 'Hoan Kiem',
+        },
+        media: [],
+      },
+      {
+        id: 'near-store',
+        name: 'Near Store',
+        slug: 'near-store',
+        category: 'CLUB',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        latitude: '21.063',
+        longitude: '105.822',
+        area: {
+          id: 'area-near',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({
+      lat: '21.0631',
+      lng: '105.8221',
+    });
+
+    expect(result.map((store) => store.slug)).toEqual([
+      'near-store',
+      'far-store',
+    ]);
+  });
+
+  it('searches public casts by cast or store name and store filters', async () => {
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        id: 'cast-mika',
+        slug: 'mika-harbor-ktv',
+        stageName: 'Mika',
+        publicAlias: 'Mika',
+        publicHeadline: 'KTV duet host',
+        tags: ['ktv'],
+        languages: ['vi', 'ja'],
+        hourlyRateVnd: 430000,
+        media: [],
+        store: {
+          id: 'store-hp',
+          name: 'Harbor KTV Hai Phong',
+          slug: 'harbor-ktv-hai-phong',
+          category: 'KARAOKE',
+          city: 'Hai Phong',
+          district: 'Hong Bang',
+          latitude: '20.8644',
+          longitude: '106.6838',
+          area: {
+            id: 'area-hp',
+            code: 'hp-hongbang',
+            name: 'Hong Bang',
+            city: 'Hai Phong',
+            district: 'Hong Bang',
+          },
+        },
+      },
+    ] as never);
+
+    const result = await service.listPublicCasts({
+      q: 'mika',
+      city: 'hp',
+      category: 'ktv',
+      lat: '20.864',
+      lng: '106.684',
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        slug: 'mika-harbor-ktv',
+        name: 'Mika',
+        distanceKm: expect.any(Number),
+        store: expect.objectContaining({
+          slug: 'harbor-ktv-hai-phong',
+          category: 'KARAOKE',
+          cityCode: 'hp',
+        }),
+      }),
+    ]);
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: expect.objectContaining({
+            deletedAt: null,
+            status: 'ACTIVE',
+            category: 'KARAOKE',
+          }),
+          OR: expect.arrayContaining([
+            { stageName: { contains: 'mika', mode: 'insensitive' } },
+          ]),
+        }),
+      }),
+    );
   });
 
   it('limits partner bookings to the stores in their access scope', async () => {

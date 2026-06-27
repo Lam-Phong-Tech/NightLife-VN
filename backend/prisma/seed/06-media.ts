@@ -70,6 +70,10 @@ const STORE_LABELS: Array<{ slug: string; label: string }> = [
   { slug: 'jade-lounge', label: 'Jade Lounge' },
   { slug: 'star-ktv', label: 'Star KTV' },
   { slug: 'tokyo-kitchen', label: 'Tokyo Kitchen' },
+  { slug: 'dragon-rooftop-da-nang', label: 'Dragon Rooftop' },
+  { slug: 'son-tra-lounge', label: 'Son Tra Lounge' },
+  { slug: 'harbor-ktv-hai-phong', label: 'Harbor KTV' },
+  { slug: 'opera-spa-hai-phong', label: 'Opera Spa' },
 ];
 
 // ── Cast info for building media entries ──
@@ -94,6 +98,14 @@ const CAST_LABELS: Array<{ slug: string; label: string }> = [
   { slug: 'tsubasa-star', label: 'Tsubasa' },
   { slug: 'kotone-tokyo', label: 'Kotone' },
   { slug: 'aoi-tokyo', label: 'Aoi' },
+  { slug: 'lina-dragon-rooftop', label: 'Lina' },
+  { slug: 'mai-dragon-rooftop', label: 'Mai' },
+  { slug: 'nami-son-tra', label: 'Nami' },
+  { slug: 'eri-son-tra', label: 'Eri' },
+  { slug: 'mika-harbor-ktv', label: 'Mika' },
+  { slug: 'hana-harbor-ktv', label: 'Hana HP' },
+  { slug: 'sumi-opera-spa', label: 'Sumi' },
+  { slug: 'yuri-opera-spa', label: 'Yuri' },
 ];
 
 export async function seedMedia(

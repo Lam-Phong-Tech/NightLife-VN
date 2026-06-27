@@ -9,6 +9,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
@@ -62,6 +63,73 @@ const couponExample = {
     category: 'LOUNGE',
     city: 'Ho Chi Minh City',
     district: 'District 1',
+  },
+};
+
+const areaExample = {
+  id: 'area_01',
+  code: 'hn-tayho',
+  name: 'Tay Ho',
+  city: 'Ha Noi',
+  district: 'Tay Ho',
+  ward: 'Quang An',
+  cityCode: 'hn',
+};
+
+const storeExample = {
+  id: 'store_01',
+  name: 'Neon Club',
+  slug: 'neon-club',
+  category: 'CLUB',
+  description: 'Club by West Lake with DJ nights and VIP tables.',
+  address: '200 Nghi Tam, Tay Ho, Ha Noi',
+  city: 'Ha Noi',
+  cityCode: 'hn',
+  district: 'Tay Ho',
+  area: {
+    id: 'area_01',
+    code: 'hn-tayho',
+    name: 'Tay Ho',
+    city: 'Ha Noi',
+    district: 'Tay Ho',
+    cityCode: 'hn',
+  },
+  latitude: 21.063,
+  longitude: 105.822,
+  thumbnailUrl: null,
+  distanceKm: 1.4,
+};
+
+const castExample = {
+  id: 'cast_01',
+  slug: 'yuna-neon',
+  stageName: 'Yuna',
+  name: 'Yuna',
+  publicAlias: 'Yuna',
+  publicHeadline: 'Party host',
+  tags: ['party', 'energetic'],
+  languages: ['ja', 'vi', 'en'],
+  hourlyRateVnd: 600000,
+  thumbnailUrl: null,
+  distanceKm: 1.4,
+  store: {
+    id: 'store_01',
+    name: 'Neon Club',
+    slug: 'neon-club',
+    category: 'CLUB',
+    city: 'Ha Noi',
+    cityCode: 'hn',
+    district: 'Tay Ho',
+    area: {
+      id: 'area_01',
+      code: 'hn-tayho',
+      name: 'Tay Ho',
+      city: 'Ha Noi',
+      district: 'Tay Ho',
+      cityCode: 'hn',
+    },
+    latitude: 21.063,
+    longitude: 105.822,
   },
 };
 
@@ -254,6 +322,51 @@ const reviewedBillExample = {
   verifiedById: 'admin_01',
   rejectedById: null,
 };
+
+export function PublicAreasContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public discovery: list active areas',
+      description:
+        'Auth guard: none. Supports city aliases such as hn, hcm, dn, hp.',
+    }),
+    ApiQuery({ name: 'city', required: false, example: 'hn' }),
+    ApiOkResponse({
+      description: 'Active areas used by public store and cast filters.',
+      schema: { example: [areaExample] },
+    }),
+  );
+}
+
+export function PublicStoresContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public discovery: search active stores',
+      description:
+        'Auth guard: none. Filters by name, category, city, area, and sorts nearest first when lat/lng are provided.',
+    }),
+    publicDiscoveryQueries(),
+    ApiOkResponse({
+      description: 'Active stores matching the discovery filters.',
+      schema: { example: [storeExample] },
+    }),
+  );
+}
+
+export function PublicCastsContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public discovery: search active casts',
+      description:
+        'Auth guard: none. Filters by cast/store name, store category, city, area, and sorts nearest first when lat/lng are provided.',
+    }),
+    publicDiscoveryQueries(),
+    ApiOkResponse({
+      description: 'Active public casts matching the discovery filters.',
+      schema: { example: [castExample] },
+    }),
+  );
+}
 
 export function PublicCouponsContract() {
   return applyDecorators(
@@ -532,6 +645,43 @@ export function ReviewSensitiveBillContract() {
         },
       },
     }),
+  );
+}
+
+function publicDiscoveryQueries() {
+  return applyDecorators(
+    ApiQuery({ name: 'q', required: false, example: 'neon' }),
+    ApiQuery({
+      name: 'city',
+      required: false,
+      description: 'City code or alias: hn, hcm, dn, hp.',
+      example: 'hn',
+    }),
+    ApiQuery({
+      name: 'area',
+      required: false,
+      description: 'Area code, area name, or district.',
+      example: 'hn-tayho',
+    }),
+    ApiQuery({
+      name: 'category',
+      required: false,
+      description: 'Store category such as BAR, CLUB, LOUNGE, KARAOKE.',
+      example: 'CLUB',
+    }),
+    ApiQuery({
+      name: 'lat',
+      required: false,
+      description: 'Latitude for nearest-first suggestions.',
+      example: '21.055',
+    }),
+    ApiQuery({
+      name: 'lng',
+      required: false,
+      description: 'Longitude for nearest-first suggestions.',
+      example: '105.822',
+    }),
+    ApiQuery({ name: 'limit', required: false, example: '24' }),
   );
 }
 

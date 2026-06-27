@@ -36,10 +36,10 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log(
     '  • Users: 7 (1 admin, 1 operator, 3 partners, 1 member, 1 VIP)',
   );
-  console.log('  • Areas: 6 (HCM: Q1/Q3/Q7, HN: Hoàn Kiếm/Tây Hồ/Cầu Giấy)');
-  console.log('  • Stores: 10 (5 HCM + 5 HN)');
-  console.log('  • Casts: 20 (2 per store)');
-  console.log('  • Media: 40 placeholders');
+  console.log('  • Areas: 10 (HCM/HN/DN/HP)');
+  console.log('  • Stores: 14 (HCM/HN/DN/HP)');
+  console.log('  • Casts: 28 (2 per store)');
+  console.log('  • Media: 56 placeholders');
   console.log('  • Coupons: 5 (3 PERCENT + 2 FIXED)');
   console.log('  • Commission Configs: 10');
   console.log('  • Contents: 5 (3 blogs + 2 policies)');

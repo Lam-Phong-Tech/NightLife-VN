@@ -339,6 +339,126 @@ const CASTS: CastSeed[] = [
     languages: ['ja', 'vi'],
     hourlyRateVnd: 450000,
   },
+
+  // ── Dragon Rooftop Da Nang (DN Hai Chau) ──
+  {
+    slug: 'lina-dragon-rooftop',
+    stageName: 'リナ',
+    storeSlug: 'dragon-rooftop-da-nang',
+    bio: 'Lina — rooftop party host in Da Nang',
+    publicAlias: 'Lina',
+    publicHeadline: 'Rooftop party guide by the Han River',
+    publicBio:
+      '🇬🇧 I host birthday groups and VIP tables with a bright, energetic style.\n' +
+      '🇻🇳 Đồng hành bàn VIP, sinh nhật và nhóm bạn tại rooftop Đà Nẵng.',
+    tags: ['party', 'rooftop', 'vip-table', '20s'],
+    languages: ['vi', 'en', 'ja'],
+    hourlyRateVnd: 520000,
+  },
+  {
+    slug: 'mai-dragon-rooftop',
+    stageName: 'マイ',
+    storeSlug: 'dragon-rooftop-da-nang',
+    bio: 'Mai — dance and club companion',
+    publicAlias: 'Mai',
+    publicHeadline: 'High-energy club companion',
+    publicBio:
+      '🇬🇧 EDM nights, dance floors, and lively group hosting are my favorite.\n' +
+      '🇻🇳 Hợp nhóm thích EDM, nhảy và không khí club sôi động.',
+    tags: ['dancer', 'edm', 'energetic', '20s'],
+    languages: ['vi', 'ja'],
+    hourlyRateVnd: 500000,
+  },
+
+  // ── Son Tra Lounge (DN Son Tra) ──
+  {
+    slug: 'nami-son-tra',
+    stageName: 'ナミ',
+    storeSlug: 'son-tra-lounge',
+    bio: 'Nami — calm lounge hostess near My Khe',
+    publicAlias: 'Nami',
+    publicHeadline: 'Quiet lounge time near the beach',
+    publicBio:
+      '🇬🇧 I enjoy slow conversations, cocktails, and relaxed terrace seating.\n' +
+      '🇻🇳 Phù hợp khách thích trò chuyện nhẹ nhàng, cocktail và không gian biển.',
+    tags: ['calm', 'cocktail', 'beach', '20s'],
+    languages: ['vi', 'en'],
+    hourlyRateVnd: 480000,
+  },
+  {
+    slug: 'eri-son-tra',
+    stageName: 'エリ',
+    storeSlug: 'son-tra-lounge',
+    bio: 'Eri — attentive VIP lounge host',
+    publicAlias: 'Eri',
+    publicHeadline: 'Private-room lounge support',
+    publicBio:
+      '🇬🇧 I support private rooms, bottle service, and business entertainment.\n' +
+      '🇻🇳 Hỗ trợ phòng riêng, gọi đồ và tiếp khách trong lounge cao cấp.',
+    tags: ['attentive', 'vip-room', 'business', '20s'],
+    languages: ['vi', 'ja', 'en'],
+    hourlyRateVnd: 560000,
+  },
+
+  // ── Harbor KTV Hai Phong (HP Hong Bang) ──
+  {
+    slug: 'mika-harbor-ktv',
+    stageName: 'ミカ',
+    storeSlug: 'harbor-ktv-hai-phong',
+    bio: 'Mika — cheerful KTV host in Hai Phong',
+    publicAlias: 'Mika',
+    publicHeadline: 'KTV duet and group mood maker',
+    publicBio:
+      '🇬🇧 I help groups choose songs and keep the KTV room lively.\n' +
+      '🇻🇳 Biết khuấy động phòng karaoke, chọn bài và song ca cùng khách.',
+    tags: ['ktv', 'singer', 'cheerful', '20s'],
+    languages: ['vi', 'ja'],
+    hourlyRateVnd: 430000,
+  },
+  {
+    slug: 'hana-harbor-ktv',
+    stageName: 'ハナ',
+    storeSlug: 'harbor-ktv-hai-phong',
+    bio: 'Hana — warm KTV companion',
+    publicAlias: 'Hana HP',
+    publicHeadline: 'Warm hosting for private karaoke rooms',
+    publicBio:
+      '🇬🇧 Friendly hosting for private karaoke rooms and business groups.\n' +
+      '🇻🇳 Phù hợp phòng riêng, nhóm tiếp khách và khách thích không khí ấm áp.',
+    tags: ['ktv', 'warm', 'private-room', '20s'],
+    languages: ['vi', 'en'],
+    hourlyRateVnd: 450000,
+  },
+
+  // ── Opera Spa Hai Phong (HP Ngo Quyen) ──
+  {
+    slug: 'sumi-opera-spa',
+    stageName: 'スミ',
+    storeSlug: 'opera-spa-hai-phong',
+    bio: 'Sumi — wellness concierge',
+    publicAlias: 'Sumi',
+    publicHeadline: 'Late-night spa and wellness support',
+    publicBio:
+      '🇬🇧 I help guests choose massage, sauna, and quiet-room packages.\n' +
+      '🇻🇳 Hỗ trợ chọn gói massage, xông hơi và phòng thư giãn mở muộn.',
+    tags: ['spa', 'wellness', 'calm', '20s'],
+    languages: ['vi', 'ja', 'en'],
+    hourlyRateVnd: 420000,
+  },
+  {
+    slug: 'yuri-opera-spa',
+    stageName: 'ユリ',
+    storeSlug: 'opera-spa-hai-phong',
+    bio: 'Yuri — attentive wellness host',
+    publicAlias: 'Yuri',
+    publicHeadline: 'Quiet care near Hai Phong Opera House',
+    publicBio:
+      '🇬🇧 Gentle support for guests who prefer quiet wellness experiences.\n' +
+      '🇻🇳 Phù hợp khách muốn trải nghiệm spa yên tĩnh gần Nhà hát Lớn.',
+    tags: ['spa', 'gentle', 'quiet', '20s'],
+    languages: ['vi', 'en'],
+    hourlyRateVnd: 420000,
+  },
 ];
 
 export async function seedCasts(

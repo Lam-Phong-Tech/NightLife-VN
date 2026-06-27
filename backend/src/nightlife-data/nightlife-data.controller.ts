@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -28,10 +29,14 @@ import {
   PartnerCouponsContract,
   PartnerScanCouponContract,
   PartnerStoresContract,
+  PublicAreasContract,
+  PublicCastsContract,
   PublicCouponsContract,
+  PublicStoresContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
 
@@ -43,6 +48,24 @@ type RequestWithUser = express.Request & {
 @Controller()
 export class NightlifeDataController {
   constructor(private readonly nightlifeDataService: NightlifeDataService) {}
+
+  @PublicAreasContract()
+  @Get('areas')
+  listPublicAreas(@Query() query: PublicDiscoveryQueryDto) {
+    return this.nightlifeDataService.listPublicAreas(query);
+  }
+
+  @PublicStoresContract()
+  @Get('stores')
+  listPublicStores(@Query() query: PublicDiscoveryQueryDto) {
+    return this.nightlifeDataService.listPublicStores(query);
+  }
+
+  @PublicCastsContract()
+  @Get('casts')
+  listPublicCasts(@Query() query: PublicDiscoveryQueryDto) {
+    return this.nightlifeDataService.listPublicCasts(query);
+  }
 
   @PublicCouponsContract()
   @Get('coupons')
