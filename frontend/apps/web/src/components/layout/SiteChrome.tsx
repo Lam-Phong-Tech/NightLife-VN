@@ -201,7 +201,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             alignItems: "center",
             gap: "34px",
             minWidth: 0,
-            flex: isMobile ? "1 1 0%" : undefined,
+            flex: "none",
           }}
         >
           <Link
@@ -295,8 +295,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 cursor: "pointer",
               }}
             >
-              <Globe size={14} />
-              <span>VI</span>
+              <Globe size={14} style={{ flex: "none" }} />
+              <span style={{ lineHeight: 1 }}>VI</span>
             </span>
 
             {/* Chat */}
