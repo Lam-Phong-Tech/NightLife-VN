@@ -296,7 +296,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               }}
             >
               <Globe size={14} style={{ flex: "none" }} />
-              <span style={{ lineHeight: 1 }}>VI</span>
+              <span style={{ lineHeight: "14px", display: "inline-flex", alignItems: "center", height: "14px" }}>VI</span>
             </span>
 
             {/* Chat */}
