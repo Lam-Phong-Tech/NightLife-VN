@@ -24,7 +24,6 @@ const booking = {
   venueName: "Club Lumière",
   area: "Tây Hồ",
   category: "Bar Lounge",
-  castName: "Rina - 21",
   date: "T6 - 21/06",
   time: "21:00",
   guests: 4,
@@ -224,7 +223,6 @@ export default function Page() {
                   label="Mã đặt chỗ"
                   value={<span style={{ fontFamily: "monospace", letterSpacing: ".06em" }}>{booking.bookingCode}</span>}
                 />
-                <DetailItem label="Cast tham chiếu" value={booking.castName} />
                 <DetailItem label="Thời gian" value={`${booking.date} · ${booking.time}`} />
                 <DetailItem label="Số khách" value={`${booking.guests} người`} />
                 <DetailItem label="Người đặt" value={`${booking.guestName} · ${booking.phone}`} />

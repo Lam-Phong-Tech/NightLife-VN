@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { CalendarDays, ChevronLeft, Clock, Minus, Plus, Sparkles, UsersRound } from "lucide-react";
+import { CalendarDays, ChevronLeft, Clock, Minus, Plus, Sparkles } from "lucide-react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 
 const colors = {
@@ -31,6 +31,7 @@ export default function Page() {
   const [mode, setMode] = useState<"guest" | "member">("guest");
   const [guests, setGuests] = useState(4);
   const [coupon, setCoupon] = useState<(typeof couponItems)[number]>(couponItems[0]);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("mode") !== "member") {
@@ -42,12 +43,12 @@ export default function Page() {
       return () => window.clearTimeout(timer);
     }
 
-    router.replace(memberLoginPath);
+    setShowLoginPrompt(true);
   }, [router]);
 
   const selectMode = (nextMode: "guest" | "member") => {
     if (nextMode === "member" && !isMemberUser(getAuthUser())) {
-      router.push(memberLoginPath);
+      setShowLoginPrompt(true);
       return;
     }
 
@@ -123,7 +124,7 @@ export default function Page() {
                 <ReadOnlyField icon={<Clock size={16} />} label="Giờ" value="21:00" />
               </div>
 
-              <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: 14 }}>
                 <div>
                   <Label>Số khách</Label>
                   <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", background: colors.panelStrong }}>
@@ -132,7 +133,6 @@ export default function Page() {
                     <button type="button" onClick={() => setGuests((value) => value + 1)} style={{ ...stepButtonStyle, background: colors.gold, color: colors.onGold }}><Plus size={15} /></button>
                   </div>
                 </div>
-                <ReadOnlyField icon={<UsersRound size={16} />} label="Cast tham chiếu" value="Rina - 21" />
               </div>
 
               <div>
@@ -190,6 +190,73 @@ export default function Page() {
           </aside>
         </div>
       </section>
+      {showLoginPrompt ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="member-login-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            display: "grid",
+            placeItems: "center",
+            padding: 18,
+            background: "rgba(0,0,0,.66)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(100%, 360px)",
+              border: `1px solid ${colors.borderStrong}`,
+              borderRadius: 18,
+              background: "linear-gradient(180deg,#18181c,#111114)",
+              color: colors.text,
+              boxShadow: "0 24px 70px rgba(0,0,0,.48)",
+              padding: 20,
+              textAlign: "center",
+            }}
+          >
+            <div id="member-login-title" style={{ fontSize: 18, fontWeight: 950, color: colors.goldPale }}>
+              Yêu cầu đăng nhập
+            </div>
+            <p style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
+              Bạn cần đăng nhập tài khoản để sử dụng quyền lợi Hội viên và tích điểm.
+            </p>
+            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setShowLoginPrompt(false)}
+                style={{
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 12,
+                  background: colors.panelStrong,
+                  color: colors.muted,
+                  padding: "12px 14px",
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                Hủy
+              </button>
+              <Link
+                href={memberLoginPath}
+                style={{
+                  borderRadius: 12,
+                  background: colors.goldGrad,
+                  color: colors.onGold,
+                  padding: "12px 14px",
+                  fontWeight: 950,
+                  textDecoration: "none",
+                }}
+              >
+                Đăng nhập
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
