@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
-import { CalendarCheck, Clock, MapPin, Phone, TicketCheck, UsersRound } from "lucide-react";
+import { Clock, MapPin, Phone, UsersRound } from "lucide-react";
 
 const colors = {
   bg: "#0c0c0f",
@@ -85,17 +85,17 @@ export default function Page() {
         <div className="nl-member-page-head">
           <div>
             <p style={{ color: colors.gold, fontSize: 12, fontWeight: 900, letterSpacing: ".16em" }}>
-              MEMBER BOOKING
+              BOOKING REQUESTS
             </p>
             <h1 style={{ marginTop: 8, fontSize: "clamp(26px,4vw,40px)", lineHeight: 1.05, fontWeight: 950 }}>
-              Đặt chỗ của tôi
+              Đơn đặt chỗ
             </h1>
             <p style={{ marginTop: 10, color: colors.muted, fontSize: 14, lineHeight: 1.6 }}>
-              Theo dõi trạng thái giữ bàn, mã đặt chỗ và thông tin liên hệ xác nhận.
+              Hiển thị các yêu cầu khách đã nhấn đặt chỗ, kèm trạng thái giữ bàn và thông tin xác nhận.
             </p>
           </div>
-          <Link href="/dat-cho" style={primaryButtonStyle}>
-            Đặt chỗ mới
+          <Link href="/danh-sach-quan" style={primaryButtonStyle}>
+            Tìm quán để đặt
           </Link>
         </div>
 
