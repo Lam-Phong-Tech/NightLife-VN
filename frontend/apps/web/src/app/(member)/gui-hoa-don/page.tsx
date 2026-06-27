@@ -271,18 +271,21 @@ function InvoiceCard({ invoice, onOpen }: { invoice: Invoice; onOpen: () => void
           <StatusBadge status={invoice.status} tone={invoice.tone} />
         </div>
 
-        <div style={{ marginTop: 11, paddingTop: 10, borderTop: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div
+          className="nl-invoice-card-footer"
+          style={{ marginTop: 11, paddingTop: 10, borderTop: `1px solid ${colors.border}`, display: "grid", gap: 10 }}
+        >
           <span style={{ color: toneColor(invoice.tone), fontSize: 12.5, lineHeight: 1.5 }}>{invoice.note}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span className="nl-invoice-actions" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, width: "100%", flexWrap: "wrap" }}>
             <button type="button" onClick={onOpen} style={detailButtonStyle}>
               Chi tiết hóa đơn
             </button>
-          {invoice.tone === "danger" ? (
-            <button type="button" onClick={onOpen} style={retryButtonStyle}>
-              <RotateCcw size={13} />
-              Gửi lại
-            </button>
-          ) : null}
+            {invoice.tone === "danger" ? (
+              <button type="button" onClick={onOpen} style={retryButtonStyle}>
+                <RotateCcw size={13} />
+                Gửi lại
+              </button>
+            ) : null}
           </span>
         </div>
       </div>
@@ -367,13 +370,15 @@ const primaryButtonStyle: React.CSSProperties = {
 };
 
 const secondaryButtonStyle: React.CSSProperties = {
+  minHeight: 42,
   border: `1px solid ${colors.border}`,
-  borderRadius: 10,
+  borderRadius: 12,
   background: colors.panelStrong,
   color: colors.goldPale,
-  padding: "6px 10px",
+  padding: "0 12px",
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "center",
   gap: 6,
   fontSize: 12,
   fontWeight: 900,
@@ -382,8 +387,10 @@ const secondaryButtonStyle: React.CSSProperties = {
 
 const detailButtonStyle: React.CSSProperties = {
   ...secondaryButtonStyle,
+  minWidth: 132,
 };
 
 const retryButtonStyle: React.CSSProperties = {
   ...secondaryButtonStyle,
+  minWidth: 86,
 };
