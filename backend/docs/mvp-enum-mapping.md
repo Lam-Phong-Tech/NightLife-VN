@@ -2,6 +2,23 @@
 
 This document pins the NightLife MVP enum meanings so DEV/TEST can use the same state names in API, database, and QA evidence.
 
+## UserRole
+
+- `USER`: member account. Membership tier is stored separately in `User.tier`.
+- `PARTNER`: store partner account.
+- `STAFF`: operator account for the MVP. API wording uses "operator", and `POST /auth/login/operator` authenticates this role.
+- `ADMIN`: platform administrator.
+
+## Action Policies
+
+Routes use role checks plus action policies for scoped business permissions:
+
+- `canViewPartnerBooking`: `ADMIN`, `STAFF`, and scoped `PARTNER`.
+- `canScanCoupon`: `ADMIN`, `STAFF`, and scoped `PARTNER`.
+- `canReviewBill`: `ADMIN` and `STAFF`.
+
+The seed also writes a DB-driven permission matrix into `permissions` and `role_permissions` for P2 expansion.
+
 ## BookingStatus
 
 - `REQUESTED`: customer or guest submitted a booking request.
@@ -42,3 +59,13 @@ Coupon inventory uses `Coupon` as the campaign/rule and `CouponIssue` as the iss
 - `Bill.couponIssueId` and `Booking.couponIssueId`: attach the scanned coupon to a booking or bill.
 
 For MVP scan evidence, set `CouponIssue.scannedById`, `CouponIssue.usedAt`, and `CouponIssue.status = USED`.
+
+Guest coupon issues expire at `min(now + 24h, Coupon.endsAt)` when `endsAt` exists. Member coupon issues expire at `min(now + 7 days, Coupon.endsAt)` and store the tier/discount snapshot in `CouponIssue.metadata`.
+
+VIP member claim snapshots enforce at least a 10% percent discount rule when the source coupon is percentage-based.
+
+## Audit And Session Security
+
+- Bill review writes `AuditLog` with actor, action, target bill, old/new status, and review metadata.
+- Logout writes `TokenBlacklist` by JWT `jti`; `JwtStrategy` rejects blacklisted active tokens.
+- Admin impersonation, if enabled later, should write `AuditLog.action = admin.impersonation.start` and `admin.impersonation.stop`.

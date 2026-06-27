@@ -31,6 +31,11 @@ export class AuthController {
     return this.authService.loginAs('PARTNER', dto);
   }
 
+  @Post('login/operator')
+  loginOperator(@Body() dto: LoginDto) {
+    return this.authService.loginAs('STAFF', dto);
+  }
+
   @Post('login/admin')
   loginAdmin(@Body() dto: LoginDto) {
     return this.authService.loginAs('ADMIN', dto);
@@ -41,5 +46,15 @@ export class AuthController {
   @Get('me')
   me(@Req() request: Request & { user: { id: string } }) {
     return this.authService.me(request.user.id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  logout(
+    @Req()
+    request: Request & { user: { id: string; jti?: string; exp?: number } },
+  ) {
+    return this.authService.logout(request.user);
   }
 }

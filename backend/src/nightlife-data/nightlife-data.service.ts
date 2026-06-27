@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class NightlifeDataService {
   constructor(
@@ -57,6 +59,7 @@ export class NightlifeDataService {
   }
 
   async claimGuestCoupon(couponId: string, dto: ClaimGuestCouponDto) {
+    const now = new Date();
     const coupon = await this.prisma.coupon.findFirst({
       where: {
         id: couponId,
@@ -74,7 +77,7 @@ export class NightlifeDataService {
       },
     });
 
-    if (!coupon || (coupon.endsAt && coupon.endsAt <= new Date())) {
+    if (!coupon || (coupon.endsAt && coupon.endsAt <= now)) {
       throw new NotFoundException('Coupon not found');
     }
 
@@ -100,7 +103,14 @@ export class NightlifeDataService {
         guestId: guest.id,
         code: issueCode,
         qrPayloadHash: createHash('sha256').update(issueCode).digest('hex'),
-        expiresAt: coupon.endsAt,
+        expiresAt: this.capExpiry(
+          new Date(now.getTime() + DAY_MS),
+          coupon.endsAt,
+        ),
+        metadata: {
+          recipientType: 'GUEST',
+          validityHours: 24,
+        },
       },
       select: {
         id: true,
@@ -122,6 +132,84 @@ export class NightlifeDataService {
       issue,
       guest: { id: guest.id },
     };
+  }
+
+  async claimMemberCoupon(couponId: string, user: AuthenticatedUser) {
+    const now = new Date();
+    const coupon = await this.prisma.coupon.findFirst({
+      where: {
+        id: couponId,
+        status: 'ACTIVE',
+        deletedAt: null,
+        store: { status: 'ACTIVE', deletedAt: null },
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        discountType: true,
+        discountValue: true,
+        maxDiscountVnd: true,
+        minSpendVnd: true,
+        endsAt: true,
+        usageLimit: true,
+        usedCount: true,
+      },
+    });
+
+    if (!coupon || (coupon.endsAt && coupon.endsAt <= now)) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+      throw new UnprocessableEntityException(
+        'Coupon usage limit has been reached',
+      );
+    }
+
+    const issueCode = `MEMBER-${randomUUID()}`;
+    const discountRuleSnapshot = this.buildMemberDiscountRuleSnapshot(
+      coupon,
+      user,
+    );
+
+    return this.prisma.couponIssue.create({
+      data: {
+        couponId: coupon.id,
+        userId: user.id,
+        code: issueCode,
+        qrPayloadHash: createHash('sha256').update(issueCode).digest('hex'),
+        expiresAt: this.capExpiry(
+          new Date(now.getTime() + 7 * DAY_MS),
+          coupon.endsAt,
+        ),
+        metadata: {
+          recipientType: 'MEMBER',
+          tier: user.tier ?? 'FREE',
+          validityDays: 7,
+          discountRuleSnapshot,
+        },
+      },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        expiresAt: true,
+        createdAt: true,
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
   }
 
   async listPartnerStores(user: AuthenticatedUser) {
@@ -191,9 +279,133 @@ export class NightlifeDataService {
         store: { select: { id: true, name: true, slug: true } },
         coupon: { select: { id: true, code: true, name: true } },
         user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true, phone: true } },
+        guest: { select: { id: true, displayName: true } },
       },
     });
+  }
+
+  async listOperatorBookings(user: AuthenticatedUser) {
+    return this.listPartnerBookings(user);
+  }
+
+  async scanCouponIssue(code: string, user: AuthenticatedUser) {
+    const issue = await this.prisma.couponIssue.findUnique({
+      where: { code },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        expiresAt: true,
+        usedAt: true,
+        user: { select: { id: true, displayName: true, tier: true } },
+        guest: { select: { id: true, displayName: true } },
+        booking: { select: { id: true, status: true, scheduledAt: true } },
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            storeId: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    await this.accessService.ensureStoreAccess(user, issue.coupon.storeId);
+    this.assertIssueCanBeConfirmed(issue);
+
+    return this.prisma.couponIssue.update({
+      where: { id: issue.id },
+      data: { scannedById: user.id },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        expiresAt: true,
+        usedAt: true,
+        user: { select: { id: true, displayName: true, tier: true } },
+        guest: { select: { id: true, displayName: true } },
+        booking: { select: { id: true, status: true, scheduledAt: true } },
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+  }
+
+  async confirmCouponIssueCheckIn(
+    couponIssueId: string,
+    user: AuthenticatedUser,
+  ) {
+    const issue = await this.prisma.couponIssue.findUnique({
+      where: { id: couponIssueId },
+      select: {
+        id: true,
+        couponId: true,
+        status: true,
+        expiresAt: true,
+        coupon: { select: { storeId: true } },
+        booking: { select: { id: true, status: true } },
+      },
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    await this.accessService.ensureStoreAccess(user, issue.coupon.storeId);
+    this.assertIssueCanBeConfirmed(issue);
+
+    const now = new Date();
+
+    const updatedIssue = await this.prisma.couponIssue.update({
+      where: { id: issue.id },
+      data: {
+        status: 'USED',
+        usedAt: now,
+        scannedById: user.id,
+      },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        expiresAt: true,
+        usedAt: true,
+        scannedById: true,
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    await this.prisma.coupon.update({
+      where: { id: issue.couponId },
+      data: { usedCount: { increment: 1 } },
+    });
+
+    if (issue.booking) {
+      await this.prisma.booking.update({
+        where: { id: issue.booking.id },
+        data: { status: 'CHECKED_IN' },
+      });
+    }
+
+    return updatedIssue;
   }
 
   async listPartnerBills(user: AuthenticatedUser) {
@@ -214,14 +426,22 @@ export class NightlifeDataService {
         discountVnd: true,
         totalVnd: true,
         submittedAt: true,
+        reviewedAt: true,
         verifiedAt: true,
         rejectedAt: true,
+        reviewedById: true,
+        verifiedById: true,
+        rejectedById: true,
         rejectReason: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
       },
     });
+  }
+
+  async listOperatorBills(user: AuthenticatedUser) {
+    return this.listPartnerBills(user);
   }
 
   listMemberBookings(userId: string) {
@@ -269,8 +489,8 @@ export class NightlifeDataService {
     });
   }
 
-  listSensitiveBillsForAdmin() {
-    return this.prisma.bill.findMany({
+  async listSensitiveBillsForAdmin(user: AuthenticatedUser) {
+    const bills = await this.prisma.bill.findMany({
       where: {
         deletedAt: null,
         status: { in: ['SUBMITTED', 'REJECTED'] },
@@ -292,8 +512,12 @@ export class NightlifeDataService {
         commissionRuleSnapshot: true,
         pointRuleSnapshot: true,
         submittedAt: true,
+        reviewedAt: true,
         verifiedAt: true,
         rejectedAt: true,
+        reviewedById: true,
+        verifiedById: true,
+        rejectedById: true,
         rejectReason: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
@@ -327,6 +551,8 @@ export class NightlifeDataService {
         },
       },
     });
+
+    return bills.map((bill) => this.maskSensitiveBillForRole(bill, user));
   }
 
   async reviewSensitiveBill(
@@ -352,18 +578,27 @@ export class NightlifeDataService {
 
     const now = new Date();
 
-    return this.prisma.bill.update({
+    const result = await this.prisma.bill.update({
       where: { id: billId },
       data: dto.approve
         ? {
             status: 'VERIFIED',
             verifiedAt: now,
+            reviewedById: adminId,
+            verifiedById: adminId,
+            reviewedAt: now,
             rejectedAt: null,
+            rejectedById: null,
             rejectReason: null,
           }
         : {
             status: 'REJECTED',
             rejectedAt: now,
+            reviewedById: adminId,
+            rejectedById: adminId,
+            reviewedAt: now,
+            verifiedById: null,
+            verifiedAt: null,
             rejectReason: dto.rejectReason ?? 'Rejected by admin review',
           },
       select: {
@@ -371,9 +606,131 @@ export class NightlifeDataService {
         status: true,
         verifiedAt: true,
         rejectedAt: true,
+        reviewedAt: true,
+        reviewedById: true,
+        verifiedById: true,
+        rejectedById: true,
         rejectReason: true,
         updatedAt: true,
       },
     });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: dto.approve ? 'bill.review.approve' : 'bill.review.reject',
+        targetType: 'Bill',
+        targetId: billId,
+        metadata: {
+          approve: dto.approve,
+          rejectReason: dto.rejectReason ?? null,
+          previousStatus: bill.status,
+          nextStatus: result.status,
+          reviewedAt: now.toISOString(),
+        },
+      },
+    });
+
+    return result;
+  }
+
+  private buildMemberDiscountRuleSnapshot(
+    coupon: {
+      discountType: string;
+      discountValue: number;
+      maxDiscountVnd: number | null;
+      minSpendVnd: number | null;
+    },
+    user: AuthenticatedUser,
+  ) {
+    const tier = user.tier ?? 'FREE';
+    const minimumPercentByTier: Record<string, number> = {
+      FREE: 8,
+      PREMIUM: 8,
+      VIP: 10,
+    };
+
+    return {
+      type: coupon.discountType,
+      value:
+        coupon.discountType === 'PERCENT'
+          ? Math.max(coupon.discountValue, minimumPercentByTier[tier] ?? 8)
+          : coupon.discountValue,
+      maxDiscountVnd: coupon.maxDiscountVnd,
+      minSpendVnd: coupon.minSpendVnd,
+      tier,
+      sourceValue: coupon.discountValue,
+    };
+  }
+
+  private maskSensitiveBillForRole<T extends { user: unknown; guest: unknown }>(
+    bill: T,
+    user: AuthenticatedUser,
+  ) {
+    if (user.role === 'ADMIN') {
+      return bill;
+    }
+
+    return {
+      ...bill,
+      user: this.maskCustomerIdentity(bill.user),
+      guest: this.maskCustomerIdentity(bill.guest),
+    };
+  }
+
+  private maskCustomerIdentity(customer: unknown) {
+    if (!customer || typeof customer !== 'object') {
+      return customer;
+    }
+
+    const value = customer as {
+      phone?: string | null;
+      email?: string | null;
+      [key: string]: unknown;
+    };
+
+    return {
+      ...value,
+      phone: value.phone ? this.maskPhone(value.phone) : value.phone,
+      email: value.email ? this.maskEmail(value.email) : value.email,
+    };
+  }
+
+  private maskPhone(phone: string) {
+    if (phone.length <= 6) {
+      return '***';
+    }
+
+    return `${phone.slice(0, 3)}****${phone.slice(-3)}`;
+  }
+
+  private maskEmail(email: string) {
+    const [name, domain] = email.split('@');
+    if (!domain) {
+      return '***';
+    }
+
+    return `${name.slice(0, 2)}***@${domain}`;
+  }
+
+  private capExpiry(candidate: Date, couponEndsAt: Date | null) {
+    if (couponEndsAt && couponEndsAt < candidate) {
+      return couponEndsAt;
+    }
+
+    return candidate;
+  }
+
+  private assertIssueCanBeConfirmed(issue: {
+    status: string;
+    expiresAt: Date | null;
+  }) {
+    if (issue.status !== 'ISSUED') {
+      throw new UnprocessableEntityException('Coupon issue is not claimable');
+    }
+
+    if (issue.expiresAt && issue.expiresAt <= new Date()) {
+      throw new UnprocessableEntityException('Coupon issue has expired');
+    }
   }
 }

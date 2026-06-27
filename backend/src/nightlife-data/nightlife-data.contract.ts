@@ -70,7 +70,7 @@ const guestClaimExample = {
     id: 'issue_01',
     code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
     status: 'ISSUED',
-    expiresAt: '2026-07-01T00:00:00.000Z',
+    expiresAt: '2026-06-27T10:00:00.000Z',
     createdAt: '2026-06-26T10:00:00.000Z',
     coupon: {
       id: 'coupon_01',
@@ -79,6 +79,24 @@ const guestClaimExample = {
     },
   },
   guest: { id: 'guest_01' },
+};
+
+const memberClaimExample = {
+  id: 'issue_02',
+  code: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
+  status: 'ISSUED',
+  expiresAt: '2026-07-03T10:00:00.000Z',
+  createdAt: '2026-06-26T10:00:00.000Z',
+  coupon: {
+    id: 'coupon_02',
+    code: 'MEMBER8',
+    name: 'Member Discount 8%',
+    discountType: 'PERCENT',
+    discountValue: 8,
+    maxDiscountVnd: 800000,
+    minSpendVnd: null,
+    store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  },
 };
 
 const partnerStoreExample = {
@@ -116,8 +134,44 @@ const bookingExample = {
   totalVnd: 1800000,
   store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
   coupon: { id: 'coupon_01', code: 'WELCOME20', name: 'Welcome 20%' },
-  user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'GOLD' },
-  guest: null,
+  user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'VIP' },
+  guest: { id: 'guest_01', displayName: 'Guest Name' },
+};
+
+const scannedCouponIssueExample = {
+  id: 'issue_01',
+  code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  status: 'ISSUED',
+  expiresAt: '2026-06-27T10:00:00.000Z',
+  usedAt: null,
+  user: null,
+  guest: { id: 'guest_01', displayName: 'Guest Name' },
+  booking: {
+    id: 'booking_01',
+    status: 'CONFIRMED',
+    scheduledAt: '2026-06-30T13:00:00.000Z',
+  },
+  coupon: {
+    id: 'coupon_01',
+    code: 'GUEST5',
+    name: 'Guest Discount 5%',
+    store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  },
+};
+
+const confirmedCheckInExample = {
+  id: 'issue_01',
+  code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  status: 'USED',
+  expiresAt: '2026-06-27T10:00:00.000Z',
+  usedAt: '2026-06-26T10:15:00.000Z',
+  scannedById: 'partner_01',
+  coupon: {
+    id: 'coupon_01',
+    code: 'GUEST5',
+    name: 'Guest Discount 5%',
+    store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  },
 };
 
 const billExample = {
@@ -129,8 +183,12 @@ const billExample = {
   discountVnd: 200000,
   totalVnd: 1800000,
   submittedAt: '2026-06-26T10:00:00.000Z',
+  reviewedAt: null,
   verifiedAt: null,
   rejectedAt: null,
+  reviewedById: null,
+  verifiedById: null,
+  rejectedById: null,
   rejectReason: null,
   store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
   booking: {
@@ -191,7 +249,10 @@ const reviewedBillExample = {
   verifiedAt: '2026-06-26T10:15:00.000Z',
   rejectedAt: null,
   rejectReason: null,
+  reviewedAt: '2026-06-26T10:15:00.000Z',
   reviewedById: 'admin_01',
+  verifiedById: 'admin_01',
+  rejectedById: null,
 };
 
 export function PublicCouponsContract() {
@@ -234,6 +295,38 @@ export function ClaimGuestCouponContract() {
   );
 }
 
+export function MemberClaimCouponContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Coupon action: member claims a public coupon',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a 7-day member coupon issue capped by coupon end date.',
+    }),
+    ApiParam({ name: 'couponId', example: 'coupon_01' }),
+    ApiCreatedResponse({
+      description: 'Member coupon issue created.',
+      schema: { example: memberClaimExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Coupon does not exist or is not claimable.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Coupon exists but cannot be claimed.',
+      schema: { example: unprocessableExample },
+    }),
+  );
+}
+
 export function PartnerStoresContract() {
   return guardedListContract(
     'Partner action: list own stores',
@@ -255,6 +348,99 @@ export function PartnerBookingsContract() {
     'Booking action: partner lists bookings',
     'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN).',
     bookingExample,
+  );
+}
+
+export function PartnerScanCouponContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: scan a coupon QR code',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, STAFF). Validates store access and returns masked customer data.',
+    }),
+    ApiParam({
+      name: 'code',
+      example: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+    }),
+    ApiOkResponse({
+      description: 'Coupon issue scan result.',
+      schema: { example: scannedCouponIssueExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user cannot access the coupon store.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Coupon issue code does not exist.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Coupon issue not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Coupon issue is expired, used, revoked, or otherwise not valid.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Coupon issue has expired',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
+export function PartnerConfirmCheckInContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: confirm customer check-in',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, STAFF). Marks the coupon issue used and linked booking checked in.',
+    }),
+    ApiParam({ name: 'couponIssueId', example: 'issue_01' }),
+    ApiOkResponse({
+      description: 'Confirmed check-in result.',
+      schema: { example: confirmedCheckInExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user cannot access the coupon store.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Coupon issue does not exist.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Coupon issue not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Coupon issue is expired, used, revoked, or otherwise not valid.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Coupon issue is not claimable',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
   );
 }
 

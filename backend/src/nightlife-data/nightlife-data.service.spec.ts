@@ -8,29 +8,37 @@ describe('NightlifeDataService', () => {
     coupon: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
     guest: {
       create: jest.fn(),
     },
     couponIssue: {
       create: jest.fn(),
+      findUnique: jest.fn(),
       findMany: jest.fn(),
+      update: jest.fn(),
     },
     store: {
       findMany: jest.fn(),
     },
     booking: {
       findMany: jest.fn(),
+      update: jest.fn(),
     },
     bill: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    auditLog: {
+      create: jest.fn(),
+    },
   } as unknown as jest.Mocked<PrismaService>;
 
   const accessService = {
     getAccessibleStoreIds: jest.fn(),
+    ensureStoreAccess: jest.fn(),
   } as unknown as jest.Mocked<AccessService>;
 
   let service: NightlifeDataService;
@@ -54,6 +62,9 @@ describe('NightlifeDataService', () => {
         where: expect.objectContaining({
           storeId: { in: ['store-1'] },
           deletedAt: null,
+        }),
+        select: expect.objectContaining({
+          guest: { select: { id: true, displayName: true } },
         }),
       }),
     );
@@ -107,12 +118,254 @@ describe('NightlifeDataService', () => {
     });
     expect(prisma.couponIssue.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        data: expect.objectContaining({
+          expiresAt: expect.any(Date),
+          metadata: {
+            recipientType: 'GUEST',
+            validityHours: 24,
+          },
+        }),
+      }),
+    );
+    expect(prisma.couponIssue.create).toHaveBeenCalledWith(
+      expect.objectContaining({
         data: expect.not.objectContaining({
           userId: expect.any(String),
         }),
       }),
     );
     expect(prisma.couponIssue.findMany).not.toHaveBeenCalled();
+  });
+
+  it('caps guest coupon expiry to 24 hours', async () => {
+    const now = new Date();
+    const couponEndsAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME',
+      name: 'Welcome',
+      endsAt: couponEndsAt,
+      usageLimit: null,
+      usedCount: 0,
+    } as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' } as never);
+    prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' } as never);
+
+    await service.claimGuestCoupon('coupon-1', { phone: '+84901234567' });
+
+    const createArgs = prisma.couponIssue.create.mock.calls[0][0] as {
+      data: { expiresAt: Date };
+    };
+    expect(createArgs.data.expiresAt.getTime()).toBeLessThanOrEqual(
+      now.getTime() + 24 * 60 * 60 * 1000 + 1000,
+    );
+    expect(createArgs.data.expiresAt.getTime()).toBeLessThan(
+      couponEndsAt.getTime(),
+    );
+  });
+
+  it('claims a coupon for a member with 7-day expiry and tier snapshot', async () => {
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'MEMBER8',
+      name: 'Member',
+      discountType: 'PERCENT',
+      discountValue: 8,
+      maxDiscountVnd: 800000,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+    } as never);
+    prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' } as never);
+
+    await service.claimMemberCoupon('coupon-1', {
+      id: 'user-1',
+      role: 'USER',
+      tier: 'VIP',
+    });
+
+    expect(prisma.couponIssue.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          couponId: 'coupon-1',
+          userId: 'user-1',
+          expiresAt: expect.any(Date),
+          metadata: expect.objectContaining({
+            recipientType: 'MEMBER',
+            tier: 'VIP',
+            validityDays: 7,
+            discountRuleSnapshot: {
+              type: 'PERCENT',
+              value: 10,
+              maxDiscountVnd: 800000,
+              minSpendVnd: null,
+              tier: 'VIP',
+              sourceValue: 8,
+            },
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('scans a coupon issue only after store access and without guest phone', async () => {
+    prisma.couponIssue.findUnique.mockResolvedValue({
+      id: 'issue-1',
+      code: 'GUEST-code',
+      status: 'ISSUED',
+      expiresAt: null,
+      usedAt: null,
+      user: null,
+      guest: { id: 'guest-1', displayName: 'Guest' },
+      booking: null,
+      coupon: {
+        id: 'coupon-1',
+        code: 'GUEST5',
+        name: 'Guest',
+        storeId: 'store-1',
+        store: { id: 'store-1', name: 'Store', slug: 'store' },
+      },
+    } as never);
+    prisma.couponIssue.update.mockResolvedValue({ id: 'issue-1' } as never);
+
+    await service.scanCouponIssue('GUEST-code', {
+      id: 'partner-1',
+      role: 'PARTNER',
+    });
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+    );
+    expect(prisma.couponIssue.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { scannedById: 'partner-1' },
+        select: expect.objectContaining({
+          guest: { select: { id: true, displayName: true } },
+        }),
+      }),
+    );
+  });
+
+  it('confirms check-in by using a coupon issue and updating linked booking', async () => {
+    prisma.couponIssue.findUnique.mockResolvedValue({
+      id: 'issue-1',
+      couponId: 'coupon-1',
+      status: 'ISSUED',
+      expiresAt: null,
+      coupon: { storeId: 'store-1' },
+      booking: { id: 'booking-1', status: 'CONFIRMED' },
+    } as never);
+    prisma.couponIssue.update.mockResolvedValue({ id: 'issue-1' } as never);
+    prisma.coupon.update.mockResolvedValue({ id: 'coupon-1' } as never);
+    prisma.booking.update.mockResolvedValue({ id: 'booking-1' } as never);
+
+    await service.confirmCouponIssueCheckIn('issue-1', {
+      id: 'partner-1',
+      role: 'PARTNER',
+    });
+
+    expect(prisma.couponIssue.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'issue-1' },
+        data: expect.objectContaining({
+          status: 'USED',
+          scannedById: 'partner-1',
+          usedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(prisma.coupon.update).toHaveBeenCalledWith({
+      where: { id: 'coupon-1' },
+      data: { usedCount: { increment: 1 } },
+    });
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: 'booking-1' },
+      data: { status: 'CHECKED_IN' },
+    });
+  });
+
+  it('stores the admin reviewer when reviewing a sensitive bill', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-1',
+      status: 'SUBMITTED',
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-1',
+      status: 'VERIFIED',
+    } as never);
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-1', { approve: true });
+
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'VERIFIED',
+          reviewedById: 'admin-1',
+          verifiedById: 'admin-1',
+          reviewedAt: expect.any(Date),
+        }),
+        select: expect.objectContaining({
+          reviewedById: true,
+          verifiedById: true,
+          rejectedById: true,
+          reviewedAt: true,
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-1',
+        action: 'bill.review.approve',
+        targetType: 'Bill',
+        targetId: 'bill-1',
+        metadata: expect.objectContaining({
+          previousStatus: 'SUBMITTED',
+          nextStatus: 'VERIFIED',
+        }),
+      }),
+    });
+  });
+
+  it('masks sensitive bill customer fields for operator review queue', async () => {
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-1',
+        user: {
+          id: 'user-1',
+          email: 'member@example.com',
+          displayName: 'Member',
+          phone: '+84901234567',
+          tier: 'VIP',
+        },
+        guest: {
+          id: 'guest-1',
+          displayName: 'Guest',
+          phone: '+84907654321',
+          email: 'guest@example.com',
+        },
+      },
+    ] as never);
+
+    await expect(
+      service.listSensitiveBillsForAdmin({
+        id: 'operator-1',
+        role: 'STAFF',
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        user: expect.objectContaining({
+          phone: '+84****567',
+          email: 'me***@example.com',
+        }),
+        guest: expect.objectContaining({
+          phone: '+84****321',
+          email: 'gu***@example.com',
+        }),
+      }),
+    ]);
   });
 
   it('rejects a guest claim when the usage limit is exhausted', async () => {

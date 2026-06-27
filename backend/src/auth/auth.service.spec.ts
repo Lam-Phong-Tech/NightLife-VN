@@ -1,4 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 
@@ -31,11 +32,17 @@ describe('AuthService', () => {
     sign: jest.fn(() => 'jwt-token'),
   } as unknown as jest.Mocked<JwtService>;
 
+  const prisma = {
+    tokenBlacklist: {
+      upsert: jest.fn(),
+    },
+  } as unknown as jest.Mocked<PrismaService>;
+
   let service: AuthService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AuthService(jwtService, usersService);
+    service = new AuthService(jwtService, usersService, prisma);
   });
 
   it('registers a user and returns a JWT auth response', async () => {
@@ -76,12 +83,15 @@ describe('AuthService', () => {
       user.email,
       'Str0ngPass!',
     );
-    expect(jwtService.sign).toHaveBeenCalledWith({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      tier: user.tier,
-    });
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        tier: user.tier,
+      },
+      { jwtid: expect.any(String) },
+    );
   });
 
   it('logs in through a role-specific portal only when the role matches', async () => {
@@ -104,5 +114,49 @@ describe('AuthService', () => {
         password: 'Str0ngPass!',
       }),
     ).rejects.toThrow('This account is not a ADMIN account');
+  });
+
+  it('logs in operator accounts through the staff role portal', async () => {
+    usersService.validateCredentials.mockResolvedValue({
+      ...user,
+      role: 'STAFF',
+    } as never);
+
+    await expect(
+      service.loginAs('STAFF', {
+        email: 'operator@nightlife.vn',
+        password: 'Str0ngPass!',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accessToken: 'jwt-token',
+      }),
+    );
+  });
+
+  it('revokes the current token on logout', async () => {
+    prisma.tokenBlacklist.upsert.mockResolvedValue({ id: 'token-1' } as never);
+
+    await expect(
+      service.logout({
+        id: 'user-1',
+        jti: 'token-id',
+        exp: 1780000000,
+      }),
+    ).resolves.toEqual({ revoked: true });
+
+    expect(prisma.tokenBlacklist.upsert).toHaveBeenCalledWith({
+      where: { jti: 'token-id' },
+      update: {
+        reason: 'logout',
+        expiresAt: new Date(1780000000 * 1000),
+      },
+      create: {
+        jti: 'token-id',
+        userId: 'user-1',
+        reason: 'logout',
+        expiresAt: new Date(1780000000 * 1000),
+      },
+    });
   });
 });

@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type * as express from 'express';
+import { ActionPolicy } from '../access/action-policy.decorator';
+import { ActionPolicyGuard } from '../access/action-policy.guard';
 import { AuthenticatedUser } from '../access/access.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -18,10 +20,13 @@ import {
   AdminSensitiveBillsContract,
   ClaimGuestCouponContract,
   MemberBookingsContract,
+  MemberClaimCouponContract,
   MemberCouponIssuesContract,
   PartnerBillsContract,
   PartnerBookingsContract,
+  PartnerConfirmCheckInContract,
   PartnerCouponsContract,
+  PartnerScanCouponContract,
   PartnerStoresContract,
   PublicCouponsContract,
   ReviewSensitiveBillContract,
@@ -54,6 +59,17 @@ export class NightlifeDataController {
     return this.nightlifeDataService.claimGuestCoupon(couponId, dto);
   }
 
+  @MemberClaimCouponContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('coupons/:couponId/member-claims')
+  claimMemberCoupon(
+    @Req() request: RequestWithUser,
+    @Param('couponId') couponId: string,
+  ) {
+    return this.nightlifeDataService.claimMemberCoupon(couponId, request.user);
+  }
+
   @PartnerStoresContract()
   @Roles('PARTNER', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -71,11 +87,39 @@ export class NightlifeDataController {
   }
 
   @PartnerBookingsContract()
+  @ActionPolicy('canViewPartnerBooking')
   @Roles('PARTNER', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/bookings')
   listPartnerBookings(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerBookings(request.user);
+  }
+
+  @PartnerScanCouponContract()
+  @ActionPolicy('canScanCoupon')
+  @Roles('PARTNER', 'ADMIN', 'STAFF')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('partner/coupon-issues/:code/scan')
+  scanCouponIssue(
+    @Req() request: RequestWithUser,
+    @Param('code') code: string,
+  ) {
+    return this.nightlifeDataService.scanCouponIssue(code, request.user);
+  }
+
+  @PartnerConfirmCheckInContract()
+  @ActionPolicy('canScanCoupon')
+  @Roles('PARTNER', 'ADMIN', 'STAFF')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('partner/check-ins/:couponIssueId/confirm')
+  confirmCouponIssueCheckIn(
+    @Req() request: RequestWithUser,
+    @Param('couponIssueId') couponIssueId: string,
+  ) {
+    return this.nightlifeDataService.confirmCouponIssueCheckIn(
+      couponIssueId,
+      request.user,
+    );
   }
 
   @PartnerBillsContract()
@@ -84,6 +128,40 @@ export class NightlifeDataController {
   @Get('partner/bills')
   listPartnerBills(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerBills(request.user);
+  }
+
+  @PartnerBookingsContract()
+  @ActionPolicy('canViewPartnerBooking')
+  @Roles('STAFF', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Get('operator/bookings')
+  listOperatorBookings(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listOperatorBookings(request.user);
+  }
+
+  @PartnerBillsContract()
+  @Roles('STAFF', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('operator/bills')
+  listOperatorBills(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listOperatorBills(request.user);
+  }
+
+  @ReviewSensitiveBillContract()
+  @ActionPolicy('canReviewBill')
+  @Roles('STAFF', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Patch('operator/bills/:billId/review')
+  reviewSensitiveBillAsOperator(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: ReviewBillDto,
+  ) {
+    return this.nightlifeDataService.reviewSensitiveBill(
+      request.user.id,
+      billId,
+      dto,
+    );
   }
 
   @MemberBookingsContract()
@@ -104,13 +182,14 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/sensitive-bills')
-  listSensitiveBillsForAdmin() {
-    return this.nightlifeDataService.listSensitiveBillsForAdmin();
+  listSensitiveBillsForAdmin(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listSensitiveBillsForAdmin(request.user);
   }
 
   @ReviewSensitiveBillContract()
+  @ActionPolicy('canReviewBill')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/sensitive-bills/:billId/review')
   reviewSensitiveBill(
     @Req() request: RequestWithUser,

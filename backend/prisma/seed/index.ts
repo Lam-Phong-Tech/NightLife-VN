@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { seedRoles } from './00-roles';
+import { seedPermissions, seedRoles } from './00-roles';
 import { seedUsers } from './01-users';
 import { seedAreas } from './02-areas';
 import { seedPartners } from './03-partners';
@@ -16,6 +16,7 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('═══════════════════════════════════════');
 
   const roles = await seedRoles(prisma);
+  await seedPermissions(prisma, roles);
   const users = await seedUsers(prisma, passwordHash, roles);
   const areas = await seedAreas(prisma);
   const partners = await seedPartners(prisma, users);
@@ -32,7 +33,9 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
 
   console.log('📋 Summary:');
   console.log('  • Roles: 3 (admin, partner, operator)');
-  console.log('  • Users: 5 (1 admin, 2 partners, 1 member, 1 VIP)');
+  console.log(
+    '  • Users: 7 (1 admin, 1 operator, 3 partners, 1 member, 1 VIP)',
+  );
   console.log('  • Areas: 6 (HCM: Q1/Q3/Q7, HN: Hoàn Kiếm/Tây Hồ/Cầu Giấy)');
   console.log('  • Stores: 10 (5 HCM + 5 HN)');
   console.log('  • Casts: 20 (2 per store)');
@@ -45,6 +48,7 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('🔑 Login credentials:');
   console.log('  All accounts use password: Str0ngPass!');
   console.log('  • admin@nightlife.vn    (ADMIN / VIP)');
+  console.log('  • operator@nightlife.vn (STAFF as OPERATOR / PREMIUM)');
   console.log('  • partner1@nightlife.vn (PARTNER / PREMIUM)');
   console.log('  • partner2@nightlife.vn (PARTNER / PREMIUM)');
   console.log('  • member@nightlife.vn   (USER / FREE)');

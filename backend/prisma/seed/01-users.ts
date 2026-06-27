@@ -4,7 +4,7 @@ interface UserSeed {
   email: string;
   displayName: string;
   phone?: string;
-  role: 'ADMIN' | 'PARTNER' | 'USER';
+  role: 'ADMIN' | 'PARTNER' | 'STAFF' | 'USER';
   tier: 'FREE' | 'PREMIUM' | 'VIP';
   roleKey?: string; // maps to Role.key for UserRoleAssignment
   profile?: {
@@ -68,11 +68,25 @@ const USERS: UserSeed[] = [
     },
   },
   {
+    email: 'operator@nightlife.vn',
+    displayName: 'NightLife Operator',
+    phone: '+84901000007',
+    role: 'STAFF',
+    tier: 'PREMIUM',
+    roleKey: 'operator',
+    profile: {
+      fullName: 'NightLife Operator',
+      gender: 'other',
+      bio: 'Internal operator account for MVP operational review and support',
+    },
+  },
+  {
     email: 'member@nightlife.vn',
     displayName: 'Phạm Thành Viên',
     phone: '+84901000004',
     role: 'USER',
     tier: 'FREE',
+    roleKey: 'member',
     profile: {
       fullName: 'Phạm Văn Thành Viên',
       gender: 'male',
@@ -85,6 +99,7 @@ const USERS: UserSeed[] = [
     phone: '+84901000005',
     role: 'USER',
     tier: 'VIP',
+    roleKey: 'member',
     profile: {
       fullName: 'Hoàng Thị VIP',
       gender: 'female',
@@ -163,6 +178,8 @@ export async function seedUsers(
     result[key] = user;
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} users (with profiles & role assignments)`);
+  console.log(
+    `     ✓ ${Object.keys(result).length} users (with profiles & role assignments)`,
+  );
   return result;
 }
