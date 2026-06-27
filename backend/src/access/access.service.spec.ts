@@ -1,0 +1,107 @@
+import { AccessService } from './access.service';
+import { PrismaService } from '../prisma/prisma.service';
+
+describe('AccessService', () => {
+  const prisma = {
+    rolePermission: {
+      findFirst: jest.fn(),
+    },
+    store: {
+      findMany: jest.fn(),
+    },
+    storePermission: {
+      findMany: jest.fn(),
+    },
+    couponIssue: {
+      findFirst: jest.fn(),
+    },
+    bill: {
+      findFirst: jest.fn(),
+    },
+  } as unknown as jest.Mocked<PrismaService>;
+
+  let service: AccessService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new AccessService(prisma);
+  });
+
+  it('checks action permissions from the role-permission matrix', async () => {
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' } as never);
+
+    await expect(
+      service.canViewPartnerBooking({
+        id: 'partner-1',
+        role: 'PARTNER',
+      }),
+    ).resolves.toBe(true);
+
+    expect(prisma.rolePermission.findFirst).toHaveBeenCalledWith({
+      where: {
+        role: {
+          key: 'partner',
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        permission: {
+          key: 'booking.partner.view',
+        },
+      },
+      select: { id: true },
+    });
+  });
+
+  it('merges owned partner stores with per-store delegated permissions', async () => {
+    prisma.store.findMany.mockResolvedValue([{ id: 'owned-store' }] as never);
+    prisma.storePermission.findMany.mockResolvedValue([
+      { storeId: 'delegated-store' },
+      { storeId: 'owned-store' },
+    ] as never);
+
+    await expect(
+      service.getAccessibleStoreIds(
+        { id: 'partner-1', role: 'PARTNER' },
+        'coupon.scan',
+      ),
+    ).resolves.toEqual(['owned-store', 'delegated-store']);
+
+    expect(prisma.storePermission.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'partner-1',
+        deletedAt: null,
+        status: 'ACTIVE',
+        permissions: { has: 'coupon.scan' },
+      },
+      select: { storeId: true },
+    });
+  });
+
+  it('allows a delegated partner to scan a coupon only within store permission scope', async () => {
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' } as never);
+    prisma.couponIssue.findFirst.mockResolvedValue({
+      coupon: { storeId: 'delegated-store' },
+    } as never);
+    prisma.store.findMany.mockResolvedValue([] as never);
+    prisma.storePermission.findMany.mockResolvedValue([
+      { storeId: 'delegated-store' },
+    ] as never);
+
+    await expect(
+      service.canScanCoupon(
+        { id: 'partner-1', role: 'PARTNER' },
+        { code: 'GUEST-code' },
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it('treats operator as a separate platform-wide operational role', async () => {
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' } as never);
+
+    await expect(
+      service.canReviewBill({ id: 'operator-1', role: 'OPERATOR' }, 'bill-1'),
+    ).resolves.toBe(true);
+
+    expect(prisma.bill.findFirst).not.toHaveBeenCalled();
+  });
+});

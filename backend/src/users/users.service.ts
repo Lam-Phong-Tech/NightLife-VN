@@ -37,7 +37,7 @@ export class UsersService {
     password: string;
     displayName?: string;
     phone?: string;
-    role?: 'USER' | 'PARTNER' | 'STAFF' | 'ADMIN';
+    role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
     tier?: 'FREE' | 'PREMIUM' | 'VIP';
   }) {
     const email = input.email.toLowerCase();

@@ -4,7 +4,7 @@ interface UserSeed {
   email: string;
   displayName: string;
   phone?: string;
-  role: 'ADMIN' | 'PARTNER' | 'STAFF' | 'USER';
+  role: 'ADMIN' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'USER';
   tier: 'FREE' | 'PREMIUM' | 'VIP';
   roleKey?: string; // maps to Role.key for UserRoleAssignment
   profile?: {
@@ -71,13 +71,26 @@ const USERS: UserSeed[] = [
     email: 'operator@nightlife.vn',
     displayName: 'NightLife Operator',
     phone: '+84901000007',
-    role: 'STAFF',
+    role: 'OPERATOR',
     tier: 'PREMIUM',
     roleKey: 'operator',
     profile: {
       fullName: 'NightLife Operator',
       gender: 'other',
       bio: 'Internal operator account for MVP operational review and support',
+    },
+  },
+  {
+    email: 'staff@nightlife.vn',
+    displayName: 'NightLife Staff',
+    phone: '+84901000008',
+    role: 'STAFF',
+    tier: 'FREE',
+    roleKey: 'staff',
+    profile: {
+      fullName: 'NightLife Staff',
+      gender: 'other',
+      bio: 'Internal support staff account separated from the Operator reviewer role',
     },
   },
   {

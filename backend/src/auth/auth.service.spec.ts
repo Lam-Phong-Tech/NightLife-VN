@@ -1,4 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -32,9 +33,17 @@ describe('AuthService', () => {
     sign: jest.fn(() => 'jwt-token'),
   } as unknown as jest.Mocked<JwtService>;
 
+  const configService = {
+    get: jest.fn(() => '1d'),
+  } as unknown as jest.Mocked<ConfigService>;
+
   const prisma = {
     tokenBlacklist: {
       upsert: jest.fn(),
+    },
+    userSession: {
+      create: jest.fn(),
+      updateMany: jest.fn(),
     },
   } as unknown as jest.Mocked<PrismaService>;
 
@@ -42,7 +51,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AuthService(jwtService, usersService, prisma);
+    service = new AuthService(configService, jwtService, usersService, prisma);
   });
 
   it('registers a user and returns a JWT auth response', async () => {
@@ -69,6 +78,13 @@ describe('AuthService', () => {
       password: 'Str0ngPass!',
       displayName: user.displayName,
     });
+    expect(prisma.userSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: user.id,
+        jti: expect.any(String),
+        expiresAt: expect.any(Date),
+      }),
+    });
   });
 
   it('logs in with validated credentials', async () => {
@@ -92,6 +108,13 @@ describe('AuthService', () => {
       },
       { jwtid: expect.any(String) },
     );
+    expect(prisma.userSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: user.id,
+        jti: expect.any(String),
+        expiresAt: expect.any(Date),
+      }),
+    });
   });
 
   it('logs in through a role-specific portal only when the role matches', async () => {
@@ -116,14 +139,14 @@ describe('AuthService', () => {
     ).rejects.toThrow('This account is not a ADMIN account');
   });
 
-  it('logs in operator accounts through the staff role portal', async () => {
+  it('logs in operator accounts through the operator role portal', async () => {
     usersService.validateCredentials.mockResolvedValue({
       ...user,
-      role: 'STAFF',
+      role: 'OPERATOR',
     } as never);
 
     await expect(
-      service.loginAs('STAFF', {
+      service.loginAs('OPERATOR', {
         email: 'operator@nightlife.vn',
         password: 'Str0ngPass!',
       }),
@@ -136,6 +159,7 @@ describe('AuthService', () => {
 
   it('revokes the current token on logout', async () => {
     prisma.tokenBlacklist.upsert.mockResolvedValue({ id: 'token-1' } as never);
+    prisma.userSession.updateMany.mockResolvedValue({ count: 1 } as never);
 
     await expect(
       service.logout({
@@ -156,6 +180,17 @@ describe('AuthService', () => {
         userId: 'user-1',
         reason: 'logout',
         expiresAt: new Date(1780000000 * 1000),
+      },
+    });
+    expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        jti: 'token-id',
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: expect.any(Date),
+        lastSeenAt: expect.any(Date),
       },
     });
   });

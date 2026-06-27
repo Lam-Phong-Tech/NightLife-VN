@@ -16,7 +16,14 @@ const ROLES = [
   {
     key: 'operator',
     name: 'Operator',
-    description: 'Internal operations staff: manage bookings and bills',
+    description:
+      'Operational reviewer: manage bookings, scans, and bill review queues',
+  },
+  {
+    key: 'staff',
+    name: 'Staff',
+    description:
+      'Internal support staff role, separated from Operator for P1 RBAC expansion',
   },
   {
     key: 'member',
@@ -27,9 +34,27 @@ const ROLES = [
 
 const PERMISSIONS = [
   {
+    key: 'store.partner.view',
+    name: 'View partner stores',
+    description: 'View stores within the actor store scope',
+    roleKeys: ['admin', 'partner', 'operator'],
+  },
+  {
+    key: 'coupon.partner.view',
+    name: 'View partner coupons',
+    description: 'View coupons within the actor store scope',
+    roleKeys: ['admin', 'partner', 'operator'],
+  },
+  {
     key: 'booking.partner.view',
     name: 'View partner bookings',
     description: 'View bookings within the actor store scope',
+    roleKeys: ['admin', 'partner', 'operator'],
+  },
+  {
+    key: 'bill.partner.view',
+    name: 'View partner bills',
+    description: 'View bills within the actor store scope',
     roleKeys: ['admin', 'partner', 'operator'],
   },
   {
@@ -57,10 +82,29 @@ const PERMISSIONS = [
     roleKeys: ['admin', 'operator'],
   },
   {
+    key: 'booking.member.view',
+    name: 'View own member bookings',
+    description: 'View bookings owned by the authenticated member',
+    roleKeys: ['admin', 'member'],
+  },
+  {
+    key: 'coupon.member.view',
+    name: 'View own member coupon issues',
+    description: 'View coupon issues owned by the authenticated member',
+    roleKeys: ['admin', 'member'],
+  },
+  {
     key: 'coupon.member.claim',
     name: 'Claim member coupon',
     description: 'Claim a member or VIP coupon issue',
     roleKeys: ['member'],
+  },
+  {
+    key: 'media.protected.read',
+    name: 'Read protected media',
+    description:
+      'Read protected media when scoped by owner, store, or support role',
+    roleKeys: ['admin', 'operator', 'staff'],
   },
 ];
 

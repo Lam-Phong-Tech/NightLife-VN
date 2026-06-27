@@ -6,18 +6,25 @@ This document pins the NightLife MVP enum meanings so DEV/TEST can use the same 
 
 - `USER`: member account. Membership tier is stored separately in `User.tier`.
 - `PARTNER`: store partner account.
-- `STAFF`: operator account for the MVP. API wording uses "operator", and `POST /auth/login/operator` authenticates this role.
+- `OPERATOR`: operational reviewer account. `POST /auth/login/operator` authenticates this role.
+- `STAFF`: internal support staff role. It is separate from `OPERATOR` and does not pass operator bill-review routes by default.
 - `ADMIN`: platform administrator.
 
 ## Action Policies
 
 Routes use role checks plus action policies for scoped business permissions:
 
-- `canViewPartnerBooking`: `ADMIN`, `STAFF`, and scoped `PARTNER`.
-- `canScanCoupon`: `ADMIN`, `STAFF`, and scoped `PARTNER`.
-- `canReviewBill`: `ADMIN` and `STAFF`.
+- `canViewPartnerStore`: `ADMIN` and scoped `PARTNER`.
+- `canViewPartnerCoupon`: `ADMIN` and scoped `PARTNER`.
+- `canViewPartnerBooking`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
+- `canViewPartnerBill`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
+- `canScanCoupon`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
+- `canConfirmCheckIn`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
+- `canReviewBill`: `ADMIN` and `OPERATOR`.
+- `canViewSensitiveBill`: `ADMIN` for admin queue access.
+- `canViewMemberBooking`, `canViewMemberCoupon`, and `canClaimMemberCoupon`: authenticated member own-resource actions.
 
-The seed also writes a DB-driven permission matrix into `permissions` and `role_permissions` for P2 expansion.
+The seed writes the DB-driven permission matrix into `permissions` and `role_permissions`, then writes example per-store grants into `store_permissions`.
 
 ## BookingStatus
 
@@ -52,8 +59,8 @@ The seed also writes a DB-driven permission matrix into `permissions` and `role_
 
 Coupon inventory uses `Coupon` as the campaign/rule and `CouponIssue` as the issued, scannable coupon instance.
 
-- `CouponIssue.issuedById`: admin/partner/staff actor who issued the coupon instance.
-- `CouponIssue.scannedById`: admin/partner/staff actor who scanned or redeemed the issued coupon.
+- `CouponIssue.issuedById`: admin/partner/operator actor who issued the coupon instance.
+- `CouponIssue.scannedById`: admin/partner/operator actor who scanned or redeemed the issued coupon.
 - `CouponIssue.userId` / `guestId`: customer or guest receiving the coupon.
 - `CouponIssue.status`: `ISSUED`, `USED`, `EXPIRED`, or `REVOKED`.
 - `Bill.couponIssueId` and `Booking.couponIssueId`: attach the scanned coupon to a booking or bill.
@@ -66,6 +73,6 @@ VIP member claim snapshots enforce at least a 10% percent discount rule when the
 
 ## Audit And Session Security
 
-- Bill review writes `AuditLog` with actor, action, target bill, old/new status, and review metadata.
-- Logout writes `TokenBlacklist` by JWT `jti`; `JwtStrategy` rejects blacklisted active tokens.
+- Bill review writes `AuditLog` with actor, action, target bill, review metadata, and `beforeJson` / `afterJson` snapshots.
+- Login writes `UserSession` by JWT `jti`; logout writes `TokenBlacklist`, marks the session revoked, and `JwtStrategy` rejects blacklisted or inactive-session tokens.
 - Admin impersonation, if enabled later, should write `AuditLog.action = admin.impersonation.start` and `admin.impersonation.stop`.

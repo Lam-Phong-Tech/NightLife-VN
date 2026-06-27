@@ -49,6 +49,36 @@ const AREAS = [
     district: 'Cầu Giấy',
     ward: 'Dịch Vọng Hậu',
   },
+  // ── Đà Nẵng ──
+  {
+    code: 'dn-haichau',
+    name: 'Hải Châu',
+    city: 'Đà Nẵng',
+    district: 'Hải Châu',
+    ward: 'Thạch Thang',
+  },
+  {
+    code: 'dn-sontra',
+    name: 'Sơn Trà',
+    city: 'Đà Nẵng',
+    district: 'Sơn Trà',
+    ward: 'An Hải Bắc',
+  },
+  // ── Hải Phòng ──
+  {
+    code: 'hp-hongbang',
+    name: 'Hồng Bàng',
+    city: 'Hải Phòng',
+    district: 'Hồng Bàng',
+    ward: 'Minh Khai',
+  },
+  {
+    code: 'hp-ngoquyen',
+    name: 'Ngô Quyền',
+    city: 'Hải Phòng',
+    district: 'Ngô Quyền',
+    ward: 'Máy Tơ',
+  },
 ];
 
 export async function seedAreas(
@@ -78,6 +108,6 @@ export async function seedAreas(
     });
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} areas (HCM: Q1/Q3/Q7, HN: Hoàn Kiếm/Tây Hồ/Cầu Giấy)`);
+  console.log(`     ✓ ${Object.keys(result).length} areas (HCM/HN/DN/HP)`);
   return result;
 }

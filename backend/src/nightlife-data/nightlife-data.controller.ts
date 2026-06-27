@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -28,10 +29,14 @@ import {
   PartnerCouponsContract,
   PartnerScanCouponContract,
   PartnerStoresContract,
+  PublicAreasContract,
   PublicCouponsContract,
+  PublicCastsContract,
+  PublicStoresContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
 
@@ -43,6 +48,24 @@ type RequestWithUser = express.Request & {
 @Controller()
 export class NightlifeDataController {
   constructor(private readonly nightlifeDataService: NightlifeDataService) {}
+
+  @PublicAreasContract()
+  @Get('areas')
+  listPublicAreas(@Query() query: PublicDiscoveryQueryDto) {
+    return this.nightlifeDataService.listPublicAreas(query);
+  }
+
+  @PublicStoresContract()
+  @Get('stores')
+  listPublicStores(@Query() query: PublicDiscoveryQueryDto) {
+    return this.nightlifeDataService.listPublicStores(query);
+  }
+
+  @PublicCastsContract()
+  @Get('casts')
+  listPublicCasts(@Query() query: PublicDiscoveryQueryDto) {
+    return this.nightlifeDataService.listPublicCasts(query);
+  }
 
   @PublicCouponsContract()
   @Get('coupons')
@@ -60,8 +83,9 @@ export class NightlifeDataController {
   }
 
   @MemberClaimCouponContract()
+  @ActionPolicy('canClaimMemberCoupon')
   @Roles('USER')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('coupons/:couponId/member-claims')
   claimMemberCoupon(
     @Req() request: RequestWithUser,
@@ -71,16 +95,18 @@ export class NightlifeDataController {
   }
 
   @PartnerStoresContract()
+  @ActionPolicy('canViewPartnerStore')
   @Roles('PARTNER', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/stores')
   listPartnerStores(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerStores(request.user);
   }
 
   @PartnerCouponsContract()
+  @ActionPolicy('canViewPartnerCoupon')
   @Roles('PARTNER', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/coupons')
   listPartnerCoupons(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerCoupons(request.user);
@@ -97,7 +123,7 @@ export class NightlifeDataController {
 
   @PartnerScanCouponContract()
   @ActionPolicy('canScanCoupon')
-  @Roles('PARTNER', 'ADMIN', 'STAFF')
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('partner/coupon-issues/:code/scan')
   scanCouponIssue(
@@ -107,9 +133,24 @@ export class NightlifeDataController {
     return this.nightlifeDataService.scanCouponIssue(code, request.user);
   }
 
+  @PartnerConfirmCheckInContract('id')
+  @ActionPolicy('canConfirmCheckIn')
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('partner/coupon-issues/:id/confirm-check-in')
+  confirmCouponIssueCheckInByIssueId(
+    @Req() request: RequestWithUser,
+    @Param('id') couponIssueId: string,
+  ) {
+    return this.nightlifeDataService.confirmCouponIssueCheckIn(
+      couponIssueId,
+      request.user,
+    );
+  }
+
   @PartnerConfirmCheckInContract()
-  @ActionPolicy('canScanCoupon')
-  @Roles('PARTNER', 'ADMIN', 'STAFF')
+  @ActionPolicy('canConfirmCheckIn')
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('partner/check-ins/:couponIssueId/confirm')
   confirmCouponIssueCheckIn(
@@ -123,8 +164,9 @@ export class NightlifeDataController {
   }
 
   @PartnerBillsContract()
+  @ActionPolicy('canViewPartnerBill')
   @Roles('PARTNER', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('partner/bills')
   listPartnerBills(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerBills(request.user);
@@ -132,7 +174,7 @@ export class NightlifeDataController {
 
   @PartnerBookingsContract()
   @ActionPolicy('canViewPartnerBooking')
-  @Roles('STAFF', 'ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('operator/bookings')
   listOperatorBookings(@Req() request: RequestWithUser) {
@@ -140,8 +182,9 @@ export class NightlifeDataController {
   }
 
   @PartnerBillsContract()
-  @Roles('STAFF', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ActionPolicy('canViewPartnerBill')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('operator/bills')
   listOperatorBills(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listOperatorBills(request.user);
@@ -149,7 +192,7 @@ export class NightlifeDataController {
 
   @ReviewSensitiveBillContract()
   @ActionPolicy('canReviewBill')
-  @Roles('STAFF', 'ADMIN')
+  @Roles('OPERATOR', 'ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('operator/bills/:billId/review')
   reviewSensitiveBillAsOperator(
@@ -165,22 +208,27 @@ export class NightlifeDataController {
   }
 
   @MemberBookingsContract()
-  @UseGuards(JwtAuthGuard)
+  @ActionPolicy('canViewMemberBooking')
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('member/bookings')
   listMemberBookings(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberBookings(request.user.id);
   }
 
   @MemberCouponIssuesContract()
-  @UseGuards(JwtAuthGuard)
+  @ActionPolicy('canViewMemberCoupon')
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('member/coupon-issues')
   listMemberCouponIssues(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberCouponIssues(request.user.id);
   }
 
   @AdminSensitiveBillsContract()
+  @ActionPolicy('canViewSensitiveBill')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/sensitive-bills')
   listSensitiveBillsForAdmin(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listSensitiveBillsForAdmin(request.user);

@@ -115,7 +115,7 @@ export class StorageService implements OnModuleInit {
 
     if (
       mediaFile.ownerId === user.id ||
-      ['ADMIN', 'STAFF'].includes(user.role ?? '')
+      ['ADMIN', 'OPERATOR', 'STAFF'].includes(user.role ?? '')
     ) {
       return resolvedFile;
     }

@@ -10,6 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
+    ConfigModule,
     PassportModule,
     PrismaModule,
     UsersModule,

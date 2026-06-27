@@ -30,6 +30,14 @@ export class ActionPolicyGuard implements CanActivate {
       return false;
     }
 
+    if (policy === 'canViewPartnerStore') {
+      return this.accessService.canViewPartnerStore(user);
+    }
+
+    if (policy === 'canViewPartnerCoupon') {
+      return this.accessService.canViewPartnerCoupon(user);
+    }
+
     if (policy === 'canReviewBill') {
       return this.accessService.canReviewBill(user, request.params?.billId);
     }
@@ -37,12 +45,38 @@ export class ActionPolicyGuard implements CanActivate {
     if (policy === 'canScanCoupon') {
       return this.accessService.canScanCoupon(user, {
         code: request.params?.code,
-        couponIssueId: request.params?.couponIssueId,
+        couponIssueId: request.params?.couponIssueId ?? request.params?.id,
+      });
+    }
+
+    if (policy === 'canConfirmCheckIn') {
+      return this.accessService.canConfirmCheckIn(user, {
+        couponIssueId: request.params?.couponIssueId ?? request.params?.id,
       });
     }
 
     if (policy === 'canViewPartnerBooking') {
       return this.accessService.canViewPartnerBooking(user);
+    }
+
+    if (policy === 'canViewPartnerBill') {
+      return this.accessService.canViewPartnerBill(user);
+    }
+
+    if (policy === 'canViewSensitiveBill') {
+      return this.accessService.canViewSensitiveBill(user);
+    }
+
+    if (policy === 'canViewMemberBooking') {
+      return this.accessService.canViewMemberBooking(user);
+    }
+
+    if (policy === 'canViewMemberCoupon') {
+      return this.accessService.canViewMemberCoupon(user);
+    }
+
+    if (policy === 'canClaimMemberCoupon') {
+      return this.accessService.canClaimMemberCoupon(user);
     }
 
     return false;

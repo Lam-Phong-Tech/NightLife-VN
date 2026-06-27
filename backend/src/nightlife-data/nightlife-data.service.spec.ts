@@ -1,4 +1,7 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NightlifeDataService } from './nightlife-data.service';
@@ -20,6 +23,12 @@ describe('NightlifeDataService', () => {
       update: jest.fn(),
     },
     store: {
+      findMany: jest.fn(),
+    },
+    area: {
+      findMany: jest.fn(),
+    },
+    cast: {
       findMany: jest.fn(),
     },
     booking: {
@@ -48,6 +57,231 @@ describe('NightlifeDataService', () => {
     service = new NightlifeDataService(prisma, accessService);
   });
 
+  it('lists public areas for supported city filters', async () => {
+    prisma.area.findMany.mockResolvedValue([
+      {
+        id: 'area-dn',
+        code: 'dn-haichau',
+        name: 'Hai Chau',
+        city: 'Da Nang',
+        district: 'Hai Chau',
+        ward: 'Thach Thang',
+      },
+    ] as never);
+
+    await expect(service.listPublicAreas({ city: 'da-nang' })).resolves.toEqual(
+      [
+        expect.objectContaining({
+          code: 'dn-haichau',
+          cityCode: 'dn',
+        }),
+      ],
+    );
+    expect(prisma.area.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          code: { startsWith: 'dn-' },
+        },
+      }),
+    );
+  });
+
+  it('searches public stores by name with category and area filters', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-neon',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'CLUB',
+        description: 'EDM club',
+        address: 'Tay Ho',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        latitude: '21.063',
+        longitude: '105.822',
+        area: {
+          id: 'area-hn',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [{ url: 'https://example.com/neon.jpg' }],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({
+      q: 'neon',
+      city: 'hn',
+      area: 'hn-tayho',
+      category: 'club',
+      lat: '21.06',
+      lng: '105.82',
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        slug: 'neon-club',
+        category: 'CLUB',
+        cityCode: 'hn',
+        distanceKm: expect.any(Number),
+      }),
+    ]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          category: 'CLUB',
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              OR: expect.arrayContaining([
+                { name: { contains: 'neon', mode: 'insensitive' } },
+              ]),
+            }),
+            {
+              area: {
+                is: {
+                  code: { startsWith: 'hn-' },
+                  deletedAt: null,
+                  status: 'ACTIVE',
+                },
+              },
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('sorts public stores nearest first when coordinates are provided', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'far-store',
+        name: 'Far Store',
+        slug: 'far-store',
+        category: 'BAR',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Hoan Kiem',
+        latitude: '21.0245',
+        longitude: '105.8485',
+        area: {
+          id: 'area-far',
+          code: 'hn-hoankiem',
+          name: 'Hoan Kiem',
+          city: 'Ha Noi',
+          district: 'Hoan Kiem',
+        },
+        media: [],
+      },
+      {
+        id: 'near-store',
+        name: 'Near Store',
+        slug: 'near-store',
+        category: 'CLUB',
+        description: null,
+        address: null,
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        latitude: '21.063',
+        longitude: '105.822',
+        area: {
+          id: 'area-near',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({
+      lat: '21.0631',
+      lng: '105.8221',
+    });
+
+    expect(result.map((store) => store.slug)).toEqual([
+      'near-store',
+      'far-store',
+    ]);
+  });
+
+  it('searches public casts by cast or store name and store filters', async () => {
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        id: 'cast-mika',
+        slug: 'mika-harbor-ktv',
+        stageName: 'Mika',
+        publicAlias: 'Mika',
+        publicHeadline: 'KTV duet host',
+        tags: ['ktv'],
+        languages: ['vi', 'ja'],
+        hourlyRateVnd: 430000,
+        media: [],
+        store: {
+          id: 'store-hp',
+          name: 'Harbor KTV Hai Phong',
+          slug: 'harbor-ktv-hai-phong',
+          category: 'KARAOKE',
+          city: 'Hai Phong',
+          district: 'Hong Bang',
+          latitude: '20.8644',
+          longitude: '106.6838',
+          area: {
+            id: 'area-hp',
+            code: 'hp-hongbang',
+            name: 'Hong Bang',
+            city: 'Hai Phong',
+            district: 'Hong Bang',
+          },
+        },
+      },
+    ] as never);
+
+    const result = await service.listPublicCasts({
+      q: 'mika',
+      city: 'hp',
+      category: 'ktv',
+      lat: '20.864',
+      lng: '106.684',
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        slug: 'mika-harbor-ktv',
+        name: 'Mika',
+        distanceKm: expect.any(Number),
+        store: expect.objectContaining({
+          slug: 'harbor-ktv-hai-phong',
+          category: 'KARAOKE',
+          cityCode: 'hp',
+        }),
+      }),
+    ]);
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: expect.objectContaining({
+            deletedAt: null,
+            status: 'ACTIVE',
+            category: 'KARAOKE',
+          }),
+          OR: expect.arrayContaining([
+            { stageName: { contains: 'mika', mode: 'insensitive' } },
+          ]),
+        }),
+      }),
+    );
+  });
+
   it('limits partner bookings to the stores in their access scope', async () => {
     accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
     prisma.booking.findMany.mockResolvedValue([] as never);
@@ -57,6 +291,10 @@ describe('NightlifeDataService', () => {
       role: 'PARTNER',
     });
 
+    expect(accessService.getAccessibleStoreIds).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'booking.partner.view',
+    );
     expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -70,6 +308,31 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('limits partner stores to their accessible store ids', async () => {
+    accessService.getAccessibleStoreIds.mockResolvedValue(['store-a']);
+    prisma.store.findMany.mockResolvedValue([
+      { id: 'store-a', name: 'Partner A Store' },
+    ] as never);
+
+    await service.listPartnerStores({
+      id: 'partner-a',
+      role: 'PARTNER',
+    });
+
+    expect(accessService.getAccessibleStoreIds).toHaveBeenCalledWith(
+      { id: 'partner-a', role: 'PARTNER' },
+      'store.partner.view',
+    );
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          id: { in: ['store-a'] },
+        },
+      }),
+    );
+  });
+
   it('does not add a store filter for admin access', async () => {
     accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
     prisma.bill.findMany.mockResolvedValue([] as never);
@@ -79,6 +342,10 @@ describe('NightlifeDataService', () => {
       role: 'ADMIN',
     });
 
+    expect(accessService.getAccessibleStoreIds).toHaveBeenCalledWith(
+      { id: 'admin-1', role: 'ADMIN' },
+      'bill.partner.view',
+    );
     expect(prisma.bill.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { deletedAt: null },
@@ -164,6 +431,28 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('caps guest coupon expiry to coupon end when it is earlier than 24 hours', async () => {
+    const now = new Date();
+    const couponEndsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME',
+      name: 'Welcome',
+      endsAt: couponEndsAt,
+      usageLimit: null,
+      usedCount: 0,
+    } as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' } as never);
+    prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' } as never);
+
+    await service.claimGuestCoupon('coupon-1', { phone: '+84901234567' });
+
+    const createArgs = prisma.couponIssue.create.mock.calls[0][0] as {
+      data: { expiresAt: Date };
+    };
+    expect(createArgs.data.expiresAt.getTime()).toBe(couponEndsAt.getTime());
+  });
+
   it('claims a coupon for a member with 7-day expiry and tier snapshot', async () => {
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
@@ -237,6 +526,7 @@ describe('NightlifeDataService', () => {
     expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
       { id: 'partner-1', role: 'PARTNER' },
       'store-1',
+      'coupon.scan',
     );
     expect(prisma.couponIssue.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -266,6 +556,11 @@ describe('NightlifeDataService', () => {
       role: 'PARTNER',
     });
 
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+      'checkin.confirm',
+    );
     expect(prisma.couponIssue.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'issue-1' },
@@ -290,10 +585,30 @@ describe('NightlifeDataService', () => {
     prisma.bill.findFirst.mockResolvedValue({
       id: 'bill-1',
       status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 180,
     } as never);
     prisma.bill.update.mockResolvedValue({
       id: 'bill-1',
       status: 'VERIFIED',
+      reviewedAt: new Date('2026-06-26T10:15:00.000Z'),
+      verifiedAt: new Date('2026-06-26T10:15:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 180,
     } as never);
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' } as never);
 
@@ -321,12 +636,34 @@ describe('NightlifeDataService', () => {
         action: 'bill.review.approve',
         targetType: 'Bill',
         targetId: 'bill-1',
+        beforeJson: expect.objectContaining({
+          id: 'bill-1',
+          status: 'SUBMITTED',
+          totalVnd: 1800000,
+        }),
+        afterJson: expect.objectContaining({
+          id: 'bill-1',
+          status: 'VERIFIED',
+          reviewedById: 'admin-1',
+        }),
         metadata: expect.objectContaining({
           previousStatus: 'SUBMITTED',
           nextStatus: 'VERIFIED',
         }),
       }),
     });
+  });
+
+  it('returns not found before updating when reviewing a missing sensitive bill', async () => {
+    prisma.bill.findFirst.mockResolvedValue(null as never);
+
+    await expect(
+      service.reviewSensitiveBill('admin-1', 'missing-bill', {
+        approve: true,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.bill.update).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('masks sensitive bill customer fields for operator review queue', async () => {
@@ -352,7 +689,7 @@ describe('NightlifeDataService', () => {
     await expect(
       service.listSensitiveBillsForAdmin({
         id: 'operator-1',
-        role: 'STAFF',
+        role: 'OPERATOR',
       }),
     ).resolves.toEqual([
       expect.objectContaining({

@@ -9,6 +9,7 @@ datasource db {
 enum UserRole {
   USER
   PARTNER
+  OPERATOR
   STAFF
   ADMIN
 }
@@ -23,6 +24,12 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
 }
 
 enum GuestStatus {
@@ -247,6 +254,8 @@ model User {
   rankingConfigs   RankingConfig[]
   auditLogs        AuditLog[]           @relation("AuditLogActor")
   revokedTokens    TokenBlacklist[]
+  sessions         UserSession[]
+  storePermissions StorePermission[]
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
   deletedAt        DateTime?            @map("deleted_at")
@@ -423,6 +432,7 @@ model Store {
   media             Media[]
   contents          Content[]
   notifications     NotificationLog[]
+  userPermissions   StorePermission[]
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
   deletedAt         DateTime?          @map("deleted_at")
@@ -786,12 +796,34 @@ model AuditLog {
   targetType String   @map("target_type")
   targetId   String   @map("target_id")
   metadata   Json?
+  beforeJson Json?    @map("before_json")
+  afterJson  Json?    @map("after_json")
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([actorId])
   @@index([action])
   @@index([targetType, targetId])
   @@map("audit_logs")
+}
+
+model UserSession {
+  id         String        @id @default(uuid()) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jti        String        @unique
+  status     SessionStatus @default(ACTIVE)
+  userAgent  String?       @map("user_agent")
+  ipAddress  String?       @map("ip_address")
+  expiresAt  DateTime      @map("expires_at")
+  lastSeenAt DateTime?     @map("last_seen_at")
+  revokedAt  DateTime?     @map("revoked_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("user_sessions")
 }
 
 model TokenBlacklist {
@@ -806,6 +838,24 @@ model TokenBlacklist {
   @@index([userId])
   @@index([expiresAt])
   @@map("token_blacklist")
+}
+
+model StorePermission {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  storeId     String     @map("store_id") @db.Uuid
+  user        User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  store       Store      @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  permissions String[]   @default([])
+  status      RoleStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@index([status])
+  @@map("store_permissions")
 }
 
 model RankingConfig {

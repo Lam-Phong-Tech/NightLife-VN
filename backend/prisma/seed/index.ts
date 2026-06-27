@@ -10,6 +10,7 @@ import { seedCoupons } from './07-coupons';
 import { seedCommissions } from './08-commissions';
 import { seedContents } from './09-contents';
 import { seedRankings } from './10-rankings';
+import { seedStorePermissions } from './11-store-permissions';
 
 export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('🌱 NightLife Vietnam — Seed Data v1.0\n');
@@ -21,6 +22,7 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   const areas = await seedAreas(prisma);
   const partners = await seedPartners(prisma, users);
   const stores = await seedStores(prisma, users, areas, partners);
+  await seedStorePermissions(prisma, users, stores);
   const casts = await seedCasts(prisma, stores);
   await seedMedia(prisma, stores, casts);
   await seedCoupons(prisma, stores);
@@ -32,14 +34,14 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('\n✅ Seed completed successfully!\n');
 
   console.log('📋 Summary:');
-  console.log('  • Roles: 3 (admin, partner, operator)');
+  console.log('  • Roles: 5 (admin, partner, operator, staff, member)');
   console.log(
-    '  • Users: 7 (1 admin, 1 operator, 3 partners, 1 member, 1 VIP)',
+    '  • Users: 8 (1 admin, 1 operator, 1 staff, 3 partners, 1 member, 1 VIP)',
   );
-  console.log('  • Areas: 6 (HCM: Q1/Q3/Q7, HN: Hoàn Kiếm/Tây Hồ/Cầu Giấy)');
-  console.log('  • Stores: 10 (5 HCM + 5 HN)');
-  console.log('  • Casts: 20 (2 per store)');
-  console.log('  • Media: 40 placeholders');
+  console.log('  • Areas: 10 (HCM/HN/DN/HP)');
+  console.log('  • Stores: 14 (HCM/HN/DN/HP)');
+  console.log('  • Casts: 28 (2 per store)');
+  console.log('  • Media: 56 placeholders');
   console.log('  • Coupons: 5 (3 PERCENT + 2 FIXED)');
   console.log('  • Commission Configs: 10');
   console.log('  • Contents: 5 (3 blogs + 2 policies)');
@@ -48,7 +50,8 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('🔑 Login credentials:');
   console.log('  All accounts use password: Str0ngPass!');
   console.log('  • admin@nightlife.vn    (ADMIN / VIP)');
-  console.log('  • operator@nightlife.vn (STAFF as OPERATOR / PREMIUM)');
+  console.log('  • operator@nightlife.vn (OPERATOR / PREMIUM)');
+  console.log('  • staff@nightlife.vn    (STAFF / FREE)');
   console.log('  • partner1@nightlife.vn (PARTNER / PREMIUM)');
   console.log('  • partner2@nightlife.vn (PARTNER / PREMIUM)');
   console.log('  • member@nightlife.vn   (USER / FREE)');

@@ -39,16 +39,41 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Account is not active');
     }
 
-    if (payload.jti) {
-      const revokedToken = await this.prisma.tokenBlacklist.findUnique({
-        where: { jti: payload.jti },
-        select: { expiresAt: true },
-      });
-
-      if (revokedToken && revokedToken.expiresAt > new Date()) {
-        throw new UnauthorizedException('Token has been revoked');
-      }
+    if (!payload.jti) {
+      throw new UnauthorizedException('Token session is not active');
     }
+
+    const revokedToken = await this.prisma.tokenBlacklist.findUnique({
+      where: { jti: payload.jti },
+      select: { expiresAt: true },
+    });
+
+    if (revokedToken && revokedToken.expiresAt > new Date()) {
+      throw new UnauthorizedException('Token has been revoked');
+    }
+
+    const session = await this.prisma.userSession.findUnique({
+      where: { jti: payload.jti },
+      select: {
+        userId: true,
+        status: true,
+        expiresAt: true,
+      },
+    });
+
+    if (
+      !session ||
+      session.userId !== user.id ||
+      session.status !== 'ACTIVE' ||
+      session.expiresAt <= new Date()
+    ) {
+      throw new UnauthorizedException('Token session is not active');
+    }
+
+    await this.prisma.userSession.update({
+      where: { jti: payload.jti },
+      data: { lastSeenAt: new Date() },
+    });
 
     return {
       id: user.id,

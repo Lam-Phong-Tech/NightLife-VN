@@ -33,7 +33,7 @@ function restaurantSchedule() {
 interface StoreSeed {
   slug: string;
   name: string;
-  category: 'BAR' | 'CLUB' | 'LOUNGE' | 'KARAOKE' | 'RESTAURANT';
+  category: 'BAR' | 'CLUB' | 'LOUNGE' | 'KARAOKE' | 'RESTAURANT' | 'SPA';
   description: string;
   address: string;
   city: string;
@@ -241,6 +241,82 @@ const STORES: StoreSeed[] = [
     mapUrl: 'https://maps.google.com/?q=21.067,105.825',
     openingHours: restaurantSchedule(),
   },
+
+  // ═══════════════ ĐÀ NẴNG (2 stores) ═══════════════
+  {
+    slug: 'dragon-rooftop-da-nang',
+    name: 'Dragon Rooftop Club',
+    category: 'CLUB',
+    description:
+      'Rooftop club near the Han River with EDM nights, VIP tables, and late-night bottle service.\n\n' +
+      'Club rooftop bên sông Hàn, phù hợp nhóm bạn, sinh nhật và bàn VIP cuối tuần.',
+    address: '36 Bạch Đằng, Hải Châu, Đà Nẵng',
+    city: 'Đà Nẵng',
+    district: 'Hải Châu',
+    areaCode: 'dn-haichau',
+    partnerKey: 'partner1',
+    phone: '+842363456011',
+    latitude: 16.0678,
+    longitude: 108.2208,
+    mapUrl: 'https://maps.google.com/?q=16.0678,108.2208',
+    openingHours: nightSchedule(),
+  },
+  {
+    slug: 'son-tra-lounge',
+    name: 'Sơn Trà Lounge',
+    category: 'LOUNGE',
+    description:
+      'Premium lounge close to My Khe and Son Tra with cocktails, private rooms, and sea-breeze terrace seating.\n\n' +
+      'Lounge cao cấp khu Sơn Trà, có cocktail, phòng riêng và khu ngồi ngoài trời.',
+    address: '88 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng',
+    city: 'Đà Nẵng',
+    district: 'Sơn Trà',
+    areaCode: 'dn-sontra',
+    partnerKey: 'partner1',
+    phone: '+842363456012',
+    latitude: 16.0811,
+    longitude: 108.2445,
+    mapUrl: 'https://maps.google.com/?q=16.0811,108.2445',
+    openingHours: nightSchedule(),
+  },
+
+  // ═══════════════ HẢI PHÒNG (2 stores) ═══════════════
+  {
+    slug: 'harbor-ktv-hai-phong',
+    name: 'Harbor KTV Hải Phòng',
+    category: 'KARAOKE',
+    description:
+      'Private-room KTV near the old port area with Japanese, Korean, and Vietnamese song catalogs.\n\n' +
+      'Karaoke phòng riêng khu trung tâm Hải Phòng, phù hợp tiếp khách và nhóm đông.',
+    address: '18 Điện Biên Phủ, Hồng Bàng, Hải Phòng',
+    city: 'Hải Phòng',
+    district: 'Hồng Bàng',
+    areaCode: 'hp-hongbang',
+    partnerKey: 'partner2',
+    phone: '+842253456013',
+    latitude: 20.8644,
+    longitude: 106.6838,
+    mapUrl: 'https://maps.google.com/?q=20.8644,106.6838',
+    openingHours: ktvSchedule(),
+  },
+  {
+    slug: 'opera-spa-hai-phong',
+    name: 'Opera Spa Hải Phòng',
+    category: 'SPA',
+    description:
+      'Late-night wellness spa near the Opera House with massage, sauna, and premium quiet rooms.\n\n' +
+      'Spa mở muộn gần Nhà hát Lớn, có massage, xông hơi và phòng riêng cao cấp.',
+    address: '12 Trần Phú, Ngô Quyền, Hải Phòng',
+    city: 'Hải Phòng',
+    district: 'Ngô Quyền',
+    areaCode: 'hp-ngoquyen',
+    partnerKey: 'partner2',
+    phone: '+842253456014',
+    latitude: 20.856,
+    longitude: 106.6881,
+    mapUrl: 'https://maps.google.com/?q=20.856,106.6881',
+    openingHours: restaurantSchedule(),
+  },
 ];
 
 export async function seedStores(
@@ -297,6 +373,6 @@ export async function seedStores(
     });
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} stores (5 HCM + 5 HN, categories: BAR/CLUB/LOUNGE/KARAOKE/RESTAURANT)`);
+  console.log(`     ✓ ${Object.keys(result).length} stores (HCM/HN/DN/HP, categories: BAR/CLUB/LOUNGE/KARAOKE/RESTAURANT/SPA)`);
   return result;
 }
