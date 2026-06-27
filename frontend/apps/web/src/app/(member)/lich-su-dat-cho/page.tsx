@@ -84,10 +84,7 @@ export default function Page() {
       <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 48px" }}>
         <div className="nl-member-page-head">
           <div>
-            <p style={{ color: colors.gold, fontSize: 12, fontWeight: 900, letterSpacing: ".16em" }}>
-              BOOKING REQUESTS
-            </p>
-            <h1 style={{ marginTop: 8, fontSize: "clamp(26px,4vw,40px)", lineHeight: 1.05, fontWeight: 950 }}>
+            <h1 style={{ marginTop: 0, fontSize: "clamp(26px,4vw,40px)", lineHeight: 1.05, fontWeight: 950 }}>
               Đơn đặt chỗ
             </h1>
             <p style={{ marginTop: 10, color: colors.muted, fontSize: 14, lineHeight: 1.6 }}>
