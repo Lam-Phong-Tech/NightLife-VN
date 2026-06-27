@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ArrowLeft, Eye, LockKeyhole, LogIn, Mail, ShieldCheck, Sparkles, Ticket } from "lucide-react";
 import { loginMember } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -29,6 +29,17 @@ export default function Page() {
   const [password, setPassword] = useState("Str0ngPass!");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const redirectTo = useMemo(() => {
+    if (typeof window === "undefined") return "/tai-khoan";
+
+    const redirect = new URLSearchParams(window.location.search).get("redirect");
+
+    if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) {
+      return "/tai-khoan";
+    }
+
+    return redirect;
+  }, []);
 
   const title = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
   const subtitle = isReg ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ." : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
@@ -45,7 +56,7 @@ export default function Page() {
     try {
       const session = await loginMember({ email: email.trim(), password });
       setAuthSession(session);
-      window.location.href = "/tai-khoan";
+      window.location.href = redirectTo;
     } catch (error) {
       const detail = error instanceof ApiError ? error.message : "Không kết nối được API đăng nhập.";
       setMessage(`${detail} Tài khoản seed: member@nightlife.vn / Str0ngPass!`);

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CalendarDays, ChevronLeft, Clock, Minus, Plus, Sparkles, UsersRound } from "lucide-react";
+import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 
 const colors = {
   bg: "#0c0c0f",
@@ -20,12 +21,38 @@ const colors = {
 };
 
 const couponItems = ["Happy Hour -30%", "Combo VIP 2+1", "Welcome -8%", "Không dùng mã"] as const;
+const memberBookingPath = "/dat-cho?mode=member";
+const memberLoginPath = `/dang-nhap?redirect=${encodeURIComponent(memberBookingPath)}`;
+
+const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
 
 export default function Page() {
   const router = useRouter();
   const [mode, setMode] = useState<"guest" | "member">("guest");
   const [guests, setGuests] = useState(4);
   const [coupon, setCoupon] = useState<(typeof couponItems)[number]>(couponItems[0]);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("mode") !== "member") {
+      return;
+    }
+
+    if (isMemberUser(getAuthUser())) {
+      const timer = window.setTimeout(() => setMode("member"), 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    router.replace(memberLoginPath);
+  }, [router]);
+
+  const selectMode = (nextMode: "guest" | "member") => {
+    if (nextMode === "member" && !isMemberUser(getAuthUser())) {
+      router.push(memberLoginPath);
+      return;
+    }
+
+    setMode(nextMode);
+  };
 
   const submit = () => router.push("/xac-nhan");
 
@@ -66,7 +93,7 @@ export default function Page() {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setMode(value as "guest" | "member")}
+                    onClick={() => selectMode(value as "guest" | "member")}
                     style={{
                       flex: 1,
                       border: 0,
