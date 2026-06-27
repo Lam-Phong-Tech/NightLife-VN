@@ -786,7 +786,7 @@ textarea::placeholder {
 
   .nl-invoice-layout {
     display: grid !important;
-    grid-template-columns: 420px minmax(0, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 18px !important;
   }
 

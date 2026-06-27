@@ -7,7 +7,6 @@ import {
   Crown,
   FileText,
   Heart,
-  Languages,
   LogOut,
   Percent,
   ShieldCheck,
@@ -38,7 +37,6 @@ const menuItems = [
   { title: "Ví ưu đãi", desc: "Coupon đã lưu và mã sắp hết hạn", href: "/vi-uu-dai", icon: Percent },
   { title: "Hóa đơn của tôi", desc: "Gửi hóa đơn để tích điểm thành viên", href: "/gui-hoa-don", icon: FileText },
   { title: "Quán & Cast đã lưu", desc: "Danh sách yêu thích để đặt lại nhanh", href: "/da-luu", icon: Heart },
-  { title: "Ngôn ngữ", desc: "Tiếng Việt · 日本語", href: "#", icon: Languages },
   { title: "Bảo mật tài khoản", desc: "Trạng thái đăng nhập và quyền truy cập", href: "#", icon: ShieldCheck },
 ];
 

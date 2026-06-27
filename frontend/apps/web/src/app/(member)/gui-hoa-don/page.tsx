@@ -72,10 +72,20 @@ const invoices = [
   },
 ] as const;
 
+type Invoice = (typeof invoices)[number];
+
 export default function Page() {
   const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]>("Tất cả");
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const visibleInvoices =
     activeFilter === "Tất cả" ? invoices : invoices.filter((invoice) => invoice.status === activeFilter);
+
+  const openInvoiceForm = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    window.requestAnimationFrame(() => {
+      document.getElementById("invoice-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   return (
     <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
@@ -99,32 +109,39 @@ export default function Page() {
           </div>
         </div>
 
-        <div className="nl-invoice-layout" style={{ display: "grid", gridTemplateColumns: "420px minmax(0,1fr)", gap: 18, marginTop: 22 }}>
-          <section style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18, height: "fit-content" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
-              <Sparkles size={18} />
-              Thông tin hóa đơn
-            </div>
-
-            <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
-              <SelectField label="Quán" required value="Club Lumière · Tây Hồ" />
-              <div className="nl-invoice-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <InputField label="Số tiền" required defaultValue="2.400.000đ" />
-                <InputField label="Thời gian" required defaultValue="21/06 · 21:00" />
+        <div className="nl-invoice-layout" style={{ display: "grid", gap: 18, marginTop: 22 }}>
+          {selectedInvoice ? (
+            <section id="invoice-form" style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18, height: "fit-content" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
+                  <Sparkles size={18} />
+                  Thông tin hóa đơn
+                </div>
+                <button type="button" onClick={() => setSelectedInvoice(null)} style={secondaryButtonStyle}>
+                  Ẩn form
+                </button>
               </div>
-              <InputField label="Cơ sở / chi nhánh" optional placeholder="VD: cơ sở Quảng An" />
-              <SelectField label="Liên kết đặt chỗ / mã" optional value="Booking #BK-2041" />
-              <UploadBox />
-            </div>
 
-            <div style={{ marginTop: 14, border: `1px solid ${colors.border}`, borderRadius: 12, background: "rgba(212,178,106,.09)", padding: "11px 13px", color: colors.goldPale, fontSize: 12.5, lineHeight: 1.6 }}>
-              Gửi trong vòng <strong>10 ngày</strong> kể từ ngày dùng dịch vụ. Chỉ ghi <strong>tổng tiền</strong>, không nhập chi tiết món.
-            </div>
+              <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
+                <SelectField label="Quán" required value={`${selectedInvoice.venue} · Tây Hồ`} />
+                <div className="nl-invoice-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <InputField label="Số tiền" required defaultValue={selectedInvoice.amount} />
+                  <InputField label="Thời gian" required defaultValue={`${selectedInvoice.date} · 21:00`} />
+                </div>
+                <InputField label="Cơ sở / chi nhánh" optional placeholder="VD: cơ sở Quảng An" />
+                <SelectField label="Liên kết đặt chỗ / mã" optional value="Booking #BK-2041" />
+                <UploadBox />
+              </div>
 
-            <button type="button" style={primaryButtonStyle}>
-              Gửi hóa đơn
-            </button>
-          </section>
+              <div style={{ marginTop: 14, border: `1px solid ${colors.border}`, borderRadius: 12, background: "rgba(212,178,106,.09)", padding: "11px 13px", color: colors.goldPale, fontSize: 12.5, lineHeight: 1.6 }}>
+                Gửi trong vòng <strong>10 ngày</strong> kể từ ngày dùng dịch vụ. Chỉ ghi <strong>tổng tiền</strong>, không nhập chi tiết món.
+              </div>
+
+              <button type="button" style={primaryButtonStyle}>
+                Gửi hóa đơn
+              </button>
+            </section>
+          ) : null}
 
           <section style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
@@ -160,7 +177,7 @@ export default function Page() {
 
             <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
               {visibleInvoices.map((invoice) => (
-                <InvoiceCard key={`${invoice.venue}-${invoice.date}`} invoice={invoice} />
+                <InvoiceCard key={`${invoice.venue}-${invoice.date}`} invoice={invoice} onOpen={() => openInvoiceForm(invoice)} />
               ))}
             </div>
 
@@ -227,7 +244,7 @@ function UploadBox() {
   );
 }
 
-function InvoiceCard({ invoice }: { invoice: (typeof invoices)[number] }) {
+function InvoiceCard({ invoice, onOpen }: { invoice: Invoice; onOpen: () => void }) {
   return (
     <article
       className="nl-invoice-history-card"
@@ -254,14 +271,19 @@ function InvoiceCard({ invoice }: { invoice: (typeof invoices)[number] }) {
           <StatusBadge status={invoice.status} tone={invoice.tone} />
         </div>
 
-        <div style={{ marginTop: 11, paddingTop: 10, borderTop: `1px solid ${colors.border}`, color: toneColor(invoice.tone), fontSize: 12.5, lineHeight: 1.5 }}>
-          {invoice.note}
+        <div style={{ marginTop: 11, paddingTop: 10, borderTop: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ color: toneColor(invoice.tone), fontSize: 12.5, lineHeight: 1.5 }}>{invoice.note}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" onClick={onOpen} style={detailButtonStyle}>
+              Chi tiết hóa đơn
+            </button>
           {invoice.tone === "danger" ? (
-            <button type="button" style={retryButtonStyle}>
+            <button type="button" onClick={onOpen} style={retryButtonStyle}>
               <RotateCcw size={13} />
               Gửi lại
             </button>
           ) : null}
+          </span>
         </div>
       </div>
     </article>
@@ -344,8 +366,7 @@ const primaryButtonStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-const retryButtonStyle: React.CSSProperties = {
-  marginLeft: 10,
+const secondaryButtonStyle: React.CSSProperties = {
   border: `1px solid ${colors.border}`,
   borderRadius: 10,
   background: colors.panelStrong,
@@ -357,4 +378,12 @@ const retryButtonStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 900,
   cursor: "pointer",
+};
+
+const detailButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
+};
+
+const retryButtonStyle: React.CSSProperties = {
+  ...secondaryButtonStyle,
 };
