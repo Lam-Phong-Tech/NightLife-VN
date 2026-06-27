@@ -30,8 +30,8 @@ import {
   PartnerScanCouponContract,
   PartnerStoresContract,
   PublicAreasContract,
-  PublicCouponsContract,
   PublicCastsContract,
+  PublicCouponsContract,
   PublicStoresContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';

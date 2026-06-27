@@ -1,161 +1,487 @@
 "use client";
-import React, { useState } from 'react';
-import Link from 'next/link';
 
-import { cats, areas, venues } from '@/lib/mock-data';
-import { VenueCard } from '@/components/ui/VenueCard';
-import { Header } from '@/components/layout/Header';
+import Link from 'next/link';
+import React, { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react';
+
+import {
+  discoveryApi,
+  type PublicArea,
+  type PublicStore,
+} from '@/lib/api/discovery';
 import { BottomNav } from '@/components/layout/BottomNav';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { VenueCard } from '@/components/ui/VenueCard';
+import type { Venue } from '@/types';
+
+const colors = {
+  shell: '#0c0c0f',
+  panel: '#111114',
+  panelSoft: 'rgba(255,255,255,.045)',
+  line: 'rgba(212,178,106,.22)',
+  gold: '#d4b26a',
+  goldSoft: '#f0dda8',
+  text: '#f3f0ea',
+  muted: '#b6b1a6',
+  dim: '#8c8679',
+};
+
+const cityOptions = [
+  { value: '', label: 'Tất cả' },
+  { value: 'hn', label: 'HN' },
+  { value: 'hcm', label: 'HCM' },
+  { value: 'dn', label: 'ĐN' },
+  { value: 'hp', label: 'HP' },
+];
+
+const categoryOptions = [
+  { value: '', label: 'Tất cả' },
+  { value: 'BAR', label: 'Bar' },
+  { value: 'CLUB', label: 'Club' },
+  { value: 'LOUNGE', label: 'Lounge' },
+  { value: 'KARAOKE', label: 'Karaoke / KTV' },
+  { value: 'RESTAURANT', label: 'Nhà hàng' },
+  { value: 'SPA', label: 'Spa' },
+];
+
+const categoryLabels: Record<string, string> = {
+  BAR: 'Bar',
+  CLUB: 'Club',
+  LOUNGE: 'Lounge',
+  KARAOKE: 'Karaoke / KTV',
+  RESTAURANT: 'Nhà hàng',
+  SPA: 'Spa',
+  EVENT: 'Sự kiện',
+  OTHER: 'Khác',
+};
+
+const cityLabels: Record<string, string> = {
+  hn: 'Hà Nội',
+  hcm: 'TP.HCM',
+  dn: 'Đà Nẵng',
+  hp: 'Hải Phòng',
+};
+
+const pageStyle: CSSProperties = {
+  minHeight: '100vh',
+  background:
+    'radial-gradient(circle at 82% 8%, rgba(212,178,106,.15), transparent 30%), linear-gradient(180deg,#0b0b0e 0%,#111114 52%,#09090b 100%)',
+  color: colors.text,
+  fontFamily:
+    'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+};
+
+const chipStyle = (active: boolean): CSSProperties => ({
+  border: `1px solid ${active ? colors.gold : colors.line}`,
+  background: active ? colors.gold : colors.panelSoft,
+  color: active ? '#241a0a' : colors.muted,
+  borderRadius: '999px',
+  padding: '9px 14px',
+  fontSize: '12.5px',
+  fontWeight: 800,
+  whiteSpace: 'nowrap',
+  cursor: 'pointer',
+});
+
+const actionButtonStyle: CSSProperties = {
+  border: `1px solid ${colors.line}`,
+  borderRadius: '14px',
+  background: colors.panelSoft,
+  color: colors.goldSoft,
+  height: '44px',
+  padding: '0 14px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '13px',
+  fontWeight: 800,
+  cursor: 'pointer',
+};
+
+const gradientByCategory: Record<string, string> = {
+  BAR: 'linear-gradient(140deg,#35151d,#8d2d42)',
+  CLUB: 'linear-gradient(140deg,#14142b,#6d28d9)',
+  LOUNGE: 'linear-gradient(140deg,#19191d,#6d5a28)',
+  KARAOKE: 'linear-gradient(140deg,#172331,#2d6fae)',
+  RESTAURANT: 'linear-gradient(140deg,#16261f,#0f766e)',
+  SPA: 'linear-gradient(140deg,#1d2330,#b07b3c)',
+};
+
+type Coordinates = {
+  lat: number;
+  lng: number;
+};
+
+const toVenue = (store: PublicStore): Venue => ({
+  id: store.slug,
+  name: store.name,
+  area: [store.area?.name ?? store.district, cityLabels[store.cityCode ?? '']]
+    .filter(Boolean)
+    .join(' · '),
+  catLabel: categoryLabels[store.category] ?? store.category,
+  rating: 4.8,
+  price:
+    typeof store.distanceKm === 'number'
+      ? `${store.distanceKm.toFixed(1)} km`
+      : 'Đang mở',
+  hasBadge: typeof store.distanceKm === 'number',
+  badgeText: typeof store.distanceKm === 'number' ? 'Gần bạn' : undefined,
+  badgeColor: '#d4b26a',
+  img:
+    store.thumbnailUrl ??
+    `${gradientByCategory[store.category] ?? 'linear-gradient(140deg,#19191d,#2a2418)'}`,
+});
 
 export default function Page() {
+  const [query, setQuery] = useState('');
+  const [city, setCity] = useState('');
+  const [area, setArea] = useState('');
+  const [category, setCategory] = useState('');
+  const [areas, setAreas] = useState<PublicArea[]>([]);
+  const [stores, setStores] = useState<PublicStore[]>([]);
+  const [coords, setCoords] = useState<Coordinates | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeCat, setActiveCat] = useState(0);
-  const [activeArea, setActiveArea] = useState(0);
-  const filterStyle = (active: boolean): React.CSSProperties => ({
-    background: active ? '#d4b26a' : 'rgba(255,255,255,.045)',
-    color: active ? '#241a0a' : '#d8d1c1',
-    border: active ? '1px solid #d4b26a' : '1px solid rgba(212,178,106,.24)',
-    borderRadius: '16px',
-    padding: '9px 14px',
-    fontWeight: 700,
-    fontSize: '12.5px',
-    whiteSpace: 'nowrap',
-    cursor: 'pointer',
-  });
-  
-  
-  React.useEffect(() => {
-    
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
-    
-  const count = 9;
-  const categoryFilters = cats.map((item, index) => ({
-    ...item,
-    style: filterStyle(index === activeCat),
-    pick: () => setActiveCat(index),
-  }));
-  const areaFilters = areas.map((item, index) => ({
-    ...item,
-    style: filterStyle(index === activeArea),
-    pick: () => setActiveArea(index),
-  }));
+  const [isLocating, setIsLocating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setArea('');
+
+    discoveryApi
+      .listAreas({ city })
+      .then((items) => {
+        if (!cancelled) setAreas(items);
+      })
+      .catch(() => {
+        if (!cancelled) setAreas([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [city]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
+    const timer = window.setTimeout(() => {
+      discoveryApi
+        .listStores({
+          q: query,
+          city,
+          area,
+          category,
+          lat: coords?.lat,
+          lng: coords?.lng,
+          limit: 48,
+        })
+        .then((items) => {
+          if (!cancelled) setStores(items);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setStores([]);
+            setError('Chưa kết nối được dữ liệu quán.');
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false);
+        });
+    }, 220);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [area, category, city, coords, query]);
+
+  const venueCards = useMemo(() => stores.map(toVenue), [stores]);
+
+  const requestNearby = () => {
+    if (!navigator.geolocation) {
+      setError('Thiết bị chưa hỗ trợ lấy vị trí.');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setIsLocating(false);
+      },
+      () => {
+        setError('Chưa lấy được vị trí hiện tại.');
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
 
   return (
     <React.Fragment>
-      {/* MOBILE */}
-      <div className="block md:hidden">
-        <div style={{ width: '100%', minHeight: '100vh', boxSizing: 'border-box', padding: '0px', background: '#e7e5df', fontFamily: "'Inter',sans-serif" }}>
-          <div style={{ margin: '0 auto', width: '100%', background: '#f5f4f2', borderRadius: '0px', overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,.16)', color: '#1f1d29', border: '1px solid #e3e0da' }}>
-            <div style={{ background: '#fff', padding: '8px 18px 12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Link href="/" style={{ fontSize: '22px', color: '#5b5870', lineHeight: '1', textDecoration: 'none' }}>‹</Link>
-              <span style={{ fontWeight: '800', fontSize: '16px' }}>Tìm quán · Hà Nội</span>
+      <main style={pageStyle}>
+        <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '18px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '18px',
+              padding: '12px 0 20px',
+            }}
+          >
+            <Link
+              href="/"
+              style={{
+                color: colors.gold,
+                fontSize: '20px',
+                fontWeight: 900,
+                textDecoration: 'none',
+              }}
+            >
+              nightlife.vn
+            </Link>
+            <Link
+              href="/danh-sach-cast"
+              style={{ color: colors.muted, fontSize: '13px', fontWeight: 800 }}
+            >
+              Tìm cast
+            </Link>
+          </div>
+
+          <section
+            style={{
+              display: 'grid',
+              gap: '18px',
+              padding: '22px',
+              border: `1px solid ${colors.line}`,
+              borderRadius: '22px',
+              background: 'rgba(255,255,255,.035)',
+              boxShadow: '0 24px 70px rgba(0,0,0,.28)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    color: colors.goldSoft,
+                    fontSize: '12px',
+                    fontWeight: 900,
+                    letterSpacing: '.16em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Tìm kiếm nhanh
+                </div>
+                <h1 style={{ marginTop: '8px', fontSize: '32px', fontWeight: 950 }}>
+                  Quán nightlife
+                </h1>
+              </div>
+              <button
+                type="button"
+                onClick={requestNearby}
+                disabled={isLocating}
+                style={{ ...actionButtonStyle, opacity: isLocating ? 0.65 : 1 }}
+              >
+                <LocateFixed size={17} />
+                {coords ? 'Đang ưu tiên gần tôi' : isLocating ? 'Đang lấy vị trí' : 'Gần tôi'}
+              </button>
             </div>
-            
-            <div style={{ padding: '0 18px 12px', background: '#fff' }}>
-              <SearchBar 
-                onSearch={() => {}} 
-                placeholder="Tên quán, khu vực…" 
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                gap: '12px',
+                alignItems: 'center',
+              }}
+            >
+              <SearchBar
+                value={query}
+                onSearch={(event) => setQuery(event.target.value)}
+                placeholder="Tên quán, cast, khu vực..."
+                style={{ minHeight: '48px' }}
+              />
+              <span
+                style={{
+                  ...actionButtonStyle,
+                  cursor: 'default',
+                  color: colors.muted,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <SlidersHorizontal size={16} />
+                {venueCards.length} kết quả
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <FilterRow
+                label="Thành phố"
+                options={cityOptions}
+                value={city}
+                onChange={setCity}
+              />
+              <FilterRow
+                label="Loại hình"
+                options={categoryOptions}
+                value={category}
+                onChange={setCategory}
+              />
+              <FilterRow
+                label="Khu vực"
+                options={[
+                  { value: '', label: 'Tất cả' },
+                  ...areas.map((item) => ({
+                    value: item.code,
+                    label: item.name,
+                  })),
+                ]}
+                value={area}
+                onChange={setArea}
               />
             </div>
+          </section>
 
-            {/* filter chips */}
-            <div className="hscroll" style={{ padding: '12px 18px 4px', display: 'flex', gap: '7px', overflowX: 'auto', background: '#fff' }}>
-              {categoryFilters?.map((c, index) => (
-                <div key={index} onClick={c.pick} style={c.style}>{c.label}</div>
-              ))}
+          {error ? (
+            <div
+              style={{
+                marginTop: '14px',
+                border: '1px solid rgba(248,113,113,.35)',
+                background: 'rgba(127,29,29,.2)',
+                color: '#fecaca',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                fontSize: '13px',
+                fontWeight: 700,
+              }}
+            >
+              {error}
             </div>
-            <div className="hscroll" style={{ padding: '8px 18px 12px', display: 'flex', gap: '7px', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #ececec' }}>
-              {areaFilters?.map((a, index) => (
-                <div key={index} onClick={a.pick} style={a.style}>{a.label}</div>
-              ))}
+          ) : null}
+
+          <section style={{ marginTop: '20px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '14px',
+                marginBottom: '14px',
+              }}
+            >
+              <div style={{ color: colors.muted, fontSize: '13px' }}>
+                <b style={{ color: colors.text }}>{venueCards.length} quán</b> phù hợp
+              </div>
+              {coords ? (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '7px',
+                    color: colors.goldSoft,
+                    fontSize: '12px',
+                    fontWeight: 800,
+                  }}
+                >
+                  <MapPin size={15} />
+                  Sắp xếp theo khoảng cách
+                </div>
+              ) : null}
             </div>
 
-            <div style={{ padding: '12px 18px 6px', fontSize: '12.5px', color: '#5b5870' }}>
-              <b style={{ color: '#1f1d29' }}>{count} quán</b> phù hợp
-            </div>
-            
-            <div style={{ padding: '0 18px 12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {isLoading ? (
-                <LoadingSkeleton />
-              ) : venues?.length > 0 ? (
-                venues.map((v, index) => (
-                  <VenueCard key={index} venue={v} variant="horizontal" />
-                ))
-              ) : (
-                <EmptyState />
-              )}
-            </div>
-
-            <BottomNav />
-          </div>
+            {isLoading ? (
+              <LoadingSkeleton />
+            ) : venueCards.length > 0 ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                {venueCards.map((venue) => (
+                  <VenueCard
+                    key={venue.id}
+                    venue={venue}
+                    href={`/stores/${venue.id}`}
+                    variant="vertical"
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="Chưa có quán phù hợp" description="Đổi khu vực hoặc loại hình để xem thêm." />
+            )}
+          </section>
         </div>
-      </div>
-
-      {/* DESKTOP */}
-      <div className="hidden md:block">
-        <div style={{ width: '100%', minWidth: '100%', minHeight: '100vh', boxSizing: 'border-box', padding: '0px', background: '#e7e5df', fontFamily: "'Inter',sans-serif" }}>
-          <div style={{ width: '100%', background: '#f5f4f2', borderRadius: '0px', overflow: 'hidden', boxShadow: '0 12px 40px rgba(0,0,0,.10)', color: '#1f1d29' }}>
-            <Header />
-
-            {/* search bar */}
-            <div style={{ padding: '20px 34px', background: '#fff', borderBottom: '1px solid #ececec', display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px', height: '46px', border: '1px solid #ececec', borderRadius: '11px', color: '#6d28d9', fontSize: '14px', fontWeight: '600' }}>Hà Nội</div>
-              <div style={{ flex: '1', display: 'flex', alignItems: 'center', gap: '10px', height: '46px', border: '1px solid #ececec', borderRadius: '11px', padding: '0' }}>
-                <SearchBar 
-                  onSearch={() => {}} 
-                  placeholder="Tìm theo tên quán…" 
-                  style={{ background: 'transparent', border: 'none', flex: 1, padding: '0 16px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '46px', padding: '0 26px', background: '#6d28d9', color: '#fff', borderRadius: '11px', fontWeight: '600', fontSize: '14px' }}>Tìm</div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0' }}>
-              {/* filter sidebar */}
-              <div style={{ width: '262px', flex: 'none', background: '#fff', borderRight: '1px solid #ececec', padding: '24px' }}>
-                <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '18px' }}>Bộ lọc</div>
-                
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#8a879a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '12px' }}>Loại hình</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                  {categoryFilters?.map((c, index) => (
-                    <div key={index} onClick={c.pick} style={c.style}>{c.label}</div>
-                  ))}
-                </div>
-                
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#8a879a', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '12px' }}>Khu vực</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-                  {areaFilters?.map((a, index) => (
-                    <div key={index} onClick={a.pick} style={a.style}>{a.label}</div>
-                  ))}
-                </div>
-              </div>
-
-              {/* results */}
-              <div style={{ flex: '1', padding: '22px 28px 30px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-                  <div style={{ fontSize: '14px', color: '#5b5870' }}><b style={{ color: '#1f1d29' }}>{count} quán</b> phù hợp</div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
-                  {isLoading ? (
-                    <LoadingSkeleton />
-                  ) : venues?.length > 0 ? (
-                    venues.map((v, index) => (
-                      <VenueCard key={index} venue={v} variant="vertical" />
-                    ))
-                  ) : (
-                    <EmptyState />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
+      <BottomNav />
     </React.Fragment>
+  );
+}
+
+function FilterRow({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: Array<{ value: string; label: string }>;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '86px minmax(0, 1fr)',
+        alignItems: 'center',
+        gap: '10px',
+      }}
+    >
+      <div
+        style={{
+          color: colors.dim,
+          fontSize: '11px',
+          fontWeight: 900,
+          letterSpacing: '.12em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </div>
+      <div
+        className="hscroll"
+        style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}
+      >
+        {options.map((option) => (
+          <button
+            key={`${label}-${option.value || 'all'}`}
+            type="button"
+            onClick={() => onChange(option.value)}
+            style={chipStyle(value === option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
