@@ -337,6 +337,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               {authUser ? <UserRound size={16} /> : <LogIn size={16} />}
             </Link>
           </div>
+        ) : (
           /* ── Desktop: icon buttons (same as mobile, slightly larger) ── */
           <div
             className="nl-site-actions"
