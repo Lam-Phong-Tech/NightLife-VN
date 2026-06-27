@@ -338,45 +338,79 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         ) : (
-          /* ── Desktop: text buttons ── */
+          /* ── Desktop: icon buttons (same as mobile, slightly larger) ── */
           <div
             className="nl-site-actions"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "14px",
+              gap: "10px",
               flex: "none",
-              minWidth: 0,
             }}
           >
+            {/* Globe / Language */}
             <span
               style={{
-                minHeight: "38px",
-                padding: "0 11px",
-                borderRadius: "19px",
+                minHeight: "40px",
+                padding: "0 12px",
+                borderRadius: "20px",
                 border: `1px solid ${colors.borderGold32}`,
                 color: colors.gold,
                 background: "rgba(255,255,255,.04)",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
+                gap: "6px",
                 fontSize: "12px",
                 fontWeight: 700,
-                whiteSpace: "nowrap",
+                cursor: "pointer",
               }}
             >
-              VI / JP
+              <Globe size={16} style={{ flex: "none" }} />
+              <span style={{ lineHeight: "16px", display: "inline-flex", alignItems: "center", height: "16px" }}>VI</span>
             </span>
+
+            {/* Chat */}
+            <Link
+              href="#"
+              style={{
+                minHeight: "40px",
+                width: "40px",
+                borderRadius: "20px",
+                border: `1px solid ${colors.borderGold32}`,
+                color: colors.gold,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(255,255,255,.04)",
+                textDecoration: "none",
+              }}
+            >
+              <MessageCircle size={18} />
+            </Link>
+
+            {/* Login / User */}
             {!authUser ? (
               <Link
                 href="/dang-nhap"
                 style={{
-                  color: colors.text2,
+                  minHeight: "40px",
+                  padding: "0 18px",
+                  borderRadius: "20px",
+                  border: `1px solid ${colors.borderGold32}`,
+                  color: colors.goldPale,
+                  background: "rgba(255,255,255,.04)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
                   fontSize: "13px",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   textDecoration: "none",
+                  whiteSpace: "nowrap",
                 }}
               >
+                <LogIn size={16} style={{ flex: "none" }} />
                 Đăng nhập
               </Link>
             ) : (
@@ -384,11 +418,11 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 href="/tai-khoan"
                 title="Xem thông tin tài khoản"
                 style={{
-                  minHeight: "38px",
-                  height: "38px",
+                  minHeight: "40px",
+                  height: "40px",
                   maxWidth: "190px",
-                  borderRadius: "19px",
-                  padding: "0 15px",
+                  padding: "0 16px",
+                  borderRadius: "20px",
                   border: `1px solid ${colors.borderGold32}`,
                   color: colors.goldPale,
                   background: "rgba(212,178,106,.1)",
@@ -396,7 +430,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  lineHeight: "normal",
                   fontSize: "13px",
                   fontWeight: 800,
                   textDecoration: "none",
@@ -408,39 +441,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 <UserRound size={16} style={{ flex: "none" }} />
                 <span
                   style={{
-                    height: "100%",
-                    display: "inline-flex",
-                    alignItems: "center",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    lineHeight: "normal",
-                    paddingTop: "1px",
                   }}
                 >
                   {displayName}
                 </span>
               </Link>
             )}
-            <Link
-              href="/dang-ky-doi-tac"
-              style={{
-                minHeight: "38px",
-                borderRadius: "19px",
-                padding: "0 16px",
-                background: colors.goldGrad,
-                color: colors.onGold,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "13px",
-                fontWeight: 800,
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-              }}
-            >
-              Đăng ký đối tác
-            </Link>
           </div>
         )}
       </header>
