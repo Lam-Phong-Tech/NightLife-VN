@@ -1,6 +1,5 @@
 "use client";
 
-import Link from 'next/link';
 import React, { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { LocateFixed, MapPin, SlidersHorizontal } from 'lucide-react';
 
@@ -229,34 +228,6 @@ export default function Page() {
     <React.Fragment>
       <main style={pageStyle}>
         <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '18px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '18px',
-              padding: '12px 0 20px',
-            }}
-          >
-            <Link
-              href="/"
-              style={{
-                color: colors.gold,
-                fontSize: '20px',
-                fontWeight: 900,
-                textDecoration: 'none',
-              }}
-            >
-              nightlife.vn
-            </Link>
-            <Link
-              href="/danh-sach-cast"
-              style={{ color: colors.muted, fontSize: '13px', fontWeight: 800 }}
-            >
-              Tìm cast
-            </Link>
-          </div>
-
           <section
             style={{
               display: 'grid',
@@ -290,7 +261,7 @@ export default function Page() {
                   Tìm kiếm nhanh
                 </div>
                 <h1 style={{ marginTop: '8px', fontSize: '32px', fontWeight: 950 }}>
-                  Quán nightlife
+                  Danh sách quán
                 </h1>
               </div>
               <button

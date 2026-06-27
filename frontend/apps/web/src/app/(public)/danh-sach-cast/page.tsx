@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import React, { type CSSProperties, useEffect, useMemo, useState } from 'react';
-import { Heart, Languages, LocateFixed, MapPin, Sparkles } from 'lucide-react';
+import { Heart, Languages, Sparkles } from 'lucide-react';
 
 import {
   discoveryApi,
@@ -85,30 +85,10 @@ const chipStyle = (active: boolean): CSSProperties => ({
   cursor: 'pointer',
 });
 
-const actionButtonStyle: CSSProperties = {
-  border: `1px solid ${colors.line}`,
-  borderRadius: '14px',
-  background: colors.panelSoft,
-  color: colors.goldSoft,
-  height: '44px',
-  padding: '0 14px',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '8px',
-  fontSize: '13px',
-  fontWeight: 800,
-  cursor: 'pointer',
-};
-
 const languageLabels: Record<string, string> = {
   vi: 'VI',
   ja: 'JP',
   en: 'EN',
-};
-
-type Coordinates = {
-  lat: number;
-  lng: number;
 };
 
 export default function Page() {
@@ -118,9 +98,7 @@ export default function Page() {
   const [category, setCategory] = useState('');
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>([]);
-  const [coords, setCoords] = useState<Coordinates | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -153,8 +131,6 @@ export default function Page() {
           city,
           area,
           category,
-          lat: coords?.lat,
-          lng: coords?.lng,
           limit: 60,
         })
         .then((items) => {
@@ -175,65 +151,14 @@ export default function Page() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, query]);
+  }, [area, category, city, query]);
 
   const visibleCasts = useMemo(() => casts, [casts]);
-
-  const requestNearby = () => {
-    if (!navigator.geolocation) {
-      setError('Thiết bị chưa hỗ trợ lấy vị trí.');
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoords({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-        setIsLocating(false);
-      },
-      () => {
-        setError('Chưa lấy được vị trí hiện tại.');
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-  };
 
   return (
     <React.Fragment>
       <main style={pageStyle}>
         <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '18px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '18px',
-              padding: '12px 0 20px',
-            }}
-          >
-            <Link
-              href="/"
-              style={{
-                color: colors.gold,
-                fontSize: '20px',
-                fontWeight: 900,
-                textDecoration: 'none',
-              }}
-            >
-              nightlife.vn
-            </Link>
-            <Link
-              href="/danh-sach-quan"
-              style={{ color: colors.muted, fontSize: '13px', fontWeight: 800 }}
-            >
-              Tìm quán
-            </Link>
-          </div>
-
           <section
             style={{
               display: 'grid',
@@ -270,15 +195,6 @@ export default function Page() {
                   Cast đang hoạt động
                 </h1>
               </div>
-              <button
-                type="button"
-                onClick={requestNearby}
-                disabled={isLocating}
-                style={{ ...actionButtonStyle, opacity: isLocating ? 0.65 : 1 }}
-              >
-                <LocateFixed size={17} />
-                {coords ? 'Đang ưu tiên gần tôi' : isLocating ? 'Đang lấy vị trí' : 'Gần tôi'}
-              </button>
             </div>
 
             <SearchBar
@@ -346,21 +262,6 @@ export default function Page() {
               <div style={{ color: colors.muted, fontSize: '13px' }}>
                 <b style={{ color: colors.text }}>{visibleCasts.length} cast</b> phù hợp
               </div>
-              {coords ? (
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                    color: colors.goldSoft,
-                    fontSize: '12px',
-                    fontWeight: 800,
-                  }}
-                >
-                  <MapPin size={15} />
-                  Sắp xếp theo khoảng cách
-                </div>
-              ) : null}
             </div>
 
             {isLoading ? (
@@ -458,23 +359,6 @@ function CastDiscoveryCard({ cast }: { cast: PublicCast }) {
         >
           <Heart size={15} color="#fff" />
         </span>
-        {typeof cast.distanceKm === 'number' ? (
-          <span
-            style={{
-              position: 'absolute',
-              bottom: 10,
-              left: 10,
-              borderRadius: '999px',
-              background: colors.gold,
-              color: '#241a0a',
-              padding: '5px 9px',
-              fontSize: '11px',
-              fontWeight: 900,
-            }}
-          >
-            {cast.distanceKm.toFixed(1)} km
-          </span>
-        ) : null}
       </PlaceholderMedia>
       <div style={{ padding: '13px' }}>
         <div
