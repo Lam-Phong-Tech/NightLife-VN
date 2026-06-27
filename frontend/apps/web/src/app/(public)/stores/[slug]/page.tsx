@@ -1,14 +1,12 @@
 "use client";
-import { Venue, Cast, FAQ, MockItem } from '@/types';
+import { Cast, MockItem } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import React, { useState } from 'react';
 import { ChevronLeft, Heart, Play } from 'lucide-react';
 
 export default function Page({ params }: { params: { slug?: string, [key: string]: unknown } }) {
-  const [activeRankTab, setActiveRankTab] = useState('quan');
-  const [activeSvcTab, setActiveSvcTab] = useState('nhahang');
-  const [isReg, setIsReg] = useState(false);
+  void params;
   const [isFavorite, setIsFavorite] = useState(false);
   const [guestCount, setGuestCount] = useState(4);
   const [activeStoreTab, setActiveStoreTab] = useState(0);
@@ -45,17 +43,48 @@ export default function Page({ params }: { params: { slug?: string, [key: string
           { label: 'Đánh giá', style: tabStyle(activeStoreTab === 3), pick: () => setActiveStoreTab(3) },
           { label: 'Bản đồ', style: tabStyle(activeStoreTab === 4), pick: () => setActiveStoreTab(4) }
         ];
-    const cast: Cast[] = Array(5).fill({
-        name: 'Club Lumière', area: 'Tây Hồ', catLabel: 'Bar Lounge', rating: 4.9,
-        img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover",
-        grad: 'linear-gradient(140deg, #d6336c, #7b2d6b)', price: '1.2tr', tag: '-20%',
-        label: 'Tất cả', style: { background: '#f3f2f5', color: '#5b5870' }, date: '12/10',
-        time: '21:00', code: 'NIGHT10', st: 'Hoàn tất',
-        favIcon: 'https://img.icons8.com/ios/100/FFFFFF/like.png',
-        favIconDark: 'https://img.icons8.com/ios/100/1f1d29/like.png',
-        mainBg: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-        open: () => console.log('Navigate')
-      });
+    const cast: Cast[] = [
+      {
+        name: 'Rina',
+        age: 22,
+        desc: 'Tiếng Nhật tốt',
+        area: 'Tây Hồ',
+        rating: 4.9,
+        img: "url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=480&q=70') center/cover",
+      },
+      {
+        name: 'Michi',
+        age: 24,
+        desc: 'VIP room host',
+        area: 'Tây Hồ',
+        rating: 4.8,
+        img: "url('https://images.unsplash.com/photo-1548142813-c348350df52b?auto=format&fit=crop&w=480&q=70') center/cover",
+      },
+      {
+        name: 'Hana',
+        age: 23,
+        desc: 'Nói Anh / Nhật',
+        area: 'Tây Hồ',
+        rating: 4.7,
+        img: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=480&q=70') center/cover",
+      },
+      {
+        name: 'Linh',
+        age: 25,
+        desc: 'Event support',
+        area: 'Tây Hồ',
+        rating: 4.9,
+        img: "url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=480&q=70') center/cover",
+      },
+      {
+        name: 'Yumi',
+        age: 21,
+        desc: 'Table service',
+        area: 'Tây Hồ',
+        rating: 4.8,
+        img: "url('https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=480&q=70') center/cover",
+      },
+    ];
     const dates: MockItem[] = [
           { label: 'T6 · 21/06', style: slotStyle(selectedDateIndex === 0), pick: () => setSelectedDateIndex(0) },
           { label: 'T7 · 22/06', style: slotStyle(selectedDateIndex === 1), pick: () => setSelectedDateIndex(1) },
@@ -84,13 +113,6 @@ export default function Page({ params }: { params: { slug?: string, [key: string
     const inc = () => setGuestCount((value) => Math.min(20, value + 1));
     const bookingHref = '/dat-cho';
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
-    const isIntro = true;
-    const isPrice: boolean | undefined = undefined;
-    const isCast = false;
-    const isReview: boolean | undefined = undefined;
-    const favIconDark = isFavorite
-      ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
-      : 'https://img.icons8.com/ios/100/1f1d29/like.png';
     const vPriceShort = vPrice;
 
     return (
@@ -129,10 +151,36 @@ export default function Page({ params }: { params: { slug?: string, [key: string
         {tabs?.map((t, index) => (<React.Fragment key={index}><span className="btn" onClick={t.pick} style={{ ...{"whiteSpace":"nowrap"}, ...t.style }}>{t.label}</span></React.Fragment>))}
       </div>
 
-      <><p style={{"fontSize":"12.5px","lineHeight":"1.65","color":"#d8d1c1","marginTop":"13px"}}>{vName} là lounge bar cao cấp khu {vArea} — không gian sang trọng, phòng VIP riêng tư, đội ngũ cast tuyển chọn kỹ, phục vụ khách Nhật với nhân viên thông thạo tiếng Nhật.</p></>
-      <><div style={{"marginTop":"13px","background":"#19191d","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","fontSize":"12.5px","color":"#f3f0ea"}}><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>1.200.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>3.500.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 500.000đ</span></div></div></>
-      <><div className="hscroll" style={{"marginTop":"13px","display":"flex","gap":"9px","overflowX":"auto"}}>{cast?.map((c, index) => (<React.Fragment key={index}><div style={{"width":"84px","flex":"none","borderRadius":"11px","overflow":"hidden","position":"relative","height":"108px","background":c.img}}><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"7px","background":"linear-gradient(0deg,rgba(20,8,16,.8),transparent)","color":"#fff","fontSize":"11px","fontWeight":"600"}}>{c.name}</div></div></React.Fragment>))}</div></>
-      <><div style={{"marginTop":"13px","display":"flex","flexDirection":"column","gap":"10px"}}><div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"12px"}}><div style={{"display":"flex","alignItems":"center","gap":"9px"}}><span style={{"width":"28px","height":"28px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=160&q=70') center/cover"}}></span><div><div style={{"fontSize":"12.5px","fontWeight":"700","color":"#f3f0ea"}}>Tanaka K.</div><div style={{"fontSize":"10px","color":"#f0c767"}}>★★★★★</div></div></div><p style={{"fontSize":"12px","color":"#d8d1c1","marginTop":"7px","lineHeight":"1.5"}}>Không gian đẹp, nhân viên nói tiếng Nhật rất tốt.</p></div></div></>
+      {activeStoreTab === 0 ? (
+        <>
+          <p style={{"fontSize":"12.5px","lineHeight":"1.65","color":"#d8d1c1","marginTop":"13px"}}>{vName} là lounge bar cao cấp khu {vArea} — không gian sang trọng, phòng VIP riêng tư, đội ngũ cast tuyển chọn kỹ, phục vụ khách Nhật với nhân viên thông thạo tiếng Nhật.</p>
+          <div style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"8px","marginTop":"13px"}}>
+            <div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"11px"}}><div style={{"fontSize":"11px","color":"#8a879a"}}>Phù hợp</div><div style={{"fontSize":"13px","fontWeight":"800","marginTop":"4px","color":"#f0dda8"}}>VIP, tiếp khách</div></div>
+            <div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"11px"}}><div style={{"fontSize":"11px","color":"#8a879a"}}>Ngôn ngữ</div><div style={{"fontSize":"13px","fontWeight":"800","marginTop":"4px","color":"#f0dda8"}}>Nhật / Anh</div></div>
+          </div>
+        </>
+      ) : null}
+      {activeStoreTab === 1 ? (
+        <div style={{"marginTop":"13px","background":"#19191d","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","fontSize":"12.5px","color":"#f3f0ea"}}><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>1.200.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>3.500.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Combo sinh nhật</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 2.000.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 500.000đ</span></div></div>
+      ) : null}
+      {activeStoreTab === 2 ? (
+        <div className="hscroll" style={{"marginTop":"13px","display":"flex","gap":"9px","overflowX":"auto"}}>{cast?.map((c, index) => (<React.Fragment key={index}><div style={{"width":"92px","flex":"none","borderRadius":"11px","overflow":"hidden","position":"relative","height":"118px","background":c.img}}><div style={{"position":"absolute","top":"8px","left":"8px","background":"rgba(12,12,15,.72)","color":"#f0dda8","fontSize":"10px","borderRadius":"999px","padding":"3px 7px"}}>★ {c.rating}</div><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"8px","background":"linear-gradient(0deg,rgba(20,8,16,.86),transparent)","color":"#fff","fontSize":"11px","fontWeight":"700"}}>{c.name}</div></div></React.Fragment>))}</div>
+      ) : null}
+      {activeStoreTab === 3 ? (
+        <div style={{"marginTop":"13px","display":"flex","flexDirection":"column","gap":"10px"}}>
+          <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","background":"rgba(212,178,106,.1)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","padding":"11px 12px"}}><div><div style={{"fontSize":"22px","fontWeight":"900","color":"#f0dda8"}}>{vRating}</div><div style={{"fontSize":"11px","color":"#d8d1c1"}}>{vReviews} đánh giá</div></div><div style={{"fontSize":"13px","color":"#f0c767"}}>★★★★★</div></div>
+          <div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"12px"}}><div style={{"display":"flex","alignItems":"center","gap":"9px"}}><span style={{"width":"28px","height":"28px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=160&q=70') center/cover"}}></span><div><div style={{"fontSize":"12.5px","fontWeight":"700","color":"#f3f0ea"}}>Tanaka K.</div><div style={{"fontSize":"10px","color":"#f0c767"}}>★★★★★</div></div></div><p style={{"fontSize":"12px","color":"#d8d1c1","marginTop":"7px","lineHeight":"1.5"}}>Không gian đẹp, nhân viên nói tiếng Nhật rất tốt.</p></div>
+        </div>
+      ) : null}
+      {activeStoreTab === 4 ? (
+        <div style={{"marginTop":"13px","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","background":"#19191d"}}>
+          <div style={{"height":"150px","position":"relative","background":"linear-gradient(135deg,#202026,#141417)"}}>
+            <span style={{"position":"absolute","inset":"18px","border":"1px dashed rgba(212,178,106,.28)","borderRadius":"12px"}}></span>
+            <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"42px","height":"42px","borderRadius":"50%","background":"#d4b26a","color":"#241a0a","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"900"}}>★</span>
+          </div>
+          <div style={{"padding":"12px","fontSize":"12.5px","lineHeight":"1.55","color":"#d8d1c1"}}><div style={{"fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div><div style={{"marginTop":"4px"}}>Gần hồ Tây, thuận tiện gọi xe sau 22:00. Admin sẽ gửi vị trí chi tiết sau khi xác nhận đặt chỗ.</div></div>
+        </div>
+      ) : null}
 
 
       {/* booking selectors */}
@@ -237,35 +285,54 @@ export default function Page({ params }: { params: { slug?: string, [key: string
           {tabs?.map((t, index) => (<React.Fragment key={index}><span onClick={t.pick} style={t.style}>{t.label}</span></React.Fragment>))}
         </div>
 
-        <>
-          <p style={{"fontSize":"13.5px","lineHeight":"1.7","color":"#3a384a","marginTop":"18px"}}>{vName} là lounge bar cao cấp bậc nhất khu {vArea}, không gian sang trọng với hệ thống âm thanh - ánh sáng hiện đại, phòng VIP riêng tư và đội ngũ cast được tuyển chọn kỹ lưỡng. Phục vụ chuyên nghiệp cho khách Nhật với nhân viên thông thạo tiếng Nhật.</p>
-          <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"12px"}}>
-            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Nói tiếng Nhật</div><div style={{"fontSize":"18px","fontWeight":"800","color":"#6d28d9","marginTop":"3px"}}>60%</div><div style={{"height":"5px","background":"#ece9f5","borderRadius":"3px","marginTop":"7px"}}><div style={{"width":"60%","height":"100%","background":"#6d28d9","borderRadius":"3px"}}></div></div></div>
-            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Nói tiếng Anh</div><div style={{"fontSize":"18px","fontWeight":"800","color":"#6d28d9","marginTop":"3px"}}>35%</div><div style={{"height":"5px","background":"#ece9f5","borderRadius":"3px","marginTop":"7px"}}><div style={{"width":"35%","height":"100%","background":"#6d28d9","borderRadius":"3px"}}></div></div></div>
-            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Quốc tịch cast</div><div style={{"fontSize":"13.5px","fontWeight":"600","marginTop":"6px","lineHeight":"1.5"}}>Việt Nam · Nhật Bản · Hàn Quốc</div></div>
-          </div>
-        </>
+        {activeStoreTab === 0 ? (
+          <>
+            <p style={{"fontSize":"13.5px","lineHeight":"1.7","color":"#3a384a","marginTop":"18px"}}>{vName} là lounge bar cao cấp bậc nhất khu {vArea}, không gian sang trọng với hệ thống âm thanh - ánh sáng hiện đại, phòng VIP riêng tư và đội ngũ cast được tuyển chọn kỹ lưỡng. Phục vụ chuyên nghiệp cho khách Nhật với nhân viên thông thạo tiếng Nhật.</p>
+            <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"12px"}}>
+              <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Nói tiếng Nhật</div><div style={{"fontSize":"18px","fontWeight":"800","color":"#6d28d9","marginTop":"3px"}}>60%</div><div style={{"height":"5px","background":"#ece9f5","borderRadius":"3px","marginTop":"7px"}}><div style={{"width":"60%","height":"100%","background":"#6d28d9","borderRadius":"3px"}}></div></div></div>
+              <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Nói tiếng Anh</div><div style={{"fontSize":"18px","fontWeight":"800","color":"#6d28d9","marginTop":"3px"}}>35%</div><div style={{"height":"5px","background":"#ece9f5","borderRadius":"3px","marginTop":"7px"}}><div style={{"width":"35%","height":"100%","background":"#6d28d9","borderRadius":"3px"}}></div></div></div>
+              <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Quốc tịch cast</div><div style={{"fontSize":"13.5px","fontWeight":"600","marginTop":"6px","lineHeight":"1.5"}}>Việt Nam · Nhật Bản · Hàn Quốc</div></div>
+            </div>
+          </>
+        ) : null}
 
-        <>
+        {activeStoreTab === 1 ? (
           <div style={{"marginTop":"18px","background":"#fff","border":"1px solid #ececec","borderRadius":"14px","overflow":"hidden","fontSize":"13.5px"}}>
             <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid #f1f0f3"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"600"}}>1.200.000đ</span></div>
             <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid #f1f0f3"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"600"}}>3.500.000đ</span></div>
+            <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid #f1f0f3"}}><span>Combo sinh nhật</span><span style={{"fontWeight":"600"}}>từ 2.000.000đ</span></div>
             <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"600"}}>từ 500.000đ</span></div>
           </div>
-        </>
+        ) : null}
 
-        <>
+        {activeStoreTab === 2 ? (
           <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"repeat(5,1fr)","gap":"12px"}}>
-            {cast?.map((c, index) => (<React.Fragment key={index}><div style={{"borderRadius":"12px","overflow":"hidden","position":"relative","height":"150px","background":c.img}}><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"9px","background":"linear-gradient(0deg,rgba(20,8,16,.8),transparent)","color":"#fff","fontSize":"12px","fontWeight":"600"}}>{c.name}</div></div></React.Fragment>))}
+            {cast?.map((c, index) => (<React.Fragment key={index}><div style={{"borderRadius":"12px","overflow":"hidden","position":"relative","height":"156px","background":c.img}}><span style={{"position":"absolute","top":"9px","left":"9px","background":"rgba(255,255,255,.92)","color":"#6d28d9","borderRadius":"999px","padding":"3px 8px","fontSize":"10.5px","fontWeight":"700"}}>★ {c.rating}</span><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"10px","background":"linear-gradient(0deg,rgba(20,8,16,.84),transparent)","color":"#fff","fontSize":"12px","fontWeight":"700"}}>{c.name}</div></div></React.Fragment>))}
           </div>
-        </>
+        ) : null}
 
-        <>
+        {activeStoreTab === 3 ? (
           <div style={{"marginTop":"18px","display":"flex","flexDirection":"column","gap":"12px"}}>
+            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"16px","display":"flex","alignItems":"center","justifyContent":"space-between"}}><div><div style={{"fontSize":"28px","fontWeight":"800","color":"#1f1d29"}}>{vRating}</div><div style={{"fontSize":"12px","color":"#8a879a"}}>{vReviews} đánh giá đã xác thực</div></div><div style={{"color":"#e8923a","fontSize":"18px"}}>★★★★★</div></div>
             <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"15px"}}><div style={{"display":"flex","alignItems":"center","gap":"10px"}}><span style={{"width":"32px","height":"32px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=200&q=70') center/cover"}}></span><div><div style={{"fontSize":"13px","fontWeight":"600"}}>Tanaka K.</div><div style={{"fontSize":"11px","color":"#e8923a"}}>★★★★★</div></div><span style={{"marginLeft":"auto","fontSize":"11.5px","color":"#a8a5b4"}}>2 ngày trước</span></div><p style={{"fontSize":"13px","color":"#3a384a","marginTop":"9px","lineHeight":"1.6"}}>Không gian đẹp, nhân viên nói tiếng Nhật rất tốt. Sẽ quay lại.</p></div>
             <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"15px"}}><div style={{"display":"flex","alignItems":"center","gap":"10px"}}><span style={{"width":"32px","height":"32px","borderRadius":"50%","background":"url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=200&q=70') center/cover"}}></span><div><div style={{"fontSize":"13px","fontWeight":"600"}}>Minh H.</div><div style={{"fontSize":"11px","color":"#e8923a"}}>★★★★★</div></div><span style={{"marginLeft":"auto","fontSize":"11.5px","color":"#a8a5b4"}}>1 tuần trước</span></div><p style={{"fontSize":"13px","color":"#3a384a","marginTop":"9px","lineHeight":"1.6"}}>Đồ uống chất lượng, phòng VIP riêng tư. Giá hợp lý cho dịch vụ.</p></div>
           </div>
-        </>
+        ) : null}
+
+        {activeStoreTab === 4 ? (
+          <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"1.2fr .8fr","gap":"14px"}}>
+            <div style={{"minHeight":"260px","borderRadius":"16px","border":"1px solid #ececec","overflow":"hidden","position":"relative","background":"linear-gradient(135deg,#ece9f5,#d8cfb8)"}}>
+              <span style={{"position":"absolute","left":"12%","right":"12%","top":"32%","height":"2px","background":"rgba(109,40,217,.34)","transform":"rotate(-12deg)"}}></span>
+              <span style={{"position":"absolute","left":"24%","right":"18%","top":"58%","height":"2px","background":"rgba(109,40,217,.24)","transform":"rotate(18deg)"}}></span>
+              <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","boxShadow":"0 14px 30px rgba(109,40,217,.28)"}}>VIP</span>
+            </div>
+            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","padding":"18px","fontSize":"13.5px","lineHeight":"1.65","color":"#3a384a"}}>
+              <div style={{"fontSize":"16px","fontWeight":"800","color":"#1f1d29"}}>{vName} · {vArea}</div>
+              <p style={{"marginTop":"10px"}}>Khu vực trung tâm Tây Hồ, phù hợp di chuyển bằng taxi sau giờ cao điểm.</p>
+              <div style={{"marginTop":"14px","display":"grid","gap":"8px"}}><div><b>Giờ mở cửa:</b> 18:00 - 02:00</div><div><b>Gửi vị trí:</b> sau khi admin xác nhận đơn đặt</div><div><b>Bãi xe:</b> hỗ trợ tại cửa quán</div></div>
+            </div>
+          </div>
+        ) : null}
 
 
       </div>
