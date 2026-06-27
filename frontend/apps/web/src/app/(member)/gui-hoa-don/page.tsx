@@ -1,264 +1,360 @@
 "use client";
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
 
-  export default function Page() {
-    
-    
-    
-    // Mock data arrays for loops
-    
-    
-    // Standalone mock variables
-    
+import Link from "next/link";
+import React, { useState } from "react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  Clock3,
+  ImagePlus,
+  RotateCcw,
+  Sparkles,
+  XCircle,
+} from "lucide-react";
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+const colors = {
+  bg: "#0c0c0f",
+  panel: "rgba(255,255,255,.045)",
+  panelStrong: "rgba(255,255,255,.07)",
+  border: "rgba(212,178,106,.22)",
+  borderStrong: "rgba(212,178,106,.34)",
+  text: "#f3f0ea",
+  muted: "#b6b1a6",
+  dim: "#8c8679",
+  gold: "#d4b26a",
+  goldPale: "#f0dda8",
+  onGold: "#241a0a",
+  danger: "#ff6b8b",
+  success: "#81d89d",
+  warning: "#f0dda8",
+  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
+};
 
-<>
-<>
+const filters = ["Tất cả", "Chờ duyệt", "Đã duyệt", "Bị từ chối"] as const;
 
+const invoices = [
+  {
+    venue: "Club Lumière",
+    date: "21/06",
+    amount: "2.400.000đ",
+    status: "Đã duyệt",
+    note: "+24 điểm đã cộng",
+    tone: "success",
+    image: "linear-gradient(140deg,#d6336c,#7b2d6b)",
+  },
+  {
+    venue: "KTV Hoàng Gia",
+    date: "18/06",
+    amount: "1.800.000đ",
+    status: "Chờ duyệt",
+    note: "Đang chờ Admin duyệt",
+    tone: "pending",
+    image: "linear-gradient(140deg,#3a8fb0,#2d5fae)",
+  },
+  {
+    venue: "Diamond Bar",
+    date: "08/06",
+    amount: "1.200.000đ",
+    status: "Bị từ chối",
+    note: "Lý do: ảnh bill mờ, vui lòng gửi lại.",
+    tone: "danger",
+    image: "linear-gradient(140deg,#e0a23a,#c0782d)",
+  },
+  {
+    venue: "Sakura Lounge",
+    date: "12/06",
+    amount: "3.500.000đ",
+    status: "Đã duyệt",
+    note: "+35 điểm đã cộng",
+    tone: "success",
+    image: "linear-gradient(140deg,#8a6ad0,#5d3da8)",
+  },
+] as const;
 
+export default function Page() {
+  const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]>("Tất cả");
+  const visibleInvoices =
+    activeFilter === "Tất cả" ? invoices : invoices.filter((invoice) => invoice.status === activeFilter);
 
+  return (
+    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 54px" }}>
+        <Link href="/tai-khoan" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.muted, fontSize: 13, fontWeight: 800 }}>
+          <ChevronLeft size={17} />
+          Tài khoản
+        </Link>
 
-</>
-
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"background":"#fff","padding":"8px 18px 12px","display":"flex","alignItems":"center","gap":"12px"}}><Link href="/tai-khoan" style={{"fontSize":"22px","color":"#5b5870","lineHeight":"1"}}>‹</Link><span style={{"fontWeight":"800","fontSize":"16px"}}>Gửi hóa đơn</span></div>
-
-    <div style={{"padding":"14px 18px"}}>
-      {/* form */}
-      <div style={{"display":"flex","flexDirection":"column","gap":"11px"}}>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Quán <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Club Lumière · Tây Hồ<span style={{"color":"#8a879a"}}>▾</span></div></div>
-        <div style={{"display":"flex","gap":"10px"}}><div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Số tiền <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","fontWeight":"600"}}>2.400.000đ</div></div><div style={{"flex":"1"}}><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Thời gian <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#3a384a"}}>21/06 · 21:00</div></div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Cơ sở / chi nhánh <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#9a98a6"}}>VD: cơ sở Quảng An</div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Liên kết đặt chỗ / mã <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div style={{"marginTop":"5px","border":"1px solid #e2e0e8","borderRadius":"10px","padding":"11px 12px","fontSize":"13px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Booking #BK-2041<span style={{"color":"#8a879a"}}>▾</span></div></div>
-        <div><label style={{"fontSize":"11.5px","fontWeight":"600","color":"#5b5870"}}>Ảnh chứng từ <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div style={{"marginTop":"5px","border":"1.5px dashed #d9c9f7","borderRadius":"10px","padding":"18px","textAlign":"center","background":"#faf7ff"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/add-image.png" style={{"width":"28px","height":"28px","display":"inline-block"}} alt="" /><div style={{"fontSize":"11.5px","color":"#6d28d9","fontWeight":"600","marginTop":"5px"}}>Chọn ảnh bill</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"2px"}}>Nên gửi để Admin đối chiếu nhanh hơn</div></div></div>
-      </div>
-
-      {/* notes */}
-      <div style={{"marginTop":"12px","background":"#fdefd6","border":"1px solid #f5dca8","borderRadius":"10px","padding":"11px 12px","fontSize":"11px","color":"#8a5a00","lineHeight":"1.6"}}>Gửi trong vòng <b>10 ngày</b> kể từ ngày dùng dịch vụ. Chỉ ghi <b>tổng tiền</b>, không nhập chi tiết món.</div>
-
-      <div style={{"marginTop":"12px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"13px","fontWeight":"700","fontSize":"14px"}}>Gửi hóa đơn</div>
-
-      {/* history */}
-      <div style={{"marginTop":"20px","fontWeight":"800","fontSize":"15px"}}>Lịch sử hóa đơn</div>
-      <div className="hscroll" style={{"display":"flex","gap":"7px","marginTop":"10px","overflowX":"auto"}}>
-        <span style={{"display":"inline-flex","alignItems":"center","fontSize":"11.5px","borderRadius":"15px","padding":"7px 13px","fontWeight":"600","whiteSpace":"nowrap","background":"#6d28d9","color":"#fff","border":"1px solid #6d28d9"}}>Tất cả</span>
-        <span style={{"display":"inline-flex","alignItems":"center","fontSize":"11.5px","borderRadius":"15px","padding":"7px 13px","fontWeight":"600","whiteSpace":"nowrap","background":"#fff","color":"#5b5870","border":"1px solid #ececec"}}>Chờ duyệt</span>
-        <span style={{"display":"inline-flex","alignItems":"center","fontSize":"11.5px","borderRadius":"15px","padding":"7px 13px","fontWeight":"600","whiteSpace":"nowrap","background":"#fff","color":"#5b5870","border":"1px solid #ececec"}}>Đã duyệt</span>
-        <span style={{"display":"inline-flex","alignItems":"center","fontSize":"11.5px","borderRadius":"15px","padding":"7px 13px","fontWeight":"600","whiteSpace":"nowrap","background":"#fff","color":"#5b5870","border":"1px solid #ececec"}}>Bị từ chối</span>
-      </div>
-
-      <div style={{"marginTop":"11px","display":"flex","flexDirection":"column","gap":"9px"}}>
-        {/* approved */}
-        <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"13px","padding":"11px 12px"}}>
-          <div style={{"display":"flex","alignItems":"center","gap":"11px"}}><span style={{"width":"40px","height":"40px","borderRadius":"10px","flex":"none","background":"linear-gradient(140deg,#d6336c,#7b2d6b)"}}></span><div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"600","fontSize":"13px"}}>Club Lumière</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>21/06 · 2.400.000đ</div></div><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"4px 8px","color":"#1f8a52","background":"#e6f7ee"}}>Đã duyệt</span></div>
-          <div style={{"marginTop":"8px","paddingTop":"8px","borderTop":"1px solid #f1f0f3","display":"flex","alignItems":"center","justifyContent":"space-between","fontSize":"11px","color":"#1f8a52","fontWeight":"600"}}><span>+24 điểm đã cộng</span></div>
-        </div>
-        {/* pending */}
-        <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"13px","padding":"11px 12px"}}>
-          <div style={{"display":"flex","alignItems":"center","gap":"11px"}}><span style={{"width":"40px","height":"40px","borderRadius":"10px","flex":"none","background":"linear-gradient(140deg,#3a8fb0,#2d5fae)"}}></span><div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"600","fontSize":"13px"}}>KTV Hoàng Gia</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>18/06 · 1.800.000đ</div></div><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"4px 8px","color":"#b06a00","background":"#fdefd6"}}>Pending</span></div>
-          <div style={{"marginTop":"8px","paddingTop":"8px","borderTop":"1px solid #f1f0f3","fontSize":"11px","color":"#8a879a"}}>Đang chờ Admin duyệt</div>
-        </div>
-        {/* rejected */}
-        <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"13px","padding":"11px 12px"}}>
-          <div style={{"display":"flex","alignItems":"center","gap":"11px"}}><span style={{"width":"40px","height":"40px","borderRadius":"10px","flex":"none","background":"linear-gradient(140deg,#e0a23a,#c0782d)"}}></span><div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"600","fontSize":"13px"}}>Diamond Bar</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>08/06 · 1.200.000đ</div></div><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"4px 8px","color":"#b03a4a","background":"#fde7ea"}}>Bị từ chối</span></div>
-          <div style={{"marginTop":"8px","paddingTop":"8px","borderTop":"1px solid #f1f0f3","display":"flex","alignItems":"center","justifyContent":"space-between","gap":"8px"}}><span style={{"fontSize":"11px","color":"#b03a4a","flex":"1"}}>Lý do: Ảnh mờ — vui lòng gửi lại.</span><span style={{"fontSize":"11px","color":"#6d28d9","fontWeight":"700","border":"1px solid #e0d4fb","borderRadius":"9px","padding":"6px 11px"}}>Gửi lại</span></div>
-        </div>
-        {/* approved 2 */}
-        <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"13px","padding":"11px 12px"}}>
-          <div style={{"display":"flex","alignItems":"center","gap":"11px"}}><span style={{"width":"40px","height":"40px","borderRadius":"10px","flex":"none","background":"linear-gradient(140deg,#8a6ad0,#5d3da8)"}}></span><div style={{"flex":"1","minWidth":"0"}}><div style={{"fontWeight":"600","fontSize":"13px"}}>Sakura Lounge</div><div style={{"fontSize":"10.5px","color":"#8a879a","marginTop":"1px"}}>12/06 · 3.500.000đ</div></div><span style={{"fontSize":"9.5px","fontWeight":"700","borderRadius":"8px","padding":"4px 8px","color":"#1f8a52","background":"#e6f7ee"}}>Đã duyệt</span></div>
-          <div style={{"marginTop":"8px","paddingTop":"8px","borderTop":"1px solid #f1f0f3","fontSize":"11px","color":"#1f8a52","fontWeight":"600"}}>+35 điểm đã cộng</div>
-        </div>
-      </div>
-      <div style={{"height":"8px"}}></div>
-    </div>
-
-    {/* bottom nav */}
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
-      <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></Link>
-      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Ưu đãi</span></Link>
-      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
-      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></Link>
-    </div>
-  </div>
-</div>
-</>
-
-
-</div>
-        <div className="hidden md:block">
-
-<>
-<>
-
-
-
-
-</>
-
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-
-  <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-
-    {/* HEADER */}
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div>
-      </div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</Link><Link href="/dang-ky-doi-tac" style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</Link></div>
-    </div>
-
-    <div style={{"display":"flex","gap":"24px","padding":"26px 34px 32px"}}>
-
-      {/* FORM */}
-      <div style={{"width":"440px","flex":"none"}}>
-        <h2 style={{"fontSize":"24px","fontWeight":"800"}}>Gửi hóa đơn</h2>
-        <p style={{"fontSize":"13px","color":"#5b5870","marginTop":"5px"}}>Gửi để tích điểm thưởng &amp; đối soát dịch vụ. Admin duyệt thủ công trong 1–2 ngày.</p>
-
-        <div style={{"marginTop":"18px","display":"flex","flexDirection":"column","gap":"14px"}}>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Quán <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Club Lumière · Tây Hồ<span style={{"color":"#8a879a"}}>▾</span></div></div>
-          <div style={{"display":"flex","gap":"12px"}}>
-            <div style={{"flex":"1"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Số tiền <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#1f1d29","fontWeight":"600"}}>2.400.000đ</div></div>
-            <div style={{"flex":"1"}}><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Thời gian dùng DV <span style={{"color":"#d6336c"}}>*</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","gap":"8px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/9A98A6/calendar.png" style={{"width":"15px","height":"15px","display":"inline-block"}} alt="" />21/06/2026</div></div>
+        <div className="nl-member-page-head" style={{ marginTop: 18 }}>
+          <div>
+            <h1 style={{ marginTop: 0, fontSize: "clamp(26px,4vw,40px)", lineHeight: 1.05, fontWeight: 950 }}>
+              Gửi hóa đơn
+            </h1>
+            <p style={{ marginTop: 10, color: colors.muted, fontSize: 14, lineHeight: 1.6, maxWidth: 620 }}>
+              Gửi tổng tiền hóa đơn để Admin đối soát và cộng điểm thành viên.
+            </p>
           </div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Cơ sở / chi nhánh <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#9a98a6"}}>VD: cơ sở Quảng An</div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Liên kết đặt chỗ / coupon <span style={{"color":"#8a879a","fontWeight":"500"}}>(tùy chọn)</span></label><div style={{"marginTop":"6px","border":"1px solid #e2e0e8","borderRadius":"11px","padding":"12px 13px","fontSize":"13.5px","color":"#3a384a","display":"flex","alignItems":"center","justifyContent":"space-between"}}>Booking #BK-2041 · Happy Hour −30%<span style={{"color":"#8a879a"}}>▾</span></div></div>
-          <div><label style={{"fontSize":"12.5px","fontWeight":"600","color":"#5b5870"}}>Ảnh / chứng từ <span style={{"color":"#8a879a","fontWeight":"500"}}>(khuyến khích, không bắt buộc)</span></label><div className="up" style={{"marginTop":"6px","border":"1.5px dashed #d9c9f7","borderRadius":"11px","padding":"24px","textAlign":"center","background":"#faf7ff"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/add-image.png" style={{"width":"32px","height":"32px","display":"inline-block"}} alt="" /><div style={{"fontSize":"12.5px","color":"#6d28d9","fontWeight":"600","marginTop":"6px"}}>Kéo thả hoặc chọn ảnh bill</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Nên gửi để Admin đối chiếu nhanh hơn (JPG/PNG ≤ 5MB)</div></div></div>
+          <div style={{ border: `1px solid ${colors.border}`, borderRadius: 14, background: colors.panel, padding: "11px 14px", color: colors.goldPale, fontSize: 13, fontWeight: 900 }}>
+            1.000.000đ = 10 điểm
+          </div>
         </div>
 
-        <div style={{"marginTop":"14px","background":"#fdefd6","border":"1px solid #f5dca8","borderRadius":"11px","padding":"11px 13px","fontSize":"12px","color":"#b06a00","lineHeight":"1.6"}}>Gửi trong vòng <b>10 ngày</b> kể từ ngày dùng dịch vụ. Chỉ ghi <b>tổng tiền</b>, không nhập chi tiết món.</div>
-        <div className="btn" style={{"marginTop":"14px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"14px","fontWeight":"700","fontSize":"15px"}}>Gửi hóa đơn</div>
-        <div style={{"marginTop":"10px","fontSize":"12px","color":"#8a879a","textAlign":"center"}}>Tích điểm: 1.000.000đ trên hóa đơn = 10 điểm.</div>
-      </div>
+        <div className="nl-invoice-layout" style={{ display: "grid", gridTemplateColumns: "420px minmax(0,1fr)", gap: 18, marginTop: 22 }}>
+          <section style={{ border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 18, height: "fit-content" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
+              <Sparkles size={18} />
+              Thông tin hóa đơn
+            </div>
 
-      {/* HISTORY */}
-      <div style={{"flex":"1"}}>
-        <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between"}}><h2 style={{"fontSize":"18px","fontWeight":"800"}}>Lịch sử hóa đơn</h2><span style={{"fontSize":"12.5px","color":"#8a879a"}}>Đã tích: <b style={{"color":"#6d28d9"}}>156 điểm</b></span></div>
-        <div style={{"display":"flex","gap":"9px","flexWrap":"wrap","marginTop":"14px"}}>
-          <span style={{"fontSize":"13px","fontWeight":"600","background":"#6d28d9","color":"#fff","border":"1px solid #6d28d9","borderRadius":"18px","padding":"8px 16px"}}>Tất cả</span>
-          <span style={{"fontSize":"13px","fontWeight":"600","background":"#fff","color":"#5b5870","border":"1px solid #ececec","borderRadius":"18px","padding":"8px 16px"}}>Chờ duyệt</span>
-          <span style={{"fontSize":"13px","fontWeight":"600","background":"#fff","color":"#5b5870","border":"1px solid #ececec","borderRadius":"18px","padding":"8px 16px"}}>Đã duyệt</span>
-          <span style={{"fontSize":"13px","fontWeight":"600","background":"#fff","color":"#5b5870","border":"1px solid #ececec","borderRadius":"18px","padding":"8px 16px"}}>Bị từ chối</span>
+            <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
+              <SelectField label="Quán" required value="Club Lumière · Tây Hồ" />
+              <div className="nl-invoice-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <InputField label="Số tiền" required defaultValue="2.400.000đ" />
+                <InputField label="Thời gian" required defaultValue="21/06 · 21:00" />
+              </div>
+              <InputField label="Cơ sở / chi nhánh" optional placeholder="VD: cơ sở Quảng An" />
+              <SelectField label="Liên kết đặt chỗ / mã" optional value="Booking #BK-2041" />
+              <UploadBox />
+            </div>
+
+            <div style={{ marginTop: 14, border: `1px solid ${colors.border}`, borderRadius: 12, background: "rgba(212,178,106,.09)", padding: "11px 13px", color: colors.goldPale, fontSize: 12.5, lineHeight: 1.6 }}>
+              Gửi trong vòng <strong>10 ngày</strong> kể từ ngày dùng dịch vụ. Chỉ ghi <strong>tổng tiền</strong>, không nhập chi tiết món.
+            </div>
+
+            <button type="button" style={primaryButtonStyle}>
+              Gửi hóa đơn
+            </button>
+          </section>
+
+          <section style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+              <h2 style={{ fontSize: 20, fontWeight: 950 }}>Lịch sử hóa đơn</h2>
+              <span style={{ color: colors.muted, fontSize: 13 }}>
+                Đã tích: <strong style={{ color: colors.goldPale }}>156 điểm</strong>
+              </span>
+            </div>
+
+            <div className="hscroll" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginTop: 14 }}>
+              {filters.map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setActiveFilter(filter)}
+                  style={{
+                    border: `1px solid ${activeFilter === filter ? colors.gold : colors.border}`,
+                    background: activeFilter === filter ? colors.goldGrad : colors.panel,
+                    color: activeFilter === filter ? colors.onGold : colors.muted,
+                    minHeight: 40,
+                    borderRadius: 999,
+                    padding: "9px 14px",
+                    fontSize: 12.5,
+                    fontWeight: 900,
+                    whiteSpace: "nowrap",
+                    cursor: "pointer",
+                  }}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: "grid", gap: 12, marginTop: 10 }}>
+              {visibleInvoices.map((invoice) => (
+                <InvoiceCard key={`${invoice.venue}-${invoice.date}`} invoice={invoice} />
+              ))}
+            </div>
+
+            {visibleInvoices.length === 0 ? (
+              <div style={{ marginTop: 18, border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 24, textAlign: "center", color: colors.muted }}>
+                Chưa có hóa đơn ở trạng thái này.
+              </div>
+            ) : null}
+          </section>
         </div>
+      </section>
+    </main>
+  );
+}
 
-        <div style={{"marginTop":"16px","display":"flex","flexDirection":"column","gap":"12px"}}>
+function Label({ children, required, optional }: { children: React.ReactNode; required?: boolean; optional?: boolean }) {
+  return (
+    <label style={{ color: colors.muted, fontSize: 12.5, fontWeight: 900 }}>
+      {children} {required ? <span style={{ color: colors.danger }}>*</span> : null}
+      {optional ? <span style={{ color: colors.dim, fontWeight: 700 }}>(tùy chọn)</span> : null}
+    </label>
+  );
+}
 
-          {/* approved */}
-          <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"14px 16px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"14px"}}>
-              <span style={{"width":"46px","height":"46px","borderRadius":"11px","flex":"none","background":"url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)"}}></span>
-              <div style={{"flex":"1"}}><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Club Lumière</div><div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"3px"}}>21/06 · 2.400.000đ</div></div>
-              <span style={{"fontSize":"11.5px","fontWeight":"700","borderRadius":"10px","padding":"5px 11px","color":"#177544","background":"#e6f7ee"}}>Đã duyệt</span>
-            </div>
-            <div style={{"marginTop":"10px","paddingTop":"10px","borderTop":"1px solid #f1f0f3","fontSize":"12.5px","color":"#177544","fontWeight":"600"}}>+24 điểm đã được cộng vào tài khoản.</div>
-          </div>
-
-          {/* pending */}
-          <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"14px 16px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"14px"}}>
-              <span style={{"width":"46px","height":"46px","borderRadius":"11px","flex":"none","background":"url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#3a8fb0,#2d5fae)"}}></span>
-              <div style={{"flex":"1"}}><div style={{"fontWeight":"600","fontSize":"14.5px"}}>KTV Hoàng Gia</div><div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"3px"}}>18/06 · 1.800.000đ</div></div>
-              <span style={{"fontSize":"11.5px","fontWeight":"700","borderRadius":"10px","padding":"5px 11px","color":"#b06a00","background":"#fdefd6"}}>Chờ duyệt</span>
-            </div>
-            <div style={{"marginTop":"10px","paddingTop":"10px","borderTop":"1px solid #f1f0f3","fontSize":"12.5px","color":"#8a879a"}}>Đang chờ Admin duyệt · dự kiến +18 điểm.</div>
-          </div>
-
-          {/* approved 2 */}
-          <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"14px 16px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"14px"}}>
-              <span style={{"width":"46px","height":"46px","borderRadius":"11px","flex":"none","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8)"}}></span>
-              <div style={{"flex":"1"}}><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Sakura Lounge</div><div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"3px"}}>12/06 · 3.500.000đ</div></div>
-              <span style={{"fontSize":"11.5px","fontWeight":"700","borderRadius":"10px","padding":"5px 11px","color":"#177544","background":"#e6f7ee"}}>Đã duyệt</span>
-            </div>
-            <div style={{"marginTop":"10px","paddingTop":"10px","borderTop":"1px solid #f1f0f3","fontSize":"12.5px","color":"#177544","fontWeight":"600"}}>+35 điểm đã được cộng vào tài khoản.</div>
-          </div>
-
-          {/* rejected */}
-          <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"14px 16px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"14px"}}>
-              <span style={{"width":"46px","height":"46px","borderRadius":"11px","flex":"none","background":"url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#e0a23a,#c0782d)"}}></span>
-              <div style={{"flex":"1"}}><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Diamond Bar</div><div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"3px"}}>08/06 · 1.200.000đ</div></div>
-              <span style={{"fontSize":"11.5px","fontWeight":"700","borderRadius":"10px","padding":"5px 11px","color":"#b03a4a","background":"#fde7ea"}}>Bị từ chối</span>
-            </div>
-            <div style={{"marginTop":"10px","paddingTop":"10px","borderTop":"1px solid #f1f0f3","display":"flex","alignItems":"center","justifyContent":"space-between","gap":"12px"}}>
-              <span style={{"fontSize":"12.5px","color":"#b03a4a"}}>Lý do: ảnh bill bị mờ, không đọc được tổng tiền.</span>
-              <span className="btn" style={{"flex":"none","fontSize":"12.5px","color":"#6d28d9","fontWeight":"600","border":"1px solid #e0d6f7","borderRadius":"10px","padding":"7px 14px"}}>Gửi lại</span>
-            </div>
-          </div>
-
-          {/* approved 3 */}
-          <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"14px","padding":"14px 16px","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"14px"}}>
-              <span style={{"width":"46px","height":"46px","borderRadius":"11px","flex":"none","background":"url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#e0598a,#a8336b)"}}></span>
-              <div style={{"flex":"1"}}><div style={{"fontWeight":"600","fontSize":"14.5px"}}>Hanoi Velvet</div><div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"3px"}}>02/06 · 1.100.000đ</div></div>
-              <span style={{"fontSize":"11.5px","fontWeight":"700","borderRadius":"10px","padding":"5px 11px","color":"#177544","background":"#e6f7ee"}}>Đã duyệt</span>
-            </div>
-            <div style={{"marginTop":"10px","paddingTop":"10px","borderTop":"1px solid #f1f0f3","fontSize":"12.5px","color":"#177544","fontWeight":"600"}}>+11 điểm đã được cộng vào tài khoản.</div>
-          </div>
-
-        </div>
-      </div>
+function InputField({ label, defaultValue, placeholder, required, optional }: { label: string; defaultValue?: string; placeholder?: string; required?: boolean; optional?: boolean }) {
+  return (
+    <div>
+      <Label required={required} optional={optional}>
+        {label}
+      </Label>
+      <input defaultValue={defaultValue} placeholder={placeholder} style={inputStyle} />
     </div>
-  </div>
-</div>
-</>
+  );
+}
 
+function SelectField({ label, value, required, optional }: { label: string; value: string; required?: boolean; optional?: boolean }) {
+  return (
+    <div>
+      <Label required={required} optional={optional}>
+        {label}
+      </Label>
+      <button type="button" style={selectStyle}>
+        <span>{value}</span>
+        <ChevronDown size={16} color={colors.muted} />
+      </button>
+    </div>
+  );
+}
 
+function UploadBox() {
+  return (
+    <div>
+      <Label optional>Ảnh chứng từ</Label>
+      <button type="button" style={uploadStyle}>
+        <span style={{ width: 38, height: 38, borderRadius: 12, display: "grid", placeItems: "center", background: "rgba(212,178,106,.12)", color: colors.gold }}>
+          <ImagePlus size={20} />
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <strong style={{ display: "block", color: colors.goldPale, fontSize: 13.5 }}>Chọn ảnh bill</strong>
+          <small style={{ display: "block", color: colors.muted, fontSize: 12, marginTop: 3 }}>Nên gửi để Admin đối chiếu nhanh hơn</small>
+        </span>
+      </button>
+    </div>
+  );
+}
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
-  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-      <div style={{"maxWidth":"300px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
+function InvoiceCard({ invoice }: { invoice: (typeof invoices)[number] }) {
+  return (
+    <article
+      className="nl-invoice-history-card"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "48px minmax(0,1fr)",
+        gap: 13,
+        alignItems: "start",
+        border: `1px solid ${colors.border}`,
+        borderRadius: 18,
+        background: colors.panel,
+        padding: 12,
+      }}
+    >
+      <span style={{ width: 48, height: 48, borderRadius: 14, background: invoice.image, border: `1px solid ${colors.borderStrong}` }} />
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ fontSize: 14.5, fontWeight: 950, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{invoice.venue}</h3>
+            <div style={{ marginTop: 3, color: colors.muted, fontSize: 12 }}>
+              {invoice.date} · {invoice.amount}
+            </div>
+          </div>
+          <StatusBadge status={invoice.status} tone={invoice.tone} />
+        </div>
+
+        <div style={{ marginTop: 11, paddingTop: 10, borderTop: `1px solid ${colors.border}`, color: toneColor(invoice.tone), fontSize: 12.5, lineHeight: 1.5 }}>
+          {invoice.note}
+          {invoice.tone === "danger" ? (
+            <button type="button" style={retryButtonStyle}>
+              <RotateCcw size={13} />
+              Gửi lại
+            </button>
+          ) : null}
         </div>
       </div>
-      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-        </div>
-      </div>
-    </div>
-    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-    </div>
-    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-      <div>v2.0.0 • Nightlife Platform</div>
-      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-      </React.Fragment>
-    );
-  }
-  
+    </article>
+  );
+}
 
+function StatusBadge({ status, tone }: { status: string; tone: string }) {
+  const Icon = tone === "success" ? CheckCircle2 : tone === "danger" ? XCircle : Clock3;
+
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 999, padding: "5px 9px", background: "rgba(255,255,255,.06)", color: toneColor(tone), fontSize: 11, fontWeight: 900, whiteSpace: "nowrap" }}>
+      <Icon size={13} />
+      {status}
+    </span>
+  );
+}
+
+function toneColor(tone: string) {
+  if (tone === "success") return colors.success;
+  if (tone === "danger") return colors.danger;
+  return colors.warning;
+}
+
+const fieldBaseStyle: React.CSSProperties = {
+  marginTop: 7,
+  width: "100%",
+  minHeight: 48,
+  border: `1px solid ${colors.border}`,
+  borderRadius: 12,
+  background: colors.panelStrong,
+  color: colors.text,
+  padding: "0 14px",
+  fontSize: 14,
+  outline: "none",
+  boxShadow: "inset 0 0 0 1px rgba(255,255,255,.02)",
+};
+
+const inputStyle: React.CSSProperties = {
+  ...fieldBaseStyle,
+};
+
+const selectStyle: React.CSSProperties = {
+  ...fieldBaseStyle,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const uploadStyle: React.CSSProperties = {
+  marginTop: 7,
+  width: "100%",
+  minHeight: 86,
+  border: `1px dashed ${colors.borderStrong}`,
+  borderRadius: 12,
+  background: colors.panelStrong,
+  color: colors.text,
+  padding: 14,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 12,
+  textAlign: "left",
+  cursor: "pointer",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  marginTop: 14,
+  width: "100%",
+  minHeight: 50,
+  border: 0,
+  borderRadius: 14,
+  background: colors.goldGrad,
+  color: colors.onGold,
+  padding: "14px 18px",
+  fontWeight: 950,
+  fontSize: 15,
+  cursor: "pointer",
+};
+
+const retryButtonStyle: React.CSSProperties = {
+  marginLeft: 10,
+  border: `1px solid ${colors.border}`,
+  borderRadius: 10,
+  background: colors.panelStrong,
+  color: colors.goldPale,
+  padding: "6px 10px",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 12,
+  fontWeight: 900,
+  cursor: "pointer",
+};
