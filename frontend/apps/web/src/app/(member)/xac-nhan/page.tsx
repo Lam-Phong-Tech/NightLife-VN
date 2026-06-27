@@ -1,14 +1,16 @@
 "use client";
 
-import { CalendarCheck2, Check, Clock3, MapPin, QrCode, Sparkles } from "lucide-react";
+import { Check, Clock3, MapPin, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
+import { getAuthUser } from "@/lib/auth/session";
 
 const colors = {
   bg: "#0c0c0f",
   panel: "#151518",
+  panelSoft: "rgba(255,255,255,.045)",
   border: "rgba(212,178,106,.24)",
   borderStrong: "rgba(212,178,106,.36)",
   text: "#f7f2e8",
@@ -17,6 +19,7 @@ const colors = {
   gold: "#d4b26a",
   goldPale: "#f2dfaa",
   onGold: "#241a0a",
+  success: "#24b56a",
   goldGrad: "linear-gradient(135deg,#fff1bf 0%,#e4bf63 52%,#c09035 100%)",
 };
 
@@ -37,19 +40,11 @@ const booking = {
     "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=75",
 };
 
-function DetailItem({ label, value, accent }: { label: string; value: React.ReactNode; accent?: boolean }) {
+function DetailLine({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
-      <div style={{ color: colors.muted, fontSize: "12px", lineHeight: 1.4 }}>{label}</div>
-      <div
-        style={{
-          marginTop: "6px",
-          color: accent ? colors.goldPale : colors.text,
-          fontWeight: accent ? 800 : 700,
-          fontSize: "15px",
-          lineHeight: 1.35,
-        }}
-      >
+    <div style={{ minWidth: 0 }}>
+      <div style={{ color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>{label}</div>
+      <div style={{ marginTop: 5, color: colors.text, fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
         {value}
       </div>
     </div>
@@ -57,7 +52,12 @@ function DetailItem({ label, value, accent }: { label: string; value: React.Reac
 }
 
 export default function Page() {
-  const toggleSave = () => alert("Đã lưu mã ưu đãi!");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showScreenshotHint, setShowScreenshotHint] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(Boolean(getAuthUser()));
+  }, []);
 
   return (
     <main
@@ -67,415 +67,288 @@ export default function Page() {
           "radial-gradient(circle at 82% 2%,rgba(212,178,106,.12),transparent 34%), linear-gradient(180deg,#121216 0%,#0c0c0f 100%)",
         color: colors.text,
         fontFamily: "var(--nl-font-sans)",
-        padding: "34px clamp(18px,3.2vw,48px) 58px",
+        padding: "24px 16px calc(118px + env(safe-area-inset-bottom))",
       }}
     >
-      <section style={{ width: "100%", maxWidth: "none", margin: "0 auto" }}>
+      <section className="confirm-shell" style={{ width: "100%", maxWidth: 560, margin: "0 auto" }}>
+        <h1 style={{ margin: 0, color: colors.text, fontSize: "clamp(24px,4vw,34px)", lineHeight: 1.08, fontWeight: 950 }}>
+          Đặt chỗ của tôi
+        </h1>
+
         <div
-          className="confirm-alert"
           style={{
-            borderRadius: "20px",
-            border: "1px solid rgba(34,197,94,.32)",
-            background:
-              "linear-gradient(135deg,rgba(34,197,94,.18),rgba(16,185,129,.08)), rgba(255,255,255,.03)",
-            padding: "20px 22px",
+            marginTop: 18,
+            borderRadius: 18,
+            border: "1px solid rgba(34,197,94,.34)",
+            background: "linear-gradient(135deg,rgba(34,197,94,.2),rgba(16,185,129,.08))",
+            padding: "15px 16px",
             display: "flex",
             alignItems: "center",
-            gap: "15px",
-            boxShadow: "0 18px 48px rgba(0,0,0,.22)",
+            gap: 13,
           }}
         >
           <span
             style={{
-              width: "50px",
-              height: "50px",
+              width: 42,
+              height: 42,
               borderRadius: "50%",
-              background: "#1f8a52",
+              background: colors.success,
               color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              display: "grid",
+              placeItems: "center",
               flex: "none",
             }}
           >
-            <Check size={27} strokeWidth={2.8} />
+            <Check size={24} strokeWidth={3} />
           </span>
           <div>
-            <div style={{ color: "#a7f3d0", fontWeight: 900, fontSize: "18px" }}>
-              Đã gửi yêu cầu đặt chỗ!
-            </div>
-            <div style={{ marginTop: "4px", color: colors.text2, fontSize: "14px", lineHeight: 1.55 }}>
-              Admin sẽ liên hệ xác nhận sớm. Bạn có thể hủy trước giờ hẹn tối thiểu 1 giờ.
+            <div style={{ color: "#a7f3d0", fontSize: 15, fontWeight: 950 }}>Đã gửi yêu cầu đặt chỗ!</div>
+            <div style={{ marginTop: 3, color: colors.text2, fontSize: 13, lineHeight: 1.45 }}>
+              Admin sẽ liên hệ xác nhận sớm.
             </div>
           </div>
         </div>
 
-        <div
-          className="confirm-layout"
+        <article
           style={{
-            marginTop: "30px",
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) minmax(340px,400px)",
-            gap: "30px",
-            alignItems: "start",
+            marginTop: 16,
+            borderRadius: 18,
+            border: `1px solid ${colors.border}`,
+            background: "linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018)), #141416",
+            overflow: "hidden",
           }}
         >
-          <div>
-            <div
+          <div style={{ padding: 16, display: "flex", gap: 13, alignItems: "center" }}>
+            <PlaceholderMedia
+              src={booking.image}
+              alt={booking.venueName}
+              label=""
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                color: colors.goldPale,
-                fontSize: "13px",
-                fontWeight: 900,
-                textTransform: "uppercase",
+                width: 58,
+                height: 58,
+                borderRadius: 13,
+                flex: "none",
+                border: `1px solid ${colors.borderStrong}`,
               }}
-            >
-              <CalendarCheck2 size={18} />
-              Chi tiết yêu cầu
-            </div>
-            <h1 style={{ margin: "12px 0 0", fontSize: "clamp(28px,3vw,42px)", lineHeight: 1.08 }}>
-              Thông tin đặt chỗ đã được ghi nhận
-            </h1>
-
-            <article
-              style={{
-                marginTop: "20px",
-                borderRadius: "18px",
-                border: `1px solid ${colors.border}`,
-                background:
-                  "linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015)), #141416",
-                overflow: "hidden",
-                boxShadow: "0 20px 54px rgba(0,0,0,.24)",
-              }}
-            >
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: colors.text, fontSize: 18, fontWeight: 950 }}>{booking.venueName}</div>
               <div
-                className="confirm-venue-head"
                 style={{
+                  marginTop: 5,
+                  color: colors.text2,
+                  fontSize: 13,
                   display: "flex",
                   alignItems: "center",
-                  gap: "16px",
-                  padding: "20px",
-                  borderBottom: `1px solid ${colors.border}`,
+                  gap: 6,
                 }}
               >
-                <PlaceholderMedia
-                  src={booking.image}
-                  alt={booking.venueName}
-                  label=""
-                  style={{
-                    width: "66px",
-                    height: "66px",
-                    borderRadius: "14px",
-                    flex: "none",
-                    border: `1px solid ${colors.borderStrong}`,
-                  }}
-                />
-                <div className="confirm-venue-info" style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: colors.text, fontSize: "20px", fontWeight: 900 }}>
-                    {booking.venueName}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "6px",
-                      color: colors.text2,
-                      fontSize: "14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "7px",
-                    }}
-                  >
-                    <MapPin size={15} color={colors.gold} />
-                    {booking.area}, Hà Nội · {booking.category}
-                  </div>
-                </div>
-                <span
-                  className="confirm-status"
-                  style={{
-                    minHeight: "34px",
-                    borderRadius: "17px",
-                    padding: "0 14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    background: "rgba(212,178,106,.12)",
-                    border: `1px solid ${colors.border}`,
-                    color: colors.goldPale,
-                    fontSize: "12px",
-                    fontWeight: 900,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Mới · chờ xác nhận
-                </span>
+                <MapPin size={14} color={colors.gold} />
+                {booking.area}, Hà Nội · {booking.category}
               </div>
-
-              <div
-                className="confirm-detail-grid"
-                style={{
-                  padding: "22px 20px",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2,minmax(0,1fr))",
-                  gap: "22px 34px",
-                }}
-              >
-                <DetailItem
-                  label="Mã đặt chỗ"
-                  value={<span style={{ fontFamily: "monospace", letterSpacing: ".06em" }}>{booking.bookingCode}</span>}
-                />
-                <DetailItem label="Thời gian" value={`${booking.date} · ${booking.time}`} />
-                <DetailItem label="Số khách" value={`${booking.guests} người`} />
-                <DetailItem label="Người đặt" value={`${booking.guestName} · ${booking.phone}`} />
-                <DetailItem label="Ưu đãi áp dụng" value={booking.coupon} accent />
-              </div>
-            </article>
-
-            <div
-              className="confirm-note"
+            </div>
+            <span
               style={{
-                marginTop: "20px",
-                background: "linear-gradient(135deg,rgba(212,178,106,.14),rgba(212,178,106,.055))",
-                border: `1px solid ${colors.borderStrong}`,
-                borderRadius: "16px",
-                padding: "18px 20px",
-                fontSize: "14px",
-                color: colors.text2,
-                lineHeight: 1.75,
-                boxShadow: "0 16px 38px rgba(0,0,0,.16)",
+                borderRadius: 999,
+                padding: "6px 10px",
+                background: "rgba(212,178,106,.13)",
+                border: `1px solid ${colors.border}`,
+                color: colors.goldPale,
+                fontSize: 11,
+                fontWeight: 900,
+                whiteSpace: "nowrap",
               }}
             >
-              <b style={{ color: colors.goldPale }}>Bước tiếp theo:</b> Giữ mã ưu đãi bên phải,
-              đưa cho nhân viên quán quét khi tới nơi để được giảm giá. Theo dõi trạng thái trong
-              mục <b style={{ color: colors.gold }}>Đặt chỗ</b>.
-            </div>
+              Mới
+            </span>
+          </div>
 
-            <div className="confirm-actions" style={{ display: "flex", gap: "14px", marginTop: "22px" }}>
-              <Link
-                href="/"
+          <div style={{ height: 1, background: colors.border }} />
+
+          <div
+            style={{
+              padding: "15px 16px 17px",
+              display: "grid",
+              gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+              gap: "14px 22px",
+            }}
+          >
+            <DetailLine
+              label="Mã"
+              value={<span style={{ fontFamily: "monospace", letterSpacing: ".04em" }}>{booking.bookingCode}</span>}
+            />
+            <DetailLine label="Khách" value={`${booking.guests} người`} />
+            <DetailLine label="Lúc" value={`${booking.date} · ${booking.time}`} />
+            <DetailLine label="Người đặt" value={`${booking.guestName} · ${booking.phone}`} />
+          </div>
+        </article>
+
+        <aside
+          style={{
+            marginTop: 16,
+            borderRadius: 18,
+            border: `1px solid ${colors.border}`,
+            background: "#141416",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ minHeight: 92, padding: 18, color: "#fff", position: "relative", overflow: "hidden" }}>
+            <PlaceholderMedia src={booking.image} alt={booking.venueName} label="Ảnh ưu đãi" style={{ position: "absolute", inset: 0 }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(83,24,82,.78),rgba(16,16,20,.56))" }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div
                 style={{
-                  flex: 1,
-                  minHeight: "54px",
-                  borderRadius: "16px",
-                  background: colors.goldGrad,
-                  color: colors.onGold,
                   display: "inline-flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  textDecoration: "none",
-                  fontWeight: 900,
-                  fontSize: "15px",
-                }}
-              >
-                Về trang chủ
-              </Link>
-              <Link
-                href="/danh-sach-quan"
-                style={{
-                  flex: 1,
-                  minHeight: "54px",
-                  borderRadius: "16px",
-                  border: `1px solid ${colors.borderStrong}`,
-                  background: "rgba(255,255,255,.025)",
+                  gap: 8,
                   color: colors.goldPale,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  textDecoration: "none",
-                  fontWeight: 800,
-                  fontSize: "15px",
+                  fontSize: 11,
+                  letterSpacing: ".14em",
+                  textTransform: "uppercase",
+                  fontWeight: 950,
                 }}
               >
-                Tìm quán khác
-              </Link>
+                <Sparkles size={14} />
+                Mã ưu đãi
+              </div>
+              <div style={{ marginTop: 8, fontSize: 22, lineHeight: 1.1, fontWeight: 950 }}>{booking.coupon}</div>
             </div>
           </div>
 
-          <aside
-            className="confirm-voucher"
-            style={{
-              borderRadius: "22px",
-              border: `1px solid ${colors.border}`,
-              background:
-                "linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015)), #141416",
-              overflow: "hidden",
-              boxShadow: "0 22px 58px rgba(0,0,0,.28)",
-            }}
-          >
+          <div style={{ padding: "20px 18px 18px", textAlign: "center" }}>
             <div
               style={{
-                minHeight: "150px",
-                padding: "24px",
-                color: "#fff",
-                position: "relative",
-                overflow: "hidden",
+                width: 158,
+                height: 158,
+                margin: "0 auto",
+                border: `1px solid ${colors.borderStrong}`,
+                borderRadius: 18,
+                background: "rgba(244,238,222,.96)",
+                display: "grid",
+                placeItems: "center",
               }}
             >
-              <PlaceholderMedia
-                src={booking.image}
-                alt={booking.venueName}
-                label="Ảnh ưu đãi"
-                style={{ position: "absolute", inset: 0 }}
+              <Image
+                width={132}
+                height={132}
+                src="https://img.icons8.com/ios/300/000000/qr-code.png"
+                style={{ width: 132, height: 132, display: "block" }}
+                alt="QR"
               />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(83,24,82,.82),rgba(16,16,20,.52))" }} />
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <div
-                  style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  color: colors.goldPale,
-                  fontSize: "12px",
-                  letterSpacing: ".14em",
-                  textTransform: "uppercase",
-                  fontWeight: 900,
-                }}
-              >
-                <Sparkles size={15} />
-                Mã ưu đãi
-                </div>
-                <div style={{ marginTop: "12px", fontSize: "28px", lineHeight: 1.1, fontWeight: 900 }}>
-                  {booking.coupon}
-                </div>
-                <div style={{ marginTop: "8px", color: "#f4ead4", fontSize: "14px" }}>
-                  {booking.venueName} · {booking.area}
-                </div>
-              </div>
             </div>
+            <div
+              style={{
+                marginTop: 14,
+                color: colors.text,
+                fontFamily: "monospace",
+                fontSize: 14,
+                letterSpacing: ".16em",
+                fontWeight: 950,
+              }}
+            >
+              {booking.couponCode}
+            </div>
+            <div
+              style={{
+                marginTop: 11,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                borderRadius: 999,
+                padding: "7px 12px",
+                background: "rgba(255,255,255,.055)",
+                color: colors.goldPale,
+                fontSize: 12,
+                fontWeight: 850,
+              }}
+            >
+              <Clock3 size={14} />
+              Còn {booking.countdown}
+            </div>
+          </div>
+        </aside>
 
-            <div style={{ padding: "26px", textAlign: "center" }}>
-              <div
-                style={{
-                  width: "200px",
-                  height: "200px",
-                  margin: "0 auto",
-                  border: `1px solid ${colors.borderStrong}`,
-                  borderRadius: "18px",
-                  background: "rgba(244,238,222,.96)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Image
-                  width={170}
-                  height={170}
-                  src="https://img.icons8.com/ios/300/000000/qr-code.png"
-                  style={{ width: "166px", height: "166px", display: "block" }}
-                  alt="QR"
-                />
+        {isLoggedIn ? (
+          <Link
+            href="/vi-uu-dai"
+            style={{
+              marginTop: 14,
+              minHeight: 54,
+              borderRadius: 16,
+              background: colors.goldGrad,
+              color: colors.onGold,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              textDecoration: "none",
+              fontWeight: 950,
+              fontSize: 15,
+            }}
+          >
+            Chuyển tới ví của bạn
+          </Link>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowScreenshotHint(true)}
+              style={{
+                marginTop: 14,
+                width: "100%",
+                minHeight: 54,
+                border: 0,
+                borderRadius: 16,
+                background: colors.goldGrad,
+                color: colors.onGold,
+                fontWeight: 950,
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              Vui lòng nhấn nút để chụp màn hình
+            </button>
+            {showScreenshotHint ? (
+              <div style={{ marginTop: 8, color: colors.muted, fontSize: 12.5, lineHeight: 1.5, textAlign: "center" }}>
+                Hãy chụp màn hình mã QR và mã đặt chỗ để đưa cho nhân viên khi tới quán.
               </div>
-              <div
-                style={{
-                  marginTop: "16px",
-                  color: colors.text,
-                  fontFamily: "monospace",
-                  fontSize: "16px",
-                  letterSpacing: ".16em",
-                  fontWeight: 900,
-                }}
-              >
-                {booking.couponCode}
-              </div>
-              <div
-                style={{
-                  marginTop: "14px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  borderRadius: "18px",
-                  padding: "8px 14px",
-                  background: "rgba(255,255,255,.055)",
-                  color: colors.goldPale,
-                  fontSize: "13px",
-                  fontWeight: 800,
-                }}
-              >
-                <Clock3 size={15} />
-                Còn {booking.countdown} · Đang giữ chỗ
-              </div>
-              <button
-                type="button"
-                onClick={toggleSave}
-                style={{
-                  marginTop: "18px",
-                  width: "100%",
-                  minHeight: "56px",
-                  border: 0,
-                  borderRadius: "16px",
-                  background: colors.goldGrad,
-                  color: colors.onGold,
-                  fontWeight: 900,
-                  fontSize: "15px",
-                  cursor: "pointer",
-                }}
-              >
-                Lưu vào ví ưu đãi
-              </button>
-            </div>
-          </aside>
-        </div>
+            ) : null}
+          </>
+        )}
+
+        <Link
+          href="/"
+          style={{
+            marginTop: 10,
+            minHeight: 52,
+            borderRadius: 16,
+            border: `1px solid ${colors.borderStrong}`,
+            background: "rgba(255,255,255,.025)",
+            color: colors.goldPale,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            textDecoration: "none",
+            fontWeight: 900,
+            fontSize: 15,
+          }}
+        >
+          Về trang chủ
+        </Link>
       </section>
 
       <style jsx>{`
-        @media (max-width: 900px) {
-          .confirm-layout {
-            grid-template-columns: 1fr !important;
-          }
-
-          .confirm-actions {
-            flex-direction: column;
+        @media (min-width: 768px) {
+          main {
+            padding-top: 38px !important;
+            padding-bottom: 68px !important;
           }
         }
 
-        @media (max-width: 640px) {
-          main {
-            padding: 24px 18px calc(124px + env(safe-area-inset-bottom)) !important;
-            overflow-x: hidden !important;
-          }
-
-          .confirm-alert {
-            align-items: flex-start !important;
-            border-radius: 18px !important;
-            padding: 18px !important;
-          }
-
-          .confirm-layout {
-            gap: 22px !important;
-            margin-top: 24px !important;
-          }
-
-          .confirm-venue-head {
-            align-items: flex-start !important;
-            gap: 12px !important;
-            padding: 16px !important;
-            flex-wrap: wrap !important;
-          }
-
-          .confirm-venue-info {
-            flex: 1 1 calc(100% - 82px) !important;
-          }
-
-          .confirm-status {
-            width: 100% !important;
-            justify-content: center !important;
-          }
-
-          .confirm-detail-grid {
-            grid-template-columns: 1fr !important;
-            gap: 18px !important;
-            padding: 18px 16px !important;
-          }
-
-          .confirm-note {
-            padding: 16px !important;
-            font-size: 13px !important;
-            line-height: 1.65 !important;
-          }
-
-          .confirm-voucher {
-            margin-bottom: 16px !important;
+        @media (max-width: 420px) {
+          .confirm-shell {
+            max-width: 100% !important;
           }
         }
       `}</style>
