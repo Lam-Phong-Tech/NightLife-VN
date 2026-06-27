@@ -1,19 +1,22 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Monitor } from "lucide-react";
-import Link from "next/link";
 
 export function MobileSimulator() {
-  const [iframeSrc, setIframeSrc] = useState<string>("");
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const search = searchParams?.toString();
+  const currentUrl = `${pathname}${search ? `?${search}` : ""}`;
+  
+  const [iframeSrc, setIframeSrc] = useState(currentUrl);
+  const [prevUrl, setPrevUrl] = useState(currentUrl);
 
-  useEffect(() => {
-    // Set the initial iframe src to match the current URL exactly
-    setIframeSrc(window.location.pathname + window.location.search);
-  }, [pathname, searchParams]);
+  if (currentUrl !== prevUrl) {
+    setPrevUrl(currentUrl);
+    setIframeSrc(currentUrl);
+  }
 
   return (
     <div className="min-h-screen bg-[#060608] flex flex-col items-center justify-center p-4 sm:p-8 font-sans relative overflow-hidden">

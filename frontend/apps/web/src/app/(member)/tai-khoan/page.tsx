@@ -16,7 +16,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 const colors = {
   bg: "#0c0c0f",
@@ -50,11 +50,10 @@ const menuItems = [
 ];
 
 export default function Page() {
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-
-  useEffect(() => {
-    setAuthUser(getAuthUser());
-  }, []);
+  const [authUser] = useState<AuthUser | null>(() => {
+    if (typeof window === "undefined") return null;
+    return getAuthUser();
+  });
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Demo Member";
   const phone = authUser?.phone || "0912 345 678";
