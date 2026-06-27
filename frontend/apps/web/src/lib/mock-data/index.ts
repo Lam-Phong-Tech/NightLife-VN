@@ -90,14 +90,14 @@ export const adBanners = [
   {
     tag: 'Quảng cáo',
     title: 'Đêm Nhạc DJ SODA tại Club Lumière',
-    desc: 'Đang diễn ra · Đặt bàn VIP ngay!',
+    desc: 'Đặt bàn VIP từ 2.500.000đ',
     btnText: 'Đặt ngay',
     img: "linear-gradient(rgba(0,0,0,0.15),rgba(0,0,0,0.72)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80') center/cover"
   },
   {
     tag: 'Quảng cáo',
     title: 'Sakura Lounge - Giảm 25% nhóm 4+',
-    desc: 'Không gian Nhật Bản cực sang xịn',
+    desc: 'Không gian Nhật Bản · Ưu đãi nhóm cuối tuần',
     btnText: 'Nhận mã',
     img: "linear-gradient(rgba(0,0,0,0.15),rgba(0,0,0,0.72)),url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80') center/cover"
   },

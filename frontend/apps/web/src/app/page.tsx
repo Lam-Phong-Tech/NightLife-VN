@@ -200,9 +200,26 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
 }
 
 function EventHero({ desktop = false }: { desktop?: boolean }) {
-  const event = adBanners[0] ?? {
+  const [activeBanner, setActiveBanner] = useState(0);
+  const fallbackBanner = {
+    title: "Sự kiện đêm nay",
+    desc: "Đặt bàn VIP từ 2.500.000đ",
+    btnText: "Đặt ngay",
     img: "linear-gradient(135deg,#15151a,#2a2112)",
   };
+  const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+
+  useEffect(() => {
+    if (banners.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveBanner((current) => (current + 1) % banners.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, [banners.length]);
+
   return (
     <Link
       href="/stores/club-lumiere"
@@ -221,9 +238,15 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
     >
       <PlaceholderMedia
         src={event.img}
-        alt={"title" in event ? event.title : "Sự kiện"}
+        alt={event.title}
         label="Ảnh sự kiện"
-        style={{ position: "absolute", inset: 0, borderRadius: "inherit" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "inherit",
+          transform: "scale(1.03)",
+          transition: "opacity 420ms ease, transform 520ms ease",
+        }}
       />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -249,10 +272,10 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
           SỰ KIỆN ĐÊM NAY · TÂY HỒ
         </div>
         <h1 style={{ maxWidth: desktop ? "620px" : "260px", marginTop: "8px", fontSize: desktop ? "48px" : "25px", lineHeight: 1.05, fontWeight: 900 }}>
-          Đêm nhạc DJ SODA tại Club Lumière
+          {event.title}
         </h1>
         <div style={{ marginTop: desktop ? "22px" : "18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-          <span style={{ fontSize: desktop ? "15px" : "12px" }}>Đặt bàn VIP từ <b>2.500.000đ</b></span>
+          <span style={{ fontSize: desktop ? "15px" : "12px" }}>{event.desc}</span>
           <span
             style={{
               display: "inline-flex",
@@ -266,9 +289,43 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
               fontWeight: 800,
             }}
           >
-            Đặt ngay
+            {event.btnText}
           </span>
         </div>
+      </div>
+      <div
+        aria-label="Chọn banner"
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: desktop ? "18px" : "10px",
+          zIndex: 2,
+          display: "flex",
+          gap: "6px",
+          transform: "translateX(-50%)",
+        }}
+      >
+        {banners.map((banner, index) => (
+          <button
+            key={banner.title}
+            type="button"
+            aria-label={`Banner ${index + 1}`}
+            onClick={(event) => {
+              event.preventDefault();
+              setActiveBanner(index);
+            }}
+            style={{
+              width: activeBanner === index ? 22 : 5,
+              height: 5,
+              border: 0,
+              borderRadius: 99,
+              padding: 0,
+              background: activeBanner === index ? colors.gold : "rgba(255,255,255,.26)",
+              cursor: "pointer",
+              transition: "width 220ms ease, background 220ms ease",
+            }}
+          />
+        ))}
       </div>
     </Link>
   );
@@ -589,11 +646,6 @@ export default function Page() {
             </div>
             <div style={{ marginTop: "22px" }}>
               <EventHero />
-            </div>
-            <div style={{ marginTop: "10px", display: "flex", justifyContent: "center", gap: "6px" }}>
-              <span style={{ width: 22, height: 5, borderRadius: 99, background: colors.gold }} />
-              <span style={{ width: 5, height: 5, borderRadius: 99, background: "rgba(255,255,255,.18)" }} />
-              <span style={{ width: 5, height: 5, borderRadius: 99, background: "rgba(255,255,255,.18)" }} />
             </div>
             <div style={{ marginTop: "18px" }}>
               <VipCard />

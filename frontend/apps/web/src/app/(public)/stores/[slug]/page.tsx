@@ -155,16 +155,35 @@ export default function Page({ params }: { params: { slug?: string, [key: string
         <>
           <p style={{"fontSize":"12.5px","lineHeight":"1.65","color":"#d8d1c1","marginTop":"13px"}}>{vName} là lounge bar cao cấp khu {vArea} — không gian sang trọng, phòng VIP riêng tư, đội ngũ cast tuyển chọn kỹ, phục vụ khách Nhật với nhân viên thông thạo tiếng Nhật.</p>
           <div style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"8px","marginTop":"13px"}}>
-            <div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"11px"}}><div style={{"fontSize":"11px","color":"#8a879a"}}>Phù hợp</div><div style={{"fontSize":"13px","fontWeight":"800","marginTop":"4px","color":"#f0dda8"}}>VIP, tiếp khách</div></div>
-            <div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"11px"}}><div style={{"fontSize":"11px","color":"#8a879a"}}>Ngôn ngữ</div><div style={{"fontSize":"13px","fontWeight":"800","marginTop":"4px","color":"#f0dda8"}}>Nhật / Anh</div></div>
+            {[
+              ["Giá từ", vPriceShort],
+              ["Cast nổi bật", `${cast.length} hồ sơ`],
+              ["Đánh giá", `${vRating}/5`],
+              ["Khu vực", vArea],
+            ].map(([label, value]) => (
+              <div key={label} style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"11px"}}>
+                <div style={{"fontSize":"11px","color":"#8a879a"}}>{label}</div>
+                <div style={{"fontSize":"13px","fontWeight":"800","marginTop":"4px","color":"#f0dda8"}}>{value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{"marginTop":"10px","background":"rgba(212,178,106,.09)","border":"1px solid rgba(212,178,106,.2)","borderRadius":"12px","padding":"11px","fontSize":"12px","lineHeight":"1.55","color":"#d8d1c1"}}>
+            <b style={{"color":"#f0dda8"}}>Gợi ý:</b> phù hợp tiếp khách VIP, nhóm nhỏ muốn phòng riêng, hoặc khách Nhật cần hỗ trợ ngôn ngữ.
           </div>
         </>
       ) : null}
       {activeStoreTab === 1 ? (
-        <div style={{"marginTop":"13px","background":"#19191d","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","fontSize":"12.5px","color":"#f3f0ea"}}><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>1.200.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>3.500.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Combo sinh nhật</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 2.000.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 500.000đ</span></div></div>
+        <div style={{"marginTop":"13px"}}>
+          <div style={{"fontSize":"12px","fontWeight":"800","color":"#f0dda8","marginBottom":"8px"}}>Bảng giá tham khảo</div>
+          <div style={{"background":"#19191d","border":"1px solid rgba(212,178,106,.22)","borderRadius":"12px","overflow":"hidden","fontSize":"12.5px","color":"#f3f0ea"}}><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>1.200.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>3.500.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Combo sinh nhật</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 2.000.000đ</span></div><div style={{"display":"flex","justifyContent":"space-between","padding":"11px 14px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"700","color":"#f0dda8"}}>từ 500.000đ</span></div></div>
+          <div style={{"marginTop":"9px","fontSize":"11.5px","lineHeight":"1.5","color":"#b6b1a6"}}>Giá cuối cùng được admin xác nhận theo ngày, khung giờ và số khách.</div>
+        </div>
       ) : null}
       {activeStoreTab === 2 ? (
-        <div className="hscroll" style={{"marginTop":"13px","display":"flex","gap":"9px","overflowX":"auto"}}>{cast?.map((c, index) => (<React.Fragment key={index}><div style={{"width":"92px","flex":"none","borderRadius":"11px","overflow":"hidden","position":"relative","height":"118px","background":c.img}}><div style={{"position":"absolute","top":"8px","left":"8px","background":"rgba(12,12,15,.72)","color":"#f0dda8","fontSize":"10px","borderRadius":"999px","padding":"3px 7px"}}>★ {c.rating}</div><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"8px","background":"linear-gradient(0deg,rgba(20,8,16,.86),transparent)","color":"#fff","fontSize":"11px","fontWeight":"700"}}>{c.name}</div></div></React.Fragment>))}</div>
+        <div style={{"marginTop":"13px"}}>
+          <div style={{"fontSize":"12px","fontWeight":"800","color":"#f0dda8","marginBottom":"8px"}}>Cast đang hoạt động</div>
+          <div className="hscroll" style={{"display":"flex","gap":"9px","overflowX":"auto"}}>{cast?.map((c, index) => (<React.Fragment key={index}><div style={{"width":"104px","flex":"none","borderRadius":"12px","overflow":"hidden","background":"#19191d","border":"1px solid rgba(212,178,106,.18)"}}><div style={{"position":"relative","height":"116px","background":c.img}}><div style={{"position":"absolute","top":"8px","left":"8px","background":"rgba(12,12,15,.72)","color":"#f0dda8","fontSize":"10px","borderRadius":"999px","padding":"3px 7px"}}>★ {c.rating}</div></div><div style={{"padding":"8px"}}><div style={{"color":"#fff","fontSize":"12px","fontWeight":"800"}}>{c.name} · {c.age}</div><div style={{"marginTop":"3px","fontSize":"10.5px","color":"#b6b1a6","lineHeight":"1.35"}}>{c.desc}</div></div></div></React.Fragment>))}</div>
+        </div>
       ) : null}
       {activeStoreTab === 3 ? (
         <div style={{"marginTop":"13px","display":"flex","flexDirection":"column","gap":"10px"}}>
@@ -178,7 +197,7 @@ export default function Page({ params }: { params: { slug?: string, [key: string
             <span style={{"position":"absolute","inset":"18px","border":"1px dashed rgba(212,178,106,.28)","borderRadius":"12px"}}></span>
             <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"42px","height":"42px","borderRadius":"50%","background":"#d4b26a","color":"#241a0a","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"900"}}>★</span>
           </div>
-          <div style={{"padding":"12px","fontSize":"12.5px","lineHeight":"1.55","color":"#d8d1c1"}}><div style={{"fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div><div style={{"marginTop":"4px"}}>Gần hồ Tây, thuận tiện gọi xe sau 22:00. Admin sẽ gửi vị trí chi tiết sau khi xác nhận đặt chỗ.</div></div>
+          <div style={{"padding":"12px","fontSize":"12.5px","lineHeight":"1.55","color":"#d8d1c1"}}><div style={{"fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div><div style={{"marginTop":"4px"}}>Gần hồ Tây, thuận tiện gọi xe sau 22:00. Admin sẽ gửi vị trí chi tiết sau khi xác nhận đặt chỗ.</div><div style={{"marginTop":"8px","display":"grid","gap":"4px","fontSize":"11.5px"}}><span>Giờ mở cửa: 18:00 - 02:00</span><span>Bãi xe: hỗ trợ tại cửa quán</span></div></div>
         </div>
       ) : null}
 
@@ -288,26 +307,58 @@ export default function Page({ params }: { params: { slug?: string, [key: string
         {activeStoreTab === 0 ? (
           <>
             <p style={{"fontSize":"13.5px","lineHeight":"1.7","color":"#3a384a","marginTop":"18px"}}>{vName} là lounge bar cao cấp bậc nhất khu {vArea}, không gian sang trọng với hệ thống âm thanh - ánh sáng hiện đại, phòng VIP riêng tư và đội ngũ cast được tuyển chọn kỹ lưỡng. Phục vụ chuyên nghiệp cho khách Nhật với nhân viên thông thạo tiếng Nhật.</p>
-            <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"12px"}}>
-              <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Nói tiếng Nhật</div><div style={{"fontSize":"18px","fontWeight":"800","color":"#6d28d9","marginTop":"3px"}}>60%</div><div style={{"height":"5px","background":"#ece9f5","borderRadius":"3px","marginTop":"7px"}}><div style={{"width":"60%","height":"100%","background":"#6d28d9","borderRadius":"3px"}}></div></div></div>
-              <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Nói tiếng Anh</div><div style={{"fontSize":"18px","fontWeight":"800","color":"#6d28d9","marginTop":"3px"}}>35%</div><div style={{"height":"5px","background":"#ece9f5","borderRadius":"3px","marginTop":"7px"}}><div style={{"width":"35%","height":"100%","background":"#6d28d9","borderRadius":"3px"}}></div></div></div>
-              <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"12px","padding":"13px"}}><div style={{"fontSize":"12px","color":"#8a879a"}}>Quốc tịch cast</div><div style={{"fontSize":"13.5px","fontWeight":"600","marginTop":"6px","lineHeight":"1.5"}}>Việt Nam · Nhật Bản · Hàn Quốc</div></div>
+            <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"1.2fr .8fr","gap":"14px"}}>
+              <div style={{"background":"rgba(255,255,255,.045)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"16px"}}>
+                <div style={{"fontSize":"12px","fontWeight":"800","letterSpacing":".08em","textTransform":"uppercase","color":"#d4b26a"}}>Tổng quan dịch vụ</div>
+                <div style={{"display":"grid","gridTemplateColumns":"repeat(2,1fr)","gap":"10px","marginTop":"13px"}}>
+                  {[
+                    ["Giá tham khảo", vPrice],
+                    ["Cast đang hoạt động", `${cast.length} hồ sơ`],
+                    ["Đánh giá", `${vRating}/5 · ${vReviews} lượt`],
+                    ["Khu vực", `${vArea}, Hà Nội`],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{"border":"1px solid rgba(212,178,106,.18)","borderRadius":"12px","padding":"12px","background":"rgba(12,12,15,.36)"}}>
+                      <div style={{"fontSize":"11.5px","color":"#8a879a"}}>{label}</div>
+                      <div style={{"fontSize":"14px","fontWeight":"800","color":"#f0dda8","marginTop":"4px"}}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{"background":"rgba(212,178,106,.09)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"16px"}}>
+                <div style={{"fontSize":"14px","fontWeight":"900","color":"#f0dda8"}}>Điểm nổi bật</div>
+                <div style={{"display":"grid","gap":"9px","marginTop":"12px","fontSize":"13px","lineHeight":"1.5","color":"#d8d1c1"}}>
+                  <div>• Phòng VIP riêng tư, phù hợp tiếp khách.</div>
+                  <div>• Nhân sự hỗ trợ tiếng Nhật và tiếng Anh.</div>
+                  <div>• Admin xác nhận đặt chỗ, không cần thanh toán online.</div>
+                </div>
+              </div>
             </div>
           </>
         ) : null}
 
         {activeStoreTab === 1 ? (
-          <div style={{"marginTop":"18px","background":"#fff","border":"1px solid #ececec","borderRadius":"14px","overflow":"hidden","fontSize":"13.5px"}}>
-            <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid #f1f0f3"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"600"}}>1.200.000đ</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid #f1f0f3"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"600"}}>3.500.000đ</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid #f1f0f3"}}><span>Combo sinh nhật</span><span style={{"fontWeight":"600"}}>từ 2.000.000đ</span></div>
-            <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"600"}}>từ 500.000đ</span></div>
+          <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px"}}>
+            <div style={{"background":"rgba(255,255,255,.045)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","overflow":"hidden","fontSize":"13.5px"}}>
+              <div style={{"padding":"14px 18px","fontWeight":"900","color":"#f0dda8","borderBottom":"1px solid rgba(212,178,106,.14)"}}>Giá dịch vụ</div>
+              <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Set bàn thường (2 giờ)</span><span style={{"fontWeight":"800","color":"#f0dda8"}}>1.200.000đ</span></div>
+              <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Phòng VIP (2 giờ)</span><span style={{"fontWeight":"800","color":"#f0dda8"}}>3.500.000đ</span></div>
+              <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px","borderBottom":"1px solid rgba(212,178,106,.12)"}}><span>Combo sinh nhật</span><span style={{"fontWeight":"800","color":"#f0dda8"}}>từ 2.000.000đ</span></div>
+              <div style={{"display":"flex","justifyContent":"space-between","padding":"13px 18px"}}><span>Phí cast / giờ</span><span style={{"fontWeight":"800","color":"#f0dda8"}}>từ 500.000đ</span></div>
+            </div>
+            <div style={{"background":"rgba(212,178,106,.09)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"16px","fontSize":"13px","lineHeight":"1.65","color":"#d8d1c1"}}>
+              <div style={{"fontSize":"15px","fontWeight":"900","color":"#f0dda8"}}>Lưu ý giá</div>
+              <p style={{"marginTop":"10px"}}>Bảng giá chỉ là tham khảo để khách chọn gói phù hợp. Admin sẽ xác nhận lại theo số khách, khung giờ, phòng VIP và yêu cầu cast.</p>
+              <div style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"10px","marginTop":"14px"}}><div style={{"border":"1px solid rgba(212,178,106,.16)","borderRadius":"12px","padding":"10px"}}><b>Không cọc</b><br />Gửi yêu cầu trước</div><div style={{"border":"1px solid rgba(212,178,106,.16)","borderRadius":"12px","padding":"10px"}}><b>24h</b><br />Admin xác nhận</div></div>
+            </div>
           </div>
         ) : null}
 
         {activeStoreTab === 2 ? (
-          <div style={{"marginTop":"18px","display":"grid","gridTemplateColumns":"repeat(5,1fr)","gap":"12px"}}>
-            {cast?.map((c, index) => (<React.Fragment key={index}><div style={{"borderRadius":"12px","overflow":"hidden","position":"relative","height":"156px","background":c.img}}><span style={{"position":"absolute","top":"9px","left":"9px","background":"rgba(255,255,255,.92)","color":"#6d28d9","borderRadius":"999px","padding":"3px 8px","fontSize":"10.5px","fontWeight":"700"}}>★ {c.rating}</span><div style={{"position":"absolute","bottom":"0","left":"0","right":"0","padding":"10px","background":"linear-gradient(0deg,rgba(20,8,16,.84),transparent)","color":"#fff","fontSize":"12px","fontWeight":"700"}}>{c.name}</div></div></React.Fragment>))}
+          <div style={{"marginTop":"18px"}}>
+            <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginBottom":"12px"}}><div style={{"fontSize":"14px","fontWeight":"900","color":"#f0dda8"}}>Cast đề xuất hôm nay</div><div style={{"fontSize":"12px","color":"#8a879a"}}>{cast.length} hồ sơ đang hoạt động</div></div>
+            <div style={{"display":"grid","gridTemplateColumns":"repeat(5,1fr)","gap":"12px"}}>
+              {cast?.map((c, index) => (<React.Fragment key={index}><div style={{"borderRadius":"14px","overflow":"hidden","background":"rgba(255,255,255,.045)","border":"1px solid rgba(212,178,106,.18)"}}><div style={{"position":"relative","height":"156px","background":c.img}}><span style={{"position":"absolute","top":"9px","left":"9px","background":"rgba(255,255,255,.92)","color":"#6d28d9","borderRadius":"999px","padding":"3px 8px","fontSize":"10.5px","fontWeight":"700"}}>★ {c.rating}</span></div><div style={{"padding":"11px"}}><div style={{"fontSize":"13px","fontWeight":"900","color":"#f3f0ea"}}>{c.name} · {c.age}</div><div style={{"fontSize":"12px","color":"#b6b1a6","marginTop":"4px","lineHeight":"1.4"}}>{c.desc}</div></div></div></React.Fragment>))}
+            </div>
           </div>
         ) : null}
 
@@ -326,8 +377,8 @@ export default function Page({ params }: { params: { slug?: string, [key: string
               <span style={{"position":"absolute","left":"24%","right":"18%","top":"58%","height":"2px","background":"rgba(109,40,217,.24)","transform":"rotate(18deg)"}}></span>
               <span style={{"position":"absolute","left":"50%","top":"50%","transform":"translate(-50%,-50%)","width":"54px","height":"54px","borderRadius":"50%","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","boxShadow":"0 14px 30px rgba(109,40,217,.28)"}}>VIP</span>
             </div>
-            <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","padding":"18px","fontSize":"13.5px","lineHeight":"1.65","color":"#3a384a"}}>
-              <div style={{"fontSize":"16px","fontWeight":"800","color":"#1f1d29"}}>{vName} · {vArea}</div>
+            <div style={{"background":"rgba(255,255,255,.045)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"18px","fontSize":"13.5px","lineHeight":"1.65","color":"#d8d1c1"}}>
+              <div style={{"fontSize":"16px","fontWeight":"800","color":"#f0dda8"}}>{vName} · {vArea}</div>
               <p style={{"marginTop":"10px"}}>Khu vực trung tâm Tây Hồ, phù hợp di chuyển bằng taxi sau giờ cao điểm.</p>
               <div style={{"marginTop":"14px","display":"grid","gap":"8px"}}><div><b>Giờ mở cửa:</b> 18:00 - 02:00</div><div><b>Gửi vị trí:</b> sau khi admin xác nhận đơn đặt</div><div><b>Bãi xe:</b> hỗ trợ tại cửa quán</div></div>
             </div>
@@ -353,7 +404,6 @@ export default function Page({ params }: { params: { slug?: string, [key: string
             <span className="btn" onClick={inc} style={{"width":"32px","height":"32px","borderRadius":"9px","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"18px"}}>+</span>
           </div>
           <Link href={bookingHref} className="btn" style={{"display":"block","marginTop":"16px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"13px","fontWeight":"700","fontSize":"14px","textDecoration":"none"}}>Đặt chỗ ngay</Link>
-          <div className="btn" style={{"marginTop":"10px","border":"1px solid #ececec","color":"#6d28d9","textAlign":"center","borderRadius":"11px","padding":"12px","fontWeight":"600","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"8px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/6D28D9/phone.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" />Gọi trực tiếp</div>
         </div>
       </div>
     </div>
