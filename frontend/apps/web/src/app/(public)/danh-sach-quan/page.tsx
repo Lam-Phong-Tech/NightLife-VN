@@ -277,8 +277,8 @@ export default function Page() {
 
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                display: 'flex',
+                flexWrap: 'wrap',
                 gap: '12px',
                 alignItems: 'center',
               }}
@@ -287,13 +287,14 @@ export default function Page() {
                 value={query}
                 onSearch={(event) => setQuery(event.target.value)}
                 placeholder="Tên quán, cast, khu vực..."
-                style={{ minHeight: '48px' }}
+                style={{ flex: '1 1 260px', minHeight: '48px', minWidth: 0 }}
               />
               <span
                 style={{
                   ...actionButtonStyle,
                   cursor: 'default',
                   color: colors.muted,
+                  flex: '0 0 auto',
                   whiteSpace: 'nowrap',
                 }}
               >
