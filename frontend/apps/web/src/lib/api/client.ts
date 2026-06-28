@@ -10,6 +10,22 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
 }
 
+const normalizeApiBaseUrl = (value: string) => value.replace(/\/api\/?$/, '').replace(/\/$/, '');
+
+const toHttpUrl = (value: string) => {
+  try {
+    const url = new URL(normalizeApiBaseUrl(value));
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
+  } catch {
+    return null;
+  }
+};
+
+const isLoopbackUrl = (value: string) => {
+  const url = toHttpUrl(value);
+  return Boolean(url && (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1'));
+};
+
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const isLocalHost =
@@ -18,21 +34,10 @@ const getBaseUrl = () => {
     const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (configuredBaseUrl) {
-      const normalizedBaseUrl = configuredBaseUrl
-        .replace(/\/api\/?$/, '')
-        .replace(/\/$/, '');
+      const normalizedBaseUrl = normalizeApiBaseUrl(configuredBaseUrl);
 
-      try {
-        const configuredHostname = new URL(normalizedBaseUrl).hostname;
-        const pointsToLocalApi =
-          configuredHostname === 'localhost' ||
-          configuredHostname === '127.0.0.1';
-
-        if (!isLocalHost && pointsToLocalApi) {
-          return '/api/backend';
-        }
-      } catch {
-        return normalizedBaseUrl;
+      if (!isLocalHost && isLoopbackUrl(normalizedBaseUrl)) {
+        return '/api/backend';
       }
 
       return normalizedBaseUrl;
@@ -41,10 +46,22 @@ const getBaseUrl = () => {
     return isLocalHost ? 'http://localhost:3001' : '/api/backend';
   }
 
+  const isProduction = process.env.NODE_ENV === 'production';
   const serverBaseUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL;
-  return serverBaseUrl
-    ? serverBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '')
-    : 'http://localhost:3001';
+
+  if (
+    serverBaseUrl &&
+    toHttpUrl(serverBaseUrl) &&
+    !(isProduction && !process.env.BACKEND_API_URL && isLoopbackUrl(serverBaseUrl))
+  ) {
+    return normalizeApiBaseUrl(serverBaseUrl);
+  }
+
+  if (isProduction) {
+    throw new ApiError(503, 'Thiếu BACKEND_API_URL cho server frontend production.');
+  }
+
+  return 'http://localhost:3001';
 };
 
 const getAuthToken = () => {
