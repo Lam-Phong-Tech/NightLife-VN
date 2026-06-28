@@ -9,7 +9,7 @@ const getBackendBaseUrl = () => {
     return normalize(baseUrl);
   }
 
-  return isProduction ? 'http://127.0.0.1:3012' : 'http://localhost:3001';
+  return isProduction ? 'http://127.0.0.1:3001' : 'http://localhost:3001';
 };
 
 const proxy = async (
