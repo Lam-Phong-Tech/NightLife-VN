@@ -14,6 +14,34 @@ const isLoopbackUrl = (value: string) => {
   return Boolean(url && (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1'));
 };
 
+const HOP_BY_HOP_HEADERS = [
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+];
+
+const HTTP_TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+
+const stripHopByHopHeaders = (source: Headers) => {
+  const headers = new Headers(source);
+  const connectionHeaders = (headers.get('connection') || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => HTTP_TOKEN_PATTERN.test(value));
+
+  for (const header of [...HOP_BY_HOP_HEADERS, ...connectionHeaders]) {
+    headers.delete(header);
+  }
+
+  return headers;
+};
+
 const addUniqueBaseUrl = (urls: string[], value?: string) => {
   if (!value || !toHttpUrl(value)) {
     return;
@@ -75,7 +103,7 @@ const proxy = async (
     );
   }
 
-  const headers = new Headers(request.headers);
+  const headers = stripHopByHopHeaders(request.headers);
   headers.delete('host');
   headers.delete('content-length');
   const body = ['GET', 'HEAD'].includes(request.method)
@@ -99,7 +127,7 @@ const proxy = async (
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers,
+        headers: stripHopByHopHeaders(response.headers),
       });
     } catch (error) {
       lastError = error;
