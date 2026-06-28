@@ -461,8 +461,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       </section>
 
       <StoreDetailMobileCta
+        startingFromVnd={store.priceReference.startingFromVnd}
+        dateOptions={dateOptions}
+        selectedDateIndex={selectedDateIndex}
+        selectedTime={selectedTime}
+        guestCount={guestCount}
         bookingHref={bookingHref}
         couponHref={couponHref}
+        firstCoupon={firstCoupon}
+        onDateSelect={setSelectedDateIndex}
+        onTimeSelect={setSelectedTime}
+        onGuestCountChange={setGuestCount}
         onBookingClick={trackBookingClick}
         onCouponClick={trackCouponClick}
       />
@@ -1218,6 +1227,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         @media (max-width: 980px) {
+          .store-detail-page {
+            padding-bottom: calc(292px + env(safe-area-inset-bottom));
+          }
+
           .store-content,
           .map-grid {
             grid-template-columns: 1fr;
@@ -1247,19 +1260,79 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             position: fixed;
             left: 0;
             right: 0;
-            bottom: 0;
-            z-index: 20;
+            bottom: calc(74px + env(safe-area-inset-bottom));
+            z-index: 65;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            padding: 10px 14px;
-            background: rgba(13, 14, 17, .94);
+            gap: 9px;
+            padding: 12px 14px;
+            background: rgba(13, 14, 17, .97);
             border-top: 1px solid rgba(226, 184, 94, .22);
+            box-shadow: 0 -18px 40px rgba(0, 0, 0, .34);
             backdrop-filter: blur(12px);
+          }
+
+          .mobile-cta-summary,
+          .mobile-cta-actions,
+          .mobile-cta-controls,
+          .mobile-cta-stepper {
+            display: flex;
+            align-items: center;
+          }
+
+          .mobile-cta-summary {
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          .mobile-cta-summary span {
+            color: #a9a197;
+            font-size: 12px;
+            font-weight: 800;
+          }
+
+          .mobile-cta-summary strong {
+            color: #fff7e8;
+            font-size: 20px;
+          }
+
+          .mobile-cta-controls {
+            gap: 7px;
+            overflow-x: auto;
+          }
+
+          .mobile-cta-controls .slot {
+            flex: 1 0 auto;
+            min-width: 0;
+          }
+
+          .mobile-cta-stepper {
+            justify-content: space-between;
+            border: 1px solid rgba(226, 184, 94, .2);
+            border-radius: 8px;
+            padding: 6px;
+          }
+
+          .mobile-cta-stepper button {
+            width: 34px;
+            min-height: 30px;
+            border: 0;
+            border-radius: 8px;
+            background: #e2b85e;
+            color: #1b1508;
+            font-size: 18px;
+            font-weight: 900;
+          }
+
+          .mobile-cta-actions {
+            gap: 10px;
           }
         }
 
         @media (max-width: 620px) {
+          .store-detail-page {
+            padding-bottom: calc(306px + env(safe-area-inset-bottom));
+          }
+
           h1 {
             font-size: 28px;
           }

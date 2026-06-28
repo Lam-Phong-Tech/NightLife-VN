@@ -2,7 +2,7 @@ import { PrismaClient, Store, Cast } from '@prisma/client';
 
 /**
  * ~40 Media placeholders: store hero images, store promo videos, and cast avatars.
- * Uses placehold.co for demo images and YouTube embed for demo videos.
+ * Uses stock-style image/video URLs for demo media.
  */
 
 interface MediaSeed {
@@ -15,6 +15,33 @@ interface MediaSeed {
   type: 'IMAGE' | 'VIDEO';
   storeSlug?: string;
   castSlug?: string;
+}
+
+const STORE_VIDEO_URLS = {
+  nightlife: 'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
+  restaurant: 'https://videos.pexels.com/video-files/31631562/13476222_3840_2160_25fps.mp4',
+  ktv: 'https://www.pexels.com/download/video/8117118/',
+  spa: 'https://www.pexels.com/download/video/6187089/',
+} as const;
+
+const restaurantStoreSlugs = new Set(['hanami-dining', 'tokyo-kitchen']);
+const ktvStoreSlugs = new Set(['golden-voice-ktv', 'star-ktv', 'harbor-ktv-hai-phong']);
+const spaStoreSlugs = new Set(['opera-spa-hai-phong']);
+
+function storeVideoUrl(slug: string) {
+  if (restaurantStoreSlugs.has(slug)) {
+    return STORE_VIDEO_URLS.restaurant;
+  }
+
+  if (ktvStoreSlugs.has(slug)) {
+    return STORE_VIDEO_URLS.ktv;
+  }
+
+  if (spaStoreSlugs.has(slug)) {
+    return STORE_VIDEO_URLS.spa;
+  }
+
+  return STORE_VIDEO_URLS.nightlife;
 }
 
 function storeHero(slug: string, label: string): MediaSeed {
@@ -38,7 +65,7 @@ function storeVideo(slug: string): MediaSeed {
     originalName: `${slug}-promo.mp4`,
     mimeType: 'video/mp4',
     sizeBytes: 10485760,
-    url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    url: storeVideoUrl(slug),
     purpose: 'promo',
     type: 'VIDEO',
     storeSlug: slug,

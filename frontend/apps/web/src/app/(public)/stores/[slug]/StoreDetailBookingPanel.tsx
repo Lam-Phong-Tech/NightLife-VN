@@ -106,20 +106,76 @@ export function StoreDetailBookingPanel({
 }
 
 type StoreDetailMobileCtaProps = {
+  startingFromVnd?: number | null;
+  dateOptions: DateOption[];
+  selectedDateIndex: number;
+  selectedTime: string;
+  guestCount: number;
   bookingHref: string;
   couponHref: string;
+  firstCoupon?: StoreActiveCoupon | null;
+  onDateSelect: (index: number) => void;
+  onTimeSelect: (time: string) => void;
+  onGuestCountChange: (guestCount: number) => void;
   onBookingClick: (surface: string) => void;
   onCouponClick: (surface: string) => void;
 };
 
 export function StoreDetailMobileCta({
+  startingFromVnd,
+  dateOptions,
+  selectedDateIndex,
+  selectedTime,
+  guestCount,
   bookingHref,
   couponHref,
+  firstCoupon,
+  onDateSelect,
+  onTimeSelect,
+  onGuestCountChange,
   onBookingClick,
   onCouponClick,
 }: StoreDetailMobileCtaProps) {
   return (
     <div className="mobile-cta">
+      <div className="mobile-cta-summary">
+        <span>Đặt chỗ từ</span>
+        <strong>{formatVnd(startingFromVnd)}</strong>
+      </div>
+      <div className="mobile-cta-controls" aria-label="Chọn ngày đặt chỗ">
+        {dateOptions.slice(0, 3).map((date, index) => (
+          <button
+            key={date.iso}
+            type="button"
+            className={index === selectedDateIndex ? "slot active" : "slot"}
+            onClick={() => onDateSelect(index)}
+          >
+            {date.label}
+          </button>
+        ))}
+      </div>
+      <div className="mobile-cta-controls" aria-label="Chọn giờ đặt chỗ">
+        {bookingTimes.slice(0, 3).map((time) => (
+          <button
+            key={time}
+            type="button"
+            className={time === selectedTime ? "slot active" : "slot"}
+            onClick={() => onTimeSelect(time)}
+          >
+            {time}
+          </button>
+        ))}
+      </div>
+      <div className="mobile-cta-stepper">
+        <button type="button" onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}>
+          -
+        </button>
+        <strong>{guestCount} người</strong>
+        <button type="button" onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}>
+          +
+        </button>
+      </div>
+      <div className="mobile-cta-actions">
       <Link
         data-testid="store-booking-cta-mobile"
         className="primary-action full"
@@ -129,8 +185,9 @@ export function StoreDetailMobileCta({
         Đặt chỗ
       </Link>
       <Link className="secondary-action full" href={couponHref} onClick={() => onCouponClick("mobile")}>
-        Coupon
+        {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Coupon"}
       </Link>
+      </div>
     </div>
   );
 }

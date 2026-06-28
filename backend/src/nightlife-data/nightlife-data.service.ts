@@ -69,6 +69,30 @@ const STORE_SLUG_ALIASES: Record<string, string> = {
   'sora-lounge': 'jade-lounge',
 };
 
+const LEGACY_DEMO_VIDEO_URLS = new Set([
+  'https://www.youtube.com/embed/dQw4w9WgXcQ',
+  'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  'https://youtu.be/dQw4w9WgXcQ',
+]);
+
+const STORE_VIDEO_URLS = {
+  nightlife: 'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
+  restaurant: 'https://videos.pexels.com/video-files/31631562/13476222_3840_2160_25fps.mp4',
+  ktv: 'https://www.pexels.com/download/video/8117118/',
+  spa: 'https://www.pexels.com/download/video/6187089/',
+} as const;
+
+const STORE_CATEGORY_VIDEO_URLS: Partial<Record<StoreCategory, string>> = {
+  BAR: STORE_VIDEO_URLS.nightlife,
+  CLUB: STORE_VIDEO_URLS.nightlife,
+  LOUNGE: STORE_VIDEO_URLS.nightlife,
+  GIRLS_BAR: STORE_VIDEO_URLS.nightlife,
+  CASINO: STORE_VIDEO_URLS.nightlife,
+  KARAOKE: STORE_VIDEO_URLS.ktv,
+  RESTAURANT: STORE_VIDEO_URLS.restaurant,
+  MASSAGE_SPA: STORE_VIDEO_URLS.spa,
+};
+
 type Coordinates = {
   lat: number;
   lng: number;
@@ -405,7 +429,7 @@ export class NightlifeDataService {
     const gallery = store.media.map((media) => ({
       id: media.id,
       type: media.type,
-      url: media.url,
+      url: this.resolvePublicStoreMediaUrl(media.url, media.type, store.category),
       purpose: media.purpose,
       mimeType: media.mimeType,
       alt: media.originalName || store.name,
@@ -2174,6 +2198,18 @@ export class NightlifeDataService {
   private normalizeStoreSlug(value?: string | null) {
     const token = this.normalizeToken(value);
     return STORE_SLUG_ALIASES[token] ?? token;
+  }
+
+  private resolvePublicStoreMediaUrl(
+    url: string,
+    type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'OTHER',
+    category: StoreCategory,
+  ) {
+    if (type !== 'VIDEO' || !LEGACY_DEMO_VIDEO_URLS.has(url)) {
+      return url;
+    }
+
+    return STORE_CATEGORY_VIDEO_URLS[category] ?? STORE_VIDEO_URLS.nightlife;
   }
 
   private containsInsensitive(value: string): Prisma.StringFilter {

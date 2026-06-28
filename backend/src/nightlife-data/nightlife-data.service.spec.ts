@@ -337,7 +337,7 @@ describe('NightlifeDataService', () => {
         {
           id: 'media-video',
           type: 'VIDEO',
-          url: 'https://example.com/neon.mp4',
+          url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
           purpose: 'store-video',
           mimeType: 'video/mp4',
           originalName: 'Neon video',
@@ -405,6 +405,7 @@ describe('NightlifeDataService', () => {
           expect.objectContaining({
             id: 'media-video',
             type: 'VIDEO',
+            url: 'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
           }),
         ]),
         casts: [
