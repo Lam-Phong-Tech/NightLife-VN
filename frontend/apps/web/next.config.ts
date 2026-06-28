@@ -11,7 +11,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'img.icons8.com' },
     ],
   },
-  output: 'standalone',
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
