@@ -710,14 +710,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .store-hero {
           display: grid;
-          grid-template-columns: minmax(0, 1.12fr) minmax(320px, .88fr);
-          min-height: 560px;
+          grid-template-columns: minmax(0, 56fr) minmax(360px, 44fr);
+          min-height: 296px;
+          height: 296px;
           border-bottom: 1px solid rgba(233, 202, 128, .18);
         }
 
         .hero-visual {
           position: relative;
-          min-height: 560px;
+          min-height: 296px;
           background-size: cover;
           background-position: center;
           overflow: hidden;
@@ -744,7 +745,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border-radius: 50%;
           background: rgba(255, 255, 255, .92);
           color: #141417;
-          display: inline-flex;
+          display: none;
           align-items: center;
           justify-content: center;
           text-decoration: none;
@@ -776,15 +777,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 58px 54px;
+          min-width: 0;
+          padding: 32px 40px;
           background: radial-gradient(circle at 15% 0%, rgba(15, 145, 132, .18), transparent 28%), #111217;
+          overflow: hidden;
         }
 
         .store-logo {
           width: 64px;
           height: 64px;
           border-radius: 8px;
-          display: flex;
+          display: none;
           align-items: center;
           justify-content: center;
           background: linear-gradient(135deg, #ead08a, #b9913f);
@@ -801,29 +804,29 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background: rgba(20, 170, 156, .12);
           border: 1px solid rgba(141, 219, 212, .22);
           border-radius: 999px;
-          padding: 6px 10px;
-          font-size: 12px;
+          padding: 4px 9px;
+          font-size: 10px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0;
         }
 
         h1 {
-          margin: 18px 0 0;
-          font-size: 48px;
-          line-height: 1.06;
+          margin: 14px 0 0;
+          font-size: 34px;
+          line-height: 1.08;
           letter-spacing: 0;
           color: #fff7e8;
         }
 
         .hero-description {
-          margin: 18px 0 0;
+          margin: 14px 0 0;
           color: #cbc4b8;
-          line-height: 1.65;
-          font-size: 15px;
-          max-width: 720px;
+          line-height: 1.58;
+          font-size: 13px;
+          max-width: 640px;
           display: -webkit-box;
-          -webkit-line-clamp: 7;
+          -webkit-line-clamp: 4;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
@@ -831,10 +834,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-meta {
           display: flex;
           flex-wrap: wrap;
-          gap: 10px;
-          margin-top: 22px;
+          gap: 12px;
+          margin-top: 16px;
           color: #e8d39b;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
         }
 
@@ -860,7 +863,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-actions {
           gap: 12px;
-          margin-top: 28px;
+          margin-top: 20px;
           flex-wrap: wrap;
         }
 
@@ -868,11 +871,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .secondary-action {
           justify-content: center;
           gap: 8px;
-          min-height: 46px;
+          min-height: 36px;
           border-radius: 8px;
-          padding: 0 18px;
+          padding: 0 14px;
           text-decoration: none;
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 900;
         }
 
@@ -893,18 +896,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .gallery-strip {
           display: flex;
-          gap: 10px;
-          max-width: 1180px;
+          gap: 8px;
+          max-width: 850px;
           margin: 0 auto;
-          padding: 18px 24px 0;
+          padding: 14px 0 0;
           overflow-x: auto;
         }
 
         .gallery-thumb {
-          width: 128px;
-          height: 82px;
+          width: 98px;
+          height: 62px;
           flex: none;
-          border-radius: 8px;
+          border-radius: 6px;
           border: 1px solid rgba(226, 184, 94, .22);
           background-size: cover;
           background-position: center;
@@ -993,12 +996,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .store-content {
-          max-width: 1180px;
+          max-width: 850px;
           margin: 0 auto;
-          padding: 24px;
+          padding: 18px 0 24px;
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 340px;
-          gap: 24px;
+          grid-template-columns: minmax(0, 1fr) 256px;
+          gap: 18px;
           align-items: start;
         }
 
@@ -1037,17 +1040,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .tab-section {
-          margin-top: 16px;
+          margin-top: 12px;
           background: rgba(255, 255, 255, .045);
           border: 1px solid rgba(226, 184, 94, .16);
           border-radius: 8px;
-          padding: 18px;
+          padding: 14px;
         }
 
         .stat-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
+          gap: 10px;
         }
 
         .stat-grid div,
@@ -1065,7 +1068,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .stat-grid div {
-          padding: 14px;
+          padding: 12px;
         }
 
         .stat-grid span,
@@ -1085,18 +1088,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: block;
           margin-top: 6px;
           color: #f4dd9b;
-          font-size: 16px;
+          font-size: 14px;
         }
 
         .campaign-list {
           display: grid;
           gap: 10px;
-          margin-top: 14px;
+          margin-top: 12px;
         }
 
         .campaign-row {
           gap: 12px;
-          padding: 14px;
+          padding: 12px;
           color: #f7f1e7;
           text-decoration: none;
         }
@@ -1293,14 +1296,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .related-section {
-          margin-top: 18px;
+          margin-top: 16px;
         }
 
         .related-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-          margin-top: 12px;
+          gap: 8px;
+          margin-top: 10px;
         }
 
         .related-card {
@@ -1310,7 +1313,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .related-card div {
-          height: 102px;
+          height: 78px;
           background-size: cover;
           background-position: center;
         }
@@ -1319,16 +1322,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .related-card small,
         .related-card span {
           display: block;
-          padding: 0 10px;
+          padding: 0 9px;
         }
 
         .related-card strong {
-          padding-top: 10px;
+          padding-top: 9px;
+          font-size: 13px;
         }
 
         .related-card span {
-          padding-bottom: 12px;
-          margin-top: 4px;
+          padding-bottom: 10px;
+          margin-top: 3px;
         }
 
         .related-card small {
@@ -1341,7 +1345,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-panel {
           position: sticky;
           top: 18px;
-          padding: 18px;
+          padding: 14px;
         }
 
         .booking-title span,
@@ -1357,12 +1361,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-title strong {
           margin-top: 4px;
           color: #fff7e8;
-          font-size: 28px;
+          font-size: 22px;
         }
 
         .booking-panel label {
           display: block;
-          margin: 16px 0 8px;
+          margin: 14px 0 8px;
           font-weight: 900;
           text-transform: uppercase;
         }
@@ -1379,9 +1383,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border-radius: 8px;
           background: rgba(255, 255, 255, .05);
           color: #f7f1e7;
-          min-height: 38px;
-          padding: 0 11px;
+          min-height: 30px;
+          padding: 0 9px;
           font-weight: 800;
+          font-size: 12px;
           cursor: pointer;
         }
 
@@ -1420,10 +1425,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .store-hero {
             min-height: auto;
+            height: auto;
           }
 
           .hero-visual {
             min-height: 360px;
+          }
+
+          .hero-icon-button {
+            display: inline-flex;
+          }
+
+          .gallery-strip,
+          .store-content {
+            max-width: 100%;
+            padding-left: 22px;
+            padding-right: 22px;
           }
 
           .hero-copy {
