@@ -113,10 +113,16 @@ const readCouponQuery = (): CouponQuery => {
 
 export default function Page() {
   const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
-  const [query, setQuery] = useState<CouponQuery>(() => readCouponQuery());
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [guestName, setGuestName] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
+  const [query] = useState<CouponQuery>(() => readCouponQuery());
+  const [authUser] = useState<AuthUser | null>(() => getAuthUser());
+  const [guestName, setGuestName] = useState(() => {
+    const user = getAuthUser();
+    return user?.displayName || user?.email || "";
+  });
+  const [guestPhone, setGuestPhone] = useState(() => {
+    const user = getAuthUser();
+    return user?.phone || "";
+  });
   const [guestEmail, setGuestEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -127,12 +133,6 @@ export default function Page() {
   useEffect(() => {
     let isMounted = true;
 
-    const user = getAuthUser();
-    setAuthUser(user);
-    if (user) {
-      setGuestName(user.displayName || user.email || "");
-      setGuestPhone(user.phone || "");
-    }
 
     couponApi
       .listPublicCoupons()
