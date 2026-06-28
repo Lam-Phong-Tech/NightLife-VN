@@ -107,43 +107,38 @@ export function StoreDetailBookingPanel({
 
 type StoreDetailMobileCtaProps = {
   startingFromVnd?: number | null;
-  dateOptions: DateOption[];
-  selectedDateIndex: number;
-  selectedTime: string;
-  guestCount: number;
   bookingHref: string;
   couponHref: string;
   firstCoupon?: StoreActiveCoupon | null;
-  onDateSelect: (index: number) => void;
-  onTimeSelect: (time: string) => void;
-  onGuestCountChange: (guestCount: number) => void;
   onBookingClick: (surface: string) => void;
   onCouponClick: (surface: string) => void;
 };
 
-export function StoreDetailMobileCta({
-  startingFromVnd,
+type StoreDetailMobileBookingControlsProps = {
+  dateOptions: DateOption[];
+  selectedDateIndex: number;
+  selectedTime: string;
+  guestCount: number;
+  onDateSelect: (index: number) => void;
+  onTimeSelect: (time: string) => void;
+  onGuestCountChange: (guestCount: number) => void;
+};
+
+export function StoreDetailMobileBookingControls({
   dateOptions,
   selectedDateIndex,
   selectedTime,
   guestCount,
-  bookingHref,
-  couponHref,
-  firstCoupon,
   onDateSelect,
   onTimeSelect,
   onGuestCountChange,
-  onBookingClick,
-  onCouponClick,
-}: StoreDetailMobileCtaProps) {
+}: StoreDetailMobileBookingControlsProps) {
   return (
-    <div className="mobile-cta">
-      <div className="mobile-cta-summary">
-        <span>Đặt chỗ từ</span>
-        <strong>{formatVnd(startingFromVnd)}</strong>
-      </div>
-      <div className="mobile-cta-controls" aria-label="Chọn ngày đặt chỗ">
-        {dateOptions.slice(0, 3).map((date, index) => (
+    <section className="mobile-booking-controls" aria-label="Chọn thông tin đặt chỗ">
+      <div className="mobile-booking-group">
+        <h2>Chọn ngày</h2>
+        <div className="mobile-booking-options">
+          {dateOptions.map((date, index) => (
           <button
             key={date.iso}
             type="button"
@@ -152,10 +147,13 @@ export function StoreDetailMobileCta({
           >
             {date.label}
           </button>
-        ))}
+          ))}
+        </div>
       </div>
-      <div className="mobile-cta-controls" aria-label="Chọn giờ đặt chỗ">
-        {bookingTimes.slice(0, 3).map((time) => (
+      <div className="mobile-booking-group">
+        <h2>Khung giờ</h2>
+        <div className="mobile-booking-options">
+          {bookingTimes.map((time) => (
           <button
             key={time}
             type="button"
@@ -164,29 +162,51 @@ export function StoreDetailMobileCta({
           >
             {time}
           </button>
-        ))}
+          ))}
+        </div>
       </div>
-      <div className="mobile-cta-stepper">
+      <div className="mobile-booking-group">
+        <h2>Số khách</h2>
+        <div className="mobile-booking-stepper">
         <button type="button" onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}>
           -
         </button>
-        <strong>{guestCount} người</strong>
+          <strong>{guestCount} người</strong>
         <button type="button" onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}>
           +
         </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function StoreDetailMobileCta({
+  startingFromVnd,
+  bookingHref,
+  couponHref,
+  firstCoupon,
+  onBookingClick,
+  onCouponClick,
+}: StoreDetailMobileCtaProps) {
+  return (
+    <div className="mobile-cta">
+      <div className="mobile-cta-summary">
+        <span>Đặt bàn từ</span>
+        <strong>{formatVnd(startingFromVnd)}</strong>
       </div>
       <div className="mobile-cta-actions">
-      <Link
-        data-testid="store-booking-cta-mobile"
-        className="primary-action full"
-        href={bookingHref}
-        onClick={() => onBookingClick("mobile")}
-      >
-        Đặt chỗ
-      </Link>
-      <Link className="secondary-action full" href={couponHref} onClick={() => onCouponClick("mobile")}>
-        {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Coupon"}
-      </Link>
+        <Link
+          data-testid="store-booking-cta-mobile"
+          className="primary-action full"
+          href={bookingHref}
+          onClick={() => onBookingClick("mobile")}
+        >
+          Đặt chỗ ngay
+        </Link>
+        <Link className="secondary-action full" href={couponHref} onClick={() => onCouponClick("mobile")}>
+          {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Coupon"}
+        </Link>
       </div>
     </div>
   );

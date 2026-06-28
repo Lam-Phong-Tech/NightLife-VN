@@ -34,7 +34,11 @@ import type { StoreTab } from "./store-detail.helpers";
 import { personalizeRelatedStores, recommendationLabel } from "./store-detail.recommendations";
 import { buildStoreStructuredData } from "./store-detail.schema";
 import { trackStoreDetailClick } from "./store-detail.tracking";
-import { StoreDetailBookingPanel, StoreDetailMobileCta } from "./StoreDetailBookingPanel";
+import {
+  StoreDetailBookingPanel,
+  StoreDetailMobileBookingControls,
+  StoreDetailMobileCta,
+} from "./StoreDetailBookingPanel";
 import { StoreDetailHeader } from "./StoreDetailHeader";
 
 type StoreDetailClientProps = {
@@ -420,6 +424,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
           ) : null}
 
+          <StoreDetailMobileBookingControls
+            dateOptions={dateOptions}
+            selectedDateIndex={selectedDateIndex}
+            selectedTime={selectedTime}
+            guestCount={guestCount}
+            onDateSelect={setSelectedDateIndex}
+            onTimeSelect={setSelectedTime}
+            onGuestCountChange={setGuestCount}
+          />
+
           {recommendedStores.length ? (
             <section className="related-section">
               <h2>Quán liên quan</h2>
@@ -462,16 +476,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
       <StoreDetailMobileCta
         startingFromVnd={store.priceReference.startingFromVnd}
-        dateOptions={dateOptions}
-        selectedDateIndex={selectedDateIndex}
-        selectedTime={selectedTime}
-        guestCount={guestCount}
         bookingHref={bookingHref}
         couponHref={couponHref}
         firstCoupon={firstCoupon}
-        onDateSelect={setSelectedDateIndex}
-        onTimeSelect={setSelectedTime}
-        onGuestCountChange={setGuestCount}
         onBookingClick={trackBookingClick}
         onCouponClick={trackCouponClick}
       />
@@ -1222,13 +1229,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-size: 18px;
         }
 
+        .mobile-booking-controls,
         .mobile-cta {
           display: none;
         }
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: calc(292px + env(safe-area-inset-bottom));
+            padding-bottom: calc(176px + env(safe-area-inset-bottom));
           }
 
           .store-content,
@@ -1250,6 +1258,63 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             display: none;
           }
 
+          .mobile-booking-controls {
+            display: grid;
+            gap: 14px;
+            margin-top: 16px;
+            padding: 14px 0 2px;
+          }
+
+          .mobile-booking-group {
+            display: grid;
+            gap: 9px;
+          }
+
+          .mobile-booking-group h2 {
+            margin: 0;
+            color: #bfb7aa;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+          }
+
+          .mobile-booking-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+
+          .mobile-booking-options .slot {
+            min-height: 40px;
+            padding: 0 14px;
+            flex: 1 0 94px;
+          }
+
+          .mobile-booking-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+          }
+
+          .mobile-booking-stepper button {
+            width: 48px;
+            min-height: 44px;
+            border: 0;
+            border-radius: 8px;
+            background: #e2b85e;
+            color: #1b1508;
+            font-size: 18px;
+            font-weight: 900;
+          }
+
+          .mobile-booking-stepper strong {
+            flex: 1;
+            text-align: center;
+            color: #fff7e8;
+          }
+
           .stat-grid,
           .cast-grid,
           .related-grid {
@@ -1263,8 +1328,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             bottom: calc(74px + env(safe-area-inset-bottom));
             z-index: 65;
             display: grid;
-            gap: 9px;
-            padding: 12px 14px;
+            grid-template-columns: minmax(96px, .42fr) minmax(0, 1fr);
+            align-items: center;
+            gap: 12px;
+            min-height: 76px;
+            padding: 10px 14px;
             background: rgba(13, 14, 17, .97);
             border-top: 1px solid rgba(226, 184, 94, .22);
             box-shadow: 0 -18px 40px rgba(0, 0, 0, .34);
@@ -1272,16 +1340,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .mobile-cta-summary,
-          .mobile-cta-actions,
-          .mobile-cta-controls,
-          .mobile-cta-stepper {
+          .mobile-cta-actions {
             display: flex;
-            align-items: center;
           }
 
           .mobile-cta-summary {
-            justify-content: space-between;
-            gap: 12px;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 2px;
           }
 
           .mobile-cta-summary span {
@@ -1292,45 +1359,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .mobile-cta-summary strong {
             color: #fff7e8;
-            font-size: 20px;
-          }
-
-          .mobile-cta-controls {
-            gap: 7px;
-            overflow-x: auto;
-          }
-
-          .mobile-cta-controls .slot {
-            flex: 1 0 auto;
-            min-width: 0;
-          }
-
-          .mobile-cta-stepper {
-            justify-content: space-between;
-            border: 1px solid rgba(226, 184, 94, .2);
-            border-radius: 8px;
-            padding: 6px;
-          }
-
-          .mobile-cta-stepper button {
-            width: 34px;
-            min-height: 30px;
-            border: 0;
-            border-radius: 8px;
-            background: #e2b85e;
-            color: #1b1508;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 900;
           }
 
           .mobile-cta-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(84px, .72fr);
             gap: 10px;
+          }
+
+          .mobile-cta-actions .primary-action,
+          .mobile-cta-actions .secondary-action {
+            min-height: 44px;
+            padding: 0 10px;
           }
         }
 
         @media (max-width: 620px) {
           .store-detail-page {
-            padding-bottom: calc(306px + env(safe-area-inset-bottom));
+            padding-bottom: calc(178px + env(safe-area-inset-bottom));
           }
 
           h1 {
