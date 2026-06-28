@@ -41,7 +41,7 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
-          rsync -avz --delete --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ $USER@$HOST:/var/www/demonightlight.test9io.vn
+          rsync -avz --delete --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ $USER@$HOST:/var/www/demonightlight.test9.io.vn
 
       - name: Restart PM2 & Update DB
         uses: appleboy/ssh-action@master
@@ -50,7 +50,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /var/www/demonightlight.test9io.vn
+            cd /var/www/demonightlight.test9.io.vn
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
             pnpm install --prod --no-frozen-lockfile || pnpm install --prod
             pm2 delete app-demonightlight.test9.io.vn 2>/dev/null || true
