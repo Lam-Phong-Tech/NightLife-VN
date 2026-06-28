@@ -113,7 +113,7 @@ const proxy = async (
   });
 
   return Response.json(
-    { message: 'Không kết nối được API backend. Kiểm tra BACKEND_API_URL và service backend.' },
+    { message: 'Không kết nối được API backend sau khi thử các cổng local. Kiểm tra PM2 backend.' },
     { status: 502 },
   );
 };
