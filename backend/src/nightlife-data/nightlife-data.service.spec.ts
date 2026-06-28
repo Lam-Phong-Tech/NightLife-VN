@@ -458,6 +458,90 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('resolves legacy public store slugs before fetching detail', async () => {
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-neon',
+      areaId: null,
+      createdAt: new Date('2026-06-20T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-21T00:00:00.000Z'),
+      name: 'Neon Club',
+      slug: 'neon-club',
+      category: 'CLUB',
+      description: null,
+      address: '200 Nghi Tam',
+      city: 'Ha Noi',
+      district: 'Tay Ho',
+      phone: '+84243456007',
+      latitude: null,
+      longitude: null,
+      openingHours: null,
+      holidaySchedule: null,
+      mapUrl: 'https://maps.google.com/?q=21.063,105.822',
+      googlePlaceId: null,
+      area: null,
+      media: [],
+      casts: [],
+      coupons: [],
+    } as never);
+    prisma.store.findMany.mockResolvedValue([] as never);
+
+    const result = await service.getPublicStoreBySlug('club-lumiere');
+
+    expect(result.slug).toBe('neon-club');
+    expect(result.seo.canonicalPath).toBe('/stores/neon-club');
+    expect(prisma.store.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          slug: 'neon-club',
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      }),
+    );
+  });
+
+  it('resolves the legacy yakitori public slug before fetching detail', async () => {
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-tokyo',
+      areaId: null,
+      createdAt: new Date('2026-06-20T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-21T00:00:00.000Z'),
+      name: 'Tokyo Kitchen',
+      slug: 'tokyo-kitchen',
+      category: 'RESTAURANT',
+      description: null,
+      address: '12 Linh Lang',
+      city: 'Ha Noi',
+      district: 'Ba Dinh',
+      phone: '+84243456008',
+      latitude: null,
+      longitude: null,
+      openingHours: null,
+      holidaySchedule: null,
+      mapUrl: 'https://maps.google.com/?q=21.034,105.812',
+      googlePlaceId: null,
+      area: null,
+      media: [],
+      casts: [],
+      coupons: [],
+    } as never);
+    prisma.store.findMany.mockResolvedValue([] as never);
+
+    const result = await service.getPublicStoreBySlug('yakitori-hanoi');
+
+    expect(result.slug).toBe('tokyo-kitchen');
+    expect(result.seo.canonicalPath).toBe('/stores/tokyo-kitchen');
+    expect(prisma.store.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          slug: 'tokyo-kitchen',
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      }),
+    );
+  });
+
   it('returns not found for a missing public store slug', async () => {
     prisma.store.findFirst.mockResolvedValue(null as never);
 

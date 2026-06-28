@@ -61,6 +61,14 @@ const CATEGORY_ALIASES: Record<string, StoreCategory> = {
   casino: 'CASINO',
 };
 
+const STORE_SLUG_ALIASES: Record<string, string> = {
+  'club-lumiere': 'neon-club',
+  'yakitori-hanoi': 'tokyo-kitchen',
+  'ktv-hoang-gia': 'golden-voice-ktv',
+  'diamond-bar': 'crimson-bar',
+  'sora-lounge': 'jade-lounge',
+};
+
 type Coordinates = {
   lat: number;
   lng: number;
@@ -233,7 +241,7 @@ export class NightlifeDataService {
   }
 
   async getPublicStoreBySlug(slug: string) {
-    const normalizedSlug = this.normalizeToken(slug);
+    const normalizedSlug = this.normalizeStoreSlug(slug);
     if (!normalizedSlug) {
       throw new BadRequestException('slug is required');
     }
@@ -2161,6 +2169,11 @@ export class NightlifeDataService {
         .replace(/-+/g, '-')
         .replace(/(^-|-$)/g, '') ?? ''
     );
+  }
+
+  private normalizeStoreSlug(value?: string | null) {
+    const token = this.normalizeToken(value);
+    return STORE_SLUG_ALIASES[token] ?? token;
   }
 
   private containsInsensitive(value: string): Prisma.StringFilter {

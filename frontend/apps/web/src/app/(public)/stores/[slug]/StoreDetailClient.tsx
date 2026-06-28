@@ -2,16 +2,11 @@
 
 import Link from "next/link";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Heart,
-  ImageIcon,
   Languages,
   MapPin,
-  Phone,
-  Play,
   Star,
   Tag,
   Ticket,
@@ -22,120 +17,29 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type {
   PublicStoreDetail,
-  StoreActiveCoupon,
   StoreGalleryItem,
-  StoreOpeningHour,
 } from "@/lib/api/store-detail";
-import { videoEmbedUrl } from "./store-detail.helpers";
+import {
+  categoryLabels,
+  formatDateOption,
+  formatVnd,
+  mapEmbedUrl,
+  openingText,
+  readableName,
+  storeDetailTabs as tabs,
+  videoEmbedUrl,
+  weekdayLabels,
+} from "./store-detail.helpers";
+import type { StoreTab } from "./store-detail.helpers";
 import { personalizeRelatedStores, recommendationLabel } from "./store-detail.recommendations";
 import { buildStoreStructuredData } from "./store-detail.schema";
 import { trackStoreDetailClick } from "./store-detail.tracking";
+import { StoreDetailBookingPanel, StoreDetailMobileCta } from "./StoreDetailBookingPanel";
+import { StoreDetailHeader } from "./StoreDetailHeader";
 
 type StoreDetailClientProps = {
   store: PublicStoreDetail;
 };
-
-type StoreTab = "overview" | "pricing" | "casts" | "reviews" | "map";
-
-const tabs: Array<{ id: StoreTab; label: string }> = [
-  { id: "overview", label: "Giới thiệu" },
-  { id: "pricing", label: "Bảng giá" },
-  { id: "casts", label: "Cast" },
-  { id: "reviews", label: "Đánh giá" },
-  { id: "map", label: "Bản đồ" },
-];
-
-const categoryLabels: Record<string, string> = {
-  BAR: "Bar",
-  CLUB: "Club",
-  LOUNGE: "Lounge",
-  GIRLS_BAR: "Girls bar",
-  KARAOKE: "Karaoke/KTV",
-  MASSAGE_SPA: "Massage spa",
-  RESTAURANT: "Nhà hàng",
-  CASINO: "Casino lounge",
-};
-
-const weekdayLabels: Array<[string, string]> = [
-  ["monday", "Thứ 2"],
-  ["tuesday", "Thứ 3"],
-  ["wednesday", "Thứ 4"],
-  ["thursday", "Thứ 5"],
-  ["friday", "Thứ 6"],
-  ["saturday", "Thứ 7"],
-  ["sunday", "CN"],
-];
-
-const formatVnd = (value?: number | null) => {
-  if (!value) {
-    return "Liên hệ";
-  }
-
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
-};
-
-const readableName = (name: string) => {
-  const parts = name.split(/—|â€”/);
-  return parts[parts.length - 1]?.trim() || name;
-};
-
-const getInitials = (name: string) =>
-  readableName(name)
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-const formatDiscount = (coupon: StoreActiveCoupon) => {
-  if (coupon.discountType === "PERCENT") {
-    return `-${coupon.discountValue}%`;
-  }
-
-  return `-${formatVnd(coupon.discountValue)}`;
-};
-
-const formatDateOption = (date: Date) =>
-  new Intl.DateTimeFormat("vi-VN", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  }).format(date);
-
-const openingText = (slot?: StoreOpeningHour | null) => {
-  if (!slot) {
-    return "Chưa cập nhật";
-  }
-
-  if (slot.closed) {
-    return "Nghỉ";
-  }
-
-  if (slot.open && slot.close) {
-    return `${slot.open} - ${slot.close}`;
-  }
-
-  return slot.note || "Chưa cập nhật";
-};
-
-const mapEmbedUrl = (store: PublicStoreDetail) => {
-  if (store.mapUrl) {
-    return store.mapUrl.includes("output=embed")
-      ? store.mapUrl
-      : `${store.mapUrl}${store.mapUrl.includes("?") ? "&" : "?"}output=embed`;
-  }
-
-  if (typeof store.latitude === "number" && typeof store.longitude === "number") {
-    return `https://www.google.com/maps?q=${store.latitude},${store.longitude}&output=embed`;
-  }
-
-  return "";
-};
-
-const mediaBackground = (media?: StoreGalleryItem | null) =>
-  media?.type === "IMAGE" && media.url
-    ? `linear-gradient(180deg, rgba(10,10,12,.18), rgba(10,10,12,.66)), url("${media.url}")`
-    : "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 
 function EmptyState({
   icon,
@@ -183,8 +87,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const languageText = Array.from(new Set(store.casts.flatMap((cast) => cast.languages))).slice(0, 2).join(" / ");
   const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
   const todayOpening = todayKey ? openingText(store.openingHours?.[todayKey]) : "";
-  const galleryTileBackground = (item?: StoreGalleryItem | null) =>
-    mediaBackground(item?.type === "VIDEO" ? heroImage ?? item : item);
 
   const dateOptions = useMemo(
     () =>
@@ -228,7 +130,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const couponHref = `/uu-dai?${couponQuery.toString()}`;
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
-  const heroVideoUrl = selectedMedia?.type === "VIDEO" ? videoEmbedUrl(selectedMedia.url) : "";
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
   const showPreviousMedia = () => {
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
@@ -253,207 +154,24 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <section className="legacy-shell">
-        <nav className="legacy-breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Trang chu</Link>
-          <span>/</span>
-          <Link href="/danh-sach-quan">Tim quan</Link>
-          <span>/</span>
-          <span>{store.area?.name ?? store.district ?? store.city}</span>
-          <span>/</span>
-          <strong>{displayName}</strong>
-        </nav>
-
-        <div className="legacy-gallery" aria-label="Gallery cua quan">
-          {galleryTiles.length ? (
-            galleryTiles.slice(0, 5).map((item, index) => (
-              <button
-                key={`${item.id}-${index}`}
-                type="button"
-                className={index === 0 ? "legacy-gallery-tile featured" : "legacy-gallery-tile"}
-                style={{ backgroundImage: galleryTileBackground(index === 0 ? mainGalleryMedia : item) }}
-                onClick={() => {
-                  setSelectedGalleryIndex(index % gallery.length);
-                  setIsLightboxOpen(true);
-                }}
-                aria-label={`Xem media ${index + 1}`}
-              >
-                {index === 0 ? (
-                  <>
-                    <span className="legacy-play-center">
-                      <Play size={20} fill="currentColor" />
-                    </span>
-                    <span className="legacy-video-badge">
-                      <Play size={12} fill="currentColor" />
-                      Video
-                    </span>
-                  </>
-                ) : item.type === "VIDEO" ? (
-                  <span className="legacy-video-badge">
-                    <Play size={12} fill="currentColor" />
-                    Video
-                  </span>
-                ) : null}
-              </button>
-            ))
-          ) : (
-            <EmptyState
-              icon={<ImageIcon size={20} />}
-              title="Chua co gallery"
-              body="Quan chua dang anh hoac video cong khai."
-            />
-          )}
-        </div>
-
-        <div className="legacy-summary">
-          <div className="store-logo">{getInitials(store.name) || "NL"}</div>
-          <div className="legacy-summary-copy">
-            <h1>{displayName}</h1>
-            <div className="legacy-summary-meta">
-              <span className="rating">★ 4.9</span>
-              <span>{store.casts.length} ho so cast</span>
-              <span>{location || "Chua cap nhat khu vuc"}</span>
-            </div>
-            <div className="legacy-tags">
-              <span>{categoryLabels[store.category] ?? store.category}</span>
-              <span>Co VIP room</span>
-              {languageText ? <span>Phuc vu {languageText}</span> : null}
-              {todayOpening ? <span className="open-now">Dang mo · den {todayOpening.split(" - ")[1] ?? todayOpening}</span> : null}
-            </div>
-          </div>
-          <div className="legacy-summary-actions">
-            <button
-              type="button"
-              aria-label={isFavorite ? "Bo luu quan" : "Luu quan"}
-              onClick={() => setIsFavorite((value) => !value)}
-            >
-              <Heart size={18} fill={isFavorite ? "#d4b26a" : "none"} />
-            </button>
-            {store.phone ? (
-              <a
-                href={`tel:${store.phone}`}
-                aria-label="Goi quan"
-                onClick={() => trackStoreDetailClick(store, "call", { surface: "summary", phone: store.phone })}
-              >
-                <Phone size={18} />
-              </a>
-            ) : null}
-          </div>
-        </div>
-      </section>
-      <section className="store-hero">
-        <div
-          className="hero-visual"
-          style={{
-            backgroundImage: mediaBackground(selectedMedia ?? heroImage),
-          }}
-        >
-          <Link className="hero-icon-button" href="/danh-sach-quan" aria-label="Quay lại danh sách quán">
-            <ChevronLeft size={22} />
-          </Link>
-          <button
-            className="hero-icon-button favorite"
-            type="button"
-            aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
-            onClick={() => setIsFavorite((value) => !value)}
-          >
-            <Heart size={20} fill={isFavorite ? "#e85d75" : "none"} />
-          </button>
-
-          {selectedMedia?.type === "VIDEO" ? (
-            heroVideoUrl.includes("youtube.com/embed") || heroVideoUrl.includes("player.vimeo.com") ? (
-              <iframe
-                className="hero-video"
-                title={`${displayName} video`}
-                src={heroVideoUrl}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <video className="hero-video" src={heroVideoUrl || selectedMedia.url} controls />
-            )
-          ) : null}
-
-          {!selectedMedia ? (
-            <div className="hero-empty">
-              <ImageIcon size={28} />
-              <span>Gallery đang được quán cập nhật.</span>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="hero-copy">
-          <div className="store-logo">{getInitials(store.name) || "NL"}</div>
-          <div className="eyebrow">{categoryLabels[store.category] ?? store.category}</div>
-          <h1>{displayName}</h1>
-          <p className="hero-description">
-            {store.description || "Thông tin mô tả sẽ được quán cập nhật trước khi nhận đặt chỗ."}
-          </p>
-          <div className="hero-meta">
-            <span>
-              <MapPin size={16} />
-              {location || "Chưa cập nhật khu vực"}
-            </span>
-            {store.phone ? (
-              <a
-                className="phone-link"
-                href={`tel:${store.phone}`}
-                onClick={() => trackStoreDetailClick(store, "call", { surface: "hero", phone: store.phone })}
-              >
-                <Phone size={16} />
-                {store.phone}
-              </a>
-            ) : null}
-          </div>
-          <div className="hero-actions">
-            <Link
-              data-testid="store-booking-cta"
-              className="primary-action"
-              href={bookingHref}
-              onClick={() => trackBookingClick("hero")}
-            >
-              <CalendarDays size={18} />
-              Đặt chỗ
-            </Link>
-            <Link
-              data-testid="store-coupon-cta"
-              className="secondary-action"
-              href={couponHref}
-              onClick={() => trackCouponClick("hero")}
-            >
-              <Ticket size={18} />
-              {firstCoupon ? `Lấy coupon ${formatDiscount(firstCoupon)}` : "Xem ưu đãi"}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="gallery-strip" aria-label="Gallery của quán">
-        {gallery.length ? (
-          gallery.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              className={index === selectedGalleryIndex ? "gallery-thumb active" : "gallery-thumb"}
-              onClick={() => {
-                setSelectedGalleryIndex(index);
-                setIsLightboxOpen(true);
-              }}
-              style={{ backgroundImage: mediaBackground(item) }}
-              aria-label={`Xem media ${index + 1}`}
-            >
-              {item.type === "VIDEO" ? <Play size={18} fill="currentColor" /> : null}
-            </button>
-          ))
-        ) : (
-          <EmptyState
-            icon={<ImageIcon size={20} />}
-            title="Chưa có gallery"
-            body="Quán chưa đăng ảnh hoặc video công khai."
-          />
-        )}
-      </section>
-
+      <StoreDetailHeader
+        store={store}
+        displayName={displayName}
+        gallery={gallery}
+        galleryTiles={galleryTiles}
+        heroImage={heroImage}
+        mainGalleryMedia={mainGalleryMedia}
+        location={location}
+        languageText={languageText}
+        todayOpening={todayOpening}
+        isFavorite={isFavorite}
+        onToggleFavorite={() => setIsFavorite((value) => !value)}
+        onOpenGallery={(index) => {
+          setSelectedGalleryIndex(index);
+          setIsLightboxOpen(true);
+        }}
+        onTrackCall={() => trackStoreDetailClick(store, "call", { surface: "summary", phone: store.phone })}
+      />
       {isLightboxOpen && lightboxMedia ? (
         <div className="lightbox" role="dialog" aria-modal="true" aria-label="Store gallery lightbox">
           <button
@@ -725,76 +443,29 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           ) : null}
         </div>
 
-        <aside className="booking-panel">
-          <div className="booking-title">
-            <span>Đặt chỗ từ</span>
-            <strong>{formatVnd(store.priceReference.startingFromVnd)}</strong>
-          </div>
-          <label>Chọn ngày</label>
-          <div className="slot-row">
-            {dateOptions.map((date, index) => (
-              <button
-                key={date.iso}
-                type="button"
-                className={index === selectedDateIndex ? "slot active" : "slot"}
-                onClick={() => setSelectedDateIndex(index)}
-              >
-                {date.label}
-              </button>
-            ))}
-          </div>
-          <label>Khung giờ</label>
-          <div className="slot-row">
-            {["20:00", "21:00", "22:00", "23:00"].map((time) => (
-              <button
-                key={time}
-                type="button"
-                className={time === selectedTime ? "slot active" : "slot"}
-                onClick={() => setSelectedTime(time)}
-              >
-                {time}
-              </button>
-            ))}
-          </div>
-          <label>Số khách</label>
-          <div className="guest-stepper">
-            <button type="button" onClick={() => setGuestCount((value) => Math.max(1, value - 1))}>
-              -
-            </button>
-            <strong>{guestCount} người</strong>
-            <button type="button" onClick={() => setGuestCount((value) => Math.min(20, value + 1))}>
-              +
-            </button>
-          </div>
-          <Link
-            data-testid="store-booking-cta-sidebar"
-            className="primary-action full"
-            href={bookingHref}
-            onClick={() => trackBookingClick("sidebar")}
-          >
-            <CalendarDays size={18} />
-            Đặt chỗ ngay
-          </Link>
-          <Link
-            data-testid="store-coupon-cta-sidebar"
-            className="secondary-action full"
-            href={couponHref}
-            onClick={() => trackCouponClick("sidebar")}
-          >
-            <Ticket size={18} />
-            {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Ưu đãi của quán"}
-          </Link>
-        </aside>
+        <StoreDetailBookingPanel
+          startingFromVnd={store.priceReference.startingFromVnd}
+          dateOptions={dateOptions}
+          selectedDateIndex={selectedDateIndex}
+          selectedTime={selectedTime}
+          guestCount={guestCount}
+          bookingHref={bookingHref}
+          couponHref={couponHref}
+          firstCoupon={firstCoupon}
+          onDateSelect={setSelectedDateIndex}
+          onTimeSelect={setSelectedTime}
+          onGuestCountChange={setGuestCount}
+          onBookingClick={trackBookingClick}
+          onCouponClick={trackCouponClick}
+        />
       </section>
 
-      <div className="mobile-cta">
-        <Link className="primary-action full" href={bookingHref} onClick={() => trackBookingClick("mobile")}>
-          Đặt chỗ
-        </Link>
-        <Link className="secondary-action full" href={couponHref} onClick={() => trackCouponClick("mobile")}>
-          Coupon
-        </Link>
-      </div>
+      <StoreDetailMobileCta
+        bookingHref={bookingHref}
+        couponHref={couponHref}
+        onBookingClick={trackBookingClick}
+        onCouponClick={trackCouponClick}
+      />
 
       <style>{`
         .store-detail-page {
@@ -803,11 +474,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: #f7f1e7;
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           padding-bottom: 72px;
-        }
-
-        .store-detail-page > .store-hero,
-        .store-detail-page > .gallery-strip {
-          display: none;
         }
 
         .legacy-shell {
@@ -888,6 +554,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 5px 8px;
         }
 
+        .legacy-gallery-empty {
+          grid-column: 1 / -1;
+          min-height: 218px;
+          border: 1px solid rgba(226, 184, 94, .22);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .035);
+          color: #f4dd9b;
+          display: grid;
+          place-items: center;
+          gap: 8px;
+          text-align: center;
+          padding: 24px;
+        }
+
+        .legacy-gallery-empty span {
+          color: #a9a197;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
         .legacy-summary {
           display: flex;
           align-items: flex-start;
@@ -930,11 +616,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin-top: 8px;
           color: #a9a197;
           font-size: 12px;
-        }
-
-        .legacy-summary-meta .rating {
-          color: #e2b85e;
-          font-weight: 900;
         }
 
         .legacy-tags {
@@ -981,81 +662,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           text-decoration: none;
         }
 
-        .store-hero {
-          display: grid;
-          grid-template-columns: minmax(0, 56fr) minmax(360px, 44fr);
-          min-height: 296px;
-          height: 296px;
-          border-bottom: 1px solid rgba(233, 202, 128, .18);
-        }
-
-        .hero-visual {
-          position: relative;
-          min-height: 296px;
-          background-size: cover;
-          background-position: center;
-          overflow: hidden;
-        }
-
-        .hero-video {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          border: 0;
-          object-fit: cover;
-          background: #050507;
-        }
-
-        .hero-icon-button {
-          position: absolute;
-          top: 22px;
-          left: 22px;
-          z-index: 2;
-          width: 42px;
-          height: 42px;
-          border: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, .92);
-          color: #141417;
-          display: none;
-          align-items: center;
-          justify-content: center;
-          text-decoration: none;
-          box-shadow: 0 14px 34px rgba(0, 0, 0, .26);
-          cursor: pointer;
-        }
-
-        .hero-icon-button.favorite {
-          left: auto;
-          right: 22px;
-          color: ${isFavorite ? "#e85d75" : "#141417"};
-        }
-
-        .hero-empty {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          color: #e8d39b;
-          background: linear-gradient(135deg, rgba(22,22,26,.92), rgba(52,45,31,.82));
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .hero-copy {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          min-width: 0;
-          padding: 32px 40px;
-          background: radial-gradient(circle at 15% 0%, rgba(15, 145, 132, .18), transparent 28%), #111217;
-          overflow: hidden;
-        }
-
         .store-logo {
           width: 64px;
           height: 64px;
@@ -1071,19 +677,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 1px solid rgba(255, 240, 190, .6);
         }
 
-        .eyebrow {
-          width: fit-content;
-          color: #8ddbd4;
-          background: rgba(20, 170, 156, .12);
-          border: 1px solid rgba(141, 219, 212, .22);
-          border-radius: 999px;
-          padding: 4px 9px;
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0;
-        }
-
         h1 {
           margin: 14px 0 0;
           font-size: 34px;
@@ -1092,31 +685,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: #fff7e8;
         }
 
-        .hero-description {
-          margin: 14px 0 0;
-          color: #cbc4b8;
-          line-height: 1.58;
-          font-size: 13px;
-          max-width: 640px;
-          display: -webkit-box;
-          -webkit-line-clamp: 4;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .hero-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
-          margin-top: 16px;
-          color: #e8d39b;
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        .hero-meta span,
-        .hero-meta a,
-        .hero-actions,
         .primary-action,
         .secondary-action,
         .campaign-row,
@@ -1124,20 +692,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .map-link {
           display: flex;
           align-items: center;
-        }
-
-        .hero-meta span,
-        .hero-meta a {
-          gap: 8px;
-          min-width: 0;
-          color: inherit;
-          text-decoration: none;
-        }
-
-        .hero-actions {
-          gap: 12px;
-          margin-top: 20px;
-          flex-wrap: wrap;
         }
 
         .primary-action,
@@ -1165,35 +719,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .full {
           width: 100%;
-        }
-
-        .gallery-strip {
-          display: flex;
-          gap: 8px;
-          max-width: 850px;
-          margin: 0 auto;
-          padding: 14px 0 0;
-          overflow-x: auto;
-        }
-
-        .gallery-thumb {
-          width: 98px;
-          height: 62px;
-          flex: none;
-          border-radius: 6px;
-          border: 1px solid rgba(226, 184, 94, .22);
-          background-size: cover;
-          background-position: center;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        .gallery-thumb.active {
-          border-color: #e2b85e;
-          box-shadow: 0 0 0 2px rgba(226, 184, 94, .22);
         }
 
         .lightbox {
@@ -1693,34 +1218,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         @media (max-width: 980px) {
-          .store-hero,
           .store-content,
           .map-grid {
             grid-template-columns: 1fr;
           }
 
-          .store-hero {
-            min-height: auto;
-            height: auto;
-          }
-
-          .hero-visual {
-            min-height: 360px;
-          }
-
-          .hero-icon-button {
-            display: inline-flex;
-          }
-
-          .gallery-strip,
           .store-content {
             max-width: 100%;
             padding-left: 22px;
             padding-right: 22px;
-          }
-
-          .hero-copy {
-            padding: 28px 22px;
           }
 
           h1 {
@@ -1754,23 +1260,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         @media (max-width: 620px) {
-          .hero-visual {
-            min-height: 260px;
-          }
-
-          .hero-copy {
-            padding: 22px 18px;
-          }
-
           h1 {
             font-size: 28px;
           }
 
-          .hero-description {
-            -webkit-line-clamp: 5;
-          }
-
-          .gallery-strip,
           .store-content {
             padding-left: 16px;
             padding-right: 16px;

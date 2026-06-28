@@ -30,7 +30,7 @@ test.describe('store detail screenshots', () => {
     );
 
     await expect(page.getByTestId('store-detail-page')).toBeVisible();
-    await expect(page.getByTestId('store-booking-cta')).toBeVisible();
+    await expect(page.getByTestId('store-booking-cta-mobile')).toBeVisible();
     await expect(page).toHaveScreenshot('store-detail-mobile.png', {
       fullPage: true,
       animations: 'disabled',
