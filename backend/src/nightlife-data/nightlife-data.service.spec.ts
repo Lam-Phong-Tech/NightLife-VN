@@ -24,6 +24,7 @@ describe('NightlifeDataService', () => {
     },
     store: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       count: jest.fn(),
     },
     area: {
@@ -31,12 +32,14 @@ describe('NightlifeDataService', () => {
     },
     cast: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       count: jest.fn(),
     },
     rankingConfig: {
       findMany: jest.fn(),
     },
     booking: {
+      create: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
     },
@@ -465,6 +468,121 @@ describe('NightlifeDataService', () => {
         }),
         select: expect.objectContaining({
           guest: { select: { id: true, displayName: true } },
+        }),
+      }),
+    );
+  });
+
+  it('creates a guest booking request for an active store', async () => {
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' } as never);
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+    } as never);
+
+    await service.createGuestBooking({
+      storeSlug: 'neon-club',
+      displayName: 'Guest Name',
+      phone: '+84901234567',
+      scheduledAt: '2026-06-30T14:00:00.000Z',
+      partySize: 4,
+      note: 'VIP room',
+    });
+
+    expect(prisma.store.findFirst).toHaveBeenCalledWith({
+      where: {
+        slug: 'neon-club',
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+    expect(prisma.guest.create).toHaveBeenCalledWith({
+      data: {
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+      },
+      select: { id: true },
+    });
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          guestId: 'guest-1',
+          storeId: 'store-1',
+          castId: undefined,
+          status: 'REQUESTED',
+          partySize: 4,
+          note: 'VIP room',
+        }),
+      }),
+    );
+  });
+
+  it('creates a member booking request for a cast with a contact snapshot', async () => {
+    prisma.cast.findFirst.mockResolvedValue({
+      id: 'cast-1',
+      slug: 'yuna-neon',
+      stageName: 'Yuna',
+      publicAlias: 'Yuna',
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+      },
+    } as never);
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' } as never);
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+    } as never);
+
+    await service.createMemberBooking(
+      { id: 'member-1', role: 'USER' },
+      {
+        castSlug: 'yuna-neon',
+        displayName: 'Minh Nguyen',
+        phone: '+84907654321',
+        scheduledAt: '2026-06-30T14:00:00.000Z',
+        partySize: 2,
+      },
+    );
+
+    expect(prisma.cast.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          slug: 'yuna-neon',
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+        }),
+      }),
+    );
+    expect(prisma.guest.create).toHaveBeenCalledWith({
+      data: {
+        convertedUserId: 'member-1',
+        displayName: 'Minh Nguyen',
+        phone: '+84907654321',
+      },
+      select: { id: true },
+    });
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'member-1',
+          guestId: 'guest-1',
+          storeId: 'store-1',
+          castId: 'cast-1',
+          status: 'REQUESTED',
+          partySize: 2,
         }),
       }),
     );

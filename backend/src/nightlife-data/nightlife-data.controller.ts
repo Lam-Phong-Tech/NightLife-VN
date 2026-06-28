@@ -20,6 +20,8 @@ import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminSensitiveBillsContract,
   ClaimGuestCouponContract,
+  CreateGuestBookingContract,
+  CreateMemberBookingContract,
   MemberBookingsContract,
   MemberClaimCouponContract,
   MemberCouponIssuesContract,
@@ -36,6 +38,7 @@ import {
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { CreateBookingDto } from './dto/create-booking.dto';
 import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
@@ -71,6 +74,12 @@ export class NightlifeDataController {
   @Get('coupons')
   listPublicCoupons() {
     return this.nightlifeDataService.listPublicCoupons();
+  }
+
+  @CreateGuestBookingContract()
+  @Post('bookings')
+  createGuestBooking(@Body() dto: CreateBookingDto) {
+    return this.nightlifeDataService.createGuestBooking(dto);
   }
 
   @ClaimGuestCouponContract()
@@ -205,6 +214,17 @@ export class NightlifeDataController {
       billId,
       dto,
     );
+  }
+
+  @CreateMemberBookingContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/bookings')
+  createMemberBooking(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBookingDto,
+  ) {
+    return this.nightlifeDataService.createMemberBooking(request.user, dto);
   }
 
   @MemberBookingsContract()

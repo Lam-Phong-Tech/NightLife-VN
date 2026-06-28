@@ -2,10 +2,20 @@
 import { MockItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import React, { useState } from 'react';
+
+const legacyCastSlugMap: Record<string, string> = {
+  yuki: 'yuki-sakura-lounge',
+  michi: 'yuna-neon',
+  rina: 'rina-velvet',
+  hana: 'hana-sakura-lounge',
+  aiko: 'aya-velvet',
+};
 
 export default function Page({ params }: { params: Promise<{ slug?: string }> }) {
     void params;
+    const routeParams = useParams<{ slug?: string }>();
     const [isFavorite, setIsFavorite] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const tabStyle = (active: boolean): React.CSSProperties => ({
@@ -46,6 +56,14 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
     const favIconDark = isFavorite
       ? 'https://img.icons8.com/ios-filled/100/FF3D71/like.png'
       : 'https://img.icons8.com/ios/100/1f1d29/like.png';
+    const routeSlug = typeof routeParams.slug === 'string' ? routeParams.slug : 'yuki-sakura-lounge';
+    const castSlug = legacyCastSlugMap[routeSlug] ?? routeSlug;
+    const bookingHref = `/dat-cho?${new URLSearchParams({
+      castSlug,
+      castName: cName,
+      storeName: 'Club LumiÃ¨re',
+      area: cArea,
+    }).toString()}`;
 
     return (
       <React.Fragment>
@@ -83,7 +101,7 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
 
     <div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
       <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Phí cast từ</div><div style={{"fontSize":"16px","fontWeight":"800"}}>500K<span style={{"fontSize":"11px","color":"#8a879a"}}>/giờ</span></div></div>
-      <Link href="/dat-cho" className="btn" style={{"flex":"1","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"900","fontSize":"14px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center"}}>Đặt theo cast</Link>
+      <Link href={bookingHref} className="btn" style={{"flex":"1","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"900","fontSize":"14px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center"}}>Đặt theo cast</Link>
     </div>
   </div>
 </div>
@@ -151,7 +169,7 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
 
         <div style={{"marginTop":"20px","background":"#fff","border":"1px solid #ececec","borderRadius":"16px","padding":"18px","display":"flex","alignItems":"center","gap":"16px","boxShadow":"0 6px 20px rgba(40,20,60,.06)"}}>
           <div style={{"flex":"1"}}><div style={{"fontSize":"13px","color":"#8a879a"}}>Đặt theo cast tại</div><div style={{"fontSize":"16px","fontWeight":"700"}}>Club Lumière · Tây Hồ</div><div style={{"fontSize":"12px","color":"#8a879a","marginTop":"3px"}}>Phí cast từ 500.000đ / giờ · Admin xác nhận lịch</div></div>
-          <Link href="/dat-cho" className="btn" style={{"background":"#6d28d9","color":"#fff","borderRadius":"11px","padding":"14px 26px","fontWeight":"700","fontSize":"14px","textDecoration":"none","display":"inline-flex","alignItems":"center","justifyContent":"center"}}>Đặt theo cast</Link>
+          <Link href={bookingHref} className="btn" style={{"background":"#6d28d9","color":"#fff","borderRadius":"11px","padding":"14px 26px","fontWeight":"700","fontSize":"14px","textDecoration":"none","display":"inline-flex","alignItems":"center","justifyContent":"center"}}>Đặt theo cast</Link>
         </div>
       </div>
     </div>

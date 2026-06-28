@@ -14,6 +14,7 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { CreateBookingDto } from './dto/create-booking.dto';
 import {
   PublicCastListResponseDto,
   PublicStoreListResponseDto,
@@ -240,6 +241,22 @@ const bookingExample = {
   guest: { id: 'guest_01', displayName: 'Guest Name' },
 };
 
+const createBookingExample = {
+  ...bookingExample,
+  status: 'REQUESTED',
+  scheduledAt: '2026-06-30T14:00:00.000Z',
+  subtotalVnd: 0,
+  discountVnd: 0,
+  totalVnd: 0,
+  note: 'Can phong VIP, uu tien nhan vien noi tieng Nhat.',
+  cast: {
+    id: 'cast_01',
+    slug: 'yuna-neon',
+    stageName: 'Yuna',
+    publicAlias: 'Yuna',
+  },
+};
+
 const scannedCouponIssueExample = {
   id: 'issue_01',
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
@@ -434,6 +451,29 @@ export function PublicCouponsContract() {
   );
 }
 
+export function CreateGuestBookingContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Booking action: guest creates a booking request',
+      description:
+        'Auth guard: none. Creates a guest contact snapshot and a booking with status REQUESTED. No deposit or payment is collected.',
+    }),
+    ApiBody({ type: CreateBookingDto }),
+    ApiCreatedResponse({
+      description: 'Guest booking request created.',
+      schema: { example: createBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid booking request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Store or cast does not exist or is not bookable.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
 export function ClaimGuestCouponContract() {
   return applyDecorators(
     ApiOperation({
@@ -457,6 +497,48 @@ export function ClaimGuestCouponContract() {
     ApiUnprocessableEntityResponse({
       description: 'Coupon exists but cannot be claimed.',
       schema: { example: unprocessableExample },
+    }),
+  );
+}
+
+export function CreateMemberBookingContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Booking action: member creates own booking request',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a member booking with status REQUESTED and stores the submitted contact snapshot. No deposit or payment is collected.',
+    }),
+    ApiBody({ type: CreateBookingDto }),
+    ApiCreatedResponse({
+      description: 'Member booking request created.',
+      schema: {
+        example: {
+          ...createBookingExample,
+          user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'VIP' },
+          guest: {
+            id: 'guest_01',
+            displayName: 'Minh Nguyen',
+            phone: '+84901234567',
+          },
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid booking request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Store or cast does not exist or is not bookable.',
+      schema: { example: notFoundExample },
     }),
   );
 }

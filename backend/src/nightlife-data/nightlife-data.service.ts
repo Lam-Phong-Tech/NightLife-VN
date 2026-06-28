@@ -9,6 +9,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { CreateBookingDto } from './dto/create-booking.dto';
 import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 
@@ -82,6 +83,20 @@ type PublicSortableItem = {
 type RankingScore = {
   pinRank: number | null;
   manualScore: number;
+};
+
+type BookingTarget = {
+  store: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  cast?: {
+    id: string;
+    slug: string;
+    stageName: string;
+    publicAlias: string | null;
+  };
 };
 
 @Injectable()
@@ -638,15 +653,69 @@ export class NightlifeDataService {
         discountVnd: true,
         totalVnd: true,
         store: { select: { id: true, name: true, slug: true } },
+        cast: {
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+          },
+        },
         coupon: { select: { id: true, code: true, name: true } },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
+        note: true,
+        createdAt: true,
       },
     });
   }
 
   async listOperatorBookings(user: AuthenticatedUser) {
     return this.listPartnerBookings(user);
+  }
+
+  async createGuestBooking(dto: CreateBookingDto) {
+    const target = await this.resolveBookingTarget(dto);
+    const contact = this.sanitizeBookingContact(dto);
+    const guest = await this.prisma.guest.create({
+      data: {
+        displayName: contact.displayName,
+        phone: contact.phone,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return this.createBookingRecord({
+      dto,
+      target,
+      note: contact.note,
+      guestId: guest.id,
+    });
+  }
+
+  async createMemberBooking(user: AuthenticatedUser, dto: CreateBookingDto) {
+    const target = await this.resolveBookingTarget(dto);
+    const contact = this.sanitizeBookingContact(dto);
+    const guest = await this.prisma.guest.create({
+      data: {
+        convertedUserId: user.id,
+        displayName: contact.displayName,
+        phone: contact.phone,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return this.createBookingRecord({
+      dto,
+      target,
+      note: contact.note,
+      userId: user.id,
+      guestId: guest.id,
+    });
   }
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
@@ -832,7 +901,18 @@ export class NightlifeDataService {
         discountVnd: true,
         totalVnd: true,
         store: { select: { id: true, name: true, slug: true } },
+        cast: {
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+          },
+        },
         coupon: { select: { id: true, code: true, name: true } },
+        guest: { select: { id: true, displayName: true, phone: true } },
+        note: true,
+        createdAt: true,
       },
     });
   }
@@ -1022,6 +1102,152 @@ export class NightlifeDataService {
     });
 
     return result;
+  }
+
+  private async resolveBookingTarget(
+    dto: CreateBookingDto,
+  ): Promise<BookingTarget> {
+    const castId = this.cleanText(dto.castId);
+    const castSlug = this.cleanText(dto.castSlug);
+    const storeId = this.cleanText(dto.storeId);
+    const storeSlug = this.cleanText(dto.storeSlug);
+
+    if (castId || castSlug) {
+      const cast = await this.prisma.cast.findFirst({
+        where: {
+          ...(castId ? { id: castId } : { slug: castSlug }),
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        },
+        select: {
+          id: true,
+          slug: true,
+          stageName: true,
+          publicAlias: true,
+          store: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      });
+
+      if (!cast) {
+        throw new NotFoundException('Cast not found');
+      }
+
+      if (
+        (storeId && cast.store.id !== storeId) ||
+        (storeSlug && cast.store.slug !== storeSlug)
+      ) {
+        throw new BadRequestException('Cast does not belong to selected store');
+      }
+
+      return {
+        store: cast.store,
+        cast: {
+          id: cast.id,
+          slug: cast.slug,
+          stageName: cast.stageName,
+          publicAlias: cast.publicAlias,
+        },
+      };
+    }
+
+    if (!storeId && !storeSlug) {
+      throw new BadRequestException('storeId or storeSlug is required');
+    }
+
+    const store = await this.prisma.store.findFirst({
+      where: {
+        ...(storeId ? { id: storeId } : { slug: storeSlug }),
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    return { store };
+  }
+
+  private sanitizeBookingContact(dto: CreateBookingDto) {
+    const displayName = this.cleanText(dto.displayName);
+    const phone = this.cleanText(dto.phone);
+
+    if (!displayName || !phone) {
+      throw new BadRequestException('displayName and phone are required');
+    }
+
+    return {
+      displayName,
+      phone,
+      note: this.cleanText(dto.note),
+    };
+  }
+
+  private createBookingRecord(input: {
+    dto: CreateBookingDto;
+    target: BookingTarget;
+    userId?: string;
+    guestId: string;
+    note?: string;
+  }) {
+    const scheduledAt = new Date(input.dto.scheduledAt);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    return this.prisma.booking.create({
+      data: {
+        userId: input.userId,
+        guestId: input.guestId,
+        storeId: input.target.store.id,
+        castId: input.target.cast?.id,
+        status: 'REQUESTED',
+        scheduledAt,
+        partySize: input.dto.partySize,
+        note: input.note,
+      },
+      select: {
+        id: true,
+        storeId: true,
+        castId: true,
+        status: true,
+        scheduledAt: true,
+        partySize: true,
+        subtotalVnd: true,
+        discountVnd: true,
+        totalVnd: true,
+        note: true,
+        createdAt: true,
+        store: { select: { id: true, name: true, slug: true } },
+        cast: {
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+          },
+        },
+        user: { select: { id: true, displayName: true, tier: true } },
+        guest: { select: { id: true, displayName: true, phone: true } },
+      },
+    });
   }
 
   private buildBillReviewAuditSnapshot(bill: {

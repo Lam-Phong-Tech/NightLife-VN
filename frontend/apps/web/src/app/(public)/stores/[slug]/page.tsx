@@ -2,10 +2,19 @@
 import { Cast, MockItem } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import React, { useState } from 'react';
 import { ChevronLeft, Heart, Play } from 'lucide-react';
 
+const legacyStoreSlugMap: Record<string, string> = {
+  'club-lumiere': 'neon-club',
+  'ktv-hoang-gia': 'golden-voice-ktv',
+  'diamond-bar': 'crimson-bar',
+  'sora-lounge': 'jade-lounge',
+};
+
 export default function Page() {
+  const routeParams = useParams<{ slug?: string }>();
   const [isFavorite, setIsFavorite] = useState(false);
   const [guestCount, setGuestCount] = useState(4);
   const [activeStoreTab, setActiveStoreTab] = useState(0);
@@ -110,7 +119,15 @@ export default function Page() {
     const dec = () => setGuestCount((value) => Math.max(1, value - 1));
     const guests = guestCount;
     const inc = () => setGuestCount((value) => Math.min(20, value + 1));
-    const bookingHref = '/dat-cho';
+    const routeSlug = typeof routeParams.slug === 'string' ? routeParams.slug : 'neon-club';
+    const storeSlug = legacyStoreSlugMap[routeSlug] ?? routeSlug;
+    const bookingHref = `/dat-cho?${new URLSearchParams({
+      storeSlug,
+      storeName: vName,
+      area: vArea,
+      guests: String(guests),
+      time: times[selectedTimeIndex]?.label ?? '21:00',
+    }).toString()}`;
     const couponHref = '/uu-dai';
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const vPriceShort = vPrice;
