@@ -14,24 +14,50 @@ const isLoopbackUrl = (value: string) => {
   return Boolean(url && (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1'));
 };
 
-const getBackendBaseUrl = () => {
+const addUniqueBaseUrl = (urls: string[], value?: string) => {
+  if (!value || !toHttpUrl(value)) {
+    return;
+  }
+
+  const normalized = normalizeApiBaseUrl(value);
+  if (!urls.includes(normalized)) {
+    urls.push(normalized);
+  }
+};
+
+const getBackendBaseUrls = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const internalBaseUrl = process.env.BACKEND_API_URL;
   const publicBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const fallbackBaseUrls = (process.env.BACKEND_API_FALLBACK_URLS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const urls: string[] = [];
 
   if (internalBaseUrl) {
-    return normalizeApiBaseUrl(internalBaseUrl);
+    addUniqueBaseUrl(urls, internalBaseUrl);
   }
 
   if (!isProduction) {
-    return normalizeApiBaseUrl(publicBaseUrl || 'http://localhost:3001');
+    addUniqueBaseUrl(urls, publicBaseUrl || 'http://localhost:3001');
+    return urls;
   }
 
   if (publicBaseUrl && toHttpUrl(publicBaseUrl) && !isLoopbackUrl(publicBaseUrl)) {
-    return normalizeApiBaseUrl(publicBaseUrl);
+    addUniqueBaseUrl(urls, publicBaseUrl);
   }
 
-  return null;
+  for (const fallbackBaseUrl of fallbackBaseUrls) {
+    addUniqueBaseUrl(urls, fallbackBaseUrl);
+  }
+
+  addUniqueBaseUrl(urls, 'http://127.0.0.1:3001');
+  addUniqueBaseUrl(urls, 'http://localhost:3001');
+  addUniqueBaseUrl(urls, 'http://127.0.0.1:3000');
+  addUniqueBaseUrl(urls, 'http://localhost:3000');
+
+  return urls;
 };
 
 const proxy = async (
@@ -40,43 +66,56 @@ const proxy = async (
 ) => {
   const { path = [] } = await context.params;
   const requestUrl = new URL(request.url);
-  const backendBaseUrl = getBackendBaseUrl();
+  const backendBaseUrls = getBackendBaseUrls();
 
-  if (!backendBaseUrl) {
+  if (!backendBaseUrls.length) {
     return Response.json(
       { message: 'Thiếu BACKEND_API_URL cho server frontend production.' },
       { status: 503 },
     );
   }
 
-  const targetUrl = new URL(`${backendBaseUrl}/${path.join('/')}`);
-  targetUrl.search = requestUrl.search;
-
   const headers = new Headers(request.headers);
   headers.delete('host');
   headers.delete('content-length');
+  const body = ['GET', 'HEAD'].includes(request.method)
+    ? undefined
+    : await request.arrayBuffer();
 
-  try {
-    const response = await fetch(targetUrl, {
-      method: request.method,
-      headers,
-      body: ['GET', 'HEAD'].includes(request.method)
-        ? undefined
-        : await request.arrayBuffer(),
-      redirect: 'manual',
-    });
+  let lastError: unknown;
 
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-    });
-  } catch {
-    return Response.json(
-      { message: 'Không kết nối được API backend. Kiểm tra BACKEND_API_URL và service backend.' },
-      { status: 502 },
-    );
+  for (const backendBaseUrl of backendBaseUrls) {
+    const targetUrl = new URL(`${backendBaseUrl}/${path.join('/')}`);
+    targetUrl.search = requestUrl.search;
+
+    try {
+      const response = await fetch(targetUrl, {
+        method: request.method,
+        headers,
+        body: body?.slice(0),
+        redirect: 'manual',
+      });
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    } catch (error) {
+      lastError = error;
+    }
   }
+
+  console.error('Backend proxy connection failed', {
+    path: path.join('/'),
+    backendBaseUrls,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+  });
+
+  return Response.json(
+    { message: 'Không kết nối được API backend. Kiểm tra BACKEND_API_URL và service backend.' },
+    { status: 502 },
+  );
 };
 
 export const GET = proxy;
