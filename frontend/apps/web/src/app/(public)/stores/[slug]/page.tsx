@@ -111,6 +111,7 @@ export default function Page() {
     const guests = guestCount;
     const inc = () => setGuestCount((value) => Math.min(20, value + 1));
     const bookingHref = '/dat-cho';
+    const couponHref = '/uu-dai';
     const mainBg = "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover";
     const vPriceShort = vPrice;
     const mapEmbedSrc = 'https://www.google.com/maps?q=Club%20Lumiere%20Tay%20Ho%20Hanoi&output=embed';
@@ -143,8 +144,13 @@ export default function Page() {
     </div>
 
     <div style={{"background":"#141417","padding":"14px 18px 14px"}}>
-      <h2 style={{"fontSize":"20px","fontWeight":"800"}}>{vName}</h2>
-      <div style={{"display":"flex","alignItems":"center","gap":"10px","marginTop":"6px","fontSize":"12.5px","color":"#5b5870"}}><span style={{"color":"#e8923a","fontWeight":"600"}}>★ {vRating}</span><span style={{"color":"#a8a5b4"}}>({vReviews})</span> · {vArea}, Hà Nội</div>
+      <div style={{"display":"flex","alignItems":"center","gap":"12px"}}>
+        <div aria-label={`${vName} logo`} style={{"width":"54px","height":"54px","borderRadius":"14px","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"18px","fontWeight":"900","border":"1px solid rgba(244,227,180,.5)","flex":"none"}}>CL</div>
+        <div style={{"minWidth":0,"flex":"1"}}>
+          <h2 style={{"fontSize":"20px","fontWeight":"800"}}>{vName}</h2>
+          <div style={{"display":"flex","alignItems":"center","gap":"10px","marginTop":"6px","fontSize":"12.5px","color":"#5b5870","flexWrap":"wrap"}}><span style={{"color":"#e8923a","fontWeight":"600"}}>★ {vRating}</span><span style={{"color":"#a8a5b4"}}>({vReviews})</span> · {vArea}, Hà Nội</div>
+        </div>
+      </div>
       <div style={{"display":"flex","gap":"7px","marginTop":"11px","flexWrap":"wrap"}}><span style={{"fontSize":"11px","background":"#f1ebff","color":"#6d28d9","borderRadius":"12px","padding":"4px 10px","fontWeight":"600"}}>{vCat}</span><span style={{"fontSize":"11px","background":"#e6f7ee","color":"#1f8a52","borderRadius":"12px","padding":"4px 10px"}}>● Đang mở</span><span style={{"fontSize":"11px","background":"#f3f2f5","color":"#5b5870","borderRadius":"12px","padding":"4px 10px"}}>Tiếng Nhật</span></div>
 
       {/* tabs */}
@@ -170,6 +176,13 @@ export default function Page() {
           </div>
           <div style={{"marginTop":"10px","background":"rgba(212,178,106,.09)","border":"1px solid rgba(212,178,106,.2)","borderRadius":"12px","padding":"11px","fontSize":"12px","lineHeight":"1.55","color":"#d8d1c1"}}>
             <b style={{"color":"#f0dda8"}}>Gợi ý:</b> phù hợp tiếp khách VIP, nhóm nhỏ muốn phòng riêng, hoặc khách Nhật cần hỗ trợ ngôn ngữ.
+          </div>
+          <div style={{"marginTop":"10px","background":"linear-gradient(135deg,rgba(212,178,106,.16),rgba(255,255,255,.04))","border":"1px solid rgba(212,178,106,.24)","borderRadius":"12px","padding":"12px","fontSize":"12px","lineHeight":"1.55","color":"#d8d1c1"}}>
+            <div style={{"fontSize":"10px","fontWeight":"900","letterSpacing":".12em","textTransform":"uppercase","color":"#d4b26a"}}>Campaign</div>
+            <div style={{"marginTop":"6px","display":"flex","alignItems":"center","justifyContent":"space-between","gap":"10px"}}>
+              <div><b style={{"color":"#f0dda8"}}>Happy Hour -20%</b><br /><span>Áp dụng khi đặt chỗ trước 20:00.</span></div>
+              <Link href={couponHref} className="btn" style={{"flex":"none","border":"1px solid rgba(212,178,106,.32)","borderRadius":"10px","padding":"8px 10px","color":"#f0dda8","fontSize":"11px","fontWeight":"900","textDecoration":"none"}}>Coupon</Link>
+            </div>
           </div>
         </>
       ) : null}
@@ -215,9 +228,10 @@ export default function Page() {
     </div>
 
     {/* sticky CTA */}
-    <div className="store-mobile-cta" style={{"background":"#141417","borderTop":"1px solid rgba(212,178,106,.18)","padding":"12px 18px 18px","display":"flex","alignItems":"center","gap":"12px"}}>
+    <div className="store-mobile-cta" style={{"background":"#141417","borderTop":"1px solid rgba(212,178,106,.18)","padding":"12px 18px 18px","display":"grid","gridTemplateColumns":"minmax(0,1fr) auto auto","alignItems":"center","gap":"8px"}}>
       <div><div style={{"fontSize":"11px","color":"#8a879a"}}>Đặt bàn từ</div><div style={{"fontSize":"16px","fontWeight":"800"}}>{vPriceShort}</div></div>
-      <Link href={bookingHref} className="btn" style={{"flex":"1","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"900","fontSize":"14px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center"}}>Đặt chỗ ngay</Link>
+      <Link href={bookingHref} className="btn" style={{"background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","textAlign":"center","borderRadius":"12px","padding":"12px 11px","fontWeight":"900","fontSize":"12px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center","whiteSpace":"nowrap"}}>Đặt chỗ</Link>
+      <Link href={couponHref} className="btn" style={{"border":"1px solid rgba(212,178,106,.32)","color":"#f0dda8","textAlign":"center","borderRadius":"12px","padding":"12px 11px","fontWeight":"900","fontSize":"12px","textDecoration":"none","display":"flex","alignItems":"center","justifyContent":"center","whiteSpace":"nowrap"}}>Coupon</Link>
     </div>
   </div>
 </div>
@@ -292,10 +306,13 @@ export default function Page() {
       {/* main */}
       <div style={{"flex":"1"}}>
         <div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between"}}>
-          <div>
-            <h2 style={{"fontSize":"26px","fontWeight":"800"}}>{vName}</h2>
-            <div style={{"display":"flex","alignItems":"center","gap":"14px","marginTop":"8px","fontSize":"13px","color":"#5b5870"}}><span style={{"color":"#e8923a","fontWeight":"600"}}>★ {vRating}</span> <span style={{"color":"#a8a5b4"}}>{vReviews} đánh giá</span> · <span>{vArea}, Hà Nội</span></div>
-            <div style={{"display":"flex","gap":"8px","marginTop":"12px","flexWrap":"wrap"}}><span style={{"fontSize":"12px","background":"#f1ebff","color":"#6d28d9","borderRadius":"14px","padding":"5px 11px","fontWeight":"600"}}>{vCat}</span><span style={{"fontSize":"12px","background":"#f3f2f5","color":"#5b5870","borderRadius":"14px","padding":"5px 11px"}}>Có VIP room</span><span style={{"fontSize":"12px","background":"#f3f2f5","color":"#5b5870","borderRadius":"14px","padding":"5px 11px"}}>Phục vụ tiếng Nhật</span><span style={{"fontSize":"12px","background":"#e6f7ee","color":"#1f8a52","borderRadius":"14px","padding":"5px 11px"}}>● Đang mở · đến 02:00</span></div>
+          <div style={{"display":"flex","alignItems":"center","gap":"14px"}}>
+            <div aria-label={`${vName} logo`} style={{"width":"68px","height":"68px","borderRadius":"16px","background":"linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)","color":"#241a0a","display":"flex","alignItems":"center","justifyContent":"center","fontSize":"22px","fontWeight":"900","border":"1px solid rgba(244,227,180,.5)","boxShadow":"0 14px 28px rgba(0,0,0,.18)","flex":"none"}}>CL</div>
+            <div>
+              <h2 style={{"fontSize":"26px","fontWeight":"800"}}>{vName}</h2>
+              <div style={{"display":"flex","alignItems":"center","gap":"14px","marginTop":"8px","fontSize":"13px","color":"#5b5870"}}><span style={{"color":"#e8923a","fontWeight":"600"}}>★ {vRating}</span> <span style={{"color":"#a8a5b4"}}>{vReviews} đánh giá</span> · <span>{vArea}, Hà Nội</span></div>
+              <div style={{"display":"flex","gap":"8px","marginTop":"12px","flexWrap":"wrap"}}><span style={{"fontSize":"12px","background":"#f1ebff","color":"#6d28d9","borderRadius":"14px","padding":"5px 11px","fontWeight":"600"}}>{vCat}</span><span style={{"fontSize":"12px","background":"#f3f2f5","color":"#5b5870","borderRadius":"14px","padding":"5px 11px"}}>Có VIP room</span><span style={{"fontSize":"12px","background":"#f3f2f5","color":"#5b5870","borderRadius":"14px","padding":"5px 11px"}}>Phục vụ tiếng Nhật</span><span style={{"fontSize":"12px","background":"#e6f7ee","color":"#1f8a52","borderRadius":"14px","padding":"5px 11px"}}>● Đang mở · đến 02:00</span></div>
+            </div>
           </div>
           <div style={{"display":"flex","gap":"10px"}}>
             <span className="btn" onClick={toggleFav} style={{"width":"42px","height":"42px","borderRadius":"11px","border":"1px solid #ececec","background":"#fff","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src={favIcon} style={{"width":"19px","height":"19px","display":"inline-block"}} alt="" /></span>
@@ -336,6 +353,14 @@ export default function Page() {
                   <div>• Admin xác nhận đặt chỗ, không cần thanh toán online.</div>
                 </div>
               </div>
+            </div>
+            <div style={{"marginTop":"14px","background":"linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.035))","border":"1px solid rgba(212,178,106,.24)","borderRadius":"16px","padding":"16px","display":"flex","alignItems":"center","justifyContent":"space-between","gap":"18px"}}>
+              <div>
+                <div style={{"fontSize":"12px","fontWeight":"900","letterSpacing":".08em","textTransform":"uppercase","color":"#d4b26a"}}>Campaign</div>
+                <div style={{"fontSize":"18px","fontWeight":"900","color":"#f0dda8","marginTop":"7px"}}>Happy Hour cuối tuần -20%</div>
+                <p style={{"marginTop":"6px","fontSize":"13px","lineHeight":"1.55","color":"#d8d1c1"}}>Lưu coupon cho bàn đặt trước 20:00. Admin xác nhận điều kiện áp dụng sau khi nhận yêu cầu đặt chỗ.</p>
+              </div>
+              <Link href={couponHref} className="btn" style={{"flex":"none","border":"1px solid rgba(212,178,106,.32)","borderRadius":"12px","padding":"12px 16px","fontWeight":"900","fontSize":"13px","color":"#f0dda8","textDecoration":"none"}}>Lấy coupon</Link>
             </div>
             <div style={{"marginTop":"14px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px"}}>
               <div style={{"background":"rgba(212,178,106,.09)","border":"1px solid rgba(212,178,106,.22)","borderRadius":"16px","padding":"16px","fontSize":"13px","lineHeight":"1.65","color":"#d8d1c1"}}>
@@ -420,6 +445,7 @@ export default function Page() {
             <span className="btn" onClick={inc} style={{"width":"32px","height":"32px","borderRadius":"9px","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"18px"}}>+</span>
           </div>
           <Link href={bookingHref} className="btn" style={{"display":"block","marginTop":"16px","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"11px","padding":"13px","fontWeight":"700","fontSize":"14px","textDecoration":"none"}}>Đặt chỗ ngay</Link>
+          <Link href={couponHref} className="btn" style={{"display":"block","marginTop":"10px","border":"1px solid rgba(212,178,106,.32)","color":"#f0dda8","textAlign":"center","borderRadius":"11px","padding":"12px","fontWeight":"800","fontSize":"13px","textDecoration":"none","background":"rgba(212,178,106,.08)"}}>Lấy coupon</Link>
         </div>
       </div>
     </div>
