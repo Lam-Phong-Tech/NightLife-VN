@@ -1,25 +1,12 @@
 const getBackendBaseUrl = () => {
   const normalize = (value: string) => value.replace(/\/api\/?$/, '').replace(/\/$/, '');
   const isProduction = process.env.NODE_ENV === 'production';
-  const baseUrl =
-    process.env.BACKEND_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL;
+  const baseUrl = isProduction
+    ? process.env.BACKEND_API_URL
+    : process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL;
 
   if (baseUrl) {
-    const normalizedBaseUrl = normalize(baseUrl);
-
-    try {
-      const hostname = new URL(normalizedBaseUrl).hostname;
-      const pointsToLocalDevApi = hostname === 'localhost' || hostname === '127.0.0.1';
-
-      if (isProduction && pointsToLocalDevApi) {
-        return 'http://127.0.0.1:3012';
-      }
-    } catch {
-      return normalizedBaseUrl;
-    }
-
-    return normalizedBaseUrl;
+    return normalize(baseUrl);
   }
 
   return isProduction ? 'http://127.0.0.1:3012' : 'http://localhost:3001';
