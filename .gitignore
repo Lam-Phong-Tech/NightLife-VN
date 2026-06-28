@@ -2,3 +2,4 @@
 .pnpm-config/
 .pnpm-home/
 .pnpm-store-local/
+.pnpm-store/

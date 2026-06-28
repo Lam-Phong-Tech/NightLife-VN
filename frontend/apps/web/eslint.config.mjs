@@ -6,4 +6,17 @@
 import { nextJsConfig } from "@nightlife/eslint-config/next";
 
 /** @type {import("eslint").Linter.Config[]} */
-export default nextJsConfig;
+const eslintConfig = [
+  {
+    ignores: [
+      ".next/**",
+      ".next.bak-*/**",
+      "playwright-report/**",
+      "test-results/**",
+      "eslint_report.json",
+    ],
+  },
+  ...nextJsConfig,
+];
+
+export default eslintConfig;

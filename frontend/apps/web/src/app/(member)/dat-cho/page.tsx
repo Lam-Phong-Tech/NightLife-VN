@@ -95,23 +95,25 @@ export default function Page() {
     const parsed = parseContext();
     const authUser = getAuthUser();
 
-    setContext(parsed.context);
-    setBookingDate(parsed.date);
-    setBookingTime(parsed.time);
-    setGuests(Number.isFinite(parsed.guests) ? Math.max(1, parsed.guests) : 4);
+    queueMicrotask(() => {
+      setContext(parsed.context);
+      setBookingDate(parsed.date);
+      setBookingTime(parsed.time);
+      setGuests(Number.isFinite(parsed.guests) ? Math.max(1, parsed.guests) : 4);
 
-    if (authUser) {
-      setGuestName(authUser.displayName ?? authUser.email ?? "");
-      setPhone(authUser.phone ?? "");
-    }
-
-    if (parsed.mode === "member") {
-      if (isMemberUser(authUser)) {
-        setMode("member");
-      } else {
-        setShowLoginPrompt(true);
+      if (authUser) {
+        setGuestName(authUser.displayName ?? authUser.email ?? "");
+        setPhone(authUser.phone ?? "");
       }
-    }
+
+      if (parsed.mode === "member") {
+        if (isMemberUser(authUser)) {
+          setMode("member");
+        } else {
+          setShowLoginPrompt(true);
+        }
+      }
+    });
   }, []);
 
   const memberLoginPath = useMemo(

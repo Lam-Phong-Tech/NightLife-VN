@@ -61,8 +61,10 @@ export default function Page() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    setBooking(getLastBooking());
-    setIsLoggedIn(Boolean(getAuthUser()));
+    queueMicrotask(() => {
+      setBooking(getLastBooking());
+      setIsLoggedIn(Boolean(getAuthUser()));
+    });
   }, []);
 
   const title = booking?.cast
