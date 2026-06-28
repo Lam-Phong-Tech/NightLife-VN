@@ -11,22 +11,40 @@ interface RequestOptions extends RequestInit {
 }
 
 const getBaseUrl = () => {
-  const configuredBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL;
-
-  if (configuredBaseUrl) {
-    return configuredBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
-  }
-
   if (typeof window !== 'undefined') {
     const isLocalHost =
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1';
+    const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    if (configuredBaseUrl) {
+      const normalizedBaseUrl = configuredBaseUrl
+        .replace(/\/api\/?$/, '')
+        .replace(/\/$/, '');
+
+      try {
+        const configuredHostname = new URL(normalizedBaseUrl).hostname;
+        const pointsToLocalApi =
+          configuredHostname === 'localhost' ||
+          configuredHostname === '127.0.0.1';
+
+        if (!isLocalHost && pointsToLocalApi) {
+          return '/api/backend';
+        }
+      } catch {
+        return normalizedBaseUrl;
+      }
+
+      return normalizedBaseUrl;
+    }
 
     return isLocalHost ? 'http://localhost:3001' : '/api/backend';
   }
 
-  return 'http://localhost:3001';
+  const serverBaseUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL;
+  return serverBaseUrl
+    ? serverBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '')
+    : 'http://localhost:3001';
 };
 
 const getAuthToken = () => {
