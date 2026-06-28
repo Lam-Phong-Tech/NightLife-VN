@@ -171,11 +171,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const gallery = store.gallery ?? [];
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? null;
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
+  const mainGalleryMedia = heroImage ?? selectedMedia;
+  const galleryTiles = gallery.length
+    ? Array.from({ length: Math.max(5, gallery.length) }, (_, index) => gallery[index % gallery.length])
+    : [];
   const firstCoupon = store.activeCoupons[0] ?? null;
   const location = [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
   const embedUrl = mapEmbedUrl(store);
   const hasMap = Boolean(embedUrl);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
+  const languageText = Array.from(new Set(store.casts.flatMap((cast) => cast.languages))).slice(0, 2).join(" / ");
+  const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
+  const todayOpening = todayKey ? openingText(store.openingHours?.[todayKey]) : "";
+  const galleryTileBackground = (item?: StoreGalleryItem | null) =>
+    mediaBackground(item?.type === "VIDEO" ? heroImage ?? item : item);
 
   const dateOptions = useMemo(
     () =>
@@ -244,6 +253,94 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <section className="legacy-shell">
+        <nav className="legacy-breadcrumb" aria-label="Breadcrumb">
+          <Link href="/">Trang chu</Link>
+          <span>/</span>
+          <Link href="/danh-sach-quan">Tim quan</Link>
+          <span>/</span>
+          <span>{store.area?.name ?? store.district ?? store.city}</span>
+          <span>/</span>
+          <strong>{displayName}</strong>
+        </nav>
+
+        <div className="legacy-gallery" aria-label="Gallery cua quan">
+          {galleryTiles.length ? (
+            galleryTiles.slice(0, 5).map((item, index) => (
+              <button
+                key={`${item.id}-${index}`}
+                type="button"
+                className={index === 0 ? "legacy-gallery-tile featured" : "legacy-gallery-tile"}
+                style={{ backgroundImage: galleryTileBackground(index === 0 ? mainGalleryMedia : item) }}
+                onClick={() => {
+                  setSelectedGalleryIndex(index % gallery.length);
+                  setIsLightboxOpen(true);
+                }}
+                aria-label={`Xem media ${index + 1}`}
+              >
+                {index === 0 ? (
+                  <>
+                    <span className="legacy-play-center">
+                      <Play size={20} fill="currentColor" />
+                    </span>
+                    <span className="legacy-video-badge">
+                      <Play size={12} fill="currentColor" />
+                      Video
+                    </span>
+                  </>
+                ) : item.type === "VIDEO" ? (
+                  <span className="legacy-video-badge">
+                    <Play size={12} fill="currentColor" />
+                    Video
+                  </span>
+                ) : null}
+              </button>
+            ))
+          ) : (
+            <EmptyState
+              icon={<ImageIcon size={20} />}
+              title="Chua co gallery"
+              body="Quan chua dang anh hoac video cong khai."
+            />
+          )}
+        </div>
+
+        <div className="legacy-summary">
+          <div className="store-logo">{getInitials(store.name) || "NL"}</div>
+          <div className="legacy-summary-copy">
+            <h1>{displayName}</h1>
+            <div className="legacy-summary-meta">
+              <span className="rating">★ 4.9</span>
+              <span>{store.casts.length} ho so cast</span>
+              <span>{location || "Chua cap nhat khu vuc"}</span>
+            </div>
+            <div className="legacy-tags">
+              <span>{categoryLabels[store.category] ?? store.category}</span>
+              <span>Co VIP room</span>
+              {languageText ? <span>Phuc vu {languageText}</span> : null}
+              {todayOpening ? <span className="open-now">Dang mo · den {todayOpening.split(" - ")[1] ?? todayOpening}</span> : null}
+            </div>
+          </div>
+          <div className="legacy-summary-actions">
+            <button
+              type="button"
+              aria-label={isFavorite ? "Bo luu quan" : "Luu quan"}
+              onClick={() => setIsFavorite((value) => !value)}
+            >
+              <Heart size={18} fill={isFavorite ? "#d4b26a" : "none"} />
+            </button>
+            {store.phone ? (
+              <a
+                href={`tel:${store.phone}`}
+                aria-label="Goi quan"
+                onClick={() => trackStoreDetailClick(store, "call", { surface: "summary", phone: store.phone })}
+              >
+                <Phone size={18} />
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </section>
       <section className="store-hero">
         <div
           className="hero-visual"
@@ -708,6 +805,182 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding-bottom: 72px;
         }
 
+        .store-detail-page > .store-hero,
+        .store-detail-page > .gallery-strip {
+          display: none;
+        }
+
+        .legacy-shell {
+          width: 100%;
+          max-width: 1468px;
+          margin: 0 auto;
+          padding: 16px 26px 0;
+        }
+
+        .legacy-breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #9f9788;
+          font-size: 12px;
+          font-weight: 700;
+          margin-bottom: 16px;
+        }
+
+        .legacy-breadcrumb a {
+          color: #bfb5a0;
+          text-decoration: none;
+        }
+
+        .legacy-breadcrumb strong {
+          color: #fff7e8;
+        }
+
+        .legacy-gallery {
+          display: grid;
+          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-rows: 104px 104px;
+          gap: 10px;
+        }
+
+        .legacy-gallery-tile {
+          position: relative;
+          border: 0;
+          border-radius: 8px;
+          background-size: cover;
+          background-position: center;
+          overflow: hidden;
+          cursor: pointer;
+          color: #241a0a;
+        }
+
+        .legacy-gallery-tile.featured {
+          grid-row: span 2;
+        }
+
+        .legacy-play-center {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, .9);
+          color: #d4b26a;
+          display: grid;
+          place-items: center;
+          box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+        }
+
+        .legacy-video-badge {
+          position: absolute;
+          left: 10px;
+          bottom: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          border-radius: 999px;
+          background: rgba(10, 10, 12, .72);
+          color: #fff7e8;
+          font-size: 11px;
+          font-weight: 900;
+          padding: 5px 8px;
+        }
+
+        .legacy-summary {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 18px 0 0;
+        }
+
+        .legacy-summary .store-logo {
+          display: flex;
+          width: 54px;
+          height: 54px;
+          flex: none;
+          margin: 0;
+          border-radius: 8px;
+        }
+
+        .legacy-summary-copy {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .legacy-summary h1 {
+          margin: 0;
+          color: #fff7e8;
+          font-size: 24px;
+          line-height: 1.1;
+        }
+
+        .legacy-summary-meta,
+        .legacy-tags,
+        .legacy-summary-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .legacy-summary-meta {
+          gap: 12px;
+          margin-top: 8px;
+          color: #a9a197;
+          font-size: 12px;
+        }
+
+        .legacy-summary-meta .rating {
+          color: #e2b85e;
+          font-weight: 900;
+        }
+
+        .legacy-tags {
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .legacy-tags span {
+          border-radius: 999px;
+          background: rgba(255, 255, 255, .06);
+          color: #d9d1c3;
+          border: 1px solid rgba(255, 255, 255, .06);
+          padding: 5px 10px;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .legacy-tags span:first-child {
+          background: rgba(226, 184, 94, .13);
+          color: #f4dd9b;
+          border-color: rgba(226, 184, 94, .2);
+        }
+
+        .legacy-tags .open-now {
+          background: #e6f7ee;
+          color: #1f8a52;
+        }
+
+        .legacy-summary-actions {
+          gap: 10px;
+        }
+
+        .legacy-summary-actions button,
+        .legacy-summary-actions a {
+          width: 36px;
+          height: 36px;
+          border: 1px solid rgba(226, 184, 94, .26);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .035);
+          color: #d4b26a;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          text-decoration: none;
+        }
+
         .store-hero {
           display: grid;
           grid-template-columns: minmax(0, 56fr) minmax(360px, 44fr);
@@ -996,9 +1269,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .store-content {
-          max-width: 850px;
+          max-width: 1468px;
           margin: 0 auto;
-          padding: 18px 0 24px;
+          padding: 16px 26px 32px;
           display: grid;
           grid-template-columns: minmax(0, 1fr) 256px;
           gap: 18px;
@@ -1014,29 +1287,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .tab-bar {
           display: flex;
-          gap: 8px;
-          padding: 6px;
-          background: rgba(255, 255, 255, .045);
-          border: 1px solid rgba(226, 184, 94, .16);
-          border-radius: 8px;
+          gap: 24px;
+          padding: 0;
+          background: transparent;
+          border: 0;
+          border-bottom: 1px solid rgba(255, 255, 255, .28);
+          border-radius: 0;
           overflow-x: auto;
         }
 
         .tab {
           flex: none;
           border: 0;
-          border-radius: 6px;
-          padding: 10px 14px;
+          border-bottom: 2px solid transparent;
+          border-radius: 0;
+          padding: 0 0 12px;
           background: transparent;
           color: #bfb7aa;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 800;
           cursor: pointer;
         }
 
         .tab.active {
-          color: #1b1508;
-          background: #e2b85e;
+          color: #e2b85e;
+          background: transparent;
+          border-bottom-color: #e2b85e;
         }
 
         .tab-section {

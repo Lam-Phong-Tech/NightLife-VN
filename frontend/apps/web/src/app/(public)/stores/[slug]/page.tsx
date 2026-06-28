@@ -10,6 +10,7 @@ type PageProps = {
 
 const legacyStoreSlugMap: Record<string, string> = {
   "club-lumiere": "neon-club",
+  "yakitori-hanoi": "tokyo-kitchen",
   "ktv-hoang-gia": "golden-voice-ktv",
   "diamond-bar": "crimson-bar",
   "sora-lounge": "jade-lounge",
