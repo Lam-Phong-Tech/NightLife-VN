@@ -1,4 +1,4 @@
-name: Deploy Node.js App
+name: Deploy Backend
 
 on:
   push:
@@ -65,3 +65,13 @@ jobs:
             pm2 save
             ok=0; for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:3001/areas >/dev/null; then ok=1; break; fi; sleep 2; done; if [ "$ok" != 1 ]; then echo "::error::Backend API khong tra loi /areas tren cong 3001 sau ~40s."; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
             booking_status=000; for i in $(seq 1 10); do booking_status=$(curl -sS -o /tmp/nightlife-backend-booking-check.json -w "%{http_code}" -X POST http://127.0.0.1:3001/bookings -H 'Content-Type: application/json' -d '{}' || true); if [ "$booking_status" = "400" ]; then break; fi; sleep 2; done; if [ "$booking_status" != "400" ]; then echo "::error::Backend POST /bookings chua tra validation 400. Status: $booking_status"; cat /tmp/nightlife-backend-booking-check.json 2>/dev/null || true; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
+            if [ -d /var/www/demonightlight.test9.io.vn ]; then
+              cd /var/www/demonightlight.test9.io.vn
+              if [ -f package.json ]; then
+                corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
+                BACKEND_API_URL=http://127.0.0.1:3001 PORT=3009 pm2 restart app-demonightlight.test9io.vn --update-env 2>/dev/null || BACKEND_API_URL=http://127.0.0.1:3001 PORT=3009 pm2 start pnpm --name "app-demonightlight.test9io.vn" -- --dir apps/web run start
+                ok_frontend=0; for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:3009/api/backend/areas >/dev/null; then ok_frontend=1; break; fi; sleep 2; done; if [ "$ok_frontend" != 1 ]; then echo "::error::Backend da len nhung frontend proxy /api/backend/areas van loi."; pm2 logs app-demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
+                proxy_booking_status=000; for i in $(seq 1 10); do proxy_booking_status=$(curl -sS -o /tmp/nightlife-proxy-booking-check.json -w "%{http_code}" -X POST http://127.0.0.1:3009/api/backend/bookings -H 'Content-Type: application/json' -d '{}' || true); if [ "$proxy_booking_status" = "400" ]; then break; fi; sleep 2; done; if [ "$proxy_booking_status" != "400" ]; then echo "::error::Frontend proxy POST /api/backend/bookings chua noi duoc backend booking validation. Status: $proxy_booking_status"; cat /tmp/nightlife-proxy-booking-check.json 2>/dev/null || true; pm2 logs app-demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
+                pm2 save
+              fi
+            fi
