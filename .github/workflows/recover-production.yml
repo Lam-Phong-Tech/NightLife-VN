@@ -1,0 +1,93 @@
+name: Recover Production Runtime
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart backend and frontend on VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            BACKEND_DIR=/var/www/api.demonightlight.test9.io.vn
+            FRONTEND_DIR=/var/www/demonightlight.test9.io.vn
+            BACKEND_URL=http://127.0.0.1:3001
+            FALLBACK_URLS=http://127.0.0.1:3001,http://localhost:3001,http://127.0.0.1:3000,http://localhost:3000
+
+            if [ ! -f "$BACKEND_DIR/dist/src/main.js" ]; then
+              echo "::error::Khong tim thay $BACKEND_DIR/dist/src/main.js. Backend deploy artifact chua co tren VPS."
+              exit 1
+            fi
+
+            cd "$BACKEND_DIR"
+            corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
+            pnpm install --prod --no-frozen-lockfile || pnpm install --prod
+            npx prisma generate
+            pm2 delete app-api.demonightlight.test9.io.vn 2>/dev/null || true
+            pm2 delete app-api.demonightlight.test9io.vn 2>/dev/null || true
+            fuser -k 3001/tcp 2>/dev/null || true
+            PORT=3001 pm2 start dist/src/main.js --name "app-api.demonightlight.test9io.vn" --update-env
+
+            ok_backend=0
+            for i in $(seq 1 30); do
+              if curl -fsS "$BACKEND_URL/areas" >/dev/null; then ok_backend=1; break; fi
+              sleep 2
+            done
+            if [ "$ok_backend" != 1 ]; then
+              echo "::error::Backend runtime khong tra loi $BACKEND_URL/areas."
+              pm2 logs app-api.demonightlight.test9io.vn --lines 120 --nostream 2>/dev/null || true
+              exit 1
+            fi
+
+            booking_status=$(curl -sS -o /tmp/nightlife-recover-booking-check.json -w "%{http_code}" -X POST "$BACKEND_URL/bookings" -H 'Content-Type: application/json' -d '{}' || true)
+            if [ "$booking_status" != "400" ]; then
+              echo "::error::Backend POST /bookings validation check failed. Status: $booking_status"
+              cat /tmp/nightlife-recover-booking-check.json 2>/dev/null || true
+              pm2 logs app-api.demonightlight.test9io.vn --lines 120 --nostream 2>/dev/null || true
+              exit 1
+            fi
+
+            if [ ! -f "$FRONTEND_DIR/package.json" ]; then
+              echo "::error::Khong tim thay $FRONTEND_DIR/package.json. Frontend deploy artifact chua co tren VPS."
+              exit 1
+            fi
+
+            cd "$FRONTEND_DIR"
+            corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
+            pnpm install --prod --no-frozen-lockfile || pnpm install --prod
+            pm2 delete app-demonightlight.test9.io.vn 2>/dev/null || true
+            pm2 delete app-demonightlight.test9io.vn 2>/dev/null || true
+            fuser -k 3009/tcp 2>/dev/null || true
+            BACKEND_API_URL="$BACKEND_URL" BACKEND_API_FALLBACK_URLS="$FALLBACK_URLS" PORT=3009 pm2 start pnpm --name "app-demonightlight.test9io.vn" -- --dir apps/web run start
+
+            ok_frontend=0
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:3009/api/backend/areas >/dev/null; then ok_frontend=1; break; fi
+              sleep 2
+            done
+            if [ "$ok_frontend" != 1 ]; then
+              echo "::error::Frontend proxy khong noi duoc backend sau khi restart runtime."
+              pm2 logs app-demonightlight.test9io.vn --lines 120 --nostream 2>/dev/null || true
+              pm2 logs app-api.demonightlight.test9io.vn --lines 120 --nostream 2>/dev/null || true
+              exit 1
+            fi
+
+            proxy_booking_status=$(curl -sS -o /tmp/nightlife-recover-proxy-booking-check.json -w "%{http_code}" -X POST http://127.0.0.1:3009/api/backend/bookings -H 'Content-Type: application/json' -d '{}' || true)
+            if [ "$proxy_booking_status" != "400" ]; then
+              echo "::error::Frontend proxy POST /api/backend/bookings validation check failed. Status: $proxy_booking_status"
+              cat /tmp/nightlife-recover-proxy-booking-check.json 2>/dev/null || true
+              pm2 logs app-demonightlight.test9io.vn --lines 120 --nostream 2>/dev/null || true
+              pm2 logs app-api.demonightlight.test9io.vn --lines 120 --nostream 2>/dev/null || true
+              exit 1
+            fi
+
+            pm2 save
