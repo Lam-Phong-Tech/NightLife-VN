@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   CalendarDays,
   ChevronLeft,
+  ChevronRight,
   Clock3,
   Heart,
   ImageIcon,
@@ -15,15 +16,20 @@ import {
   Tag,
   Ticket,
   Users,
+  X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   PublicStoreDetail,
   StoreActiveCoupon,
   StoreGalleryItem,
   StoreOpeningHour,
 } from "@/lib/api/store-detail";
+import { videoEmbedUrl } from "./store-detail.helpers";
+import { personalizeRelatedStores, recommendationLabel } from "./store-detail.recommendations";
+import { buildStoreStructuredData } from "./store-detail.schema";
+import { trackStoreDetailClick } from "./store-detail.tracking";
 
 type StoreDetailClientProps = {
   store: PublicStoreDetail;
@@ -158,6 +164,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [recommendedStores, setRecommendedStores] = useState(store.relatedStores);
 
   const displayName = readableName(store.name);
   const gallery = store.gallery ?? [];
@@ -167,6 +175,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const location = [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
   const embedUrl = mapEmbedUrl(store);
   const hasMap = Boolean(embedUrl);
+  const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
+
+  useEffect(() => {
+    setRecommendedStores(personalizeRelatedStores(store.relatedStores));
+  }, [store.relatedStores]);
   const dateOptions = useMemo(
     () =>
       Array.from({ length: 4 }, (_, index) => {
@@ -208,9 +221,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const couponHref = `/uu-dai?${couponQuery.toString()}`;
+  const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
+  const heroVideoUrl = selectedMedia?.type === "VIDEO" ? videoEmbedUrl(selectedMedia.url) : "";
+  const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
+  const showPreviousMedia = () => {
+    setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
+  };
+  const showNextMedia = () => {
+    setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+  };
+  const trackBookingClick = (surface: string) =>
+    trackStoreDetailClick(store, "booking", {
+      surface,
+      guests: guestCount,
+      date: selectedDate.iso,
+      time: selectedTime,
+      couponId: firstCoupon?.id ?? null,
+    });
+  const trackCouponClick = (surface: string, couponId = firstCoupon?.id ?? null) =>
+    trackStoreDetailClick(store, "coupon", { surface, couponId });
 
   return (
     <main className="store-detail-page" data-testid="store-detail-page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <section className="store-hero">
         <div
           className="hero-visual"
@@ -231,16 +267,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           </button>
 
           {selectedMedia?.type === "VIDEO" ? (
-            selectedMedia.url.includes("youtube.com/embed") ? (
+            heroVideoUrl.includes("youtube.com/embed") || heroVideoUrl.includes("player.vimeo.com") ? (
               <iframe
                 className="hero-video"
                 title={`${displayName} video`}
-                src={selectedMedia.url}
+                src={heroVideoUrl}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : (
-              <video className="hero-video" src={selectedMedia.url} controls />
+              <video className="hero-video" src={heroVideoUrl || selectedMedia.url} controls />
             )
           ) : null}
 
@@ -265,18 +301,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               {location || "Chưa cập nhật khu vực"}
             </span>
             {store.phone ? (
-              <span>
+              <a
+                className="phone-link"
+                href={`tel:${store.phone}`}
+                onClick={() => trackStoreDetailClick(store, "call", { surface: "hero", phone: store.phone })}
+              >
                 <Phone size={16} />
                 {store.phone}
-              </span>
+              </a>
             ) : null}
           </div>
           <div className="hero-actions">
-            <Link data-testid="store-booking-cta" className="primary-action" href={bookingHref}>
+            <Link
+              data-testid="store-booking-cta"
+              className="primary-action"
+              href={bookingHref}
+              onClick={() => trackBookingClick("hero")}
+            >
               <CalendarDays size={18} />
               Đặt chỗ
             </Link>
-            <Link data-testid="store-coupon-cta" className="secondary-action" href={couponHref}>
+            <Link
+              data-testid="store-coupon-cta"
+              className="secondary-action"
+              href={couponHref}
+              onClick={() => trackCouponClick("hero")}
+            >
               <Ticket size={18} />
               {firstCoupon ? `Lấy coupon ${formatDiscount(firstCoupon)}` : "Xem ưu đãi"}
             </Link>
@@ -291,7 +341,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               key={item.id}
               type="button"
               className={index === selectedGalleryIndex ? "gallery-thumb active" : "gallery-thumb"}
-              onClick={() => setSelectedGalleryIndex(index)}
+              onClick={() => {
+                setSelectedGalleryIndex(index);
+                setIsLightboxOpen(true);
+              }}
               style={{ backgroundImage: mediaBackground(item) }}
               aria-label={`Xem media ${index + 1}`}
             >
@@ -306,6 +359,49 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           />
         )}
       </section>
+
+      {isLightboxOpen && lightboxMedia ? (
+        <div className="lightbox" role="dialog" aria-modal="true" aria-label="Store gallery lightbox">
+          <button
+            className="lightbox-close"
+            type="button"
+            aria-label="Close gallery"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <X size={22} />
+          </button>
+          {gallery.length > 1 ? (
+            <button className="lightbox-nav previous" type="button" aria-label="Previous media" onClick={showPreviousMedia}>
+              <ChevronLeft size={28} />
+            </button>
+          ) : null}
+          <div className="lightbox-media">
+            {lightboxMedia.type === "VIDEO" ? (
+              lightboxVideoUrl.includes("youtube.com/embed") || lightboxVideoUrl.includes("player.vimeo.com") ? (
+                <iframe
+                  title={`${displayName} gallery video`}
+                  src={lightboxVideoUrl}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video src={lightboxVideoUrl || lightboxMedia.url} controls autoPlay />
+              )
+            ) : (
+              <img src={lightboxMedia.url} alt={lightboxMedia.alt || displayName} />
+            )}
+          </div>
+          {gallery.length > 1 ? (
+            <button className="lightbox-nav next" type="button" aria-label="Next media" onClick={showNextMedia}>
+              <ChevronRight size={28} />
+            </button>
+          ) : null}
+          <div className="lightbox-caption">
+            {selectedGalleryIndex + 1}/{gallery.length}
+            {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
+          </div>
+        </div>
+      ) : null}
 
       <section className="store-content">
         <div className="main-column">
@@ -350,6 +446,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     <Link
                       key={campaign.id}
                       className="campaign-row"
+                      onClick={() => trackCouponClick("campaign", campaign.couponId)}
                       href={`/uu-dai?${new URLSearchParams({
                         storeId: store.id,
                         storeSlug: store.slug,
@@ -496,7 +593,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     </span>
                   </div>
                   {store.mapUrl ? (
-                    <a className="map-link" href={store.mapUrl} target="_blank" rel="noreferrer">
+                    <a
+                      className="map-link"
+                      href={store.mapUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => trackStoreDetailClick(store, "map", { surface: "map-panel" })}
+                    >
                       Mở Google Maps
                     </a>
                   ) : null}
@@ -505,11 +608,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
           ) : null}
 
-          {store.relatedStores.length ? (
+          {recommendedStores.length ? (
             <section className="related-section">
               <h2>Quán liên quan</h2>
               <div className="related-grid">
-                {store.relatedStores.map((related) => (
+                {recommendedStores.map((related) => (
                   <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
                     <div
                       style={{
@@ -519,6 +622,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       }}
                     />
                     <strong>{readableName(related.name)}</strong>
+                    <small>{recommendationLabel(related)}</small>
                     <span>{[categoryLabels[related.category] ?? related.category, related.area?.name ?? related.district].filter(Boolean).join(" · ")}</span>
                   </Link>
                 ))}
@@ -568,11 +672,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               +
             </button>
           </div>
-          <Link data-testid="store-booking-cta-sidebar" className="primary-action full" href={bookingHref}>
+          <Link
+            data-testid="store-booking-cta-sidebar"
+            className="primary-action full"
+            href={bookingHref}
+            onClick={() => trackBookingClick("sidebar")}
+          >
             <CalendarDays size={18} />
             Đặt chỗ ngay
           </Link>
-          <Link data-testid="store-coupon-cta-sidebar" className="secondary-action full" href={couponHref}>
+          <Link
+            data-testid="store-coupon-cta-sidebar"
+            className="secondary-action full"
+            href={couponHref}
+            onClick={() => trackCouponClick("sidebar")}
+          >
             <Ticket size={18} />
             {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Ưu đãi của quán"}
           </Link>
@@ -580,10 +694,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       </section>
 
       <div className="mobile-cta">
-        <Link className="primary-action full" href={bookingHref}>
+        <Link className="primary-action full" href={bookingHref} onClick={() => trackBookingClick("mobile")}>
           Đặt chỗ
         </Link>
-        <Link className="secondary-action full" href={couponHref}>
+        <Link className="secondary-action full" href={couponHref} onClick={() => trackCouponClick("mobile")}>
           Coupon
         </Link>
       </div>
@@ -728,6 +842,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .hero-meta span,
+        .hero-meta a,
         .hero-actions,
         .primary-action,
         .secondary-action,
@@ -738,9 +853,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
         }
 
-        .hero-meta span {
+        .hero-meta span,
+        .hero-meta a {
           gap: 8px;
           min-width: 0;
+          color: inherit;
+          text-decoration: none;
         }
 
         .hero-actions {
@@ -803,6 +921,78 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .gallery-thumb.active {
           border-color: #e2b85e;
           box-shadow: 0 0 0 2px rgba(226, 184, 94, .22);
+        }
+
+        .lightbox {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          background: rgba(5, 6, 8, .92);
+          display: grid;
+          place-items: center;
+          padding: 28px;
+        }
+
+        .lightbox-media {
+          width: min(100%, 980px);
+          aspect-ratio: 16 / 9;
+          display: grid;
+          place-items: center;
+        }
+
+        .lightbox-media img,
+        .lightbox-media video,
+        .lightbox-media iframe {
+          width: 100%;
+          height: 100%;
+          border: 0;
+          object-fit: contain;
+          border-radius: 8px;
+          background: #050608;
+        }
+
+        .lightbox-close,
+        .lightbox-nav {
+          position: absolute;
+          border: 1px solid rgba(244, 221, 155, .28);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, .08);
+          color: #f7f1e7;
+          cursor: pointer;
+          display: grid;
+          place-items: center;
+        }
+
+        .lightbox-close {
+          top: 22px;
+          right: 22px;
+          width: 44px;
+          height: 44px;
+        }
+
+        .lightbox-nav {
+          width: 52px;
+          height: 52px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+
+        .lightbox-nav.previous {
+          left: 22px;
+        }
+
+        .lightbox-nav.next {
+          right: 22px;
+        }
+
+        .lightbox-caption {
+          position: absolute;
+          left: 50%;
+          bottom: 22px;
+          transform: translateX(-50%);
+          color: #f4dd9b;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .store-content {
@@ -1129,6 +1319,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .related-card strong,
+        .related-card small,
         .related-card span {
           display: block;
           padding: 0 10px;
@@ -1140,6 +1331,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .related-card span {
           padding-bottom: 12px;
+          margin-top: 4px;
+        }
+
+        .related-card small {
+          color: #7ddbd2;
+          font-size: 11px;
+          font-weight: 900;
           margin-top: 4px;
         }
 

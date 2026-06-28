@@ -468,6 +468,13 @@ export class NightlifeDataService {
         district: relatedStore.district,
         area: this.mapPublicArea(relatedStore.area),
         thumbnailUrl: relatedStore.media[0]?.url ?? null,
+        relatedReason:
+          relatedStore.area?.id && relatedStore.area.id === store.areaId
+            ? 'same-area'
+            : relatedStore.category === store.category &&
+                relatedStore.city === store.city
+              ? 'same-category'
+              : 'same-city',
       })),
       seo: {
         title: `${store.name} | NightLife VN`,

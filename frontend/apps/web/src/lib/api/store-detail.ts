@@ -97,6 +97,7 @@ export type RelatedStore = {
   district?: string | null;
   area?: StoreDetailArea | null;
   thumbnailUrl?: string | null;
+  relatedReason?: "same-area" | "same-category" | "same-city";
 };
 
 export type StoreSeoMetadata = {

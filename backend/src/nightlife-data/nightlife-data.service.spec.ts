@@ -437,6 +437,7 @@ describe('NightlifeDataService', () => {
           expect.objectContaining({
             slug: 'crimson-bar',
             thumbnailUrl: 'https://example.com/crimson.jpg',
+            relatedReason: 'same-city',
           }),
         ],
         seo: expect.objectContaining({

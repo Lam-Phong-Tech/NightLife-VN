@@ -238,6 +238,32 @@ export class PublicStoreDetailCouponDto {
   endsAt?: Date | null;
 }
 
+export class PublicStoreOpeningHourDto {
+  @ApiPropertyOptional({ example: '19:00' })
+  open?: string;
+
+  @ApiPropertyOptional({ example: '02:00' })
+  close?: string;
+
+  @ApiPropertyOptional({ example: false })
+  closed?: boolean;
+
+  @ApiPropertyOptional({ example: 'Last booking 30 minutes before closing.' })
+  note?: string;
+}
+
+export class PublicStoreHolidayScheduleDto {
+  @ApiPropertyOptional({
+    example: 'Holiday hours are confirmed by the store before each booking.',
+  })
+  note?: string;
+
+  @ApiPropertyOptional({
+    example: [{ date: '2026-09-02', reason: 'National holiday' }],
+  })
+  specialClosures?: Array<Record<string, unknown>>;
+}
+
 export class PublicStoreCampaignDto {
   @ApiProperty({ example: 'coupon_01' })
   id!: string;
@@ -279,6 +305,9 @@ export class PublicRelatedStoreDto {
 
   @ApiPropertyOptional({ example: null, nullable: true })
   thumbnailUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'same-area' })
+  relatedReason?: 'same-area' | 'same-category' | 'same-city';
 }
 
 export class PublicStoreSeoMetadataDto {
@@ -338,11 +367,15 @@ export class PublicStoreDetailResponseDto {
   })
   mapUrl?: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
-  openingHours?: unknown;
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'object' },
+    nullable: true,
+  })
+  openingHours?: Record<string, PublicStoreOpeningHourDto> | null;
 
-  @ApiPropertyOptional({ nullable: true })
-  holidaySchedule?: unknown;
+  @ApiPropertyOptional({ type: () => PublicStoreHolidayScheduleDto, nullable: true })
+  holidaySchedule?: PublicStoreHolidayScheduleDto | null;
 
   @ApiProperty({ type: [PublicStoreGalleryItemDto] })
   gallery!: PublicStoreGalleryItemDto[];

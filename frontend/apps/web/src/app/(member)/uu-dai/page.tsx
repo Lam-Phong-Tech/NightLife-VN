@@ -1,151 +1,789 @@
 "use client";
-import { MockItem } from '@/types';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
 
-  export default function Page() {
-    
-    
-    
-    // Mock data arrays for loops
-    const offers: MockItem[] = [
-          { title: 'Happy Hour cuối tuần', place: 'Club Lumière · Tây Hồ', value: '-30%', expiry: 'Còn 3 ngày', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
-          { title: 'Combo phòng VIP 2+1', place: 'KTV Hoàng Gia · Kim Mã', value: '2+1', expiry: 'Còn 8 ngày', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
-          { title: 'Spa thư giãn nửa giá', place: 'Spa Hồng Ngọc · Đống Đa', value: '-50%', expiry: 'Sắp hết', img: "url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Đã lưu ví ✓', btnStyle: { background: '#e6f7ee', color: '#177544' }, take: () => alert('Mã đã được lưu') },
-          { title: 'Ladies Night -20%', place: 'Hanoi Velvet · Hoàn Kiếm', value: '-20%', expiry: 'Thứ 5 hàng tuần', img: "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
-          { title: 'Welcome Member -8%', place: 'Sora Lounge · Quận 1', value: '-8%', expiry: 'Hội viên mới', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') },
-          { title: 'Khai trương -10%', place: 'Neon Garden · Bình Thạnh', value: '-10%', expiry: 'Còn 5 ngày', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' }, take: () => alert('Đã lưu mã') }
-        ];
-    
-    // Standalone mock variables
-    
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Gift,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Store,
+  Ticket,
+  UserRound,
+} from "lucide-react";
+import { ApiError } from "@/lib/api/client";
+import { couponApi, type CouponIssue, type PublicCoupon } from "@/lib/api/coupons";
+import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+type CouponQuery = {
+  couponId?: string;
+  storeId?: string;
+  storeSlug?: string;
+};
 
-<>
-<>
+const categoryLabels: Record<string, string> = {
+  BAR: "Bar",
+  CLUB: "Club",
+  LOUNGE: "Lounge",
+  GIRLS_BAR: "Girls bar",
+  KARAOKE: "Karaoke/KTV",
+  MASSAGE_SPA: "Massage spa",
+  RESTAURANT: "Nhà hàng",
+  CASINO: "Casino lounge",
+};
 
+const formatVnd = (value?: number | null) => {
+  if (!value) {
+    return "0đ";
+  }
 
+  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
+};
 
+const formatDiscount = (coupon: PublicCoupon) => {
+  if (coupon.discountType === "PERCENT") {
+    return `-${coupon.discountValue}%`;
+  }
 
-</>
+  return `-${formatVnd(coupon.discountValue)}`;
+};
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"background":"#fff","padding":"8px 18px 12px","display":"flex","alignItems":"center","justifyContent":"space-between"}}><h2 style={{"fontSize":"19px","fontWeight":"800"}}>Ưu đãi hot</h2><Link href="/vi-uu-dai" style={{"fontSize":"12px","color":"#6d28d9","fontWeight":"600"}}>Ví của tôi ›</Link></div>
+const formatDate = (value?: string | null) => {
+  if (!value) {
+    return "Không giới hạn";
+  }
 
-    <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"11px"}}>
-      {offers?.map((o, index) => (<React.Fragment key={index}>
-        <div style={{"background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"flex"}}>
-          <div style={{"width":"96px","flex":"none","background":o.img,"position":"relative"}}><span style={{"position":"absolute","top":"8px","left":"8px","background":"#ffd24d","color":"#5a3d00","fontSize":"12px","fontWeight":"800","borderRadius":"9px","padding":"3px 8px"}}>{o.value}</span></div>
-          <div style={{"padding":"11px 12px","flex":"1"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>{o.title}</div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>{o.place}</div><div style={{"marginTop":"9px","display":"flex","alignItems":"center","justifyContent":"space-between"}}><span style={{"fontSize":"10px","color":"#c0246a","background":"#fce4ef","borderRadius":"8px","padding":"3px 8px","fontWeight":"600"}}>{o.expiry}</span><span onClick={o.take} className="btn" style={{ ...{"fontSize":"11.5px","fontWeight":"700","borderRadius":"9px","padding":"6px 12px"}, ...o.btnStyle }}>{o.btnLabel}</span></div></div>
-        </div>
-      </React.Fragment>))}
-    </div>
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Đang cập nhật";
+  }
 
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
-      <Link href="/danh-sach-cast" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/geisha.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Cast</span></Link>
-      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/fluency/96/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#6d28d9","fontWeight":"600"}}>Ưu đãi</span></Link>
-      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
-      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></Link>
-    </div>
-  </div>
-</div>
-</>
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+};
 
+const expiryText = (value?: string | null) => {
+  if (!value) {
+    return "Không giới hạn";
+  }
 
-</div>
-        <div className="hidden md:block">
+  const expiresAt = new Date(value).getTime();
+  if (Number.isNaN(expiresAt)) {
+    return "Đang cập nhật";
+  }
 
-<>
-<>
+  const diffMs = expiresAt - Date.now();
+  if (diffMs <= 0) {
+    return "Đã hết hạn";
+  }
 
+  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (days <= 1) {
+    return "Còn dưới 24 giờ";
+  }
 
+  return `Còn ${days} ngày`;
+};
 
+const readableName = (name: string) => {
+  const parts = name.split(/—|-/);
+  return parts[parts.length - 1]?.trim() || name;
+};
 
-</>
+const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
 
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
-  <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}><Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link><div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" className="lk">Tour</Link><Link href="/blog" className="lk">Blog</Link></div></div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><Link href="/vi-uu-dai" className="lk" style={{"fontSize":"13px","color":"#6d28d9","fontWeight":"600"}}>Ví của tôi ›</Link><Link href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</Link><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
-    </div>
+const readCouponQuery = (): CouponQuery => {
+  if (typeof window === "undefined") {
+    return {};
+  }
 
-    <div style={{"padding":"26px 34px 8px"}}><h2 style={{"fontSize":"24px","fontWeight":"800"}}>Ưu đãi &amp; Sự kiện hot</h2><p style={{"fontSize":"13px","color":"#5b5870","marginTop":"5px"}}>Lấy mã miễn phí, đưa nhân viên quán quét khi tới nơi. Mã lưu trong <Link href="/vi-uu-dai" style={{"color":"#6d28d9","fontWeight":"600"}}>Ví ưu đãi</Link>.</p></div>
+  const params = new URLSearchParams(window.location.search);
+  return {
+    couponId: params.get("couponId") || undefined,
+    storeId: params.get("storeId") || undefined,
+    storeSlug: params.get("storeSlug") || undefined,
+  };
+};
 
-    <div style={{"padding":"18px 34px 32px","display":"grid","gridTemplateColumns":"repeat(3,1fr)","gap":"16px"}}>
-      {offers?.map((o, index) => (<React.Fragment key={index}>
-        <div className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
-          <div style={{"height":"140px","background":o.img,"position":"relative"}}><span style={{"position":"absolute","top":"12px","left":"12px","background":"#ffd24d","color":"#5a3d00","fontSize":"17px","fontWeight":"800","borderRadius":"12px","padding":"6px 12px"}}>{o.value}</span></div>
-          <div style={{"padding":"15px"}}>
-            <div style={{"fontWeight":"700","fontSize":"15px"}}>{o.title}</div>
-            <div style={{"fontSize":"12.5px","color":"#8a879a","marginTop":"4px"}}>{o.place}</div>
-            <div style={{"marginTop":"13px","display":"flex","alignItems":"center","justifyContent":"space-between"}}>
-              <span style={{"fontSize":"11.5px","color":"#c0246a","background":"#fce4ef","borderRadius":"10px","padding":"4px 9px","fontWeight":"600"}}>{o.expiry}</span>
-              <span onClick={o.take} className="btn" style={{ ...{"fontSize":"13px","fontWeight":"700","borderRadius":"10px","padding":"8px 16px"}, ...o.btnStyle }}>{o.btnLabel}</span>
+export default function Page() {
+  const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
+  const [query, setQuery] = useState<CouponQuery>({});
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [claimingCouponId, setClaimingCouponId] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState("");
+  const [claimedIssue, setClaimedIssue] = useState<CouponIssue | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setQuery(readCouponQuery());
+    const user = getAuthUser();
+    setAuthUser(user);
+    if (user) {
+      setGuestName(user.displayName || user.email || "");
+      setGuestPhone(user.phone || "");
+    }
+
+    couponApi
+      .listPublicCoupons()
+      .then((data) => {
+        if (isMounted) {
+          setCoupons(data);
+          setLoadError("");
+        }
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : "Không tải được danh sách ưu đãi từ backend.";
+        setLoadError(message);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const visibleCoupons = useMemo(() => {
+    return coupons.filter((coupon) => {
+      const matchesCoupon = !query.couponId || coupon.id === query.couponId;
+      const matchesStoreId = !query.storeId || coupon.store.id === query.storeId;
+      const matchesStoreSlug = !query.storeSlug || coupon.store.slug === query.storeSlug;
+
+      return matchesCoupon && matchesStoreId && matchesStoreSlug;
+    });
+  }, [coupons, query]);
+
+  const scopedStore = useMemo(() => {
+    const byVisibleCoupon = visibleCoupons[0]?.store;
+    if (byVisibleCoupon) {
+      return byVisibleCoupon;
+    }
+
+    return coupons.find((coupon) => {
+      if (query.storeId && coupon.store.id === query.storeId) {
+        return true;
+      }
+
+      return Boolean(query.storeSlug && coupon.store.slug === query.storeSlug);
+    })?.store;
+  }, [coupons, query.storeId, query.storeSlug, visibleCoupons]);
+
+  const isScopedFromStore = Boolean(query.couponId || query.storeId || query.storeSlug);
+  const isMember = isMemberUser(authUser);
+  const pageTitle = scopedStore
+    ? `Ưu đãi của ${readableName(scopedStore.name)}`
+    : "Ưu đãi đang mở";
+  const backHref = query.storeSlug ? `/stores/${query.storeSlug}` : "/danh-sach-quan";
+
+  const claimCoupon = async (coupon: PublicCoupon) => {
+    setClaimError("");
+    setClaimedIssue(null);
+
+    const phone = guestPhone.trim();
+    if (!isMember && !phone) {
+      setClaimError("Nhập số điện thoại để tạo mã coupon khách.");
+      return;
+    }
+
+    try {
+      setClaimingCouponId(coupon.id);
+      const issue = isMember
+        ? await couponApi.claimMemberCoupon(coupon.id)
+        : (
+            await couponApi.claimGuestCoupon(coupon.id, {
+              ...(guestName.trim() ? { displayName: guestName.trim() } : {}),
+              phone,
+              ...(guestEmail.trim() ? { email: guestEmail.trim() } : {}),
+            })
+          ).issue;
+
+      setClaimedIssue(issue);
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Không tạo được mã coupon. Vui lòng thử lại.";
+      setClaimError(message);
+    } finally {
+      setClaimingCouponId(null);
+    }
+  };
+
+  return (
+    <main className="coupon-page">
+      <section className="coupon-shell">
+        <header className="coupon-header">
+          <Link className="back-link" href={backHref}>
+            {query.storeSlug ? "Về chi tiết quán" : "Xem danh sách quán"}
+          </Link>
+          <div className="header-grid">
+            <div>
+              <span className="eyebrow">
+                <Gift size={16} />
+                Coupon thật từ backend
+              </span>
+              <h1>{pageTitle}</h1>
+              <p>
+                Chọn ưu đãi, tạo coupon issue thật và đưa mã cho nhân viên quán
+                quét khi đến nơi.
+              </p>
+            </div>
+            <div className="summary-panel">
+              <div>
+                <span>Phạm vi</span>
+                <strong>{isScopedFromStore ? "Theo CTA của quán" : "Tất cả coupon"}</strong>
+              </div>
+              <div>
+                <span>Đang hiển thị</span>
+                <strong>{visibleCoupons.length} mã</strong>
+              </div>
+              {scopedStore ? (
+                <Link href={`/stores/${scopedStore.slug}`}>Mở trang quán</Link>
+              ) : null}
             </div>
           </div>
-        </div>
-      </React.Fragment>))}
-    </div>
-  </div>
-</div>
-</>
+        </header>
 
+        <section className="claim-panel">
+          <div>
+            <span className="eyebrow muted">
+              <Ticket size={16} />
+              Cách nhận mã
+            </span>
+            <h2>{isMember ? "Nhận vào ví hội viên" : "Nhận mã khách"}</h2>
+            <p>
+              {isMember
+                ? "Bạn đang đăng nhập hội viên, nút lấy mã sẽ gọi member claim."
+                : "Khách chưa đăng nhập cần để lại số điện thoại để hệ thống tạo mã guest coupon."}
+            </p>
+          </div>
+          {!isMember ? (
+            <div className="guest-form" aria-label="Thông tin nhận coupon">
+              <label>
+                <UserRound size={15} />
+                <input
+                  value={guestName}
+                  onChange={(event) => setGuestName(event.target.value)}
+                  placeholder="Tên người nhận"
+                />
+              </label>
+              <label>
+                <Phone size={15} />
+                <input
+                  value={guestPhone}
+                  onChange={(event) => setGuestPhone(event.target.value)}
+                  placeholder="Số điện thoại"
+                />
+              </label>
+              <label>
+                <Mail size={15} />
+                <input
+                  value={guestEmail}
+                  onChange={(event) => setGuestEmail(event.target.value)}
+                  placeholder="Email nếu có"
+                  type="email"
+                />
+              </label>
+            </div>
+          ) : null}
+        </section>
 
+        {claimedIssue ? (
+          <section className="result success" role="status">
+            <CheckCircle2 size={20} />
+            <div>
+              <strong>Đã tạo mã {claimedIssue.code}</strong>
+              <span>
+                Hiệu lực đến {formatDate(claimedIssue.expiresAt)} cho coupon{" "}
+                {claimedIssue.coupon.name}.
+              </span>
+            </div>
+          </section>
+        ) : null}
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
-  <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-    <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-      <div style={{"maxWidth":"300px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-        <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-          <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
-        </div>
-      </div>
-      <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-          <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-          <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-          <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-          <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-        </div>
-        <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-          <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-          <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-        </div>
-      </div>
-    </div>
-    <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-      <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-      <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-    </div>
-    <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-      <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-      <div>v2.0.0 • Nightlife Platform</div>
-      <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-      </React.Fragment>
-    );
-  }
-  
+        {claimError ? (
+          <section className="result error" role="alert">
+            <AlertCircle size={20} />
+            <span>{claimError}</span>
+          </section>
+        ) : null}
 
+        {loadError ? (
+          <section className="result error" role="alert">
+            <AlertCircle size={20} />
+            <span>{loadError}</span>
+          </section>
+        ) : null}
+
+        {isLoading ? (
+          <section className="coupon-grid" aria-label="Đang tải ưu đãi">
+            {[0, 1, 2].map((item) => (
+              <div className="coupon-skeleton" key={item} />
+            ))}
+          </section>
+        ) : null}
+
+        {!isLoading && !loadError && visibleCoupons.length === 0 ? (
+          <section className="empty-state">
+            <Ticket size={32} />
+            <h2>Chưa có coupon đang mở</h2>
+            <p>
+              {isScopedFromStore
+                ? "Quán hoặc coupon từ CTA hiện không có ưu đãi active."
+                : "Backend hiện chưa trả về coupon active nào."}
+            </p>
+            <Link href="/danh-sach-quan">Tìm quán khác</Link>
+          </section>
+        ) : null}
+
+        {!isLoading && !loadError && visibleCoupons.length ? (
+          <section className="coupon-grid" aria-label="Danh sách coupon">
+            {visibleCoupons.map((coupon) => {
+              const isClaiming = claimingCouponId === coupon.id;
+              const storeLabel = readableName(coupon.store.name);
+
+              return (
+                <article
+                  className={query.couponId === coupon.id ? "coupon-card selected" : "coupon-card"}
+                  key={coupon.id}
+                >
+                  <div className="coupon-value">{formatDiscount(coupon)}</div>
+                  <div className="coupon-body">
+                    <div className="coupon-meta">
+                      <span>
+                        <Store size={14} />
+                        {categoryLabels[coupon.store.category] ?? coupon.store.category}
+                      </span>
+                      <span>
+                        <MapPin size={14} />
+                        {[coupon.store.district, coupon.store.city].filter(Boolean).join(", ")}
+                      </span>
+                    </div>
+                    <h2>{coupon.name}</h2>
+                    <p>{coupon.description || "Coupon đang áp dụng tại quán này."}</p>
+                    <div className="store-line">
+                      <strong>{storeLabel}</strong>
+                      <Link href={`/stores/${coupon.store.slug}`}>Chi tiết quán</Link>
+                    </div>
+                    <dl>
+                      <div>
+                        <dt>Mã gốc</dt>
+                        <dd>{coupon.code}</dd>
+                      </div>
+                      <div>
+                        <dt>Hạn</dt>
+                        <dd>{expiryText(coupon.endsAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>Đơn tối thiểu</dt>
+                        <dd>{coupon.minSpendVnd ? formatVnd(coupon.minSpendVnd) : "Không yêu cầu"}</dd>
+                      </div>
+                      <div>
+                        <dt>Giảm tối đa</dt>
+                        <dd>{coupon.maxDiscountVnd ? formatVnd(coupon.maxDiscountVnd) : "Theo quy định"}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <button
+                    className="claim-button"
+                    disabled={Boolean(claimingCouponId)}
+                    onClick={() => claimCoupon(coupon)}
+                    type="button"
+                  >
+                    {isClaiming ? <Loader2 size={18} className="spin" /> : <Ticket size={18} />}
+                    {isMember ? "Lưu vào ví" : "Lấy mã guest"}
+                  </button>
+                </article>
+              );
+            })}
+          </section>
+        ) : null}
+      </section>
+
+      <style>{`
+        .coupon-page {
+          min-height: 100vh;
+          background: #101114;
+          color: #f7f1e7;
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          padding: 24px;
+        }
+
+        .coupon-shell {
+          max-width: 1180px;
+          margin: 0 auto;
+          display: grid;
+          gap: 18px;
+        }
+
+        .back-link,
+        .store-line a,
+        .summary-panel a,
+        .empty-state a {
+          color: #f4d98d;
+          font-weight: 900;
+          text-decoration: none;
+        }
+
+        .coupon-header {
+          padding: 30px 0 8px;
+        }
+
+        .header-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 18px;
+          align-items: end;
+        }
+
+        .eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: #7ddbd2;
+          font-size: 12px;
+          font-weight: 950;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+        }
+
+        .eyebrow.muted {
+          color: #f0c96f;
+        }
+
+        h1,
+        h2,
+        p {
+          margin: 0;
+        }
+
+        h1 {
+          margin-top: 10px;
+          font-size: clamp(32px, 5vw, 58px);
+          line-height: 1;
+          letter-spacing: 0;
+        }
+
+        .coupon-header p,
+        .claim-panel p,
+        .empty-state p,
+        .coupon-card p {
+          color: #c8c0b1;
+          line-height: 1.6;
+        }
+
+        .coupon-header p {
+          max-width: 680px;
+          margin-top: 12px;
+        }
+
+        .summary-panel,
+        .claim-panel,
+        .result,
+        .empty-state,
+        .coupon-card {
+          border: 1px solid rgba(240, 201, 111, .2);
+          background: rgba(255, 255, 255, .055);
+          border-radius: 8px;
+        }
+
+        .summary-panel {
+          display: grid;
+          gap: 12px;
+          padding: 16px;
+        }
+
+        .summary-panel span,
+        dt {
+          display: block;
+          color: #a9a194;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .summary-panel strong,
+        dd {
+          margin: 0;
+          font-weight: 950;
+        }
+
+        .claim-panel {
+          display: grid;
+          grid-template-columns: minmax(0, .85fr) minmax(320px, 1.15fr);
+          gap: 18px;
+          padding: 18px;
+          align-items: center;
+        }
+
+        .claim-panel h2 {
+          margin-top: 8px;
+          font-size: 22px;
+        }
+
+        .guest-form {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .guest-form label {
+          min-height: 46px;
+          border: 1px solid rgba(255, 255, 255, .12);
+          border-radius: 8px;
+          background: rgba(0, 0, 0, .18);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0 12px;
+          color: #f0c96f;
+        }
+
+        .guest-form input {
+          width: 100%;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: #f7f1e7;
+          font: inherit;
+          min-width: 0;
+        }
+
+        .guest-form input::placeholder {
+          color: #8d8579;
+        }
+
+        .result {
+          min-height: 56px;
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          padding: 14px 16px;
+        }
+
+        .result.success {
+          border-color: rgba(125, 219, 210, .42);
+          background: rgba(48, 150, 140, .12);
+        }
+
+        .result.error {
+          border-color: rgba(255, 128, 150, .42);
+          background: rgba(255, 128, 150, .12);
+          color: #ffd1d9;
+        }
+
+        .result div {
+          display: grid;
+          gap: 2px;
+        }
+
+        .result span {
+          color: inherit;
+        }
+
+        .coupon-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .coupon-card {
+          min-height: 430px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .coupon-card.selected {
+          border-color: rgba(125, 219, 210, .72);
+          box-shadow: 0 0 0 1px rgba(125, 219, 210, .22);
+        }
+
+        .coupon-value {
+          min-height: 118px;
+          display: flex;
+          align-items: end;
+          padding: 18px;
+          font-size: 42px;
+          line-height: .9;
+          font-weight: 950;
+          color: #14100a;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,.85), rgba(240,201,111,.95)),
+            radial-gradient(circle at 80% 20%, #7ddbd2, transparent 30%);
+        }
+
+        .coupon-body {
+          padding: 16px;
+          display: grid;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .coupon-meta,
+        .store-line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .coupon-meta {
+          flex-wrap: wrap;
+        }
+
+        .coupon-meta span {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #bcb3a6;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .coupon-card h2 {
+          font-size: 21px;
+          letter-spacing: 0;
+        }
+
+        .store-line {
+          padding-top: 4px;
+        }
+
+        .store-line strong {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        dl {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin: 0;
+        }
+
+        dl div {
+          min-height: 58px;
+          border: 1px solid rgba(255, 255, 255, .1);
+          border-radius: 8px;
+          padding: 10px;
+          background: rgba(0, 0, 0, .14);
+        }
+
+        .claim-button {
+          min-height: 52px;
+          border: 0;
+          border-top: 1px solid rgba(240, 201, 111, .2);
+          background: #f0c96f;
+          color: #171109;
+          font: inherit;
+          font-weight: 950;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .claim-button:disabled {
+          cursor: wait;
+          opacity: .72;
+        }
+
+        .spin {
+          animation: spin .8s linear infinite;
+        }
+
+        .coupon-skeleton {
+          min-height: 420px;
+          border-radius: 8px;
+          background: linear-gradient(90deg, rgba(255,255,255,.055), rgba(240,201,111,.13), rgba(255,255,255,.055));
+          background-size: 220% 100%;
+          animation: shimmer 1.4s ease-in-out infinite;
+        }
+
+        .empty-state {
+          min-height: 280px;
+          display: grid;
+          place-items: center;
+          text-align: center;
+          padding: 34px;
+          gap: 10px;
+        }
+
+        .empty-state h2 {
+          font-size: 26px;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: 100% 0; }
+          100% { background-position: -100% 0; }
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 980px) {
+          .header-grid,
+          .claim-panel,
+          .coupon-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .guest-form {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 620px) {
+          .coupon-page {
+            padding: 16px;
+          }
+
+          .coupon-header {
+            padding-top: 20px;
+          }
+
+          .coupon-value {
+            min-height: 98px;
+            font-size: 36px;
+          }
+
+          dl {
+            grid-template-columns: 1fr;
+          }
+
+          .coupon-meta,
+          .store-line {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
