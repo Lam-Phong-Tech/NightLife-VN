@@ -165,7 +165,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [selectedTime, setSelectedTime] = useState("21:00");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [recommendedStores, setRecommendedStores] = useState(store.relatedStores);
+  const recommendedStores = useMemo(() => personalizeRelatedStores(store.relatedStores), [store.relatedStores]);
 
   const displayName = readableName(store.name);
   const gallery = store.gallery ?? [];
@@ -177,9 +177,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const hasMap = Boolean(embedUrl);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
 
-  useEffect(() => {
-    setRecommendedStores(personalizeRelatedStores(store.relatedStores));
-  }, [store.relatedStores]);
   const dateOptions = useMemo(
     () =>
       Array.from({ length: 4 }, (_, index) => {

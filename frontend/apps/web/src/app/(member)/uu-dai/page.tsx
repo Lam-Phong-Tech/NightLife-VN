@@ -113,7 +113,7 @@ const readCouponQuery = (): CouponQuery => {
 
 export default function Page() {
   const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
-  const [query, setQuery] = useState<CouponQuery>({});
+  const [query, setQuery] = useState<CouponQuery>(() => readCouponQuery());
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
@@ -127,7 +127,6 @@ export default function Page() {
   useEffect(() => {
     let isMounted = true;
 
-    setQuery(readCouponQuery());
     const user = getAuthUser();
     setAuthUser(user);
     if (user) {
