@@ -18,13 +18,14 @@ interface MediaSeed {
 }
 
 function storeHero(slug: string, label: string): MediaSeed {
-  const text = encodeURIComponent(label);
+  // Use a generic night club/bar image from Unsplash
+  const seed = slug.length;
   return {
     storageKey: `seed/stores/${slug}/hero.jpg`,
     originalName: `${slug}-hero.jpg`,
     mimeType: 'image/jpeg',
     sizeBytes: 204800,
-    url: `https://placehold.co/800x600/1a1a2e/e94560?text=${text}`,
+    url: `https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80&sig=${seed}`,
     purpose: 'hero',
     type: 'IMAGE',
     storeSlug: slug,
@@ -45,13 +46,14 @@ function storeVideo(slug: string): MediaSeed {
 }
 
 function castAvatar(slug: string, label: string): MediaSeed {
-  const text = encodeURIComponent(label);
+  // Use a generic portrait image from Unsplash
+  const seed = slug.length;
   return {
     storageKey: `seed/casts/${slug}/avatar.jpg`,
     originalName: `${slug}-avatar.jpg`,
     mimeType: 'image/jpeg',
     sizeBytes: 102400,
-    url: `https://placehold.co/400x500/2d2d44/ff6b9d?text=${text}`,
+    url: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80&sig=${seed}`,
     purpose: 'avatar',
     type: 'IMAGE',
     castSlug: slug,
