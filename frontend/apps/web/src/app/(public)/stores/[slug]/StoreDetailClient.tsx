@@ -172,8 +172,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? null;
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
   const mainGalleryMedia = heroImage ?? selectedMedia;
-  const galleryTiles = gallery.length
-    ? Array.from({ length: Math.max(5, gallery.length) }, (_, index) => gallery[index % gallery.length])
+  const galleryTiles: StoreGalleryItem[] = gallery.length
+    ? Array.from({ length: Math.max(5, gallery.length) }, (_, index) => gallery[index % gallery.length]!)
     : [];
   const firstCoupon = store.activeCoupons[0] ?? null;
   const location = [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
