@@ -296,6 +296,176 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('gets public store detail by slug with gallery, casts, coupons, related stores, and seo', async () => {
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-neon',
+      areaId: 'area-hn',
+      createdAt: new Date('2026-06-20T00:00:00.000Z'),
+      updatedAt: new Date('2026-06-21T00:00:00.000Z'),
+      name: 'Neon Club',
+      slug: 'neon-club',
+      category: 'CLUB',
+      description: 'Late-night club by West Lake.',
+      address: '200 Nghi Tam',
+      city: 'Ha Noi',
+      district: 'Tay Ho',
+      phone: '+84243456007',
+      latitude: '21.063',
+      longitude: '105.822',
+      openingHours: { monday: { open: '19:00', close: '02:00' } },
+      holidaySchedule: { specialClosures: [] },
+      mapUrl: 'https://maps.google.com/?q=21.063,105.822',
+      googlePlaceId: 'place-neon',
+      area: {
+        id: 'area-hn',
+        code: 'hn-tayho',
+        name: 'Tay Ho',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        ward: 'Quang An',
+      },
+      media: [
+        {
+          id: 'media-hero',
+          type: 'IMAGE',
+          url: 'https://example.com/neon.jpg',
+          purpose: 'store-hero',
+          mimeType: 'image/jpeg',
+          originalName: 'Neon hero',
+          createdAt: new Date('2026-06-20T00:00:00.000Z'),
+        },
+        {
+          id: 'media-video',
+          type: 'VIDEO',
+          url: 'https://example.com/neon.mp4',
+          purpose: 'store-video',
+          mimeType: 'video/mp4',
+          originalName: 'Neon video',
+          createdAt: new Date('2026-06-19T00:00:00.000Z'),
+        },
+      ],
+      casts: [
+        {
+          id: 'cast-yuna',
+          slug: 'yuna-neon',
+          stageName: 'Yuna',
+          publicAlias: 'Yuna Neon',
+          publicHeadline: 'Party host',
+          tags: ['club', 'vip'],
+          languages: ['ja', 'vi'],
+          hourlyRateVnd: 700000,
+          media: [{ url: 'https://example.com/yuna.jpg' }],
+        },
+      ],
+      coupons: [
+        {
+          id: 'coupon-1',
+          code: 'WELCOME20',
+          name: 'Welcome 20%',
+          description: '20% off',
+          discountType: 'PERCENT',
+          discountValue: 20,
+          maxDiscountVnd: 200000,
+          minSpendVnd: 1000000,
+          startsAt: new Date('2026-06-01T00:00:00.000Z'),
+          endsAt: new Date('2026-07-01T00:00:00.000Z'),
+          usageLimit: 100,
+          usedCount: 10,
+        },
+      ],
+    } as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-related',
+        name: 'Crimson Bar',
+        slug: 'crimson-bar',
+        category: 'BAR',
+        city: 'Ha Noi',
+        district: 'Hoan Kiem',
+        area: null,
+        media: [{ url: 'https://example.com/crimson.jpg' }],
+      },
+    ] as never);
+
+    const result = await service.getPublicStoreBySlug('Neon Club');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'store-neon',
+        slug: 'neon-club',
+        mapUrl: 'https://maps.google.com/?q=21.063,105.822',
+        openingHours: { monday: { open: '19:00', close: '02:00' } },
+        holidaySchedule: { specialClosures: [] },
+        gallery: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'media-hero',
+            type: 'IMAGE',
+            url: 'https://example.com/neon.jpg',
+          }),
+          expect.objectContaining({
+            id: 'media-video',
+            type: 'VIDEO',
+          }),
+        ]),
+        casts: [
+          expect.objectContaining({
+            id: 'cast-yuna',
+            slug: 'yuna-neon',
+            publicAlias: 'Yuna Neon',
+            thumbnailUrl: 'https://example.com/yuna.jpg',
+            tags: ['club', 'vip'],
+            languages: ['ja', 'vi'],
+          }),
+        ],
+        priceReference: expect.objectContaining({
+          currency: 'VND',
+          startingFromVnd: 700000,
+        }),
+        activeCoupons: [
+          expect.objectContaining({
+            id: 'coupon-1',
+            code: 'WELCOME20',
+          }),
+        ],
+        campaigns: [
+          expect.objectContaining({
+            source: 'coupon',
+            couponId: 'coupon-1',
+          }),
+        ],
+        relatedStores: [
+          expect.objectContaining({
+            slug: 'crimson-bar',
+            thumbnailUrl: 'https://example.com/crimson.jpg',
+          }),
+        ],
+        seo: expect.objectContaining({
+          title: 'Neon Club | NightLife VN',
+          canonicalPath: '/stores/neon-club',
+          ogImage: 'https://example.com/neon.jpg',
+        }),
+      }),
+    );
+    expect(prisma.store.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          slug: 'neon-club',
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      }),
+    );
+  });
+
+  it('returns not found for a missing public store slug', async () => {
+    prisma.store.findFirst.mockResolvedValue(null as never);
+
+    await expect(
+      service.getPublicStoreBySlug('missing-store'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.store.findMany).not.toHaveBeenCalled();
+  });
+
   it('sorts public stores by manual priority ranking', async () => {
     prisma.store.count.mockResolvedValue(2 as never);
     prisma.store.findMany.mockResolvedValue([

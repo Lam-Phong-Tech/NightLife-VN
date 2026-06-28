@@ -232,6 +232,254 @@ export class NightlifeDataService {
     return this.buildPublicListResponse(data, total, pagination, sort);
   }
 
+  async getPublicStoreBySlug(slug: string) {
+    const normalizedSlug = this.normalizeToken(slug);
+    if (!normalizedSlug) {
+      throw new BadRequestException('slug is required');
+    }
+
+    const now = new Date();
+    const store = await this.prisma.store.findFirst({
+      where: {
+        slug: normalizedSlug,
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        areaId: true,
+        createdAt: true,
+        updatedAt: true,
+        name: true,
+        slug: true,
+        category: true,
+        description: true,
+        address: true,
+        city: true,
+        district: true,
+        phone: true,
+        latitude: true,
+        longitude: true,
+        openingHours: true,
+        holidaySchedule: true,
+        mapUrl: true,
+        googlePlaceId: true,
+        area: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            city: true,
+            district: true,
+            ward: true,
+          },
+        },
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: { in: ['IMAGE', 'VIDEO'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            purpose: true,
+            mimeType: true,
+            originalName: true,
+            createdAt: true,
+          },
+        },
+        casts: {
+          where: {
+            deletedAt: null,
+            status: 'ACTIVE',
+            isPublic: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+            publicHeadline: true,
+            tags: true,
+            languages: true,
+            hourlyRateVnd: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                url: true,
+              },
+            },
+          },
+        },
+        coupons: {
+          where: this.buildActiveCouponWhere(now),
+          orderBy: { startsAt: 'desc' },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            description: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+            startsAt: true,
+            endsAt: true,
+            usageLimit: true,
+            usedCount: true,
+          },
+        },
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    const relatedStores = await this.prisma.store.findMany({
+      where: {
+        id: { not: store.id },
+        deletedAt: null,
+        status: 'ACTIVE',
+        OR: [
+          ...(store.areaId ? [{ areaId: store.areaId }] : []),
+          { category: store.category, city: store.city },
+          { city: store.city },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 4,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        city: true,
+        district: true,
+        area: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            city: true,
+            district: true,
+            ward: true,
+          },
+        },
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            url: true,
+          },
+        },
+      },
+    });
+
+    const gallery = store.media.map((media) => ({
+      id: media.id,
+      type: media.type,
+      url: media.url,
+      purpose: media.purpose,
+      mimeType: media.mimeType,
+      alt: media.originalName || store.name,
+    }));
+    const activeCoupons = store.coupons.map((coupon) => ({
+      id: coupon.id,
+      code: coupon.code,
+      name: coupon.name,
+      description: coupon.description,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      maxDiscountVnd: coupon.maxDiscountVnd,
+      minSpendVnd: coupon.minSpendVnd,
+      startsAt: coupon.startsAt,
+      endsAt: coupon.endsAt,
+      usageLimit: coupon.usageLimit,
+      usedCount: coupon.usedCount,
+    }));
+    const seoDescription = this.buildStoreSeoDescription(store);
+
+    return {
+      id: store.id,
+      slug: store.slug,
+      name: store.name,
+      category: store.category,
+      description: store.description,
+      area: this.mapPublicArea(store.area),
+      address: store.address,
+      city: store.city,
+      cityCode: store.area?.code
+        ? this.cityCodeFromAreaCode(store.area.code)
+        : this.normalizeCityCode(store.city),
+      district: store.district,
+      phone: store.phone,
+      latitude: this.toNumber(store.latitude),
+      longitude: this.toNumber(store.longitude),
+      mapUrl: store.mapUrl,
+      googlePlaceId: store.googlePlaceId,
+      openingHours: store.openingHours,
+      holidaySchedule: store.holidaySchedule,
+      gallery,
+      casts: store.casts.map((cast) => ({
+        id: cast.id,
+        slug: cast.slug,
+        stageName: cast.stageName,
+        publicAlias: cast.publicAlias,
+        publicHeadline: cast.publicHeadline,
+        thumbnailUrl: cast.media[0]?.url ?? null,
+        tags: cast.tags,
+        languages: cast.languages,
+        hourlyRateVnd: cast.hourlyRateVnd,
+      })),
+      priceReference: this.buildStorePriceReference(store.casts),
+      activeCoupons,
+      campaigns: activeCoupons.map((coupon) => ({
+        id: coupon.id,
+        title: coupon.name,
+        description: coupon.description,
+        source: 'coupon' as const,
+        couponId: coupon.id,
+      })),
+      relatedStores: relatedStores.map((relatedStore) => ({
+        id: relatedStore.id,
+        slug: relatedStore.slug,
+        name: relatedStore.name,
+        category: relatedStore.category,
+        city: relatedStore.city,
+        district: relatedStore.district,
+        area: this.mapPublicArea(relatedStore.area),
+        thumbnailUrl: relatedStore.media[0]?.url ?? null,
+      })),
+      seo: {
+        title: `${store.name} | NightLife VN`,
+        description: seoDescription,
+        canonicalPath: `/stores/${store.slug}`,
+        ogImage: gallery.find((item) => item.type === 'IMAGE')?.url ?? null,
+      },
+      createdAt: store.createdAt,
+      updatedAt: store.updatedAt,
+    };
+  }
+
   async listPublicCasts(query: PublicDiscoveryQueryDto = {}) {
     const coordinates = this.parseCoordinates(query);
     const pagination = this.resolvePagination(query);
@@ -1280,6 +1528,89 @@ export class NightlifeDataService {
     };
   }
 
+  private mapPublicArea(
+    area: {
+      id: string;
+      code: string;
+      name: string;
+      city: string;
+      district?: string | null;
+      ward?: string | null;
+    } | null,
+  ) {
+    if (!area) {
+      return null;
+    }
+
+    return {
+      id: area.id,
+      code: area.code,
+      name: area.name,
+      city: area.city,
+      district: area.district ?? null,
+      ward: area.ward ?? null,
+      cityCode: this.cityCodeFromAreaCode(area.code),
+    };
+  }
+
+  private buildStorePriceReference(
+    casts: Array<{
+      hourlyRateVnd: number | null;
+    }>,
+  ) {
+    const rates = casts
+      .map((cast) => cast.hourlyRateVnd)
+      .filter((rate): rate is number => typeof rate === 'number' && rate > 0);
+    const startingFromVnd = rates.length ? Math.min(...rates) : null;
+
+    return {
+      currency: 'VND',
+      startingFromVnd,
+      note: 'Reference price only; admin confirms final pricing by guest count, room type, and time slot.',
+      items: [
+        ...(startingFromVnd
+          ? [
+              {
+                label: 'Cast hourly rate',
+                amountVnd: startingFromVnd,
+                unit: 'hour',
+                note: 'Lowest active public cast rate for this store.',
+              },
+            ]
+          : []),
+        {
+          label: 'Table or room package',
+          amountVnd: null,
+          unit: null,
+          note: 'Confirmed by admin after the booking request.',
+        },
+      ],
+    };
+  }
+
+  private buildStoreSeoDescription(store: {
+    name: string;
+    description: string | null;
+    city: string;
+    district: string | null;
+    area: { name: string } | null;
+  }) {
+    const rawDescription = store.description
+      ?.replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 155);
+
+    if (rawDescription) {
+      return rawDescription;
+    }
+
+    const location = [store.area?.name, store.district, store.city]
+      .filter(Boolean)
+      .join(', ');
+
+    return `${store.name}${location ? ` in ${location}` : ''}. View gallery, public casts, active coupons, map, and opening hours on NightLife VN.`;
+  }
+
   private buildPublicStoreWhere(
     query: PublicDiscoveryQueryDto,
     options: { includeTextSearch?: boolean; includeCastName?: boolean } = {},
@@ -1532,7 +1863,10 @@ export class NightlifeDataService {
             pagination.offset + pagination.limit,
           );
 
-    return sortedItems.map(({ createdAt: _createdAt, ...item }) => item);
+    return sortedItems.map(({ createdAt: _createdAt, ...item }) => {
+      void _createdAt;
+      return item;
+    });
   }
 
   private sortPublicItems<T extends PublicSortableItem>(
@@ -1849,8 +2183,10 @@ export class NightlifeDataService {
       'toNumber' in value &&
       typeof value.toNumber === 'function'
     ) {
-      const parsed = value.toNumber();
-      return Number.isFinite(parsed) ? parsed : null;
+      const parsed = (value as { toNumber: () => unknown }).toNumber();
+      return typeof parsed === 'number' && Number.isFinite(parsed)
+        ? parsed
+        : null;
     }
 
     return null;

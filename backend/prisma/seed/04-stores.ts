@@ -29,6 +29,13 @@ function restaurantSchedule() {
   };
 }
 
+function defaultHolidaySchedule() {
+  return {
+    note: 'Holiday hours are confirmed by the store before each booking.',
+    specialClosures: [],
+  };
+}
+
 // ── Store definitions ───────────────────────────────────────────────
 interface StoreSeed {
   slug: string;
@@ -53,6 +60,7 @@ interface StoreSeed {
   longitude: number;
   mapUrl: string;
   openingHours: Record<string, { open: string; close: string }>;
+  holidaySchedule?: ReturnType<typeof defaultHolidaySchedule>;
 }
 
 const STORES: StoreSeed[] = [
@@ -372,6 +380,7 @@ export async function seedStores(
         latitude: s.latitude,
         longitude: s.longitude,
         openingHours: s.openingHours,
+        holidaySchedule: s.holidaySchedule ?? defaultHolidaySchedule(),
         mapUrl: s.mapUrl,
         status: 'ACTIVE',
         ownerId,
@@ -390,6 +399,7 @@ export async function seedStores(
         latitude: s.latitude,
         longitude: s.longitude,
         openingHours: s.openingHours,
+        holidaySchedule: s.holidaySchedule ?? defaultHolidaySchedule(),
         mapUrl: s.mapUrl,
         status: 'ACTIVE',
         ownerId,

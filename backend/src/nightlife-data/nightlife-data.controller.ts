@@ -34,6 +34,7 @@ import {
   PublicAreasContract,
   PublicCastsContract,
   PublicCouponsContract,
+  PublicStoreDetailContract,
   PublicStoresContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
@@ -62,6 +63,12 @@ export class NightlifeDataController {
   @Get('stores')
   listPublicStores(@Query() query: PublicDiscoveryQueryDto) {
     return this.nightlifeDataService.listPublicStores(query);
+  }
+
+  @PublicStoreDetailContract()
+  @Get('stores/:slug')
+  getPublicStoreBySlug(@Param('slug') slug: string) {
+    return this.nightlifeDataService.getPublicStoreBySlug(slug);
   }
 
   @PublicCastsContract()

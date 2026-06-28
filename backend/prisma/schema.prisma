@@ -421,6 +421,7 @@ model Store {
   latitude          Decimal?           @db.Decimal(10, 7)
   longitude         Decimal?           @db.Decimal(10, 7)
   openingHours      Json?              @map("opening_hours")
+  holidaySchedule   Json?              @map("holiday_schedule")
   mapUrl            String?            @map("map_url")
   googlePlaceId     String?            @map("google_place_id")
   status            StoreStatus        @default(DRAFT)

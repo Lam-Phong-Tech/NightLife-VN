@@ -17,6 +17,7 @@ import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
   PublicCastListResponseDto,
+  PublicStoreDetailResponseDto,
   PublicStoreListResponseDto,
 } from './dto/public-discovery-response.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
@@ -77,6 +78,19 @@ const couponExample = {
   },
 };
 
+const storeDetailCouponExample = {
+  id: 'coupon_01',
+  code: 'WELCOME20',
+  name: 'Welcome 20%',
+  description: '20% off for first booking',
+  discountType: 'PERCENT',
+  discountValue: 20,
+  maxDiscountVnd: 200000,
+  minSpendVnd: 1000000,
+  startsAt: '2026-06-01T00:00:00.000Z',
+  endsAt: '2026-07-01T00:00:00.000Z',
+};
+
 const areaExample = {
   id: 'area_01',
   code: 'hn-tayho',
@@ -120,6 +134,83 @@ const storeListExample = {
     offset: 0,
     hasMore: true,
     sort: 'nearest',
+  },
+};
+
+const storeDetailExample = {
+  ...storeExample,
+  phone: '+84243456007',
+  mapUrl: 'https://maps.google.com/?q=21.063,105.822',
+  openingHours: {
+    monday: { open: '19:00', close: '02:00' },
+    friday: { open: '19:00', close: '04:00' },
+  },
+  holidaySchedule: {
+    note: 'Holiday hours are confirmed by the store before each booking.',
+    specialClosures: [],
+  },
+  gallery: [
+    {
+      id: 'media_01',
+      type: 'IMAGE',
+      url: 'https://images.unsplash.com/photo.jpg',
+      purpose: 'store-hero',
+      mimeType: 'image/jpeg',
+      alt: 'Neon Club hero',
+    },
+  ],
+  casts: [
+    {
+      id: 'cast_01',
+      slug: 'yuna-neon',
+      stageName: 'Yuna',
+      publicAlias: 'Yuna',
+      publicHeadline: 'Party host',
+      thumbnailUrl: null,
+      tags: ['party', 'vip'],
+      languages: ['ja', 'vi'],
+      hourlyRateVnd: 600000,
+    },
+  ],
+  priceReference: {
+    currency: 'VND',
+    startingFromVnd: 600000,
+    note: 'Reference price only; admin confirms final pricing by guest count and time slot.',
+    items: [
+      {
+        label: 'Cast hourly rate',
+        amountVnd: 600000,
+        unit: 'hour',
+      },
+    ],
+  },
+  activeCoupons: [storeDetailCouponExample],
+  campaigns: [
+    {
+      id: 'coupon_01',
+      title: 'Welcome 20%',
+      description: '20% off for first booking',
+      source: 'coupon',
+      couponId: 'coupon_01',
+    },
+  ],
+  relatedStores: [
+    {
+      id: 'store_02',
+      slug: 'crimson-bar',
+      name: 'Crimson Bar',
+      category: 'BAR',
+      city: 'Ha Noi',
+      district: 'Hoan Kiem',
+      area: null,
+      thumbnailUrl: null,
+    },
+  ],
+  seo: {
+    title: 'Neon Club | NightLife VN',
+    description: 'Neon Club tai Tay Ho, Ha Noi.',
+    canonicalPath: '/stores/neon-club',
+    ogImage: null,
   },
 };
 
@@ -414,6 +505,36 @@ export function PublicStoresContract() {
     ApiBadRequestResponse({
       description: 'Invalid discovery filter.',
       schema: { example: publicDiscoveryBadRequestExample },
+    }),
+  );
+}
+
+export function PublicStoreDetailContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public discovery: get active store detail by slug',
+      description:
+        'Auth guard: none. Returns public store detail for SEO/detail pages, including gallery, public casts, active coupons/campaigns, map/opening data, related stores, and SEO metadata.',
+    }),
+    ApiParam({
+      name: 'slug',
+      description: 'Public store slug.',
+      example: 'neon-club',
+    }),
+    ApiOkResponse({
+      description: 'Active public store detail.',
+      type: PublicStoreDetailResponseDto,
+      schema: { example: storeDetailExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Store does not exist or is not public.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Store not found',
+          error: 'Not Found',
+        },
+      },
     }),
   );
 }
