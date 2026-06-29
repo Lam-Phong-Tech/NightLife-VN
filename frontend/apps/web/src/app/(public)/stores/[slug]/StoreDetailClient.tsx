@@ -53,14 +53,27 @@ const introMarkerPattern = /(?:🇯🇵|🇻🇳|🇬🇧|🇺🇸|\bJP\b|\bVN\b
 const japaneseTextPattern = /[\u3040-\u30ff\u3400-\u9fff]/;
 const vietnameseTextPattern = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
+const languageLabels: Record<string, string> = {
+  en: "Anh",
+  ja: "Nhật",
+  vi: "Việt",
+};
+
 const nationalityLabels: Record<string, string> = {
   ja: "Nhật Bản",
+  ko: "Hàn Quốc",
+  kr: "Hàn Quốc",
   vi: "Việt Nam",
 };
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
 
 const languageToNationality = (language: string) => nationalityLabels[normalizeLanguageCode(language)];
+
+const languageToLabel = (language: string) => {
+  const normalized = normalizeLanguageCode(language);
+  return languageLabels[normalized] ?? language.trim().toUpperCase();
+};
 
 const nationalitiesFromLanguages = (languages: string[]) =>
   Array.from(
@@ -171,35 +184,36 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const hasMap = Boolean(embedUrl);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const nationalityText = Array.from(new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))))
-    .slice(0, 2)
-    .join(" / ");
+    .slice(0, 3)
+    .join(" · ");
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
-  const nationalityCards = useMemo(() => {
-    const nationalityCounts = new Map<string, number>();
+  const languageCards = useMemo(() => {
+    const languageCounts = new Map<string, number>();
     store.casts.forEach((cast) => {
       cast.languages.forEach((language) => {
-        const nationality = languageToNationality(language);
-        if (!nationality) return;
-        nationalityCounts.set(nationality, (nationalityCounts.get(nationality) ?? 0) + 1);
+        const label = languageToLabel(language);
+        languageCounts.set(label, (languageCounts.get(label) ?? 0) + 1);
       });
     });
 
     const totalCasts = Math.max(store.casts.length, 1);
-    const topNationalities = [...nationalityCounts.entries()]
+    const topLanguages = [...languageCounts.entries()]
       .sort((left, right) => right[1] - left[1])
       .slice(0, 2)
-      .map(([nationality, count]) => ({
-        label: `Quốc tịch ${nationality}`,
+      .map(([language, count]) => ({
+        type: "language" as const,
+        label: `Nói tiếng ${language}`,
         value: `${Math.round((count / totalCasts) * 100)}%`,
         progress: Math.max(8, Math.round((count / totalCasts) * 100)),
       }));
 
     return [
-      ...topNationalities,
+      ...topLanguages,
       {
-        label: "Quốc tịch nhân sự",
+        type: "nationality" as const,
+        label: "Quốc tịch cast",
         value: nationalityText || "Chưa cập nhật",
-        progress: 100,
+        progress: 0,
       },
     ];
   }, [nationalityText, store.casts]);
@@ -360,13 +374,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
 
               <div className="language-grid">
-                {nationalityCards.map((card) => (
-                  <div className="language-card" key={card.label}>
+                {languageCards.map((card) => (
+                  <div
+                    className={card.type === "nationality" ? "language-card nationality-card" : "language-card"}
+                    key={card.label}
+                  >
                     <span>{card.label}</span>
                     <strong>{card.value}</strong>
-                    <div className="language-meter" aria-hidden="true">
-                      <i style={{ width: `${card.progress}%` }} />
-                    </div>
+                    {card.type === "language" ? (
+                      <div className="language-meter" aria-hidden="true">
+                        <i style={{ width: `${card.progress}%` }} />
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -1112,6 +1131,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.25;
         }
 
+        .language-card.nationality-card strong {
+          color: #fff7e8;
+          font-size: 14px;
+          font-weight: 900;
+          line-height: 1.35;
+        }
+
         .language-meter {
           height: 5px;
           margin-top: 12px;
@@ -1598,10 +1624,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .stat-grid,
-          .language-grid,
           .cast-grid,
           .related-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .language-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
           }
 
           .mobile-cta {
@@ -1755,10 +1785,31 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .stat-grid,
-          .language-grid,
           .cast-grid,
           .related-grid {
             grid-template-columns: 1fr;
+          }
+
+          .language-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .language-card {
+            min-height: 76px;
+            padding: 10px;
+          }
+
+          .language-card span {
+            font-size: 10px;
+          }
+
+          .language-card strong {
+            font-size: 15px;
+          }
+
+          .language-card.nationality-card strong {
+            font-size: 12px;
           }
 
           .price-row {
