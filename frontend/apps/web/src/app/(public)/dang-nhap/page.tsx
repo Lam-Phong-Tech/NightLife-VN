@@ -76,13 +76,20 @@ export default function Page() {
     setMessage("");
 
     try {
-      const session = isReg
-        ? await registerMember({
-            email: normalizedEmail,
-            password,
-            displayName: trimmedDisplayName || undefined,
-          })
-        : await loginMember({ email: normalizedEmail, password });
+      if (isReg) {
+        await registerMember({
+          email: normalizedEmail,
+          password,
+          displayName: trimmedDisplayName || undefined,
+        });
+        setIsReg(false);
+        setPassword("");
+        setShowPassword(false);
+        setMessage("Đăng ký thành công. Vui lòng đăng nhập để vào hệ thống.");
+        return;
+      }
+
+      const session = await loginMember({ email: normalizedEmail, password });
       setAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
