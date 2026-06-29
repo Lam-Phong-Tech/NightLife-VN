@@ -20,6 +20,7 @@ const colors = {
   goldPale: "#f0dda8",
   onGold: "#241a0a",
   danger: "#fca5a5",
+  success: "#86efac",
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
 
@@ -30,6 +31,7 @@ export default function Page() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
@@ -58,16 +60,19 @@ export default function Page() {
     const trimmedDisplayName = displayName.trim();
 
     if (!normalizedEmail || !password) {
+      setMessageTone("error");
       setMessage("Vui lòng nhập email và mật khẩu.");
       return;
     }
 
     if (!normalizedEmail.includes("@")) {
+      setMessageTone("error");
       setMessage("Vui lòng nhập email hợp lệ để tiếp tục.");
       return;
     }
 
     if (isReg && password.length < 8) {
+      setMessageTone("error");
       setMessage("Mật khẩu đăng ký cần tối thiểu 8 ký tự.");
       return;
     }
@@ -85,6 +90,7 @@ export default function Page() {
         setIsReg(false);
         setPassword("");
         setShowPassword(false);
+        setMessageTone("success");
         setMessage("Đăng ký thành công. Vui lòng đăng nhập để vào hệ thống.");
         return;
       }
@@ -99,6 +105,7 @@ export default function Page() {
           : isReg
             ? "Không kết nối được API đăng ký."
             : "Không kết nối được API đăng nhập.";
+      setMessageTone("error");
       setMessage(detail);
     } finally {
       setIsSubmitting(false);
@@ -206,7 +213,21 @@ export default function Page() {
                   <Link href="#" style={{ color: colors.gold, fontWeight: 800 }}>Quên mật khẩu?</Link>
                 </div>
 
-                {message ? <div style={{ color: colors.danger, background: "rgba(252,165,165,.08)", border: "1px solid rgba(252,165,165,.24)", borderRadius: 12, padding: "10px 12px", fontSize: 12.5, lineHeight: 1.5 }}>{message}</div> : null}
+                {message ? (
+                  <div
+                    style={{
+                      color: messageTone === "success" ? colors.success : colors.danger,
+                      background: messageTone === "success" ? "rgba(134,239,172,.10)" : "rgba(252,165,165,.08)",
+                      border: messageTone === "success" ? "1px solid rgba(134,239,172,.28)" : "1px solid rgba(252,165,165,.24)",
+                      borderRadius: 12,
+                      padding: "10px 12px",
+                      fontSize: 12.5,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {message}
+                  </div>
+                ) : null}
 
                 <button
                   type="submit"
