@@ -179,6 +179,10 @@ body > div {
   background: var(--nl-bg) !important;
 }
 
+.nl-mobile-simulator-root {
+  background: #f6f5f2 !important;
+}
+
 #nl-theme-btn {
   display: none !important;
 }
@@ -513,6 +517,21 @@ textarea::placeholder {
 }
 
 @media (max-width: 767px) {
+  html,
+  body {
+    scrollbar-width: none;
+  }
+
+  body {
+    -ms-overflow-style: none;
+  }
+
+  body::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
+  }
+
   .nl-page-content .ranking-page {
     padding: 22px 16px 36px !important;
   }

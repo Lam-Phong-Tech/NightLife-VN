@@ -9,7 +9,7 @@ export function MobileSimulator() {
   const searchParams = useSearchParams();
   const search = searchParams?.toString();
   const currentUrl = `${pathname}${search ? `?${search}` : ""}`;
-  
+
   const [iframeSrc, setIframeSrc] = useState(currentUrl);
   const [prevUrl, setPrevUrl] = useState(currentUrl);
 
@@ -19,50 +19,37 @@ export function MobileSimulator() {
   }
 
   return (
-    <div className="min-h-screen bg-[#060608] flex flex-col items-center justify-center p-4 sm:p-8 font-sans relative overflow-hidden">
-      {/* Background ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#d4b26a] opacity-[0.04] rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Top action bar to exit simulator */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 lg:left-10 lg:translate-x-0 z-20">
-        <div className="bg-[rgba(8,8,11,0.8)] backdrop-blur-md border border-[rgba(212,178,106,0.2)] rounded-full px-6 py-2.5 flex items-center gap-4 shadow-lg">
-          <span className="text-[#8c8679] text-sm font-medium">Chế độ giả lập Mobile</span>
-          <div className="w-[1px] h-4 bg-[rgba(212,178,106,0.2)]" />
-          <button
-            onClick={() => {
-              document.cookie = 'device_preference=; path=/; max-age=0';
-              window.location.href = '/chon-giao-dien';
-            }}
-            className="flex items-center gap-2 text-[#d4b26a] hover:text-[#f0dda8] transition-colors text-sm font-bold cursor-pointer"
-          >
-            <Monitor size={16} />
-            <span>Thoát giả lập</span>
-          </button>
-        </div>
+    <div className="nl-mobile-simulator-root min-h-screen bg-[#f6f5f2] font-sans">
+      <div className="fixed left-4 top-4 z-20 opacity-0 transition-opacity duration-200 hover:opacity-100 focus-within:opacity-100">
+        <button
+          onClick={() => {
+            document.cookie = "device_preference=; path=/; max-age=0";
+            window.location.href = "/chon-giao-dien";
+          }}
+          className="flex cursor-pointer items-center gap-2 rounded-full border border-[rgba(212,178,106,0.24)] bg-[rgba(8,8,11,0.86)] px-4 py-2 text-sm font-bold text-[#d4b26a] shadow-lg backdrop-blur-md transition-colors hover:text-[#f0dda8]"
+        >
+          <Monitor size={16} />
+          <span>Thoát giả lập</span>
+        </button>
       </div>
 
-      {/* The Phone Frame */}
-      <div className="relative z-10 w-full max-w-[390px] h-[844px] max-h-[90vh] bg-black rounded-[3rem] border-[8px] border-[#1a1a1f] shadow-[0_0_0_1px_rgba(255,255,255,0.05),_0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col ring-4 ring-[#0c0c0f]">
-        
-
-
-        {/* Iframe Content */}
+      <main
+        className="mx-auto w-full max-w-[390px] overflow-hidden bg-[#0c0c0f]"
+        style={{ height: "100dvh", minHeight: "100vh" }}
+      >
         {iframeSrc ? (
           <iframe
             src={iframeSrc}
-            className="w-full h-full border-none bg-[#0c0c0f]"
+            className="block h-full w-full border-none bg-[#0c0c0f]"
             title="Mobile Simulator"
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
           />
         ) : (
-          <div className="w-full h-full bg-[#0c0c0f] flex items-center justify-center text-[#8c8679]">
+          <div className="flex h-full w-full items-center justify-center bg-[#0c0c0f] text-[#8c8679]">
             Đang tải giả lập...
           </div>
         )}
-        
-        {/* Hardware details: Home indicator */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[120px] h-[4px] bg-white/20 rounded-full z-20" />
-      </div>
+      </main>
     </div>
   );
 }
