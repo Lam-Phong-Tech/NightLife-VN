@@ -88,7 +88,7 @@ const contentPlaceholders = [
 ];
 
 type RankedItem = {
-  rank?: string;
+  rank?: string | number;
   numColor?: string;
   crown?: string;
   img?: string;
@@ -128,6 +128,11 @@ const pillStyle: CSSProperties = {
   fontSize: "12px",
   fontWeight: 700,
 };
+
+function formatRankingPeriod() {
+  const period = new Intl.DateTimeFormat("vi-VN", { month: "long", year: "numeric" }).format(new Date());
+  return period.charAt(0).toUpperCase() + period.slice(1);
+}
 
 function HeaderBar({ desktop = false }: { desktop?: boolean }) {
   void desktop;
@@ -453,33 +458,54 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
 }
 
 function RankingRow({ item }: { item: RankedItem }) {
+  const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
+  const hasCrown = rankNumber >= 1 && rankNumber <= 5;
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "36px 48px 1fr auto",
+        gridTemplateColumns: "46px 56px minmax(0, 1fr) auto",
         alignItems: "center",
-        gap: "12px",
-        padding: "11px",
-        borderRadius: "16px",
-        background: "rgba(255,255,255,.04)",
-        border: "1px solid rgba(255,255,255,.08)",
+        gap: "14px",
+        minHeight: "78px",
+        padding: "14px 13px",
+        borderRadius: "18px",
+        background: "linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.035))",
+        border: `1px solid ${colors.line}`,
+        boxShadow: "0 14px 28px rgba(0,0,0,.16)",
       }}
     >
-      <span style={{ width: 32, height: 32, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", background: item.crown ?? colors.gold, color: item.numColor ?? "#241a0a", fontWeight: 900 }}>
-        {item.rank}
+      <span
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: "15px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1px",
+          background: item.crown ?? colors.gold,
+          color: item.numColor ?? "#241a0a",
+          fontWeight: 950,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,.32), 0 9px 20px rgba(0,0,0,.24)",
+        }}
+      >
+        {hasCrown ? <Crown size={16} fill="currentColor" strokeWidth={2.5} /> : null}
+        <span style={{ fontSize: hasCrown ? "13px" : "15px", lineHeight: 1 }}>{item.rank}</span>
       </span>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Xếp hạng"}
         label=""
-        style={{ width: 46, height: 46, borderRadius: "50%", flex: "none" }}
+        style={{ width: 56, height: 56, borderRadius: "50%", flex: "none", border: `1px solid ${colors.line}` }}
       />
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
-        <div style={{ marginTop: "3px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
+        <div style={{ fontSize: "16px", fontWeight: 900, lineHeight: 1.18 }}>{item.name}</div>
+        <div style={{ marginTop: "5px", color: colors.muted, fontSize: "12.5px", lineHeight: 1.25 }}>{item.area}</div>
       </div>
-      <span style={{ color: colors.gold, fontSize: "12px", fontWeight: 800 }}>{item.metric}</span>
+      <span style={{ color: colors.goldSoft, fontSize: "13px", fontWeight: 900, whiteSpace: "nowrap" }}>{item.metric}</span>
     </div>
   );
 }
@@ -632,6 +658,7 @@ export default function Page() {
   const [activeRankTab, setActiveRankTab] = useState("quan");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const rankList = (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[];
+  const rankingPeriod = formatRankingPeriod();
   const svc = activeSvcTab === "nhahang" ? svcData : spaData;
 
   useEffect(() => {
@@ -678,7 +705,12 @@ export default function Page() {
 
             <section style={{ marginTop: "22px" }}>
               <div style={sectionTitleStyle}>
-                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
+                <div style={{ minWidth: 0 }}>
+                  <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
+                  <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>
+                    {rankingPeriod}
+                  </div>
+                </div>
                 <TabSwitch items={rankTabs} active={activeRankTab} onChange={setActiveRankTab} />
               </div>
               <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
@@ -750,7 +782,12 @@ export default function Page() {
               </div>
               <div style={{ marginTop: "34px" }}>
                 <div style={sectionTitleStyle}>
-                  <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
+                  <div style={{ minWidth: 0 }}>
+                    <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
+                    <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>
+                      {rankingPeriod}
+                    </div>
+                  </div>
                   <TabSwitch items={rankTabs} active={activeRankTab} onChange={setActiveRankTab} />
                 </div>
                 <div style={{ display: "grid", gap: "12px" }}>
