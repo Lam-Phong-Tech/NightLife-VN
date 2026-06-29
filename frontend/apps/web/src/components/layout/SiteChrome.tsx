@@ -1,9 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CalendarDays, Home, Search, Ticket, UserRound, MessageCircle, LogIn } from "lucide-react";
+import {
+  Bell,
+  CalendarDays,
+  CheckCheck,
+  ChevronLeft,
+  Clock3,
+  Crown,
+  Home,
+  LogIn,
+  MessageCircle,
+  Send,
+  Settings,
+  Search,
+  Ticket,
+  Trophy,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
@@ -50,6 +68,106 @@ const bottomNav = [
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
 ];
 
+type NoticeTone = "gold" | "green" | "amber" | "vip";
+
+type Notice = {
+  id: string;
+  group: "today" | "yesterday";
+  title: string;
+  body: string;
+  time: string;
+  action?: string;
+  unread?: boolean;
+  icon: LucideIcon;
+  tone: NoticeTone;
+};
+
+const notices: Notice[] = [
+  {
+    id: "happy-hour",
+    group: "today",
+    title: "Ưu đãi mới −30% Happy Hour",
+    body: "Club Lumière vừa tung mã giảm cho khung giờ vàng tối nay.",
+    time: "5 phút",
+    action: "Lấy mã",
+    unread: true,
+    icon: Ticket,
+    tone: "gold",
+  },
+  {
+    id: "booking-confirmed",
+    group: "today",
+    title: "Đặt bàn VIP đã được xác nhận",
+    body: "Bàn tại Sakura Lounge · 22:30 tối nay đã sẵn sàng.",
+    time: "22 phút",
+    action: "Xem chi tiết",
+    unread: true,
+    icon: CalendarDays,
+    tone: "green",
+  },
+  {
+    id: "admin-routing",
+    group: "today",
+    title: "Admin đang điều phối đặt chỗ",
+    body: "Đã gửi yêu cầu tới quán qua Telegram, sẽ liên hệ bạn trong ít phút.",
+    time: "40 phút",
+    unread: true,
+    icon: Send,
+    tone: "gold",
+  },
+  {
+    id: "ranking",
+    group: "yesterday",
+    title: "Club Lumière đã lên #1 BXH tuần",
+    body: "Quán bạn yêu thích đang dẫn đầu bảng xếp hạng Hà Nội.",
+    time: "Hôm qua",
+    icon: Trophy,
+    tone: "gold",
+  },
+  {
+    id: "vip-points",
+    group: "yesterday",
+    title: "Bạn nhận 200 điểm thưởng VIP",
+    body: "Tích luỹ đủ 1.000 điểm để lên hạng Gold.",
+    time: "Hôm qua",
+    action: "Xem quyền lợi",
+    icon: Crown,
+    tone: "vip",
+  },
+  {
+    id: "coupon-expiring",
+    group: "yesterday",
+    title: "Mã “2+1 Combo phòng” sắp hết hạn",
+    body: "Còn hiệu lực trong 2 giờ — dùng kẻo lỡ.",
+    time: "Hôm qua",
+    icon: Clock3,
+    tone: "amber",
+  },
+];
+
+const noticeToneStyle: Record<NoticeTone, { background: string; border: string; color: string }> = {
+  gold: {
+    background: "rgba(212,178,106,.12)",
+    border: "rgba(212,178,106,.3)",
+    color: "#e3c27e",
+  },
+  green: {
+    background: "rgba(95,191,134,.12)",
+    border: "rgba(95,191,134,.3)",
+    color: "#7fd3a0",
+  },
+  amber: {
+    background: "rgba(224,164,78,.12)",
+    border: "rgba(224,164,78,.3)",
+    color: "#e6b873",
+  },
+  vip: {
+    background: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
+    border: "rgba(212,178,106,.4)",
+    color: "#241a0a",
+  },
+};
+
 const revealTargetSelector = [
   ".nl-page-content > *",
   ".nl-page-content main > *",
@@ -86,16 +204,487 @@ function isRevealTarget(element: HTMLElement) {
   return true;
 }
 
+function NotificationBellButton({
+  isMobile,
+  isOpen,
+  onClick,
+}: {
+  isMobile: boolean;
+  isOpen: boolean;
+  onClick: () => void;
+}) {
+  const size = isMobile ? 36 : 40;
+
+  return (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded={isOpen}
+      aria-label="Mở thông báo"
+      onClick={onClick}
+      style={{
+        minHeight: `${size}px`,
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: "50%",
+        border: `1px solid ${isOpen ? "rgba(212,178,106,.6)" : colors.borderGold32}`,
+        color: colors.goldPale,
+        background: isMobile ? "transparent" : "rgba(255,255,255,.04)",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: isOpen ? "0 0 0 3px rgba(212,178,106,.14)" : "none",
+        cursor: "pointer",
+        fontFamily: "var(--nl-font-sans)",
+        padding: 0,
+        position: "relative",
+        flex: "none",
+      }}
+    >
+      <Bell size={isMobile ? 16 : 18} strokeWidth={1.8} />
+      <i
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: isMobile ? "6px" : "7px",
+          right: isMobile ? "8px" : "9px",
+          width: "8px",
+          height: "8px",
+          borderRadius: "50%",
+          background: "#e0729e",
+          border: "2px solid #15131a",
+          boxSizing: "content-box",
+        }}
+      />
+    </button>
+  );
+}
+
+function NotificationTabs({ isMobile }: { isMobile: boolean }) {
+  const tabs = isMobile ? ["Tất cả", "Đặt chỗ", "Ưu đãi", "Sự kiện", "Hệ thống"] : ["Tất cả", "Đặt chỗ", "Ưu đãi", "Hệ thống"];
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "7px",
+        padding: isMobile ? "0 16px 12px" : "0 16px 12px",
+        overflowX: isMobile ? "auto" : "hidden",
+        borderBottom: `1px solid rgba(255,255,255,.06)`,
+        scrollbarWidth: "none",
+      }}
+    >
+      {tabs.map((tab, index) => {
+        const active = index === 0;
+        return (
+          <button
+            key={tab}
+            type="button"
+            style={{
+              flex: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              fontSize: "12px",
+              fontWeight: active ? 700 : 600,
+              color: active ? colors.onGold : colors.text2,
+              background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : "rgba(255,255,255,.05)",
+              border: active ? "0" : "1px solid rgba(255,255,255,.1)",
+              borderRadius: "15px",
+              padding: isMobile ? "7px 13px" : "6px 12px",
+              fontFamily: "var(--nl-font-sans)",
+              cursor: "pointer",
+            }}
+          >
+            {tab}
+            {active ? (
+              <b
+                style={{
+                  background: colors.onGold,
+                  color: colors.goldPale,
+                  borderRadius: "7px",
+                  fontSize: "9.5px",
+                  fontWeight: 800,
+                  lineHeight: 1.5,
+                  padding: "0 5px",
+                }}
+              >
+                3
+              </b>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function NoticeRow({ notice, isMobile }: { notice: Notice; isMobile: boolean }) {
+  const Icon = notice.icon;
+  const tone = noticeToneStyle[notice.tone];
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "12px",
+        padding: "11px 16px",
+        alignItems: "flex-start",
+        background: notice.unread ? "rgba(212,178,106,.06)" : "transparent",
+        borderBottom: "1px solid rgba(255,255,255,.05)",
+        position: "relative",
+      }}
+    >
+      <span
+        style={{
+          width: "40px",
+          height: "40px",
+          borderRadius: "12px",
+          flex: "none",
+          background: tone.background,
+          border: `1px solid ${tone.border}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: tone.color,
+        }}
+      >
+        <Icon size={isMobile ? 18 : 19} strokeWidth={notice.tone === "vip" ? 2 : 1.7} />
+      </span>
+
+      <div style={{ flex: 1, minWidth: 0, paddingRight: notice.unread ? "10px" : 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: isMobile ? "8px" : "10px" }}>
+          <span
+            style={{
+              fontSize: isMobile ? "14px" : "13.5px",
+              fontWeight: notice.unread ? 700 : 600,
+              color: notice.unread ? colors.text : colors.text2,
+              lineHeight: 1.35,
+            }}
+          >
+            {notice.title}
+          </span>
+          <span style={{ fontSize: isMobile ? "10.5px" : "11px", color: "#6f6b62", flex: "none" }}>
+            {notice.time}
+          </span>
+        </div>
+
+        <div style={{ fontSize: "12px", color: colors.muted, marginTop: "3px", lineHeight: 1.45 }}>
+          {notice.body}
+        </div>
+
+        {notice.action ? (
+          <button
+            type="button"
+            style={{
+              display: "inline-block",
+              marginTop: "9px",
+              fontSize: isMobile ? "11.5px" : "11px",
+              fontWeight: 700,
+              color: notice.id === "happy-hour" ? colors.onGold : colors.goldPale,
+              background:
+                notice.id === "happy-hour"
+                  ? "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)"
+                  : "rgba(212,178,106,.1)",
+              border: notice.id === "happy-hour" ? "0" : "1px solid rgba(212,178,106,.3)",
+              borderRadius: isMobile ? "9px" : "8px",
+              padding: isMobile ? "7px 14px" : "6px 13px",
+              fontFamily: "var(--nl-font-sans)",
+              cursor: "pointer",
+            }}
+          >
+            {notice.action}
+          </button>
+        ) : null}
+      </div>
+
+      {notice.unread ? (
+        <i
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: isMobile ? "13px" : "14px",
+            right: "14px",
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
+            background: colors.gold,
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function NoticeGroup({ label, group, isMobile }: { label: string; group: Notice["group"]; isMobile: boolean }) {
+  const groupNotices = notices.filter((notice) => notice.group === group);
+  const visibleNotices =
+    group === "yesterday"
+      ? groupNotices.filter((notice) =>
+          isMobile ? notice.id !== "coupon-expiring" : notice.id === "coupon-expiring",
+        )
+      : groupNotices;
+
+  return (
+    <>
+      <div
+        style={{
+          fontSize: "10px",
+          fontWeight: 700,
+          letterSpacing: "1.4px",
+          color: colors.muted,
+          textTransform: "uppercase",
+          padding: isMobile ? "13px 16px 2px" : "13px 16px 4px",
+        }}
+      >
+        {label}
+      </div>
+      {visibleNotices.map((notice) => (
+        <NoticeRow key={notice.id} notice={notice} isMobile={isMobile} />
+      ))}
+    </>
+  );
+}
+
+function DesktopNotificationDropdown({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        background: "rgba(8,8,11,.42)",
+        backdropFilter: "blur(2px)",
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notification-panel-title"
+        onMouseDown={(event) => event.stopPropagation()}
+        style={{
+          position: "fixed",
+          top: "70px",
+          right: "18px",
+          width: "min(404px, calc(100vw - 36px))",
+          background: "#16141b",
+          border: "1px solid rgba(255,255,255,.08)",
+          borderRadius: "16px",
+          boxShadow: "0 30px 70px -24px rgba(0,0,0,.85)",
+          overflow: "hidden",
+          color: colors.text,
+          fontFamily: "var(--nl-font-sans)",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: "62px",
+            right: "72px",
+            width: "14px",
+            height: "14px",
+            background: "#16141b",
+            borderLeft: "1px solid rgba(255,255,255,.08)",
+            borderTop: "1px solid rgba(255,255,255,.08)",
+            transform: "rotate(45deg)",
+          }}
+        />
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 12px" }}>
+          <h2 id="notification-panel-title" style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: colors.text }}>
+            Thông báo
+          </h2>
+          <button
+            type="button"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              border: 0,
+              background: "transparent",
+              color: colors.goldPale,
+              fontSize: "11.5px",
+              fontWeight: 700,
+              fontFamily: "var(--nl-font-sans)",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            <CheckCheck size={14} strokeWidth={2.2} />
+            Đánh dấu tất cả đã đọc
+          </button>
+        </div>
+
+        <NotificationTabs isMobile={false} />
+        <NoticeGroup label="Hôm nay" group="today" isMobile={false} />
+        <NoticeGroup label="Trước đó" group="yesterday" isMobile={false} />
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.06)" }}>
+          <button
+            type="button"
+            style={{
+              border: 0,
+              padding: 0,
+              background: "transparent",
+              color: colors.goldPale,
+              fontSize: "12.5px",
+              fontWeight: 700,
+              fontFamily: "var(--nl-font-sans)",
+              cursor: "pointer",
+            }}
+          >
+            Xem tất cả thông báo
+          </button>
+          <button
+            type="button"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              border: 0,
+              padding: 0,
+              background: "transparent",
+              color: "#9b958a",
+              fontSize: "12px",
+              fontFamily: "var(--nl-font-sans)",
+              cursor: "pointer",
+            }}
+          >
+            <Settings size={15} strokeWidth={1.7} />
+            Cài đặt
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-notification-title"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 120,
+        background: colors.bg,
+        color: colors.text,
+        fontFamily: "var(--nl-font-sans)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "calc(10px + env(safe-area-inset-top)) 14px 8px" }}>
+        <button
+          type="button"
+          aria-label="Đóng thông báo"
+          onClick={onClose}
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,.12)",
+            background: "transparent",
+            color: colors.text,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "none",
+            cursor: "pointer",
+          }}
+        >
+          <ChevronLeft size={17} strokeWidth={2} />
+        </button>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 id="mobile-notification-title" style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: colors.text }}>
+            Thông báo
+          </h2>
+          <div style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "1.8px", color: colors.muted, textTransform: "uppercase", marginTop: "2px" }}>
+            Notifications
+          </div>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Cài đặt thông báo"
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            border: "1px solid rgba(255,255,255,.12)",
+            background: "transparent",
+            color: "#9b958a",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "none",
+            cursor: "pointer",
+          }}
+        >
+          <Settings size={17} strokeWidth={1.7} />
+        </button>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px 8px", gap: "12px" }}>
+        <span style={{ fontSize: "11.5px", color: "#9b958a" }}>
+          <b style={{ color: colors.goldPale }}>3</b> thông báo chưa đọc
+        </span>
+        <button
+          type="button"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            border: 0,
+            background: "transparent",
+            color: colors.goldPale,
+            fontSize: "11.5px",
+            fontWeight: 700,
+            fontFamily: "var(--nl-font-sans)",
+            cursor: "pointer",
+            padding: 0,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <CheckCheck size={13} strokeWidth={2.2} />
+          Đánh dấu đã đọc
+        </button>
+      </div>
+
+      <NotificationTabs isMobile />
+
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: "calc(24px + env(safe-area-inset-bottom))" }}>
+        <NoticeGroup label="Hôm nay" group="today" isMobile />
+        <NoticeGroup label="Hôm qua" group="yesterday" isMobile />
+      </div>
+    </section>
+  );
+}
+
+function NotificationOverlay({ isMobile, onClose }: { isMobile: boolean; onClose: () => void }) {
+  return isMobile ? <MobileNotificationPanel onClose={onClose} /> : <DesktopNotificationDropdown onClose={onClose} />;
+}
+
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const [isMobile, setIsMobile] = useState(false);
   const [shouldSimulate, setShouldSimulate] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
-  const isCustomerUser = authUser?.role?.toUpperCase() === "USER";
+  const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
@@ -197,6 +786,33 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       observer.disconnect();
     };
   }, [pathname]);
+
+  useEffect(() => {
+    const closeTimer = window.setTimeout(() => setIsNotificationOpen(false), 0);
+    return () => window.clearTimeout(closeTimer);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isNotificationOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    if (isMobile) {
+      document.body.style.overflow = "hidden";
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isMobile, isNotificationOpen]);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -415,6 +1031,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <MessageCircle size={16} />
             </Link>
 
+            {showCustomerNotifications ? (
+              <NotificationBellButton
+                isMobile={isMobile}
+                isOpen={isNotificationOpen}
+                onClick={() => setIsNotificationOpen(true)}
+              />
+            ) : null}
+
             {/* Login / User */}
             <Link
               href={authUser ? "/tai-khoan" : "/dang-nhap"}
@@ -431,7 +1055,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 textDecoration: "none",
               }}
             >
-              {authUser ? isCustomerUser ? <Bell size={16} /> : <UserRound size={16} /> : <LogIn size={16} />}
+              {authUser ? <UserRound size={16} /> : <LogIn size={16} />}
             </Link>
           </div>
         ) : (
@@ -465,6 +1089,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             >
               <MessageCircle size={18} />
             </Link>
+
+            {showCustomerNotifications ? (
+              <NotificationBellButton
+                isMobile={isMobile}
+                isOpen={isNotificationOpen}
+                onClick={() => setIsNotificationOpen(true)}
+              />
+            ) : null}
 
             {/* Login / User */}
             {!authUser ? (
@@ -632,6 +1264,16 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+
+      {isNotificationOpen && typeof document !== "undefined"
+        ? createPortal(
+            <NotificationOverlay
+              isMobile={isMobile}
+              onClose={() => setIsNotificationOpen(false)}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
