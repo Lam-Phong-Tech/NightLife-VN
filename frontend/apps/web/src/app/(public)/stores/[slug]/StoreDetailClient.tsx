@@ -735,7 +735,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .legacy-tags {
           gap: 7px;
           margin-top: 0;
-          padding-left: 68px;
+          padding-left: 0;
         }
 
         .legacy-tags span {
@@ -1024,6 +1024,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           height: 100%;
           border-radius: inherit;
           background: #e2b85e;
+        }
+
+        .tab-section .language-grid + .campaign-list,
+        .tab-section .language-grid + .empty-state {
+          margin-top: 24px;
         }
 
         .stat-grid {
@@ -1395,6 +1400,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           width: 36px;
           padding: 0;
           font-size: 18px;
+        }
+
+        .booking-panel .primary-action.full + .secondary-action.full {
+          margin-top: 10px;
         }
 
         .mobile-booking-controls,
