@@ -218,6 +218,7 @@ function NotificationBellButton({
   return (
     <button
       type="button"
+      data-notification-trigger="true"
       aria-haspopup="dialog"
       aria-expanded={isOpen}
       aria-label="Mở thông báo"
@@ -446,30 +447,34 @@ function NoticeGroup({ label, group, isMobile }: { label: string; group: Notice[
   );
 }
 
-function DesktopNotificationDropdown({ onClose }: { onClose: () => void }) {
+function DesktopNotificationDropdown() {
   return (
-    <div
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.currentTarget === event.target) onClose();
-      }}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 100,
-        background: "rgba(8,8,11,.42)",
-        backdropFilter: "blur(2px)",
-      }}
-    >
+    <>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: "62px",
+          right: "72px",
+          width: "14px",
+          height: "14px",
+          background: "#16141b",
+          borderLeft: "1px solid rgba(255,255,255,.08)",
+          borderTop: "1px solid rgba(255,255,255,.08)",
+          transform: "rotate(45deg)",
+          zIndex: 101,
+        }}
+      />
       <section
+        data-notification-popup="true"
         role="dialog"
-        aria-modal="true"
         aria-labelledby="notification-panel-title"
         onMouseDown={(event) => event.stopPropagation()}
         style={{
           position: "fixed",
           top: "70px",
           right: "18px",
+          zIndex: 101,
           width: "min(404px, calc(100vw - 36px))",
           background: "#16141b",
           border: "1px solid rgba(255,255,255,.08)",
@@ -480,21 +485,6 @@ function DesktopNotificationDropdown({ onClose }: { onClose: () => void }) {
           fontFamily: "var(--nl-font-sans)",
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{
-            position: "fixed",
-            top: "62px",
-            right: "72px",
-            width: "14px",
-            height: "14px",
-            background: "#16141b",
-            borderLeft: "1px solid rgba(255,255,255,.08)",
-            borderTop: "1px solid rgba(255,255,255,.08)",
-            transform: "rotate(45deg)",
-          }}
-        />
-
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 12px" }}>
           <h2 id="notification-panel-title" style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: colors.text }}>
             Thông báo
@@ -560,7 +550,7 @@ function DesktopNotificationDropdown({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </section>
-    </div>
+    </>
   );
 }
 
@@ -671,7 +661,7 @@ function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
 }
 
 function NotificationOverlay({ isMobile, onClose }: { isMobile: boolean; onClose: () => void }) {
-  return isMobile ? <MobileNotificationPanel onClose={onClose} /> : <DesktopNotificationDropdown onClose={onClose} />;
+  return isMobile ? <MobileNotificationPanel onClose={onClose} /> : <DesktopNotificationDropdown />;
 }
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
@@ -796,6 +786,15 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     if (!isNotificationOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const onPointerDown = (event: PointerEvent) => {
+      if (isMobile) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("[data-notification-popup='true'], [data-notification-trigger='true']")) {
+        return;
+      }
+      setIsNotificationOpen(false);
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsNotificationOpen(false);
@@ -806,10 +805,12 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = "hidden";
     }
 
+    window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [isMobile, isNotificationOpen]);
@@ -1035,7 +1036,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <NotificationBellButton
                 isMobile={isMobile}
                 isOpen={isNotificationOpen}
-                onClick={() => setIsNotificationOpen(true)}
+                onClick={() => setIsNotificationOpen((open) => !open)}
               />
             ) : null}
 
@@ -1094,7 +1095,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <NotificationBellButton
                 isMobile={isMobile}
                 isOpen={isNotificationOpen}
-                onClick={() => setIsNotificationOpen(true)}
+                onClick={() => setIsNotificationOpen((open) => !open)}
               />
             ) : null}
 
