@@ -530,195 +530,443 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
 
   return (
     <React.Fragment>
-      <div className="block md:hidden cast-detail-mobile-shell">
-        <div
-          className="cast-detail-mobile"
-          style={{
-            width: "100%",
-            minHeight: "100vh",
-            boxSizing: "border-box",
-            padding: "0px",
-            background: "#0c0c0f",
-            fontFamily: "'Inter',sans-serif",
-          }}
-        >
-          <div
-            style={{
-              margin: "0 auto",
-              width: "100%",
-              background: "#f5f4f2",
-              borderRadius: "0px",
-              overflow: "hidden",
-              boxShadow: "0 12px 40px rgba(0,0,0,.16)",
-              color: "#1f1d29",
-              border: "1px solid #e3e0da",
-            }}
-          >
-            <div style={{ position: "relative", height: "300px", background: mainBg }}>
-              <Link
-                href="/danh-sach-cast"
-                style={{
-                  position: "absolute",
-                  top: "12px",
-                  left: "14px",
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,.92)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "18px",
-                  color: "#1f1d29",
-                  textDecoration: "none",
-                }}
-              >
+      <div className="block md:hidden cast-profile-mobile-shell">
+        <main className="cast-profile-mobile-v2">
+          <section className="cast-mobile-hero" style={{ background: `linear-gradient(180deg, rgba(12,12,15,.08), rgba(12,12,15,.82)), ${mainBg}` }}>
+            <div className="cast-mobile-topbar">
+              <Link href="/danh-sach-cast" className="cast-mobile-icon-link" aria-label="Quay lại danh sách cast">
                 ‹
               </Link>
-              <span
-                className="btn"
-                onClick={toggleFav}
-                style={{
-                  position: "absolute",
-                  top: "12px",
-                  right: "14px",
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,.92)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Image width={100} height={100} src={favIconDark} style={{ width: "17px", height: "17px", display: "inline-block" }} alt="" />
-              </span>
-              {activeMedia.type === "VIDEO" ? (
-                <span
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%,-50%)",
-                    width: "54px",
-                    height: "54px",
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,.9)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Image
-                    width={100}
-                    height={100}
-                    src="https://img.icons8.com/ios-filled/100/6D28D9/play.png"
-                    style={{ width: "22px", height: "22px", marginLeft: "2px", display: "inline-block" }}
-                    alt=""
-                  />
-                </span>
-              ) : null}
+              <button type="button" className="cast-mobile-icon-button" onClick={toggleFav} aria-label="Lưu cast">
+                <Image width={100} height={100} src={favIconDark} alt="" />
+              </button>
             </div>
-            <div className="hscroll" style={{ display: "flex", gap: "7px", padding: "10px 18px 0", overflowX: "auto" }}>
+            <div className="cast-mobile-hero-copy">
+              <div className="cast-mobile-kicker">Cast profile</div>
+              <div className="cast-mobile-title-row">
+                <h1>
+                  {cName} <span>· {cAge} tuổi</span>
+                </h1>
+                <span className="cast-mobile-approved">Đã duyệt public</span>
+              </div>
+              <div className="cast-mobile-meta">
+                <b>★ {cRating}</b>
+                <span>{cArea}</span>
+              </div>
+              <p>{profile.publicHeadline}</p>
+            </div>
+            {activeMedia.type === "VIDEO" ? (
+              <span className="cast-mobile-play">
+                <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/241a0a/play.png" alt="" />
+              </span>
+            ) : null}
+          </section>
+
+          <section className="cast-mobile-thumb-panel">
+            <div className="cast-mobile-thumbs hscroll">
               {gallery.map((media, index) => (
                 <button
                   type="button"
-                  className="btn"
                   key={media.id}
                   onClick={() => setActiveMediaIndex(index)}
                   aria-label={media.alt}
-                  style={{
-                    width: "54px",
-                    height: "54px",
-                    flex: "none",
-                    borderRadius: "9px",
-                    background: mediaBg(media.url),
-                    position: "relative",
-                    border: activeMediaIndex === index ? "2px solid #d4b26a" : "0",
-                    padding: 0,
-                    cursor: "pointer",
-                  }}
+                  className={activeMediaIndex === index ? "is-active" : ""}
+                  style={{ background: mediaBg(media.url) }}
                 >
                   {media.type === "VIDEO" ? (
-                    <span style={{ position: "absolute", inset: "0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style={{ width: "14px", height: "14px", display: "inline-block" }} alt="" />
+                    <span>
+                      <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" alt="" />
                     </span>
                   ) : null}
                 </button>
               ))}
             </div>
+          </section>
 
-            <div style={{ background: "#fff", padding: "14px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-                <h2 style={{ fontSize: "20px", fontWeight: "800" }}>
-                  {cName} <span style={{ fontSize: "14px", color: "#8a879a", fontWeight: "600" }}>· {cAge} tuổi</span>
-                </h2>
-                <span style={{ fontSize: "10.5px", background: "#ecfdf3", color: "#157347", borderRadius: "12px", padding: "4px 9px", fontWeight: 800 }}>
-                  Đã duyệt public
+          <section className="cast-mobile-panel">
+            <div className="cast-mobile-chip-row">
+              {profile.languages.map((language) => (
+                <span className="cast-mobile-language-chip" key={language}>
+                  {labelLanguage(language)}
                 </span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "6px", fontSize: "12.5px", color: "#5b5870" }}>
-                <span style={{ color: "#e8923a", fontWeight: "600" }}>★ {cRating}</span> · {cArea}
-              </div>
-              <div style={{ display: "flex", gap: "7px", marginTop: "11px", flexWrap: "wrap" }}>
-                {profile.languages.map((language) => (
-                  <span key={language} style={{ fontSize: "11px", background: "#f1ebff", color: "#6d28d9", borderRadius: "12px", padding: "4px 10px", fontWeight: "600" }}>
-                    {labelLanguage(language)}
-                  </span>
-                ))}
-                {profile.tags.slice(0, 4).map((tag) => (
-                  <span key={tag} style={{ fontSize: "11px", background: "#fde8ef", color: "#c0246a", borderRadius: "12px", padding: "4px 10px", fontWeight: "600" }}>
-                    {labelTag(tag)}
-                  </span>
-                ))}
-              </div>
-              <div style={{ marginTop: "13px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "9px" }}>
-                <div style={{ background: "#faf9fb", border: "1px solid #ececec", borderRadius: "11px", padding: "11px" }}>
-                  <div style={{ fontSize: "10.5px", color: "#8a879a" }}>Năm sinh · tuổi tự tính</div>
-                  <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>
-                    {cBorn} · {cAge}t
-                  </div>
-                </div>
-                <Link href={storeHref} style={{ background: "#faf9fb", border: "1px solid #ececec", borderRadius: "11px", padding: "11px", color: "#1f1d29", textDecoration: "none" }}>
-                  <div style={{ fontSize: "10.5px", color: "#8a879a" }}>Đang làm tại</div>
-                  <div style={{ fontSize: "13px", fontWeight: "700", marginTop: "3px" }}>{profile.store.name}</div>
-                </Link>
-              </div>
-              <p style={{ fontSize: "12.5px", lineHeight: "1.6", color: "#3a384a", marginTop: "13px" }}>{profile.bio}</p>
+              ))}
+              {profile.tags.slice(0, 4).map((tag) => (
+                <span className="cast-mobile-tag-chip" key={tag}>
+                  {labelTag(tag)}
+                </span>
+              ))}
             </div>
 
-            <div style={{ background: "#fff", borderTop: "1px solid #ececec", padding: "12px 18px 18px", display: "flex", alignItems: "center", gap: "12px" }}>
-              <div>
-                <div style={{ fontSize: "11px", color: "#8a879a" }}>Phí cast từ</div>
-                <div style={{ fontSize: "16px", fontWeight: "800" }}>
-                  {priceShort}
-                  {profile.hourlyRateVnd ? <span style={{ fontSize: "11px", color: "#8a879a" }}>/giờ</span> : null}
-                </div>
+            <div className="cast-mobile-stats">
+              <div className="cast-mobile-stat-card">
+                <span>Năm sinh · tuổi tự tính</span>
+                <strong>
+                  {cBorn} · {cAge}t
+                </strong>
               </div>
-              <Link
-                href={bookingHref}
-                className="btn"
-                style={{
-                  flex: "1",
-                  background: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
-                  color: "#241a0a",
-                  textAlign: "center",
-                  borderRadius: "12px",
-                  padding: "14px",
-                  fontWeight: "900",
-                  fontSize: "14px",
-                  textDecoration: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                Đặt theo cast
+              <Link href={storeHref} className="cast-mobile-stat-card cast-mobile-store-card">
+                <span>Đang làm tại</span>
+                <strong>{profile.store.name}</strong>
               </Link>
             </div>
-          </div>
-        </div>
+
+            <p className="cast-mobile-bio">{profile.bio}</p>
+          </section>
+
+          <section className="cast-mobile-booking">
+            <div>
+              <span>Phí cast từ</span>
+              <strong>
+                {priceShort}
+                {profile.hourlyRateVnd ? <small>/giờ</small> : null}
+              </strong>
+            </div>
+            <Link href={bookingHref}>Đặt theo cast</Link>
+          </section>
+        </main>
       </div>
+      <style>{`
+        .cast-profile-mobile-v2 {
+          min-height: 100vh;
+          padding-bottom: calc(154px + env(safe-area-inset-bottom));
+          background: #0c0c0f;
+          color: #f3f0ea;
+          font-family: "Inter", var(--nl-font-sans);
+        }
+
+        .cast-mobile-hero {
+          position: relative;
+          min-height: 430px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 14px 16px 24px;
+          background-size: cover !important;
+          background-position: center !important;
+          overflow: hidden;
+          border-bottom: 1px solid rgba(212,178,106,.18) !important;
+        }
+
+        .cast-mobile-topbar,
+        .cast-mobile-title-row,
+        .cast-mobile-meta,
+        .cast-mobile-booking,
+        .cast-mobile-chip-row {
+          display: flex;
+          align-items: center;
+        }
+
+        .cast-mobile-topbar {
+          justify-content: space-between;
+          position: relative;
+          z-index: 2;
+        }
+
+        .cast-mobile-icon-link,
+        .cast-mobile-icon-button {
+          width: 40px !important;
+          height: 40px !important;
+          min-height: 40px !important;
+          border: 1px solid rgba(244,227,180,.48) !important;
+          border-radius: 14px !important;
+          background: rgba(12,12,15,.62) !important;
+          color: #f8e8b8 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          backdrop-filter: blur(14px);
+          text-decoration: none !important;
+          font-size: 28px !important;
+          font-weight: 700 !important;
+          line-height: 1 !important;
+          padding: 0 !important;
+        }
+
+        .cast-mobile-icon-button img {
+          width: 18px !important;
+          height: 18px !important;
+          display: block !important;
+        }
+
+        .cast-mobile-hero-copy {
+          position: relative;
+          z-index: 2;
+          display: grid;
+          gap: 8px;
+          max-width: 100%;
+        }
+
+        .cast-mobile-kicker {
+          color: #f4dfab !important;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: .16em;
+          text-transform: uppercase;
+        }
+
+        .cast-mobile-title-row {
+          justify-content: space-between;
+          gap: 10px;
+        }
+
+        .cast-mobile-title-row h1 {
+          min-width: 0;
+          color: #fff8ea !important;
+          font-size: 28px;
+          line-height: 1.08;
+          font-weight: 950;
+          margin: 0;
+        }
+
+        .cast-mobile-title-row h1 span {
+          color: #d9cfb6 !important;
+          font-size: 15px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .cast-mobile-approved {
+          flex: none;
+          border: 1px solid rgba(89,197,132,.34) !important;
+          border-radius: 999px;
+          background: rgba(236,253,243,.95) !important;
+          color: #157347 !important;
+          padding: 6px 10px;
+          font-size: 11px;
+          font-weight: 950;
+          white-space: nowrap;
+        }
+
+        .cast-mobile-meta {
+          gap: 9px;
+          color: #d5cbb2 !important;
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        .cast-mobile-meta b {
+          color: #f1c86b !important;
+        }
+
+        .cast-mobile-hero-copy p,
+        .cast-mobile-bio {
+          margin: 0;
+          color: #f2eadb !important;
+          font-size: 13.5px;
+          line-height: 1.62;
+        }
+
+        .cast-mobile-play {
+          position: absolute;
+          left: 50%;
+          top: 46%;
+          transform: translate(-50%, -50%);
+          z-index: 2;
+          width: 58px;
+          height: 58px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a) !important;
+          box-shadow: 0 16px 36px rgba(0,0,0,.34) !important;
+        }
+
+        .cast-mobile-play img {
+          width: 24px !important;
+          height: 24px !important;
+          margin-left: 2px;
+        }
+
+        .cast-mobile-thumb-panel {
+          margin-top: -22px;
+          position: relative;
+          z-index: 3;
+          padding: 0 16px;
+        }
+
+        .cast-mobile-thumbs {
+          display: flex;
+          gap: 9px;
+          overflow-x: auto;
+          padding: 0 0 4px;
+        }
+
+        .cast-mobile-thumbs button {
+          position: relative;
+          flex: 0 0 62px;
+          width: 62px;
+          height: 62px;
+          min-height: 62px;
+          border: 1px solid rgba(244,227,180,.18) !important;
+          border-radius: 14px;
+          padding: 0;
+          background-size: cover !important;
+          background-position: center !important;
+          overflow: hidden;
+          cursor: pointer;
+        }
+
+        .cast-mobile-thumbs button.is-active {
+          border-color: #d4b26a !important;
+          box-shadow: 0 0 0 2px rgba(212,178,106,.18) !important;
+        }
+
+        .cast-mobile-thumbs button span {
+          position: absolute;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          background: rgba(0,0,0,.22);
+        }
+
+        .cast-mobile-thumbs img {
+          width: 15px !important;
+          height: 15px !important;
+        }
+
+        .cast-mobile-panel {
+          margin: 14px 16px 0;
+          padding: 16px;
+          border: 1px solid rgba(212,178,106,.2) !important;
+          border-radius: 18px;
+          background: #141417 !important;
+          box-shadow: 0 18px 44px rgba(0,0,0,.22) !important;
+        }
+
+        .cast-mobile-chip-row {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .cast-mobile-language-chip,
+        .cast-mobile-tag-chip {
+          border-radius: 999px;
+          padding: 7px 10px;
+          font-size: 11.5px;
+          font-weight: 900;
+          line-height: 1;
+        }
+
+        .cast-mobile-language-chip {
+          background: rgba(212,178,106,.14) !important;
+          color: #f4d989 !important;
+          border: 1px solid rgba(212,178,106,.2) !important;
+        }
+
+        .cast-mobile-tag-chip {
+          background: rgba(255,255,255,.075) !important;
+          color: #f3e9d1 !important;
+          border: 1px solid rgba(255,255,255,.08) !important;
+        }
+
+        .cast-mobile-stats {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 15px;
+        }
+
+        .cast-mobile-stat-card {
+          min-height: 86px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 10px;
+          border: 1px solid rgba(212,178,106,.16) !important;
+          border-radius: 14px;
+          background: rgba(255,255,255,.055) !important;
+          color: #f8f3e7 !important;
+          padding: 12px;
+          text-decoration: none !important;
+        }
+
+        .cast-mobile-stat-card span {
+          color: #bdb39e !important;
+          font-size: 11px;
+          line-height: 1.35;
+          font-weight: 750;
+        }
+
+        .cast-mobile-stat-card strong {
+          color: #fff8ea !important;
+          font-size: 15px;
+          line-height: 1.25;
+          font-weight: 950;
+        }
+
+        .cast-mobile-store-card strong {
+          color: #f4d989 !important;
+        }
+
+        .cast-mobile-bio {
+          margin-top: 15px;
+        }
+
+        .cast-mobile-booking {
+          position: sticky;
+          z-index: 20;
+          bottom: calc(74px + env(safe-area-inset-bottom));
+          gap: 14px;
+          margin: 14px 16px 0;
+          padding: 12px;
+          border: 1px solid rgba(212,178,106,.2) !important;
+          border-radius: 18px;
+          background: rgba(17,17,20,.94) !important;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 -16px 40px rgba(0,0,0,.28) !important;
+        }
+
+        .cast-mobile-booking div {
+          flex: none;
+          min-width: 62px;
+        }
+
+        .cast-mobile-booking span {
+          display: block;
+          color: #bdb39e !important;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .cast-mobile-booking strong {
+          display: block;
+          color: #fff8ea !important;
+          font-size: 19px;
+          line-height: 1.1;
+          font-weight: 950;
+        }
+
+        .cast-mobile-booking small {
+          color: #d8cdb3 !important;
+          font-size: 11px;
+          margin-left: 2px;
+        }
+
+        .cast-mobile-booking a {
+          flex: 1;
+          min-height: 50px;
+          border-radius: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a) !important;
+          color: #241a0a !important;
+          font-size: 14px;
+          font-weight: 950;
+          text-decoration: none !important;
+        }
+
+        @media (max-width: 370px) {
+          .cast-mobile-title-row {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .cast-mobile-stats {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
       <div className="hidden md:block">
         <div
           style={{
