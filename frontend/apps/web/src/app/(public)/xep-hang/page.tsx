@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 
-type RankingKind = 'quan' | 'cast';
+type RankingKind = 'cast' | 'quan';
+type RankingArea = 'all' | 'hn' | 'hcm';
+type RankingCategory = 'all' | 'bar' | 'club' | 'karaoke' | 'lounge' | 'massage';
 
 type RankingItem = {
   rank: number;
@@ -12,122 +14,185 @@ type RankingItem = {
   image: string;
   name: string;
   area: string;
-  metric: string;
   href: string;
+  kind: RankingKind;
+  city: Exclude<RankingArea, 'all'>;
+  category: Exclude<RankingCategory, 'all'>;
+  sourceLabel: string;
+  sponsored?: boolean;
 };
 
-const storeRankings: RankingItem[] = [
-  {
-    rank: 1,
-    numColor: '#713f12',
-    crown: 'linear-gradient(140deg, #fef08a, #eab308)',
-    image: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Club Lumière',
-    area: 'Tây Hồ - HN',
-    metric: '12.4k lượt',
-    href: '/stores/club-lumiere',
-  },
-  {
-    rank: 2,
-    numColor: '#1e293b',
-    crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)',
-    image: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Sora Lounge',
-    area: 'Quận 1 - HCM',
-    metric: '11.8k lượt',
-    href: '/stores/sora-lounge',
-  },
-  {
-    rank: 3,
-    numColor: '#451a03',
-    crown: 'linear-gradient(140deg, #fed7aa, #b45309)',
-    image: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'KTV Hoàng Gia',
-    area: 'Kim Mã - HN',
-    metric: '9.7k lượt',
-    href: '/stores/ktv-hoang-gia',
-  },
-  {
-    rank: 4,
-    numColor: '#064e3b',
-    crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)',
-    image: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Diamond Bar',
-    area: 'Quận 3 - HCM',
-    metric: '8.9k lượt',
-    href: '/stores/diamond-bar',
-  },
-  {
-    rank: 5,
-    numColor: '#1e3a8a',
-    crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)',
-    image: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Sakura Lounge',
-    area: 'Trúc Bạch - HN',
-    metric: '8.1k lượt',
-    href: '/stores/sakura-lounge',
-  },
-];
+const rankStyles = [
+  { numColor: '#713f12', crown: 'linear-gradient(140deg, #fef08a, #eab308)' },
+  { numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)' },
+  { numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)' },
+  { numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)' },
+  { numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)' },
+] as const;
 
-const castRankings: RankingItem[] = [
+const adminRankingItems: RankingItem[] = [
   {
     rank: 1,
-    numColor: '#713f12',
-    crown: 'linear-gradient(140deg, #fef08a, #eab308)',
-    image: "url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Michi',
-    area: '23 tuổi - Nổi tiếng Nhật',
-    metric: '4.9 sao',
-    href: '/casts/michi',
-  },
-  {
-    rank: 2,
-    numColor: '#1e293b',
-    crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)',
+    ...rankStyles[0],
     image: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=180&q=70') center/cover",
     name: 'Yuki',
-    area: '24 tuổi - Phong cách đẹp',
-    metric: '4.8 sao',
+    area: 'Tây Hồ - HN · Club',
     href: '/casts/yuki',
+    kind: 'cast',
+    city: 'hn',
+    category: 'club',
+    sourceLabel: 'Admin cấu hình',
+    sponsored: true,
+  },
+  {
+    rank: 2,
+    ...rankStyles[1],
+    image: "url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Michi',
+    area: 'Hoàn Kiếm - HN · Bar',
+    href: '/casts/michi',
+    kind: 'cast',
+    city: 'hn',
+    category: 'bar',
+    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 3,
-    numColor: '#451a03',
-    crown: 'linear-gradient(140deg, #fed7aa, #b45309)',
+    ...rankStyles[2],
     image: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=180&q=70') center/cover",
     name: 'Rina',
-    area: '21 tuổi - Trong độ tuổi 20',
-    metric: '4.7 sao',
+    area: 'Kim Mã - HN · Lounge',
     href: '/casts/rina',
+    kind: 'cast',
+    city: 'hn',
+    category: 'lounge',
+    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 4,
-    numColor: '#064e3b',
-    crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)',
+    ...rankStyles[3],
     image: "url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=180&q=70') center/cover",
     name: 'Hana',
-    area: '22 tuổi - Tiếng Anh',
-    metric: '4.7 sao',
+    area: 'Quận 3 - HCM · Lounge',
     href: '/casts/hana',
+    kind: 'cast',
+    city: 'hcm',
+    category: 'lounge',
+    sourceLabel: 'Admin cấu hình',
+    sponsored: true,
   },
   {
     rank: 5,
-    numColor: '#1e3a8a',
-    crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)',
+    ...rankStyles[4],
     image: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=180&q=70') center/cover",
     name: 'Aiko',
-    area: '25 tuổi - Hà Nội',
-    metric: '4.6 sao',
+    area: 'Quận 1 - HCM · Bar',
     href: '/casts/aiko',
+    kind: 'cast',
+    city: 'hcm',
+    category: 'bar',
+    sourceLabel: 'Admin cấu hình',
+  },
+  {
+    rank: 1,
+    ...rankStyles[0],
+    image: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Club Lumière',
+    area: 'Tây Hồ - HN · Club',
+    href: '/stores/neon-club',
+    kind: 'quan',
+    city: 'hn',
+    category: 'club',
+    sourceLabel: 'Admin cấu hình',
+    sponsored: true,
+  },
+  {
+    rank: 2,
+    ...rankStyles[1],
+    image: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Sora Lounge',
+    area: 'Quận 1 - HCM · Lounge',
+    href: '/stores/jade-lounge',
+    kind: 'quan',
+    city: 'hcm',
+    category: 'lounge',
+    sourceLabel: 'Admin cấu hình',
+  },
+  {
+    rank: 3,
+    ...rankStyles[2],
+    image: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'KTV Hoàng Gia',
+    area: 'Kim Mã - HN · Karaoke',
+    href: '/stores/golden-voice-ktv',
+    kind: 'quan',
+    city: 'hn',
+    category: 'karaoke',
+    sourceLabel: 'Admin cấu hình',
+    sponsored: true,
+  },
+  {
+    rank: 4,
+    ...rankStyles[3],
+    image: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Diamond Bar',
+    area: 'Quận 3 - HCM · Bar',
+    href: '/stores/crimson-bar',
+    kind: 'quan',
+    city: 'hcm',
+    category: 'bar',
+    sourceLabel: 'Admin cấu hình',
+  },
+  {
+    rank: 5,
+    ...rankStyles[4],
+    image: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=180&q=70') center/cover",
+    name: 'Sakura Lounge',
+    area: 'Trúc Bạch - HN · Lounge',
+    href: '/stores/sakura-lounge',
+    kind: 'quan',
+    city: 'hn',
+    category: 'lounge',
+    sourceLabel: 'Admin cấu hình',
   },
 ];
 
-const areas = ['Tất cả', 'Hà Nội', 'TP.HCM'];
+const areaFilters: Array<{ key: RankingArea; label: string }> = [
+  { key: 'all', label: 'Tất cả' },
+  { key: 'hn', label: 'Hà Nội' },
+  { key: 'hcm', label: 'TP.HCM' },
+];
+
+const categoryFilters: Array<{ key: RankingCategory; label: string }> = [
+  { key: 'all', label: 'Tất cả danh mục' },
+  { key: 'club', label: 'Club' },
+  { key: 'bar', label: 'Bar' },
+  { key: 'lounge', label: 'Lounge' },
+  { key: 'karaoke', label: 'Karaoke / KTV' },
+  { key: 'massage', label: 'Massage' },
+];
 
 export default function Page() {
-  const [rankingType, setRankingType] = useState<RankingKind>('quan');
+  const [rankingType, setRankingType] = useState<RankingKind>('cast');
+  const [selectedArea, setSelectedArea] = useState<RankingArea>('all');
+  const [selectedCategory, setSelectedCategory] = useState<RankingCategory>('all');
 
-  const list = rankingType === 'quan' ? storeRankings : castRankings;
+  const list = useMemo(
+    () =>
+      adminRankingItems
+        .filter((item) => item.kind === rankingType)
+        .filter((item) => selectedArea === 'all' || item.city === selectedArea)
+        .filter((item) => selectedCategory === 'all' || item.category === selectedCategory)
+        .slice(0, 5)
+        .map((item, index) => ({
+          ...item,
+          rank: index + 1,
+          numColor: rankStyles[index]?.numColor ?? item.numColor,
+          crown: rankStyles[index]?.crown ?? item.crown,
+        })),
+    [rankingType, selectedArea, selectedCategory],
+  );
+
   const title = rankingType === 'quan' ? 'Quán' : 'Cast';
   const pageStyle: React.CSSProperties = {
     width: '100%',
@@ -165,11 +230,16 @@ export default function Page() {
     borderRadius: '20px',
     background: '#141418',
   };
+  const filterStackStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginBottom: '26px',
+  };
   const filterWrapStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    marginBottom: '26px',
   };
   const inactiveButtonStyle: React.CSSProperties = {
     border: '1px solid rgba(222, 181, 92, 0.25)',
@@ -231,7 +301,7 @@ export default function Page() {
   const tabs = useMemo(
     () => [
       { key: 'cast' as const, label: 'Cast' },
-      { key: 'quan' as const, label: 'Quan' },
+      { key: 'quan' as const, label: 'Quán' },
     ],
     [],
   );
@@ -241,7 +311,7 @@ export default function Page() {
       <section className="ranking-head" style={headStyle}>
         <div>
           <h1 style={titleStyle}>Bảng xếp hạng {title}</h1>
-          <p style={subTitleStyle}>Kỳ tháng 6/2026 - cập nhật 21/06 - giới hạn Top 5</p>
+          <p style={subTitleStyle}>Top 1-5 theo khu vực/danh mục - dữ liệu do Admin cấu hình</p>
         </div>
 
         <div className="ranking-tabs" aria-label="Chuyển bảng xếp hạng" style={tabWrapStyle}>
@@ -259,29 +329,54 @@ export default function Page() {
         </div>
       </section>
 
-      <div className="ranking-filters" aria-label="Lọc khu vực" style={filterWrapStyle}>
-        {areas.map((area, index) => (
-          <button key={area} type="button" className={index === 0 ? 'active' : ''} style={index === 0 ? activeButtonStyle : inactiveButtonStyle}>
-            {area}
-          </button>
-        ))}
+      <div className="ranking-filter-stack" style={filterStackStyle}>
+        <div className="ranking-filters" aria-label="Lọc khu vực" style={filterWrapStyle}>
+          {areaFilters.map((area) => (
+            <button
+              key={area.key}
+              type="button"
+              className={selectedArea === area.key ? 'active' : ''}
+              style={selectedArea === area.key ? activeButtonStyle : inactiveButtonStyle}
+              onClick={() => setSelectedArea(area.key)}
+            >
+              {area.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="ranking-filters" aria-label="Lọc danh mục" style={filterWrapStyle}>
+          {categoryFilters.map((category) => (
+            <button
+              key={category.key}
+              type="button"
+              className={selectedCategory === category.key ? 'active' : ''}
+              style={selectedCategory === category.key ? activeButtonStyle : inactiveButtonStyle}
+              onClick={() => setSelectedCategory(category.key)}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <section className="ranking-list" aria-label={`Bảng xếp hạng ${title}`} style={listStyle}>
         {list.map((item) => (
-          <Link key={`${rankingType}-${item.rank}`} href={item.href} className="ranking-row" style={rowStyle}>
+          <Link key={`${rankingType}-${item.city}-${item.category}-${item.rank}`} href={item.href} className="ranking-row" style={rowStyle}>
             <span className="rank-badge" style={{ ...rankBadgeStyle, color: item.numColor, background: item.crown }}>
               {item.rank}
             </span>
             <span className="rank-avatar" style={{ ...rankAvatarStyle, background: item.image }} />
             <span className="rank-copy" style={rankCopyStyle}>
-              <strong style={{ color: '#fff8e6', fontSize: '20px' }}>{item.name}</strong>
-              <small style={{ color: '#c7bd9e', fontSize: '15px' }}>{item.area}</small>
+              <span className="rank-title-line">
+                <strong>{item.name}</strong>
+                {item.sponsored ? <span className="sponsored-badge">Tài trợ</span> : null}
+              </span>
+              <small>{item.area}</small>
             </span>
-            <span className="rank-metric" style={{ color: '#f1ce69', fontWeight: 900, whiteSpace: 'nowrap' }}>
-              {item.metric}
+            <span className="rank-source">
+              {item.sourceLabel}
             </span>
-            <span className="rank-arrow" aria-hidden="true" style={{ color: '#8f8877', fontSize: '36px', lineHeight: 1 }}>
+            <span className="rank-arrow" aria-hidden="true">
               ›
             </span>
           </Link>
@@ -327,6 +422,17 @@ export default function Page() {
           gap: 8px;
         }
 
+        .ranking-filter-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 26px;
+        }
+
+        .ranking-filters {
+          flex-wrap: wrap;
+        }
+
         .ranking-tabs {
           padding: 4px;
           border: 1px solid rgba(222, 181, 92, 0.28);
@@ -353,10 +459,6 @@ export default function Page() {
         .ranking-filters button.active {
           color: #17130b;
           background: linear-gradient(135deg, #f4d989, #d1a944);
-        }
-
-        .ranking-filters {
-          margin-bottom: 26px;
         }
 
         .ranking-filters button {
@@ -415,6 +517,14 @@ export default function Page() {
           gap: 6px;
         }
 
+        .rank-title-line {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          flex-wrap: wrap;
+        }
+
         .rank-copy strong {
           color: #fff8e6;
           font-size: 20px;
@@ -425,7 +535,18 @@ export default function Page() {
           font-size: 15px;
         }
 
-        .rank-metric {
+        .sponsored-badge {
+          border: 1px solid rgba(244, 217, 137, 0.5);
+          border-radius: 999px;
+          padding: 3px 9px;
+          color: #17130b;
+          background: linear-gradient(135deg, #f4d989, #d1a944);
+          font-size: 11px;
+          font-weight: 900;
+          white-space: nowrap;
+        }
+
+        .rank-source {
           color: #f1ce69;
           font-weight: 900;
           white-space: nowrap;
@@ -439,7 +560,7 @@ export default function Page() {
 
         @media (max-width: 767px) {
           .ranking-page {
-            padding: 22px 16px 36px;
+            padding: 22px 16px 112px;
           }
 
           .ranking-head {
@@ -464,7 +585,12 @@ export default function Page() {
             flex: 1;
           }
 
+          .ranking-filter-stack {
+            margin-bottom: 18px;
+          }
+
           .ranking-filters {
+            flex-wrap: nowrap;
             overflow-x: auto;
             padding-bottom: 3px;
           }
@@ -475,9 +601,13 @@ export default function Page() {
 
           .ranking-row {
             grid-template-columns: 42px 52px 1fr;
-            gap: 12px;
-            min-height: 88px;
-            padding: 14px;
+            gap: 10px;
+            min-height: 76px;
+            padding: 12px;
+          }
+
+          .ranking-list {
+            gap: 10px;
           }
 
           .rank-badge {
@@ -493,16 +623,19 @@ export default function Page() {
           }
 
           .rank-copy strong {
-            font-size: 16px;
+            font-size: 15px;
           }
 
           .rank-copy small {
-            font-size: 12px;
+            font-size: 11.5px;
           }
 
-          .rank-metric {
-            grid-column: 3;
-            font-size: 12px;
+          .rank-copy {
+            gap: 3px;
+          }
+
+          .rank-source {
+            display: none;
           }
 
           .rank-arrow {
