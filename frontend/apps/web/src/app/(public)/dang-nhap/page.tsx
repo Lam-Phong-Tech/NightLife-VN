@@ -26,7 +26,8 @@ const colors = {
 
 const demoPhoneEmailMap = new Map([["0912345678", "member@nightlife.vn"]]);
 const googleLogoSrc = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
-const lineLogoSrc = "https://static.line-scdn.net/line_web/img/favicon-32x32.png";
+const lineLogoSrc =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306C755'/%3E%3Cpath fill='%23fff' d='M32 14c-11.6 0-21 7.4-21 16.6 0 8.2 7.5 15.1 17.6 16.4.7.1 1.6.5 1.8 1.1.2.5.1 1.3.1 1.8l-.3 2c-.1.6-.4 2.2 1.8 1.2 2.2-1 11.8-7 16.1-12 3-3.3 4.9-6.7 4.9-10.5C53 21.4 43.6 14 32 14Z'/%3E%3Cpath fill='%2306C755' d='M20.4 35.2h8v-3.1h-4.5v-7.3h-3.5v10.4Zm10.2 0h3.5V24.8h-3.5v10.4Zm6 0H40v-5.6l4.3 5.6h3V24.8h-3.4v5.5l-4.2-5.5h-3.1v10.4Zm12.8 0v-3h-3.9v-1h3.5v-2.8h-3.5v-.7h3.9v-2.9h-7.2v10.4h7.2Z'/%3E%3C/svg%3E";
 
 function normalizePhone(value: string) {
   return value.replace(/[^\d+]/g, "");
@@ -387,14 +388,18 @@ function SocialButton({
         alignItems: "center",
         justifyContent: "center",
         gap: 10,
-        border: "1px solid rgba(255,255,255,.78)",
+        minWidth: 0,
+        padding: "0 14px",
+        border: `1px solid ${colors.borderStrong}`,
         borderRadius: 13,
-        background: "#f8f7f4",
-        color: "#121214",
-        fontSize: 14,
-        fontWeight: 900,
+        background: "linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)), #101013",
+        color: colors.text,
+        fontFamily: "inherit",
+        fontSize: 13.5,
+        fontWeight: 850,
+        lineHeight: 1,
         cursor: "pointer",
-        boxShadow: "0 10px 24px rgba(0,0,0,.16)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.22)",
       }}
     >
       <span
@@ -407,7 +412,7 @@ function SocialButton({
           background: `url("${logoSrc}") center / contain no-repeat`,
         }}
       />
-      {label}
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
     </button>
   );
 }
