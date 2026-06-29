@@ -156,6 +156,7 @@ export default function Page() {
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [ratingOnly, setRatingOnly] = useState(false);
   const [openNow, setOpenNow] = useState(true);
+  const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [stores, setStores] = useState<PublicStore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -236,8 +237,9 @@ export default function Page() {
     );
   };
 
-  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setCity(event.target.value);
+  const handleCityChange = (nextCity: string) => {
+    setCity(nextCity);
+    setCityMenuOpen(false);
     setSort((current) => (current === "nearest" && !coords ? "priority" : current));
   };
 
@@ -295,18 +297,42 @@ export default function Page() {
             </button>
           </label>
 
-          <label className="venue-city-select">
-            <MapPin size={15} />
-            <span className="venue-city-current">{selectedCityLabel}</span>
-            <select value={city} onChange={handleCityChange} aria-label="Chọn thành phố">
-              {cityOptions.map((option) => (
-                <option key={option.value || "all"} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} />
-          </label>
+          <div
+            className="venue-city-select"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setCityMenuOpen(false);
+              }
+            }}
+          >
+            <button
+              type="button"
+              className="venue-city-trigger"
+              aria-haspopup="listbox"
+              aria-expanded={isCityMenuOpen}
+              onClick={() => setCityMenuOpen((current) => !current)}
+            >
+              <MapPin size={15} />
+              <span className="venue-city-current">{selectedCityLabel}</span>
+              <ChevronDown size={14} />
+            </button>
+            {isCityMenuOpen ? (
+              <div className="venue-city-menu" role="listbox" aria-label="Chọn thành phố">
+                {cityOptions.map((option) => (
+                  <button
+                    key={option.value || "all"}
+                    type="button"
+                    role="option"
+                    aria-selected={option.value === city}
+                    className={option.value === city ? "is-selected" : ""}
+                    onClick={() => handleCityChange(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <button type="button" className="venue-find-button">
             Tìm
@@ -579,14 +605,27 @@ const venueSearchCss = `
   .venue-city-select,
   .venue-sort-select {
     position: relative;
+    display: block;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .venue-city-trigger {
+    width: 100%;
+    min-height: 54px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: #f0dda8;
     padding: 0 16px;
-    font-size: 13px;
-    font-weight: 800;
-    white-space: nowrap;
+    font: inherit;
+    cursor: pointer;
   }
 
   .venue-city-current {
@@ -596,13 +635,53 @@ const venueSearchCss = `
     text-overflow: ellipsis;
   }
 
-  .venue-city-select select,
   .venue-sort-select select {
     position: absolute;
     inset: 0;
     width: 100%;
     opacity: 0;
     cursor: pointer;
+  }
+
+  .venue-city-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 40;
+    overflow: hidden;
+    border: 1px solid rgba(212, 178, 106, .35);
+    border-radius: 12px;
+    background: #141316;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, .36);
+  }
+
+  .venue-city-menu button {
+    width: 100%;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+    background: transparent;
+    color: #c5c0b6;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .venue-city-menu button:last-child {
+    border-bottom: 0;
+  }
+
+  .venue-city-menu button:hover,
+  .venue-city-menu button:focus-visible,
+  .venue-city-menu button.is-selected {
+    background: rgba(212, 178, 106, .16);
+    color: #f0dda8;
+    outline: 0;
   }
 
   .venue-find-button {
