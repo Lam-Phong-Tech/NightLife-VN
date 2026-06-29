@@ -1,69 +1,56 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useMemo, useState } from "react";
-import { LocateFixed, MapPin, SlidersHorizontal } from "lucide-react";
-
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  discoveryApi,
-  type DiscoverySort,
-  type PublicArea,
-  type PublicStore,
-} from "@/lib/api/discovery";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
-import { SearchBar } from "@/components/ui/SearchBar";
-import { VenueCard } from "@/components/ui/VenueCard";
-import type { Venue } from "@/types";
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Heart,
+  LocateFixed,
+  MapPin,
+  Search,
+  SlidersHorizontal,
+  Star,
+} from "lucide-react";
 
-const colors = {
-  shell: "#0c0c0f",
-  panel: "#111114",
-  panelSoft: "rgba(255,255,255,.045)",
-  line: "rgba(212,178,106,.22)",
-  gold: "#d4b26a",
-  goldSoft: "#f0dda8",
-  text: "#f3f0ea",
-  muted: "#b6b1a6",
-  dim: "#8c8679",
+import { discoveryApi, type DiscoverySort, type PublicStore } from "@/lib/api/discovery";
+import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
+
+type Coordinates = {
+  lat: number;
+  lng: number;
+};
+
+type VenueView = {
+  id: string;
+  name: string;
+  categoryLabel: string;
+  areaLabel: string;
+  cityLabel: string;
+  distanceLabel: string;
+  priceLabel: string;
+  rating: number;
+  reviews: number;
+  tags: string[];
+  statusLabel: string;
+  dealLabel: string;
+  image: string;
 };
 
 const cityOptions = [
+  { value: "hn", label: "Hà Nội" },
+  { value: "hcm", label: "TP.HCM" },
   { value: "", label: "Tất cả" },
-  { value: "hn", label: "HN" },
-  { value: "hcm", label: "HCM" },
-];
-
-const categoryOptions = [
-  { value: "", label: "Tất cả" },
-  { value: "BAR", label: "Bar" },
-  { value: "CLUB", label: "Club" },
-  { value: "LOUNGE", label: "Lounge" },
-  { value: "GIRLS_BAR", label: "Girls Bar" },
-  { value: "KARAOKE", label: "Karaoke / KTV" },
-  { value: "MASSAGE_SPA", label: "Massage / Spa" },
-  { value: "RESTAURANT", label: "Nhà hàng" },
-  { value: "CASINO", label: "Casino" },
-];
-
-const storeSortOptions = [
-  { value: "newest", label: "Mới nhất" },
-  { value: "priority", label: "Ưu tiên" },
-  { value: "nearest", label: "Gần nhất" },
-];
-
-const couponOptions = [
-  { value: "all", label: "Tất cả" },
-  { value: "active", label: "Có ưu đãi" },
 ];
 
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
   CLUB: "Club",
   LOUNGE: "Lounge",
-  GIRLS_BAR: "Girls Bar",
-  KARAOKE: "Karaoke / KTV",
-  MASSAGE_SPA: "Massage / Spa",
+  GIRLS_BAR: "Girls bar",
+  KARAOKE: "Karaoke",
+  MASSAGE_SPA: "Spa",
   RESTAURANT: "Nhà hàng",
   CASINO: "Casino",
 };
@@ -73,109 +60,107 @@ const cityLabels: Record<string, string> = {
   hcm: "TP.HCM",
 };
 
-const pageStyle: CSSProperties = {
-  minHeight: "100vh",
-  background:
-    "radial-gradient(circle at 82% 8%, rgba(212,178,106,.15), transparent 30%), linear-gradient(180deg,#0b0b0e 0%,#111114 52%,#09090b 100%)",
-  color: colors.text,
-  fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+const sortLabels: Record<DiscoverySort, string> = {
+  priority: "Phổ biến",
+  nearest: "Gần nhất",
+  newest: "Mới nhất",
 };
 
-const chipStyle = (active: boolean): CSSProperties => ({
-  border: `1px solid ${active ? colors.gold : colors.line}`,
-  background: active ? colors.gold : colors.panelSoft,
-  color: active ? "#241a0a" : colors.muted,
-  borderRadius: "999px",
-  padding: "9px 14px",
-  fontSize: "12.5px",
-  fontWeight: 800,
-  whiteSpace: "nowrap",
-  cursor: "pointer",
-});
+const imagePool = [
+  "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=76') center/cover",
+  "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=900&q=76') center/cover",
+  "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=900&q=76') center/cover",
+  "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=76') center/cover",
+  "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=900&q=76') center/cover",
+  "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=900&q=76') center/cover",
+];
 
-const actionButtonStyle: CSSProperties = {
-  border: `1px solid ${colors.line}`,
-  borderRadius: "14px",
-  background: colors.panelSoft,
-  color: colors.goldSoft,
-  height: "44px",
-  padding: "0 14px",
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "8px",
-  fontSize: "13px",
-  fontWeight: 800,
-  cursor: "pointer",
+const categoryTags: Record<string, string[]> = {
+  BAR: ["Live music", "Rooftop", "Whisky bar"],
+  CLUB: ["Đặt bàn VIP", "Sân khấu DJ", "Mở đến 02:00"],
+  LOUNGE: ["Hỗ trợ tiếng Nhật", "Phòng riêng", "Cocktail"],
+  GIRLS_BAR: ["Host lounge", "VIP sofa", "Cocktail"],
+  KARAOKE: ["Phòng riêng", "Âm thanh hay", "Combo nhóm"],
+  MASSAGE_SPA: ["Thư giãn", "Mở muộn", "Gói đôi"],
+  RESTAURANT: ["Izakaya", "Phòng riêng", "Ăn khuya"],
+  CASINO: ["VIP table", "Private room", "Premium"],
 };
 
-const gradientByCategory: Record<string, string> = {
-  BAR: "linear-gradient(140deg,#35151d,#8d2d42)",
-  CLUB: "linear-gradient(140deg,#14142b,#6d28d9)",
-  LOUNGE: "linear-gradient(140deg,#19191d,#6d5a28)",
-  GIRLS_BAR: "linear-gradient(140deg,#2d1724,#b13b6b)",
-  KARAOKE: "linear-gradient(140deg,#172331,#2d6fae)",
-  MASSAGE_SPA: "linear-gradient(140deg,#1d2330,#b07b3c)",
-  RESTAURANT: "linear-gradient(140deg,#16261f,#0f766e)",
-  CASINO: "linear-gradient(140deg,#1b2319,#9a7a24)",
+const categoryPrices: Record<string, string> = {
+  BAR: "từ 650.000đ",
+  CLUB: "từ 2.500.000đ",
+  LOUNGE: "từ 900.000đ",
+  GIRLS_BAR: "từ 1.200.000đ",
+  KARAOKE: "từ 1.500.000đ",
+  MASSAGE_SPA: "từ 500.000đ",
+  RESTAURANT: "từ 800.000đ",
+  CASINO: "từ 3.000.000đ",
 };
 
-type Coordinates = {
-  lat: number;
-  lng: number;
-};
+const dealLabels = [
+  "-30% Happy Hour",
+  "Combo nhóm",
+  "2+1 Combo phòng",
+  "Ưu đãi VIP",
+  "Set Nhật Bản",
+  "-20% gói đôi",
+];
 
-const toVenue = (store: PublicStore): Venue => ({
-  id: store.slug,
-  name: store.name,
-  area: [store.area?.name ?? store.district, cityLabels[store.cityCode ?? ""]]
-    .filter(Boolean)
-    .join(" · "),
-  catLabel: categoryLabels[store.category] ?? store.category,
-  rating: 4.8,
-  price: typeof store.distanceKm === "number" ? `${store.distanceKm.toFixed(1)} km` : "Đang mở",
-  hasBadge: typeof store.distanceKm === "number",
-  badgeText: typeof store.distanceKm === "number" ? "Gần bạn" : undefined,
-  badgeColor: "#d4b26a",
-  img:
-    store.thumbnailUrl ??
-    `${gradientByCategory[store.category] ?? "linear-gradient(140deg,#19191d,#2a2418)"}`,
-});
+const distanceFallbacks = ["1.2 km", "2.4 km", "3.1 km", "3.8 km", "4.6 km", "5.2 km"];
+
+const pickByIndex = <T,>(items: readonly T[], index: number, fallback: T) =>
+  items[index % items.length] ?? fallback;
+
+const roundRating = (index: number) => pickByIndex([4.9, 4.8, 4.8, 4.7, 4.7, 4.6], index, 4.7);
+
+const reviewCount = (index: number) => pickByIndex([212, 188, 96, 146, 84, 72], index, 84);
+
+const formatDistance = (distanceKm: number | null | undefined, index: number) =>
+  typeof distanceKm === "number" && Number.isFinite(distanceKm)
+    ? `${distanceKm.toFixed(1)} km`
+    : pickByIndex(distanceFallbacks, index, "1.2 km");
+
+const toVenueView = (store: PublicStore, index: number): VenueView => {
+  const categoryLabel = categoryLabels[store.category] ?? store.category;
+  const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
+  const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
+  const fallbackImage = pickByIndex(
+    imagePool,
+    index,
+    "linear-gradient(135deg,#19191d,#2a2418)",
+  );
+  const statusLabel = index % 3 === 2 ? "Mở đến 02:00" : "Đang mở";
+
+  return {
+    id: store.slug,
+    name: store.name,
+    categoryLabel,
+    areaLabel,
+    cityLabel,
+    distanceLabel: formatDistance(store.distanceKm, index),
+    priceLabel: categoryPrices[store.category] ?? "từ 900.000đ",
+    rating: roundRating(index),
+    reviews: reviewCount(index),
+    tags: categoryTags[store.category] ?? ["Đặt bàn nhanh", "Không gian đẹp", "Ưu đãi"],
+    statusLabel,
+    dealLabel: pickByIndex(dealLabels, index, "-30% Happy Hour"),
+    image: store.thumbnailUrl ? `url('${store.thumbnailUrl}') center/cover` : fallbackImage,
+  };
+};
 
 export default function Page() {
   const [query, setQuery] = useState("");
-  const [city, setCity] = useState("");
-  const [area, setArea] = useState("");
+  const [city, setCity] = useState("hn");
   const [category, setCategory] = useState("");
-  const [sort, setSort] = useState<DiscoverySort>("newest");
+  const [sort, setSort] = useState<DiscoverySort>("priority");
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
-  const [areas, setAreas] = useState<PublicArea[]>([]);
-  const [stores, setStores] = useState<PublicStore[]>([]);
+  const [ratingOnly, setRatingOnly] = useState(false);
+  const [openNow, setOpenNow] = useState(true);
   const [coords, setCoords] = useState<Coordinates | null>(null);
+  const [stores, setStores] = useState<PublicStore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleCityChange = (nextCity: string) => {
-    setCity(nextCity);
-    setArea("");
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    discoveryApi
-      .listAreas({ city })
-      .then((items) => {
-        if (!cancelled) setAreas(items);
-      })
-      .catch(() => {
-        if (!cancelled) setAreas([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [city]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,7 +172,6 @@ export default function Page() {
         .listStores({
           q: query,
           city,
-          area,
           category,
           lat: coords?.lat,
           lng: coords?.lng,
@@ -213,9 +197,18 @@ export default function Page() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, hasActiveCoupon, query, sort]);
+  }, [category, city, coords, hasActiveCoupon, query, sort]);
 
-  const venueCards = useMemo(() => stores.map(toVenue), [stores]);
+  const venues = useMemo(
+    () =>
+      stores
+        .map(toVenueView)
+        .filter((venue) => !ratingOnly || venue.rating >= 4.5)
+        .filter((venue) => !openNow || venue.statusLabel.includes("Đang") || venue.statusLabel.includes("Mở")),
+    [openNow, ratingOnly, stores],
+  );
+
+  const cityLabel = cityLabels[city] ?? "Việt Nam";
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
@@ -241,260 +234,982 @@ export default function Page() {
     );
   };
 
-  const handleSortChange = (nextSort: string) => {
+  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setCity(event.target.value);
+    setSort((current) => (current === "nearest" && !coords ? "priority" : current));
+  };
+
+  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextSort = event.target.value as DiscoverySort;
+
     if (nextSort === "nearest" && !coords) {
       requestNearby();
       return;
     }
 
-    setSort(nextSort as DiscoverySort);
+    setSort(nextSort);
   };
 
+  const categoryChips = [
+    { label: "Lounge", value: "LOUNGE" },
+    { label: "Bar", value: "BAR" },
+    { label: "Club", value: "CLUB" },
+    { label: "Karaoke", value: "KARAOKE" },
+    { label: "Spa", value: "MASSAGE_SPA" },
+  ];
+
   return (
-    <React.Fragment>
-      <main style={pageStyle}>
-        <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "18px" }}>
-          <section
-            style={{
-              display: "grid",
-              gap: "18px",
-              padding: "22px",
-              border: `1px solid ${colors.line}`,
-              borderRadius: "22px",
-              background: "rgba(255,255,255,.035)",
-              boxShadow: "0 24px 70px rgba(0,0,0,.28)",
-            }}
+    <main className="venue-search-page">
+      <style>{venueSearchCss}</style>
+
+      <div className="venue-search-shell">
+        <header className="venue-search-header">
+          <Link href="/" aria-label="Quay lại trang chủ" className="venue-search-back">
+            <ArrowLeft size={17} />
+          </Link>
+
+          <div className="venue-search-title">
+            <h1>
+              <span className="venue-title-desktop">Tìm quán đêm {cityLabel}</span>
+              <span className="venue-title-mobile">Tìm quán</span>
+            </h1>
+            <p>
+              <span className="venue-subtitle-desktop">FIND YOUR VENUE TONIGHT</span>
+              <span className="venue-subtitle-mobile">FIND VENUES</span>
+            </p>
+          </div>
+        </header>
+
+        <section className="venue-search-controls" aria-label="Tìm và lọc quán">
+          <label className="venue-search-input">
+            <Search size={18} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Tìm quán, khu vực hoặc loại hình..."
+            />
+            <button type="button" aria-label="Bộ lọc" className="venue-filter-icon">
+              <SlidersHorizontal size={16} />
+            </button>
+          </label>
+
+          <label className="venue-city-select">
+            <MapPin size={15} />
+            <select value={city} onChange={handleCityChange} aria-label="Chọn thành phố">
+              {cityOptions.map((option) => (
+                <option key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} />
+          </label>
+
+          <button type="button" className="venue-find-button">
+            Tìm
+          </button>
+        </section>
+
+        <nav className="venue-chip-row hscroll" aria-label="Bộ lọc nhanh">
+          <button
+            type="button"
+            className={`venue-chip ${openNow ? "is-active" : ""}`}
+            onClick={() => setOpenNow((current) => !current)}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: "16px",
-                flexWrap: "wrap",
-              }}
+            Đang mở
+          </button>
+          <button
+            type="button"
+            className={`venue-chip ${sort === "nearest" ? "is-active" : ""}`}
+            onClick={requestNearby}
+            disabled={isLocating}
+          >
+            <LocateFixed size={13} />
+            {isLocating ? "Đang lấy vị trí" : "Gần tôi"}
+          </button>
+          <button
+            type="button"
+            className={`venue-chip ${hasActiveCoupon ? "is-active" : ""}`}
+            onClick={() => setHasActiveCoupon((current) => !current)}
+          >
+            Có ưu đãi
+          </button>
+          <button
+            type="button"
+            className={`venue-chip ${ratingOnly ? "is-active" : ""}`}
+            onClick={() => setRatingOnly((current) => !current)}
+          >
+            4.5★ trở lên
+          </button>
+          {categoryChips.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              className={`venue-chip ${category === chip.value ? "is-active" : ""}`}
+              onClick={() => setCategory((current) => (current === chip.value ? "" : chip.value))}
             >
-              <div>
-                <div
-                  style={{
-                    color: colors.goldSoft,
-                    fontSize: "12px",
-                    fontWeight: 900,
-                    letterSpacing: ".16em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Tìm kiếm nhanh
-                </div>
-                <h1 style={{ marginTop: "8px", fontSize: "32px", fontWeight: 950 }}>
-                  Danh sách quán
-                </h1>
-              </div>
-              <button
-                type="button"
-                onClick={requestNearby}
-                disabled={isLocating}
-                style={{ ...actionButtonStyle, opacity: isLocating ? 0.65 : 1 }}
-              >
-                <LocateFixed size={17} />
-                {coords ? "Đang ưu tiên gần tôi" : isLocating ? "Đang lấy vị trí" : "Gần tôi"}
-              </button>
-            </div>
+              {chip.label}
+            </button>
+          ))}
+        </nav>
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "12px",
-                alignItems: "center",
-              }}
-            >
-              <SearchBar
-                value={query}
-                onSearch={(event) => setQuery(event.target.value)}
-                placeholder="Tên quán, cast, khu vực..."
-                style={{ flex: "1 1 260px", minHeight: "48px", minWidth: 0 }}
-              />
-              <span
-                style={{
-                  ...actionButtonStyle,
-                  cursor: "default",
-                  color: colors.muted,
-                  flex: "0 0 auto",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <SlidersHorizontal size={16} />
-                {venueCards.length} kết quả
-              </span>
-            </div>
+        <div className="venue-result-bar">
+          <div>
+            <strong>{isLoading ? "..." : venues.length} quán</strong>
+            <span> · {cityLabel}</span>
+          </div>
 
-            <div style={{ display: "grid", gap: "12px" }}>
-              <FilterRow
-                label="Thành phố"
-                options={cityOptions}
-                value={city}
-                onChange={handleCityChange}
-              />
-              <FilterRow
-                label="Loại hình"
-                options={categoryOptions}
-                value={category}
-                onChange={setCategory}
-              />
-              <FilterRow
-                label="Khu vực"
-                options={[
-                  { value: "", label: "Tất cả" },
-                  ...areas.map((item) => ({
-                    value: item.code,
-                    label: item.name,
-                  })),
-                ]}
-                value={area}
-                onChange={setArea}
-              />
-              <FilterRow
-                label="Sắp xếp"
-                options={storeSortOptions}
-                value={sort}
-                onChange={handleSortChange}
-              />
-              <FilterRow
-                label="Ưu đãi"
-                options={couponOptions}
-                value={hasActiveCoupon ? "active" : "all"}
-                onChange={(value) => setHasActiveCoupon(value === "active")}
-              />
-            </div>
-          </section>
-
-          {error ? (
-            <div
-              style={{
-                marginTop: "14px",
-                border: "1px solid rgba(248,113,113,.35)",
-                background: "rgba(127,29,29,.2)",
-                color: "#fecaca",
-                borderRadius: "14px",
-                padding: "12px 14px",
-                fontSize: "13px",
-                fontWeight: 700,
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-
-          <section style={{ marginTop: "20px" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "14px",
-                marginBottom: "14px",
-              }}
-            >
-              <div style={{ color: colors.muted, fontSize: "13px" }}>
-                <b style={{ color: colors.text }}>{venueCards.length} quán</b> phù hợp
-              </div>
-              {coords ? (
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "7px",
-                    color: colors.goldSoft,
-                    fontSize: "12px",
-                    fontWeight: 800,
-                  }}
-                >
-                  <MapPin size={15} />
-                  Sắp xếp theo khoảng cách
-                </div>
-              ) : null}
-            </div>
-
-            {isLoading ? (
-              <LoadingSkeleton />
-            ) : venueCards.length > 0 ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                {venueCards.map((venue) => (
-                  <VenueCard
-                    key={venue.id}
-                    venue={venue}
-                    href={`/stores/${venue.id}`}
-                    variant="vertical"
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="Chưa có quán phù hợp"
-                description="Đổi khu vực hoặc loại hình để xem thêm."
-              />
-            )}
-          </section>
+          <label className="venue-sort-select">
+            <span>Sắp xếp:</span>
+            <select value={sort} onChange={handleSortChange} aria-label="Sắp xếp danh sách">
+              <option value="priority">Phổ biến</option>
+              <option value="nearest">Gần nhất</option>
+              <option value="newest">Mới nhất</option>
+            </select>
+            <strong>{sortLabels[sort]}</strong>
+            <ChevronDown size={13} />
+          </label>
         </div>
-      </main>
-      <BottomNav />
-    </React.Fragment>
+
+        {error ? <div className="venue-error">{error}</div> : null}
+
+        <section className="venue-list" aria-label="Danh sách quán">
+          {isLoading ? (
+            <VenueSkeletons />
+          ) : venues.length > 0 ? (
+            venues.map((venue) => <VenueResultCard key={venue.id} venue={venue} />)
+          ) : (
+            <div className="venue-empty">
+              <strong>Chưa có quán phù hợp</strong>
+              <span>Đổi khu vực, loại hình hoặc từ khóa để xem thêm.</span>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
 
-function FilterRow({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string }>;
-  value: string;
-  onChange: (value: string) => void;
-}) {
+function VenueResultCard({ venue }: { venue: VenueView }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "86px minmax(0, 1fr)",
-        alignItems: "center",
-        gap: "10px",
-      }}
-    >
-      <div
-        style={{
-          color: colors.dim,
-          fontSize: "11px",
-          fontWeight: 900,
-          letterSpacing: ".12em",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
+    <Link href={`/stores/${venue.id}`} className="venue-card">
+      <div className="venue-card-media">
+        <PlaceholderMedia src={venue.image} alt={venue.name} label="" style={{ width: "100%", height: "100%" }} />
+        <div className="venue-image-shade" />
+        <span className={`venue-status ${venue.statusLabel.includes("02:00") ? "is-late" : ""}`}>
+          <span />
+          {venue.statusLabel}
+        </span>
+        <span className="venue-deal">{venue.dealLabel}</span>
+        <span className="venue-heart" aria-hidden="true">
+          <Heart size={18} />
+        </span>
       </div>
-      <div
-        className="hscroll"
-        style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "2px" }}
-      >
-        {options.map((option) => (
-          <button
-            key={`${label}-${option.value || "all"}`}
-            type="button"
-            onClick={() => onChange(option.value)}
-            style={chipStyle(value === option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
+
+      <div className="venue-card-body">
+        <div className="venue-card-main">
+          <div className="venue-name-row">
+            <h2>{venue.name}</h2>
+            <div className="venue-mobile-rating">
+              <Star size={12} fill="currentColor" />
+              {venue.rating.toFixed(1)}
+            </div>
+          </div>
+          <p className="venue-meta">
+            {venue.categoryLabel} · {venue.areaLabel}
+            <span className="venue-mobile-distance"> · {venue.distanceLabel}</span>
+          </p>
+          <div className="venue-tags">
+            {venue.tags.map((tag) => (
+              <span key={`${venue.id}-${tag}`}>{tag}</span>
+            ))}
+          </div>
+          <div className="venue-price">{venue.priceLabel}</div>
+          <div className="venue-distance">
+            <MapPin size={12} />
+            {venue.distanceLabel} · {venue.areaLabel}
+          </div>
+        </div>
+
+        <div className="venue-rating">
+          <Star size={14} fill="currentColor" />
+          <strong>{venue.rating.toFixed(1)}</strong>
+          <span>({venue.reviews})</span>
+        </div>
+
+        <span className="venue-book-button">
+          Đặt bàn
+          <ChevronRight size={16} />
+        </span>
       </div>
+    </Link>
+  );
+}
+
+function VenueSkeletons() {
+  return (
+    <div className="venue-skeleton-stack">
+      {[1, 2, 3].map((item) => (
+        <div key={item} className="venue-card venue-skeleton">
+          <div className="venue-card-media" />
+          <div className="venue-card-body">
+            <div className="venue-card-main">
+              <span className="venue-skeleton-line is-title" />
+              <span className="venue-skeleton-line is-short" />
+              <span className="venue-skeleton-line" />
+            </div>
+            <span className="venue-skeleton-pill" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
+
+const venueSearchCss = `
+  .venue-search-page {
+    min-height: 100vh;
+    background: #0c0c0f;
+    color: #f3f0ea;
+    font-family: Inter, var(--nl-font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .venue-search-page * {
+    box-sizing: border-box;
+  }
+
+  .venue-search-shell {
+    width: min(100%, 1180px);
+    margin: 0 auto;
+    padding: 28px 26px 54px;
+  }
+
+  .venue-search-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .venue-search-back {
+    display: none;
+  }
+
+  .venue-search-title h1 {
+    margin: 0;
+    color: #f3f0ea;
+    font-size: 30px;
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .venue-search-title p {
+    margin: 8px 0 0;
+    color: #8c8679;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: .18em;
+  }
+
+  .venue-title-mobile,
+  .venue-subtitle-mobile {
+    display: none;
+  }
+
+  .venue-search-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px 108px;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .venue-search-input,
+  .venue-city-select,
+  .venue-find-button,
+  .venue-sort-select {
+    min-height: 56px;
+    border: 1px solid rgba(212, 178, 106, .35);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .035);
+    color: #f0dda8;
+  }
+
+  .venue-search-input {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 18px;
+  }
+
+  .venue-search-input svg {
+    color: #d4b26a;
+    flex: none;
+  }
+
+  .venue-search-input input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f3f0ea;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .venue-search-input input::placeholder {
+    color: #8c8679;
+  }
+
+  .venue-filter-icon {
+    display: none;
+    border: 0;
+    background: transparent;
+    color: #8c8679;
+    padding: 0;
+  }
+
+  .venue-city-select,
+  .venue-sort-select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .venue-city-select select,
+  .venue-sort-select select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .venue-find-button {
+    cursor: pointer;
+    border-color: transparent;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: #241a0a;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .venue-chip-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    margin-top: 18px;
+    padding-bottom: 2px;
+  }
+
+  .venue-chip {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, .11);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .045);
+    color: #c5c0b6;
+    padding: 0 17px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .venue-chip.is-active {
+    border-color: rgba(244, 227, 180, .72);
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: #241a0a;
+  }
+
+  .venue-chip:disabled {
+    opacity: .7;
+    cursor: progress;
+  }
+
+  .venue-result-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: 24px;
+    color: #8c8679;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .venue-result-bar strong {
+    color: #f3f0ea;
+    font-weight: 900;
+  }
+
+  .venue-sort-select {
+    min-height: 30px;
+    border: 0;
+    background: transparent;
+    color: #8c8679;
+    padding: 0;
+    gap: 5px;
+  }
+
+  .venue-sort-select strong,
+  .venue-sort-select svg {
+    color: #d4b26a;
+  }
+
+  .venue-list,
+  .venue-skeleton-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .venue-card {
+    min-height: 168px;
+    display: grid;
+    grid-template-columns: minmax(260px, 386px) minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid rgba(212, 178, 106, .18);
+    border-radius: 18px;
+    background: #141316;
+    color: inherit;
+    text-decoration: none;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .22);
+  }
+
+  .venue-card-media {
+    position: relative;
+    min-height: 168px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #19191d, #2a2418);
+  }
+
+  .venue-image-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(12, 12, 15, .05), rgba(12, 12, 15, .2) 42%, rgba(12, 12, 15, .78));
+    pointer-events: none;
+  }
+
+  .venue-status,
+  .venue-deal,
+  .venue-heart {
+    position: absolute;
+    z-index: 2;
+  }
+
+  .venue-status {
+    top: 12px;
+    left: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 22px;
+    border: 1px solid rgba(58, 222, 143, .34);
+    border-radius: 999px;
+    background: rgba(9, 28, 22, .74);
+    color: #8df0ba;
+    padding: 0 9px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .venue-status.is-late {
+    border-color: rgba(212, 178, 106, .36);
+    background: rgba(42, 32, 16, .78);
+    color: #f0dda8;
+  }
+
+  .venue-status span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .venue-deal {
+    left: 14px;
+    bottom: 14px;
+    min-height: 23px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 7px;
+    background: #f0dda8;
+    color: #241a0a;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .venue-heart {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .28);
+    border-radius: 50%;
+    background: rgba(12, 12, 15, .46);
+    color: #f3f0ea;
+    backdrop-filter: blur(8px);
+  }
+
+  .venue-card-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr auto;
+    gap: 12px 18px;
+    padding: 22px 24px 22px 26px;
+  }
+
+  .venue-card-main {
+    min-width: 0;
+  }
+
+  .venue-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .venue-name-row h2 {
+    margin: 0;
+    overflow: hidden;
+    color: #f3f0ea;
+    font-size: 22px;
+    line-height: 1.1;
+    font-weight: 850;
+    letter-spacing: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .venue-meta {
+    margin: 7px 0 0;
+    color: #8c8679;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .venue-mobile-distance {
+    display: none;
+  }
+
+  .venue-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 17px;
+  }
+
+  .venue-tags span {
+    min-height: 27px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, .045);
+    color: #c5c0b6;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .venue-price {
+    margin-top: 18px;
+    color: #e3c27e;
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 950;
+  }
+
+  .venue-distance {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    color: #8c8679;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .venue-rating {
+    display: inline-flex;
+    align-items: center;
+    justify-self: end;
+    gap: 5px;
+    color: #e3c27e;
+    font-size: 14px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .venue-rating span {
+    color: #8c8679;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .venue-mobile-rating {
+    display: none;
+  }
+
+  .venue-book-button {
+    grid-column: 2;
+    align-self: end;
+    justify-self: end;
+    min-width: 112px;
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: #241a0a;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .venue-error {
+    margin-top: 14px;
+    border: 1px solid rgba(248, 113, 113, .35);
+    border-radius: 14px;
+    background: rgba(127, 29, 29, .22);
+    color: #fecaca;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .venue-empty {
+    display: grid;
+    gap: 8px;
+    border: 1px solid rgba(212, 178, 106, .18);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .035);
+    padding: 28px;
+    color: #8c8679;
+  }
+
+  .venue-empty strong {
+    color: #f3f0ea;
+    font-size: 18px;
+  }
+
+  .venue-skeleton {
+    pointer-events: none;
+  }
+
+  .venue-skeleton .venue-card-media,
+  .venue-skeleton-line,
+  .venue-skeleton-pill {
+    background: linear-gradient(90deg, rgba(255,255,255,.045), rgba(255,255,255,.09), rgba(255,255,255,.045));
+    background-size: 220% 100%;
+    animation: venue-skeleton 1.4s ease-in-out infinite;
+  }
+
+  .venue-skeleton-line {
+    display: block;
+    width: 82%;
+    height: 13px;
+    border-radius: 999px;
+    margin-top: 13px;
+  }
+
+  .venue-skeleton-line.is-title {
+    width: 48%;
+    height: 22px;
+    margin-top: 0;
+  }
+
+  .venue-skeleton-line.is-short {
+    width: 34%;
+  }
+
+  .venue-skeleton-pill {
+    align-self: end;
+    justify-self: end;
+    width: 112px;
+    height: 46px;
+    border-radius: 12px;
+  }
+
+  @keyframes venue-skeleton {
+    0% { background-position: 120% 0; }
+    100% { background-position: -120% 0; }
+  }
+
+  @media (max-width: 767px) {
+    .venue-search-page {
+      background: #07080a;
+    }
+
+    .venue-search-shell {
+      width: 100%;
+      padding: 0 14px 28px;
+    }
+
+    .venue-search-header {
+      min-height: 31px;
+      align-items: center;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .venue-search-back {
+      width: 28px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, .11);
+      border-radius: 50%;
+      color: #f3f0ea;
+      background: rgba(255, 255, 255, .03);
+      text-decoration: none;
+      flex: none;
+    }
+
+    .venue-search-title h1 {
+      font-size: 17px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .venue-search-title p {
+      margin-top: 3px;
+      font-size: 7.5px;
+      letter-spacing: .16em;
+    }
+
+    .venue-title-desktop,
+    .venue-subtitle-desktop {
+      display: none;
+    }
+
+    .venue-title-mobile,
+    .venue-subtitle-mobile {
+      display: inline;
+    }
+
+    .venue-search-controls {
+      grid-template-columns: minmax(0, 1fr);
+      margin-top: 2px;
+      gap: 0;
+    }
+
+    .venue-search-input {
+      min-height: 31px;
+      gap: 9px;
+      border-radius: 8px;
+      padding: 0 11px;
+    }
+
+    .venue-search-input input {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .venue-search-input svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .venue-filter-icon {
+      width: 22px;
+      height: 22px;
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+    }
+
+    .venue-city-select,
+    .venue-find-button {
+      display: none;
+    }
+
+    .venue-chip-row {
+      gap: 7px;
+      margin: 7px -14px 0;
+      padding: 0 14px 2px;
+    }
+
+    .venue-chip {
+      min-height: 28px;
+      padding: 0 13px;
+      font-size: 10.5px;
+      border-radius: 999px;
+    }
+
+    .venue-result-bar {
+      margin-top: 7px;
+      font-size: 11px;
+      gap: 8px;
+    }
+
+    .venue-sort-select {
+      min-height: 22px;
+      font-size: 11px;
+    }
+
+    .venue-sort-select span {
+      font-weight: 600;
+    }
+
+    .venue-list,
+    .venue-skeleton-stack {
+      gap: 10px;
+      margin-top: 7px;
+    }
+
+    .venue-card {
+      min-height: 0;
+      display: block;
+      border-radius: 12px;
+      background: #111114;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
+    }
+
+    .venue-card-media {
+      min-height: 0;
+      height: 105px;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .venue-status {
+      top: 8px;
+      left: 9px;
+      min-height: 18px;
+      padding: 0 7px;
+      font-size: 8.5px;
+    }
+
+    .venue-deal {
+      left: 9px;
+      bottom: 8px;
+      min-height: 18px;
+      border-radius: 5px;
+      padding: 0 7px;
+      font-size: 9px;
+    }
+
+    .venue-heart {
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+    }
+
+    .venue-heart svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .venue-card-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px 10px;
+      padding: 11px 10px 12px;
+    }
+
+    .venue-card-main {
+      display: contents;
+    }
+
+    .venue-name-row,
+    .venue-meta {
+      grid-column: 1 / -1;
+    }
+
+    .venue-name-row h2 {
+      font-size: 16px;
+      line-height: 1.15;
+    }
+
+    .venue-mobile-rating {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #e3c27e;
+      font-size: 12px;
+      font-weight: 900;
+      flex: none;
+    }
+
+    .venue-meta {
+      margin-top: 4px;
+      font-size: 10.5px;
+    }
+
+    .venue-mobile-distance {
+      display: inline;
+    }
+
+    .venue-tags,
+    .venue-distance,
+    .venue-rating {
+      display: none;
+    }
+
+    .venue-price {
+      grid-column: 1;
+      margin-top: 8px;
+      font-size: 14px;
+      align-self: center;
+    }
+
+    .venue-book-button {
+      grid-column: 2;
+      min-width: 75px;
+      min-height: 32px;
+      border-radius: 9px;
+      font-size: 10px;
+      align-self: end;
+    }
+
+    .venue-book-button svg {
+      display: none;
+    }
+
+    .venue-error {
+      margin-top: 8px;
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-size: 11px;
+    }
+
+    .venue-empty {
+      border-radius: 12px;
+      padding: 18px;
+      font-size: 12px;
+    }
+
+    .venue-empty strong {
+      font-size: 15px;
+    }
+
+    .venue-skeleton-line.is-title {
+      width: 60%;
+      height: 16px;
+    }
+
+    .venue-skeleton-pill {
+      width: 75px;
+      height: 32px;
+      border-radius: 9px;
+    }
+  }
+`;
