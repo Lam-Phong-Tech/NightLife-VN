@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Languages,
   MapPin,
   Star,
   Tag,
@@ -44,6 +43,89 @@ import { StoreDetailHeader } from "./StoreDetailHeader";
 type StoreDetailClientProps = {
   store: PublicStoreDetail;
 };
+
+type IntroLine = {
+  key: "ja" | "vi";
+  text: string;
+};
+
+const introMarkerPattern = /(?:🇯🇵|🇻🇳|🇬🇧|🇺🇸|\bJP\b|\bVN\b|\bGB\b|\bEN\b)/gi;
+const japaneseTextPattern = /[\u3040-\u30ff\u3400-\u9fff]/;
+const vietnameseTextPattern = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+
+const nationalityLabels: Record<string, string> = {
+  ja: "Nhật Bản",
+  vi: "Việt Nam",
+};
+
+const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
+
+const languageToNationality = (language: string) => nationalityLabels[normalizeLanguageCode(language)];
+
+const nationalitiesFromLanguages = (languages: string[]) =>
+  Array.from(
+    new Set(
+      languages
+        .map(languageToNationality)
+        .filter((nationality): nationality is string => Boolean(nationality)),
+    ),
+  );
+
+const formatNationalities = (languages: string[]) => nationalitiesFromLanguages(languages).join(", ");
+
+const markerToIntroKey = (marker: string) => {
+  const normalized = marker.toUpperCase();
+  if (marker === "🇯🇵" || normalized === "JP") return "ja";
+  if (marker === "🇻🇳" || normalized === "VN") return "vi";
+  return null;
+};
+
+function buildIntroLines(description?: string | null): IntroLine[] {
+  const fallback = "Thông tin giới thiệu sẽ được quán cập nhật trước khi nhận đặt chỗ.";
+  const source = description?.trim();
+
+  if (!source) {
+    return [{ key: "vi", text: fallback }];
+  }
+
+  const markers = [...source.matchAll(introMarkerPattern)];
+
+  if (markers.length) {
+    const byLanguage = new Map<IntroLine["key"], string>();
+
+    markers.forEach((match, index) => {
+      const key = markerToIntroKey(match[0]);
+      if (!key || byLanguage.has(key)) return;
+
+      const start = (match.index ?? 0) + match[0].length;
+      const end = markers[index + 1]?.index ?? source.length;
+      const text = source.slice(start, end).trim();
+      if (text) byLanguage.set(key, text);
+    });
+
+    const markedLines = (["ja", "vi"] as const)
+      .map((key) => {
+        const text = byLanguage.get(key);
+        return text ? { key, text } : null;
+      })
+      .filter((line): line is IntroLine => Boolean(line));
+
+    if (markedLines.length) return markedLines;
+  }
+
+  const chunks = source
+    .split(/\n{2,}|(?<=[。.!?])\s+/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+  const japaneseLine = chunks.filter((chunk) => japaneseTextPattern.test(chunk)).join(" ");
+  const vietnameseLine = chunks.filter((chunk) => vietnameseTextPattern.test(chunk)).join(" ");
+  const detectedLines: IntroLine[] = [
+    japaneseLine ? { key: "ja", text: japaneseLine } : null,
+    vietnameseLine ? { key: "vi", text: vietnameseLine } : null,
+  ].filter((line): line is IntroLine => Boolean(line));
+
+  return detectedLines.length ? detectedLines : [{ key: "vi", text: source }];
+}
 
 function EmptyState({
   icon,
@@ -88,34 +170,39 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const embedUrl = mapEmbedUrl(store);
   const hasMap = Boolean(embedUrl);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
-  const languageText = Array.from(new Set(store.casts.flatMap((cast) => cast.languages))).slice(0, 2).join(" / ");
-  const languageCards = useMemo(() => {
-    const languageCounts = new Map<string, number>();
+  const nationalityText = Array.from(new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))))
+    .slice(0, 2)
+    .join(" / ");
+  const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
+  const nationalityCards = useMemo(() => {
+    const nationalityCounts = new Map<string, number>();
     store.casts.forEach((cast) => {
       cast.languages.forEach((language) => {
-        languageCounts.set(language, (languageCounts.get(language) ?? 0) + 1);
+        const nationality = languageToNationality(language);
+        if (!nationality) return;
+        nationalityCounts.set(nationality, (nationalityCounts.get(nationality) ?? 0) + 1);
       });
     });
 
     const totalCasts = Math.max(store.casts.length, 1);
-    const topLanguages = [...languageCounts.entries()]
+    const topNationalities = [...nationalityCounts.entries()]
       .sort((left, right) => right[1] - left[1])
       .slice(0, 2)
-      .map(([language, count]) => ({
-        label: `Nói tiếng ${language}`,
+      .map(([nationality, count]) => ({
+        label: `Quốc tịch ${nationality}`,
         value: `${Math.round((count / totalCasts) * 100)}%`,
         progress: Math.max(8, Math.round((count / totalCasts) * 100)),
       }));
 
     return [
-      ...topLanguages,
+      ...topNationalities,
       {
-        label: "Ngôn ngữ nhân sự",
-        value: languageText || "Chưa cập nhật",
+        label: "Quốc tịch nhân sự",
+        value: nationalityText || "Chưa cập nhật",
         progress: 100,
       },
     ];
-  }, [languageText, store.casts]);
+  }, [nationalityText, store.casts]);
   const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
   const todayOpening = todayKey ? openingText(store.openingHours?.[todayKey]) : "";
 
@@ -193,7 +280,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         heroImage={heroImage}
         mainGalleryMedia={mainGalleryMedia}
         location={location}
-        languageText={languageText}
+        nationalityText={nationalityText}
         todayOpening={todayOpening}
         isFavorite={isFavorite}
         onToggleFavorite={() => setIsFavorite((value) => !value)}
@@ -264,12 +351,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           {activeTab === "overview" ? (
             <section className="tab-section">
-              <p className="overview-description">
-                {store.description || "Thông tin giới thiệu sẽ được quán cập nhật trước khi nhận đặt chỗ."}
-              </p>
+              <div className="overview-description">
+                {introLines.map((line) => (
+                  <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
+                    {line.text}
+                  </p>
+                ))}
+              </div>
 
               <div className="language-grid">
-                {languageCards.map((card) => (
+                {nationalityCards.map((card) => (
                   <div className="language-card" key={card.label}>
                     <span>{card.label}</span>
                     <strong>{card.value}</strong>
@@ -383,8 +474,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                         <strong>{cast.publicAlias || cast.stageName}</strong>
                         <span>{cast.publicHeadline || "Hồ sơ cast"}</span>
                         <small>
-                          <Languages size={13} />
-                          {cast.languages.length ? cast.languages.join(", ") : "Chưa cập nhật"}
+                          <Users size={13} />
+                          {formatNationalities(cast.languages) || "Chưa cập nhật"}
                         </small>
                         <small>
                           <Tag size={13} />
@@ -979,6 +1070,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: #f7f1e7;
           font-size: 15px;
           line-height: 1.75;
+        }
+
+        .overview-description p {
+          margin: 0;
+        }
+
+        .overview-description p + p {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(226, 184, 94, .14);
         }
 
         .language-grid {

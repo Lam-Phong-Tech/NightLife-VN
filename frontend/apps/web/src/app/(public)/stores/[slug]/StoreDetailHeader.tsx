@@ -37,7 +37,7 @@ type StoreDetailHeaderProps = {
   heroImage?: StoreGalleryItem | null;
   mainGalleryMedia?: StoreGalleryItem | null;
   location: string;
-  languageText: string;
+  nationalityText: string;
   todayOpening: string;
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -53,7 +53,7 @@ export function StoreDetailHeader({
   heroImage,
   mainGalleryMedia,
   location,
-  languageText,
+  nationalityText,
   todayOpening,
   isFavorite,
   onToggleFavorite,
@@ -66,7 +66,7 @@ export function StoreDetailHeader({
   const rawSummaryTags = [
     { key: "category", label: categoryLabel, icon: Tag, tone: "featured" },
     store.priceReference.items.length ? { key: "pricing", label: "Bảng giá tham khảo", icon: WalletCards } : null,
-    languageText ? { key: "language", label: `Phục vụ ${languageText}`, icon: Users } : null,
+    nationalityText ? { key: "nationality", label: `Quốc tịch ${nationalityText}`, icon: Users } : null,
     closingTime ? { key: "opening", label: `Đang mở đến ${closingTime}`, icon: Clock3, tone: "open" } : null,
   ];
   const summaryTags = rawSummaryTags.filter((tag): tag is Exclude<(typeof rawSummaryTags)[number], null> =>
