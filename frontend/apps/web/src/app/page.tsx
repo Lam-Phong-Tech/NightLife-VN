@@ -62,8 +62,8 @@ const serviceTabs = [
 ];
 
 const rankTabs = [
-  { id: "quan", label: "Quán" },
   { id: "cast", label: "Cast" },
+  { id: "quan", label: "Quán" },
 ];
 
 const contentPlaceholders = [
@@ -347,37 +347,6 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
   );
 }
 
-function VipCard({ desktop = false }: { desktop?: boolean }) {
-  return (
-    <Link
-      href="/dang-nhap"
-      style={{
-        display: "block",
-        borderRadius: desktop ? "24px" : "18px",
-        padding: desktop ? "28px" : "20px",
-        color: "#241a0a",
-        background:
-          "radial-gradient(circle at 78% 28%, rgba(255,255,255,.72), transparent 22%), linear-gradient(135deg,#f2e0ad 0%,#d4b26a 48%,#9b7428 100%)",
-        boxShadow: "0 18px 38px rgba(212,178,106,.2)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: desktop ? "25px" : "22px", fontWeight: 900 }}>
-        <Crown size={desktop ? 25 : 21} fill="#241a0a" />
-        Vietyoru VIP
-      </div>
-      <p style={{ maxWidth: "520px", marginTop: "10px", color: "rgba(36,26,10,.78)", fontSize: desktop ? "15px" : "13px", lineHeight: 1.55 }}>
-        Mở khoá ưu đãi độc quyền, ưu tiên đặt bàn & thứ hạng riêng cho thành viên.
-      </p>
-      <div style={{ marginTop: "18px", display: "flex", alignItems: "center", gap: "14px" }}>
-        <span style={{ borderRadius: "999px", background: colors.ink, color: colors.goldSoft, padding: "11px 18px", fontSize: "13px", fontWeight: 800 }}>
-          Trở thành VIP
-        </span>
-        <span style={{ fontSize: "12px", color: "rgba(36,26,10,.7)" }}>từ 199.000đ / tháng</span>
-      </div>
-    </Link>
-  );
-}
-
 function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div style={sectionTitleStyle}>
@@ -655,7 +624,7 @@ function BottomNav() {
 }
 
 export default function Page() {
-  const [activeRankTab, setActiveRankTab] = useState("quan");
+  const [activeRankTab, setActiveRankTab] = useState("cast");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const rankList = (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[];
   const rankingPeriod = formatRankingPeriod();
@@ -678,15 +647,14 @@ export default function Page() {
         <div style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
           <HeaderBar />
           <main style={{ padding: "8px 18px 0" }}>
-            <SearchPanel />
-            <div style={{ marginTop: "22px" }}>
-              <CategoryGrid />
-            </div>
             <div style={{ marginTop: "22px" }}>
               <EventHero />
             </div>
             <div style={{ marginTop: "18px" }}>
-              <VipCard />
+              <SearchPanel />
+            </div>
+            <div style={{ marginTop: "22px" }}>
+              <CategoryGrid />
             </div>
 
             <section style={{ marginTop: "24px" }}>
@@ -754,11 +722,10 @@ export default function Page() {
         <div style={{ width: "100%", minHeight: "100vh", ...appStyle, border: 0, boxShadow: "none" }}>
           <HeaderBar desktop />
           <main style={{ padding: "10px 50px 44px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.6fr .9fr", gap: "24px", alignItems: "stretch" }}>
+            <div>
               <EventHero desktop />
-              <div style={{ display: "grid", gap: "18px" }}>
+              <div style={{ marginTop: "18px" }}>
                 <SearchPanel />
-                <VipCard desktop />
               </div>
             </div>
 
