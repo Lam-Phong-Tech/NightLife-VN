@@ -2,9 +2,15 @@
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
-import { Clock, MapPin, Phone, UsersRound } from "lucide-react";
+import { Clock, MapPin, Phone, QrCode, UsersRound } from "lucide-react";
 import { getAuthUser } from "@/lib/auth/session";
-import { bookingApi, getGuestBookingHistory, type BookingRecord } from "@/lib/api/bookings";
+import {
+  bookingApi,
+  getGuestBookingHistory,
+  mergeBookingHistories,
+  rememberLastBooking,
+  type BookingRecord,
+} from "@/lib/api/bookings";
 
 const colors = {
   bg: "#0c0c0f",
@@ -70,7 +76,7 @@ export default function Page() {
       try {
         if (authUser?.role?.toUpperCase() === "USER") {
           const items = await bookingApi.listMemberBookings();
-          if (alive) setBookings(items);
+          if (alive) setBookings(mergeBookingHistories(items, getGuestBookingHistory()));
           return;
         }
 
@@ -194,6 +200,14 @@ export default function Page() {
                 </div>
               </div>
               <div className="nl-booking-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <Link
+                  href={`/xac-nhan?bookingId=${booking.id}`}
+                  onClick={() => rememberLastBooking(booking, { history: true })}
+                  style={secondaryButtonStyle}
+                >
+                  <QrCode size={14} />
+                  QR
+                </Link>
                 <Link href={booking.store?.slug ? `/stores/${booking.store.slug}` : "/danh-sach-quan"} style={secondaryButtonStyle}>
                   Quán
                 </Link>
@@ -260,6 +274,7 @@ const secondaryButtonStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  gap: 6,
   fontSize: 12,
   fontWeight: 900,
   textDecoration: "none",

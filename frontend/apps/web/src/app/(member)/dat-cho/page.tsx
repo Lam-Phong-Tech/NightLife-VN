@@ -54,6 +54,14 @@ const buildScheduledAt = (date: string, time: string) => {
   return value.toISOString();
 };
 
+const parseRequestedMode = (value: string | null) => {
+  if (value === "guest" || value === "member") {
+    return value;
+  }
+
+  return null;
+};
+
 const parseContext = () => {
   const params = new URLSearchParams(window.location.search);
   const castSlug = params.get("castSlug") || undefined;
@@ -69,7 +77,7 @@ const parseContext = () => {
       castName: params.get("castName") || undefined,
       fromHref: castSlug ? `/casts/${castSlug}` : `/stores/${storeSlug ?? defaultContext.storeSlug}`,
     },
-    mode: params.get("mode") === "member" ? "member" : "guest",
+    mode: parseRequestedMode(params.get("mode")),
     date: params.get("date") || getTomorrowDate(),
     time: params.get("time") || "21:00",
     guests: Number(params.get("guests") || 4),
@@ -106,12 +114,16 @@ export default function Page() {
         setPhone(authUser.phone ?? "");
       }
 
-      if (parsed.mode === "member") {
+      const preferredMode = parsed.mode ?? (isMemberUser(authUser) ? "member" : "guest");
+
+      if (preferredMode === "member") {
         if (isMemberUser(authUser)) {
           setMode("member");
         } else {
           setShowLoginPrompt(true);
         }
+      } else {
+        setMode("guest");
       }
     });
   }, []);
@@ -190,7 +202,7 @@ export default function Page() {
           ? await bookingApi.createMemberBooking(payload)
           : await bookingApi.createGuestBooking(payload);
 
-      rememberLastBooking(booking, { guestHistory: mode === "guest" });
+      rememberLastBooking(booking, { history: true });
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt chỗ.";

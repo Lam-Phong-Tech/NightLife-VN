@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Clock3, MapPin, UsersRound } from "lucide-react";
+import { Check, Clock3, MapPin, QrCode, UsersRound } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
@@ -45,6 +46,20 @@ const formatDateTime = (value?: string) => {
 const bookingCode = (booking: BookingRecord) =>
   `NL-BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
+const bookingQrPayload = (booking: BookingRecord) =>
+  [
+    "NLBOOKING",
+    booking.id,
+    bookingCode(booking),
+    booking.store?.slug ?? "nightlife",
+    booking.scheduledAt,
+  ].join("|");
+
+const bookingQrImageUrl = (booking: BookingRecord) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
+    bookingQrPayload(booking),
+  )}`;
+
 function DetailLine({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ minWidth: 0 }}>
@@ -62,7 +77,8 @@ export default function Page() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      setBooking(getLastBooking());
+      const bookingId = new URLSearchParams(window.location.search).get("bookingId");
+      setBooking(getLastBooking(bookingId));
       setIsLoggedIn(Boolean(getAuthUser()));
     });
   }, []);
@@ -196,6 +212,75 @@ export default function Page() {
                 label="Người đặt"
                 value={`${booking.guest?.displayName ?? booking.user?.displayName ?? "Khách"} · ${booking.guest?.phone ?? "SĐT đã lưu"}`}
               />
+            </div>
+
+            <div style={{ height: 1, background: colors.border }} />
+
+            <div
+              style={{
+                padding: 16,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 16,
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: 148,
+                  height: 148,
+                  borderRadius: 16,
+                  background: "#fff",
+                  border: `1px solid ${colors.borderStrong}`,
+                  display: "grid",
+                  placeItems: "center",
+                  flex: "none",
+                }}
+              >
+                <Image
+                  src={bookingQrImageUrl(booking)}
+                  alt={`QR đặt chỗ ${bookingCode(booking)}`}
+                  width={124}
+                  height={124}
+                  unoptimized
+                  style={{ width: 124, height: 124, display: "block" }}
+                />
+              </div>
+              <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                <div
+                  style={{
+                    color: colors.goldPale,
+                    fontSize: 15,
+                    fontWeight: 950,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <QrCode size={18} color={colors.gold} />
+                  QR check-in tại quán
+                </div>
+                <p style={{ marginTop: 8, marginBottom: 0, color: colors.text2, fontSize: 13, lineHeight: 1.55 }}>
+                  Đưa mã QR này cho nhân viên quán quét khi tới nơi. Mã gắn với đúng booking và dùng để đối chiếu lúc check-in.
+                </p>
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 12,
+                    border: `1px solid ${colors.border}`,
+                    background: "rgba(212,178,106,.1)",
+                    color: colors.goldPale,
+                    padding: "10px 12px",
+                    fontFamily: "monospace",
+                    fontSize: 13,
+                    fontWeight: 950,
+                    letterSpacing: ".08em",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {bookingCode(booking)}
+                </div>
+              </div>
             </div>
           </article>
         ) : (

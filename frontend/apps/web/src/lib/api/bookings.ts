@@ -62,6 +62,31 @@ export type CreateBookingPayload = {
 
 const lastBookingKey = "nightlife_last_booking";
 const guestBookingsKey = "nightlife_guest_bookings";
+const maxStoredBookings = 20;
+
+const bookingTimeValue = (booking: BookingRecord) => {
+  const value = booking.createdAt ?? booking.scheduledAt;
+  const time = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
+};
+
+export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
+  const bookingsById = new Map<string, BookingRecord>();
+
+  for (const source of sources) {
+    for (const booking of source) {
+      if (!booking?.id || bookingsById.has(booking.id)) {
+        continue;
+      }
+
+      bookingsById.set(booking.id, booking);
+    }
+  }
+
+  return Array.from(bookingsById.values())
+    .sort((a, b) => bookingTimeValue(b) - bookingTimeValue(a))
+    .slice(0, maxStoredBookings);
+};
 
 const readStoredBookings = () => {
   if (typeof window === "undefined") {
@@ -70,38 +95,56 @@ const readStoredBookings = () => {
 
   try {
     const raw = window.localStorage.getItem(guestBookingsKey);
-    return raw ? (JSON.parse(raw) as BookingRecord[]) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as BookingRecord[]) : [];
   } catch {
     window.localStorage.removeItem(guestBookingsKey);
     return [];
   }
 };
 
-export const rememberLastBooking = (booking: BookingRecord, options?: { guestHistory?: boolean }) => {
+const writeStoredBookings = (bookings: BookingRecord[]) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(guestBookingsKey, JSON.stringify(bookings.slice(0, maxStoredBookings)));
+};
+
+export const rememberLastBooking = (
+  booking: BookingRecord,
+  options?: { guestHistory?: boolean; history?: boolean },
+) => {
   if (typeof window === "undefined") {
     return;
   }
 
   window.sessionStorage.setItem(lastBookingKey, JSON.stringify(booking));
 
-  if (options?.guestHistory) {
-    const existing = readStoredBookings().filter((item) => item.id !== booking.id);
-    window.localStorage.setItem(guestBookingsKey, JSON.stringify([booking, ...existing].slice(0, 20)));
+  if (options?.guestHistory || options?.history) {
+    writeStoredBookings(mergeBookingHistories([booking], readStoredBookings()));
   }
 };
 
-export const getLastBooking = () => {
+export const getLastBooking = (bookingId?: string | null) => {
   if (typeof window === "undefined") {
     return null;
   }
 
+  let lastBooking: BookingRecord | null = null;
+
   try {
     const raw = window.sessionStorage.getItem(lastBookingKey);
-    return raw ? (JSON.parse(raw) as BookingRecord) : null;
+    lastBooking = raw ? (JSON.parse(raw) as BookingRecord) : null;
   } catch {
     window.sessionStorage.removeItem(lastBookingKey);
-    return null;
   }
+
+  if (!bookingId || lastBooking?.id === bookingId) {
+    return lastBooking;
+  }
+
+  return readStoredBookings().find((booking) => booking.id === bookingId) ?? lastBooking;
 };
 
 export const getGuestBookingHistory = readStoredBookings;
