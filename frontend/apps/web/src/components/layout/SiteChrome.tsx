@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Home, Search, Ticket, UserRound, MessageCircle, LogIn } from "lucide-react";
+import { Bell, CalendarDays, Home, Search, Ticket, UserRound, MessageCircle, LogIn } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
@@ -95,6 +95,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
+  const isCustomerUser = authUser?.role?.toUpperCase() === "USER";
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
@@ -430,7 +431,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 textDecoration: "none",
               }}
             >
-              {authUser ? <UserRound size={16} /> : <LogIn size={16} />}
+              {authUser ? isCustomerUser ? <Bell size={16} /> : <UserRound size={16} /> : <LogIn size={16} />}
             </Link>
           </div>
         ) : (
