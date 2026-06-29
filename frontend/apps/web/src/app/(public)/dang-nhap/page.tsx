@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, Eye, LockKeyhole, LogIn, Mail, ShieldCheck, Sparkles, Ticket } from "lucide-react";
-import { loginMember } from "@/lib/api/auth";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, Mail, ShieldCheck, Sparkles, Ticket } from "lucide-react";
+import { loginMember, registerMember } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
 
@@ -25,8 +25,10 @@ const colors = {
 
 export default function Page() {
   const [isReg, setIsReg] = useState(false);
-  const [email, setEmail] = useState("member@nightlife.vn");
-  const [password, setPassword] = useState("Str0ngPass!");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const redirectTo = useMemo(() => {
@@ -44,9 +46,29 @@ export default function Page() {
   const title = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
   const subtitle = isReg ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ." : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
 
-  const submit = async () => {
-    if (isReg) {
-      setMessage("Đăng ký member sẽ nối API riêng sau. Tài khoản test: member@nightlife.vn / Str0ngPass!");
+  const switchMode = (nextIsReg: boolean) => {
+    setIsReg(nextIsReg);
+    setMessage("");
+  };
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedDisplayName = displayName.trim();
+
+    if (!normalizedEmail || !password) {
+      setMessage("Vui lòng nhập email và mật khẩu.");
+      return;
+    }
+
+    if (!normalizedEmail.includes("@")) {
+      setMessage("Vui lòng nhập email hợp lệ để tiếp tục.");
+      return;
+    }
+
+    if (isReg && password.length < 8) {
+      setMessage("Mật khẩu đăng ký cần tối thiểu 8 ký tự.");
       return;
     }
 
@@ -54,12 +76,23 @@ export default function Page() {
     setMessage("");
 
     try {
-      const session = await loginMember({ email: email.trim(), password });
+      const session = isReg
+        ? await registerMember({
+            email: normalizedEmail,
+            password,
+            displayName: trimmedDisplayName || undefined,
+          })
+        : await loginMember({ email: normalizedEmail, password });
       setAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
-      const detail = error instanceof ApiError ? error.message : "Không kết nối được API đăng nhập.";
-      setMessage(`${detail} Tài khoản seed: member@nightlife.vn / Str0ngPass!`);
+      const detail =
+        error instanceof ApiError
+          ? error.message
+          : isReg
+            ? "Không kết nối được API đăng ký."
+            : "Không kết nối được API đăng nhập.";
+      setMessage(detail);
     } finally {
       setIsSubmitting(false);
     }
@@ -109,17 +142,54 @@ export default function Page() {
 
             <div className="nl-login-card" style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 22, boxShadow: "0 22px 60px rgba(0,0,0,.32)" }}>
               <div style={{ display: "flex", background: colors.panelStrong, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 5 }}>
-                <Tab active={!isReg} label="Đăng nhập" onClick={() => setIsReg(false)} />
-                <Tab active={isReg} label="Đăng ký" onClick={() => setIsReg(true)} />
+                <Tab active={!isReg} label="Đăng nhập" onClick={() => switchMode(false)} />
+                <Tab active={isReg} label="Đăng ký" onClick={() => switchMode(true)} />
               </div>
 
               <h2 style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>{title}</h2>
               <p style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>{subtitle}</p>
 
-              <div style={{ marginTop: 24, display: "grid", gap: 14 }}>
-                {isReg ? <Field label="Họ tên" placeholder="Nguyễn Văn A" /> : null}
-                <Field icon={<Mail size={16} />} label="Email / số điện thoại" value={email} onChange={setEmail} placeholder="member@nightlife.vn" />
-                <Field icon={<LockKeyhole size={16} />} label="Mật khẩu" value={password} onChange={setPassword} placeholder="••••••••" type="password" action={<Eye size={17} />} />
+              <form onSubmit={submit} style={{ marginTop: 24, display: "grid", gap: 14 }}>
+                {isReg ? (
+                  <Field
+                    label="Họ tên"
+                    value={displayName}
+                    onChange={setDisplayName}
+                    placeholder="Nguyễn Văn A"
+                    autoComplete="name"
+                    name="name"
+                  />
+                ) : null}
+                <Field
+                  icon={<Mail size={16} />}
+                  label="Email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="member@nightlife.vn"
+                  autoComplete="email"
+                  inputMode="email"
+                  name="email"
+                />
+                <Field
+                  icon={<LockKeyhole size={16} />}
+                  label="Mật khẩu"
+                  value={password}
+                  onChange={setPassword}
+                  placeholder="••••••••"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={isReg ? "new-password" : "current-password"}
+                  name="password"
+                  action={
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      onClick={() => setShowPassword((current) => !current)}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, border: 0, borderRadius: 8, background: "transparent", color: colors.gold, cursor: "pointer" }}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  }
+                />
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, color: colors.muted, fontSize: 13 }}>
                   <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
@@ -132,13 +202,13 @@ export default function Page() {
                 {message ? <div style={{ color: colors.danger, background: "rgba(252,165,165,.08)", border: "1px solid rgba(252,165,165,.24)", borderRadius: 12, padding: "10px 12px", fontSize: 12.5, lineHeight: 1.5 }}>{message}</div> : null}
 
                 <button
-                  type="button"
-                  onClick={isSubmitting ? undefined : submit}
+                  type="submit"
+                  disabled={isSubmitting}
                   style={{ border: 0, borderRadius: 14, background: colors.goldGrad, color: colors.onGold, padding: "15px 18px", fontWeight: 900, fontSize: 15, cursor: isSubmitting ? "default" : "pointer", opacity: isSubmitting ? .72 : 1 }}
                 >
                   {isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập"}
                 </button>
-              </div>
+              </form>
             </div>
             <div className="nl-login-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12, marginTop: 16 }}>
               <Metric icon={<Ticket size={18} />} value="30%" label="ưu đãi hot" />
@@ -231,6 +301,9 @@ function Field({
   onChange,
   placeholder,
   type = "text",
+  autoComplete,
+  inputMode,
+  name,
   action,
 }: {
   icon?: React.ReactNode;
@@ -239,6 +312,9 @@ function Field({
   onChange?: (value: string) => void;
   placeholder: string;
   type?: string;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  name?: string;
   action?: React.ReactNode;
 }) {
   return (
@@ -247,10 +323,13 @@ function Field({
       <span style={{ height: 48, display: "flex", alignItems: "center", gap: 9, border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, padding: "0 13px", color: colors.text }}>
         {icon ? <span style={{ color: colors.gold, display: "inline-flex" }}>{icon}</span> : null}
         <input
+          name={name}
           type={type}
           value={value}
           onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
+          autoComplete={autoComplete}
+          inputMode={inputMode}
           style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: colors.text, fontSize: 14 }}
         />
         {action ? <span style={{ color: colors.gold, display: "inline-flex" }}>{action}</span> : null}

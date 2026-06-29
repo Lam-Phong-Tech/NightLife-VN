@@ -6,6 +6,10 @@ export type LoginPayload = {
   password: string;
 };
 
+export type RegisterPayload = LoginPayload & {
+  displayName?: string;
+};
+
 type DemoAccount = {
   id: string;
   email: string;
@@ -144,5 +148,12 @@ export const loginAdmin = (payload: LoginPayload) => {
 
 export const loginMember = (payload: LoginPayload) => {
   return loginWithRole('USER', '/auth/login/member', payload);
+};
+
+export const registerMember = (payload: RegisterPayload) => {
+  return apiClient<AuthResponse>('/auth/register', {
+    method: 'POST',
+    data: payload,
+  });
 };
 
