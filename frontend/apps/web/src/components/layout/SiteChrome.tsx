@@ -49,9 +49,59 @@ const bottomNav = [
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
 ];
 
+const revealTargetSelector = [
+  ".nl-page-content > *",
+  ".nl-page-content main > *",
+  ".nl-page-content section",
+  ".nl-page-content article",
+  ".nl-page-content [data-scroll-reveal]",
+  ".nl-page-content [class*='card']",
+  ".nl-page-content [class*='panel']",
+  ".nl-page-content [class*='grid'] > *",
+  ".nl-page-content [class*='list'] > *",
+].join(",");
+
+const nativeScrollSelector = "input, textarea, select, [data-native-scroll], [data-no-smooth-scroll]";
+
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
+}
+
+function shouldUseNativeWheelScroll(target: EventTarget | null) {
+  let element = target instanceof Element ? target : null;
+
+  while (element && element !== document.body && element !== document.documentElement) {
+    if (element.matches(nativeScrollSelector)) return true;
+
+    const style = window.getComputedStyle(element);
+    const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY)
+      && element.scrollHeight > element.clientHeight + 1;
+
+    if (canScrollY) return true;
+    element = element.parentElement;
+  }
+
+  return false;
+}
+
+function isRevealTarget(element: HTMLElement) {
+  if (
+    element.closest(
+      ".nl-site-header, .nl-site-footer, .nl-mobile-bottom-nav, .nl-scroll-reveal-skip, [data-no-scroll-reveal]",
+    )
+  ) {
+    return false;
+  }
+
+  const rect = element.getBoundingClientRect();
+  if (rect.width < 72 || rect.height < 28) return false;
+
+  const style = window.getComputedStyle(element);
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  if (style.position === "fixed" || style.position === "sticky") return false;
+
+  return true;
 }
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
@@ -162,6 +212,156 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     return () => {
       if (scanTimer) window.clearTimeout(scanTimer);
       observer.disconnect();
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reducedMotion.matches) return;
+
+    let animationFrame = 0;
+    let targetY = window.scrollY;
+
+    const getMaxScrollY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+    const getWheelDelta = (event: WheelEvent) => {
+      if (event.deltaMode === 1) return event.deltaY * 18;
+      if (event.deltaMode === 2) return event.deltaY * window.innerHeight;
+      return event.deltaY;
+    };
+
+    const step = () => {
+      const currentY = window.scrollY;
+      const distance = targetY - currentY;
+
+      if (Math.abs(distance) < 0.6) {
+        window.scrollTo(0, targetY);
+        animationFrame = 0;
+        return;
+      }
+
+      window.scrollTo(0, currentY + distance * 0.18);
+      animationFrame = window.requestAnimationFrame(step);
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      if (
+        event.defaultPrevented
+        || event.ctrlKey
+        || event.metaKey
+        || event.shiftKey
+        || shouldUseNativeWheelScroll(event.target)
+      ) {
+        targetY = window.scrollY;
+        return;
+      }
+
+      const delta = getWheelDelta(event);
+      if (!delta) return;
+
+      event.preventDefault();
+      targetY = Math.max(0, Math.min(getMaxScrollY(), targetY + delta));
+
+      if (!animationFrame) {
+        animationFrame = window.requestAnimationFrame(step);
+      }
+    };
+
+    const syncTarget = () => {
+      if (!animationFrame) targetY = window.scrollY;
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("scroll", syncTarget, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("scroll", syncTarget);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
+
+    const root = document.documentElement;
+    const observed = new Set<HTMLElement>();
+    let scanTimer: number | undefined;
+    let lastScrollY = window.scrollY;
+    let scrollDirection: "up" | "down" = "down";
+
+    const updateScrollDirection = () => {
+      const nextY = window.scrollY;
+      scrollDirection = nextY < lastScrollY ? "up" : "down";
+      lastScrollY = nextY;
+      root.dataset.scrollDirection = scrollDirection;
+
+      observed.forEach((element) => {
+        if (!element.classList.contains("is-revealed")) {
+          element.dataset.revealDir = scrollDirection;
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const element = entry.target as HTMLElement;
+          element.dataset.revealDir = scrollDirection;
+          element.classList.toggle("is-revealed", entry.isIntersecting);
+        });
+      },
+      {
+        rootMargin: "-6% 0px -8% 0px",
+        threshold: 0.12,
+      },
+    );
+
+    const observeElement = (element: HTMLElement) => {
+      if (observed.has(element) || !isRevealTarget(element)) return;
+
+      element.classList.add("nl-scroll-reveal");
+      element.dataset.revealDir = scrollDirection;
+      element.style.setProperty("--nl-reveal-delay", `${Math.min(observed.size % 7, 6) * 38}ms`);
+      observer.observe(element);
+      observed.add(element);
+    };
+
+    const scan = () => {
+      scanTimer = undefined;
+      document.querySelectorAll<HTMLElement>(revealTargetSelector).forEach(observeElement);
+    };
+
+    const scheduleScan = () => {
+      if (scanTimer) window.clearTimeout(scanTimer);
+      scanTimer = window.setTimeout(scan, 90);
+    };
+
+    root.classList.add("nl-scroll-effects-ready");
+    updateScrollDirection();
+    scan();
+
+    const mutationObserver = new MutationObserver(scheduleScan);
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    window.addEventListener("scroll", updateScrollDirection, { passive: true });
+
+    return () => {
+      root.classList.remove("nl-scroll-effects-ready");
+      delete root.dataset.scrollDirection;
+      if (scanTimer) window.clearTimeout(scanTimer);
+      mutationObserver.disconnect();
+      observer.disconnect();
+      window.removeEventListener("scroll", updateScrollDirection);
+      observed.forEach((element) => {
+        element.classList.remove("nl-scroll-reveal", "is-revealed");
+        element.style.removeProperty("--nl-reveal-delay");
+        delete element.dataset.revealDir;
+      });
     };
   }, [pathname]);
 

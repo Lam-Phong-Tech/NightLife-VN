@@ -168,11 +168,16 @@ body {
   color: var(--nl-text) !important;
   font-family: var(--nl-font-sans) !important;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body,
 body * {
   font-family: var(--nl-font-sans) !important;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
 }
 
 body > div {
@@ -181,6 +186,57 @@ body > div {
 
 .nl-mobile-simulator-root {
   background: #f6f5f2 !important;
+}
+
+.nl-page-content {
+  scroll-behavior: smooth;
+}
+
+.nl-scroll-reveal {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+  transition:
+    opacity 440ms ease,
+    transform 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+html.nl-scroll-effects-ready .nl-scroll-reveal:not(.is-revealed) {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  filter: blur(8px);
+  transition-delay: 0ms;
+}
+
+html.nl-scroll-effects-ready .nl-scroll-reveal[data-reveal-dir="up"]:not(.is-revealed) {
+  transform: translate3d(0, -24px, 0);
+}
+
+html.nl-scroll-effects-ready .nl-scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+  transition-delay: var(--nl-reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  .nl-page-content {
+    scroll-behavior: auto !important;
+  }
+
+  .nl-scroll-reveal,
+  html.nl-scroll-effects-ready .nl-scroll-reveal,
+  html.nl-scroll-effects-ready .nl-scroll-reveal:not(.is-revealed),
+  html.nl-scroll-effects-ready .nl-scroll-reveal.is-revealed {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
 }
 
 #nl-theme-btn {
