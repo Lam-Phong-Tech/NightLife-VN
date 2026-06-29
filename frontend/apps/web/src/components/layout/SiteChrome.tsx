@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, Home, Search, Ticket, UserRound, Globe, MessageCircle, LogIn } from "lucide-react";
+import { CalendarDays, Home, Search, Ticket, UserRound, MessageCircle, LogIn } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
 
 const colors = {
@@ -392,27 +393,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               flex: "none",
             }}
           >
-            {/* Globe / Language */}
-            <span
-              style={{
-                minHeight: "36px",
-                padding: "0 10px",
-                borderRadius: "18px",
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                background: "transparent",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "5px",
-                fontSize: "11px",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              <Globe size={14} style={{ flex: "none" }} />
-              <span style={{ lineHeight: "14px", display: "inline-flex", alignItems: "center", height: "14px" }}>VI</span>
-            </span>
+            <LanguagePicker isMobile={isMobile} />
 
             {/* Chat */}
             <Link
@@ -463,27 +444,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               flex: "none",
             }}
           >
-            {/* Globe / Language */}
-            <span
-              style={{
-                minHeight: "40px",
-                padding: "0 12px",
-                borderRadius: "20px",
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                background: "rgba(255,255,255,.04)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              <Globe size={16} style={{ flex: "none" }} />
-              <span style={{ lineHeight: "16px", display: "inline-flex", alignItems: "center", height: "16px" }}>VI</span>
-            </span>
+            <LanguagePicker isMobile={isMobile} />
 
             {/* Chat */}
             <Link

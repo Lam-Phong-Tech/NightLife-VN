@@ -721,6 +721,7 @@ textarea::placeholder {
   }
 
   .nl-site-actions a,
+  .nl-site-actions button,
   .nl-site-actions span {
     min-height: 36px !important;
     font-size: 11px !important;
