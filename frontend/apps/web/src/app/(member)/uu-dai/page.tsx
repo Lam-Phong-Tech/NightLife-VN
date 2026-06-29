@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
-  Gift,
   Loader2,
   Mail,
   MapPin,
@@ -98,22 +98,9 @@ const readableName = (name: string) => {
 
 const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
 
-const readCouponQuery = (): CouponQuery => {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  return {
-    couponId: params.get("couponId") || undefined,
-    storeId: params.get("storeId") || undefined,
-    storeSlug: params.get("storeSlug") || undefined,
-  };
-};
-
 export default function Page() {
+  const searchParams = useSearchParams();
   const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
-  const [query] = useState<CouponQuery>(() => readCouponQuery());
   const [authUser] = useState<AuthUser | null>(() => getAuthUser());
   const [guestName, setGuestName] = useState(() => {
     const user = getAuthUser();
@@ -129,6 +116,16 @@ export default function Page() {
   const [claimingCouponId, setClaimingCouponId] = useState<string | null>(null);
   const [claimError, setClaimError] = useState("");
   const [claimedIssue, setClaimedIssue] = useState<CouponIssue | null>(null);
+  const query = useMemo<CouponQuery>(
+    () => ({
+      couponId: searchParams.get("couponId") || undefined,
+      storeId: searchParams.get("storeId") || undefined,
+      storeSlug: searchParams.get("storeSlug") || undefined,
+    }),
+    [searchParams],
+  );
+  const hasStoreScope = Boolean(query.storeId || query.storeSlug);
+  const hasCouponScope = Boolean(query.couponId);
 
   useEffect(() => {
     let isMounted = true;
@@ -166,18 +163,25 @@ export default function Page() {
 
   const visibleCoupons = useMemo(() => {
     return coupons.filter((coupon) => {
-      const matchesCoupon = !query.couponId || coupon.id === query.couponId;
       const matchesStoreId = !query.storeId || coupon.store.id === query.storeId;
       const matchesStoreSlug = !query.storeSlug || coupon.store.slug === query.storeSlug;
 
-      return matchesCoupon && matchesStoreId && matchesStoreSlug;
+      if (hasStoreScope) {
+        return matchesStoreId && matchesStoreSlug;
+      }
+
+      return !query.couponId || coupon.id === query.couponId;
     });
-  }, [coupons, query]);
+  }, [coupons, hasStoreScope, query.couponId, query.storeId, query.storeSlug]);
+
+  const selectedCoupon = useMemo(
+    () => (query.couponId ? coupons.find((coupon) => coupon.id === query.couponId) ?? null : null),
+    [coupons, query.couponId],
+  );
 
   const scopedStore = useMemo(() => {
-    const byVisibleCoupon = visibleCoupons[0]?.store;
-    if (byVisibleCoupon) {
-      return byVisibleCoupon;
+    if (!hasStoreScope) {
+      return selectedCoupon?.store ?? null;
     }
 
     return coupons.find((coupon) => {
@@ -187,14 +191,17 @@ export default function Page() {
 
       return Boolean(query.storeSlug && coupon.store.slug === query.storeSlug);
     })?.store;
-  }, [coupons, query.storeId, query.storeSlug, visibleCoupons]);
+  }, [coupons, hasStoreScope, query.storeId, query.storeSlug, selectedCoupon]);
 
-  const isScopedFromStore = Boolean(query.couponId || query.storeId || query.storeSlug);
+  const isSelectedCouponOnly = hasCouponScope && !hasStoreScope;
   const isMember = isMemberUser(authUser);
-  const pageTitle = scopedStore
+  const pageTitle = hasStoreScope && scopedStore
     ? `Ưu đãi của ${readableName(scopedStore.name)}`
+    : isSelectedCouponOnly && selectedCoupon
+      ? selectedCoupon.name
     : "Ưu đãi đang mở";
-  const backHref = query.storeSlug ? `/stores/${query.storeSlug}` : "/danh-sach-quan";
+  const backHref = hasStoreScope && scopedStore ? `/stores/${scopedStore.slug}` : "/danh-sach-quan";
+  const scopeLabel = hasStoreScope ? "Ưu đãi của quán" : isSelectedCouponOnly ? "Ưu đãi được chọn" : "Tất cả coupon";
 
   const claimCoupon = async (coupon: PublicCoupon) => {
     setClaimError("");
@@ -235,24 +242,19 @@ export default function Page() {
       <section className="coupon-shell">
         <header className="coupon-header">
           <Link className="back-link" href={backHref}>
-            {query.storeSlug ? "Về chi tiết quán" : "Xem danh sách quán"}
+            {hasStoreScope ? "Về chi tiết quán" : "Xem danh sách quán"}
           </Link>
           <div className="header-grid">
             <div>
-              <span className="eyebrow">
-                <Gift size={16} />
-                Coupon thật từ backend
-              </span>
               <h1>{pageTitle}</h1>
               <p>
-                Chọn ưu đãi, tạo coupon issue thật và đưa mã cho nhân viên quán
-                quét khi đến nơi.
+                Chọn ưu đãi, lấy mã và đưa cho nhân viên quán quét khi đến nơi.
               </p>
             </div>
             <div className="summary-panel">
               <div>
                 <span>Phạm vi</span>
-                <strong>{isScopedFromStore ? "Theo CTA của quán" : "Tất cả coupon"}</strong>
+                <strong>{scopeLabel}</strong>
               </div>
               <div>
                 <span>Đang hiển thị</span>
@@ -274,8 +276,8 @@ export default function Page() {
             <h2>{isMember ? "Nhận vào ví hội viên" : "Nhận mã khách"}</h2>
             <p>
               {isMember
-                ? "Bạn đang đăng nhập hội viên, nút lấy mã sẽ gọi member claim."
-                : "Khách chưa đăng nhập cần để lại số điện thoại để hệ thống tạo mã guest coupon."}
+                ? "Bạn đang đăng nhập hội viên, mã sẽ được lưu vào ví ưu đãi."
+                : "Khách chưa đăng nhập cần để lại số điện thoại để nhận mã."}
             </p>
           </div>
           {!isMember ? (
@@ -349,9 +351,11 @@ export default function Page() {
             <Ticket size={32} />
             <h2>Chưa có coupon đang mở</h2>
             <p>
-              {isScopedFromStore
-                ? "Quán hoặc coupon từ CTA hiện không có ưu đãi active."
-                : "Backend hiện chưa trả về coupon active nào."}
+              {hasStoreScope
+                ? "Quán này hiện không có ưu đãi active."
+                : isSelectedCouponOnly
+                  ? "Ưu đãi từ CTA hiện không còn hoạt động."
+                : "Hiện chưa có ưu đãi đang mở."}
             </p>
             <Link href="/danh-sach-quan">Tìm quán khác</Link>
           </section>
@@ -412,7 +416,7 @@ export default function Page() {
                     type="button"
                   >
                     {isClaiming ? <Loader2 size={18} className="spin" /> : <Ticket size={18} />}
-                    {isMember ? "Lưu vào ví" : "Lấy mã guest"}
+                    {isMember ? "Lưu vào ví" : "Lấy mã"}
                   </button>
                 </article>
               );
