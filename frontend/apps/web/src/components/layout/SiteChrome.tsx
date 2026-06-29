@@ -61,28 +61,9 @@ const revealTargetSelector = [
   ".nl-page-content [class*='list'] > *",
 ].join(",");
 
-const nativeScrollSelector = "input, textarea, select, [data-native-scroll], [data-no-smooth-scroll]";
-
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
-}
-
-function shouldUseNativeWheelScroll(target: EventTarget | null) {
-  let element = target instanceof Element ? target : null;
-
-  while (element && element !== document.body && element !== document.documentElement) {
-    if (element.matches(nativeScrollSelector)) return true;
-
-    const style = window.getComputedStyle(element);
-    const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY)
-      && element.scrollHeight > element.clientHeight + 1;
-
-    if (canScrollY) return true;
-    element = element.parentElement;
-  }
-
-  return false;
 }
 
 function isRevealTarget(element: HTMLElement) {
@@ -212,72 +193,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     return () => {
       if (scanTimer) window.clearTimeout(scanTimer);
       observer.disconnect();
-    };
-  }, [pathname]);
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reducedMotion.matches) return;
-
-    let animationFrame = 0;
-    let targetY = window.scrollY;
-
-    const getMaxScrollY = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-
-    const getWheelDelta = (event: WheelEvent) => {
-      if (event.deltaMode === 1) return event.deltaY * 18;
-      if (event.deltaMode === 2) return event.deltaY * window.innerHeight;
-      return event.deltaY;
-    };
-
-    const step = () => {
-      const currentY = window.scrollY;
-      const distance = targetY - currentY;
-
-      if (Math.abs(distance) < 0.6) {
-        window.scrollTo(0, targetY);
-        animationFrame = 0;
-        return;
-      }
-
-      window.scrollTo(0, currentY + distance * 0.18);
-      animationFrame = window.requestAnimationFrame(step);
-    };
-
-    const onWheel = (event: WheelEvent) => {
-      if (
-        event.defaultPrevented
-        || event.ctrlKey
-        || event.metaKey
-        || event.shiftKey
-        || shouldUseNativeWheelScroll(event.target)
-      ) {
-        targetY = window.scrollY;
-        return;
-      }
-
-      const delta = getWheelDelta(event);
-      if (!delta) return;
-
-      event.preventDefault();
-      targetY = Math.max(0, Math.min(getMaxScrollY(), targetY + delta));
-
-      if (!animationFrame) {
-        animationFrame = window.requestAnimationFrame(step);
-      }
-    };
-
-    const syncTarget = () => {
-      if (!animationFrame) targetY = window.scrollY;
-    };
-
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("scroll", syncTarget, { passive: true });
-
-    return () => {
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("scroll", syncTarget);
-      if (animationFrame) window.cancelAnimationFrame(animationFrame);
     };
   }, [pathname]);
 
