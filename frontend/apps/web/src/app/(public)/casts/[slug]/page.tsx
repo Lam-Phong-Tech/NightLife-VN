@@ -492,9 +492,6 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
   const favIcon = isFavorite
     ? "https://img.icons8.com/ios-filled/100/FF3D71/like.png"
     : "https://img.icons8.com/ios/100/D4B26A/like.png";
-  const favIconDark = isFavorite
-    ? "https://img.icons8.com/ios-filled/100/FF3D71/like.png"
-    : "https://img.icons8.com/ios/100/1f1d29/like.png";
   const toggleFav = () => setIsFavorite((value) => !value);
   const tabs = [
     { label: "Giới thiệu", style: tabStyle(activeTab === 0), pick: () => setActiveTab(0) },
@@ -535,10 +532,18 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
           <section className="cast-mobile-hero" style={{ background: `linear-gradient(180deg, rgba(12,12,15,.08), rgba(12,12,15,.82)), ${mainBg}` }}>
             <div className="cast-mobile-topbar">
               <Link href="/danh-sach-cast" className="cast-mobile-icon-link" aria-label="Quay lại danh sách cast">
-                ‹
+                <span aria-hidden="true">{"\u2190"}</span>
               </Link>
-              <button type="button" className="cast-mobile-icon-button" onClick={toggleFav} aria-label="Lưu cast">
-                <Image width={100} height={100} src={favIconDark} alt="" />
+              <button
+                type="button"
+                className={`cast-mobile-icon-button${isFavorite ? " is-active" : ""}`}
+                onClick={toggleFav}
+                aria-label="Lưu cast"
+                aria-pressed={isFavorite}
+              >
+                <span className="cast-mobile-heart-icon" aria-hidden="true">
+                  {isFavorite ? "\u2665" : "\u2661"}
+                </span>
               </button>
             </div>
             <div className="cast-mobile-hero-copy">
@@ -628,10 +633,15 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
       <style>{`
         .cast-profile-mobile-v2 {
           min-height: 100vh;
-          padding-bottom: calc(154px + env(safe-area-inset-bottom));
+          padding-bottom: calc(88px + env(safe-area-inset-bottom));
           background: #0c0c0f;
           color: #f3f0ea;
           font-family: "Inter", var(--nl-font-sans);
+        }
+
+        .nl-page-content:has(.cast-profile-mobile-shell) {
+          padding-bottom: 0 !important;
+          scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
         }
 
         .cast-mobile-hero {
@@ -660,13 +670,15 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
           justify-content: space-between;
           position: relative;
           z-index: 2;
+          min-height: 42px;
         }
 
         .cast-mobile-icon-link,
         .cast-mobile-icon-button {
-          width: 40px !important;
-          height: 40px !important;
-          min-height: 40px !important;
+          width: 42px !important;
+          height: 42px !important;
+          min-width: 42px !important;
+          min-height: 42px !important;
           border: 1px solid rgba(244,227,180,.48) !important;
           border-radius: 14px !important;
           background: rgba(12,12,15,.62) !important;
@@ -674,18 +686,40 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
           display: inline-flex !important;
           align-items: center !important;
           justify-content: center !important;
+          box-sizing: border-box !important;
           backdrop-filter: blur(14px);
           text-decoration: none !important;
-          font-size: 28px !important;
-          font-weight: 700 !important;
-          line-height: 1 !important;
+          line-height: 0 !important;
           padding: 0 !important;
         }
 
-        .cast-mobile-icon-button img {
-          width: 18px !important;
-          height: 18px !important;
-          display: block !important;
+        .cast-mobile-icon-button {
+          appearance: none;
+          cursor: pointer;
+        }
+
+        .cast-mobile-icon-link span,
+        .cast-mobile-heart-icon {
+          display: block;
+          line-height: 1;
+          transform: translateY(-1px);
+        }
+
+        .cast-mobile-icon-link span {
+          color: #f8e8b8 !important;
+          font-size: 22px;
+          font-weight: 950;
+        }
+
+        .cast-mobile-heart-icon {
+          color: #f4d989 !important;
+          font-size: 24px;
+          font-weight: 900;
+          text-shadow: 0 1px 8px rgba(0,0,0,.32);
+        }
+
+        .cast-mobile-icon-button.is-active .cast-mobile-heart-icon {
+          color: #ff6f9a !important;
         }
 
         .cast-mobile-hero-copy {
@@ -905,7 +939,7 @@ export default function Page({ params }: { params: Promise<{ slug?: string }> })
         .cast-mobile-booking {
           position: sticky;
           z-index: 20;
-          bottom: calc(74px + env(safe-area-inset-bottom));
+          bottom: calc(82px + env(safe-area-inset-bottom));
           gap: 14px;
           margin: 14px 16px 0;
           padding: 12px;
