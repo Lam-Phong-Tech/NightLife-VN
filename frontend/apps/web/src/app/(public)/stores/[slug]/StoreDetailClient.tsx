@@ -89,6 +89,33 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const hasMap = Boolean(embedUrl);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const languageText = Array.from(new Set(store.casts.flatMap((cast) => cast.languages))).slice(0, 2).join(" / ");
+  const languageCards = useMemo(() => {
+    const languageCounts = new Map<string, number>();
+    store.casts.forEach((cast) => {
+      cast.languages.forEach((language) => {
+        languageCounts.set(language, (languageCounts.get(language) ?? 0) + 1);
+      });
+    });
+
+    const totalCasts = Math.max(store.casts.length, 1);
+    const topLanguages = [...languageCounts.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 2)
+      .map(([language, count]) => ({
+        label: `Nói tiếng ${language}`,
+        value: `${Math.round((count / totalCasts) * 100)}%`,
+        progress: Math.max(8, Math.round((count / totalCasts) * 100)),
+      }));
+
+    return [
+      ...topLanguages,
+      {
+        label: "Ngôn ngữ nhân sự",
+        value: languageText || "Chưa cập nhật",
+        progress: 100,
+      },
+    ];
+  }, [languageText, store.casts]);
   const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
   const todayOpening = todayKey ? openingText(store.openingHours?.[todayKey]) : "";
 
@@ -237,23 +264,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           {activeTab === "overview" ? (
             <section className="tab-section">
-              <div className="stat-grid">
-                <div>
-                  <span>Giá từ</span>
-                  <strong>{formatVnd(store.priceReference.startingFromVnd)}</strong>
-                </div>
-                <div>
-                  <span>Cast hiển thị</span>
-                  <strong>{store.casts.length} hồ sơ</strong>
-                </div>
-                <div>
-                  <span>Ưu đãi đang mở</span>
-                  <strong>{store.activeCoupons.length} mã</strong>
-                </div>
-                <div>
-                  <span>Khu vực</span>
-                  <strong>{store.area?.name ?? store.district ?? store.city}</strong>
-                </div>
+              <p className="overview-description">
+                {store.description || "Thông tin giới thiệu sẽ được quán cập nhật trước khi nhận đặt chỗ."}
+              </p>
+
+              <div className="language-grid">
+                {languageCards.map((card) => (
+                  <div className="language-card" key={card.label}>
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                    <div className="language-meter" aria-hidden="true">
+                      <i style={{ width: `${card.progress}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {store.campaigns.length ? (
@@ -284,6 +308,25 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   body="Quán hiện chưa có ưu đãi đang mở."
                 />
               )}
+
+              <div className="stat-grid compact">
+                <div>
+                  <span>Giá từ</span>
+                  <strong>{formatVnd(store.priceReference.startingFromVnd)}</strong>
+                </div>
+                <div>
+                  <span>Cast hiển thị</span>
+                  <strong>{store.casts.length} hồ sơ</strong>
+                </div>
+                <div>
+                  <span>Ưu đãi đang mở</span>
+                  <strong>{store.activeCoupons.length} mã</strong>
+                </div>
+                <div>
+                  <span>Khu vực</span>
+                  <strong>{store.area?.name ?? store.district ?? store.city}</strong>
+                </div>
+              </div>
             </section>
           ) : null}
 
@@ -521,7 +564,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .legacy-gallery {
           display: grid;
           grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-          grid-template-rows: 104px 104px;
+          grid-template-rows: 134px 134px;
           gap: 10px;
         }
 
@@ -592,8 +635,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .legacy-summary {
           display: grid;
-          gap: 12px;
-          padding: 18px 0 0;
+          gap: 10px;
+          padding: 20px 360px 0 0;
         }
 
         .legacy-summary-main {
@@ -692,6 +735,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .legacy-tags {
           gap: 7px;
           margin-top: 0;
+          padding-left: 68px;
         }
 
         .legacy-tags span {
@@ -878,10 +922,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .store-content {
           max-width: 1468px;
           margin: 0 auto;
-          padding: 16px 26px 32px;
+          padding: 14px 26px 32px;
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 256px;
-          gap: 18px;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 24px;
           align-items: start;
         }
 
@@ -923,11 +967,63 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .tab-section {
-          margin-top: 12px;
-          background: rgba(255, 255, 255, .045);
-          border: 1px solid rgba(226, 184, 94, .16);
+          margin-top: 18px;
+          background: transparent;
+          border: 0;
+          border-radius: 0;
+          padding: 0;
+        }
+
+        .overview-description {
+          margin: 0;
+          color: #f7f1e7;
+          font-size: 15px;
+          line-height: 1.75;
+        }
+
+        .language-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin-top: 18px;
+        }
+
+        .language-card {
+          min-height: 86px;
+          border: 1px solid rgba(226, 184, 94, .18);
           border-radius: 8px;
+          background: rgba(255, 255, 255, .045);
           padding: 14px;
+        }
+
+        .language-card span {
+          display: block;
+          color: #bfb7aa;
+          font-size: 12px;
+          line-height: 1.35;
+        }
+
+        .language-card strong {
+          display: block;
+          margin-top: 5px;
+          color: #f4dd9b;
+          font-size: 17px;
+          line-height: 1.25;
+        }
+
+        .language-meter {
+          height: 5px;
+          margin-top: 12px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, .14);
+        }
+
+        .language-meter i {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: #e2b85e;
         }
 
         .stat-grid {
@@ -977,7 +1073,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .campaign-list {
           display: grid;
           gap: 10px;
-          margin-top: 12px;
+          margin-top: 16px;
         }
 
         .campaign-row {
@@ -985,6 +1081,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 12px;
           color: #f7f1e7;
           text-decoration: none;
+        }
+
+        .stat-grid.compact {
+          margin-top: 16px;
         }
 
         .campaign-row strong,
@@ -1228,7 +1328,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-panel {
           position: sticky;
           top: 18px;
-          padding: 14px;
+          margin-top: -126px;
+          padding: 20px;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, .24);
         }
 
         .booking-title span,
@@ -1303,6 +1405,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         @media (max-width: 980px) {
           .store-detail-page {
             padding-bottom: calc(176px + env(safe-area-inset-bottom));
+          }
+
+          .legacy-summary {
+            padding-right: 0;
           }
 
           .store-content,
@@ -1382,6 +1488,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .stat-grid,
+          .language-grid,
           .cast-grid,
           .related-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1538,6 +1645,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .stat-grid,
+          .language-grid,
           .cast-grid,
           .related-grid {
             grid-template-columns: 1fr;

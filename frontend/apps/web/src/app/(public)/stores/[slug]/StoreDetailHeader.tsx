@@ -137,6 +137,10 @@ export function StoreDetailHeader({
                 <Users size={13} />
                 {store.casts.length} hồ sơ cast
               </span>
+              <span className="summary-location">
+                <MapPin size={13} />
+                {location || "Chưa cập nhật khu vực"}
+              </span>
             </div>
           </div>
           <div className="legacy-summary-actions">
@@ -155,26 +159,20 @@ export function StoreDetailHeader({
           </div>
         </div>
 
-        <div className="legacy-info-panel">
-          <div className="legacy-location">
-            <MapPin size={15} />
-            <span>{location || "Chưa cập nhật khu vực"}</span>
-          </div>
-          <div className="legacy-tags">
-            {summaryTags.map((tag) => {
-              const Icon = tag.icon;
+        <div className="legacy-tags">
+          {summaryTags.map((tag) => {
+            const Icon = tag.icon;
 
-              return (
-                <span
-                  key={tag.key}
-                  className={tag.tone === "open" ? "open-now" : tag.tone === "featured" ? "featured" : undefined}
-                >
-                  <Icon size={13} />
-                  {tag.label}
-                </span>
-              );
-            })}
-          </div>
+            return (
+              <span
+                key={tag.key}
+                className={tag.tone === "open" ? "open-now" : tag.tone === "featured" ? "featured" : undefined}
+              >
+                <Icon size={13} />
+                {tag.label}
+              </span>
+            );
+          })}
         </div>
       </div>
     </section>
