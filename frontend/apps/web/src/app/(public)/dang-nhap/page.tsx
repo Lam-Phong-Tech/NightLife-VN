@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, LogIn, Mail, ShieldCheck, Sparkles, Ticket } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, MessageCircle, Phone, Sparkles } from "lucide-react";
 import { loginMember, registerMember } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
@@ -24,10 +24,25 @@ const colors = {
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
 
+const demoPhoneEmailMap = new Map([["0912345678", "member@nightlife.vn"]]);
+
+function normalizePhone(value: string) {
+  return value.replace(/[^\d+]/g, "");
+}
+
+function getPhoneDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function phoneToAuthEmail(phone: string) {
+  const digits = getPhoneDigits(phone);
+  return demoPhoneEmailMap.get(digits) ?? `${digits}@phone.vietyoru.local`;
+}
+
 export default function Page() {
   const [isReg, setIsReg] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,18 +71,20 @@ export default function Page() {
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = normalizePhone(phone);
+    const phoneDigits = getPhoneDigits(phone);
+    const authEmail = phoneToAuthEmail(phone);
     const trimmedDisplayName = displayName.trim();
 
-    if (!normalizedEmail || !password) {
+    if (!normalizedPhone || !password) {
       setMessageTone("error");
-      setMessage("Vui lòng nhập email và mật khẩu.");
+      setMessage("Vui lòng nhập số điện thoại và mật khẩu.");
       return;
     }
 
-    if (!normalizedEmail.includes("@")) {
+    if (phoneDigits.length < 9) {
       setMessageTone("error");
-      setMessage("Vui lòng nhập email hợp lệ để tiếp tục.");
+      setMessage("Số điện thoại cần tối thiểu 9 chữ số.");
       return;
     }
 
@@ -83,7 +100,7 @@ export default function Page() {
     try {
       if (isReg) {
         await registerMember({
-          email: normalizedEmail,
+          email: authEmail,
           password,
           displayName: trimmedDisplayName || undefined,
         });
@@ -95,7 +112,7 @@ export default function Page() {
         return;
       }
 
-      const session = await loginMember({ email: normalizedEmail, password });
+      const session = await loginMember({ email: authEmail, password });
       setAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
@@ -110,6 +127,11 @@ export default function Page() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const showSocialComingSoon = (provider: "Google" | "LINE") => {
+    setMessageTone("error");
+    setMessage(`Đăng nhập bằng ${provider} sẽ được kết nối ở bước tiếp theo.`);
   };
 
   return (
@@ -139,12 +161,7 @@ export default function Page() {
               MEMBER ACCESS
             </span>
             <h1 style={{ marginTop: 18, maxWidth: 560, fontSize: 46, lineHeight: 1.05, fontWeight: 900 }}>Giữ mọi cuộc hẹn nightlife trong một tài khoản.</h1>
-            <p style={{ marginTop: 16, maxWidth: 500, color: colors.muted, fontSize: 15, lineHeight: 1.7 }}>
-              Lưu quán, nhận mã ưu đãi, theo dõi trạng thái đặt chỗ và sử dụng ví coupon khi đến quán.
-            </p>
           </div>
-
-          <div style={{ color: colors.muted, fontSize: 12 }}>© 2026 Vietyoru</div>
         </section>
 
         <section className="nl-login-form-section" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "34px" }}>
@@ -175,14 +192,14 @@ export default function Page() {
                   />
                 ) : null}
                 <Field
-                  icon={<Mail size={16} />}
-                  label="Email"
-                  value={email}
-                  onChange={setEmail}
-                  placeholder="member@nightlife.vn"
-                  autoComplete="email"
-                  inputMode="email"
-                  name="email"
+                  icon={<Phone size={16} />}
+                  label="Số điện thoại"
+                  value={phone}
+                  onChange={setPhone}
+                  placeholder="0912 345 678"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  name="phone"
                 />
                 <Field
                   icon={<LockKeyhole size={16} />}
@@ -204,14 +221,6 @@ export default function Page() {
                     </button>
                   }
                 />
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, color: colors.muted, fontSize: 13 }}>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                    <input type="checkbox" defaultChecked style={{ accentColor: colors.gold }} />
-                    Ghi nhớ
-                  </label>
-                  <Link href="#" style={{ color: colors.gold, fontWeight: 800 }}>Quên mật khẩu?</Link>
-                </div>
 
                 {message ? (
                   <div
@@ -236,12 +245,21 @@ export default function Page() {
                 >
                   {isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập"}
                 </button>
+
+                <div style={{ display: "grid", gap: 10 }}>
+                  <SocialButton
+                    icon={<GoogleMark />}
+                    label="Đăng nhập bằng Google"
+                    onClick={() => showSocialComingSoon("Google")}
+                  />
+                  <SocialButton
+                    icon={<MessageCircle size={17} />}
+                    label="Đăng nhập bằng LINE"
+                    onClick={() => showSocialComingSoon("LINE")}
+                    tone="line"
+                  />
+                </div>
               </form>
-            </div>
-            <div className="nl-login-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12, marginTop: 16 }}>
-              <Metric icon={<Ticket size={18} />} value="30%" label="ưu đãi hot" />
-              <Metric icon={<ShieldCheck size={18} />} value="24h" label="giữ mã guest" />
-              <Metric icon={<LogIn size={18} />} value="1 chạm" label="đặt lại lịch" />
             </div>
           </div>
         </section>
@@ -268,28 +286,6 @@ export default function Page() {
             font-size: 34px !important;
             line-height: 1.08 !important;
             margin-top: 18px !important;
-          }
-
-          .nl-login-page .nl-login-visual p {
-            max-width: 320px !important;
-            font-size: 13.5px !important;
-            line-height: 1.55 !important;
-          }
-
-          .nl-login-page .nl-login-metrics {
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            gap: 8px !important;
-            margin-top: 18px !important;
-          }
-
-          .nl-login-page .nl-login-metrics > div {
-            min-width: 0 !important;
-            padding: 10px !important;
-            border-radius: 12px !important;
-          }
-
-          .nl-login-page .nl-login-metrics > div > div:nth-child(2) {
-            font-size: 18px !important;
           }
 
           .nl-login-page .nl-login-form-section {
@@ -366,12 +362,61 @@ function Field({
   );
 }
 
-function Metric({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function SocialButton({
+  icon,
+  label,
+  onClick,
+  tone = "google",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  tone?: "google" | "line";
+}) {
   return (
-    <div style={{ border: `1px solid ${colors.border}`, background: "rgba(12,12,15,.5)", borderRadius: 14, padding: 13 }}>
-      <div style={{ color: colors.gold, display: "inline-flex" }}>{icon}</div>
-      <div style={{ marginTop: 8, color: colors.goldPale, fontSize: 22, fontWeight: 900 }}>{value}</div>
-      <div style={{ marginTop: 3, color: colors.muted, fontSize: 12 }}>{label}</div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        minHeight: 46,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        border: `1px solid ${tone === "line" ? "rgba(6,199,85,.44)" : colors.border}`,
+        borderRadius: 13,
+        background: tone === "line" ? "rgba(6,199,85,.12)" : "rgba(255,255,255,.055)",
+        color: tone === "line" ? "#8ff0b5" : colors.text,
+        fontSize: 14,
+        fontWeight: 900,
+        cursor: "pointer",
+      }}
+    >
+      <span style={{ color: tone === "line" ? "#06c755" : colors.gold, display: "inline-flex" }}>{icon}</span>
+      {label}
+    </button>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 18,
+        height: 18,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "50%",
+        background: colors.goldGrad,
+        color: colors.onGold,
+        fontSize: 13,
+        fontWeight: 950,
+        lineHeight: 1,
+      }}
+    >
+      G
+    </span>
   );
 }
