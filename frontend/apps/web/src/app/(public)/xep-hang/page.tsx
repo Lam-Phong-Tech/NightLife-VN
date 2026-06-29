@@ -18,7 +18,6 @@ type RankingItem = {
   kind: RankingKind;
   city: Exclude<RankingArea, 'all'>;
   category: Exclude<RankingCategory, 'all'>;
-  sourceLabel: string;
   sponsored?: boolean;
 };
 
@@ -41,7 +40,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'cast',
     city: 'hn',
     category: 'club',
-    sourceLabel: 'Admin cấu hình',
     sponsored: true,
   },
   {
@@ -54,7 +52,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'cast',
     city: 'hn',
     category: 'bar',
-    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 3,
@@ -66,7 +63,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'cast',
     city: 'hn',
     category: 'lounge',
-    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 4,
@@ -78,7 +74,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'cast',
     city: 'hcm',
     category: 'lounge',
-    sourceLabel: 'Admin cấu hình',
     sponsored: true,
   },
   {
@@ -91,7 +86,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'cast',
     city: 'hcm',
     category: 'bar',
-    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 1,
@@ -103,7 +97,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'quan',
     city: 'hn',
     category: 'club',
-    sourceLabel: 'Admin cấu hình',
     sponsored: true,
   },
   {
@@ -116,7 +109,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'quan',
     city: 'hcm',
     category: 'lounge',
-    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 3,
@@ -128,7 +120,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'quan',
     city: 'hn',
     category: 'karaoke',
-    sourceLabel: 'Admin cấu hình',
     sponsored: true,
   },
   {
@@ -141,7 +132,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'quan',
     city: 'hcm',
     category: 'bar',
-    sourceLabel: 'Admin cấu hình',
   },
   {
     rank: 5,
@@ -153,7 +143,6 @@ const adminRankingItems: RankingItem[] = [
     kind: 'quan',
     city: 'hn',
     category: 'lounge',
-    sourceLabel: 'Admin cấu hình',
   },
 ];
 
@@ -263,7 +252,7 @@ export default function Page() {
   };
   const rowStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: '54px 70px 1fr auto 24px',
+    gridTemplateColumns: '54px 70px 1fr 24px',
     alignItems: 'center',
     gap: '18px',
     width: '100%',
@@ -311,7 +300,7 @@ export default function Page() {
       <section className="ranking-head" style={headStyle}>
         <div>
           <h1 style={titleStyle}>Bảng xếp hạng {title}</h1>
-          <p style={subTitleStyle}>Top 1-5 theo khu vực/danh mục - dữ liệu do Admin cấu hình</p>
+          <p style={subTitleStyle}>Top 1-5 theo khu vực/danh mục</p>
         </div>
 
         <div className="ranking-tabs" aria-label="Chuyển bảng xếp hạng" style={tabWrapStyle}>
@@ -372,9 +361,6 @@ export default function Page() {
                 {item.sponsored ? <span className="sponsored-badge">Tài trợ</span> : null}
               </span>
               <small>{item.area}</small>
-            </span>
-            <span className="rank-source">
-              {item.sourceLabel}
             </span>
             <span className="rank-arrow" aria-hidden="true">
               ›
@@ -473,7 +459,7 @@ export default function Page() {
 
         .ranking-row {
           display: grid;
-          grid-template-columns: 54px 70px 1fr auto 24px;
+          grid-template-columns: 54px 70px 1fr 24px;
           align-items: center;
           gap: 18px;
           min-height: 108px;
@@ -542,12 +528,6 @@ export default function Page() {
           color: #17130b;
           background: linear-gradient(135deg, #f4d989, #d1a944);
           font-size: 11px;
-          font-weight: 900;
-          white-space: nowrap;
-        }
-
-        .rank-source {
-          color: #f1ce69;
           font-weight: 900;
           white-space: nowrap;
         }
@@ -632,10 +612,6 @@ export default function Page() {
 
           .rank-copy {
             gap: 3px;
-          }
-
-          .rank-source {
-            display: none;
           }
 
           .rank-arrow {
