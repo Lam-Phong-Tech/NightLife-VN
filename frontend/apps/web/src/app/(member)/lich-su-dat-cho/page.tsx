@@ -11,6 +11,8 @@ import {
   rememberLastBooking,
   type BookingRecord,
 } from "@/lib/api/bookings";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const colors = {
   bg: "#0c0c0f",
@@ -159,7 +161,9 @@ export default function Page() {
         </div>
 
         <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
-          {visibleBookings.map((booking) => (
+          {isLoading ? <LoadingSkeleton rows={3} /> : null}
+
+          {!isLoading ? visibleBookings.map((booking) => (
             <article
               key={booking.id}
               className="nl-booking-history-card"
@@ -213,12 +217,18 @@ export default function Page() {
                 </Link>
               </div>
             </article>
-          ))}
+          )) : null}
         </div>
 
         {!isLoading && visibleBookings.length === 0 ? (
-          <div style={{ marginTop: 28, border: `1px solid ${colors.border}`, borderRadius: 18, background: colors.panel, padding: 28, textAlign: "center", color: colors.muted }}>
-            Chưa có đặt chỗ ở trạng thái này.
+          <div style={{ marginTop: 28 }}>
+            <EmptyState
+              variant="bookings"
+              title={activeTab === tabs[0] ? "Chưa có đặt chỗ nào" : "Chưa có đặt chỗ ở trạng thái này"}
+              description="Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây."
+              ctaLabel="Khám phá quán"
+              ctaHref="/danh-sach-quan"
+            />
           </div>
         ) : null}
       </section>

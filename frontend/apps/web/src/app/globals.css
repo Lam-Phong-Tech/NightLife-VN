@@ -17,7 +17,7 @@
 
 :root {
   color-scheme: dark;
-  --nl-font-sans: "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -150,7 +150,7 @@ body {
 /* Premium dark/gold theme override for generated prototype pages. */
 :root {
   --nl-bg: #0c0c0f;
-  --nl-font-sans: "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --nl-surface: #141417;
   --nl-surface-soft: rgba(255, 255, 255, 0.045);
   --nl-surface-strong: rgba(255, 255, 255, 0.075);

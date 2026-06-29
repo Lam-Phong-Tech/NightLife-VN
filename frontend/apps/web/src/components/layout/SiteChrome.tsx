@@ -23,6 +23,7 @@ import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
 
@@ -901,17 +902,18 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   if (shouldSimulate) return <MobileSimulator />;
 
-  if (hideChrome) return <>{children}</>;
+  if (hideChrome) return <SystemFeedbackProvider>{children}</SystemFeedbackProvider>;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: colors.bg,
-        color: colors.text,
-        fontFamily: "var(--nl-font-sans)",
-      }}
-    >
+    <SystemFeedbackProvider>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: colors.bg,
+          color: colors.text,
+          fontFamily: "var(--nl-font-sans)",
+        }}
+      >
       <header
         className="nl-site-header"
         style={{
@@ -1275,6 +1277,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             document.body,
           )
         : null}
-    </div>
+      </div>
+    </SystemFeedbackProvider>
   );
 }
