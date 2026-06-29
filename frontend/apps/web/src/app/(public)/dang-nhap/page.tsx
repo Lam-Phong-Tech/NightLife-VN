@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, MessageCircle, Phone, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Phone, Sparkles } from "lucide-react";
 import { loginMember, registerMember } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
@@ -25,6 +25,8 @@ const colors = {
 };
 
 const demoPhoneEmailMap = new Map([["0912345678", "member@nightlife.vn"]]);
+const googleLogoSrc = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
+const lineLogoSrc = "https://static.line-scdn.net/line_web/img/favicon-32x32.png";
 
 function normalizePhone(value: string) {
   return value.replace(/[^\d+]/g, "");
@@ -246,17 +248,18 @@ export default function Page() {
                   {isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập"}
                 </button>
 
-                <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
                   <SocialButton
-                    icon={<GoogleMark />}
-                    label="Đăng nhập bằng Google"
+                    logoSrc={googleLogoSrc}
+                    logoAlt="Google"
+                    label="Google"
                     onClick={() => showSocialComingSoon("Google")}
                   />
                   <SocialButton
-                    icon={<MessageCircle size={17} />}
-                    label="Đăng nhập bằng LINE"
+                    logoSrc={lineLogoSrc}
+                    logoAlt="LINE"
+                    label="LINE"
                     onClick={() => showSocialComingSoon("LINE")}
-                    tone="line"
                   />
                 </div>
               </form>
@@ -363,19 +366,20 @@ function Field({
 }
 
 function SocialButton({
-  icon,
+  logoSrc,
+  logoAlt,
   label,
   onClick,
-  tone = "google",
 }: {
-  icon: React.ReactNode;
+  logoSrc: string;
+  logoAlt: string;
   label: string;
   onClick: () => void;
-  tone?: "google" | "line";
 }) {
   return (
     <button
       type="button"
+      aria-label={`Đăng nhập bằng ${label}`}
       onClick={onClick}
       style={{
         minHeight: 46,
@@ -383,40 +387,27 @@ function SocialButton({
         alignItems: "center",
         justifyContent: "center",
         gap: 10,
-        border: `1px solid ${tone === "line" ? "rgba(6,199,85,.44)" : colors.border}`,
+        border: "1px solid rgba(255,255,255,.78)",
         borderRadius: 13,
-        background: tone === "line" ? "rgba(6,199,85,.12)" : "rgba(255,255,255,.055)",
-        color: tone === "line" ? "#8ff0b5" : colors.text,
+        background: "#f8f7f4",
+        color: "#121214",
         fontSize: 14,
         fontWeight: 900,
         cursor: "pointer",
+        boxShadow: "0 10px 24px rgba(0,0,0,.16)",
       }}
     >
-      <span style={{ color: tone === "line" ? "#06c755" : colors.gold, display: "inline-flex" }}>{icon}</span>
+      <span
+        aria-hidden="true"
+        title={logoAlt}
+        style={{
+          width: 20,
+          height: 20,
+          flex: "none",
+          background: `url("${logoSrc}") center / contain no-repeat`,
+        }}
+      />
       {label}
     </button>
-  );
-}
-
-function GoogleMark() {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        width: 18,
-        height: 18,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: "50%",
-        background: colors.goldGrad,
-        color: colors.onGold,
-        fontSize: 13,
-        fontWeight: 950,
-        lineHeight: 1,
-      }}
-    >
-      G
-    </span>
   );
 }
