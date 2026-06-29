@@ -434,47 +434,48 @@ function RankingRow({ item }: { item: RankedItem }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "46px 56px minmax(0, 1fr) auto",
+        gridTemplateColumns: "64px minmax(0, 1fr) auto",
         alignItems: "center",
-        gap: "14px",
-        minHeight: "78px",
-        padding: "14px 13px",
-        borderRadius: "18px",
-        background: "linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.035))",
-        border: `1px solid ${colors.line}`,
-        boxShadow: "0 14px 28px rgba(0,0,0,.16)",
+        gap: "16px",
+        minHeight: "92px",
+        padding: "16px",
+        borderRadius: "16px",
+        background: "rgba(255,255,255,.045)",
+        border: "1px solid rgba(255,255,255,.12)",
+        boxShadow: "0 16px 30px rgba(0,0,0,.14)",
       }}
     >
-      <span
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: "15px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "1px",
-          background: item.crown ?? colors.gold,
-          color: item.numColor ?? "#241a0a",
-          fontWeight: 950,
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,.32), 0 9px 20px rgba(0,0,0,.24)",
-        }}
-      >
-        {hasCrown ? <Crown size={16} fill="currentColor" strokeWidth={2.5} /> : null}
-        <span style={{ fontSize: hasCrown ? "13px" : "15px", lineHeight: 1 }}>{item.rank}</span>
-      </span>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Xếp hạng"}
         label=""
-        style={{ width: 56, height: 56, borderRadius: "50%", flex: "none", border: `1px solid ${colors.line}` }}
+        style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", border: `1px solid ${colors.line}`, boxShadow: "0 10px 20px rgba(0,0,0,.28)" }}
       />
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: "16px", fontWeight: 900, lineHeight: 1.18 }}>{item.name}</div>
-        <div style={{ marginTop: "5px", color: colors.muted, fontSize: "12.5px", lineHeight: 1.25 }}>{item.area}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px" }}>
+          <span
+            style={{
+              width: 38,
+              height: 28,
+              borderRadius: "10px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: item.crown ?? colors.gold,
+              color: item.numColor ?? "#241a0a",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,.34), 0 8px 18px rgba(0,0,0,.22)",
+            }}
+          >
+            {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
+          </span>
+          <span style={{ color: colors.goldSoft, fontSize: "11px", fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>
+            Top {item.rank}
+          </span>
+        </div>
+        <div style={{ fontSize: "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
+        <div style={{ marginTop: "5px", color: colors.muted, fontSize: "13px", lineHeight: 1.25 }}>{item.area}</div>
       </div>
-      <span style={{ color: colors.goldSoft, fontSize: "13px", fontWeight: 900, whiteSpace: "nowrap" }}>{item.metric}</span>
+      <span style={{ color: colors.goldSoft, fontSize: "13px", fontWeight: 950, whiteSpace: "nowrap" }}>{item.metric}</span>
     </div>
   );
 }
