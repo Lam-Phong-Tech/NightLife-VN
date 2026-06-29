@@ -2,6 +2,7 @@
 
 import { Check, ChevronDown, Globe, X } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 type LanguageCode = "vi" | "en" | "ja" | "ko" | "zh";
 
@@ -190,7 +191,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         {!isMobile ? <ChevronDown size={13} strokeWidth={2.2} style={{ flex: "none" }} /> : null}
       </button>
 
-      {isOpen ? (
+      {isOpen && typeof document !== "undefined" ? createPortal(
         <div
           role="presentation"
           onMouseDown={(event) => {
@@ -472,7 +473,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
               </button>
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </>
   );
