@@ -27,7 +27,6 @@ const hiddenChromePaths = [
   "/dang-nhap",
   "/dang-nhap-doi-tac",
   "/dang-ky-doi-tac",
-  "/danh-sach-quan",
   "/partner",
   "/admin",
   "/chon-giao-dien",

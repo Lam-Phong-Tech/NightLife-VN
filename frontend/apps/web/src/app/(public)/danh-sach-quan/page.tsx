@@ -209,6 +209,8 @@ export default function Page() {
   );
 
   const cityLabel = cityLabels[city] ?? "Việt Nam";
+  const selectedCityLabel =
+    cityOptions.find((option) => option.value === city)?.label ?? cityLabel;
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
@@ -295,6 +297,7 @@ export default function Page() {
 
           <label className="venue-city-select">
             <MapPin size={15} />
+            <span className="venue-city-current">{selectedCityLabel}</span>
             <select value={city} onChange={handleCityChange} aria-label="Chọn thành phố">
               {cityOptions.map((option) => (
                 <option key={option.value || "all"} value={option.value}>
@@ -417,7 +420,10 @@ function VenueResultCard({ venue }: { venue: VenueView }) {
           </div>
           <p className="venue-meta">
             {venue.categoryLabel} · {venue.areaLabel}
-            <span className="venue-mobile-distance"> · {venue.distanceLabel}</span>
+            <span className="venue-mobile-distance">
+              {" "}
+              · {venue.distanceLabel} · {venue.cityLabel}
+            </span>
           </p>
           <div className="venue-tags">
             {venue.tags.map((tag) => (
@@ -427,7 +433,7 @@ function VenueResultCard({ venue }: { venue: VenueView }) {
           <div className="venue-price">{venue.priceLabel}</div>
           <div className="venue-distance">
             <MapPin size={12} />
-            {venue.distanceLabel} · {venue.areaLabel}
+            {venue.distanceLabel} · {venue.areaLabel} · {venue.cityLabel}
           </div>
         </div>
 
@@ -581,6 +587,13 @@ const venueSearchCss = `
     font-size: 13px;
     font-weight: 800;
     white-space: nowrap;
+  }
+
+  .venue-city-current {
+    overflow: hidden;
+    max-width: 74px;
+    color: #f0dda8;
+    text-overflow: ellipsis;
   }
 
   .venue-city-select select,
