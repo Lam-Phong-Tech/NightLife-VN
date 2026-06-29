@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, ImageIcon, Phone, Play } from "lucide-react";
+import { Clock3, Heart, ImageIcon, MapPin, Phone, Play, Tag, Users, WalletCards } from "lucide-react";
 import type { PublicStoreDetail, StoreGalleryItem } from "@/lib/api/store-detail";
 import { categoryLabels } from "./store-detail.helpers";
 
@@ -63,13 +63,15 @@ export function StoreDetailHeader({
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const startingPrice = formatVnd(store.priceReference.startingFromVnd);
   const closingTime = todayOpening.includes(" - ") ? todayOpening.split(" - ")[1] : "";
-  const summaryTags = [
-    categoryLabel,
-    store.priceReference.startingFromVnd ? `Từ ${startingPrice}` : null,
-    store.priceReference.items.length ? "Bảng giá tham khảo" : null,
-    languageText ? `Phục vụ ${languageText}` : null,
-    closingTime ? `Đang mở - đến ${closingTime}` : null,
-  ].filter(Boolean);
+  const rawSummaryTags = [
+    { key: "category", label: categoryLabel, icon: Tag, tone: "featured" },
+    store.priceReference.items.length ? { key: "pricing", label: "Bảng giá tham khảo", icon: WalletCards } : null,
+    languageText ? { key: "language", label: `Phục vụ ${languageText}`, icon: Users } : null,
+    closingTime ? { key: "opening", label: `Đang mở đến ${closingTime}`, icon: Clock3, tone: "open" } : null,
+  ];
+  const summaryTags = rawSummaryTags.filter((tag): tag is Exclude<(typeof rawSummaryTags)[number], null> =>
+    Boolean(tag),
+  );
 
   const galleryTileBackground = (item?: StoreGalleryItem | null) =>
     mediaBackground(item?.type === "VIDEO" ? heroImage ?? item : item);
@@ -125,35 +127,54 @@ export function StoreDetailHeader({
       </div>
 
       <div className="legacy-summary">
-        <div className="store-logo">{getInitials(store.name) || "NL"}</div>
-        <div className="legacy-summary-copy">
-          <h1>{displayName}</h1>
-          <div className="legacy-summary-meta">
-            <span>{startingPrice}</span>
-            <span>{store.casts.length} hồ sơ cast</span>
+        <div className="legacy-summary-main">
+          <div className="store-logo">{getInitials(store.name) || "NL"}</div>
+          <div className="legacy-summary-copy">
+            <h1>{displayName}</h1>
+            <div className="legacy-summary-meta">
+              <span className="summary-price">{startingPrice}</span>
+              <span>
+                <Users size={13} />
+                {store.casts.length} hồ sơ cast
+              </span>
+            </div>
+          </div>
+          <div className="legacy-summary-actions">
+            <button
+              type="button"
+              aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+              onClick={onToggleFavorite}
+            >
+              <Heart size={18} fill={isFavorite ? "#d4b26a" : "none"} />
+            </button>
+            {store.phone ? (
+              <a href={`tel:${store.phone}`} aria-label="Gọi quán" onClick={onTrackCall}>
+                <Phone size={18} />
+              </a>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="legacy-info-panel">
+          <div className="legacy-location">
+            <MapPin size={15} />
             <span>{location || "Chưa cập nhật khu vực"}</span>
           </div>
           <div className="legacy-tags">
-            {summaryTags.map((tag, index) => (
-              <span key={`${tag}-${index}`} className={String(tag).startsWith("Đang mở") ? "open-now" : undefined}>
-                {tag}
-              </span>
-            ))}
+            {summaryTags.map((tag) => {
+              const Icon = tag.icon;
+
+              return (
+                <span
+                  key={tag.key}
+                  className={tag.tone === "open" ? "open-now" : tag.tone === "featured" ? "featured" : undefined}
+                >
+                  <Icon size={13} />
+                  {tag.label}
+                </span>
+              );
+            })}
           </div>
-        </div>
-        <div className="legacy-summary-actions">
-          <button
-            type="button"
-            aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
-            onClick={onToggleFavorite}
-          >
-            <Heart size={18} fill={isFavorite ? "#d4b26a" : "none"} />
-          </button>
-          {store.phone ? (
-            <a href={`tel:${store.phone}`} aria-label="Gọi quán" onClick={onTrackCall}>
-              <Phone size={18} />
-            </a>
-          ) : null}
         </div>
       </div>
     </section>

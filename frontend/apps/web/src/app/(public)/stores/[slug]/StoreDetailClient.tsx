@@ -84,7 +84,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     ? Array.from({ length: Math.max(5, gallery.length) }, (_, index) => gallery[index % gallery.length]!)
     : [];
   const firstCoupon = store.activeCoupons[0] ?? null;
-  const location = [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
+  const location = Array.from(new Set([store.area?.name, store.district, store.city].filter(Boolean))).join(", ");
   const embedUrl = mapEmbedUrl(store);
   const hasMap = Boolean(embedUrl);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
@@ -591,11 +591,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .legacy-summary {
+          display: grid;
+          gap: 12px;
+          padding: 18px 0 0;
+        }
+
+        .legacy-summary-main {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
           gap: 14px;
-          padding: 18px 0 0;
         }
 
         .legacy-summary .store-logo {
@@ -621,43 +626,104 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .legacy-summary-meta,
         .legacy-tags,
-        .legacy-summary-actions {
+        .legacy-summary-actions,
+        .legacy-location {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
         }
 
         .legacy-summary-meta {
-          gap: 12px;
+          gap: 8px;
           margin-top: 8px;
           color: #a9a197;
           font-size: 12px;
         }
 
-        .legacy-tags {
+        .legacy-summary-meta span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          min-height: 22px;
+          white-space: nowrap;
+        }
+
+        .legacy-summary-meta svg {
+          color: #c8a95c;
+        }
+
+        .legacy-summary-meta .summary-price {
+          color: #d4b26a;
+          font-weight: 900;
+        }
+
+        .legacy-info-panel {
+          display: grid;
+          gap: 9px;
+          max-width: min(720px, calc(100% - 68px));
+          margin-left: 68px;
+          padding: 11px 12px;
+          border: 1px solid rgba(226, 184, 94, .14);
+          border-radius: 8px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, .055), rgba(226, 184, 94, .035));
+        }
+
+        .legacy-location {
           gap: 8px;
-          margin-top: 12px;
+          min-width: 0;
+          color: #cfc6b8;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.45;
+        }
+
+        .legacy-location svg {
+          flex: none;
+          color: #d4b26a;
+        }
+
+        .legacy-location span {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .legacy-tags {
+          gap: 7px;
+          margin-top: 0;
         }
 
         .legacy-tags span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          min-height: 30px;
           border-radius: 999px;
           background: rgba(255, 255, 255, .06);
           color: #d9d1c3;
-          border: 1px solid rgba(255, 255, 255, .06);
-          padding: 5px 10px;
+          border: 1px solid rgba(255, 255, 255, .08);
+          padding: 0 10px;
           font-size: 11px;
           font-weight: 800;
+          white-space: nowrap;
         }
 
-        .legacy-tags span:first-child {
+        .legacy-tags span svg {
+          color: currentColor;
+          flex: none;
+        }
+
+        .legacy-tags .featured {
           background: rgba(226, 184, 94, .13);
           color: #f4dd9b;
           border-color: rgba(226, 184, 94, .2);
         }
 
         .legacy-tags .open-now {
-          background: #e6f7ee;
-          color: #1f8a52;
+          background: rgba(31, 138, 82, .16);
+          color: #baf7d2;
+          border-color: rgba(82, 215, 143, .28);
         }
 
         .legacy-summary-actions {
@@ -1379,6 +1445,87 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         @media (max-width: 620px) {
           .store-detail-page {
             padding-bottom: calc(178px + env(safe-area-inset-bottom));
+          }
+
+          .legacy-shell {
+            padding: 8px 16px 0;
+          }
+
+          .legacy-breadcrumb {
+            display: none;
+          }
+
+          .legacy-gallery {
+            gap: 8px;
+          }
+
+          .legacy-summary {
+            gap: 10px;
+            padding-top: 16px;
+          }
+
+          .legacy-summary-main {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: start;
+          }
+
+          .legacy-summary .store-logo {
+            width: 52px;
+            height: 52px;
+            font-size: 18px;
+          }
+
+          .legacy-summary h1 {
+            font-size: 23px;
+            line-height: 1.12;
+          }
+
+          .legacy-summary-meta {
+            gap: 8px;
+            margin-top: 6px;
+            font-size: 11px;
+          }
+
+          .legacy-summary-actions {
+            gap: 8px;
+            flex-wrap: nowrap;
+          }
+
+          .legacy-info-panel {
+            max-width: none;
+            margin-left: 0;
+            padding: 10px 0 0;
+            border: 0;
+            background: transparent;
+            gap: 8px;
+          }
+
+          .legacy-location {
+            flex-wrap: nowrap;
+            min-height: 34px;
+            padding: 0 10px;
+            border: 1px solid rgba(226, 184, 94, .14);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .045);
+          }
+
+          .legacy-tags {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            margin-right: -16px;
+            padding: 0 16px 2px 0;
+            scrollbar-width: none;
+          }
+
+          .legacy-tags::-webkit-scrollbar {
+            display: none;
+          }
+
+          .legacy-tags span {
+            flex: 0 0 auto;
+            min-height: 32px;
           }
 
           h1 {
