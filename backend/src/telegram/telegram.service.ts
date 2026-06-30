@@ -12,7 +12,7 @@ export class TelegramService {
     @InjectBot() private bot: Telegraf,
     private configService: ConfigService,
   ) {
-    this.chatId = this.configService.get<string>('TELEGRAM_CHAT_ID') || '';
+    this.chatId = this.configService.get<string>('TELEGRAM_CHAT_ID') || this.configService.get<string>('TELEGRAM_OPS_CHAT_ID') || '';
   }
 
   async notifyNewBooking(booking: any) {

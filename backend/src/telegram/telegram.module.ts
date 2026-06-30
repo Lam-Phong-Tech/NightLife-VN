@@ -14,12 +14,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         token: configService.get<string>('TELEGRAM_BOT_TOKEN') || '',
-        launchOptions: {
-          webhook: {
-            domain: configService.get<string>('WEB_BASE_URL') || '',
-            hookPath: '/api/telegram/webhook',
-          },
-        },
       }),
       inject: [ConfigService],
     }),
