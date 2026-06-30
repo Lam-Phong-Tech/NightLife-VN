@@ -8,6 +8,8 @@ export type BookingStatus =
   | "CANCELLED"
   | "NO_SHOW";
 
+export type BookingStatusGroup = "Mới" | "Hoàn tất" | "Đã hủy";
+
 export type BookingRecord = {
   id: string;
   storeId?: string;
@@ -20,6 +22,7 @@ export type BookingRecord = {
   totalVnd?: number;
   note?: string | null;
   createdAt?: string;
+  cancelledAt?: string | null;
   store?: {
     id: string;
     name: string;
@@ -60,9 +63,27 @@ export type CreateBookingPayload = {
   note?: string;
 };
 
+const bookingCancelCutoffMs = 60 * 60 * 1000;
 const lastBookingKey = "nightlife_last_booking";
 const guestBookingsKey = "nightlife_guest_bookings";
 const maxStoredBookings = 20;
+
+export const bookingStatusGroup = (status: string): BookingStatusGroup => {
+  if (status === "COMPLETED" || status === "CHECKED_IN") return "Hoàn tất";
+  if (status === "CANCELLED" || status === "NO_SHOW") return "Đã hủy";
+  return "Mới";
+};
+
+export const bookingStatusLabel = bookingStatusGroup;
+
+export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "scheduledAt">) => {
+  if (booking.status !== "REQUESTED" && booking.status !== "CONFIRMED") {
+    return false;
+  }
+
+  const scheduledAt = new Date(booking.scheduledAt).getTime();
+  return Number.isFinite(scheduledAt) && scheduledAt - Date.now() >= bookingCancelCutoffMs;
+};
 
 const bookingTimeValue = (booking: BookingRecord) => {
   const value = booking.createdAt ?? booking.scheduledAt;
@@ -108,7 +129,10 @@ const writeStoredBookings = (bookings: BookingRecord[]) => {
     return;
   }
 
-  window.localStorage.setItem(guestBookingsKey, JSON.stringify(bookings.slice(0, maxStoredBookings)));
+  window.localStorage.setItem(
+    guestBookingsKey,
+    JSON.stringify(bookings.slice(0, maxStoredBookings)),
+  );
 };
 
 export const rememberLastBooking = (
@@ -154,5 +178,10 @@ export const bookingApi = {
     apiClient<BookingRecord>("/bookings", { data: payload }),
   createMemberBooking: (payload: CreateBookingPayload) =>
     apiClient<BookingRecord>("/member/bookings", { data: payload }),
+  cancelMemberBooking: (bookingId: string, reason?: string) =>
+    apiClient<BookingRecord>(`/member/bookings/${encodeURIComponent(bookingId)}/cancel`, {
+      method: "PATCH",
+      data: reason ? { reason } : {},
+    }),
   listMemberBookings: () => apiClient<BookingRecord[]>("/member/bookings"),
 };

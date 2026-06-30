@@ -42,6 +42,10 @@ describe('Route/action contract coverage (e2e)', () => {
       ]),
     );
     expect(implementedRoutes).toEqual(expect.arrayContaining(contractRoutes));
+    expect(implementedRoutes).not.toContainEqual({
+      method: 'PATCH',
+      route: '/member/bookings/:bookingId',
+    });
     expect(contract).toContain('Route/action contract v1.1');
     expect(contract).toContain('role":"OPERATOR"');
     expect(contract).not.toContain('STAFF as OPERATOR');

@@ -43,3 +43,5 @@ Web: http://localhost:3000/stores/luna-lounge
 ```
 
 The same structure is used for bill and partner request events, with fields adjusted to the event.
+
+Booking cancellation notifications are sent only after a successful `PATCH /member/bookings/:bookingId/cancel`. Requests inside the 1 hour cancellation cutoff return 422 and do not create an Admin cancellation notification.

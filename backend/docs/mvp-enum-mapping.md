@@ -35,6 +35,14 @@ The seed writes the DB-driven permission matrix into `permissions` and `role_per
 - `CANCELLED`: booking was cancelled before completion.
 - `NO_SHOW`: customer did not arrive.
 
+Customer-facing booking status is grouped into three PM labels:
+
+- `Mới`: `REQUESTED` or `CONFIRMED`.
+- `Hoàn tất`: `CHECKED_IN` or `COMPLETED`.
+- `Đã hủy`: `CANCELLED` or `NO_SHOW`.
+
+Booking details are not edited in place. If customer information or schedule changes, the customer cancels and rebooks before the 1 hour cutoff, or contacts Admin after that cutoff.
+
 ## BillStatus
 
 - `DRAFT`: bill is being created.

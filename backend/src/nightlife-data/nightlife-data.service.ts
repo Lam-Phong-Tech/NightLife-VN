@@ -19,6 +19,7 @@ import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const DEFAULT_PUBLIC_LIMIT = 24;
 const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
@@ -1210,6 +1211,13 @@ export class NightlifeDataService {
     if (['CHECKED_IN', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
       throw new UnprocessableEntityException(
         'Booking cannot be cancelled in its current state',
+      );
+    }
+
+    const msUntilBooking = new Date(booking.scheduledAt).getTime() - Date.now();
+    if (msUntilBooking < BOOKING_CANCEL_CUTOFF_MS) {
+      throw new UnprocessableEntityException(
+        'Booking can only be cancelled at least 1 hour before scheduled time',
       );
     }
 

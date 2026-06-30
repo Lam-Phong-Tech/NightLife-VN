@@ -88,6 +88,10 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('lists public areas for supported city filters', async () => {
     prisma.area.findMany.mockResolvedValue([
       {
@@ -1096,6 +1100,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('cancels a member booking and sends the admin alert', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
       status: 'REQUESTED',
@@ -1146,6 +1151,31 @@ describe('NightlifeDataService', () => {
       }),
       { reason: 'Change of plans' },
     );
+  });
+
+  it('blocks member booking cancellation inside the 1 hour cutoff', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-30T13:10:00.000Z'));
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 2,
+    });
+
+    await expect(
+      service.cancelMemberBooking(
+        { id: 'member-1', role: 'USER' },
+        'booking-1',
+        { reason: 'Change of plans' },
+      ),
+    ).rejects.toThrow(
+      'Booking can only be cancelled at least 1 hour before scheduled time',
+    );
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(
+      adminNotificationService.notifyBookingCancelled,
+    ).not.toHaveBeenCalled();
   });
 
   it('limits partner stores to their accessible store ids', async () => {

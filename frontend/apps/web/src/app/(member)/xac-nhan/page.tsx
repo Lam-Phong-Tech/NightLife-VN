@@ -6,7 +6,7 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { getAuthUser } from "@/lib/auth/session";
-import { getLastBooking, type BookingRecord } from "@/lib/api/bookings";
+import { bookingStatusLabel, getLastBooking, type BookingRecord } from "@/lib/api/bookings";
 
 const colors = {
   bg: "#0c0c0f",
@@ -25,16 +25,6 @@ const colors = {
 const fallbackImage =
   "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=75";
 
-const statusLabel = (status?: string) => {
-  if (status === "REQUESTED") return "Mới";
-  if (status === "CONFIRMED") return "Đã xác nhận";
-  if (status === "CHECKED_IN") return "Đã check-in";
-  if (status === "COMPLETED") return "Hoàn tất";
-  if (status === "CANCELLED") return "Đã hủy";
-  if (status === "NO_SHOW") return "Không đến";
-  return status ?? "Mới";
-};
-
 const formatDateTime = (value?: string) => {
   if (!value) return "Chưa có thời gian";
   return new Intl.DateTimeFormat("vi-VN", {
@@ -43,8 +33,7 @@ const formatDateTime = (value?: string) => {
   }).format(new Date(value));
 };
 
-const bookingCode = (booking: BookingRecord) =>
-  `NL-BK-${booking.id.slice(0, 8).toUpperCase()}`;
+const bookingCode = (booking: BookingRecord) => `NL-BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
 const bookingQrPayload = (booking: BookingRecord) =>
   [
@@ -64,7 +53,15 @@ function DetailLine({ label, value }: { label: string; value: React.ReactNode })
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>{label}</div>
-      <div style={{ marginTop: 5, color: colors.text, fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
+      <div
+        style={{
+          marginTop: 5,
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: 850,
+          lineHeight: 1.35,
+        }}
+      >
         {value}
       </div>
     </div>
@@ -85,7 +82,7 @@ export default function Page() {
 
   const title = booking?.cast
     ? `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${booking.store?.name ?? "NightLife"}`
-    : booking?.store?.name ?? "Booking NightLife";
+    : (booking?.store?.name ?? "Booking NightLife");
 
   return (
     <main
@@ -99,7 +96,15 @@ export default function Page() {
       }}
     >
       <section className="confirm-shell" style={{ width: "100%", maxWidth: 560, margin: "0 auto" }}>
-        <h1 style={{ margin: 0, color: colors.text, fontSize: "clamp(24px,4vw,34px)", lineHeight: 1.08, fontWeight: 950 }}>
+        <h1
+          style={{
+            margin: 0,
+            color: colors.text,
+            fontSize: "clamp(24px,4vw,34px)",
+            lineHeight: 1.08,
+            fontWeight: 950,
+          }}
+        >
           Đặt chỗ của tôi
         </h1>
 
@@ -130,9 +135,11 @@ export default function Page() {
             <Check size={24} strokeWidth={3} />
           </span>
           <div>
-            <div style={{ color: "#a7f3d0", fontSize: 15, fontWeight: 950 }}>Đã gửi yêu cầu đặt chỗ</div>
+            <div style={{ color: "#a7f3d0", fontSize: 15, fontWeight: 950 }}>
+              Đã gửi yêu cầu đặt chỗ
+            </div>
             <div style={{ marginTop: 3, color: colors.text2, fontSize: 13, lineHeight: 1.45 }}>
-              Trạng thái hiện tại: {statusLabel(booking?.status)}.
+              Trạng thái hiện tại: {bookingStatusLabel(booking?.status ?? "REQUESTED")}.
             </div>
           </div>
         </div>
@@ -143,7 +150,8 @@ export default function Page() {
               marginTop: 16,
               borderRadius: 18,
               border: `1px solid ${colors.border}`,
-              background: "linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018)), #141416",
+              background:
+                "linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018)), #141416",
               overflow: "hidden",
             }}
           >
@@ -188,7 +196,7 @@ export default function Page() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {statusLabel(booking.status)}
+                {bookingStatusLabel(booking.status)}
               </span>
             </div>
 
@@ -204,10 +212,28 @@ export default function Page() {
             >
               <DetailLine
                 label="Mã"
-                value={<span style={{ fontFamily: "var(--nl-font-sans)", letterSpacing: ".04em" }}>{bookingCode(booking)}</span>}
+                value={
+                  <span style={{ fontFamily: "var(--nl-font-sans)", letterSpacing: ".04em" }}>
+                    {bookingCode(booking)}
+                  </span>
+                }
               />
-              <DetailLine label="Khách" value={<span><UsersRound size={14} /> {booking.partySize} người</span>} />
-              <DetailLine label="Lúc" value={<span><Clock3 size={14} /> {formatDateTime(booking.scheduledAt)}</span>} />
+              <DetailLine
+                label="Khách"
+                value={
+                  <span>
+                    <UsersRound size={14} /> {booking.partySize} người
+                  </span>
+                }
+              />
+              <DetailLine
+                label="Lúc"
+                value={
+                  <span>
+                    <Clock3 size={14} /> {formatDateTime(booking.scheduledAt)}
+                  </span>
+                }
+              />
               <DetailLine
                 label="Người đặt"
                 value={`${booking.guest?.displayName ?? booking.user?.displayName ?? "Khách"} · ${booking.guest?.phone ?? "SĐT đã lưu"}`}
@@ -260,8 +286,17 @@ export default function Page() {
                   <QrCode size={18} color={colors.gold} />
                   QR check-in tại quán
                 </div>
-                <p style={{ marginTop: 8, marginBottom: 0, color: colors.text2, fontSize: 13, lineHeight: 1.55 }}>
-                  Đưa mã QR này cho nhân viên quán quét khi tới nơi. Mã gắn với đúng booking và dùng để đối chiếu lúc check-in.
+                <p
+                  style={{
+                    marginTop: 8,
+                    marginBottom: 0,
+                    color: colors.text2,
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  Đưa mã QR này cho nhân viên quán quét khi tới nơi. Mã gắn với đúng booking và dùng
+                  để đối chiếu lúc check-in.
                 </p>
                 <div
                   style={{
@@ -284,7 +319,17 @@ export default function Page() {
             </div>
           </article>
         ) : (
-          <div style={{ marginTop: 16, borderRadius: 18, border: `1px solid ${colors.border}`, background: "#141416", padding: 20, color: colors.muted, lineHeight: 1.6 }}>
+          <div
+            style={{
+              marginTop: 16,
+              borderRadius: 18,
+              border: `1px solid ${colors.border}`,
+              background: "#141416",
+              padding: 20,
+              color: colors.muted,
+              lineHeight: 1.6,
+            }}
+          >
             Chưa tìm thấy booking vừa tạo trong phiên này.
           </div>
         )}

@@ -799,7 +799,7 @@ export function CreateGuestBookingContract() {
     ApiOperation({
       summary: 'Booking action: guest creates a booking request',
       description:
-        'Auth guard: none. Creates a guest contact snapshot and a booking with status REQUESTED. Sends P0 Telegram admin notification using template telegram.admin.booking.created.v1.',
+        'Auth guard: none. Creates a guest contact snapshot and a booking with status REQUESTED. Booking details are not edited in place; customers must cancel and rebook or contact Admin for changes. Sends P0 Telegram admin notification using template telegram.admin.booking.created.v1.',
     }),
     ApiBody({ type: CreateBookingDto }),
     ApiCreatedResponse({
@@ -869,7 +869,7 @@ export function CreateMemberBookingContract() {
     ApiOperation({
       summary: 'Booking action: member creates own booking request',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a member booking with status REQUESTED, stores the submitted contact snapshot, and sends P0 Telegram admin notification using template telegram.admin.booking.created.v1. No deposit or payment is collected.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a member booking with status REQUESTED, stores the submitted contact snapshot, and sends P0 Telegram admin notification using template telegram.admin.booking.created.v1. No deposit or payment is collected. Booking details are not edited in place; customers must cancel and rebook or contact Admin for changes.',
     }),
     ApiBody({ type: CreateBookingDto }),
     ApiCreatedResponse({
@@ -911,7 +911,7 @@ export function CancelMemberBookingContract() {
     ApiOperation({
       summary: 'Booking action: member cancels own booking',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberBooking). Marks an own booking as CANCELLED and sends P0 Telegram admin notification using template telegram.admin.booking.cancelled.v1.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberBooking). Marks an own booking as CANCELLED only when it is at least 1 hour before scheduledAt, then sends P0 Telegram admin notification using template telegram.admin.booking.cancelled.v1. Booking details are not edited in place; customers must cancel and rebook or contact Admin for changes.',
     }),
     ApiParam({ name: 'bookingId', example: 'booking_01' }),
     ApiBody({ type: CancelBookingDto }),
@@ -942,11 +942,13 @@ export function CancelMemberBookingContract() {
       },
     }),
     ApiUnprocessableEntityResponse({
-      description: 'Booking cannot be cancelled in its current state.',
+      description:
+        'Booking cannot be cancelled in its current state or is inside the 1 hour cutoff.',
       schema: {
         example: {
           statusCode: 422,
-          message: 'Booking cannot be cancelled in its current state',
+          message:
+            'Booking can only be cancelled at least 1 hour before scheduled time',
           error: 'Unprocessable Entity',
         },
       },
