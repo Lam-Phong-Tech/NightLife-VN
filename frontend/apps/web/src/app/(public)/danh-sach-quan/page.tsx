@@ -1052,14 +1052,14 @@ const venueSearchCss = `
 
     .venue-search-shell {
       width: 100%;
-      padding: 0 14px 28px;
+      padding: 12px 14px 28px;
     }
 
     .venue-search-header {
       min-height: 31px;
       align-items: center;
       gap: 10px;
-      padding-top: 2px;
+      padding-top: 0;
     }
 
     .venue-search-back {
