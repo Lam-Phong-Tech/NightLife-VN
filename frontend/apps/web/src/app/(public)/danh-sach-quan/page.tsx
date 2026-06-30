@@ -11,7 +11,6 @@ import {
   MapPin,
   Search,
   SlidersHorizontal,
-  Star,
 } from "lucide-react";
 
 import { discoveryApi, type DiscoverySort, type PublicStore } from "@/lib/api/discovery";
@@ -31,7 +30,6 @@ type VenueView = {
   distanceLabel: string;
   priceLabel: string;
   rating: number;
-  reviews: number;
   tags: string[];
   statusLabel: string;
   dealLabel: string;
@@ -42,6 +40,12 @@ const cityOptions = [
   { value: "hn", label: "Hà Nội" },
   { value: "hcm", label: "TP.HCM" },
   { value: "", label: "Tất cả" },
+];
+
+const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
+  { value: "priority", label: "Phổ biến" },
+  { value: "nearest", label: "Gần nhất" },
+  { value: "newest", label: "Mới nhất" },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -113,8 +117,6 @@ const pickByIndex = <T,>(items: readonly T[], index: number, fallback: T) =>
 
 const roundRating = (index: number) => pickByIndex([4.9, 4.8, 4.8, 4.7, 4.7, 4.6], index, 4.7);
 
-const reviewCount = (index: number) => pickByIndex([212, 188, 96, 146, 84, 72], index, 84);
-
 const formatDistance = (distanceKm: number | null | undefined, index: number) =>
   typeof distanceKm === "number" && Number.isFinite(distanceKm)
     ? `${distanceKm.toFixed(1)} km`
@@ -140,7 +142,6 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
     distanceLabel: formatDistance(store.distanceKm, index),
     priceLabel: categoryPrices[store.category] ?? "từ 900.000đ",
     rating: roundRating(index),
-    reviews: reviewCount(index),
     tags: categoryTags[store.category] ?? ["Đặt bàn nhanh", "Không gian đẹp", "Ưu đãi"],
     statusLabel,
     dealLabel: pickByIndex(dealLabels, index, "-30% Happy Hour"),
@@ -157,6 +158,7 @@ export default function Page() {
   const [ratingOnly, setRatingOnly] = useState(false);
   const [openNow, setOpenNow] = useState(true);
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
+  const [isSortMenuOpen, setSortMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [stores, setStores] = useState<PublicStore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -243,8 +245,8 @@ export default function Page() {
     setSort((current) => (current === "nearest" && !coords ? "priority" : current));
   };
 
-  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextSort = event.target.value as DiscoverySort;
+  const handleSortChange = (nextSort: DiscoverySort) => {
+    setSortMenuOpen(false);
 
     if (nextSort === "nearest" && !coords) {
       requestNearby();
@@ -388,16 +390,42 @@ export default function Page() {
             <span> · {cityLabel}</span>
           </div>
 
-          <label className="venue-sort-select">
-            <span>Sắp xếp:</span>
-            <select value={sort} onChange={handleSortChange} aria-label="Sắp xếp danh sách">
-              <option value="priority">Phổ biến</option>
-              <option value="nearest">Gần nhất</option>
-              <option value="newest">Mới nhất</option>
-            </select>
-            <strong>{sortLabels[sort]}</strong>
-            <ChevronDown size={13} />
-          </label>
+          <div
+            className="venue-sort-select"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setSortMenuOpen(false);
+              }
+            }}
+          >
+            <button
+              type="button"
+              className="venue-sort-trigger"
+              aria-haspopup="listbox"
+              aria-expanded={isSortMenuOpen}
+              onClick={() => setSortMenuOpen((current) => !current)}
+            >
+              <span>Sắp xếp:</span>
+              <strong>{sortLabels[sort]}</strong>
+              <ChevronDown size={13} />
+            </button>
+            {isSortMenuOpen ? (
+              <div className="venue-sort-menu" role="listbox" aria-label="Sắp xếp danh sách">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={option.value === sort}
+                    className={option.value === sort ? "is-selected" : ""}
+                    onClick={() => handleSortChange(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {error ? <div className="venue-error">{error}</div> : null}
@@ -439,10 +467,6 @@ function VenueResultCard({ venue }: { venue: VenueView }) {
         <div className="venue-card-main">
           <div className="venue-name-row">
             <h2>{venue.name}</h2>
-            <div className="venue-mobile-rating">
-              <Star size={12} fill="currentColor" />
-              {venue.rating.toFixed(1)}
-            </div>
           </div>
           <p className="venue-meta">
             {venue.categoryLabel} · {venue.areaLabel}
@@ -461,12 +485,6 @@ function VenueResultCard({ venue }: { venue: VenueView }) {
             <MapPin size={12} />
             {venue.distanceLabel} · {venue.areaLabel} · {venue.cityLabel}
           </div>
-        </div>
-
-        <div className="venue-rating">
-          <Star size={14} fill="currentColor" />
-          <strong>{venue.rating.toFixed(1)}</strong>
-          <span>({venue.reviews})</span>
         </div>
 
         <span className="venue-book-button">
@@ -628,6 +646,22 @@ const venueSearchCss = `
     cursor: pointer;
   }
 
+  .venue-sort-trigger {
+    width: 100%;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    border: 0;
+    background: transparent;
+    color: #8c8679;
+    padding: 0;
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
   .venue-city-current {
     overflow: hidden;
     max-width: 74px;
@@ -635,18 +669,9 @@ const venueSearchCss = `
     text-overflow: ellipsis;
   }
 
-  .venue-sort-select select {
+  .venue-city-menu,
+  .venue-sort-menu {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .venue-city-menu {
-    position: absolute;
-    left: 0;
-    right: 0;
     top: calc(100% + 8px);
     z-index: 40;
     overflow: hidden;
@@ -656,7 +681,18 @@ const venueSearchCss = `
     box-shadow: 0 18px 38px rgba(0, 0, 0, .36);
   }
 
-  .venue-city-menu button {
+  .venue-city-menu {
+    left: 0;
+    right: 0;
+  }
+
+  .venue-sort-menu {
+    right: 0;
+    width: 142px;
+  }
+
+  .venue-city-menu button,
+  .venue-sort-menu button {
     width: 100%;
     min-height: 40px;
     display: flex;
@@ -672,13 +708,17 @@ const venueSearchCss = `
     cursor: pointer;
   }
 
-  .venue-city-menu button:last-child {
+  .venue-city-menu button:last-child,
+  .venue-sort-menu button:last-child {
     border-bottom: 0;
   }
 
   .venue-city-menu button:hover,
   .venue-city-menu button:focus-visible,
-  .venue-city-menu button.is-selected {
+  .venue-city-menu button.is-selected,
+  .venue-sort-menu button:hover,
+  .venue-sort-menu button:focus-visible,
+  .venue-sort-menu button.is-selected {
     background: rgba(212, 178, 106, .16);
     color: #f0dda8;
     outline: 0;
@@ -751,12 +791,13 @@ const venueSearchCss = `
     background: transparent;
     color: #8c8679;
     padding: 0;
-    gap: 5px;
+    min-width: 128px;
   }
 
-  .venue-sort-select strong,
-  .venue-sort-select svg {
+  .venue-sort-trigger strong,
+  .venue-sort-trigger svg {
     color: #d4b26a;
+    flex: none;
   }
 
   .venue-list,
@@ -936,27 +977,6 @@ const venueSearchCss = `
     color: #8c8679;
     font-size: 12px;
     font-weight: 700;
-  }
-
-  .venue-rating {
-    display: inline-flex;
-    align-items: center;
-    justify-self: end;
-    gap: 5px;
-    color: #e3c27e;
-    font-size: 14px;
-    font-weight: 900;
-    white-space: nowrap;
-  }
-
-  .venue-rating span {
-    color: #8c8679;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .venue-mobile-rating {
-    display: none;
   }
 
   .venue-book-button {
@@ -1155,10 +1175,26 @@ const venueSearchCss = `
     .venue-sort-select {
       min-height: 22px;
       font-size: 11px;
+      min-width: 118px;
     }
 
-    .venue-sort-select span {
+    .venue-sort-trigger {
+      min-height: 24px;
+    }
+
+    .venue-sort-trigger span {
       font-weight: 600;
+    }
+
+    .venue-sort-menu {
+      top: calc(100% + 6px);
+      width: 118px;
+    }
+
+    .venue-sort-menu button {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 11px;
     }
 
     .venue-list,
@@ -1231,16 +1267,6 @@ const venueSearchCss = `
       line-height: 1.15;
     }
 
-    .venue-mobile-rating {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      color: #e3c27e;
-      font-size: 12px;
-      font-weight: 900;
-      flex: none;
-    }
-
     .venue-meta {
       margin-top: 4px;
       font-size: 10.5px;
@@ -1251,8 +1277,7 @@ const venueSearchCss = `
     }
 
     .venue-tags,
-    .venue-distance,
-    .venue-rating {
+    .venue-distance {
       display: none;
     }
 

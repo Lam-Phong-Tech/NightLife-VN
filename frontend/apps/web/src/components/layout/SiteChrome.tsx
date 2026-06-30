@@ -1042,24 +1042,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               />
             ) : null}
 
-            {/* Login / User */}
-            <Link
-              href={authUser ? "/tai-khoan" : "/dang-nhap"}
-              style={{
-                minHeight: "36px",
-                width: "36px",
-                borderRadius: "18px",
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "transparent",
-                textDecoration: "none",
-              }}
-            >
-              {authUser ? <UserRound size={16} /> : <LogIn size={16} />}
-            </Link>
           </div>
         ) : (
           /* ── Desktop: icon buttons (same as mobile, slightly larger) ── */
