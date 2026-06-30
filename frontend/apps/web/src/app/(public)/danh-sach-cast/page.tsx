@@ -78,7 +78,7 @@ const pageStyle: CSSProperties = {
   background:
     "radial-gradient(circle at 78% 6%, rgba(224,114,158,.16), transparent 28%), radial-gradient(circle at 12% 12%, rgba(212,178,106,.13), transparent 28%), linear-gradient(180deg,#0b0b0e 0%,#111114 54%,#09090b 100%)",
   color: colors.text,
-  fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  fontFamily: "var(--nl-font-sans)",
 };
 
 const chipStyle = (active: boolean): CSSProperties => ({

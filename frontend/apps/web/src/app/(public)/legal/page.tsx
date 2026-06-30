@@ -25,7 +25,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"background":"#fff","padding":"8px 18px 10px","display":"flex","alignItems":"center","gap":"12px"}}><Link href="/tai-khoan" style={{"fontSize":"22px","color":"#5b5870","lineHeight":"1"}}>‹</Link><span style={{"fontWeight":"800","fontSize":"16px"}}>Chính sách</span></div>
 
@@ -92,7 +92,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
 
   <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
 
@@ -177,7 +177,7 @@ import React, { useState } from 'react';
 
 
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
+<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"var(--nl-font-sans)","color":"#5b5870"}}>
   <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
     <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
       <div style={{"maxWidth":"300px"}}>

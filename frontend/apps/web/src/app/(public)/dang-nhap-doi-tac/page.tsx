@@ -92,7 +92,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
         minHeight: '100vh',
         background: colors.bg,
         color: colors.text,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--nl-font-sans)",
       }}
     >
       <div style={{ padding: isMobile ? '13px 22px 0' : '18px 34px 0' }}>

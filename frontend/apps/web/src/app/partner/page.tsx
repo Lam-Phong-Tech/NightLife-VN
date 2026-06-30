@@ -140,7 +140,7 @@ export default function PartnerPage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "'Inter', sans-serif" }}>
+    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)" }}>
       <div style={{ display: 'grid', gridTemplateColumns: '250px minmax(0,1fr)', minHeight: '100vh' }}>
         <aside
           style={{
@@ -383,7 +383,7 @@ export default function PartnerPage() {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-                        <span style={{ color: colors.gold, fontFamily: 'monospace', fontSize: '12px', fontWeight: 700 }}>{code}</span>
+                        <span style={{ color: colors.gold, fontFamily: "var(--nl-font-sans)", fontSize: '12px', fontWeight: 700 }}>{code}</span>
                         <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>{value}</span>
                       </div>
                       <div style={{ marginTop: '6px', color: colors.text, fontSize: '12.5px' }}>{service}</div>

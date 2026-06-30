@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "'Inter', sans-serif", padding: '34px' }}>
+    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)", padding: '34px' }}>
       <div style={{ minHeight: 'calc(100vh - 68px)', display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(430px,.9fr)', gap: '28px' }}>
         <section
           style={{

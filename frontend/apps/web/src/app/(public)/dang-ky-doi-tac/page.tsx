@@ -174,7 +174,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
         minHeight: '100vh',
         background: colors.bg,
         color: colors.text,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "var(--nl-font-sans)",
         paddingBottom: isMobile ? '76px' : 0,
       }}
     >

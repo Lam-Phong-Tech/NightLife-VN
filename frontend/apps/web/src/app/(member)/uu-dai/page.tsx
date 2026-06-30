@@ -430,7 +430,7 @@ export default function Page() {
           min-height: 100vh;
           background: #101114;
           color: #f7f1e7;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: var(--nl-font-sans);
           padding: 24px;
         }
 

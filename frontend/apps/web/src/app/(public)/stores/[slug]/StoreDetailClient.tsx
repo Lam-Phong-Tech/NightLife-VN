@@ -641,7 +641,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 100vh;
           background: #0d0e11;
           color: #f7f1e7;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: var(--nl-font-sans);
           padding-bottom: 72px;
         }
 

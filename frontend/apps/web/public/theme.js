@@ -103,7 +103,7 @@
     if (!btn) return;
     var dark = isDark();
     btn.style.cssText = 'position:fixed;right:20px;bottom:20px;z-index:99999;display:flex;align-items:center;gap:8px;cursor:pointer;' +
-      'font-family:Inter,sans-serif;font-size:13px;font-weight:600;border-radius:24px;padding:10px 16px;user-select:none;' +
+      'font-family:var(--nl-font-sans);font-size:13px;font-weight:600;border-radius:24px;padding:10px 16px;user-select:none;' +
       'box-shadow:0 6px 20px rgba(0,0,0,.22);transition:transform .14s ease;' +
       (dark ? 'background:#2a2342;color:#f0ecfb;border:1px solid #3b3060;' : 'background:#fff;color:#5b5870;border:1px solid #ececec;');
     btn.innerHTML = '<img src="https://img.icons8.com/ios-filled/100/' + (dark ? 'FFD66B/sun--v1' : '6D28D9/crescent-moon') +

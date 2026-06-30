@@ -204,7 +204,7 @@ export default function Page() {
             >
               <DetailLine
                 label="Mã"
-                value={<span style={{ fontFamily: "monospace", letterSpacing: ".04em" }}>{bookingCode(booking)}</span>}
+                value={<span style={{ fontFamily: "var(--nl-font-sans)", letterSpacing: ".04em" }}>{bookingCode(booking)}</span>}
               />
               <DetailLine label="Khách" value={<span><UsersRound size={14} /> {booking.partySize} người</span>} />
               <DetailLine label="Lúc" value={<span><Clock3 size={14} /> {formatDateTime(booking.scheduledAt)}</span>} />
@@ -271,7 +271,7 @@ export default function Page() {
                     background: "rgba(212,178,106,.1)",
                     color: colors.goldPale,
                     padding: "10px 12px",
-                    fontFamily: "monospace",
+                    fontFamily: "var(--nl-font-sans)",
                     fontSize: 13,
                     fontWeight: 950,
                     letterSpacing: ".08em",

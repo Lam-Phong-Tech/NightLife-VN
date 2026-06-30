@@ -503,7 +503,7 @@ const venueSearchCss = `
     min-height: 100vh;
     background: #0c0c0f;
     color: #f3f0ea;
-    font-family: Inter, var(--nl-font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--nl-font-sans);
   }
 
   .venue-search-page * {
