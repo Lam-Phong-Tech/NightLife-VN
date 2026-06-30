@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 type RankingKind = 'cast' | 'quan';
@@ -363,7 +364,7 @@ export default function Page() {
               <small>{item.area}</small>
             </span>
             <span className="rank-arrow" aria-hidden="true">
-              ›
+              <ChevronRight size={24} strokeWidth={2.35} />
             </span>
           </Link>
         ))}
@@ -533,9 +534,16 @@ export default function Page() {
         }
 
         .rank-arrow {
-          color: #8f8877;
-          font-size: 36px;
+          width: 28px;
+          height: 28px;
+          display: grid;
+          place-items: center;
+          color: rgba(240, 221, 168, 0.58);
           line-height: 1;
+        }
+
+        .ranking-row:hover .rank-arrow {
+          color: #f0dda8;
         }
 
         @media (max-width: 767px) {
@@ -580,7 +588,7 @@ export default function Page() {
           }
 
           .ranking-row {
-            grid-template-columns: 42px 52px 1fr;
+            grid-template-columns: 42px 52px minmax(0, 1fr) 24px;
             gap: 10px;
             min-height: 76px;
             padding: 12px;
@@ -615,7 +623,8 @@ export default function Page() {
           }
 
           .rank-arrow {
-            display: none;
+            width: 24px;
+            height: 24px;
           }
         }
       `}</style>
