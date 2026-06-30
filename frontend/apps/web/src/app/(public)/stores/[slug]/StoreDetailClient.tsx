@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   ChevronLeft,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
+import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { castImageForSlug, storeGalleryForSlug, storeImageForSlug } from "@/lib/demo-media";
 import {
@@ -195,6 +197,13 @@ const todayKey = () =>
   ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
     new Date().getDay()
   ];
+
+const buildScheduledAt = (date: string, time: string) => {
+  const [hours = "21", minutes = "00"] = time.split(":");
+  return new Date(
+    `${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`,
+  ).toISOString();
+};
 
 function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
@@ -450,13 +459,20 @@ function BookingCard({
   selectedDateIndex,
   selectedTime,
   guestCount,
-  bookingHref,
   couponHref,
   firstCoupon,
+  guestName,
+  phone,
+  note,
+  isSubmitting,
+  errorMessage,
   onDateSelect,
   onTimeSelect,
   onGuestCountChange,
-  onBookingClick,
+  onGuestNameChange,
+  onPhoneChange,
+  onNoteChange,
+  onSubmit,
   onCouponClick,
 }: {
   store: PublicStoreDetail;
@@ -464,17 +480,31 @@ function BookingCard({
   selectedDateIndex: number;
   selectedTime: string;
   guestCount: number;
-  bookingHref: string;
   couponHref: string;
   firstCoupon?: PublicStoreDetail["activeCoupons"][number] | null;
+  guestName: string;
+  phone: string;
+  note: string;
+  isSubmitting: boolean;
+  errorMessage: string;
   onDateSelect: (index: number) => void;
   onTimeSelect: (time: string) => void;
   onGuestCountChange: (guestCount: number) => void;
-  onBookingClick: (surface: string) => void;
+  onGuestNameChange: (value: string) => void;
+  onPhoneChange: (value: string) => void;
+  onNoteChange: (value: string) => void;
+  onSubmit: () => void;
   onCouponClick: (surface: string) => void;
 }) {
   return (
     <aside className="booking-card" aria-label="Đặt bàn">
+      <form
+        className="booking-card-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
       <div className="booking-card-head">
         <span>
           <strong>Đặt bàn</strong>
@@ -489,14 +519,25 @@ function BookingCard({
       </div>
 
       <div className="booking-form-grid">
-        <div className="booking-field">
+        <label className="booking-field booking-input-field">
           <span>Họ tên</span>
-          <strong>Khách NightLife</strong>
-        </div>
-        <div className="booking-field">
+          <input
+            value={guestName}
+            onChange={(event) => onGuestNameChange(event.target.value)}
+            placeholder="Nguyễn Minh"
+            autoComplete="name"
+          />
+        </label>
+        <label className="booking-field booking-input-field">
           <span>Số điện thoại</span>
-          <strong>Admin xác nhận</strong>
-        </div>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(event) => onPhoneChange(event.target.value)}
+            placeholder="0901 234 567"
+            autoComplete="tel"
+          />
+        </label>
         <div className="booking-field">
           <span>Số người</span>
           <div className="guest-stepper">
@@ -548,19 +589,24 @@ function BookingCard({
       </div>
 
       <label>Ghi chú tuỳ chọn</label>
-      <div className="booking-note-box">
-        Bàn gần sân khấu, có sinh nhật nhỏ - chuẩn bị giúp nến.
-      </div>
+      <textarea
+        className="booking-note-box"
+        value={note}
+        onChange={(event) => onNoteChange(event.target.value)}
+        placeholder="Bàn gần sân khấu, có sinh nhật nhỏ - chuẩn bị giúp nến."
+      />
 
-      <Link
+      {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
+
+      <button
+        type="submit"
         data-testid="store-booking-cta-sidebar"
         className="primary-action full"
-        href={bookingHref}
-        onClick={() => onBookingClick("desktop-booking-card")}
+        disabled={isSubmitting}
       >
         <CalendarDays size={18} />
-        Gửi yêu cầu đặt bàn
-      </Link>
+        {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}
+      </button>
 
       <Link
         data-testid="store-coupon-cta-sidebar"
@@ -578,6 +624,7 @@ function BookingCard({
           Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.
         </span>
       </div>
+      </form>
     </aside>
   );
 }
@@ -621,10 +668,16 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
 }
 
 export default function StoreDetailClient({ store }: StoreDetailClientProps) {
+  const router = useRouter();
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
+  const [guestName, setGuestName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [note, setNote] = useState("");
+  const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
+  const [bookingErrorMessage, setBookingErrorMessage] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const recommendedStores = useMemo(
@@ -751,6 +804,41 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     });
   const trackCouponClick = (surface: string, couponId = firstCoupon?.id ?? null) =>
     trackStoreDetailClick(store, "coupon", { surface, couponId });
+
+  const submitDesktopBooking = async () => {
+    setBookingErrorMessage("");
+    const displayName = guestName.trim();
+    const normalizedPhone = phone.trim();
+
+    if (!displayName || !normalizedPhone) {
+      setBookingErrorMessage("Vui lòng nhập tên và số điện thoại.");
+      return;
+    }
+
+    const payload: CreateBookingPayload = {
+      storeSlug: store.slug,
+      displayName,
+      phone: normalizedPhone,
+      scheduledAt: buildScheduledAt(selectedDate.iso, selectedTime),
+      partySize: guestCount,
+      ...(note.trim() ? { note: note.trim() } : {}),
+    };
+
+    try {
+      setIsBookingSubmitting(true);
+      trackBookingClick("desktop-booking-card");
+      const booking = await bookingApi.createGuestBooking(payload);
+
+      rememberLastBooking(booking, { history: true });
+      router.push(`/xac-nhan?bookingId=${booking.id}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Không gửi được yêu cầu đặt bàn.";
+      setBookingErrorMessage(message);
+    } finally {
+      setIsBookingSubmitting(false);
+    }
+  };
 
   return (
     <main
@@ -946,13 +1034,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               selectedDateIndex={selectedDateIndex}
               selectedTime={selectedTime}
               guestCount={guestCount}
-              bookingHref={bookingHref}
               couponHref={couponHref}
               firstCoupon={firstCoupon}
+              guestName={guestName}
+              phone={phone}
+              note={note}
+              isSubmitting={isBookingSubmitting}
+              errorMessage={bookingErrorMessage}
               onDateSelect={setSelectedDateIndex}
               onTimeSelect={setSelectedTime}
               onGuestCountChange={setGuestCount}
-              onBookingClick={trackBookingClick}
+              onGuestNameChange={setGuestName}
+              onPhoneChange={setPhone}
+              onNoteChange={setNote}
+              onSubmit={submitDesktopBooking}
               onCouponClick={trackCouponClick}
             />
 
@@ -1706,6 +1801,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 12px 16px;
         }
 
+        .booking-card-form {
+          display: grid;
+          gap: 0;
+          margin: 0;
+        }
+
         .booking-card-head {
           display: flex;
           justify-content: space-between;
@@ -1815,6 +1916,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.25;
         }
 
+        .booking-field input,
         .booking-field select {
           width: 100%;
           margin-top: 4px;
@@ -1827,6 +1929,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.25;
           appearance: none;
           cursor: pointer;
+        }
+
+        .booking-field input {
+          cursor: text;
+        }
+
+        .booking-field input::placeholder,
+        .booking-note-box::placeholder {
+          color: rgba(197, 192, 182, .62);
+          opacity: 1;
         }
 
         .booking-field select option {
@@ -1883,20 +1995,51 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-note-box {
-          min-height: 40px;
+          display: block;
+          width: 100%;
+          min-height: 52px;
           padding: 9px 12px;
-          border: 1px solid rgba(255, 255, 255, .09);
+          border: 1px solid rgba(212, 178, 106, .2);
           border-radius: 8px;
           background: rgba(12, 12, 15, .36);
-          color: #8c8679;
+          color: #f3f0ea;
           font-size: 12px;
+          font-family: inherit;
           line-height: 1.55;
+          resize: vertical;
+          outline: none;
+        }
+
+        .booking-field:focus-within,
+        .booking-note-box:focus {
+          border-color: rgba(227, 194, 126, .58);
+          box-shadow: 0 0 0 2px rgba(212, 178, 106, .1);
+        }
+
+        .booking-error {
+          margin-top: 8px;
+          padding: 8px 10px;
+          border: 1px solid rgba(248, 113, 113, .3);
+          border-radius: 8px;
+          background: rgba(127, 29, 29, .16);
+          color: #fecaca;
+          font-size: 12px;
+          line-height: 1.45;
         }
 
         .primary-action {
           background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
           color: #241a0a;
           border: 0;
+        }
+
+        button.primary-action {
+          cursor: pointer;
+        }
+
+        button.primary-action:disabled {
+          cursor: wait;
+          opacity: .72;
         }
 
         .secondary-action {
