@@ -29,7 +29,6 @@ import {
   formatDateOption,
   formatDiscount,
   formatVnd,
-  getInitials,
   mapEmbedUrl,
   mediaBackground,
   openingText,
@@ -465,18 +464,41 @@ function BookingCard({
         </span>
       </div>
 
-      <label>Chọn ngày</label>
-      <div className="slot-row">
-        {dateOptions.map((date, index) => (
-          <button
-            key={date.iso}
-            type="button"
-            className={index === selectedDateIndex ? "slot active" : "slot"}
-            onClick={() => onDateSelect(index)}
+      <div className="booking-form-grid">
+        <div className="booking-field">
+          <span>Họ tên</span>
+          <strong>Khách NightLife</strong>
+        </div>
+        <div className="booking-field">
+          <span>Số điện thoại</span>
+          <strong>Admin xác nhận</strong>
+        </div>
+        <div className="booking-field">
+          <span>Số người</span>
+          <div className="guest-stepper">
+            <button type="button" aria-label="Giảm số khách" onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}>
+              <Minus size={15} />
+            </button>
+            <strong>{guestCount} người</strong>
+            <button type="button" aria-label="Tăng số khách" onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}>
+              <Plus size={15} />
+            </button>
+          </div>
+        </div>
+        <label className="booking-field">
+          <span>Ngày</span>
+          <select
+            aria-label="Chọn ngày"
+            value={selectedDateIndex}
+            onChange={(event) => onDateSelect(Number(event.target.value))}
           >
-            {date.label}
-          </button>
-        ))}
+            {dateOptions.map((date, index) => (
+              <option key={date.iso} value={index}>
+                {date.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <label>Khung giờ</label>
@@ -493,15 +515,9 @@ function BookingCard({
         ))}
       </div>
 
-      <label>Số khách</label>
-      <div className="guest-stepper">
-        <button type="button" aria-label="Giảm số khách" onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}>
-          <Minus size={16} />
-        </button>
-        <strong>{guestCount} người</strong>
-        <button type="button" aria-label="Tăng số khách" onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}>
-          <Plus size={16} />
-        </button>
+      <label>Ghi chú tuỳ chọn</label>
+      <div className="booking-note-box">
+        Bàn gần sân khấu, có sinh nhật nhỏ - chuẩn bị giúp nến.
       </div>
 
       <Link
@@ -693,11 +709,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       />
 
       <section className="detail-shell">
+        <nav className="desktop-breadcrumb" aria-label="Breadcrumb">
+          <Link href="/">Trang chủ</Link>
+          <span>/</span>
+          <Link href="/danh-sach-quan">Tìm quán</Link>
+          <span>/</span>
+          <strong>{displayName}</strong>
+        </nav>
+
         <div className="detail-layout">
           <div className="media-column">
             <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
               <div className="hero-top">
-                <Link className="round-action" href="/danh-sach-quan" aria-label="Quay lại danh sách quán">
+                <Link className="round-action hero-back" href="/danh-sach-quan" aria-label="Quay lại danh sách quán">
                   <ChevronLeft size={20} />
                 </Link>
                 <div className="hero-actions">
@@ -725,7 +749,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <span>{[categoryLabel, location].filter(Boolean).join(" · ")}</span>
                   <b className={openNow ? "open" : "closed"}>
                     <i />
-                    {openNow ? "Đang mở" : "Đang nghỉ"}
+                    {openNow ? `Đang mở · ${todayOpening}` : "Đang nghỉ"}
                   </b>
                 </div>
               </div>
@@ -809,11 +833,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           <div className="info-column">
             <div className="desktop-title">
               <div>
-                <span className="store-logo">{getInitials(store.name) || "NL"}</span>
                 <h1>{displayName}</h1>
                 <p>
                   <Star size={15} fill="currentColor" />
-                  Được đề xuất · {[categoryLabel, location].filter(Boolean).join(" · ")}
+                  4.8 (18 đánh giá) · {[categoryLabel, location].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <b className={openNow ? "open-pill" : "closed-pill"}>
@@ -853,7 +876,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               onCouponClick={trackCouponClick}
             />
 
-            <section>
+            <section className="desktop-about-inline">
+              <div className="feature-chips">
+                {[categoryLabel, "Phòng VIP riêng", "Hỗ trợ tiếng Nhật", "Cocktail signature", "Karaoke"].map((chip) => (
+                  <span key={chip}>{chip}</span>
+                ))}
+              </div>
+              <div className="intro-copy">
+                {introLines.map((line) => (
+                  <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
+                    {line.text}
+                  </p>
+                ))}
+              </div>
+            </section>
+
+            <section className="mobile-about-section">
               <SectionTitle title="Giới thiệu" kicker="About" />
               <div className="intro-copy">
                 {introLines.map((line) => (
@@ -900,12 +938,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               <CastRail store={store} />
             </section>
 
-            <section>
+            <section className="mobile-only">
               <SectionTitle title="Ưu đãi" kicker="Hot deals" />
               <CouponBlock store={store} couponHref={couponHref} onCouponClick={trackCouponClick} />
             </section>
 
-            <section id="menu">
+            <section id="menu" className="mobile-only">
               <SectionTitle title="Thực đơn" kicker="Menu" />
               <PriceMenu store={store} />
             </section>
@@ -1005,12 +1043,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .detail-shell {
           width: min(1240px, calc(100% - 36px));
           margin: 0 auto;
-          padding: 24px 0 42px;
+          padding: 18px 0 42px;
+        }
+
+        .desktop-breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin-bottom: 18px;
+          color: #8c8679;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .desktop-breadcrumb a,
+        .desktop-breadcrumb strong {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .desktop-breadcrumb strong {
+          color: #c5c0b6;
         }
 
         .detail-layout {
           display: grid;
-          grid-template-columns: minmax(420px, 512px) minmax(0, 1fr);
+          grid-template-columns: 512px minmax(0, 1fr);
           gap: 34px;
           align-items: start;
         }
@@ -1022,7 +1080,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .info-column {
           display: grid;
-          gap: 24px;
+          gap: 12px;
         }
 
         .hero-panel {
@@ -1057,13 +1115,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           right: 14px;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: flex-end;
           gap: 12px;
         }
 
         .hero-actions {
           display: flex;
           gap: 9px;
+        }
+
+        .hero-back {
+          display: none;
         }
 
         .round-action {
@@ -1080,6 +1142,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           backdrop-filter: blur(8px);
           cursor: pointer;
           padding: 0;
+        }
+
+        .round-action.hero-back {
+          display: none;
         }
 
         .hero-play {
@@ -1103,7 +1169,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .video-badge {
           left: 14px;
-          top: 68px;
+          top: 14px;
           display: inline-flex;
           align-items: center;
           gap: 7px;
@@ -1121,9 +1187,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .hero-name {
-          left: 20px;
-          right: 20px;
-          bottom: 18px;
+          left: 14px;
+          right: auto;
+          bottom: 14px;
         }
 
         .hero-name h1,
@@ -1139,6 +1205,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           text-shadow: 0 1px 16px rgba(0, 0, 0, .56);
         }
 
+        .hero-name h1,
+        .hero-name div > span {
+          display: none;
+        }
+
         .hero-name div,
         .desktop-title p {
           display: flex;
@@ -1148,6 +1219,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin: 10px 0 0;
           color: #cfc9bd;
           font-size: 12px;
+        }
+
+        .hero-name div {
+          margin-top: 0;
         }
 
         .hero-name b,
@@ -1185,7 +1260,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background: currentColor;
         }
 
-        .quick-stats,
         .desktop-stats {
           display: flex;
           align-items: stretch;
@@ -1194,6 +1268,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .quick-stats {
+          display: none;
+          align-items: stretch;
+          border-top: 1px solid rgba(255, 255, 255, .07);
+          border-bottom: 1px solid rgba(255, 255, 255, .07);
           padding: 16px 4px 10px;
         }
 
@@ -1229,7 +1307,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .secondary-actions {
-          display: flex;
+          display: none;
           gap: 9px;
           padding: 12px 0 0;
         }
@@ -1473,20 +1551,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           gap: 14px;
         }
 
-        .store-logo {
-          width: 48px;
-          height: 48px;
-          border-radius: 8px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 12px;
-          color: #241a0a;
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-          font-size: 17px;
-          font-weight: 900;
-        }
-
         .desktop-title h1 {
           font-size: 34px;
         }
@@ -1506,7 +1570,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .desktop-stats {
-          padding: 15px 0;
+          padding: 10px 0;
         }
 
         .desktop-stats div {
@@ -1525,7 +1589,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card {
-          padding: 16px;
+          padding: 12px 16px;
         }
 
         .booking-card-head {
@@ -1542,18 +1606,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-card-head strong {
           color: #f3f0ea;
-          font-size: 16px;
+          font-size: 15px;
         }
 
         .booking-card-head small {
-          margin-top: 4px;
+          margin-top: 3px;
           color: #8c8679;
-          font-size: 12px;
+          font-size: 11px;
         }
 
         .booking-card-head b {
           color: #e3c27e;
-          font-size: 15px;
+          font-size: 14px;
           white-space: nowrap;
         }
 
@@ -1569,8 +1633,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .member-nudge {
-          margin: 12px 0 14px;
-          padding: 10px 11px;
+          align-items: center;
+          margin: 9px 0 10px;
+          padding: 7px 10px;
           border: 1px solid rgba(212, 178, 106, .28);
           border-radius: 8px;
           background: rgba(212, 178, 106, .1);
@@ -1586,12 +1651,72 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-card label {
           display: block;
-          margin: 12px 0 8px;
+          margin: 8px 0 6px;
           color: #8c8679;
           font-size: 10px;
           font-weight: 900;
           letter-spacing: 0;
           text-transform: uppercase;
+        }
+
+        .booking-form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .booking-field {
+          display: grid;
+          align-content: center;
+          min-height: 44px;
+          padding: 7px 10px;
+          border: 1px solid rgba(255, 255, 255, .1);
+          border-radius: 8px;
+          background: rgba(12, 12, 15, .36);
+        }
+
+        .booking-card label.booking-field {
+          margin: 0;
+          letter-spacing: 0;
+          text-transform: none;
+        }
+
+        .booking-field span,
+        .booking-field strong {
+          display: block;
+        }
+
+        .booking-field span {
+          color: #8c8679;
+          font-size: 10px;
+          font-weight: 900;
+          line-height: 1.2;
+        }
+
+        .booking-field strong {
+          margin-top: 4px;
+          color: #f3f0ea;
+          font-size: 12px;
+          line-height: 1.25;
+        }
+
+        .booking-field select {
+          width: 100%;
+          margin-top: 4px;
+          border: 0;
+          outline: none;
+          background: transparent;
+          color: #f3f0ea;
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.25;
+          appearance: none;
+          cursor: pointer;
+        }
+
+        .booking-field select option {
+          color: #17151a;
         }
 
         .slot-row {
@@ -1601,7 +1726,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .slot {
-          min-height: 34px;
+          min-height: 31px;
           border: 1px solid rgba(255, 255, 255, .1);
           border-radius: 8px;
           background: rgba(12, 12, 15, .42);
@@ -1623,19 +1748,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          min-height: 46px;
-          margin-bottom: 14px;
-          padding: 6px;
-          border: 1px solid rgba(255, 255, 255, .1);
-          border-radius: 8px;
-          background: rgba(12, 12, 15, .42);
+          gap: 8px;
+          margin-top: 4px;
         }
 
         .guest-stepper button {
-          width: 36px;
-          min-height: 34px;
-          border-radius: 8px;
+          width: 24px;
+          min-height: 24px;
+          border: 0;
+          border-radius: 7px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -1644,7 +1765,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .guest-stepper strong {
           color: #f3f0ea;
-          font-size: 14px;
+          font-size: 12px;
+        }
+
+        .booking-note-box {
+          min-height: 40px;
+          padding: 9px 12px;
+          border: 1px solid rgba(255, 255, 255, .09);
+          border-radius: 8px;
+          background: rgba(12, 12, 15, .36);
+          color: #8c8679;
+          font-size: 12px;
+          line-height: 1.55;
         }
 
         .primary-action {
@@ -1667,14 +1799,36 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin-top: 10px;
         }
 
+        .booking-card .primary-action {
+          min-height: 40px;
+        }
+
+        .booking-card .secondary-action {
+          display: none;
+        }
+
         .booking-safe {
-          margin-top: 11px;
+          margin-top: 8px;
         }
 
         .intro-copy {
           color: #c5c0b6;
           font-size: 14px;
           line-height: 1.8;
+        }
+
+        .desktop-about-inline {
+          display: grid;
+          gap: 12px;
+        }
+
+        .desktop-about-inline .intro-copy {
+          font-size: 13px;
+          line-height: 1.78;
+        }
+
+        .mobile-about-section {
+          display: none;
         }
 
         .intro-copy p {
@@ -2171,6 +2325,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             padding: 0 0 26px;
           }
 
+          .desktop-breadcrumb {
+            display: none;
+          }
+
           .detail-layout {
             display: block;
           }
@@ -2194,6 +2352,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             top: 12px;
             left: 16px;
             right: 16px;
+            justify-content: space-between;
+          }
+
+          .round-action.hero-back {
+            display: inline-flex;
           }
 
           .hero-play {
@@ -2214,14 +2377,25 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .hero-name h1 {
+            display: block;
             font-size: 28px;
           }
 
+          .hero-name div {
+            margin-top: 10px;
+          }
+
+          .hero-name div > span {
+            display: inline;
+          }
+
           .quick-stats {
+            display: flex;
             margin: 0 18px;
           }
 
           .secondary-actions {
+            display: flex;
             padding: 12px 18px 4px;
           }
 
@@ -2229,10 +2403,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .desktop-only,
           .desktop-title,
           .desktop-stats,
+          .desktop-about-inline,
           .booking-card {
             display: none;
           }
 
+          .mobile-about-section,
           .mobile-only {
             display: block;
           }
