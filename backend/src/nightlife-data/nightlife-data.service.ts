@@ -27,6 +27,19 @@ const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
 const MVP_CITY_CODES = ['hn', 'hcm'] as const;
+const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
+  GUEST: 5,
+  MEMBER: 8,
+  VIP: 10,
+} as const;
+const COUPON_ISSUE_STATUS_LABELS: Record<string, string> = {
+  ISSUED: 'Đang giữ chỗ',
+  USED: 'Đã sử dụng',
+  EXPIRED: 'Hết hạn',
+  REVOKED: 'Đã hủy',
+};
+
+type CouponUserType = keyof typeof COUPON_DISCOUNT_PERCENT_BY_USER_TYPE;
 
 const CITY_ALIASES: Record<string, string> = {
   all: 'all',
@@ -894,9 +907,15 @@ export class NightlifeDataService {
         id: true,
         code: true,
         name: true,
+        storeId: true,
+        discountType: true,
+        discountValue: true,
+        maxDiscountVnd: true,
+        minSpendVnd: true,
         endsAt: true,
         usageLimit: true,
         usedCount: true,
+        store: { select: { id: true, name: true, slug: true } },
       },
     });
 
@@ -919,20 +938,32 @@ export class NightlifeDataService {
       select: { id: true },
     });
     const issueCode = `GUEST-${randomUUID()}`;
+    const userType: CouponUserType = 'GUEST';
+    const qrPayload = this.buildCouponQrPayload(issueCode);
+    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
+      coupon,
+      userType,
+    );
 
     const issue = await this.prisma.couponIssue.create({
       data: {
         couponId: coupon.id,
         guestId: guest.id,
         code: issueCode,
-        qrPayloadHash: createHash('sha256').update(issueCode).digest('hex'),
+        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
         expiresAt: this.capExpiry(
           new Date(now.getTime() + DAY_MS),
           coupon.endsAt,
         ),
         metadata: {
           recipientType: 'GUEST',
+          userType,
           validityHours: 24,
+          qrPayload,
+          statusLabel: this.couponIssueStatusLabel('ISSUED'),
+          discountPercent: discountRuleSnapshot.discountPercent,
+          discountRuleSnapshot,
+          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
         },
       },
       select: {
@@ -941,18 +972,24 @@ export class NightlifeDataService {
         status: true,
         expiresAt: true,
         createdAt: true,
+        metadata: true,
         coupon: {
           select: {
             id: true,
             code: true,
             name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+            store: { select: { id: true, name: true, slug: true } },
           },
         },
       },
     });
 
     return {
-      issue,
+      issue: this.decorateCouponIssue(issue),
       guest: { id: guest.id },
     };
   }
@@ -970,6 +1007,7 @@ export class NightlifeDataService {
         id: true,
         code: true,
         name: true,
+        storeId: true,
         discountType: true,
         discountValue: true,
         maxDiscountVnd: true,
@@ -977,6 +1015,7 @@ export class NightlifeDataService {
         endsAt: true,
         usageLimit: true,
         usedCount: true,
+        store: { select: { id: true, name: true, slug: true } },
       },
     });
 
@@ -991,26 +1030,34 @@ export class NightlifeDataService {
     }
 
     const issueCode = `MEMBER-${randomUUID()}`;
-    const discountRuleSnapshot = this.buildMemberDiscountRuleSnapshot(
+    const userType = this.resolveCouponUserType(user);
+    const qrPayload = this.buildCouponQrPayload(issueCode);
+    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
       coupon,
-      user,
+      userType,
+      user.tier ?? 'FREE',
     );
 
-    return this.prisma.couponIssue.create({
+    const issue = await this.prisma.couponIssue.create({
       data: {
         couponId: coupon.id,
         userId: user.id,
         code: issueCode,
-        qrPayloadHash: createHash('sha256').update(issueCode).digest('hex'),
+        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
         expiresAt: this.capExpiry(
           new Date(now.getTime() + 7 * DAY_MS),
           coupon.endsAt,
         ),
         metadata: {
           recipientType: 'MEMBER',
+          userType,
           tier: user.tier ?? 'FREE',
           validityDays: 7,
+          qrPayload,
+          statusLabel: this.couponIssueStatusLabel('ISSUED'),
+          discountPercent: discountRuleSnapshot.discountPercent,
           discountRuleSnapshot,
+          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
         },
       },
       select: {
@@ -1019,6 +1066,7 @@ export class NightlifeDataService {
         status: true,
         expiresAt: true,
         createdAt: true,
+        metadata: true,
         coupon: {
           select: {
             id: true,
@@ -1033,6 +1081,8 @@ export class NightlifeDataService {
         },
       },
     });
+
+    return this.decorateCouponIssue(issue);
   }
 
   async listPartnerStores(user: AuthenticatedUser) {
@@ -1255,6 +1305,7 @@ export class NightlifeDataService {
         status: true,
         expiresAt: true,
         usedAt: true,
+        metadata: true,
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
@@ -1279,9 +1330,9 @@ export class NightlifeDataService {
       issue.coupon.storeId,
       'coupon.scan',
     );
-    this.assertIssueCanBeConfirmed(issue);
+    await this.assertIssueCanBeConfirmed(issue);
 
-    return this.prisma.couponIssue.update({
+    const scannedIssue = await this.prisma.couponIssue.update({
       where: { id: issue.id },
       data: { scannedById: user.id },
       select: {
@@ -1290,6 +1341,7 @@ export class NightlifeDataService {
         status: true,
         expiresAt: true,
         usedAt: true,
+        metadata: true,
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
@@ -1298,11 +1350,17 @@ export class NightlifeDataService {
             id: true,
             code: true,
             name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
             store: { select: { id: true, name: true, slug: true } },
           },
         },
       },
     });
+
+    return this.decorateCouponIssue(scannedIssue);
   }
 
   async confirmCouponIssueCheckIn(
@@ -1330,17 +1388,31 @@ export class NightlifeDataService {
       issue.coupon.storeId,
       'checkin.confirm',
     );
-    this.assertIssueCanBeConfirmed(issue);
+    await this.assertIssueCanBeConfirmed(issue);
 
     const now = new Date();
 
-    const updatedIssue = await this.prisma.couponIssue.update({
-      where: { id: issue.id },
+    const usedIssue = await this.prisma.couponIssue.updateMany({
+      where: {
+        id: issue.id,
+        status: 'ISSUED',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
       data: {
         status: 'USED',
         usedAt: now,
         scannedById: user.id,
       },
+    });
+
+    if (usedIssue.count !== 1) {
+      throw new UnprocessableEntityException(
+        'Coupon issue has already been used',
+      );
+    }
+
+    const updatedIssue = await this.prisma.couponIssue.findUnique({
+      where: { id: issue.id },
       select: {
         id: true,
         code: true,
@@ -1348,16 +1420,25 @@ export class NightlifeDataService {
         expiresAt: true,
         usedAt: true,
         scannedById: true,
+        metadata: true,
         coupon: {
           select: {
             id: true,
             code: true,
             name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
             store: { select: { id: true, name: true, slug: true } },
           },
         },
       },
     });
+
+    if (!updatedIssue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
 
     await this.prisma.coupon.update({
       where: { id: issue.couponId },
@@ -1371,7 +1452,7 @@ export class NightlifeDataService {
       });
     }
 
-    return updatedIssue;
+    return this.decorateCouponIssue(updatedIssue);
   }
 
   async listPartnerBills(user: AuthenticatedUser) {
@@ -1580,8 +1661,10 @@ export class NightlifeDataService {
     };
   }
 
-  listMemberCouponIssues(userId: string) {
-    return this.prisma.couponIssue.findMany({
+  async listMemberCouponIssues(userId: string) {
+    await this.expireIssuedCouponIssues({ userId });
+
+    const issues = await this.prisma.couponIssue.findMany({
       where: {
         userId,
       },
@@ -1592,16 +1675,23 @@ export class NightlifeDataService {
         status: true,
         expiresAt: true,
         usedAt: true,
+        metadata: true,
         coupon: {
           select: {
             id: true,
             code: true,
             name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
             store: { select: { id: true, name: true, slug: true } },
           },
         },
       },
     });
+
+    return issues.map((issue) => this.decorateCouponIssue(issue));
   }
 
   async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
@@ -3033,33 +3123,122 @@ export class NightlifeDataService {
     return null;
   }
 
-  private buildMemberDiscountRuleSnapshot(
+  private resolveCouponUserType(user: AuthenticatedUser): CouponUserType {
+    return user.tier === 'VIP' ? 'VIP' : 'MEMBER';
+  }
+
+  private buildCouponDiscountRuleSnapshot(
     coupon: {
       discountType: string;
       discountValue: number;
       maxDiscountVnd: number | null;
       minSpendVnd: number | null;
     },
-    user: AuthenticatedUser,
+    userType: CouponUserType,
+    tier?: string | null,
   ) {
-    const tier = user.tier ?? 'FREE';
-    const minimumPercentByTier: Record<string, number> = {
-      FREE: 8,
-      PREMIUM: 8,
-      VIP: 10,
-    };
+    const discountPercent = COUPON_DISCOUNT_PERCENT_BY_USER_TYPE[userType];
 
     return {
-      type: coupon.discountType,
-      value:
-        coupon.discountType === 'PERCENT'
-          ? Math.max(coupon.discountValue, minimumPercentByTier[tier] ?? 8)
-          : coupon.discountValue,
+      type: 'PERCENT',
+      value: discountPercent,
+      discountPercent,
       maxDiscountVnd: coupon.maxDiscountVnd,
       minSpendVnd: coupon.minSpendVnd,
-      tier,
+      userType,
+      tier: userType === 'GUEST' ? null : (tier ?? userType),
+      sourceType: coupon.discountType,
       sourceValue: coupon.discountValue,
     };
+  }
+
+  private buildCouponCampaignSnapshot(coupon: {
+    id: string;
+    code: string;
+    name: string;
+    storeId?: string;
+    discountType: string;
+    discountValue: number;
+    maxDiscountVnd: number | null;
+    minSpendVnd: number | null;
+    store?: { id: string; name: string; slug: string } | null;
+  }) {
+    return {
+      id: coupon.id,
+      code: coupon.code,
+      name: coupon.name,
+      storeId: coupon.storeId ?? coupon.store?.id ?? null,
+      store: coupon.store
+        ? {
+            id: coupon.store.id,
+            name: coupon.store.name,
+            slug: coupon.store.slug,
+          }
+        : null,
+      sourceType: coupon.discountType,
+      sourceValue: coupon.discountValue,
+      maxDiscountVnd: coupon.maxDiscountVnd,
+      minSpendVnd: coupon.minSpendVnd,
+    };
+  }
+
+  private buildCouponQrPayload(code: string) {
+    return code;
+  }
+
+  private buildCouponQrPayloadHash(payload: string) {
+    return createHash('sha256').update(payload).digest('hex');
+  }
+
+  private couponIssueStatusLabel(status: string) {
+    return COUPON_ISSUE_STATUS_LABELS[status] ?? status;
+  }
+
+  private decorateCouponIssue<
+    T extends { code: string; status: string; metadata?: unknown },
+  >(issue: T) {
+    const metadata = this.asRecord(issue.metadata);
+    const discountRuleSnapshot = this.asRecord(
+      metadata?.discountRuleSnapshot,
+    );
+    const discountPercent = this.toNumber(metadata?.discountPercent);
+
+    return {
+      ...issue,
+      qrPayload:
+        typeof metadata?.qrPayload === 'string'
+          ? metadata.qrPayload
+          : this.buildCouponQrPayload(issue.code),
+      statusLabel: this.couponIssueStatusLabel(issue.status),
+      userType:
+        typeof metadata?.userType === 'string'
+          ? metadata.userType
+          : metadata?.recipientType,
+      discountPercent:
+        discountPercent ??
+        this.toNumber(discountRuleSnapshot?.discountPercent) ??
+        this.toNumber(discountRuleSnapshot?.value),
+      discountRuleSnapshot: discountRuleSnapshot ?? null,
+    };
+  }
+
+  private asRecord(value: unknown) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  private async expireIssuedCouponIssues(where: Prisma.CouponIssueWhereInput) {
+    return this.prisma.couponIssue.updateMany({
+      where: {
+        ...where,
+        status: 'ISSUED',
+        expiresAt: { lte: new Date() },
+      },
+      data: { status: 'EXPIRED' },
+    });
   }
 
   private maskSensitiveBillForRole<T extends { user: unknown; guest: unknown }>(
@@ -3120,15 +3299,27 @@ export class NightlifeDataService {
     return candidate;
   }
 
-  private assertIssueCanBeConfirmed(issue: {
+  private async assertIssueCanBeConfirmed(issue: {
+    id: string;
     status: string;
     expiresAt: Date | null;
   }) {
+    if (issue.status === 'EXPIRED') {
+      throw new UnprocessableEntityException('Coupon issue has expired');
+    }
+
+    if (issue.status === 'USED') {
+      throw new UnprocessableEntityException(
+        'Coupon issue has already been used',
+      );
+    }
+
     if (issue.status !== 'ISSUED') {
-      throw new UnprocessableEntityException('Coupon issue is not claimable');
+      throw new UnprocessableEntityException('Coupon issue is not usable');
     }
 
     if (issue.expiresAt && issue.expiresAt <= new Date()) {
+      await this.expireIssuedCouponIssues({ id: issue.id });
       throw new UnprocessableEntityException('Coupon issue has expired');
     }
   }

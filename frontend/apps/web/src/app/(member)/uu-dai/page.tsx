@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -182,6 +183,11 @@ const getCouponImage = (coupon: PublicCoupon, index: number) =>
 const getStoreLocation = (coupon: PublicCoupon) =>
   [coupon.store.district, coupon.store.city].filter(Boolean).join(", ");
 
+const couponQrImageUrl = (issue: CouponIssue) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(
+    issue.qrPayload || issue.code,
+  )}`;
+
 function ClaimedCouponModal({
   copied,
   coupon,
@@ -241,12 +247,22 @@ function ClaimedCouponModal({
 
         <div className="coupon-modal-body">
           <span className="modal-eyebrow">Mã ưu đãi của bạn</span>
+          <div className="claimed-qr" aria-label="QR coupon">
+            <Image
+              src={couponQrImageUrl(issue)}
+              alt={`QR ${issue.code}`}
+              width={148}
+              height={148}
+              unoptimized
+            />
+          </div>
           <div className="claimed-code">
             <strong>{issue.code}</strong>
             <button aria-label="Sao chép mã ưu đãi" onClick={onCopy} type="button">
               <Copy size={15} />
             </button>
           </div>
+          {issue.statusLabel ? <span className="claimed-status">{issue.statusLabel}</span> : null}
           <button className="copy-button" onClick={onCopy} type="button">
             <Copy size={16} />
             {copied ? "Đã sao chép" : "Sao chép mã"}
@@ -1305,6 +1321,24 @@ export default function Page() {
           justify-content: center;
         }
 
+        .claimed-qr {
+          width: 164px;
+          height: 164px;
+          margin: 0 auto;
+          border-radius: 16px;
+          border: 1px solid rgba(212,178,106,.24);
+          background: #f8f5ee;
+          display: grid;
+          place-items: center;
+          box-shadow: 0 18px 32px -24px rgba(0,0,0,.8);
+        }
+
+        .claimed-qr img {
+          width: 148px;
+          height: 148px;
+          display: block;
+        }
+
         .claimed-code {
           display: flex;
           align-items: center;
@@ -1338,6 +1372,18 @@ export default function Page() {
           justify-content: center;
           cursor: pointer;
           flex: none;
+        }
+
+        .claimed-status {
+          width: fit-content;
+          margin: -4px auto 0;
+          border: 1px solid rgba(212,178,106,.25);
+          border-radius: 999px;
+          background: rgba(212,178,106,.1);
+          color: #e3c27e;
+          font-size: 11.5px;
+          font-weight: 700;
+          padding: 5px 10px;
         }
 
         .copy-button {

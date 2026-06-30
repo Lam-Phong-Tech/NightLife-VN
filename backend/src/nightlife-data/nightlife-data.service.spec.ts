@@ -21,6 +21,7 @@ describe('NightlifeDataService', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     store: {
       findMany: jest.fn(),
@@ -81,6 +82,7 @@ describe('NightlifeDataService', () => {
     prisma.store.count.mockResolvedValue(1);
     prisma.cast.count.mockResolvedValue(1);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
     service = new NightlifeDataService(
       prisma,
       accessService,
@@ -1228,9 +1230,15 @@ describe('NightlifeDataService', () => {
       id: 'coupon-1',
       code: 'WELCOME',
       name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
       endsAt: null,
       usageLimit: null,
       usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
     });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
     prisma.couponIssue.create.mockResolvedValue({
@@ -1259,8 +1267,27 @@ describe('NightlifeDataService', () => {
           expiresAt: expect.any(Date),
           metadata: {
             recipientType: 'GUEST',
+            userType: 'GUEST',
             validityHours: 24,
+            statusLabel: 'Đang giữ chỗ',
+            discountPercent: 5,
+            discountRuleSnapshot: expect.objectContaining({
+              type: 'PERCENT',
+              value: 5,
+              discountPercent: 5,
+              userType: 'GUEST',
+              tier: null,
+              sourceType: 'PERCENT',
+              sourceValue: 5,
+            }),
+            qrPayload: expect.stringMatching(/^GUEST-/),
+            campaignSnapshot: expect.objectContaining({
+              id: 'coupon-1',
+              code: 'WELCOME',
+              storeId: 'store-1',
+            }),
           },
+          qrPayloadHash: expect.any(String),
         }),
       }),
     );
@@ -1281,9 +1308,15 @@ describe('NightlifeDataService', () => {
       id: 'coupon-1',
       code: 'WELCOME',
       name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
       endsAt: couponEndsAt,
       usageLimit: null,
       usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
     });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
     prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' });
@@ -1308,9 +1341,15 @@ describe('NightlifeDataService', () => {
       id: 'coupon-1',
       code: 'WELCOME',
       name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
       endsAt: couponEndsAt,
       usageLimit: null,
       usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
     });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
     prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' });
@@ -1328,6 +1367,7 @@ describe('NightlifeDataService', () => {
       id: 'coupon-1',
       code: 'MEMBER8',
       name: 'Member',
+      storeId: 'store-1',
       discountType: 'PERCENT',
       discountValue: 8,
       maxDiscountVnd: 800000,
@@ -1335,6 +1375,7 @@ describe('NightlifeDataService', () => {
       endsAt: null,
       usageLimit: null,
       usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
     });
     prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' });
 
@@ -1352,16 +1393,73 @@ describe('NightlifeDataService', () => {
           expiresAt: expect.any(Date),
           metadata: expect.objectContaining({
             recipientType: 'MEMBER',
+            userType: 'VIP',
             tier: 'VIP',
             validityDays: 7,
-            discountRuleSnapshot: {
+            statusLabel: 'Đang giữ chỗ',
+            discountPercent: 10,
+            qrPayload: expect.stringMatching(/^MEMBER-/),
+            campaignSnapshot: expect.objectContaining({
+              id: 'coupon-1',
+              code: 'MEMBER8',
+              storeId: 'store-1',
+            }),
+            discountRuleSnapshot: expect.objectContaining({
               type: 'PERCENT',
               value: 10,
+              discountPercent: 10,
               maxDiscountVnd: 800000,
               minSpendVnd: null,
+              userType: 'VIP',
               tier: 'VIP',
+              sourceType: 'PERCENT',
               sourceValue: 8,
-            },
+            }),
+          }),
+          qrPayloadHash: expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it('claims a coupon for a regular member with an 8 percent snapshot', async () => {
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'MEMBER8',
+      name: 'Member',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 8,
+      maxDiscountVnd: 800000,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
+    });
+    prisma.couponIssue.create.mockResolvedValue({ id: 'issue-1' });
+
+    await service.claimMemberCoupon('coupon-1', {
+      id: 'user-1',
+      role: 'USER',
+      tier: 'FREE',
+    });
+
+    expect(prisma.couponIssue.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            userType: 'MEMBER',
+            tier: 'FREE',
+            discountPercent: 8,
+            discountRuleSnapshot: expect.objectContaining({
+              type: 'PERCENT',
+              value: 8,
+              discountPercent: 8,
+              userType: 'MEMBER',
+              tier: 'FREE',
+              sourceValue: 8,
+            }),
           }),
         }),
       }),
@@ -1408,16 +1506,74 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('confirms check-in by using a coupon issue and updating linked booking', async () => {
+  it('marks an expired coupon issue before rejecting QR scan', async () => {
     prisma.couponIssue.findUnique.mockResolvedValue({
       id: 'issue-1',
-      couponId: 'coupon-1',
+      code: 'GUEST-code',
       status: 'ISSUED',
-      expiresAt: null,
-      coupon: { storeId: 'store-1' },
-      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      expiresAt: new Date(Date.now() - 60_000),
+      usedAt: null,
+      user: null,
+      guest: { id: 'guest-1', displayName: 'Guest' },
+      booking: null,
+      coupon: {
+        id: 'coupon-1',
+        code: 'GUEST5',
+        name: 'Guest',
+        storeId: 'store-1',
+        store: { id: 'store-1', name: 'Store', slug: 'store' },
+      },
     });
-    prisma.couponIssue.update.mockResolvedValue({ id: 'issue-1' });
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    await expect(
+      service.scanCouponIssue('GUEST-code', {
+        id: 'partner-1',
+        role: 'PARTNER',
+      }),
+    ).rejects.toThrow('Coupon issue has expired');
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+      'coupon.scan',
+    );
+    expect(prisma.couponIssue.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'issue-1',
+        status: 'ISSUED',
+        expiresAt: { lte: expect.any(Date) },
+      },
+      data: { status: 'EXPIRED' },
+    });
+    expect(prisma.couponIssue.update).not.toHaveBeenCalled();
+  });
+
+  it('confirms check-in by using a coupon issue and updating linked booking', async () => {
+    prisma.couponIssue.findUnique
+      .mockResolvedValueOnce({
+        id: 'issue-1',
+        couponId: 'coupon-1',
+        status: 'ISSUED',
+        expiresAt: null,
+        coupon: { storeId: 'store-1' },
+        booking: { id: 'booking-1', status: 'CONFIRMED' },
+      })
+      .mockResolvedValueOnce({
+        id: 'issue-1',
+        code: 'GUEST-code',
+        status: 'USED',
+        expiresAt: null,
+        usedAt: new Date(),
+        scannedById: 'partner-1',
+        coupon: {
+          id: 'coupon-1',
+          code: 'GUEST5',
+          name: 'Guest',
+          store: { id: 'store-1', name: 'Store', slug: 'store' },
+        },
+      });
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.coupon.update.mockResolvedValue({ id: 'coupon-1' });
     prisma.booking.update.mockResolvedValue({ id: 'booking-1' });
 
@@ -1431,9 +1587,12 @@ describe('NightlifeDataService', () => {
       'store-1',
       'checkin.confirm',
     );
-    expect(prisma.couponIssue.update).toHaveBeenCalledWith(
+    expect(prisma.couponIssue.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'issue-1' },
+        where: expect.objectContaining({
+          id: 'issue-1',
+          status: 'ISSUED',
+        }),
         data: expect.objectContaining({
           status: 'USED',
           scannedById: 'partner-1',
@@ -1448,6 +1607,80 @@ describe('NightlifeDataService', () => {
     expect(prisma.booking.update).toHaveBeenCalledWith({
       where: { id: 'booking-1' },
       data: { status: 'CHECKED_IN' },
+    });
+  });
+
+  it('does not reuse a coupon issue when the one-time update loses the race', async () => {
+    prisma.couponIssue.findUnique.mockResolvedValue({
+      id: 'issue-1',
+      couponId: 'coupon-1',
+      status: 'ISSUED',
+      expiresAt: null,
+      coupon: { storeId: 'store-1' },
+      booking: null,
+    });
+    prisma.couponIssue.updateMany.mockResolvedValue({ count: 0 } as never);
+
+    await expect(
+      service.confirmCouponIssueCheckIn('issue-1', {
+        id: 'partner-1',
+        role: 'PARTNER',
+      }),
+    ).rejects.toThrow('Coupon issue has already been used');
+
+    expect(prisma.coupon.update).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+  });
+
+  it('expires stale member coupon issues before returning the wallet', async () => {
+    prisma.couponIssue.findMany.mockResolvedValue([
+      {
+        id: 'issue-1',
+        code: 'MEMBER-code',
+        status: 'EXPIRED',
+        expiresAt: new Date(Date.now() - 60_000),
+        usedAt: null,
+        metadata: {
+          userType: 'MEMBER',
+          qrPayload: 'MEMBER-code',
+          discountPercent: 8,
+          discountRuleSnapshot: {
+            type: 'PERCENT',
+            value: 8,
+            discountPercent: 8,
+          },
+        },
+        coupon: {
+          id: 'coupon-1',
+          code: 'MEMBER8',
+          name: 'Member',
+          discountType: 'PERCENT',
+          discountValue: 8,
+          maxDiscountVnd: 800000,
+          minSpendVnd: null,
+          store: { id: 'store-1', name: 'Store', slug: 'store' },
+        },
+      },
+    ] as never);
+
+    await expect(service.listMemberCouponIssues('user-1')).resolves.toEqual([
+      expect.objectContaining({
+        id: 'issue-1',
+        status: 'EXPIRED',
+        statusLabel: 'Hết hạn',
+        qrPayload: 'MEMBER-code',
+        userType: 'MEMBER',
+        discountPercent: 8,
+      }),
+    ]);
+
+    expect(prisma.couponIssue.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        status: 'ISSUED',
+        expiresAt: { lte: expect.any(Date) },
+      },
+      data: { status: 'EXPIRED' },
     });
   });
 

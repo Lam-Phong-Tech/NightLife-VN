@@ -337,12 +337,30 @@ const guestClaimExample = {
     id: 'issue_01',
     code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
     status: 'ISSUED',
+    statusLabel: 'Đang giữ chỗ',
+    qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+    userType: 'GUEST',
+    discountPercent: 5,
+    discountRuleSnapshot: {
+      type: 'PERCENT',
+      value: 5,
+      discountPercent: 5,
+      userType: 'GUEST',
+      tier: null,
+      sourceType: 'PERCENT',
+      sourceValue: 5,
+    },
     expiresAt: '2026-06-27T10:00:00.000Z',
     createdAt: '2026-06-26T10:00:00.000Z',
     coupon: {
       id: 'coupon_01',
-      code: 'WELCOME20',
-      name: 'Welcome 20%',
+      code: 'GUEST5',
+      name: 'Guest Discount 5%',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
+      store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
     },
   },
   guest: { id: 'guest_01' },
@@ -352,6 +370,19 @@ const memberClaimExample = {
   id: 'issue_02',
   code: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
   status: 'ISSUED',
+  statusLabel: 'Đang giữ chỗ',
+  qrPayload: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
+  userType: 'VIP',
+  discountPercent: 10,
+  discountRuleSnapshot: {
+    type: 'PERCENT',
+    value: 10,
+    discountPercent: 10,
+    userType: 'VIP',
+    tier: 'VIP',
+    sourceType: 'PERCENT',
+    sourceValue: 8,
+  },
   expiresAt: '2026-07-03T10:00:00.000Z',
   createdAt: '2026-06-26T10:00:00.000Z',
   coupon: {
@@ -431,6 +462,10 @@ const scannedCouponIssueExample = {
   id: 'issue_01',
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
   status: 'ISSUED',
+  statusLabel: 'Đang giữ chỗ',
+  qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  userType: 'GUEST',
+  discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
   usedAt: null,
   user: null,
@@ -452,6 +487,10 @@ const confirmedCheckInExample = {
   id: 'issue_01',
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
   status: 'USED',
+  statusLabel: 'Đã sử dụng',
+  qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  userType: 'GUEST',
+  discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
   usedAt: '2026-06-26T10:15:00.000Z',
   scannedById: 'partner_01',
@@ -492,6 +531,10 @@ const memberCouponIssueExample = {
   id: 'issue_01',
   code: 'MEMBER-2026-0001',
   status: 'ISSUED',
+  statusLabel: 'Đang giữ chỗ',
+  qrPayload: 'MEMBER-2026-0001',
+  userType: 'VIP',
+  discountPercent: 10,
   expiresAt: '2026-07-01T00:00:00.000Z',
   usedAt: null,
   coupon: {
@@ -845,7 +888,8 @@ export function ClaimGuestCouponContract() {
   return applyDecorators(
     ApiOperation({
       summary: 'Coupon action: guest claims a public coupon',
-      description: 'Auth guard: none. Creates a guest and coupon issue.',
+      description:
+        'Auth guard: none. Creates a guest and one-time coupon issue with Guest 5% discount snapshot, QR payload, and 24-hour expiry capped by coupon end date.',
     }),
     ApiParam({ name: 'couponId', example: 'coupon_01' }),
     ApiBody({ type: ClaimGuestCouponDto }),
@@ -967,7 +1011,7 @@ export function MemberClaimCouponContract() {
     ApiOperation({
       summary: 'Coupon action: member claims a public coupon',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canClaimMemberCoupon). Creates a 7-day member coupon issue capped by coupon end date.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canClaimMemberCoupon). Creates a one-time coupon issue with Member 8% or VIP 10% discount snapshot, QR payload, and 7-day expiry capped by coupon end date.',
     }),
     ApiParam({ name: 'couponId', example: 'coupon_01' }),
     ApiCreatedResponse({
@@ -1023,7 +1067,7 @@ export function PartnerScanCouponContract() {
     ApiOperation({
       summary: 'Partner action: scan a coupon QR code',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canScanCoupon). Validates DB permission and store access, then returns masked customer data.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canScanCoupon). Validates DB permission and store access, marks stale issued codes EXPIRED, then returns masked customer data.',
     }),
     ApiParam({
       name: 'code',
@@ -1071,7 +1115,7 @@ export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
     ApiOperation({
       summary: 'Partner action: confirm customer check-in',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canConfirmCheckIn). Marks the coupon issue used and linked booking checked in.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canConfirmCheckIn). Atomically marks the one-time coupon issue USED and linked booking checked in.',
     }),
     ApiParam({ name: paramName, example: 'issue_01' }),
     ApiOkResponse({
@@ -1102,7 +1146,7 @@ export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
       schema: {
         example: {
           statusCode: 422,
-          message: 'Coupon issue is not claimable',
+          message: 'Coupon issue has expired',
           error: 'Unprocessable Entity',
         },
       },
@@ -1134,7 +1178,7 @@ export function MemberBookingsContract() {
 export function MemberCouponIssuesContract() {
   return guardedListContract(
     'Coupon action: member lists own coupon issues',
-    'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberCoupon). Own-resource route.',
+    'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberCoupon). Own-resource route; stale ISSUED codes are marked EXPIRED before returning.',
     memberCouponIssueExample,
   );
 }

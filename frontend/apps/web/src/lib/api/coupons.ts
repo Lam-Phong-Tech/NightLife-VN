@@ -25,6 +25,21 @@ export type CouponIssue = {
   id: string;
   code: string;
   status: string;
+  statusLabel?: string;
+  qrPayload?: string;
+  userType?: "GUEST" | "MEMBER" | "VIP" | string;
+  discountPercent?: number | null;
+  discountRuleSnapshot?: {
+    type?: "PERCENT" | "FIXED_AMOUNT" | string;
+    value?: number;
+    discountPercent?: number;
+    maxDiscountVnd?: number | null;
+    minSpendVnd?: number | null;
+    userType?: string;
+    tier?: string | null;
+    sourceType?: string;
+    sourceValue?: number;
+  } | null;
   expiresAt: string;
   createdAt?: string;
   coupon: {

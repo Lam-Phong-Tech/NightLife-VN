@@ -75,13 +75,22 @@ Coupon inventory uses `Coupon` as the campaign/rule and `CouponIssue` as the iss
 - `CouponIssue.scannedById`: admin/partner/operator actor who scanned or redeemed the issued coupon.
 - `CouponIssue.userId` / `guestId`: customer or guest receiving the coupon.
 - `CouponIssue.status`: `ISSUED`, `USED`, `EXPIRED`, or `REVOKED`.
+  PM-facing labels map `ISSUED` to `Đang giữ chỗ`, `USED` to `Đã sử dụng`,
+  and `EXPIRED` to `Hết hạn`; `REVOKED` remains an operational cancel state.
 - `Bill.couponIssueId` and `Booking.couponIssueId`: attach the scanned coupon to a booking or bill.
 
 For MVP scan evidence, set `CouponIssue.scannedById`, `CouponIssue.usedAt`, and `CouponIssue.status = USED`.
 
-Guest coupon issues expire at `min(now + 24h, Coupon.endsAt)` when `endsAt` exists. Member coupon issues expire at `min(now + 7 days, Coupon.endsAt)` and store the tier/discount snapshot in `CouponIssue.metadata`.
+Guest coupon issues expire at `min(now + 24h, Coupon.endsAt)` when `endsAt`
+exists and snapshot a 5% discount. Member coupon issues expire at
+`min(now + 7 days, Coupon.endsAt)` and snapshot an 8% member discount or 10%
+VIP discount in `CouponIssue.metadata`.
 
-VIP member claim snapshots enforce at least a 10% percent discount rule when the source coupon is percentage-based.
+Each issued coupon stores the QR payload, campaign/store snapshot, user type,
+and immutable discount percent snapshot in `CouponIssue.metadata`.
+Stale `ISSUED` issues are marked `EXPIRED` before partner scan/check-in and
+before member wallet responses. Check-in uses a conditional `status = ISSUED`
+write so each coupon issue is one-time only.
 
 ## Audit And Session Security
 
