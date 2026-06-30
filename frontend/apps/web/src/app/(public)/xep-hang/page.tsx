@@ -1,630 +1,808 @@
 "use client";
 
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import Link from "next/link";
+import { ChevronDown, ChevronLeft, Crown, MapPin } from "lucide-react";
+import React, { useMemo, useState } from "react";
 
-type RankingKind = 'cast' | 'quan';
-type RankingArea = 'all' | 'hn' | 'hcm';
-type RankingCategory = 'all' | 'bar' | 'club' | 'karaoke' | 'lounge' | 'massage';
+type RankingKind = "cast" | "quan";
+type RankingPeriod = "week" | "month";
+type RankingArea = "hn" | "hcm" | "all";
 
 type RankingItem = {
-  rank: number;
-  numColor: string;
-  crown: string;
-  image: string;
   name: string;
   area: string;
   href: string;
+  image: string;
   kind: RankingKind;
-  city: Exclude<RankingArea, 'all'>;
-  category: Exclude<RankingCategory, 'all'>;
-  sponsored?: boolean;
+  city: RankingArea;
 };
 
-const rankStyles = [
-  { numColor: '#713f12', crown: 'linear-gradient(140deg, #fef08a, #eab308)' },
-  { numColor: '#1e293b', crown: 'linear-gradient(140deg, #e2e8f0, #94a3b8)' },
-  { numColor: '#451a03', crown: 'linear-gradient(140deg, #fed7aa, #b45309)' },
-  { numColor: '#064e3b', crown: 'linear-gradient(140deg, #a7f3d0, #22c55e)' },
-  { numColor: '#1e3a8a', crown: 'linear-gradient(140deg, #bfdbfe, #3b82f6)' },
-] as const;
+type RankTone = {
+  badge: string;
+  text: string;
+  icon: string;
+  topBorder?: string;
+};
 
-const adminRankingItems: RankingItem[] = [
+const rankTones: RankTone[] = [
   {
-    rank: 1,
-    ...rankStyles[0],
-    image: "url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Yuki',
-    area: 'Tây Hồ - HN · Club',
-    href: '/casts/yuki',
-    kind: 'cast',
-    city: 'hn',
-    category: 'club',
-    sponsored: true,
+    badge: "linear-gradient(135deg,#f4e3b4,#d4b26a)",
+    text: "#e3c27e",
+    icon: "#5a4413",
+    topBorder: "rgba(212,178,106,.34)",
   },
   {
-    rank: 2,
-    ...rankStyles[1],
-    image: "url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Michi',
-    area: 'Hoàn Kiếm - HN · Bar',
-    href: '/casts/michi',
-    kind: 'cast',
-    city: 'hn',
-    category: 'bar',
+    badge: "linear-gradient(135deg,#e8e8ee,#b8b8c4)",
+    text: "#b9b4ab",
+    icon: "#4a4a52",
   },
   {
-    rank: 3,
-    ...rankStyles[2],
-    image: "url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Rina',
-    area: 'Kim Mã - HN · Lounge',
-    href: '/casts/rina',
-    kind: 'cast',
-    city: 'hn',
-    category: 'lounge',
+    badge: "linear-gradient(135deg,#f0c08a,#cf8f55)",
+    text: "#d8a571",
+    icon: "#5a3a18",
   },
   {
-    rank: 4,
-    ...rankStyles[3],
-    image: "url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Hana',
-    area: 'Quận 3 - HCM · Lounge',
-    href: '/casts/hana',
-    kind: 'cast',
-    city: 'hcm',
-    category: 'lounge',
-    sponsored: true,
+    badge: "linear-gradient(135deg,#86e0a8,#4cae78)",
+    text: "#7fcf9e",
+    icon: "#16402a",
   },
   {
-    rank: 5,
-    ...rankStyles[4],
-    image: "url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Aiko',
-    area: 'Quận 1 - HCM · Bar',
-    href: '/casts/aiko',
-    kind: 'cast',
-    city: 'hcm',
-    category: 'bar',
-  },
-  {
-    rank: 1,
-    ...rankStyles[0],
-    image: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Club Lumière',
-    area: 'Tây Hồ - HN · Club',
-    href: '/stores/neon-club',
-    kind: 'quan',
-    city: 'hn',
-    category: 'club',
-    sponsored: true,
-  },
-  {
-    rank: 2,
-    ...rankStyles[1],
-    image: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Sora Lounge',
-    area: 'Quận 1 - HCM · Lounge',
-    href: '/stores/jade-lounge',
-    kind: 'quan',
-    city: 'hcm',
-    category: 'lounge',
-  },
-  {
-    rank: 3,
-    ...rankStyles[2],
-    image: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'KTV Hoàng Gia',
-    area: 'Kim Mã - HN · Karaoke',
-    href: '/stores/golden-voice-ktv',
-    kind: 'quan',
-    city: 'hn',
-    category: 'karaoke',
-    sponsored: true,
-  },
-  {
-    rank: 4,
-    ...rankStyles[3],
-    image: "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Diamond Bar',
-    area: 'Quận 3 - HCM · Bar',
-    href: '/stores/crimson-bar',
-    kind: 'quan',
-    city: 'hcm',
-    category: 'bar',
-  },
-  {
-    rank: 5,
-    ...rankStyles[4],
-    image: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=180&q=70') center/cover",
-    name: 'Sakura Lounge',
-    area: 'Trúc Bạch - HN · Lounge',
-    href: '/stores/sakura-lounge',
-    kind: 'quan',
-    city: 'hn',
-    category: 'lounge',
+    badge: "linear-gradient(135deg,#9db4ff,#6b86e6)",
+    text: "#9db0e8",
+    icon: "#1a2350",
   },
 ];
 
-const areaFilters: Array<{ key: RankingArea; label: string }> = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'hn', label: 'Hà Nội' },
-  { key: 'hcm', label: 'TP.HCM' },
+const rankingItems: RankingItem[] = [
+  {
+    name: "Yuki",
+    area: "Tây Hồ · HN",
+    href: "/casts/yuki",
+    image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hn",
+  },
+  {
+    name: "Hana",
+    area: "Quận 1 · HCM",
+    href: "/casts/hana",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hcm",
+  },
+  {
+    name: "Rina",
+    area: "Kim Mã · HN",
+    href: "/casts/rina",
+    image: "https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hn",
+  },
+  {
+    name: "Michi",
+    area: "Club Lumière · HN",
+    href: "/casts/michi",
+    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hn",
+  },
+  {
+    name: "Aiko",
+    area: "Sora Lounge · HCM",
+    href: "/casts/aiko",
+    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hcm",
+  },
+  {
+    name: "Mei",
+    area: "Hoàn Kiếm · HN",
+    href: "/casts/mei",
+    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hn",
+  },
+  {
+    name: "Saki",
+    area: "Tây Hồ · HN",
+    href: "/casts/saki",
+    image: "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hn",
+  },
+  {
+    name: "Rin",
+    area: "Hoàn Kiếm · HN",
+    href: "/casts/rin",
+    image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=220&q=75",
+    kind: "cast",
+    city: "hn",
+  },
+  {
+    name: "Club Lumière",
+    area: "Tây Hồ · HN",
+    href: "/stores/neon-club",
+    image: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hn",
+  },
+  {
+    name: "Sora Lounge",
+    area: "Quận 1 · HCM",
+    href: "/stores/jade-lounge",
+    image: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hcm",
+  },
+  {
+    name: "KTV Hoàng Gia",
+    area: "Kim Mã · HN",
+    href: "/stores/golden-voice-ktv",
+    image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hn",
+  },
+  {
+    name: "Diamond Bar",
+    area: "Quận 3 · HCM",
+    href: "/stores/crimson-bar",
+    image: "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hcm",
+  },
+  {
+    name: "Sakura Lounge",
+    area: "Trúc Bạch · HN",
+    href: "/stores/sakura-lounge",
+    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hn",
+  },
+  {
+    name: "Moonlight Bar",
+    area: "Hoàn Kiếm · HN",
+    href: "/stores/moonlight-bar",
+    image: "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hn",
+  },
+  {
+    name: "Velvet KTV",
+    area: "Quận 1 · HCM",
+    href: "/stores/velvet-ktv",
+    image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hcm",
+  },
+  {
+    name: "Aurora Club",
+    area: "Tây Hồ · HN",
+    href: "/stores/aurora-club",
+    image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=220&q=75",
+    kind: "quan",
+    city: "hn",
+  },
 ];
 
-const categoryFilters: Array<{ key: RankingCategory; label: string }> = [
-  { key: 'all', label: 'Tất cả danh mục' },
-  { key: 'club', label: 'Club' },
-  { key: 'bar', label: 'Bar' },
-  { key: 'lounge', label: 'Lounge' },
-  { key: 'karaoke', label: 'Karaoke / KTV' },
-  { key: 'massage', label: 'Massage' },
+const kindTabs: Array<{ key: RankingKind; label: string }> = [
+  { key: "cast", label: "Cast" },
+  { key: "quan", label: "Quán" },
 ];
+
+const periodTabs: Array<{ key: RankingPeriod; label: string }> = [
+  { key: "week", label: "Tuần" },
+  { key: "month", label: "Tháng" },
+];
+
+const areaOptions: Array<{ key: RankingArea; label: string }> = [
+  { key: "hn", label: "Hà Nội" },
+  { key: "hcm", label: "TP.HCM" },
+  { key: "all", label: "Tất cả" },
+];
+
+function getRankTone(rank: number) {
+  return rankTones[rank - 1];
+}
+
+function KindTabs({
+  rankingType,
+  onChange,
+}: {
+  rankingType: RankingKind;
+  onChange: (value: RankingKind) => void;
+}) {
+  return (
+    <div className="vyr-ranking-segment vyr-kind-tabs" aria-label="Chuyển bảng xếp hạng">
+      {kindTabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          className={rankingType === tab.key ? "is-active" : ""}
+          onClick={() => onChange(tab.key)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PeriodTabs({
+  period,
+  onChange,
+}: {
+  period: RankingPeriod;
+  onChange: (value: RankingPeriod) => void;
+}) {
+  return (
+    <div className="vyr-ranking-period" aria-label="Chọn thời gian xếp hạng">
+      {periodTabs.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          className={period === tab.key ? "is-active" : ""}
+          onClick={() => onChange(tab.key)}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AreaSelect({
+  area,
+  onChange,
+}: {
+  area: RankingArea;
+  onChange: (value: RankingArea) => void;
+}) {
+  return (
+    <label className="vyr-ranking-area">
+      <MapPin size={15} strokeWidth={1.8} aria-hidden="true" />
+      <select
+        aria-label="Chọn khu vực"
+        value={area}
+        onChange={(event) => onChange(event.target.value as RankingArea)}
+      >
+        {areaOptions.map((option) => (
+          <option key={option.key} value={option.key}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={13} strokeWidth={2} aria-hidden="true" />
+    </label>
+  );
+}
 
 export default function Page() {
-  const [rankingType, setRankingType] = useState<RankingKind>('cast');
-  const [selectedArea, setSelectedArea] = useState<RankingArea>('all');
-  const [selectedCategory, setSelectedCategory] = useState<RankingCategory>('all');
+  const [rankingType, setRankingType] = useState<RankingKind>("cast");
+  const [period, setPeriod] = useState<RankingPeriod>("month");
+  const [selectedArea, setSelectedArea] = useState<RankingArea>("hn");
 
-  const list = useMemo(
-    () =>
-      adminRankingItems
-        .filter((item) => item.kind === rankingType)
-        .filter((item) => selectedArea === 'all' || item.city === selectedArea)
-        .filter((item) => selectedCategory === 'all' || item.category === selectedCategory)
-        .slice(0, 5)
-        .map((item, index) => ({
-          ...item,
-          rank: index + 1,
-          numColor: rankStyles[index]?.numColor ?? item.numColor,
-          crown: rankStyles[index]?.crown ?? item.crown,
-        })),
-    [rankingType, selectedArea, selectedCategory],
-  );
+  const list = useMemo(() => {
+    const filtered = rankingItems.filter((item) => {
+      const byKind = item.kind === rankingType;
+      const byArea = selectedArea === "all" || selectedArea === "hn" || item.city === selectedArea;
+      return byKind && byArea;
+    });
 
-  const title = rankingType === 'quan' ? 'Quán' : 'Cast';
-  const pageStyle: React.CSSProperties = {
-    width: '100%',
-    minHeight: '100vh',
-    padding: '40px 42px 56px',
-    background: '#101014',
-    color: '#f8f3e7',
-    fontFamily: 'var(--nl-font-sans)',
-  };
-  const headStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'end',
-    justifyContent: 'space-between',
-    gap: '24px',
-    marginBottom: '30px',
-  };
-  const titleStyle: React.CSSProperties = {
-    margin: 0,
-    fontSize: '32px',
-    lineHeight: 1.15,
-    fontWeight: 900,
-    color: '#fff8e6',
-  };
-  const subTitleStyle: React.CSSProperties = {
-    margin: '10px 0 0',
-    color: '#c7bd9e',
-    fontSize: '15px',
-  };
-  const tabWrapStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '4px',
-    border: '1px solid rgba(222, 181, 92, 0.28)',
-    borderRadius: '20px',
-    background: '#141418',
-  };
-  const filterStackStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    marginBottom: '26px',
-  };
-  const filterWrapStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  };
-  const inactiveButtonStyle: React.CSSProperties = {
-    border: '1px solid rgba(222, 181, 92, 0.25)',
-    borderRadius: '18px',
-    padding: '10px 20px',
-    color: '#ddd0af',
-    background: 'transparent',
-    fontWeight: 800,
-    cursor: 'pointer',
-    font: 'inherit',
-  };
-  const activeButtonStyle: React.CSSProperties = {
-    ...inactiveButtonStyle,
-    color: '#17130b',
-    background: 'linear-gradient(135deg, #f4d989, #d1a944)',
-  };
-  const listStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
-  };
-  const rowStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '54px 70px 1fr 24px',
-    alignItems: 'center',
-    gap: '18px',
-    width: '100%',
-    minHeight: '108px',
-    padding: '18px 22px',
-    border: '1px solid rgba(222, 181, 92, 0.22)',
-    borderRadius: '16px',
-    background: '#141418',
-    color: '#f8f3e7',
-    textDecoration: 'none',
-    boxShadow: '0 14px 34px rgba(0, 0, 0, 0.18)',
-  };
-  const rankBadgeStyle: React.CSSProperties = {
-    width: '54px',
-    height: '54px',
-    borderRadius: '14px',
-    display: 'grid',
-    placeItems: 'center',
-    fontSize: '22px',
-    fontWeight: 900,
-  };
-  const rankAvatarStyle: React.CSSProperties = {
-    width: '70px',
-    height: '70px',
-    borderRadius: '50%',
-    border: '1px solid rgba(244, 217, 137, 0.25)',
-  };
-  const rankCopyStyle: React.CSSProperties = {
-    minWidth: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  };
+    return filtered.map((item, index) => ({
+      ...item,
+      rank: index + 1,
+    }));
+  }, [rankingType, selectedArea]);
 
-  const tabs = useMemo(
-    () => [
-      { key: 'cast' as const, label: 'Cast' },
-      { key: 'quan' as const, label: 'Quán' },
-    ],
-    [],
-  );
+  const dateLabel = period === "month" ? "Tháng 6 năm 2026" : "Tuần này";
 
   return (
-    <main className="ranking-page" style={pageStyle}>
-      <section className="ranking-head" style={headStyle}>
-        <div>
-          <h1 style={titleStyle}>Bảng xếp hạng {title}</h1>
-          <p style={subTitleStyle}>Top 1-5 theo khu vực/danh mục</p>
-        </div>
-
-        <div className="ranking-tabs" aria-label="Chuyển bảng xếp hạng" style={tabWrapStyle}>
-          {tabs.map((tab) => (
+    <main className="vyr-ranking-page">
+      <section className="vyr-ranking-shell" aria-labelledby="vyr-ranking-title">
+        <div className="vyr-ranking-heading">
+          <div className="vyr-ranking-title-row">
             <button
-              key={tab.key}
               type="button"
-              className={rankingType === tab.key ? 'active' : ''}
-              style={rankingType === tab.key ? activeButtonStyle : inactiveButtonStyle}
-              onClick={() => setRankingType(tab.key)}
+              className="vyr-ranking-back"
+              aria-label="Quay lại"
+              onClick={() => window.history.back()}
             >
-              {tab.label}
+              <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
             </button>
-          ))}
-        </div>
-      </section>
+            <div>
+              <h1 id="vyr-ranking-title">Bảng xếp hạng</h1>
+              <p>{dateLabel}</p>
+            </div>
+          </div>
 
-      <div className="ranking-filter-stack" style={filterStackStyle}>
-        <div className="ranking-filters" aria-label="Lọc khu vực" style={filterWrapStyle}>
-          {areaFilters.map((area) => (
-            <button
-              key={area.key}
-              type="button"
-              className={selectedArea === area.key ? 'active' : ''}
-              style={selectedArea === area.key ? activeButtonStyle : inactiveButtonStyle}
-              onClick={() => setSelectedArea(area.key)}
-            >
-              {area.label}
-            </button>
-          ))}
+          <div className="vyr-ranking-desktop-controls">
+            <PeriodTabs period={period} onChange={setPeriod} />
+            <AreaSelect area={selectedArea} onChange={setSelectedArea} />
+            <KindTabs rankingType={rankingType} onChange={setRankingType} />
+          </div>
         </div>
 
-        <div className="ranking-filters" aria-label="Lọc danh mục" style={filterWrapStyle}>
-          {categoryFilters.map((category) => (
-            <button
-              key={category.key}
-              type="button"
-              className={selectedCategory === category.key ? 'active' : ''}
-              style={selectedCategory === category.key ? activeButtonStyle : inactiveButtonStyle}
-              onClick={() => setSelectedCategory(category.key)}
-            >
-              {category.label}
-            </button>
-          ))}
+        <div className="vyr-ranking-mobile-controls">
+          <KindTabs rankingType={rankingType} onChange={setRankingType} />
+          <div className="vyr-ranking-mobile-filter-row">
+            <PeriodTabs period={period} onChange={setPeriod} />
+            <AreaSelect area={selectedArea} onChange={setSelectedArea} />
+          </div>
         </div>
-      </div>
 
-      <section className="ranking-list" aria-label={`Bảng xếp hạng ${title}`} style={listStyle}>
-        {list.map((item) => (
-          <Link key={`${rankingType}-${item.city}-${item.category}-${item.rank}`} href={item.href} className="ranking-row" style={rowStyle}>
-            <span className="rank-badge" style={{ ...rankBadgeStyle, color: item.numColor, background: item.crown }}>
-              {item.rank}
-            </span>
-            <span className="rank-avatar" style={{ ...rankAvatarStyle, background: item.image }} />
-            <span className="rank-copy" style={rankCopyStyle}>
-              <span className="rank-title-line">
-                <strong>{item.name}</strong>
-                {item.sponsored ? <span className="sponsored-badge">Tài trợ</span> : null}
-              </span>
-              <small>{item.area}</small>
-            </span>
-            <span className="rank-arrow" aria-hidden="true">
-              <ChevronRight size={24} strokeWidth={2.35} />
-            </span>
-          </Link>
-        ))}
+        <div className="vyr-ranking-list" aria-label="Danh sách xếp hạng">
+          {list.map((item) => {
+            const tone = getRankTone(item.rank);
+            const topRank = item.rank === 1;
+
+            return (
+              <Link
+                key={`${rankingType}-${selectedArea}-${item.name}`}
+                href={item.href}
+                className={topRank ? "vyr-rank-row is-top-rank" : "vyr-rank-row"}
+                style={{
+                  borderColor: tone?.topBorder,
+                }}
+              >
+                <span
+                  className="vyr-rank-avatar"
+                  style={{
+                    backgroundImage: `url(${item.image})`,
+                    borderColor: topRank ? "#d4b26a" : undefined,
+                  }}
+                />
+                <span className="vyr-rank-copy">
+                  <span className="vyr-rank-badge-line">
+                    {tone ? (
+                      <>
+                        <span
+                          className="vyr-rank-crown"
+                          style={{
+                            background: tone.badge,
+                            color: tone.icon,
+                          }}
+                        >
+                          <Crown size={16} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                        </span>
+                        <span className="vyr-rank-label" style={{ color: tone.text }}>
+                          TOP {item.rank}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="vyr-rank-number">{item.rank}</span>
+                    )}
+                  </span>
+                  <strong>{item.name}</strong>
+                  <small>{item.area}</small>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <style jsx global>{`
-        .ranking-page {
+        .vyr-ranking-page {
           width: 100%;
-          min-height: 100vh;
-          padding: 40px 42px 56px;
-          background: #101014;
-          color: #f8f3e7;
+          min-height: calc(100vh - 82px);
+          background: #0c0c0f;
+          color: #f3f0ea;
           font-family: var(--nl-font-sans);
+          padding: 26px 30px 48px;
         }
 
-        .ranking-head {
+        .vyr-ranking-shell {
+          width: min(100%, 1180px);
+          margin: 0 auto;
+          background: #0e0d12;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 18px;
+          box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.7);
+          padding: 26px 30px 32px;
+        }
+
+        .vyr-ranking-heading {
           display: flex;
-          align-items: end;
+          align-items: flex-start;
           justify-content: space-between;
           gap: 24px;
-          margin-bottom: 30px;
         }
 
-        h1 {
-          margin: 0;
-          font-size: 32px;
-          line-height: 1.15;
-          font-weight: 900;
-          color: #fff8e6;
-        }
-
-        p {
-          margin: 10px 0 0;
-          color: #c7bd9e;
-          font-size: 15px;
-        }
-
-        .ranking-tabs,
-        .ranking-filters {
+        .vyr-ranking-title-row {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
+          min-width: 0;
         }
 
-        .ranking-filter-stack {
+        .vyr-ranking-back {
+          display: none;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: transparent;
+          color: #f3f0ea;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          cursor: pointer;
+        }
+
+        .vyr-ranking-page h1 {
+          margin: 0;
+          color: #f3f0ea;
+          font-size: 27px;
+          line-height: 1.15;
+          font-weight: 700;
+          letter-spacing: 0;
+        }
+
+        .vyr-ranking-page p {
+          margin: 4px 0 0;
+          color: #d4b26a;
+          font-size: 13px;
+          line-height: 1.3;
+          font-weight: 600;
+        }
+
+        .vyr-ranking-desktop-controls {
           display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-bottom: 26px;
-        }
-
-        .ranking-filters {
+          align-items: center;
+          gap: 14px;
           flex-wrap: wrap;
+          justify-content: flex-end;
         }
 
-        .ranking-tabs {
+        .vyr-ranking-mobile-controls {
+          display: none;
+        }
+
+        .vyr-ranking-segment,
+        .vyr-ranking-period {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 13px;
           padding: 4px;
-          border: 1px solid rgba(222, 181, 92, 0.28);
-          border-radius: 20px;
-          background: #141418;
         }
 
-        button {
+        .vyr-ranking-segment button,
+        .vyr-ranking-period button {
+          min-height: 0;
           border: 0;
+          border-radius: 9px;
+          background: transparent;
+          color: #b6b1a6;
           cursor: pointer;
           font: inherit;
-        }
-
-        .ranking-tabs button,
-        .ranking-filters button {
-          border-radius: 18px;
-          padding: 10px 20px;
-          color: #ddd0af;
-          background: transparent;
-          font-weight: 800;
-        }
-
-        .ranking-tabs button.active,
-        .ranking-filters button.active {
-          color: #17130b;
-          background: linear-gradient(135deg, #f4d989, #d1a944);
-        }
-
-        .ranking-filters button {
-          border: 1px solid rgba(222, 181, 92, 0.25);
-        }
-
-        .ranking-list {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-
-        .ranking-row {
-          display: grid;
-          grid-template-columns: 54px 70px 1fr 24px;
-          align-items: center;
-          gap: 18px;
-          min-height: 108px;
-          padding: 18px 22px;
-          border: 1px solid rgba(222, 181, 92, 0.22);
-          border-radius: 16px;
-          background: #141418;
-          color: inherit;
-          text-decoration: none;
-          box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
-          transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
-        }
-
-        .ranking-row:hover {
-          transform: translateY(-2px);
-          border-color: rgba(244, 217, 137, 0.55);
-          background: #17171c;
-        }
-
-        .rank-badge {
-          width: 54px;
-          height: 54px;
-          border-radius: 14px;
-          display: grid;
-          place-items: center;
-          font-size: 22px;
-          font-weight: 900;
-        }
-
-        .rank-avatar {
-          width: 70px;
-          height: 70px;
-          border-radius: 50%;
-          border: 1px solid rgba(244, 217, 137, 0.25);
-        }
-
-        .rank-copy {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .rank-title-line {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          min-width: 0;
-          flex-wrap: wrap;
-        }
-
-        .rank-copy strong {
-          color: #fff8e6;
-          font-size: 20px;
-        }
-
-        .rank-copy small {
-          color: #c7bd9e;
-          font-size: 15px;
-        }
-
-        .sponsored-badge {
-          border: 1px solid rgba(244, 217, 137, 0.5);
-          border-radius: 999px;
-          padding: 3px 9px;
-          color: #17130b;
-          background: linear-gradient(135deg, #f4d989, #d1a944);
-          font-size: 11px;
-          font-weight: 900;
+          font-size: 12.5px;
+          font-weight: 600;
+          line-height: 1;
+          padding: 8px 18px;
           white-space: nowrap;
         }
 
-        .rank-arrow {
-          width: 28px;
-          height: 28px;
-          display: grid;
-          place-items: center;
-          color: rgba(240, 221, 168, 0.58);
+        .vyr-ranking-period button {
+          padding-inline: 14px;
+        }
+
+        .vyr-ranking-segment button.is-active,
+        .vyr-ranking-period button.is-active {
+          color: #241a0a;
+          background: linear-gradient(135deg, #f0dda8, #d4b26a);
+        }
+
+        .vyr-ranking-area {
+          min-height: 36px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 13px;
+          padding: 0 12px 0 14px;
+          color: #c5c0b6;
+          background: transparent;
+          position: relative;
+        }
+
+        .vyr-ranking-area svg:first-child {
+          color: #c9a86a;
+          flex: none;
+        }
+
+        .vyr-ranking-area svg:last-child {
+          color: currentColor;
+          flex: none;
+          pointer-events: none;
+        }
+
+        .vyr-ranking-area select {
+          min-height: 34px;
+          appearance: none;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: #c5c0b6;
+          cursor: pointer;
+          font: inherit;
+          font-size: 13px;
+          line-height: 1;
+          padding: 0;
+        }
+
+        .vyr-ranking-area option {
+          background: #15131a;
+          color: #f3f0ea;
+        }
+
+        .vyr-ranking-list {
+          display: flex;
+          flex-direction: column;
+          gap: 11px;
+          margin-top: 22px;
+        }
+
+        .vyr-rank-row {
+          width: 100%;
+          min-height: 90px;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.03);
+          color: #f3f0ea;
+          text-decoration: none;
+          padding: 15px 24px;
+          transition:
+            background 160ms ease,
+            border-color 160ms ease,
+            transform 160ms ease;
+        }
+
+        .vyr-rank-row:hover {
+          transform: translateY(-1px);
+          background: rgba(255, 255, 255, 0.045);
+          border-color: rgba(212, 178, 106, 0.28);
+        }
+
+        .vyr-rank-row.is-top-rank {
+          background: linear-gradient(135deg, rgba(212, 178, 106, 0.13), rgba(255, 255, 255, 0.025));
+        }
+
+        .vyr-rank-avatar {
+          width: 58px;
+          height: 58px;
+          border-radius: 50%;
+          flex: none;
+          background-position: center;
+          background-size: cover;
+          border: 2px solid transparent;
+        }
+
+        .vyr-rank-copy {
+          min-width: 0;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .vyr-rank-badge-line {
+          min-height: 30px;
+          display: flex;
+          align-items: center;
+          gap: 9px;
+        }
+
+        .vyr-rank-crown {
+          width: 30px;
+          height: 30px;
+          border-radius: 9px;
+          flex: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .vyr-rank-label {
+          font-size: 11px;
+          line-height: 1;
+          font-weight: 700;
+        }
+
+        .vyr-rank-number {
+          width: 30px;
+          height: 30px;
+          border-radius: 9px;
+          flex: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(212, 178, 106, 0.3);
+          background: rgba(212, 178, 106, 0.1);
+          color: #d4b26a;
+          font-size: 14px;
+          font-weight: 800;
           line-height: 1;
         }
 
-        .ranking-row:hover .rank-arrow {
-          color: #f0dda8;
+        .vyr-rank-copy strong {
+          margin-top: 6px;
+          color: #f3f0ea;
+          font-size: 20px;
+          line-height: 1.15;
+          font-weight: 700;
+          overflow-wrap: anywhere;
+        }
+
+        .vyr-rank-copy small {
+          margin-top: 3px;
+          color: #8c8679;
+          font-size: 13px;
+          line-height: 1.3;
         }
 
         @media (max-width: 767px) {
-          .ranking-page {
-            padding: 22px 16px 112px;
+          .vyr-ranking-page {
+            min-height: calc(100vh - 56px);
+            padding: 6px 16px calc(100px + env(safe-area-inset-bottom));
           }
 
-          .ranking-head {
-            align-items: stretch;
-            flex-direction: column;
-            margin-bottom: 18px;
+          .vyr-ranking-shell {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            background: #0c0c0f;
           }
 
-          h1 {
-            font-size: 25px;
+          .vyr-ranking-heading {
+            display: block;
           }
 
-          p {
-            font-size: 13px;
+          .vyr-ranking-title-row {
+            padding: 6px 0 8px;
           }
 
-          .ranking-tabs {
-            align-self: stretch;
-          }
-
-          .ranking-tabs button {
-            flex: 1;
-          }
-
-          .ranking-filter-stack {
-            margin-bottom: 18px;
-          }
-
-          .ranking-filters {
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding-bottom: 3px;
-          }
-
-          .ranking-filters button {
+          .vyr-ranking-back {
+            display: inline-flex;
             flex: none;
           }
 
-          .ranking-row {
-            grid-template-columns: 42px 52px minmax(0, 1fr) 24px;
-            gap: 10px;
-            min-height: 76px;
-            padding: 12px;
-          }
-
-          .ranking-list {
-            gap: 10px;
-          }
-
-          .rank-badge {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
+          .vyr-ranking-page h1 {
             font-size: 18px;
+            font-weight: 700;
           }
 
-          .rank-avatar {
-            width: 52px;
-            height: 52px;
+          .vyr-ranking-page p {
+            font-size: 11px;
+            margin-top: 1px;
           }
 
-          .rank-copy strong {
-            font-size: 15px;
+          .vyr-ranking-desktop-controls {
+            display: none;
           }
 
-          .rank-copy small {
+          .vyr-ranking-mobile-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+          }
+
+          .vyr-kind-tabs {
+            width: 100%;
+          }
+
+          .vyr-kind-tabs button {
+            flex: 1;
+            padding: 9px 0;
+            font-size: 13px;
+          }
+
+          .vyr-ranking-mobile-filter-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .vyr-ranking-period {
+            gap: 6px;
+            flex: none;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+          }
+
+          .vyr-ranking-period button {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 13px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #c5c0b6;
+            font-size: 11.5px;
+            padding: 7px 13px;
+          }
+
+          .vyr-ranking-period button.is-active {
+            color: #e3c27e;
+            border-color: rgba(212, 178, 106, 0.3);
+            background: rgba(212, 178, 106, 0.1);
+          }
+
+          .vyr-ranking-area {
+            min-width: 112px;
+            min-height: 29px;
+            border: 0;
+            padding: 0;
+            justify-content: flex-end;
+            background: transparent;
             font-size: 11.5px;
           }
 
-          .rank-copy {
-            gap: 3px;
+          .vyr-ranking-area select {
+            min-height: 29px;
+            max-width: 80px;
+            color: #c5c0b6;
+            font-size: 11.5px;
           }
 
-          .rank-arrow {
+          .vyr-ranking-list {
+            gap: 9px;
+            margin-top: 10px;
+            padding-bottom: 16px;
+          }
+
+          .vyr-rank-row {
+            min-height: 70px;
+            gap: 13px;
+            border-radius: 15px;
+            padding: 11px 13px;
+          }
+
+          .vyr-rank-avatar {
+            width: 48px;
+            height: 48px;
+          }
+
+          .vyr-rank-badge-line {
+            min-height: 24px;
+            gap: 7px;
+          }
+
+          .vyr-rank-crown,
+          .vyr-rank-number {
             width: 24px;
             height: 24px;
+            border-radius: 7px;
+          }
+
+          .vyr-rank-crown svg {
+            width: 13px;
+            height: 13px;
+          }
+
+          .vyr-rank-label {
+            font-size: 9.5px;
+          }
+
+          .vyr-rank-number {
+            font-size: 12px;
+          }
+
+          .vyr-rank-copy strong {
+            margin-top: 5px;
+            font-size: 16px;
+          }
+
+          .vyr-rank-copy small {
+            margin-top: 1px;
+            font-size: 11.5px;
           }
         }
       `}</style>
