@@ -147,6 +147,20 @@ const CASTS: CastSeed[] = [
     languages: ['ja', 'vi'],
     hourlyRateVnd: 400000,
   },
+  {
+    slug: 'mika-golden-ktv',
+    stageName: 'Mika',
+    storeSlug: 'golden-voice-ktv',
+    bio: 'Mika - KTV host for private groups in Quan 7',
+    publicAlias: 'Mika KTV',
+    publicHeadline: 'KTV host cho tiec nhom Quan 7',
+    publicBio:
+      'EN Cheerful KTV host for group parties, song picking, and duet support.\n' +
+      'VI Biet khuay dong phong karaoke, chon bai va song ca cung khach.',
+    tags: ['ktv', 'karaoke', 'group', '20s'],
+    languages: ['vi', 'ja'],
+    hourlyRateVnd: 820000,
+  },
 
   // ── Hanami Dining (HCM Q3) ──
   {
@@ -210,6 +224,20 @@ const CASTS: CastSeed[] = [
     tags: ['mysterious', 'whisky-lover', 'jazz', '20s'],
     languages: ['ja', 'en'],
     hourlyRateVnd: 500000,
+  },
+  {
+    slug: 'linh-crimson-bar',
+    stageName: 'Linh',
+    storeSlug: 'crimson-bar',
+    bio: 'Linh - cocktail companion in Hoan Kiem',
+    publicAlias: 'Linh Crimson',
+    publicHeadline: 'Cocktail companion khu Hoan Kiem',
+    publicBio:
+      'EN Friendly cocktail companion for private tables and quiet conversations in Hoan Kiem.\n' +
+      'VI Phu hop khach thich cocktail, tro chuyen nhe nhang va khong gian bar tai Hoan Kiem.',
+    tags: ['bar', 'cocktail', 'chill', '20s'],
+    languages: ['vi', 'en'],
+    hourlyRateVnd: 780000,
   },
 
   // ── Neon Club (HN Tây Hồ) ──
@@ -458,6 +486,20 @@ const CASTS: CastSeed[] = [
     tags: ['spa', 'gentle', 'quiet', '20s'],
     languages: ['vi', 'en'],
     hourlyRateVnd: 420000,
+  },
+  {
+    slug: 'sumi-lotus-massage-spa',
+    stageName: 'Sumi',
+    storeSlug: 'lotus-massage-spa',
+    bio: 'Sumi - massage spa coordinator in Quan 3',
+    publicAlias: 'Sumi Spa',
+    publicHeadline: 'Massage spa coordinator Quan 3',
+    publicBio:
+      'EN Wellness companion for late-night massage, sauna, and quiet-room packages.\n' +
+      'VI Ho tro chon goi massage, xong hoi va phong thu gian tai Quan 3.',
+    tags: ['massage-spa', 'relax', 'wellness', '20s'],
+    languages: ['vi'],
+    hourlyRateVnd: 680000,
   },
 ];
 
