@@ -732,7 +732,7 @@ textarea::placeholder {
   }
 
   .nl-site-footer {
-    display: none !important;
+    display: block !important;
   }
 
   .nl-page-content {
@@ -882,6 +882,19 @@ textarea::placeholder {
 }
 
 @media (max-width: 767px) {
+  .nl-page-content .nl-blog-feature,
+  .nl-page-content .nl-blog-detail-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .nl-page-content .nl-blog-feature [role="img"] {
+    min-height: 240px !important;
+  }
+
+  .nl-page-content .nl-blog-related {
+    position: static !important;
+  }
+
   .nl-member-page-head,
   .nl-account-layout,
   .nl-account-stat-grid,

@@ -69,6 +69,34 @@ const bottomNav = [
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
 ];
 
+const footerGroups = [
+  {
+    title: "Khám phá",
+    links: [
+      { href: "/danh-sach-quan", label: "Tìm quán" },
+      { href: "/danh-sach-cast", label: "Cast" },
+      { href: "/xep-hang", label: "Bảng xếp hạng" },
+      { href: "/blog", label: "Blog" },
+    ],
+  },
+  {
+    title: "Dịch vụ",
+    links: [
+      { href: "/uu-dai", label: "Ưu đãi" },
+      { href: "/tour", label: "Tour" },
+      { href: "/dang-ky-doi-tac", label: "Đăng ký đối tác" },
+    ],
+  },
+  {
+    title: "Pháp lý",
+    links: [
+      { href: "/legal/chinh-sach-bao-mat", label: "Chính sách bảo mật" },
+      { href: "/legal/dieu-khoan-su-dung", label: "Điều khoản sử dụng" },
+      { href: "/legal/chinh-sach-hoat-dong", label: "Chính sách hoạt động" },
+    ],
+  },
+];
+
 type NoticeTone = "gold" | "green" | "amber" | "vip";
 
 type Notice = {
@@ -665,6 +693,110 @@ function NotificationOverlay({ isMobile, onClose }: { isMobile: boolean; onClose
   return isMobile ? <MobileNotificationPanel onClose={onClose} /> : <DesktopNotificationDropdown />;
 }
 
+function SiteFooter({ isMobile }: { isMobile: boolean }) {
+  return (
+    <footer
+      className="nl-site-footer"
+      style={{
+        borderTop: `1px solid ${colors.borderGold12}`,
+        background: colors.bg,
+        color: colors.muted,
+        padding: isMobile
+          ? "28px 18px calc(116px + env(safe-area-inset-bottom))"
+          : "42px 34px 34px",
+        fontSize: "12px",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile
+            ? "1fr"
+            : "minmax(220px, 1.1fr) repeat(3, minmax(140px, .7fr))",
+          gap: isMobile ? "22px" : "28px",
+          maxWidth: "1180px",
+          margin: "0 auto",
+        }}
+      >
+        <div>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              color: colors.goldPale,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
+              Vietyoru
+            </span>
+            <span style={{ marginTop: "6px", color: colors.goldPale, opacity: 0.7, letterSpacing: "2px" }}>
+              VIETNAM NIGHTLIFE GUIDE
+            </span>
+          </Link>
+          <p style={{ maxWidth: "310px", margin: "14px 0 0", color: colors.text2, lineHeight: 1.65 }}>
+            Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.
+          </p>
+          <p style={{ margin: "12px 0 0", color: "#9a9488", lineHeight: 1.6 }}>
+            Nội dung pháp lý đang dùng placeholder cho đến khi khách hàng cung cấp bản chính thức.
+          </p>
+        </div>
+
+        {footerGroups.map((group) => (
+          <nav key={group.title} aria-label={group.title}>
+            <h2
+              style={{
+                margin: 0,
+                color: colors.goldPale,
+                fontSize: "12px",
+                fontWeight: 900,
+                letterSpacing: "1.3px",
+                textTransform: "uppercase",
+              }}
+            >
+              {group.title}
+            </h2>
+            <div style={{ display: "grid", gap: "10px", marginTop: "13px" }}>
+              {group.links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={{
+                    color: colors.text2,
+                    textDecoration: "none",
+                    fontSize: "13px",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        ))}
+      </div>
+
+      <div
+        style={{
+          maxWidth: "1180px",
+          margin: "26px auto 0",
+          borderTop: `1px solid ${colors.borderGold12}`,
+          paddingTop: "18px",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          gap: "10px",
+          color: "#8c8679",
+        }}
+      >
+        <span>© 2026 Vietyoru. Bảo lưu mọi quyền.</span>
+        <span>18+ · Giá và tình trạng đặt chỗ được xác nhận lại bởi admin.</span>
+      </div>
+    </footer>
+  );
+}
+
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const [isMobile, setIsMobile] = useState(false);
@@ -1168,58 +1300,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
       <div className="nl-page-content">{children}</div>
 
-      {!isMobile ? (
-        <footer
-          className="nl-site-footer"
-          style={{
-            borderTop: `1px solid ${colors.borderGold12}`,
-            background: colors.bg,
-            color: colors.muted,
-            padding: "34px",
-            fontSize: "12px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "24px",
-            }}
-          >
-            <div>
-              <div style={{ color: colors.goldPale, fontSize: "22px", fontWeight: 800 }}>
-                Vietyoru
-              </div>
-              <div style={{ marginTop: "8px" }}>
-                Vietnam Nightlife Guide · Dark Mode · Premium Gold
-              </div>
-            </div>
-            <div
-              style={{ display: "flex", gap: "18px", flexWrap: "wrap", justifyContent: "flex-end" }}
-            >
-              <Link href="/legal" style={{ color: colors.muted, textDecoration: "none" }}>
-                Chính sách
-              </Link>
-              <Link href="/legal" style={{ color: colors.muted, textDecoration: "none" }}>
-                Điều khoản
-              </Link>
-              <Link href="/dang-ky-doi-tac" style={{ color: colors.gold, textDecoration: "none" }}>
-                Đăng ký đối tác
-              </Link>
-            </div>
-          </div>
-          <div
-            style={{
-              marginTop: "22px",
-              borderTop: `1px solid ${colors.borderGold12}`,
-              paddingTop: "18px",
-            }}
-          >
-            © 2026 Vietyoru. Bảo lưu mọi quyền.
-          </div>
-        </footer>
-      ) : null}
+      <SiteFooter isMobile={isMobile} />
 
       <nav
         style={{

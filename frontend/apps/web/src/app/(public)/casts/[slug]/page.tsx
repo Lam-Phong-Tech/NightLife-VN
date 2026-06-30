@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
+import { absoluteSiteUrl } from "@/lib/site";
 import CastProfileClient from "./CastProfileClient";
 
 type PageProps = {
@@ -40,30 +41,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   try {
     const cast = await getCastDetail(resolveCastSlug(slug));
+    const canonicalPath = cast.seo.canonicalPath || `/casts/${cast.slug}`;
+    const images = cast.seo.ogImage ? [{ url: cast.seo.ogImage }] : undefined;
 
     return {
-      title: cast.seo.title,
+      title: { absolute: cast.seo.title },
       description: cast.seo.description,
       alternates: {
-        canonical: cast.seo.canonicalPath,
+        canonical: canonicalPath,
       },
       openGraph: {
         title: cast.seo.title,
         description: cast.seo.description,
-        images: cast.seo.ogImage ? [{ url: cast.seo.ogImage }] : undefined,
+        url: absoluteSiteUrl(canonicalPath),
+        images,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: cast.seo.title,
+        description: cast.seo.description,
+        images: cast.seo.ogImage ? [cast.seo.ogImage] : undefined,
       },
     };
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return {
-        title: "Không tìm thấy cast | NightLife VN",
-        description: "Cast này không tồn tại hoặc chưa được public qua CMS.",
+        title: "Không tìm thấy cast",
+        description: "Cast này không tồn tại hoặc chưa được công khai trên Vietyoru.",
       };
     }
 
     return {
-      title: "Cast Profile | NightLife VN",
-      description: "Xem bio, gallery public, ngôn ngữ và đặt booking theo cast trên NightLife VN.",
+      title: "Hồ sơ cast",
+      description: "Xem bio, gallery public, ngôn ngữ hỗ trợ và đặt booking theo cast trên Vietyoru.",
     };
   }
 }

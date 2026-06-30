@@ -3,16 +3,29 @@ import Script from "next/script";
 import "./globals.css";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { SocketProvider } from "@/components/providers/SocketProvider";
+import { siteConfig } from "@/lib/site";
 
-// metadata: Next.js đọc object này để sinh ra thẻ <title>, <meta> trong <head>.
-// Đây là tính năng của App Router (không cần tự viết thẻ <head>).
 export const metadata: Metadata = {
-  title: "NightLife VN",
-  description: "Khám phá nhịp sống về đêm tại Việt Nam",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.name} | ${siteConfig.tagline}`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  openGraph: {
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} | ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    locale: "vi_VN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} | ${siteConfig.tagline}`,
+    description: siteConfig.description,
+  },
 };
 
-// RootLayout bọc TOÀN BỘ ứng dụng. Mọi page sẽ được render vào {children}.
-// Đây là Server Component (mặc định trong App Router) — chạy trên server.
 export default function RootLayout({
   children,
 }: Readonly<{
