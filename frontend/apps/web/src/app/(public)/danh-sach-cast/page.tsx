@@ -61,8 +61,8 @@ const languageOptions: Option[] = [
 ];
 
 const sortOptions: Array<{ value: DiscoverySort; label: string }> = [
-  { value: "priority", label: "Phổ biến" },
   { value: "newest", label: "Mới nhất" },
+  { value: "priority", label: "Phổ biến" },
   { value: "nearest", label: "Gần nhất" },
 ];
 
@@ -152,7 +152,7 @@ export default function Page() {
   const [language, setLanguage] = useState("");
   const [storeSlug, setStoreSlug] = useState("");
   const [priceRange, setPriceRange] = useState<PriceRange>("");
-  const [sort, setSort] = useState<DiscoverySort>("priority");
+  const [sort, setSort] = useState<DiscoverySort>("newest");
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isSearchFocused, setSearchFocused] = useState(false);
@@ -266,7 +266,7 @@ export default function Page() {
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
   const cityLabel = city ? (cityLabels[city] ?? city) : "Việt Nam";
-  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Phổ biến";
+  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Mới nhất";
   const activeFilterCount = [
     area,
     category,
@@ -284,7 +284,7 @@ export default function Page() {
     setStoreSlug("");
     setPriceRange("");
     setHasActiveCoupon(false);
-    setSort("priority");
+    setSort("newest");
   };
 
   const handleCityChange = (nextCity: string) => {
@@ -362,17 +362,14 @@ export default function Page() {
               </button>
             </label>
 
-            <label className="cast-select-control cast-city-select">
-              <MapPin size={16} />
-              <select value={city} onChange={(event) => handleCityChange(event.target.value)}>
-                {cityOptions.map((option) => (
-                  <option key={option.value || "all"} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} />
-            </label>
+            <CastDropdown
+              ariaLabel="Chọn thành phố"
+              className="cast-city-select"
+              icon={<MapPin size={16} />}
+              options={cityOptions}
+              value={city}
+              onChange={handleCityChange}
+            />
 
             <button type="button" className="cast-find-button">
               Tìm
@@ -409,7 +406,7 @@ export default function Page() {
             <button
               type="button"
               className={`cast-chip ${sort === "priority" ? "is-active" : ""}`}
-              onClick={() => setSort("priority")}
+              onClick={() => setSort((current) => (current === "priority" ? "newest" : "priority"))}
             >
               Top ranking
             </button>
@@ -444,20 +441,14 @@ export default function Page() {
               <span> · {cityLabel}</span>
             </span>
 
-            <label className="cast-sort-select">
-              <span>Sắp xếp:</span>
-              <select
-                value={sort}
-                onChange={(event) => setSort(event.target.value as DiscoverySort)}
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={13} />
-            </label>
+            <CastDropdown
+              ariaLabel="Chọn sắp xếp"
+              className="cast-sort-select"
+              label="Sắp xếp:"
+              options={sortOptions}
+              value={sort}
+              onChange={(value) => setSort(value as DiscoverySort)}
+            />
           </div>
 
           {isLoading ? (
@@ -503,6 +494,72 @@ export default function Page() {
         />
       ) : null}
     </main>
+  );
+}
+
+function CastDropdown({
+  ariaLabel,
+  className,
+  icon,
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  ariaLabel: string;
+  className?: string;
+  icon?: React.ReactNode;
+  label?: string;
+  options: Option[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <div
+      className={`cast-dropdown ${className ?? ""} ${isOpen ? "is-open" : ""}`}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="cast-dropdown-trigger"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {icon}
+        {label ? <span className="cast-dropdown-label">{label}</span> : null}
+        <b>{selected?.label}</b>
+        <ChevronDown size={14} />
+      </button>
+
+      {isOpen ? (
+        <div className="cast-dropdown-menu" role="listbox" aria-label={ariaLabel}>
+          {options.map((option) => (
+            <button
+              key={option.value || "all"}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={`cast-dropdown-option ${option.value === value ? "is-selected" : ""}`}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -915,8 +972,7 @@ const castSearchCss = `
 }
 
 .cast-search-input,
-.cast-select-control,
-.cast-sort-select {
+.cast-dropdown-trigger {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -938,15 +994,12 @@ const castSearchCss = `
 }
 
 .cast-search-input svg,
-.cast-select-control svg,
-.cast-sort-select svg {
+.cast-dropdown-trigger svg {
   color: #c9a86a;
   flex: none;
 }
 
-.cast-search-input input,
-.cast-select-control select,
-.cast-sort-select select {
+.cast-search-input input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -990,23 +1043,95 @@ const castSearchCss = `
   display: none;
 }
 
-.cast-select-control {
+.cast-dropdown {
   position: relative;
+  min-width: 0;
+}
+
+.cast-dropdown-trigger {
+  width: 100%;
   min-height: 52px;
   border-radius: 14px;
   padding: 0 13px;
-}
-
-.cast-select-control select,
-.cast-sort-select select {
-  appearance: none;
+  font-family: var(--nl-font-sans);
   cursor: pointer;
 }
 
-.cast-select-control option,
-.cast-sort-select option {
-  color: #16151a;
-  background: #fff;
+.cast-dropdown-trigger b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #f3f0ea;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cast-dropdown-trigger > svg:last-child {
+  color: #d4b26a;
+  transition: transform 180ms ease;
+}
+
+.cast-dropdown.is-open .cast-dropdown-trigger {
+  border-color: rgba(212, 178, 106, 0.72);
+  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+}
+
+.cast-dropdown.is-open .cast-dropdown-trigger > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.cast-dropdown-label {
+  color: #9b958a;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.cast-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 35;
+  display: grid;
+  gap: 3px;
+  min-width: 100%;
+  border: 1px solid rgba(212, 178, 106, 0.28);
+  border-radius: 12px;
+  background: #16141b;
+  padding: 6px;
+  box-shadow: 0 20px 48px -24px rgba(0, 0, 0, 0.9);
+}
+
+.cast-dropdown-option {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #c5c0b6;
+  padding: 0 10px;
+  font-family: var(--nl-font-sans);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cast-dropdown-option:hover,
+.cast-dropdown-option:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f3f0ea;
+  outline: none;
+}
+
+.cast-dropdown-option.is-selected {
+  background: linear-gradient(135deg, #f0dda8, #d4b26a);
+  color: #241a0a;
+  font-weight: 850;
 }
 
 .cast-find-button,
@@ -1110,20 +1235,31 @@ const castSearchCss = `
 }
 
 .cast-sort-select {
-  min-height: 38px;
-  border-radius: 13px;
-  padding: 0 12px;
   font-size: 13px;
 }
 
-.cast-sort-select span {
-  white-space: nowrap;
+.cast-sort-select .cast-dropdown-trigger {
+  min-height: 38px;
+  border-radius: 13px;
+  gap: 7px;
+  padding: 0 12px;
 }
 
-.cast-sort-select select {
-  width: auto;
+.cast-sort-select .cast-dropdown-label {
+  font-size: 13px;
+}
+
+.cast-sort-select .cast-dropdown-trigger b {
+  flex: none;
   color: #e3c27e;
+  font-size: 13px;
   font-weight: 700;
+}
+
+.cast-sort-select .cast-dropdown-menu {
+  left: auto;
+  right: 0;
+  min-width: 148px;
 }
 
 .cast-card-grid {
@@ -1896,15 +2032,34 @@ const castSearchCss = `
   }
 
   .cast-sort-select {
+    font-size: 12px;
+  }
+
+  .cast-sort-select .cast-dropdown-trigger {
     min-height: auto;
     border: 0;
     background: transparent;
     padding: 0;
+    gap: 5px;
+    box-shadow: none;
+  }
+
+  .cast-sort-select.is-open .cast-dropdown-trigger {
+    box-shadow: none;
+  }
+
+  .cast-sort-select .cast-dropdown-label {
+    display: inline;
     font-size: 12px;
   }
 
-  .cast-sort-select span {
-    display: inline;
+  .cast-sort-select .cast-dropdown-trigger b {
+    font-size: 12px;
+  }
+
+  .cast-sort-select .cast-dropdown-menu {
+    top: calc(100% + 8px);
+    min-width: 128px;
   }
 
   .cast-card-grid {
