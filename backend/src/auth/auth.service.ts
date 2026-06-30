@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'node:crypto';
+import type { Request, Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
@@ -31,6 +32,59 @@ type GoogleTokenInfoResponse = {
   error?: string;
   error_description?: string;
 };
+
+type LineTokenResponse = {
+  access_token?: string;
+  expires_in?: number;
+  id_token?: string;
+  refresh_token?: string;
+  scope?: string;
+  token_type?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type LineIdTokenVerifyResponse = {
+  iss?: string;
+  sub?: string;
+  aud?: string;
+  exp?: number;
+  iat?: number;
+  nonce?: string;
+  name?: string;
+  picture?: string;
+  email?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type LineCallbackQuery = {
+  code?: string;
+  state?: string;
+  error?: string;
+  errorDescription?: string;
+};
+
+type LineAccount = {
+  sub: string;
+  email: string;
+  displayName?: string;
+};
+
+type AuthCookiePayload = {
+  accessToken: string;
+  user: {
+    email: string;
+    displayName?: string | null;
+    role: string;
+  };
+};
+
+const lineStateCookie = 'line_oauth_state';
+const lineNonceCookie = 'line_oauth_nonce';
+const lineRedirectCookie = 'line_oauth_redirect';
+const authCookieMaxAgeMs = 24 * 60 * 60 * 1000;
+const oauthCookieMaxAgeMs = 10 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -103,6 +157,122 @@ export class AuthService {
     });
 
     return this.toAuthResponse(user, sessionContext);
+  }
+
+  redirectToLineLogin(redirect: string | undefined, response: Response) {
+    const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
+    const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL');
+
+    if (!channelId || !callbackUrl) {
+      throw new ServiceUnavailableException('LINE login is not configured');
+    }
+
+    const state = randomUUID();
+    const nonce = randomUUID();
+    const redirectPath = this.normalizeRedirectPath(redirect);
+    const cookieOptions = this.oauthCookieOptions();
+
+    response.cookie(lineStateCookie, state, cookieOptions);
+    response.cookie(lineNonceCookie, nonce, cookieOptions);
+    response.cookie(lineRedirectCookie, redirectPath, cookieOptions);
+
+    const authorizationUrl = new URL(
+      'https://access.line.me/oauth2/v2.1/authorize',
+    );
+    authorizationUrl.searchParams.set('response_type', 'code');
+    authorizationUrl.searchParams.set('client_id', channelId);
+    authorizationUrl.searchParams.set('redirect_uri', callbackUrl);
+    authorizationUrl.searchParams.set('state', state);
+    authorizationUrl.searchParams.set('scope', 'profile openid email');
+    authorizationUrl.searchParams.set('nonce', nonce);
+
+    return response.redirect(authorizationUrl.toString());
+  }
+
+  async handleLineCallback(
+    query: LineCallbackQuery,
+    request: Request,
+    response: Response,
+    sessionContext?: SessionContext,
+  ) {
+    const cookies = this.parseCookieHeader(request.headers.cookie);
+    const redirectPath = this.normalizeRedirectPath(cookies[lineRedirectCookie]);
+
+    if (query.error) {
+      this.clearLineOAuthCookies(response);
+      return this.redirectLineLoginError(
+        response,
+        redirectPath,
+        query.errorDescription || query.error,
+      );
+    }
+
+    if (!query.code || !query.state || query.state !== cookies[lineStateCookie]) {
+      this.clearLineOAuthCookies(response);
+      return this.redirectLineLoginError(
+        response,
+        redirectPath,
+        'LINE login state is invalid. Please try again.',
+      );
+    }
+
+    let lineAccount: LineAccount;
+
+    try {
+      lineAccount = await this.verifyLineAuthorizationCode(
+        query.code,
+        cookies[lineNonceCookie],
+      );
+    } catch (error) {
+      this.clearLineOAuthCookies(response);
+      return this.redirectLineLoginError(
+        response,
+        redirectPath,
+        error instanceof ServiceUnavailableException
+          ? 'LINE login is not configured.'
+          : 'LINE did not return a verified email address. Please approve email permission and try again.',
+      );
+    }
+
+    const existingUser = await this.usersService.findByEmail(lineAccount.email);
+
+    if (existingUser) {
+      if (existingUser.deletedAt || existingUser.status !== 'ACTIVE') {
+        this.clearLineOAuthCookies(response);
+        return this.redirectLineLoginError(
+          response,
+          redirectPath,
+          'LINE account is not active.',
+        );
+      }
+
+      if (existingUser.role !== 'USER') {
+        this.clearLineOAuthCookies(response);
+        return this.redirectLineLoginError(
+          response,
+          redirectPath,
+          'This LINE account is not a member account.',
+        );
+      }
+
+      const authResponse = await this.toAuthResponse(
+        existingUser,
+        sessionContext,
+      );
+      this.setAuthCookies(response, authResponse);
+      this.clearLineOAuthCookies(response);
+      return response.redirect(this.webRedirectUrl(redirectPath));
+    }
+
+    const user = await this.usersService.createLineMember({
+      email: lineAccount.email,
+      displayName: lineAccount.displayName,
+    });
+    const authResponse = await this.toAuthResponse(user, sessionContext);
+    this.setAuthCookies(response, authResponse);
+    this.clearLineOAuthCookies(response);
+
+    return response.redirect(this.webRedirectUrl(redirectPath));
   }
 
   async me(userId: string) {
@@ -231,6 +401,198 @@ export class AuthService {
       email: tokenInfo.email.toLowerCase(),
       displayName: tokenInfo.name?.trim() || undefined,
     };
+  }
+
+  private async verifyLineAuthorizationCode(code: string, expectedNonce?: string) {
+    const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
+    const channelSecret = this.configService.get<string>('LINE_CHANNEL_SECRET');
+    const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL');
+
+    if (!channelId || !channelSecret || !callbackUrl) {
+      throw new ServiceUnavailableException('LINE login is not configured');
+    }
+
+    let tokenResponse: LineTokenResponse;
+
+    try {
+      const response = await fetch('https://api.line.me/oauth2/v2.1/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: callbackUrl,
+          client_id: channelId,
+          client_secret: channelSecret,
+        }),
+      });
+
+      tokenResponse = (await response.json()) as LineTokenResponse;
+
+      if (!response.ok || !tokenResponse.id_token) {
+        throw new UnauthorizedException('Invalid LINE authorization code');
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException('Invalid LINE authorization code');
+    }
+
+    let idTokenInfo: LineIdTokenVerifyResponse;
+
+    try {
+      const response = await fetch('https://api.line.me/oauth2/v2.1/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          id_token: tokenResponse.id_token,
+          client_id: channelId,
+        }),
+      });
+
+      idTokenInfo = (await response.json()) as LineIdTokenVerifyResponse;
+
+      if (!response.ok) {
+        throw new UnauthorizedException('Invalid LINE ID token');
+      }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException('Invalid LINE ID token');
+    }
+
+    if (
+      idTokenInfo.error ||
+      idTokenInfo.aud !== channelId ||
+      (expectedNonce && idTokenInfo.nonce !== expectedNonce) ||
+      !idTokenInfo.sub ||
+      !idTokenInfo.email
+    ) {
+      throw new UnauthorizedException(
+        'LINE email permission is required for login',
+      );
+    }
+
+    return {
+      sub: idTokenInfo.sub,
+      email: idTokenInfo.email.toLowerCase(),
+      displayName: idTokenInfo.name?.trim() || undefined,
+    };
+  }
+
+  private setAuthCookies(response: Response, authResponse: AuthCookiePayload) {
+    const cookieOptions = {
+      maxAge: authCookieMaxAgeMs,
+      path: '/',
+      sameSite: 'lax' as const,
+      secure: this.shouldUseSecureCookies(),
+    };
+
+    response.cookie('auth_token', authResponse.accessToken, cookieOptions);
+    response.cookie('user_role', authResponse.user.role, cookieOptions);
+    response.cookie('user_email', authResponse.user.email, cookieOptions);
+    response.cookie(
+      'user_name',
+      authResponse.user.displayName ?? authResponse.user.email,
+      cookieOptions,
+    );
+  }
+
+  private oauthCookieOptions() {
+    return {
+      httpOnly: true,
+      maxAge: oauthCookieMaxAgeMs,
+      path: '/',
+      sameSite: 'lax' as const,
+      secure: this.shouldUseSecureCookies(),
+    };
+  }
+
+  private clearLineOAuthCookies(response: Response) {
+    const options = {
+      path: '/',
+      sameSite: 'lax' as const,
+      secure: this.shouldUseSecureCookies(),
+    };
+
+    response.clearCookie(lineStateCookie, options);
+    response.clearCookie(lineNonceCookie, options);
+    response.clearCookie(lineRedirectCookie, options);
+  }
+
+  private redirectLineLoginError(
+    response: Response,
+    redirectPath: string,
+    message: string,
+  ) {
+    const loginUrl = this.webRedirectUrl('/dang-nhap');
+    const url = new URL(loginUrl);
+    url.searchParams.set('redirect', redirectPath);
+    url.searchParams.set('line_error', message);
+
+    return response.redirect(url.toString());
+  }
+
+  private normalizeRedirectPath(value: string | undefined) {
+    if (!value || !value.startsWith('/') || value.startsWith('//')) {
+      return '/tai-khoan';
+    }
+
+    return value;
+  }
+
+  private webRedirectUrl(path: string) {
+    const baseUrl = this.configService.get<string>(
+      'WEB_BASE_URL',
+      'http://localhost:3000',
+    );
+    const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+
+    return `${normalizedBaseUrl}${this.normalizeRedirectPath(path)}`;
+  }
+
+  private shouldUseSecureCookies() {
+    const webBaseUrl = this.configService.get<string>('WEB_BASE_URL', '');
+    const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL', '');
+
+    return (
+      this.configService.get<string>('NODE_ENV') === 'production' ||
+      webBaseUrl.startsWith('https://') ||
+      callbackUrl.startsWith('https://')
+    );
+  }
+
+  private parseCookieHeader(cookieHeader: string | undefined) {
+    if (!cookieHeader) {
+      return {};
+    }
+
+    return cookieHeader.split(';').reduce<Record<string, string>>(
+      (cookies, entry) => {
+        const [rawName, ...rawValueParts] = entry.trim().split('=');
+        if (!rawName || rawValueParts.length === 0) {
+          return cookies;
+        }
+
+        const rawValue = rawValueParts.join('=');
+        try {
+          cookies[rawName] = decodeURIComponent(rawValue);
+        } catch {
+          cookies[rawName] = rawValue;
+        }
+
+        return cookies;
+      },
+      {},
+    );
   }
 
   private resolveJwtExpiresAt() {

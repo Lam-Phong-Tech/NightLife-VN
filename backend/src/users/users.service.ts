@@ -77,6 +77,24 @@ export class UsersService {
     });
   }
 
+  async createLineMember(input: { email: string; displayName?: string }) {
+    const email = input.email.toLowerCase();
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException('Email is already registered');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: await this.passwordService.hash(`line:${randomUUID()}`),
+        displayName: input.displayName,
+        role: 'USER',
+        tier: 'FREE',
+      },
+    });
+  }
+
   async validateCredentials(email: string, password: string) {
     const user = await this.findByEmail(email);
 

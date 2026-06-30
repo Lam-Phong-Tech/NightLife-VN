@@ -273,6 +273,11 @@ export default function Page() {
     setMessage(`Đăng nhập bằng ${provider} sẽ được kết nối ở bước tiếp theo.`);
   };
 
+  const startLineConsent = () => {
+    const params = new URLSearchParams({ redirect: redirectTo });
+    window.location.href = `/line-email-consent?${params.toString()}`;
+  };
+
   return (
     <main className="nl-login-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
       <div className="nl-login-shell" style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "minmax(0,1.05fr) minmax(0,.95fr)" }}>
@@ -406,6 +411,7 @@ export default function Page() {
                       logoAlt="Google"
                       label="Google"
                       onClick={() => {
+                        showSocialComingSoon("Google");
                         setMessageTone("error");
                         setMessage("Thiếu NEXT_PUBLIC_GOOGLE_CLIENT_ID cho đăng nhập Google.");
                       }}
@@ -415,7 +421,7 @@ export default function Page() {
                     logoSrc={lineLogoSrc}
                     logoAlt="LINE"
                     label="LINE"
-                    onClick={() => showSocialComingSoon("LINE")}
+                    onClick={startLineConsent}
                   />
                 </div>
               </form>

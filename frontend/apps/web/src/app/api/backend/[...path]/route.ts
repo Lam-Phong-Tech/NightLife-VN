@@ -42,6 +42,20 @@ const stripHopByHopHeaders = (source: Headers) => {
   return headers;
 };
 
+const getSetCookieHeaders = (headers: Headers) => {
+  const headersWithSetCookie = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const setCookies = headersWithSetCookie.getSetCookie?.();
+
+  if (setCookies?.length) {
+    return setCookies;
+  }
+
+  const setCookie = headers.get('set-cookie');
+  return setCookie ? [setCookie] : [];
+};
+
 const addUniqueBaseUrl = (urls: string[], value?: string) => {
   if (!value || !toHttpUrl(value)) {
     return;
@@ -124,11 +138,21 @@ const proxy = async (
         redirect: 'manual',
       });
 
-      return new Response(response.body, {
+      const responseHeaders = stripHopByHopHeaders(response.headers);
+      const setCookieHeaders = getSetCookieHeaders(response.headers);
+      responseHeaders.delete('set-cookie');
+
+      const proxiedResponse = new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
-        headers: stripHopByHopHeaders(response.headers),
+        headers: responseHeaders,
       });
+
+      for (const setCookieHeader of setCookieHeaders) {
+        proxiedResponse.headers.append('set-cookie', setCookieHeader);
+      }
+
+      return proxiedResponse;
     } catch (error) {
       lastError = error;
     }

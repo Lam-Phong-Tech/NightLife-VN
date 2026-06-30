@@ -19,6 +19,7 @@ describe('AuthService', () => {
   const usersService = {
     createUser: jest.fn(),
     createGoogleMember: jest.fn(),
+    createLineMember: jest.fn(),
     findByEmail: jest.fn(),
     validateCredentials: jest.fn(),
     findByIdOrThrow: jest.fn(),

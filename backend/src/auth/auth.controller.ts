@@ -1,6 +1,15 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
@@ -31,6 +40,36 @@ export class AuthController {
   loginGoogleMember(@Body() dto: GoogleAuthDto, @Req() request: Request) {
     return this.authService.loginGoogleMember(
       dto,
+      this.sessionContext(request),
+    );
+  }
+
+  @Get('line/start')
+  startLineLogin(
+    @Query('redirect') redirect: string | undefined,
+    @Res() response: Response,
+  ) {
+    return this.authService.redirectToLineLogin(redirect, response);
+  }
+
+  @Get('line/callback')
+  handleLineCallback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Query('error_description') errorDescription: string | undefined,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    return this.authService.handleLineCallback(
+      {
+        code,
+        state,
+        error,
+        errorDescription,
+      },
+      request,
+      response,
       this.sessionContext(request),
     );
   }
