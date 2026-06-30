@@ -352,86 +352,75 @@ function DesktopSupportChatPanel({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <>
+    <section
+      data-support-chat-panel="true"
+      role="dialog"
+      aria-labelledby="support-chat-title"
+      onMouseDown={(event) => event.stopPropagation()}
+      style={{
+        position: "fixed",
+        right: "26px",
+        bottom: "26px",
+        zIndex: 111,
+        width: "min(374px, calc(100vw - 32px))",
+        height: "min(498px, calc(100vh - 112px))",
+        minHeight: "420px",
+        background: chatColors.panel,
+        border: "1px solid rgba(212,178,106,.22)",
+        borderRadius: "18px",
+        boxShadow: "0 30px 70px -22px rgba(0,0,0,.85)",
+        color: chatColors.text,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        fontFamily: "var(--nl-font-sans)",
+      }}
+    >
       <div
-        aria-hidden="true"
         style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 110,
-          background: "rgba(8,8,11,.5)",
-        }}
-      />
-      <section
-        data-support-chat-panel="true"
-        role="dialog"
-        aria-labelledby="support-chat-title"
-        onMouseDown={(event) => event.stopPropagation()}
-        style={{
-          position: "fixed",
-          right: "26px",
-          bottom: "26px",
-          zIndex: 111,
-          width: "min(374px, calc(100vw - 32px))",
-          height: "min(498px, calc(100vh - 112px))",
-          minHeight: "420px",
-          background: chatColors.panel,
-          border: "1px solid rgba(212,178,106,.22)",
-          borderRadius: "18px",
-          boxShadow: "0 30px 70px -22px rgba(0,0,0,.85)",
-          color: chatColors.text,
           display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          fontFamily: "var(--nl-font-sans)",
+          alignItems: "center",
+          gap: "11px",
+          padding: "13px 15px",
+          borderBottom: "1px solid rgba(255,255,255,.07)",
+          background: "linear-gradient(180deg,rgba(212,178,106,.08),rgba(255,255,255,0))",
+          flex: "none",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "11px",
-            padding: "13px 15px",
-            borderBottom: "1px solid rgba(255,255,255,.07)",
-            background: "linear-gradient(180deg,rgba(212,178,106,.08),rgba(255,255,255,0))",
-            flex: "none",
-          }}
-        >
-          <SupportAvatar />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2
-              id="support-chat-title"
-              style={{
-                margin: 0,
-                fontSize: "14.5px",
-                fontWeight: 700,
-                color: chatColors.text,
-                lineHeight: 1.25,
-              }}
-            >
-              Vietyoru Hỗ trợ
-            </h2>
-            <div style={{ fontSize: "11px", color: chatColors.muted, marginTop: "1px" }}>
-              Chăm sóc khách hàng
-            </div>
+        <SupportAvatar />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2
+            id="support-chat-title"
+            style={{
+              margin: 0,
+              fontSize: "14.5px",
+              fontWeight: 700,
+              color: chatColors.text,
+              lineHeight: 1.25,
+            }}
+          >
+            Vietyoru Hỗ trợ
+          </h2>
+          <div style={{ fontSize: "11px", color: chatColors.muted, marginTop: "1px" }}>
+            Chăm sóc khách hàng
           </div>
-          <IconCircleButton label="Thu nhỏ chat hỗ trợ" onClick={onClose}>
-            <ChevronDown size={15} strokeWidth={2.2} />
-          </IconCircleButton>
-          <IconCircleButton label="Đóng chat hỗ trợ" onClick={onClose}>
-            <X size={13} strokeWidth={2.4} />
-          </IconCircleButton>
         </div>
+        <IconCircleButton label="Thu nhỏ chat hỗ trợ" onClick={onClose}>
+          <ChevronDown size={15} strokeWidth={2.2} />
+        </IconCircleButton>
+        <IconCircleButton label="Đóng chat hỗ trợ" onClick={onClose}>
+          <X size={13} strokeWidth={2.4} />
+        </IconCircleButton>
+      </div>
 
-        <ChatThread messages={messages} isMobile={false} />
-        <ChatComposer
-          draft={draft}
-          isMobile={false}
-          onDraftChange={onDraftChange}
-          onSubmit={onSubmit}
-        />
-      </section>
-    </>
+      <ChatThread messages={messages} isMobile={false} />
+      <ChatComposer
+        draft={draft}
+        isMobile={false}
+        onDraftChange={onDraftChange}
+        onSubmit={onSubmit}
+      />
+    </section>
   );
 }
 
