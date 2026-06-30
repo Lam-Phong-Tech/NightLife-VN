@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -19,18 +20,26 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminSensitiveBillsContract,
+  CancelMemberBookingContract,
   ClaimGuestCouponContract,
   CreateGuestBookingContract,
+  CreateMemberBillContract,
   CreateMemberBookingContract,
+  CreatePartnerRequestContract,
   MemberBookingsContract,
+  MemberCastFavoriteStateContract,
   MemberClaimCouponContract,
   MemberCouponIssuesContract,
+  MemberFavoriteCastContract,
+  MemberFavoriteCastsContract,
+  MemberUnfavoriteCastContract,
   PartnerBillsContract,
   PartnerBookingsContract,
   PartnerConfirmCheckInContract,
   PartnerCouponsContract,
   PartnerScanCouponContract,
   PartnerStoresContract,
+  PublicCastDetailContract,
   PublicAreasContract,
   PublicCastsContract,
   PublicCouponsContract,
@@ -38,8 +47,11 @@ import {
   PublicStoresContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
 import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
@@ -77,6 +89,12 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPublicCasts(query);
   }
 
+  @PublicCastDetailContract()
+  @Get('casts/:slug')
+  getPublicCastBySlug(@Param('slug') slug: string) {
+    return this.nightlifeDataService.getPublicCastBySlug(slug);
+  }
+
   @PublicCouponsContract()
   @Get('coupons')
   listPublicCoupons() {
@@ -87,6 +105,12 @@ export class NightlifeDataController {
   @Post('bookings')
   createGuestBooking(@Body() dto: CreateBookingDto) {
     return this.nightlifeDataService.createGuestBooking(dto);
+  }
+
+  @CreatePartnerRequestContract()
+  @Post('partner-requests')
+  createPartnerRequest(@Body() dto: CreatePartnerRequestDto) {
+    return this.nightlifeDataService.createPartnerRequest(dto);
   }
 
   @ClaimGuestCouponContract()
@@ -234,6 +258,23 @@ export class NightlifeDataController {
     return this.nightlifeDataService.createMemberBooking(request.user, dto);
   }
 
+  @CancelMemberBookingContract()
+  @ActionPolicy('canViewMemberBooking')
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Patch('member/bookings/:bookingId/cancel')
+  cancelMemberBooking(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: CancelBookingDto,
+  ) {
+    return this.nightlifeDataService.cancelMemberBooking(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
   @MemberBookingsContract()
   @ActionPolicy('canViewMemberBooking')
   @Roles('USER')
@@ -243,6 +284,50 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listMemberBookings(request.user.id);
   }
 
+  @MemberFavoriteCastsContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/favorite-casts')
+  listMemberFavoriteCasts(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listMemberFavoriteCasts(request.user.id);
+  }
+
+  @MemberCastFavoriteStateContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/favorite-casts/:slug')
+  getMemberCastFavorite(
+    @Req() request: RequestWithUser,
+    @Param('slug') slug: string,
+  ) {
+    return this.nightlifeDataService.getMemberCastFavoriteState(
+      request.user.id,
+      slug,
+    );
+  }
+
+  @MemberFavoriteCastContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/favorite-casts/:slug')
+  favoriteMemberCast(
+    @Req() request: RequestWithUser,
+    @Param('slug') slug: string,
+  ) {
+    return this.nightlifeDataService.favoriteMemberCast(request.user, slug);
+  }
+
+  @MemberUnfavoriteCastContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('member/favorite-casts/:slug')
+  unfavoriteMemberCast(
+    @Req() request: RequestWithUser,
+    @Param('slug') slug: string,
+  ) {
+    return this.nightlifeDataService.unfavoriteMemberCast(request.user, slug);
+  }
+
   @MemberCouponIssuesContract()
   @ActionPolicy('canViewMemberCoupon')
   @Roles('USER')
@@ -250,6 +335,17 @@ export class NightlifeDataController {
   @Get('member/coupon-issues')
   listMemberCouponIssues(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberCouponIssues(request.user.id);
+  }
+
+  @CreateMemberBillContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/bills')
+  submitMemberBill(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBillDto,
+  ) {
+    return this.nightlifeDataService.submitMemberBill(request.user, dto);
   }
 
   @AdminSensitiveBillsContract()

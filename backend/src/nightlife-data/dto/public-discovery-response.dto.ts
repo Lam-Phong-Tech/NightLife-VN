@@ -129,6 +129,103 @@ export class PublicCastDto {
   store!: PublicStoreDto;
 }
 
+export class PublicCastGalleryItemDto {
+  @ApiProperty({ example: 'media_01' })
+  id!: string;
+
+  @ApiProperty({ enum: MediaType, example: MediaType.IMAGE })
+  type!: MediaType;
+
+  @ApiProperty({ example: 'https://images.unsplash.com/photo.jpg' })
+  url!: string;
+
+  @ApiPropertyOptional({ example: 'cast-gallery', nullable: true })
+  purpose?: string | null;
+
+  @ApiPropertyOptional({ example: 'image/jpeg', nullable: true })
+  mimeType?: string | null;
+
+  @ApiPropertyOptional({ example: 'Yuna profile photo', nullable: true })
+  alt?: string | null;
+}
+
+export class PublicCastDetailStoreDto extends PublicStoreDto {
+  @ApiPropertyOptional({ example: '+84243456007', nullable: true })
+  phone?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'https://maps.google.com/?q=21.063,105.822',
+    nullable: true,
+  })
+  mapUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'ChIJ...', nullable: true })
+  googlePlaceId?: string | null;
+}
+
+export class PublicRelatedCastDto {
+  @ApiProperty({ example: 'cast_02' })
+  id!: string;
+
+  @ApiProperty({ example: 'miyuki-moonlight' })
+  slug!: string;
+
+  @ApiProperty({ example: 'Miyuki' })
+  stageName!: string;
+
+  @ApiProperty({ example: 'Miyuki' })
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'Miyuki Moonlight', nullable: true })
+  publicAlias?: string | null;
+
+  @ApiPropertyOptional({ example: 'Cocktail host', nullable: true })
+  publicHeadline?: string | null;
+
+  @ApiProperty({ type: [String], example: ['calm', 'cocktail'] })
+  tags!: string[];
+
+  @ApiProperty({ type: [String], example: ['ja', 'vi'] })
+  languages!: string[];
+
+  @ApiPropertyOptional({ example: 500000, nullable: true })
+  hourlyRateVnd?: number | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  thumbnailUrl?: string | null;
+
+  @ApiProperty({
+    enum: ['same-store', 'same-area', 'same-tag'],
+    example: 'same-store',
+  })
+  relatedReason!: 'same-store' | 'same-area' | 'same-tag';
+
+  @ApiProperty({ type: () => PublicStoreDto })
+  store!: PublicStoreDto;
+}
+
+export class PublicCastFavoriteStateDto {
+  @ApiProperty({ example: 'cast_01' })
+  castId!: string;
+
+  @ApiProperty({ example: 'yuna-neon' })
+  castSlug!: string;
+
+  @ApiProperty({ example: true })
+  favorited!: boolean;
+}
+
+export class MemberFavoriteCastDto {
+  @ApiProperty({ example: 'fav_01' })
+  favoriteId!: string;
+
+  @ApiProperty({ example: '2026-06-30T10:00:00.000Z' })
+  favoritedAt!: Date;
+
+  @ApiProperty({ type: () => PublicRelatedCastDto })
+  cast!: PublicRelatedCastDto;
+}
+
 export class PublicStoreGalleryItemDto {
   @ApiProperty({ example: 'media_01' })
   id!: string;
@@ -394,6 +491,68 @@ export class PublicStoreDetailResponseDto {
 
   @ApiProperty({ type: [PublicRelatedStoreDto] })
   relatedStores!: PublicRelatedStoreDto[];
+
+  @ApiProperty({ type: () => PublicStoreSeoMetadataDto })
+  seo!: PublicStoreSeoMetadataDto;
+}
+
+export class PublicCastDetailResponseDto {
+  @ApiProperty({ example: 'cast_01' })
+  id!: string;
+
+  @ApiProperty({ example: 'yuna-neon' })
+  slug!: string;
+
+  @ApiProperty({ example: 'Yuna' })
+  stageName!: string;
+
+  @ApiProperty({ example: 'Yuna' })
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'Yuna Neon', nullable: true })
+  publicAlias?: string | null;
+
+  @ApiPropertyOptional({ example: 'Party host', nullable: true })
+  publicHeadline?: string | null;
+
+  @ApiPropertyOptional({ example: 'Public cast introduction.', nullable: true })
+  publicBio?: string | null;
+
+  @ApiPropertyOptional({ example: 9, nullable: true })
+  monthOfBirth?: number | null;
+
+  @ApiPropertyOptional({ example: 'Xử Nữ', nullable: true })
+  zodiacSign?: string | null;
+
+  @ApiPropertyOptional({ example: 165, nullable: true })
+  heightCm?: number | null;
+
+  @ApiPropertyOptional({ example: '82-58-86', nullable: true })
+  measurements?: string | null;
+
+  @ApiProperty({ type: [String], example: ['dance', 'movies'] })
+  interests!: string[];
+
+  @ApiProperty({ type: [String], example: ['party', 'vip'] })
+  tags!: string[];
+
+  @ApiProperty({ type: [String], example: ['ja', 'vi'] })
+  languages!: string[];
+
+  @ApiPropertyOptional({ example: 600000, nullable: true })
+  hourlyRateVnd?: number | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  thumbnailUrl?: string | null;
+
+  @ApiProperty({ type: [PublicCastGalleryItemDto] })
+  gallery!: PublicCastGalleryItemDto[];
+
+  @ApiProperty({ type: [PublicRelatedCastDto] })
+  relatedCasts!: PublicRelatedCastDto[];
+
+  @ApiProperty({ type: () => PublicCastDetailStoreDto })
+  store!: PublicCastDetailStoreDto;
 
   @ApiProperty({ type: () => PublicStoreSeoMetadataDto })
   seo!: PublicStoreSeoMetadataDto;

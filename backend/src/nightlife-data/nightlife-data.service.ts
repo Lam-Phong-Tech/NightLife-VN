@@ -2,14 +2,19 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Prisma, StoreCategory } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
+import { AdminNotificationService } from '../notifications/admin-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
 import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 
@@ -69,6 +74,17 @@ const STORE_SLUG_ALIASES: Record<string, string> = {
   'sora-lounge': 'jade-lounge',
 };
 
+const CAST_SLUG_ALIASES: Record<string, string> = {
+  aiko: 'aya-velvet',
+  hana: 'hana-sakura-lounge',
+  michi: 'miyuki-moonlight',
+  rina: 'rina-velvet',
+  yuki: 'yuki-sakura-lounge',
+  'kotone-tokyo-kitchen': 'kotone-tokyo',
+  'sakura-moonlight-q1': 'sakura-moonlight',
+  'yuna-neon-district': 'yuna-neon',
+};
+
 const LEGACY_DEMO_VIDEO_URLS = new Set([
   'https://www.youtube.com/embed/dQw4w9WgXcQ',
   'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
@@ -76,8 +92,10 @@ const LEGACY_DEMO_VIDEO_URLS = new Set([
 ]);
 
 const STORE_VIDEO_URLS = {
-  nightlife: 'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
-  restaurant: 'https://videos.pexels.com/video-files/31631562/13476222_3840_2160_25fps.mp4',
+  nightlife:
+    'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
+  restaurant:
+    'https://videos.pexels.com/video-files/31631562/13476222_3840_2160_25fps.mp4',
   ktv: 'https://www.pexels.com/download/video/8117118/',
   spa: 'https://www.pexels.com/download/video/6187089/',
 } as const;
@@ -136,6 +154,8 @@ export class NightlifeDataService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessService: AccessService,
+    @Optional()
+    private readonly adminNotificationService?: AdminNotificationService,
   ) {}
 
   async listPublicAreas(query: PublicDiscoveryQueryDto = {}) {
@@ -429,7 +449,11 @@ export class NightlifeDataService {
     const gallery = store.media.map((media) => ({
       id: media.id,
       type: media.type,
-      url: this.resolvePublicStoreMediaUrl(media.url, media.type, store.category),
+      url: this.resolvePublicStoreMediaUrl(
+        media.url,
+        media.type,
+        store.category,
+      ),
       purpose: media.purpose,
       mimeType: media.mimeType,
       alt: media.originalName || store.name,
@@ -670,6 +694,147 @@ export class NightlifeDataService {
     );
 
     return this.buildPublicListResponse(data, total, pagination, sort);
+  }
+
+  async getPublicCastBySlug(slug: string) {
+    const normalizedSlug = this.normalizeCastSlug(slug);
+    if (!normalizedSlug) {
+      throw new BadRequestException('slug is required');
+    }
+
+    const cast = await this.prisma.cast.findFirst({
+      where: {
+        slug: normalizedSlug,
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        store: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      },
+      select: {
+        id: true,
+        slug: true,
+        storeId: true,
+        stageName: true,
+        publicAlias: true,
+        publicHeadline: true,
+        publicBio: true,
+        tags: true,
+        languages: true,
+        hourlyRateVnd: true,
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            category: true,
+            description: true,
+            address: true,
+            city: true,
+            district: true,
+            phone: true,
+            latitude: true,
+            longitude: true,
+            mapUrl: true,
+            googlePlaceId: true,
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+                ward: true,
+              },
+            },
+          },
+        },
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: { in: ['IMAGE', 'VIDEO'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            purpose: true,
+            mimeType: true,
+            originalName: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!cast) {
+      throw new NotFoundException('Cast not found');
+    }
+
+    const gallery = cast.media.map((media) => ({
+      id: media.id,
+      type: media.type,
+      url: media.url,
+      purpose: media.purpose,
+      mimeType: media.mimeType,
+      alt: media.originalName || cast.publicAlias || cast.stageName,
+    }));
+    const thumbnailUrl =
+      gallery.find((item) => item.type === 'IMAGE')?.url ?? null;
+    const name = cast.publicAlias ?? cast.stageName;
+    const seoDescription = this.buildCastSeoDescription(cast);
+    const relatedCasts = await this.loadRelatedPublicCasts(cast);
+
+    return {
+      id: cast.id,
+      slug: cast.slug,
+      stageName: cast.stageName,
+      name,
+      publicAlias: cast.publicAlias,
+      publicHeadline: cast.publicHeadline,
+      publicBio: cast.publicBio,
+      monthOfBirth: null,
+      zodiacSign: null,
+      heightCm: null,
+      measurements: null,
+      interests: [],
+      tags: cast.tags,
+      languages: cast.languages,
+      hourlyRateVnd: cast.hourlyRateVnd,
+      thumbnailUrl,
+      gallery,
+      relatedCasts,
+      store: {
+        id: cast.store.id,
+        name: cast.store.name,
+        slug: cast.store.slug,
+        category: cast.store.category,
+        description: cast.store.description,
+        address: cast.store.address,
+        city: cast.store.city,
+        cityCode: cast.store.area?.code
+          ? this.cityCodeFromAreaCode(cast.store.area.code)
+          : this.normalizeCityCode(cast.store.city),
+        district: cast.store.district,
+        area: this.mapPublicArea(cast.store.area),
+        phone: cast.store.phone,
+        latitude: this.toNumber(cast.store.latitude),
+        longitude: this.toNumber(cast.store.longitude),
+        mapUrl: cast.store.mapUrl,
+        googlePlaceId: cast.store.googlePlaceId,
+      },
+      seo: {
+        title: `${name} tại ${cast.store.name} | NightLife VN`,
+        description: seoDescription,
+        canonicalPath: `/casts/${cast.slug}`,
+        ogImage: thumbnailUrl,
+      },
+    };
   }
 
   listPublicCoupons() {
@@ -974,12 +1139,16 @@ export class NightlifeDataService {
       },
     });
 
-    return this.createBookingRecord({
+    const booking = await this.createBookingRecord({
       dto,
       target,
       note: contact.note,
       guestId: guest.id,
     });
+
+    await this.adminNotificationService?.notifyBookingCreated(booking);
+
+    return booking;
   }
 
   async createMemberBooking(user: AuthenticatedUser, dto: CreateBookingDto) {
@@ -996,13 +1165,68 @@ export class NightlifeDataService {
       },
     });
 
-    return this.createBookingRecord({
+    const booking = await this.createBookingRecord({
       dto,
       target,
       note: contact.note,
       userId: user.id,
       guestId: guest.id,
     });
+
+    await this.adminNotificationService?.notifyBookingCreated(booking);
+
+    return booking;
+  }
+
+  async cancelMemberBooking(
+    user: AuthenticatedUser,
+    bookingId: string,
+    dto: CancelBookingDto = {},
+  ) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId: user.id,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        status: true,
+        scheduledAt: true,
+        partySize: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status === 'CANCELLED') {
+      throw new UnprocessableEntityException(
+        'Booking has already been cancelled',
+      );
+    }
+
+    if (['CHECKED_IN', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
+      throw new UnprocessableEntityException(
+        'Booking cannot be cancelled in its current state',
+      );
+    }
+
+    const result = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+      },
+      select: this.bookingNotificationSelect(),
+    });
+
+    await this.adminNotificationService?.notifyBookingCancelled(result, {
+      reason: dto.reason,
+    });
+
+    return result;
   }
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
@@ -1204,6 +1428,141 @@ export class NightlifeDataService {
     });
   }
 
+  async listMemberFavoriteCasts(userId: string) {
+    const favorites = await this.prisma.memberFavoriteCast.findMany({
+      where: {
+        userId,
+        cast: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        createdAt: true,
+        cast: {
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+            publicHeadline: true,
+            tags: true,
+            languages: true,
+            hourlyRateVnd: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { url: true },
+            },
+            store: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                category: true,
+                description: true,
+                address: true,
+                city: true,
+                district: true,
+                latitude: true,
+                longitude: true,
+                area: {
+                  select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    city: true,
+                    district: true,
+                    ward: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return favorites.map((favorite) => ({
+      favoriteId: favorite.id,
+      favoritedAt: favorite.createdAt,
+      cast: this.mapPublicRelatedCast(favorite.cast, 'same-store'),
+    }));
+  }
+
+  async getMemberCastFavoriteState(userId: string, slug: string) {
+    const cast = await this.resolvePublicCastForMemberFavorite(slug);
+    const favorite = await this.prisma.memberFavoriteCast.findUnique({
+      where: {
+        userId_castId: {
+          userId,
+          castId: cast.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    return {
+      castId: cast.id,
+      castSlug: cast.slug,
+      favorited: Boolean(favorite),
+    };
+  }
+
+  async favoriteMemberCast(user: AuthenticatedUser, slug: string) {
+    const cast = await this.resolvePublicCastForMemberFavorite(slug);
+
+    await this.prisma.memberFavoriteCast.upsert({
+      where: {
+        userId_castId: {
+          userId: user.id,
+          castId: cast.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        castId: cast.id,
+      },
+    });
+
+    return {
+      castId: cast.id,
+      castSlug: cast.slug,
+      favorited: true,
+    };
+  }
+
+  async unfavoriteMemberCast(user: AuthenticatedUser, slug: string) {
+    const cast = await this.resolvePublicCastForMemberFavorite(slug);
+
+    await this.prisma.memberFavoriteCast.deleteMany({
+      where: {
+        userId: user.id,
+        castId: cast.id,
+      },
+    });
+
+    return {
+      castId: cast.id,
+      castSlug: cast.slug,
+      favorited: false,
+    };
+  }
+
   listMemberCouponIssues(userId: string) {
     return this.prisma.couponIssue.findMany({
       where: {
@@ -1226,6 +1585,107 @@ export class NightlifeDataService {
         },
       },
     });
+  }
+
+  async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
+    const booking = dto.bookingId
+      ? await this.prisma.booking.findFirst({
+          where: {
+            id: dto.bookingId,
+            userId: user.id,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            status: true,
+            storeId: true,
+            guestId: true,
+            couponId: true,
+            couponIssueId: true,
+            scheduledAt: true,
+            store: { select: { id: true, name: true, slug: true } },
+            guest: { select: { id: true, displayName: true, phone: true } },
+            coupon: { select: { id: true, code: true, name: true } },
+          },
+        })
+      : null;
+
+    if (dto.bookingId && !booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking?.status === 'CANCELLED') {
+      throw new UnprocessableEntityException(
+        'Cancelled booking cannot submit a bill',
+      );
+    }
+
+    if (booking?.id) {
+      const existingBill = await this.prisma.bill.findFirst({
+        where: {
+          bookingId: booking.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (existingBill) {
+        throw new UnprocessableEntityException(
+          'Booking already has a submitted bill',
+        );
+      }
+    }
+
+    const store = booking?.store ?? (await this.resolveBillStore(dto));
+    const now = new Date();
+    const bill = await this.prisma.bill.create({
+      data: {
+        bookingId: booking?.id,
+        userId: user.id,
+        guestId: booking?.guestId,
+        storeId: store.id,
+        couponId: booking?.couponId,
+        couponIssueId: booking?.couponIssueId,
+        status: 'SUBMITTED',
+        billNumber: this.buildBillNumber(now),
+        subtotalVnd: dto.subtotalVnd ?? dto.totalVnd,
+        discountVnd: dto.discountVnd ?? 0,
+        serviceChargeVnd: dto.serviceChargeVnd ?? 0,
+        taxVnd: dto.taxVnd ?? 0,
+        totalVnd: dto.totalVnd,
+        paidVnd: dto.paidVnd ?? dto.totalVnd,
+        submittedAt: now,
+      },
+      select: this.billNotificationSelect(),
+    });
+
+    await this.adminNotificationService?.notifyBillSubmitted(bill);
+
+    return bill;
+  }
+
+  async createPartnerRequest(dto: CreatePartnerRequestDto) {
+    const submittedAt = new Date();
+    const request = {
+      id: `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`,
+      businessName: this.cleanText(dto.businessName),
+      businessType: this.cleanText(dto.businessType) || null,
+      area: this.cleanText(dto.area) || null,
+      contactName: this.cleanText(dto.contactName),
+      contactPhone: this.cleanText(dto.contactPhone),
+      contactEmail: this.cleanText(dto.contactEmail) || null,
+      note: this.cleanText(dto.note) || null,
+      submittedAt,
+    };
+
+    await this.adminNotificationService?.notifyPartnerRequest(request);
+
+    return {
+      id: request.id,
+      status: 'PENDING_REVIEW',
+      submittedAt,
+      message: 'Partner request submitted for admin review',
+    };
   }
 
   async listSensitiveBillsForAdmin(user: AuthenticatedUser) {
@@ -1306,6 +1766,7 @@ export class NightlifeDataService {
       },
       select: {
         id: true,
+        billNumber: true,
         status: true,
         reviewedAt: true,
         verifiedAt: true,
@@ -1317,6 +1778,11 @@ export class NightlifeDataService {
         totalVnd: true,
         commissionAmountVnd: true,
         pointsEarned: true,
+        store: { select: { id: true, name: true, slug: true } },
+        booking: { select: { id: true, status: true, scheduledAt: true } },
+        coupon: { select: { id: true, code: true, name: true } },
+        user: { select: { id: true, displayName: true, tier: true } },
+        guest: { select: { id: true, displayName: true, phone: true } },
       },
     });
 
@@ -1353,21 +1819,7 @@ export class NightlifeDataService {
             verifiedAt: null,
             rejectReason: dto.rejectReason ?? 'Rejected by admin review',
           },
-      select: {
-        id: true,
-        status: true,
-        verifiedAt: true,
-        rejectedAt: true,
-        reviewedAt: true,
-        reviewedById: true,
-        verifiedById: true,
-        rejectedById: true,
-        rejectReason: true,
-        totalVnd: true,
-        commissionAmountVnd: true,
-        pointsEarned: true,
-        updatedAt: true,
-      },
+      select: this.billNotificationSelect(),
     });
 
     await this.prisma.auditLog.create({
@@ -1386,6 +1838,11 @@ export class NightlifeDataService {
           reviewedAt: now.toISOString(),
         },
       },
+    });
+
+    await this.adminNotificationService?.notifyBillReviewed(result, {
+      approve: dto.approve,
+      reviewedById: adminId,
     });
 
     return result;
@@ -1487,6 +1944,43 @@ export class NightlifeDataService {
     };
   }
 
+  private async resolveBillStore(dto: CreateBillDto) {
+    const storeId = this.cleanText(dto.storeId);
+    const storeSlug = this.cleanText(dto.storeSlug);
+
+    if (!storeId && !storeSlug) {
+      throw new BadRequestException(
+        'bookingId, storeId, or storeSlug is required',
+      );
+    }
+
+    const store = await this.prisma.store.findFirst({
+      where: {
+        ...(storeId ? { id: storeId } : { slug: storeSlug }),
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    return store;
+  }
+
+  private buildBillNumber(now: Date) {
+    const dateToken = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomToken = randomUUID().slice(0, 8).toUpperCase();
+
+    return `BILL-${dateToken}-${randomToken}`;
+  }
+
   private createBookingRecord(input: {
     dto: CreateBookingDto;
     target: BookingTarget;
@@ -1510,31 +2004,66 @@ export class NightlifeDataService {
         partySize: input.dto.partySize,
         note: input.note,
       },
-      select: {
-        id: true,
-        storeId: true,
-        castId: true,
-        status: true,
-        scheduledAt: true,
-        partySize: true,
-        subtotalVnd: true,
-        discountVnd: true,
-        totalVnd: true,
-        note: true,
-        createdAt: true,
-        store: { select: { id: true, name: true, slug: true } },
-        cast: {
-          select: {
-            id: true,
-            slug: true,
-            stageName: true,
-            publicAlias: true,
-          },
-        },
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true, phone: true } },
-      },
+      select: this.bookingNotificationSelect(),
     });
+  }
+
+  private bookingNotificationSelect() {
+    return {
+      id: true,
+      storeId: true,
+      castId: true,
+      status: true,
+      scheduledAt: true,
+      partySize: true,
+      subtotalVnd: true,
+      discountVnd: true,
+      totalVnd: true,
+      note: true,
+      cancelledAt: true,
+      createdAt: true,
+      store: { select: { id: true, name: true, slug: true } },
+      cast: {
+        select: {
+          id: true,
+          slug: true,
+          stageName: true,
+          publicAlias: true,
+        },
+      },
+      user: { select: { id: true, displayName: true, tier: true } },
+      guest: { select: { id: true, displayName: true, phone: true } },
+    } satisfies Prisma.BookingSelect;
+  }
+
+  private billNotificationSelect() {
+    return {
+      id: true,
+      billNumber: true,
+      status: true,
+      subtotalVnd: true,
+      discountVnd: true,
+      serviceChargeVnd: true,
+      taxVnd: true,
+      totalVnd: true,
+      paidVnd: true,
+      commissionAmountVnd: true,
+      pointsEarned: true,
+      submittedAt: true,
+      reviewedAt: true,
+      verifiedAt: true,
+      rejectedAt: true,
+      reviewedById: true,
+      verifiedById: true,
+      rejectedById: true,
+      rejectReason: true,
+      updatedAt: true,
+      store: { select: { id: true, name: true, slug: true } },
+      booking: { select: { id: true, status: true, scheduledAt: true } },
+      coupon: { select: { id: true, code: true, name: true } },
+      user: { select: { id: true, displayName: true, tier: true } },
+      guest: { select: { id: true, displayName: true, phone: true } },
+    } satisfies Prisma.BillSelect;
   }
 
   private buildBillReviewAuditSnapshot(bill: {
@@ -1625,6 +2154,236 @@ export class NightlifeDataService {
         },
       ],
     };
+  }
+
+  private buildCastSeoDescription(cast: {
+    publicAlias: string | null;
+    stageName: string;
+    publicHeadline: string | null;
+    publicBio: string | null;
+    languages: string[];
+    store: {
+      name: string;
+      city: string;
+      district: string | null;
+      area: { name: string } | null;
+    };
+  }) {
+    const publicSummary = (cast.publicBio ?? cast.publicHeadline)
+      ?.replace(/\s+/g, ' ')
+      .trim();
+    const name = cast.publicAlias ?? cast.stageName;
+    const location = [cast.store.area?.name, cast.store.district, cast.store.city]
+      .filter(Boolean)
+      .join(', ');
+    const languageText = cast.languages.length
+      ? ` Languages: ${cast.languages.join(', ')}.`
+      : '';
+
+    if (publicSummary) {
+      return `${publicSummary.slice(0, 130)}${location ? ` ${location}.` : ''}${languageText}`.slice(
+        0,
+        170,
+      );
+    }
+
+    return `${name} tại ${cast.store.name}${location ? `, ${location}` : ''}. Xem bio, gallery public, ngôn ngữ hỗ trợ và đặt booking theo cast trên NightLife VN.`;
+  }
+
+  private async loadRelatedPublicCasts(cast: {
+    id: string;
+    storeId: string;
+    tags: string[];
+    store: {
+      city: string;
+      area: { id: string; code: string } | null;
+    };
+  }) {
+    const relatedFilters = [
+      { storeId: cast.storeId },
+      ...(cast.store.area?.id
+        ? [{ store: { areaId: cast.store.area.id } }]
+        : []),
+      ...(cast.tags.length ? [{ tags: { hasSome: cast.tags } }] : []),
+      { store: { city: cast.store.city } },
+    ];
+
+    const related = await this.prisma.cast.findMany({
+      where: {
+        id: { not: cast.id },
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        AND: [
+          {
+            store: {
+              deletedAt: null,
+              status: 'ACTIVE',
+            },
+          },
+          {
+            OR: relatedFilters,
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+      select: {
+        id: true,
+        slug: true,
+        storeId: true,
+        stageName: true,
+        publicAlias: true,
+        publicHeadline: true,
+        tags: true,
+        languages: true,
+        hourlyRateVnd: true,
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { url: true },
+        },
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            category: true,
+            description: true,
+            address: true,
+            city: true,
+            district: true,
+            latitude: true,
+            longitude: true,
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+                ward: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const unique = new Map<string, (typeof related)[number]>();
+    related.forEach((item) => unique.set(item.id, item));
+
+    return [...unique.values()].map((item) =>
+      this.mapPublicRelatedCast(
+        item,
+        item.storeId === cast.storeId
+          ? 'same-store'
+          : item.store.area?.id && item.store.area.id === cast.store.area?.id
+            ? 'same-area'
+            : 'same-tag',
+      ),
+    );
+  }
+
+  private mapPublicRelatedCast(
+    cast: {
+      id: string;
+      slug: string;
+      stageName: string;
+      publicAlias: string | null;
+      publicHeadline: string | null;
+      tags: string[];
+      languages: string[];
+      hourlyRateVnd: number | null;
+      media: Array<{ url: string }>;
+      store: {
+        id: string;
+        name: string;
+        slug: string;
+        category: StoreCategory;
+        description: string | null;
+        address: string | null;
+        city: string;
+        district: string | null;
+        latitude: Prisma.Decimal | number | string | null;
+        longitude: Prisma.Decimal | number | string | null;
+        area: {
+          id: string;
+          code: string;
+          name: string;
+          city: string;
+          district?: string | null;
+          ward?: string | null;
+        } | null;
+      };
+    },
+    relatedReason: 'same-store' | 'same-area' | 'same-tag',
+  ) {
+    return {
+      id: cast.id,
+      slug: cast.slug,
+      stageName: cast.stageName,
+      name: cast.publicAlias ?? cast.stageName,
+      publicAlias: cast.publicAlias,
+      publicHeadline: cast.publicHeadline,
+      tags: cast.tags,
+      languages: cast.languages,
+      hourlyRateVnd: cast.hourlyRateVnd,
+      thumbnailUrl: cast.media[0]?.url ?? null,
+      relatedReason,
+      store: {
+        id: cast.store.id,
+        name: cast.store.name,
+        slug: cast.store.slug,
+        category: cast.store.category,
+        description: cast.store.description,
+        address: cast.store.address,
+        city: cast.store.city,
+        cityCode: cast.store.area?.code
+          ? this.cityCodeFromAreaCode(cast.store.area.code)
+          : this.normalizeCityCode(cast.store.city),
+        district: cast.store.district,
+        area: this.mapPublicArea(cast.store.area),
+        latitude: this.toNumber(cast.store.latitude),
+        longitude: this.toNumber(cast.store.longitude),
+      },
+    };
+  }
+
+  private async resolvePublicCastForMemberFavorite(slug: string) {
+    const normalizedSlug = this.normalizeCastSlug(slug);
+    if (!normalizedSlug) {
+      throw new BadRequestException('slug is required');
+    }
+
+    const cast = await this.prisma.cast.findFirst({
+      where: {
+        slug: normalizedSlug,
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        store: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+
+    if (!cast) {
+      throw new NotFoundException('Cast not found');
+    }
+
+    return cast;
   }
 
   private buildStoreSeoDescription(store: {
@@ -2198,6 +2957,11 @@ export class NightlifeDataService {
   private normalizeStoreSlug(value?: string | null) {
     const token = this.normalizeToken(value);
     return STORE_SLUG_ALIASES[token] ?? token;
+  }
+
+  private normalizeCastSlug(value?: string | null) {
+    const token = this.normalizeToken(value);
+    return CAST_SLUG_ALIASES[token] ?? token;
   }
 
   private resolvePublicStoreMediaUrl(

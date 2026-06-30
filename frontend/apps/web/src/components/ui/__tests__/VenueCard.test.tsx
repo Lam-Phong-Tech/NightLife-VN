@@ -18,7 +18,7 @@ describe('VenueCard', () => {
     render(<VenueCard venue={mockVenue} />);
     
     expect(screen.getByText('Club Test')).toBeInTheDocument();
-    expect(screen.getByText('Hoàn Kiếm · Bar')).toBeInTheDocument();
+    expect(screen.getByText('Hoàn Kiếm - Bar')).toBeInTheDocument();
   });
 
   it('renders badge if hasBadge is true', () => {

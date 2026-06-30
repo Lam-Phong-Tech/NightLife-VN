@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "test": "vitest run",
-    "e2e": "playwright test",
+    "e2e": "node ./scripts/run-e2e.mjs",
+    "test:e2e": "pnpm e2e",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

@@ -38,12 +38,20 @@ describe('NightlifeDataService', () => {
     rankingConfig: {
       findMany: jest.fn(),
     },
+    memberFavoriteCast: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     booking: {
       create: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
     },
     bill: {
+      create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
@@ -58,6 +66,14 @@ describe('NightlifeDataService', () => {
     ensureStoreAccess: jest.fn(),
   } as unknown as jest.Mocked<AccessService>;
 
+  const adminNotificationService = {
+    notifyBookingCreated: jest.fn(),
+    notifyBookingCancelled: jest.fn(),
+    notifyBillSubmitted: jest.fn(),
+    notifyBillReviewed: jest.fn(),
+    notifyPartnerRequest: jest.fn(),
+  };
+
   let service: NightlifeDataService;
 
   beforeEach(() => {
@@ -65,7 +81,11 @@ describe('NightlifeDataService', () => {
     prisma.store.count.mockResolvedValue(1 as never);
     prisma.cast.count.mockResolvedValue(1 as never);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
-    service = new NightlifeDataService(prisma, accessService);
+    service = new NightlifeDataService(
+      prisma,
+      accessService,
+      adminNotificationService as never,
+    );
   });
 
   it('lists public areas for supported city filters', async () => {
@@ -703,6 +723,231 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('gets public cast detail by slug without exposing private fields', async () => {
+    prisma.cast.findFirst.mockResolvedValue({
+      id: 'cast-aya',
+      slug: 'aya-velvet',
+      storeId: 'store-velvet',
+      stageName: 'Aya',
+      publicAlias: 'Aya',
+      publicHeadline: 'VIP host',
+      publicBio: 'Public introduction for Aya.',
+      tags: ['vip', 'wine-expert'],
+      languages: ['ja', 'vi'],
+      hourlyRateVnd: 700000,
+      media: [
+        {
+          id: 'media-image',
+          type: 'IMAGE',
+          url: 'https://example.com/aya.jpg',
+          purpose: 'cast-gallery',
+          mimeType: 'image/jpeg',
+          originalName: 'Aya profile',
+          createdAt: new Date('2026-06-20T00:00:00.000Z'),
+        },
+        {
+          id: 'media-video',
+          type: 'VIDEO',
+          url: 'https://example.com/aya.mp4',
+          purpose: 'intro-video',
+          mimeType: 'video/mp4',
+          originalName: 'Aya intro',
+          createdAt: new Date('2026-06-21T00:00:00.000Z'),
+        },
+      ],
+      store: {
+        id: 'store-velvet',
+        name: 'Velvet Club',
+        slug: 'velvet-club',
+        category: 'CLUB',
+        description: 'VIP club',
+        address: 'Quan 1',
+        city: 'Ho Chi Minh',
+        district: 'Quan 1',
+        phone: '+842812345678',
+        latitude: '10.7731',
+        longitude: '106.7042',
+        mapUrl: 'https://maps.example/velvet',
+        googlePlaceId: null,
+        area: {
+          id: 'area-hcm',
+          code: 'hcm-q1',
+          name: 'Quan 1',
+          city: 'Ho Chi Minh',
+          district: 'Quan 1',
+          ward: 'Ben Nghe',
+        },
+      },
+    } as never);
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        id: 'cast-rina',
+        slug: 'rina-velvet',
+        storeId: 'store-velvet',
+        stageName: 'Rina',
+        publicAlias: 'Rina',
+        publicHeadline: 'Party host',
+        tags: ['party', 'vip'],
+        languages: ['ja', 'vi'],
+        hourlyRateVnd: 600000,
+        media: [{ url: 'https://example.com/rina.jpg' }],
+        store: {
+          id: 'store-velvet',
+          name: 'Velvet Club',
+          slug: 'velvet-club',
+          category: 'CLUB',
+          description: 'VIP club',
+          address: 'Quan 1',
+          city: 'Ho Chi Minh',
+          district: 'Quan 1',
+          latitude: '10.7731',
+          longitude: '106.7042',
+          area: {
+            id: 'area-hcm',
+            code: 'hcm-q1',
+            name: 'Quan 1',
+            city: 'Ho Chi Minh',
+            district: 'Quan 1',
+            ward: 'Ben Nghe',
+          },
+        },
+      },
+    ] as never);
+
+    const result = await service.getPublicCastBySlug('aiko');
+
+    expect(prisma.cast.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          slug: 'aya-velvet',
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        }),
+        select: expect.not.objectContaining({
+          bio: true,
+          status: true,
+          isPublic: true,
+          deletedAt: true,
+          userId: true,
+        }),
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'cast-aya',
+        slug: 'aya-velvet',
+        name: 'Aya',
+        publicBio: 'Public introduction for Aya.',
+        monthOfBirth: null,
+        zodiacSign: null,
+        heightCm: null,
+        measurements: null,
+        interests: [],
+        thumbnailUrl: 'https://example.com/aya.jpg',
+        gallery: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'media-image',
+            type: 'IMAGE',
+            url: 'https://example.com/aya.jpg',
+            purpose: 'cast-gallery',
+          }),
+          expect.objectContaining({
+            id: 'media-video',
+            type: 'VIDEO',
+            url: 'https://example.com/aya.mp4',
+            purpose: 'intro-video',
+          }),
+        ]),
+        relatedCasts: [
+          expect.objectContaining({
+            slug: 'rina-velvet',
+            relatedReason: 'same-store',
+            thumbnailUrl: 'https://example.com/rina.jpg',
+          }),
+        ],
+        store: expect.objectContaining({
+          slug: 'velvet-club',
+          cityCode: 'hcm',
+          phone: '+842812345678',
+          mapUrl: 'https://maps.example/velvet',
+        }),
+        seo: expect.objectContaining({
+          title: 'Aya tại Velvet Club | NightLife VN',
+          canonicalPath: '/casts/aya-velvet',
+          ogImage: 'https://example.com/aya.jpg',
+        }),
+      }),
+    );
+    expect(result).not.toHaveProperty('bio');
+    expect(result).not.toHaveProperty('status');
+    expect(result).not.toHaveProperty('isPublic');
+    expect(result).not.toHaveProperty('deletedAt');
+  });
+
+  it('returns 404 when cast detail is not public', async () => {
+    prisma.cast.findFirst.mockResolvedValue(null as never);
+
+    await expect(service.getPublicCastBySlug('hidden-cast')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('saves and removes a cast favorite for a member', async () => {
+    prisma.cast.findFirst.mockResolvedValue({
+      id: 'cast-aya',
+      slug: 'aya-velvet',
+    } as never);
+    prisma.memberFavoriteCast.upsert.mockResolvedValue({
+      id: 'fav-1',
+    } as never);
+    prisma.memberFavoriteCast.deleteMany.mockResolvedValue({
+      count: 1,
+    } as never);
+
+    await expect(
+      service.favoriteMemberCast(
+        { id: 'user-1', role: 'USER' } as never,
+        'aiko',
+      ),
+    ).resolves.toEqual({
+      castId: 'cast-aya',
+      castSlug: 'aya-velvet',
+      favorited: true,
+    });
+    expect(prisma.memberFavoriteCast.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_castId: {
+            userId: 'user-1',
+            castId: 'cast-aya',
+          },
+        },
+      }),
+    );
+
+    await expect(
+      service.unfavoriteMemberCast(
+        { id: 'user-1', role: 'USER' } as never,
+        'aiko',
+      ),
+    ).resolves.toEqual({
+      castId: 'cast-aya',
+      castSlug: 'aya-velvet',
+      favorited: false,
+    });
+    expect(prisma.memberFavoriteCast.deleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        castId: 'cast-aya',
+      },
+    });
+  });
+
   it('limits partner bookings to the stores in their access scope', async () => {
     accessService.getAccessibleStoreIds.mockResolvedValue(['store-1']);
     prisma.booking.findMany.mockResolvedValue([] as never);
@@ -781,6 +1026,12 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(adminNotificationService.notifyBookingCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'REQUESTED',
+      }),
+    );
   });
 
   it('creates a member booking request for a cast with a contact snapshot', async () => {
@@ -841,6 +1092,65 @@ describe('NightlifeDataService', () => {
           partySize: 2,
         }),
       }),
+    );
+    expect(adminNotificationService.notifyBookingCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'REQUESTED',
+      }),
+    );
+  });
+
+  it('cancels a member booking and sends the admin alert', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 2,
+    } as never);
+    prisma.booking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CANCELLED',
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    } as never);
+
+    await service.cancelMemberBooking(
+      { id: 'member-1', role: 'USER' },
+      'booking-1',
+      { reason: 'Change of plans' },
+    );
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        userId: 'member-1',
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        status: true,
+        scheduledAt: true,
+        partySize: true,
+      },
+    });
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'booking-1' },
+        data: expect.objectContaining({
+          status: 'CANCELLED',
+          cancelledAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(
+      adminNotificationService.notifyBookingCancelled,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'CANCELLED',
+      }),
+      { reason: 'Change of plans' },
     );
   });
 
@@ -1117,6 +1427,94 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('submits a member bill and sends the admin alert', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CONFIRMED',
+      storeId: 'store-1',
+      guestId: 'guest-1',
+      couponId: 'coupon-1',
+      couponIssueId: 'issue-1',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+      coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+    } as never);
+    prisma.bill.findFirst.mockResolvedValue(null as never);
+    prisma.bill.create.mockResolvedValue({
+      id: 'bill-1',
+      billNumber: 'BILL-20260630-ABC12345',
+      status: 'SUBMITTED',
+      totalVnd: 1800000,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    } as never);
+
+    await service.submitMemberBill(
+      { id: 'member-1', role: 'USER' },
+      {
+        bookingId: 'booking-1',
+        totalVnd: 1800000,
+      },
+    );
+
+    expect(prisma.bill.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bookingId: 'booking-1',
+          userId: 'member-1',
+          guestId: 'guest-1',
+          storeId: 'store-1',
+          couponId: 'coupon-1',
+          couponIssueId: 'issue-1',
+          status: 'SUBMITTED',
+          totalVnd: 1800000,
+          paidVnd: 1800000,
+          submittedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(adminNotificationService.notifyBillSubmitted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'bill-1',
+        status: 'SUBMITTED',
+      }),
+    );
+  });
+
+  it('submits a partner request and sends the admin alert', async () => {
+    const result = await service.createPartnerRequest({
+      businessName: 'Neon Club',
+      businessType: 'Club',
+      area: 'Ha Noi',
+      contactName: 'Owner',
+      contactPhone: '+84901234567',
+      contactEmail: 'owner@example.com',
+      note: 'Please call after 6PM',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: expect.stringMatching(/^PARTNER-/),
+        status: 'PENDING_REVIEW',
+        message: 'Partner request submitted for admin review',
+      }),
+    );
+    expect(adminNotificationService.notifyPartnerRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: result.id,
+        businessName: 'Neon Club',
+        businessType: 'Club',
+        area: 'Ha Noi',
+        contactName: 'Owner',
+        contactPhone: '+84901234567',
+        contactEmail: 'owner@example.com',
+        note: 'Please call after 6PM',
+      }),
+    );
+  });
+
   it('stores the admin reviewer when reviewing a sensitive bill', async () => {
     prisma.bill.findFirst.mockResolvedValue({
       id: 'bill-1',
@@ -1188,6 +1586,13 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+    expect(adminNotificationService.notifyBillReviewed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'bill-1',
+        status: 'VERIFIED',
+      }),
+      { approve: true, reviewedById: 'admin-1' },
+    );
   });
 
   it('returns not found before updating when reviewing a missing sensitive bill', async () => {

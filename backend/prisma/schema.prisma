@@ -256,6 +256,7 @@ model User {
   revokedTokens    TokenBlacklist[]
   sessions         UserSession[]
   storePermissions StorePermission[]
+  favoriteCasts    MemberFavoriteCast[]
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
   deletedAt        DateTime?            @map("deleted_at")
@@ -466,6 +467,7 @@ model Cast {
   status         CastStatus @default(DRAFT)
   bookings       Booking[]
   media          Media[]
+  memberFavorites MemberFavoriteCast[]
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
   deletedAt      DateTime?  @map("deleted_at")
@@ -474,6 +476,20 @@ model Cast {
   @@index([userId])
   @@index([status])
   @@map("casts")
+}
+
+model MemberFavoriteCast {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  castId    String   @map("cast_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cast      Cast     @relation(fields: [castId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, castId])
+  @@index([userId])
+  @@index([castId])
+  @@map("member_favorite_casts")
 }
 
 model Booking {

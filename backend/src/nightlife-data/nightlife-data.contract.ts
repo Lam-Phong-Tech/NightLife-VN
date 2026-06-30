@@ -13,9 +13,15 @@ import {
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
 import {
+  MemberFavoriteCastDto,
+  PublicCastFavoriteStateDto,
+  PublicCastDetailResponseDto,
   PublicCastListResponseDto,
   PublicStoreDetailResponseDto,
   PublicStoreListResponseDto,
@@ -247,6 +253,68 @@ const castExample = {
   },
 };
 
+const castDetailExample = {
+  ...castExample,
+  publicBio:
+    'Yuna hosts public VIP bookings at Neon Club with Japanese, Vietnamese, and English support.',
+  monthOfBirth: 9,
+  zodiacSign: 'Xử Nữ',
+  heightCm: null,
+  measurements: null,
+  interests: [],
+  gallery: [
+    {
+      id: 'media_01',
+      type: 'IMAGE',
+      url: 'https://images.unsplash.com/photo.jpg',
+      purpose: 'cast-gallery',
+      mimeType: 'image/jpeg',
+      alt: 'Yuna profile photo',
+    },
+  ],
+  relatedCasts: [
+    {
+      id: 'cast_02',
+      slug: 'miyuki-moonlight',
+      stageName: 'Miyuki',
+      name: 'Miyuki',
+      publicAlias: 'Miyuki',
+      publicHeadline: 'Cocktail host',
+      tags: ['cocktail', 'calm'],
+      languages: ['ja', 'vi'],
+      hourlyRateVnd: 500000,
+      thumbnailUrl: null,
+      relatedReason: 'same-area',
+      store: castExample.store,
+    },
+  ],
+  store: {
+    ...castExample.store,
+    phone: '+84243456007',
+    mapUrl: 'https://maps.google.com/?q=21.063,105.822',
+    googlePlaceId: null,
+  },
+  seo: {
+    title: 'Yuna tại Neon Club | NightLife VN',
+    description:
+      'Yuna hosts public VIP bookings at Neon Club in Tay Ho, Ha Noi.',
+    canonicalPath: '/casts/yuna-neon',
+    ogImage: 'https://images.unsplash.com/photo.jpg',
+  },
+};
+
+const castFavoriteStateExample = {
+  castId: 'cast_01',
+  castSlug: 'yuna-neon',
+  favorited: true,
+};
+
+const memberFavoriteCastExample = {
+  favoriteId: 'fav_01',
+  favoritedAt: '2026-06-30T10:00:00.000Z',
+  cast: castDetailExample.relatedCasts[0],
+};
+
 const castListExample = {
   data: [castExample],
   meta: {
@@ -346,6 +414,12 @@ const createBookingExample = {
     stageName: 'Yuna',
     publicAlias: 'Yuna',
   },
+};
+
+const cancelledBookingExample = {
+  ...createBookingExample,
+  status: 'CANCELLED',
+  cancelledAt: '2026-06-26T10:20:00.000Z',
 };
 
 const scannedCouponIssueExample = {
@@ -465,6 +539,13 @@ const reviewedBillExample = {
   rejectedById: null,
 };
 
+const partnerRequestExample = {
+  id: 'PARTNER-7F3A91BC',
+  status: 'PENDING_REVIEW',
+  submittedAt: '2026-06-26T10:20:00.000Z',
+  message: 'Partner request submitted for admin review',
+};
+
 export function PublicAreasContract() {
   return applyDecorators(
     ApiOperation({
@@ -559,6 +640,146 @@ export function PublicCastsContract() {
   );
 }
 
+export function PublicCastDetailContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public discovery: get active cast detail by slug',
+      description:
+        'Auth guard: none. Returns only ACTIVE, public, non-deleted cast data for SEO/detail pages. Does not return empty schedules, private bio, user links, or other sensitive fields.',
+    }),
+    ApiParam({
+      name: 'slug',
+      description: 'Public cast slug.',
+      example: 'yuna-neon',
+    }),
+    ApiOkResponse({
+      description: 'Active public cast detail.',
+      type: PublicCastDetailResponseDto,
+      schema: { example: castDetailExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Cast does not exist or is not public.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Cast not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+  );
+}
+
+export function MemberCastFavoriteStateContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: get own favorite state for a cast',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Returns whether the current member has saved the active public cast.',
+    }),
+    ApiParam({ name: 'slug', example: 'yuna-neon' }),
+    ApiOkResponse({
+      description: 'Favorite state for the current member.',
+      type: PublicCastFavoriteStateDto,
+      schema: { example: castFavoriteStateExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Cast does not exist or is not public.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function MemberFavoriteCastContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: save a public cast',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates or keeps the current member favorite for an active public cast.',
+    }),
+    ApiParam({ name: 'slug', example: 'yuna-neon' }),
+    ApiCreatedResponse({
+      description: 'Cast saved for the current member.',
+      type: PublicCastFavoriteStateDto,
+      schema: { example: castFavoriteStateExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Cast does not exist or is not public.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function MemberUnfavoriteCastContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: remove a saved public cast',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Removes the current member favorite for an active public cast.',
+    }),
+    ApiParam({ name: 'slug', example: 'yuna-neon' }),
+    ApiOkResponse({
+      description: 'Cast removed from current member favorites.',
+      type: PublicCastFavoriteStateDto,
+      schema: { example: { ...castFavoriteStateExample, favorited: false } },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Cast does not exist or is not public.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function MemberFavoriteCastsContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Member action: list own saved public casts',
+      description: 'Auth guard: JwtAuthGuard + RolesGuard(USER). Own-resource route.',
+    }),
+    ApiOkResponse({
+      description: 'Saved casts for the current member.',
+      type: [MemberFavoriteCastDto],
+      schema: { example: [memberFavoriteCastExample] },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}
+
 export function PublicCouponsContract() {
   return applyDecorators(
     ApiOperation({
@@ -577,7 +798,7 @@ export function CreateGuestBookingContract() {
     ApiOperation({
       summary: 'Booking action: guest creates a booking request',
       description:
-        'Auth guard: none. Creates a guest contact snapshot and a booking with status REQUESTED. No deposit or payment is collected.',
+        'Auth guard: none. Creates a guest contact snapshot and a booking with status REQUESTED. Sends P0 Telegram admin notification using template telegram.admin.booking.created.v1.',
     }),
     ApiBody({ type: CreateBookingDto }),
     ApiCreatedResponse({
@@ -591,6 +812,25 @@ export function CreateGuestBookingContract() {
     ApiNotFoundResponse({
       description: 'Store or cast does not exist or is not bookable.',
       schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function CreatePartnerRequestContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Partner action: submit a partner request',
+      description:
+        'Auth guard: none. Accepts a public partner request and sends P0 Telegram admin notification using template telegram.admin.partner.requested.v1. CMS link: /admin?tab=partners.',
+    }),
+    ApiBody({ type: CreatePartnerRequestDto }),
+    ApiCreatedResponse({
+      description: 'Partner request submitted for admin review.',
+      schema: { example: partnerRequestExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid partner request body.',
+      schema: { example: badRequestExample },
     }),
   );
 }
@@ -628,7 +868,7 @@ export function CreateMemberBookingContract() {
     ApiOperation({
       summary: 'Booking action: member creates own booking request',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a member booking with status REQUESTED and stores the submitted contact snapshot. No deposit or payment is collected.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a member booking with status REQUESTED, stores the submitted contact snapshot, and sends P0 Telegram admin notification using template telegram.admin.booking.created.v1. No deposit or payment is collected.',
     }),
     ApiBody({ type: CreateBookingDto }),
     ApiCreatedResponse({
@@ -660,6 +900,55 @@ export function CreateMemberBookingContract() {
     ApiNotFoundResponse({
       description: 'Store or cast does not exist or is not bookable.',
       schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function CancelMemberBookingContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Booking action: member cancels own booking',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberBooking). Marks an own booking as CANCELLED and sends P0 Telegram admin notification using template telegram.admin.booking.cancelled.v1.',
+    }),
+    ApiParam({ name: 'bookingId', example: 'booking_01' }),
+    ApiBody({ type: CancelBookingDto }),
+    ApiOkResponse({
+      description: 'Booking cancelled.',
+      schema: { example: cancelledBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid cancel request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking does not exist or does not belong to the member.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Booking not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Booking cannot be cancelled in its current state.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Booking cannot be cancelled in its current state',
+          error: 'Unprocessable Entity',
+        },
+      },
     }),
   );
 }
@@ -842,6 +1131,48 @@ export function MemberCouponIssuesContract() {
   );
 }
 
+export function CreateMemberBillContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Bill action: member submits a bill',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills.',
+    }),
+    ApiBody({ type: CreateBillDto }),
+    ApiCreatedResponse({
+      description: 'Bill submitted for admin review.',
+      schema: { example: billExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid bill request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking or store does not exist.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Bill cannot be submitted for the requested booking.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Booking already has a submitted bill',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
 export function AdminSensitiveBillsContract() {
   return guardedListContract(
     'Admin action: list sensitive bill reviews',
@@ -856,7 +1187,7 @@ export function ReviewSensitiveBillContract() {
     ApiOperation({
       summary: 'Admin action: review a sensitive bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN/OPERATOR depending on route) + ActionPolicy(canReviewBill). Writes AuditLog beforeJson/afterJson snapshots.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN/OPERATOR depending on route) + ActionPolicy(canReviewBill). Writes AuditLog beforeJson/afterJson snapshots and sends P0 Telegram admin notification using template telegram.admin.bill.verified.v1 or telegram.admin.bill.rejected.v1.',
     }),
     ApiParam({ name: 'billId', example: 'bill_01' }),
     ApiBody({ type: ReviewBillDto }),

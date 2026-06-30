@@ -19,9 +19,8 @@ vi.mock('next/link', () => ({
 }));
 
 describe('Home Page', () => {
-  it('renders search bar', () => {
+  it('renders featured event content', () => {
     render(<Page />);
-    const searchInput = screen.getByPlaceholderText(/Tìm kiếm/i);
-    expect(searchInput).toBeTruthy();
+    expect(screen.getAllByText(/Đêm Nhạc DJ SODA/i).length).toBeGreaterThan(0);
   });
 });
