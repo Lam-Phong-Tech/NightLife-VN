@@ -86,6 +86,7 @@ export default function Page() {
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(buildTimeGoogleClientId);
   const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
@@ -233,15 +234,15 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    setIsGoogleReady(false);
+
     if (!googleClientId) {
       googleTokenClientRef.current = null;
-      return;
     }
 
-    let mounted = true;
-
     const initializeGoogleTokenClient = () => {
-      if (!mounted || !window.google?.accounts.oauth2) {
+      if (!mounted || !googleClientId || !window.google?.accounts.oauth2) {
         return;
       }
 
@@ -250,6 +251,7 @@ export default function Page() {
         scope: "openid email profile",
         callback: handleGoogleTokenResponse,
       });
+      setIsGoogleReady(true);
     };
 
     if (window.google?.accounts.oauth2) {
@@ -282,6 +284,7 @@ export default function Page() {
         return;
       }
 
+      setIsGoogleReady(false);
       setMessageTone("error");
       setMessage("Không tải được nút đăng nhập Google.");
     };
@@ -313,7 +316,7 @@ export default function Page() {
       return;
     }
 
-    if (!googleTokenClientRef.current) {
+    if (!isGoogleReady || !googleTokenClientRef.current) {
       setMessageTone("error");
       setMessage("Google đang tải chưa xong. Vui lòng thử lại sau vài giây.");
       return;
@@ -578,7 +581,12 @@ export default function Page() {
                     logoAlt="Google"
                     label="Google"
                     onClick={startGoogleLogin}
-                    disabled={isGoogleSubmitting}
+                    disabled={
+                      isGoogleSubmitting ||
+                      isGoogleConfigLoading ||
+                      !googleClientId ||
+                      !isGoogleReady
+                    }
                   />
                   <SocialButton
                     logoSrc={lineLogoSrc}
