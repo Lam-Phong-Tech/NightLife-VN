@@ -17,7 +17,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID || vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID || vars.GOOGLE_CLIENT_ID }}
     defaults:
       run:
         working-directory: ./frontend
@@ -37,11 +37,10 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --no-frozen-lockfile --prod=false || pnpm install --prod=false
 
-      - name: Validate Google OAuth client ID
+      - name: Check Google OAuth client ID
         run: |
           if [ -z "${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}" ]; then
-            echo "::error::Thieu NEXT_PUBLIC_GOOGLE_CLIENT_ID hoac GOOGLE_CLIENT_ID secret cho Google login."
-            exit 1
+            echo "::warning::Chua set NEXT_PUBLIC_GOOGLE_CLIENT_ID hoac GOOGLE_CLIENT_ID secret/variable; Google login se tam thoi bao thieu cau hinh."
           fi
 
       - name: Build Project
