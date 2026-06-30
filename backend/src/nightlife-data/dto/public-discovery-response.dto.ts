@@ -471,7 +471,10 @@ export class PublicStoreDetailResponseDto {
   })
   openingHours?: Record<string, PublicStoreOpeningHourDto> | null;
 
-  @ApiPropertyOptional({ type: () => PublicStoreHolidayScheduleDto, nullable: true })
+  @ApiPropertyOptional({
+    type: () => PublicStoreHolidayScheduleDto,
+    nullable: true,
+  })
   holidaySchedule?: PublicStoreHolidayScheduleDto | null;
 
   @ApiProperty({ type: [PublicStoreGalleryItemDto] })

@@ -2173,7 +2173,11 @@ export class NightlifeDataService {
       ?.replace(/\s+/g, ' ')
       .trim();
     const name = cast.publicAlias ?? cast.stageName;
-    const location = [cast.store.area?.name, cast.store.district, cast.store.city]
+    const location = [
+      cast.store.area?.name,
+      cast.store.district,
+      cast.store.city,
+    ]
       .filter(Boolean)
       .join(', ');
     const languageText = cast.languages.length

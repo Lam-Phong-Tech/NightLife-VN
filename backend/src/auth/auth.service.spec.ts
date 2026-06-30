@@ -68,7 +68,7 @@ describe('AuthService', () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok,
       json: jest.fn().mockResolvedValue(body),
-    } as unknown as Response);
+    });
   };
 
   beforeEach(() => {
@@ -242,7 +242,7 @@ describe('AuthService', () => {
       name: 'New Google Member',
       sub: 'google-sub-new',
     });
-    usersService.findByEmail.mockResolvedValue(null as never);
+    usersService.findByEmail.mockResolvedValue(null);
     usersService.createGoogleMember.mockResolvedValue(member as never);
 
     await expect(
@@ -262,21 +262,23 @@ describe('AuthService', () => {
   });
 
   it('starts LINE OAuth with email scope and web login fallback', () => {
-    configService.get.mockImplementation((key: string, defaultValue?: string) => {
-      if (key === 'LINE_CHANNEL_ID') {
-        return '2010552841';
-      }
+    configService.get.mockImplementation(
+      (key: string, defaultValue?: string) => {
+        if (key === 'LINE_CHANNEL_ID') {
+          return '2010552841';
+        }
 
-      if (key === 'LINE_CALLBACK_URL') {
-        return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
-      }
+        if (key === 'LINE_CALLBACK_URL') {
+          return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
+        }
 
-      if (key === 'JWT_EXPIRES_IN') {
-        return defaultValue ?? '1d';
-      }
+        if (key === 'JWT_EXPIRES_IN') {
+          return defaultValue ?? '1d';
+        }
 
-      return defaultValue;
-    });
+        return defaultValue;
+      },
+    );
 
     const response = {
       cookie: jest.fn(),
@@ -292,9 +294,7 @@ describe('AuthService', () => {
     expect(redirectUrl.searchParams.get('redirect_uri')).toBe(
       'https://demonightlight.test9.io.vn/api/backend/auth/line/callback',
     );
-    expect(redirectUrl.searchParams.get('scope')).toBe(
-      'profile openid email',
-    );
+    expect(redirectUrl.searchParams.get('scope')).toBe('profile openid email');
     expect(redirectUrl.searchParams.get('disable_auto_login')).toBe('true');
     expect(response.cookie).toHaveBeenCalledWith(
       'line_oauth_redirect',
@@ -309,8 +309,8 @@ describe('AuthService', () => {
   });
 
   it('revokes the current token on logout', async () => {
-    prisma.tokenBlacklist.upsert.mockResolvedValue({ id: 'token-1' } as never);
-    prisma.userSession.updateMany.mockResolvedValue({ count: 1 } as never);
+    prisma.tokenBlacklist.upsert.mockResolvedValue({ id: 'token-1' });
+    prisma.userSession.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(
       service.logout({

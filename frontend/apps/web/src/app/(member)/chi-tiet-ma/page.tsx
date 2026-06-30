@@ -25,7 +25,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"background":"#fff","padding":"8px 18px 12px","display":"flex","alignItems":"center","gap":"12px"}}><Link href="/uu-dai" style={{"fontSize":"22px","color":"#5b5870","lineHeight":"1"}}>‹</Link><span style={{"fontWeight":"800","fontSize":"16px"}}>Mã ưu đãi</span></div>
 
@@ -51,7 +51,7 @@ import React, { useState } from 'react';
       {/* QR card */}
       <div style={{"background":"#fff","border":"1px solid #ececec","borderRadius":"16px","marginTop":"12px","padding":"18px","textAlign":"center"}}>
         <div style={{"width":"168px","height":"168px","margin":"0 auto","border":"1px solid #ececec","borderRadius":"14px","display":"flex","alignItems":"center","justifyContent":"center"}}><Image width={100} height={100} src="https://img.icons8.com/ios/300/000000/qr-code.png" style={{"width":"140px","height":"140px","display":"inline-block"}} alt="QR" /></div>
-        <div style={{"fontFamily":"monospace","fontSize":"13px","letterSpacing":".16em","fontWeight":"700","marginTop":"12px"}}>NL-HH30-7K2A</div>
+        <div style={{"fontFamily":"var(--nl-font-sans)","fontSize":"13px","letterSpacing":".16em","fontWeight":"700","marginTop":"12px"}}>NL-HH30-7K2A</div>
         <div style={{"display":"inline-flex","alignItems":"center","gap":"6px","marginTop":"11px","background":"#fdefd6","color":"#b06a00","borderRadius":"18px","padding":"7px 13px","fontSize":"11.5px","fontWeight":"700"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B06A00/clock.png" style={{"width":"14px","height":"14px","display":"inline-block"}} alt="" />Còn 6 ngày 22 giờ</div>
         <div style={{"marginTop":"9px","display":"inline-flex","alignItems":"center","gap":"6px","background":"#f1ebff","color":"#6d28d9","borderRadius":"18px","padding":"6px 12px","fontSize":"11px","fontWeight":"600"}}><span style={{"width":"7px","height":"7px","borderRadius":"50%","background":"#6d28d9","display":"inline-block"}}></span>Đang giữ chỗ</div>
       </div>
@@ -64,7 +64,7 @@ import React, { useState } from 'react';
 
       {/* actions */}
       <Link href="/vi-uu-dai" style={{"marginTop":"14px","display":"block","background":"#6d28d9","color":"#fff","textAlign":"center","borderRadius":"12px","padding":"14px","fontWeight":"700","fontSize":"14px"}}>Lưu vào ví</Link>
-      <Link href="/stores/club-lumiere" style={{"marginTop":"10px","display":"block","border":"1px solid #ececec","background":"#fff","color":"#6d28d9","textAlign":"center","borderRadius":"12px","padding":"13px","fontWeight":"600","fontSize":"13.5px"}}>Xem quán áp dụng ›</Link>
+      <Link href="/stores/neon-club" style={{"marginTop":"10px","display":"block","border":"1px solid #ececec","background":"#fff","color":"#6d28d9","textAlign":"center","borderRadius":"12px","padding":"13px","fontWeight":"600","fontSize":"13.5px"}}>Xem quán áp dụng ›</Link>
     </div>
 
     {/* bottom nav */}
@@ -91,7 +91,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
 
   <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
 
@@ -123,7 +123,7 @@ import React, { useState } from 'react';
           <div style={{"width":"208px","height":"208px","margin":"0 auto","border":"1px solid #ececec","borderRadius":"16px","padding":"14px","background":"#fff"}}>
             <div style={{"width":"100%","height":"100%","borderRadius":"8px","background":"linear-gradient(#1f1d29,#1f1d29) 0 0/40px 40px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 0 0/40px 8px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 0 32px/8px 8px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 32px 0/8px 40px no-repeat,\r\n              linear-gradient(#fff,#fff) 8px 8px/24px 24px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 14px 14px/12px 12px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 100% 0/40px 40px no-repeat,\r\n              linear-gradient(#fff,#fff) calc(100% - 8px) 8px/24px 24px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) calc(100% - 14px) 14px/12px 12px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 0 100%/40px 40px no-repeat,\r\n              linear-gradient(#fff,#fff) 8px calc(100% - 8px)/24px 24px no-repeat,\r\n              linear-gradient(#1f1d29,#1f1d29) 14px calc(100% - 14px)/12px 12px no-repeat,\r\n              repeating-linear-gradient(0deg,#1f1d29 0 6px,transparent 6px 12px) 60px 0/8px 100% no-repeat,\r\n              repeating-linear-gradient(0deg,#1f1d29 0 6px,transparent 6px 12px) 84px 0/8px 100% no-repeat,\r\n              repeating-linear-gradient(90deg,#1f1d29 0 6px,transparent 6px 12px) 0 60px/100% 8px no-repeat,\r\n              repeating-linear-gradient(90deg,#1f1d29 0 6px,transparent 6px 12px) 0 84px/100% 8px no-repeat,\r\n              repeating-linear-gradient(0deg,#1f1d29 0 6px,transparent 6px 12px) 108px 52px/8px 60px no-repeat,\r\n              repeating-linear-gradient(90deg,#1f1d29 0 6px,transparent 6px 12px) 52px 108px/60px 8px no-repeat,\r\n              #fff"}}></div>
           </div>
-          <div style={{"fontFamily":"monospace","fontSize":"16px","letterSpacing":".18em","color":"#1f1d29","fontWeight":"700","marginTop":"16px"}}>NL-HH30-7K2A</div>
+          <div style={{"fontFamily":"var(--nl-font-sans)","fontSize":"16px","letterSpacing":".18em","color":"#1f1d29","fontWeight":"700","marginTop":"16px"}}>NL-HH30-7K2A</div>
 
           {/* countdown + status */}
           <div style={{"marginTop":"14px","display":"flex","gap":"8px","justifyContent":"center","flexWrap":"wrap"}}>
@@ -160,7 +160,7 @@ import React, { useState } from 'react';
 
 
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
+<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"var(--nl-font-sans)","color":"#5b5870"}}>
   <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
     <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
       <div style={{"maxWidth":"300px"}}>

@@ -26,6 +26,10 @@ GOOGLE_CLIENT_ID=""
 PORT=3001
 STORAGE_LOCAL_DIR="uploads"
 PUBLIC_BASE_URL="http://localhost:3001"
+WEB_BASE_URL="http://localhost:3000"
+CMS_BASE_URL="http://localhost:3000"
+TELEGRAM_BOT_TOKEN=""
+TELEGRAM_ADMIN_CHAT_ID=""
 ```
 
 ## Database
@@ -107,6 +111,12 @@ The first migration creates:
 Core enums include `UserRole`, `UserTier`, `UserStatus`, `StoreStatus`, `CastStatus`, `BookingStatus`, `BillStatus`, `MediaType`, and `MediaStatus`.
 
 MVP enum mapping is documented in `docs/mvp-enum-mapping.md`.
+
+## Admin Telegram Notifications
+
+P0 admin notifications are documented in `docs/admin-telegram-notifications.md`.
+Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_ID` to send messages to the admin group.
+When Telegram is not configured, the API still completes the business action and records a failed `NotificationLog` for follow-up.
 
 ## Seed
 

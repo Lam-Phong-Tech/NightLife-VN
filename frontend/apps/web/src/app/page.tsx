@@ -101,7 +101,7 @@ const shellStyle: CSSProperties = {
   minHeight: "100vh",
   background: colors.shell,
   color: colors.text,
-  fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  fontFamily: "var(--nl-font-sans)",
 };
 
 const appStyle: CSSProperties = {
@@ -227,7 +227,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <Link
-      href="/stores/club-lumiere"
+      href="/stores/neon-club"
       style={{
         minHeight: desktop ? "310px" : "208px",
         borderRadius: desktop ? "26px" : "18px",
@@ -359,7 +359,7 @@ function SectionHeading({ title, action }: { title: string; action?: string }) {
 function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number]; compact?: boolean }) {
   return (
     <Link
-      href="/stores/club-lumiere"
+      href="/stores/neon-club"
       style={{
         minWidth: compact ? "162px" : "0",
         display: "block",
@@ -397,7 +397,7 @@ function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number];
 function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; compact?: boolean }) {
   return (
     <Link
-      href="/stores/club-lumiere"
+      href="/stores/neon-club"
       style={{
         display: "grid",
         gridTemplateColumns: compact ? "82px 1fr auto" : "120px 1fr auto",
@@ -486,7 +486,7 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "") || "club-lumiere";
+    .replace(/(^-|-$)/g, "") || "neon-club";
 
   return (
     <Link
@@ -520,7 +520,7 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
 
 function VideoCard({ item, compact = false }: { item: (typeof hotVideos)[number]; compact?: boolean }) {
   return (
-    <Link href="/stores/club-lumiere" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
+    <Link href="/stores/neon-club" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Video"}

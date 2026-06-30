@@ -43,7 +43,7 @@ describe('StorageService', () => {
   });
 
   it('stores local media metadata with relation ids and public access', async () => {
-    prisma.media.create.mockResolvedValue({ id: 'media-1' } as never);
+    prisma.media.create.mockResolvedValue({ id: 'media-1' });
 
     await service.saveLocalFile(file, {
       ownerId: 'owner-1',
@@ -84,7 +84,7 @@ describe('StorageService', () => {
       ownerId: 'owner-1',
       mimeType: 'image/png',
       storageKey: 'stored-image',
-    } as never);
+    });
 
     await expect(
       service.resolveProtectedLocalFile('stored-image', {
@@ -101,7 +101,7 @@ describe('StorageService', () => {
       storeId: 'store-1',
       mimeType: 'image/png',
       storageKey: 'stored-image',
-    } as never);
+    });
 
     await expect(
       service.resolveProtectedLocalFile('stored-image', {

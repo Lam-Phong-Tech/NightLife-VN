@@ -197,7 +197,9 @@ export class AuthService {
     sessionContext?: SessionContext,
   ) {
     const cookies = this.parseCookieHeader(request.headers.cookie);
-    const redirectPath = this.normalizeRedirectPath(cookies[lineRedirectCookie]);
+    const redirectPath = this.normalizeRedirectPath(
+      cookies[lineRedirectCookie],
+    );
 
     if (query.error) {
       this.clearLineOAuthCookies(response);
@@ -208,7 +210,11 @@ export class AuthService {
       );
     }
 
-    if (!query.code || !query.state || query.state !== cookies[lineStateCookie]) {
+    if (
+      !query.code ||
+      !query.state ||
+      query.state !== cookies[lineStateCookie]
+    ) {
       this.clearLineOAuthCookies(response);
       return this.redirectLineLoginError(
         response,
@@ -404,7 +410,10 @@ export class AuthService {
     };
   }
 
-  private async verifyLineAuthorizationCode(code: string, expectedNonce?: string) {
+  private async verifyLineAuthorizationCode(
+    code: string,
+    expectedNonce?: string,
+  ) {
     const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
     const channelSecret = this.configService.get<string>('LINE_CHANNEL_SECRET');
     const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL');
@@ -576,8 +585,9 @@ export class AuthService {
       return {};
     }
 
-    return cookieHeader.split(';').reduce<Record<string, string>>(
-      (cookies, entry) => {
+    return cookieHeader
+      .split(';')
+      .reduce<Record<string, string>>((cookies, entry) => {
         const [rawName, ...rawValueParts] = entry.trim().split('=');
         if (!rawName || rawValueParts.length === 0) {
           return cookies;
@@ -591,9 +601,7 @@ export class AuthService {
         }
 
         return cookies;
-      },
-      {},
-    );
+      }, {});
   }
 
   private resolveJwtExpiresAt() {

@@ -13,7 +13,7 @@ interface CouponCardProps {
 export const CouponCard: React.FC<CouponCardProps> = ({ coupon, onClick, onTakeClick, variant = 'hot' }) => {
   if (variant === 'list') {
     return (
-      <Link href="/stores/club-lumiere" onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', borderRadius: '13px', padding: '11px', boxShadow: '0 3px 12px rgba(40,20,60,.06)', textDecoration: 'none', color: 'inherit' }}>
+      <Link href="/stores/neon-club" onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#fff', borderRadius: '13px', padding: '11px', boxShadow: '0 3px 12px rgba(40,20,60,.06)', textDecoration: 'none', color: 'inherit' }}>
         <PlaceholderMedia src={coupon.img} alt={coupon.title || 'Coupon'} label="" style={{ width: '48px', height: '48px', borderRadius: '11px', flex: 'none' }} />
         <div style={{ flex: '1' }}>
           <div style={{ fontWeight: '700', fontSize: '13.5px' }}>{coupon.title}</div>

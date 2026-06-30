@@ -25,7 +25,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"background":"#fff","padding":"8px 18px 10px","display":"flex","alignItems":"center","gap":"12px"}}><Link href="/blog" style={{"fontSize":"22px","color":"#5b5870","lineHeight":"1"}}>‹</Link><Link href="/blog" style={{"fontWeight":"700","fontSize":"14px","color":"#8a879a"}}>Blog</Link></div>
 
@@ -79,7 +79,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
 
   <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
 
@@ -135,7 +135,7 @@ import React, { useState } from 'react';
           </div>
         </div>
 
-        <Link href="/stores/club-lumiere" className="card" style={{"borderRadius":"16px","overflow":"hidden","background":"url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#6d28d9,#3a1f6e)","padding":"22px","color":"#fff","display":"block"}}><div style={{"fontSize":"11px","letterSpacing":".14em","textTransform":"uppercase","color":"#d9c9f7","fontWeight":"700"}}>Quảng cáo</div><div style={{"fontSize":"18px","fontWeight":"800","marginTop":"8px","lineHeight":"1.25"}}>Club Lumière — ưu đãi −30% cuối tuần</div><div className="btn" style={{"marginTop":"14px","background":"#fff","color":"#6d28d9","textAlign":"center","borderRadius":"10px","padding":"11px","fontWeight":"700","fontSize":"13px"}}>Xem ngay</div></Link>
+        <Link href="/stores/neon-club" className="card" style={{"borderRadius":"16px","overflow":"hidden","background":"url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#6d28d9,#3a1f6e)","padding":"22px","color":"#fff","display":"block"}}><div style={{"fontSize":"11px","letterSpacing":".14em","textTransform":"uppercase","color":"#d9c9f7","fontWeight":"700"}}>Quảng cáo</div><div style={{"fontSize":"18px","fontWeight":"800","marginTop":"8px","lineHeight":"1.25"}}>Club Lumière — ưu đãi −30% cuối tuần</div><div className="btn" style={{"marginTop":"14px","background":"#fff","color":"#6d28d9","textAlign":"center","borderRadius":"10px","padding":"11px","fontWeight":"700","fontSize":"13px"}}>Xem ngay</div></Link>
       </div>
     </div>
   </div>
@@ -144,7 +144,7 @@ import React, { useState } from 'react';
 
 
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
+<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"var(--nl-font-sans)","color":"#5b5870"}}>
   <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
     <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
       <div style={{"maxWidth":"300px"}}>

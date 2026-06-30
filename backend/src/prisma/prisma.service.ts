@@ -27,7 +27,9 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(private readonly configService: ConfigService) {
-    super(createPrismaOptions(configService.getOrThrow<string>('DATABASE_URL')));
+    super(
+      createPrismaOptions(configService.getOrThrow<string>('DATABASE_URL')),
+    );
   }
 
   async onModuleInit() {

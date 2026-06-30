@@ -24,7 +24,8 @@ export class PasswordService {
     const storedKeyBuffer = Buffer.from(storedKey, 'hex');
 
     return (
-      key.length === storedKeyBuffer.length && timingSafeEqual(key, storedKeyBuffer)
+      key.length === storedKeyBuffer.length &&
+      timingSafeEqual(key, storedKeyBuffer)
     );
   }
 }

@@ -762,7 +762,8 @@ export function MemberFavoriteCastsContract() {
     ApiBearerAuth(),
     ApiOperation({
       summary: 'Member action: list own saved public casts',
-      description: 'Auth guard: JwtAuthGuard + RolesGuard(USER). Own-resource route.',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Own-resource route.',
     }),
     ApiOkResponse({
       description: 'Saved casts for the current member.',

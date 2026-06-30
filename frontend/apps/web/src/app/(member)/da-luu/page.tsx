@@ -39,7 +39,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
   <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
     <div style={{"background":"#fff","padding":"8px 18px 12px"}}><h2 style={{"fontSize":"19px","fontWeight":"800"}}>Đã lưu</h2>
       {/* tabs */}
@@ -51,15 +51,15 @@ import React, { useState } from 'react';
 
     {/* saved venue list */}
     <div style={{"padding":"12px 18px","display":"flex","flexDirection":"column","gap":"11px"}}>
-      <Link href="/stores/club-lumiere" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <Link href="/stores/neon-club" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <span style={{"width":"96px","flex":"none","background":"url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)"}}></span>
         <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>Club Lumière</div><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none","display":"inline-block"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Tây Hồ · Bar Lounge</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.8</span><span style={{"fontSize":"9.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"8px","padding":"2px 7px","fontWeight":"600"}}>−30% Happy Hour</span></div></div>
       </Link>
-      <Link href="/stores/club-lumiere" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <Link href="/stores/neon-club" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <span style={{"width":"96px","flex":"none","background":"url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#3a8fb0,#2d5fae)"}}></span>
         <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>KTV Hoàng Gia</div><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none","display":"inline-block"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Kim Mã · Karaoke VIP</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.6</span><span style={{"fontSize":"9.5px","color":"#6d28d9","background":"#f1ebff","borderRadius":"8px","padding":"2px 7px","fontWeight":"600"}}>Combo VIP 2+1</span></div></div>
       </Link>
-      <Link href="/stores/club-lumiere" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
+      <Link href="/stores/neon-club" style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)"}}>
         <span style={{"width":"96px","flex":"none","background":"url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8)"}}></span>
         <div style={{"flex":"1","padding":"11px 12px 11px 0","display":"flex","flexDirection":"column","justifyContent":"center"}}><div style={{"display":"flex","alignItems":"flex-start","justifyContent":"space-between","gap":"8px"}}><div style={{"fontWeight":"700","fontSize":"13.5px"}}>Sakura Lounge</div><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/FF3D71/like.png" style={{"width":"18px","height":"18px","flex":"none","display":"inline-block"}} alt="" /></div><div style={{"fontSize":"11px","color":"#8a879a","marginTop":"2px"}}>Hoàn Kiếm · Lounge</div><div style={{"display":"flex","alignItems":"center","gap":"8px","marginTop":"7px"}}><span style={{"fontSize":"11px","color":"#e8923a","fontWeight":"600"}}>★ 4.7</span></div></div>
       </Link>
@@ -99,7 +99,7 @@ import React, { useState } from 'react';
 
 </>
 
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"'Inter',sans-serif"}}>
+<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
 
   <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
 
@@ -151,7 +151,7 @@ import React, { useState } from 'react';
 
 
 
-<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"'Inter',sans-serif","color":"#5b5870"}}>
+<div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"var(--nl-font-sans)","color":"#5b5870"}}>
   <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
     <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
       <div style={{"maxWidth":"300px"}}>

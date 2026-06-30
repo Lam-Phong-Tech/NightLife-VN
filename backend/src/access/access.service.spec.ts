@@ -28,7 +28,7 @@ describe('AccessService', () => {
   });
 
   it('checks action permissions from the role-permission matrix', async () => {
-    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' } as never);
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' });
 
     await expect(
       service.canViewPartnerBooking({
@@ -78,10 +78,10 @@ describe('AccessService', () => {
   });
 
   it('allows a delegated partner to scan a coupon only within store permission scope', async () => {
-    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' } as never);
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' });
     prisma.couponIssue.findFirst.mockResolvedValue({
       coupon: { storeId: 'delegated-store' },
-    } as never);
+    });
     prisma.store.findMany.mockResolvedValue([] as never);
     prisma.storePermission.findMany.mockResolvedValue([
       { storeId: 'delegated-store' },
@@ -96,7 +96,7 @@ describe('AccessService', () => {
   });
 
   it('treats operator as a separate platform-wide operational role', async () => {
-    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' } as never);
+    prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' });
 
     await expect(
       service.canReviewBill({ id: 'operator-1', role: 'OPERATOR' }, 'bill-1'),
