@@ -107,6 +107,15 @@ const areaExample = {
   cityCode: 'hn',
 };
 
+const neonStoreImage =
+  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1100&q=80';
+const crimsonStoreImage =
+  'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=1100&q=80';
+const yunaCastImage =
+  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80';
+const miyukiCastImage =
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80';
+
 const storeExample = {
   id: 'store_01',
   name: 'Neon Club',
@@ -127,7 +136,7 @@ const storeExample = {
   },
   latitude: 21.063,
   longitude: 105.822,
-  thumbnailUrl: null,
+  thumbnailUrl: neonStoreImage,
   distanceKm: 1.4,
 };
 
@@ -159,7 +168,7 @@ const storeDetailExample = {
     {
       id: 'media_01',
       type: 'IMAGE',
-      url: 'https://images.unsplash.com/photo.jpg',
+      url: neonStoreImage,
       purpose: 'store-hero',
       mimeType: 'image/jpeg',
       alt: 'Neon Club hero',
@@ -172,7 +181,7 @@ const storeDetailExample = {
       stageName: 'Yuna',
       publicAlias: 'Yuna',
       publicHeadline: 'Party host',
-      thumbnailUrl: null,
+      thumbnailUrl: yunaCastImage,
       tags: ['party', 'vip'],
       languages: ['ja', 'vi'],
       hourlyRateVnd: 600000,
@@ -209,14 +218,14 @@ const storeDetailExample = {
       city: 'Ha Noi',
       district: 'Hoan Kiem',
       area: null,
-      thumbnailUrl: null,
+      thumbnailUrl: crimsonStoreImage,
     },
   ],
   seo: {
     title: 'Neon Club | NightLife VN',
     description: 'Neon Club tai Tay Ho, Ha Noi.',
     canonicalPath: '/stores/neon-club',
-    ogImage: null,
+    ogImage: neonStoreImage,
   },
 };
 
@@ -230,7 +239,7 @@ const castExample = {
   tags: ['party', 'energetic'],
   languages: ['ja', 'vi', 'en'],
   hourlyRateVnd: 600000,
-  thumbnailUrl: null,
+  thumbnailUrl: yunaCastImage,
   distanceKm: 1.4,
   store: {
     id: 'store_01',
@@ -266,7 +275,7 @@ const castDetailExample = {
     {
       id: 'media_01',
       type: 'IMAGE',
-      url: 'https://images.unsplash.com/photo.jpg',
+      url: yunaCastImage,
       purpose: 'cast-gallery',
       mimeType: 'image/jpeg',
       alt: 'Yuna profile photo',
@@ -283,7 +292,7 @@ const castDetailExample = {
       tags: ['cocktail', 'calm'],
       languages: ['ja', 'vi'],
       hourlyRateVnd: 500000,
-      thumbnailUrl: null,
+      thumbnailUrl: miyukiCastImage,
       relatedReason: 'same-area',
       store: castExample.store,
     },
@@ -299,7 +308,7 @@ const castDetailExample = {
     description:
       'Yuna hosts public VIP bookings at Neon Club in Tay Ho, Ha Noi.',
     canonicalPath: '/casts/yuna-neon',
-    ogImage: 'https://images.unsplash.com/photo.jpg',
+    ogImage: yunaCastImage,
   },
 };
 

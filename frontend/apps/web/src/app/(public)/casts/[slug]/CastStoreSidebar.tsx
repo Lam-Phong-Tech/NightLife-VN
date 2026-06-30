@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { RelatedCast } from "@/lib/api/cast-detail";
+import { castImageForSlug } from "@/lib/demo-media";
 import { labelLanguage, mediaBg } from "./cast-profile.helpers";
 import { recommendationLabel } from "./cast-profile.recommendations";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
@@ -29,13 +30,21 @@ export function CastStoreSidebar({
         <br />
         {area || "Chưa cập nhật khu vực"}
       </p>
-      <Link href={storeHref} className="cast-store-action" onClick={() => onTrack?.("store", { surface: "sidebar" })}>
+      <Link
+        href={storeHref}
+        className="cast-store-action"
+        onClick={() => onTrack?.("store", { surface: "sidebar" })}
+      >
         Xem quán
       </Link>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
         {personalizationBadges.map((badge) => (
-          <span className="cast-chip tag" key={badge} style={{ background: "#f3f2f5", color: "#5b5870", border: 0 }}>
+          <span
+            className="cast-chip tag"
+            key={badge}
+            style={{ background: "#f3f2f5", color: "#5b5870", border: 0 }}
+          >
             {badge}
           </span>
         ))}
@@ -45,19 +54,19 @@ export function CastStoreSidebar({
         <h2>Gợi ý phù hợp</h2>
         <div className="cast-related-list">
           {relatedCasts.length ? (
-            relatedCasts.map((cast) => (
+            relatedCasts.map((cast, index) => (
               <Link
                 key={cast.id}
                 className="cast-related-card"
                 href={`/casts/${cast.slug}`}
-                onClick={() => onTrack?.("related", { surface: "sidebar", relatedCastSlug: cast.slug })}
+                onClick={() =>
+                  onTrack?.("related", { surface: "sidebar", relatedCastSlug: cast.slug })
+                }
               >
                 <span
                   className="cast-related-media"
                   style={{
-                    background: mediaBg(
-                      cast.thumbnailUrl || "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=240&q=70",
-                    ),
+                    background: mediaBg(cast.thumbnailUrl || castImageForSlug(cast.slug, index)),
                   }}
                 />
                 <span>

@@ -39,9 +39,9 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
     '  • Users: 8 (1 admin, 1 operator, 1 staff, 3 partners, 1 member, 1 VIP)',
   );
   console.log('  • Areas: 10 (HCM/HN/DN/HP)');
-  console.log('  • Stores: 14 (HCM/HN/DN/HP)');
-  console.log('  • Casts: 28 (2 per store)');
-  console.log('  • Media: 56 placeholders');
+  console.log('  • Stores: 15 (HCM/HN/DN/HP)');
+  console.log('  • Casts: 29');
+  console.log('  • Media: 59 image/video assets');
   console.log('  • Coupons: 5 (3 PERCENT + 2 FIXED)');
   console.log('  • Commission Configs: 10');
   console.log('  • Contents: 5 (3 blogs + 2 policies)');

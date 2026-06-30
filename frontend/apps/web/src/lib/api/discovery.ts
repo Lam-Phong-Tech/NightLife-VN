@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { castImageForSlug, storeImageForSlug } from "../demo-media";
 
 export type DiscoverySort = "newest" | "nearest" | "priority";
 
@@ -142,6 +143,7 @@ const buildStore = (
 
   return {
     ...storeFields,
+    thumbnailUrl: storeFields.thumbnailUrl ?? storeImageForSlug(storeFields.slug),
     area: areaByCode.get(areaCode) ?? null,
     distanceKm: null,
   };
@@ -161,7 +163,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hn-hoan-kiem",
     latitude: 21.0279,
     longitude: 105.8522,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-jade-casino-hoan-kiem",
@@ -176,7 +177,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hn-hoan-kiem",
     latitude: 21.0245,
     longitude: 105.8485,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-neon-tay-ho",
@@ -191,7 +191,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hn-tay-ho",
     latitude: 21.0603,
     longitude: 105.8237,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-tokyo-kitchen-hoan-kiem",
@@ -206,7 +205,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hn-hoan-kiem",
     latitude: 21.0341,
     longitude: 105.8525,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-moonlight-q1",
@@ -221,7 +219,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hcm-q1",
     latitude: 10.7731,
     longitude: 106.7042,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-sakura-lounge-q3",
@@ -236,7 +233,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hcm-q3",
     latitude: 10.7826,
     longitude: 106.6921,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-golden-ktv-q7",
@@ -251,7 +247,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hcm-q7",
     latitude: 10.7385,
     longitude: 106.7219,
-    thumbnailUrl: null,
   }),
   buildStore({
     id: "store-lotus-massage-q3",
@@ -266,7 +261,6 @@ const demoStores: PublicStore[] = [
     areaCode: "hcm-q3",
     latitude: 10.7829,
     longitude: 106.691,
-    thumbnailUrl: null,
   }),
 ];
 
@@ -295,6 +289,7 @@ const buildCast = (
 
   return {
     ...castFields,
+    thumbnailUrl: castFields.thumbnailUrl ?? castImageForSlug(castFields.slug),
     store,
     distanceKm: null,
   };
@@ -311,7 +306,6 @@ const demoCasts: PublicCast[] = [
     tags: ["club", "vip", "dance"],
     languages: ["vi", "en"],
     hourlyRateVnd: 950000,
-    thumbnailUrl: null,
     storeSlug: "neon-district-club",
   }),
   buildCast({
@@ -324,7 +318,6 @@ const demoCasts: PublicCast[] = [
     tags: ["bar", "cocktail", "chill"],
     languages: ["vi", "en"],
     hourlyRateVnd: 780000,
-    thumbnailUrl: null,
     storeSlug: "crimson-bar-hoan-kiem",
   }),
   buildCast({
@@ -337,7 +330,6 @@ const demoCasts: PublicCast[] = [
     tags: ["restaurant", "japanese", "dinner"],
     languages: ["ja", "en"],
     hourlyRateVnd: 880000,
-    thumbnailUrl: null,
     storeSlug: "tokyo-kitchen-old-quarter",
   }),
   buildCast({
@@ -350,7 +342,6 @@ const demoCasts: PublicCast[] = [
     tags: ["bar", "rooftop", "business"],
     languages: ["vi", "ja", "en"],
     hourlyRateVnd: 1100000,
-    thumbnailUrl: null,
     storeSlug: "moonlight-q1-bar",
   }),
   buildCast({
@@ -363,7 +354,6 @@ const demoCasts: PublicCast[] = [
     tags: ["lounge", "talk", "vip"],
     languages: ["vi", "en"],
     hourlyRateVnd: 920000,
-    thumbnailUrl: null,
     storeSlug: "sakura-lounge-quan-3",
   }),
   buildCast({
@@ -376,7 +366,6 @@ const demoCasts: PublicCast[] = [
     tags: ["ktv", "karaoke", "group"],
     languages: ["vi", "ja"],
     hourlyRateVnd: 820000,
-    thumbnailUrl: null,
     storeSlug: "golden-voice-ktv-quan-7",
   }),
   buildCast({
@@ -389,10 +378,22 @@ const demoCasts: PublicCast[] = [
     tags: ["massage-spa", "relax", "wellness"],
     languages: ["vi"],
     hourlyRateVnd: 680000,
-    thumbnailUrl: null,
     storeSlug: "lotus-massage-spa-quan-3",
   }),
 ];
+
+const demoCastSlugAliases: Record<string, string> = {
+  "kotone-tokyo": "kotone-tokyo-kitchen",
+  "sakura-moonlight": "sakura-moonlight-q1",
+  "yuna-neon": "yuna-neon-district",
+};
+
+export const getFallbackCastBySlug = (slug: string) => {
+  const normalizedSlug = normalize(slug);
+  const aliasSlug = demoCastSlugAliases[normalizedSlug] ?? normalizedSlug;
+
+  return demoCasts.find((cast) => normalize(cast.slug) === aliasSlug) ?? null;
+};
 
 const normalize = (value: string | number | null | undefined) =>
   String(value ?? "")

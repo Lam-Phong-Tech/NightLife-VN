@@ -24,6 +24,7 @@ import {
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
+import { castImageForSlug, storeGalleryForSlug, storeImageForSlug } from "@/lib/demo-media";
 import {
   categoryLabels,
   formatDateOption,
@@ -84,7 +85,8 @@ const fallbackTourImages = [
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
 
-const languageToNationality = (language: string) => nationalityLabels[normalizeLanguageCode(language)];
+const languageToNationality = (language: string) =>
+  nationalityLabels[normalizeLanguageCode(language)];
 
 const languageToLabel = (language: string) => {
   const normalized = normalizeLanguageCode(language);
@@ -100,7 +102,8 @@ const nationalitiesFromLanguages = (languages: string[]) =>
     ),
   );
 
-const formatNationalities = (languages: string[]) => nationalitiesFromLanguages(languages).join(", ");
+const formatNationalities = (languages: string[]) =>
+  nationalitiesFromLanguages(languages).join(", ");
 
 const markerToIntroKey = (marker: string) => {
   const normalized = marker.toUpperCase();
@@ -257,23 +260,25 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
 
   return (
     <div className="cast-rail hscroll">
-      {store.casts.slice(0, 10).map((cast) => (
-        <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
-          <span
-            className="cast-avatar"
-            style={{
-              backgroundImage: cast.thumbnailUrl
-                ? `url("${cast.thumbnailUrl}")`
-                : "linear-gradient(135deg,#292a31,#776435)",
-            }}
-          />
-          <strong>{cast.publicAlias || cast.stageName}</strong>
-          <small>
-            <Star size={11} fill="currentColor" />
-            {formatNationalities(cast.languages) || "Cast"}
-          </small>
-        </Link>
-      ))}
+      {store.casts.slice(0, 10).map((cast, index) => {
+        const avatarUrl = cast.thumbnailUrl ?? castImageForSlug(cast.slug, index);
+
+        return (
+          <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
+            <span
+              className="cast-avatar"
+              style={{
+                backgroundImage: imageBackground(avatarUrl),
+              }}
+            />
+            <strong>{cast.publicAlias || cast.stageName}</strong>
+            <small>
+              <Star size={11} fill="currentColor" />
+              {formatNationalities(cast.languages) || "Cast"}
+            </small>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -300,7 +305,11 @@ function CouponBlock({
   }
 
   return (
-    <Link className="coupon-strip" href={couponHref} onClick={() => onCouponClick("coupon-strip", coupon.id)}>
+    <Link
+      className="coupon-strip"
+      href={couponHref}
+      onClick={() => onCouponClick("coupon-strip", coupon.id)}
+    >
       <span className="coupon-photo" aria-hidden="true" />
       <span className="coupon-copy">
         <b>{formatDiscount(coupon)}</b>
@@ -332,7 +341,9 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
               <span
                 className="menu-photo"
                 style={{
-                  backgroundImage: imageBackground(fallbackTourImages[index % fallbackTourImages.length] ?? fallbackHero.url),
+                  backgroundImage: imageBackground(
+                    fallbackTourImages[index % fallbackTourImages.length] ?? fallbackHero.url,
+                  ),
                 }}
                 aria-hidden="true"
               />
@@ -341,7 +352,10 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
                   {item.label}
                   {index === 1 ? <em>Bán chạy</em> : null}
                 </strong>
-                <small>{item.note || (item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán")}</small>
+                <small>
+                  {item.note ||
+                    (item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán")}
+                </small>
               </span>
               <b>
                 {formatVnd(item.amountVnd)}
@@ -360,7 +374,10 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
 
       <div className="menu-note">
         <Info size={15} />
-        <span>{store.priceReference.note || "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ."}</span>
+        <span>
+          {store.priceReference.note ||
+            "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ."}
+        </span>
       </div>
     </section>
   );
@@ -406,10 +423,19 @@ function MapBlock({
       )}
       <div className="map-overlay">
         <MapPin size={16} />
-        <span>{store.address || [store.area?.name, store.district, store.city].filter(Boolean).join(", ")}</span>
+        <span>
+          {store.address ||
+            [store.area?.name, store.district, store.city].filter(Boolean).join(", ")}
+        </span>
       </div>
       {mapsUrl ? (
-        <a className="map-open-link" href={mapsUrl} target="_blank" rel="noreferrer" onClick={onMapClick}>
+        <a
+          className="map-open-link"
+          href={mapsUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={onMapClick}
+        >
           <Navigation size={15} />
           Chỉ đường
         </a>
@@ -459,9 +485,7 @@ function BookingCard({
 
       <div className="member-nudge">
         <Sparkles size={15} fill="currentColor" />
-        <span>
-          Khách vãng lai nhận ưu đãi cơ bản. Đăng nhập để nâng mức giảm khi có coupon.
-        </span>
+        <span>Khách vãng lai nhận ưu đãi cơ bản. Đăng nhập để nâng mức giảm khi có coupon.</span>
       </div>
 
       <div className="booking-form-grid">
@@ -476,11 +500,19 @@ function BookingCard({
         <div className="booking-field">
           <span>Số người</span>
           <div className="guest-stepper">
-            <button type="button" aria-label="Giảm số khách" onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}>
+            <button
+              type="button"
+              aria-label="Giảm số khách"
+              onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
+            >
               <Minus size={15} />
             </button>
             <strong>{guestCount} người</strong>
-            <button type="button" aria-label="Tăng số khách" onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}>
+            <button
+              type="button"
+              aria-label="Tăng số khách"
+              onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}
+            >
               <Plus size={15} />
             </button>
           </div>
@@ -542,7 +574,9 @@ function BookingCard({
 
       <div className="booking-safe">
         <ShieldCheck size={15} />
-        <span>Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.</span>
+        <span>
+          Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.
+        </span>
       </div>
     </aside>
   );
@@ -555,27 +589,32 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
     <section className="related-section">
       <SectionTitle title="Quán tương tự" kicker="Similar venues" meta="Xem thêm" />
       <div className="related-grid">
-        {stores.slice(0, 4).map((related) => (
-          <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
-            <span
-              className="related-photo"
-              style={{
-                backgroundImage: related.thumbnailUrl
-                  ? imageBackground(related.thumbnailUrl)
-                  : "linear-gradient(135deg,#202126,#6d5b2f)",
-              }}
-            />
-            <span className="related-copy">
-              <strong>{readableName(related.name)}</strong>
-              <small>{recommendationLabel(related)}</small>
-              <em>
-                {[categoryLabels[related.category] ?? related.category, related.area?.name ?? related.district]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </em>
-            </span>
-          </Link>
-        ))}
+        {stores.slice(0, 4).map((related, index) => {
+          const photoUrl = related.thumbnailUrl ?? storeImageForSlug(related.slug, index);
+
+          return (
+            <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
+              <span
+                className="related-photo"
+                style={{
+                  backgroundImage: imageBackground(photoUrl),
+                }}
+              />
+              <span className="related-copy">
+                <strong>{readableName(related.name)}</strong>
+                <small>{recommendationLabel(related)}</small>
+                <em>
+                  {[
+                    categoryLabels[related.category] ?? related.category,
+                    related.area?.name ?? related.district,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </em>
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
@@ -588,15 +627,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [selectedTime, setSelectedTime] = useState("21:00");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const recommendedStores = useMemo(() => personalizeRelatedStores(store.relatedStores), [store.relatedStores]);
+  const recommendedStores = useMemo(
+    () => personalizeRelatedStores(store.relatedStores),
+    [store.relatedStores],
+  );
 
   const displayName = readableName(store.name);
-  const gallery = store.gallery?.length ? store.gallery : [fallbackHero];
+  const gallery = store.gallery?.length
+    ? store.gallery
+    : storeGalleryForSlug(store.slug, displayName);
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? fallbackHero;
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? fallbackHero;
   const heroMedia = selectedMedia.type === "IMAGE" ? selectedMedia : heroImage;
   const heroBackground = mediaBackground(heroMedia);
-  const galleryTiles = Array.from({ length: Math.min(Math.max(gallery.length, 5), 5) }, (_, index) => gallery[index % gallery.length]!);
+  const galleryTiles = Array.from(
+    { length: Math.min(Math.max(gallery.length, 5), 5) },
+    (_, index) => gallery[index % gallery.length]!,
+  );
   const tourMedia = gallery.filter((item) => item.type === "VIDEO").length
     ? gallery.filter((item) => item.type === "VIDEO")
     : gallery.slice(0, 3);
@@ -611,7 +658,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const priceText = priceRangeText(store);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
-  const nationalityText = Array.from(new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))))
+  const nationalityText = Array.from(
+    new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))),
+  )
     .slice(0, 3)
     .join(" · ");
   const languageCards = useMemo(() => {
@@ -684,8 +733,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const couponHref = `/uu-dai?${couponQuery.toString()}`;
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
-  const showPreviousMedia = () => setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
-  const showNextMedia = () => setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+  const showPreviousMedia = () =>
+    setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
+  const showNextMedia = () =>
+    setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
   const openGallery = (index: number) => {
     setSelectedGalleryIndex(index % gallery.length);
     setIsLightboxOpen(true);
@@ -702,7 +753,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     trackStoreDetailClick(store, "coupon", { surface, couponId });
 
   return (
-    <main className="store-detail-page" data-testid="store-detail-page" data-no-scroll-reveal="true">
+    <main
+      className="store-detail-page"
+      data-testid="store-detail-page"
+      data-no-scroll-reveal="true"
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -721,20 +776,32 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           <div className="media-column">
             <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
               <div className="hero-top">
-                <Link className="round-action hero-back" href="/danh-sach-quan" aria-label="Quay lại danh sách quán">
+                <Link
+                  className="round-action hero-back"
+                  href="/danh-sach-quan"
+                  aria-label="Quay lại danh sách quán"
+                >
                   <ChevronLeft size={20} />
                 </Link>
                 <div className="hero-actions">
                   <IconButton label="Chia sẻ quán">
                     <Share2 size={18} />
                   </IconButton>
-                  <IconButton label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"} onClick={() => setIsFavorite((value) => !value)}>
+                  <IconButton
+                    label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+                    onClick={() => setIsFavorite((value) => !value)}
+                  >
                     <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
                   </IconButton>
                 </div>
               </div>
 
-              <button className="hero-play" type="button" aria-label="Mở video tour" onClick={() => openGallery(0)}>
+              <button
+                className="hero-play"
+                type="button"
+                aria-label="Mở video tour"
+                onClick={() => openGallery(0)}
+              >
                 <Play size={25} fill="currentColor" />
               </button>
 
@@ -774,7 +841,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <div className="secondary-actions">
               {mapsUrl ? (
-                <a href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackStoreDetailClick(store, "map", { surface: "hero-action" })}>
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => trackStoreDetailClick(store, "map", { surface: "hero-action" })}
+                >
                   <Navigation size={16} />
                   Chỉ đường
                 </a>
@@ -801,7 +873,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </div>
 
             <section className="desktop-only">
-              <SectionTitle title="Video tour" kicker="Venue tour" meta={`${tourMedia.length} media`} />
+              <SectionTitle
+                title="Video tour"
+                kicker="Venue tour"
+                meta={`${tourMedia.length} media`}
+              />
               <div className="tour-grid">
                 {tourMedia.slice(0, 4).map((item, index) => (
                   <button
@@ -809,10 +885,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     type="button"
                     key={`${item.id}-${index}`}
                     style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                    onClick={() => openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)}
+                    onClick={() =>
+                      openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
+                    }
                   >
                     <Play size={18} fill="currentColor" />
-                    <span>{item.purpose || (item.type === "VIDEO" ? "Video tour" : "Không gian quán")}</span>
+                    <span>
+                      {item.purpose || (item.type === "VIDEO" ? "Video tour" : "Không gian quán")}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -878,7 +958,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <section className="desktop-about-inline">
               <div className="feature-chips">
-                {[categoryLabel, "Phòng VIP riêng", "Hỗ trợ tiếng Nhật", "Cocktail signature", "Karaoke"].map((chip) => (
+                {[
+                  categoryLabel,
+                  "Phòng VIP riêng",
+                  "Hỗ trợ tiếng Nhật",
+                  "Cocktail signature",
+                  "Karaoke",
+                ].map((chip) => (
                   <span key={chip}>{chip}</span>
                 ))}
               </div>
@@ -901,9 +987,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 ))}
               </div>
               <div className="feature-chips">
-                {[categoryLabel, "Phòng VIP", "Hỗ trợ tiếng Nhật", "Đặt bàn qua Admin"].map((chip) => (
-                  <span key={chip}>{chip}</span>
-                ))}
+                {[categoryLabel, "Phòng VIP", "Hỗ trợ tiếng Nhật", "Đặt bàn qua Admin"].map(
+                  (chip) => (
+                    <span key={chip}>{chip}</span>
+                  ),
+                )}
               </div>
               <div className="language-grid">
                 {languageCards.map((card) => (
@@ -916,7 +1004,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="mobile-only">
-              <SectionTitle title="Video tour" kicker="Venue tour" meta={`${tourMedia.length} media`} />
+              <SectionTitle
+                title="Video tour"
+                kicker="Venue tour"
+                meta={`${tourMedia.length} media`}
+              />
               <div className="tour-rail hscroll">
                 {tourMedia.slice(0, 6).map((item, index) => (
                   <button
@@ -924,7 +1016,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     type="button"
                     key={`${item.id}-${index}`}
                     style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                    onClick={() => openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)}
+                    onClick={() =>
+                      openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
+                    }
                   >
                     <Play size={18} fill="currentColor" />
                     <span>{item.purpose || "Không gian quán"}</span>
@@ -934,7 +1028,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section>
-              <SectionTitle title="Cast đang làm" kicker="Cast on tonight" meta={`${store.casts.length} cast`} />
+              <SectionTitle
+                title="Cast đang làm"
+                kicker="Cast on tonight"
+                meta={`${store.casts.length} cast`}
+              />
               <CastRail store={store} />
             </section>
 
@@ -989,7 +1087,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       </div>
 
       {isLightboxOpen && lightboxMedia ? (
-        <div className="lightbox" role="dialog" aria-modal="true" aria-label="Store gallery lightbox">
+        <div
+          className="lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Store gallery lightbox"
+        >
           <button
             className="lightbox-close"
             type="button"
@@ -999,13 +1102,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <X size={22} />
           </button>
           {gallery.length > 1 ? (
-            <button className="lightbox-nav previous" type="button" aria-label="Media trước" onClick={showPreviousMedia}>
+            <button
+              className="lightbox-nav previous"
+              type="button"
+              aria-label="Media trước"
+              onClick={showPreviousMedia}
+            >
               <ChevronLeft size={28} />
             </button>
           ) : null}
           <div className="lightbox-media">
             {lightboxMedia.type === "VIDEO" ? (
-              lightboxVideoUrl.includes("youtube.com/embed") || lightboxVideoUrl.includes("player.vimeo.com") ? (
+              lightboxVideoUrl.includes("youtube.com/embed") ||
+              lightboxVideoUrl.includes("player.vimeo.com") ? (
                 <iframe
                   title={`${displayName} gallery video`}
                   src={lightboxVideoUrl}
@@ -1020,7 +1129,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             )}
           </div>
           {gallery.length > 1 ? (
-            <button className="lightbox-nav next" type="button" aria-label="Media sau" onClick={showNextMedia}>
+            <button
+              className="lightbox-nav next"
+              type="button"
+              aria-label="Media sau"
+              onClick={showNextMedia}
+            >
               <ChevronRight size={28} />
             </button>
           ) : null}
@@ -2317,12 +2431,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: calc(170px + env(safe-area-inset-bottom));
+            padding-bottom: calc(34px + env(safe-area-inset-bottom));
           }
 
           .detail-shell {
             width: 100%;
-            padding: 0 0 26px;
+            padding: 0;
           }
 
           .desktop-breadcrumb {
@@ -2365,9 +2479,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .video-badge {
-            top: 118px;
-            left: 50%;
-            transform: translateX(-50%);
+            display: none;
           }
 
           .hero-name {
@@ -2415,6 +2527,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .section-title {
             margin-bottom: 12px;
+          }
+
+          .tour-rail .tour-card {
+            flex: 0 0 min(100%, 340px);
+            min-height: 188px;
           }
 
           .language-grid {
@@ -2540,7 +2657,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .tour-rail .tour-card {
-            flex-basis: 228px;
+            flex-basis: 100%;
+            min-height: 188px;
           }
 
           .menu-row {

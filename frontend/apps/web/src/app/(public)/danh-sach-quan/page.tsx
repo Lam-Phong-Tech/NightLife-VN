@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { discoveryApi, type DiscoverySort, type PublicStore } from "@/lib/api/discovery";
+import { storeImageForSlug } from "@/lib/demo-media";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 
 type Coordinates = {
@@ -70,15 +71,6 @@ const sortLabels: Record<DiscoverySort, string> = {
   newest: "Mới nhất",
 };
 
-const imagePool = [
-  "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=76') center/cover",
-  "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=900&q=76') center/cover",
-  "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=900&q=76') center/cover",
-  "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=76') center/cover",
-  "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=900&q=76') center/cover",
-  "url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=900&q=76') center/cover",
-];
-
 const categoryTags: Record<string, string[]> = {
   BAR: ["Live music", "Rooftop", "Whisky bar"],
   CLUB: ["Đặt bàn VIP", "Sân khấu DJ", "Mở đến 02:00"],
@@ -126,11 +118,7 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
   const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
-  const fallbackImage = pickByIndex(
-    imagePool,
-    index,
-    "linear-gradient(135deg,#19191d,#2a2418)",
-  );
+  const image = store.thumbnailUrl ?? storeImageForSlug(store.slug, index);
   const statusLabel = index % 3 === 2 ? "Mở đến 02:00" : "Đang mở";
 
   return {
@@ -145,7 +133,7 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
     tags: categoryTags[store.category] ?? ["Đặt bàn nhanh", "Không gian đẹp", "Ưu đãi"],
     statusLabel,
     dealLabel: pickByIndex(dealLabels, index, "-30% Happy Hour"),
-    image: store.thumbnailUrl ? `url('${store.thumbnailUrl}') center/cover` : fallbackImage,
+    image: `url('${image}') center/cover`,
   };
 };
 
@@ -207,13 +195,15 @@ export default function Page() {
       stores
         .map(toVenueView)
         .filter((venue) => !ratingOnly || venue.rating >= 4.5)
-        .filter((venue) => !openNow || venue.statusLabel.includes("Đang") || venue.statusLabel.includes("Mở")),
+        .filter(
+          (venue) =>
+            !openNow || venue.statusLabel.includes("Đang") || venue.statusLabel.includes("Mở"),
+        ),
     [openNow, ratingOnly, stores],
   );
 
   const cityLabel = cityLabels[city] ?? "Việt Nam";
-  const selectedCityLabel =
-    cityOptions.find((option) => option.value === city)?.label ?? cityLabel;
+  const selectedCityLabel = cityOptions.find((option) => option.value === city)?.label ?? cityLabel;
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
@@ -451,7 +441,12 @@ function VenueResultCard({ venue }: { venue: VenueView }) {
   return (
     <Link href={`/stores/${venue.id}`} className="venue-card">
       <div className="venue-card-media">
-        <PlaceholderMedia src={venue.image} alt={venue.name} label="" style={{ width: "100%", height: "100%" }} />
+        <PlaceholderMedia
+          src={venue.image}
+          alt={venue.name}
+          label=""
+          style={{ width: "100%", height: "100%" }}
+        />
         <div className="venue-image-shade" />
         <span className={`venue-status ${venue.statusLabel.includes("02:00") ? "is-late" : ""}`}>
           <span />

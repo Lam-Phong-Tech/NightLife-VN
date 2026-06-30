@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
-import type { PublicArea, PublicStore } from "./discovery";
+import { getFallbackCastBySlug, type PublicArea, type PublicStore } from "./discovery";
 import type { StoreSeoMetadata } from "./store-detail";
+import { castGalleryForSlug, castImageForSlug, storeImageForSlug } from "../demo-media";
 
 export type CastDetailMediaType = "IMAGE" | "VIDEO" | "DOCUMENT" | "OTHER";
 
@@ -75,11 +76,70 @@ export type PublicCastDetail = {
 
 export type PublicCastDetailResponse = PublicCastDetail;
 
-export const getCastDetail = (slug: string, options: RequestInit = {}) =>
-  apiClient<PublicCastDetail>(`/casts/${encodeURIComponent(slug)}`, {
-    cache: "no-store",
-    ...options,
-  });
+const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
+  const cast = getFallbackCastBySlug(slug);
+
+  if (!cast) return null;
+
+  const displayName = cast.publicAlias ?? cast.name ?? cast.stageName;
+  const thumbnailUrl = cast.thumbnailUrl ?? castImageForSlug(cast.slug);
+  const storeThumbnailUrl = cast.store.thumbnailUrl ?? storeImageForSlug(cast.store.slug);
+
+  return {
+    id: cast.id,
+    slug: cast.slug,
+    stageName: cast.stageName,
+    name: cast.name,
+    publicAlias: cast.publicAlias,
+    publicHeadline: cast.publicHeadline,
+    publicBio:
+      cast.publicHeadline ??
+      `${displayName} dang hoat dong tai ${cast.store.name}, phu hop dat lich theo cast tren NightLife VN.`,
+    monthOfBirth: null,
+    zodiacSign: null,
+    heightCm: null,
+    measurements: null,
+    interests: cast.tags,
+    tags: cast.tags,
+    languages: cast.languages,
+    hourlyRateVnd: cast.hourlyRateVnd,
+    thumbnailUrl,
+    gallery: castGalleryForSlug(cast.slug, displayName),
+    relatedCasts: [],
+    store: {
+      ...cast.store,
+      thumbnailUrl: storeThumbnailUrl,
+      phone: null,
+      mapUrl:
+        typeof cast.store.latitude === "number" && typeof cast.store.longitude === "number"
+          ? `https://maps.google.com/?q=${cast.store.latitude},${cast.store.longitude}`
+          : null,
+      googlePlaceId: null,
+    },
+    seo: {
+      title: `${displayName} | NightLife VN`,
+      description:
+        cast.publicHeadline ?? `Xem profile, ngon ngu va gia tham khao cua ${displayName}.`,
+      canonicalPath: `/casts/${cast.slug}`,
+      ogImage: thumbnailUrl,
+    },
+  };
+};
+
+export const getCastDetail = async (slug: string, options: RequestInit = {}) => {
+  try {
+    return await apiClient<PublicCastDetail>(`/casts/${encodeURIComponent(slug)}`, {
+      cache: "no-store",
+      ...options,
+    });
+  } catch (error) {
+    const fallback = fallbackCastDetail(slug);
+
+    if (fallback) return fallback;
+
+    throw error;
+  }
+};
 
 export const castFavoriteApi = {
   getState: (slug: string) =>

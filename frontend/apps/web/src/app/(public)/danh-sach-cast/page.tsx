@@ -24,6 +24,7 @@ import {
   type PublicArea,
   type PublicCast,
 } from "@/lib/api/discovery";
+import { castImageForSlug } from "@/lib/demo-media";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
@@ -96,17 +97,6 @@ const compactLanguageLabels: Record<string, string> = {
   en: "EN",
   ko: "KR",
 };
-
-const castFallbackImages = [
-  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&w=700&q=78",
-];
 
 const favoriteCounts = ["1.2k", "1.0k", "947", "880", "812", "760", "690", "642"];
 const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
@@ -594,9 +584,7 @@ function SearchSuggestions({
           {casts.map((cast, index) => (
             <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
               <PlaceholderMedia
-                src={
-                  cast.thumbnailUrl ?? pickByIndex(castFallbackImages, index, castFallbackImages[0])
-                }
+                src={cast.thumbnailUrl ?? castImageForSlug(cast.slug, index)}
                 alt={cast.name}
                 label=""
                 className="cast-suggestion-avatar"
@@ -654,7 +642,7 @@ function SearchSuggestions({
 }
 
 function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number }) {
-  const image = cast.thumbnailUrl ?? pickByIndex(castFallbackImages, index, castFallbackImages[0]);
+  const image = cast.thumbnailUrl ?? castImageForSlug(cast.slug, index);
   const areaLabel = [
     cast.store.area?.name ?? cast.store.district,
     cityLabels[cast.store.cityCode ?? ""],
@@ -671,7 +659,7 @@ function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number })
 
   return (
     <Link href={`/casts/${cast.slug}`} className="cast-card">
-      <PlaceholderMedia src={image} alt={cast.name} label="Ảnh cast" className="cast-card-media">
+      <PlaceholderMedia src={image} alt={cast.name} label="" className="cast-card-media">
         <span className="cast-media-shade" />
         <span className={`cast-rank-badge ${isRanked ? "is-ranked" : ""}`}>
           {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}

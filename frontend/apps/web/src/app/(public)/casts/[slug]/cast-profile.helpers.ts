@@ -1,4 +1,5 @@
 import type { PublicCastDetail } from "@/lib/api/cast-detail";
+import { castGalleryForSlug, castImageForSlug } from "@/lib/demo-media";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 export const cityLabels: Record<string, string> = {
@@ -59,7 +60,9 @@ export const placeholderGallery: CastMedia[] = [
 ];
 
 export function labelTag(tag: string) {
-  return tagLabels[tag] ?? tag.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return (
+    tagLabels[tag] ?? tag.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
 }
 
 export function labelLanguage(language: string) {
@@ -136,11 +139,15 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
   ];
   const seen = new Set<string>();
 
-  return items.filter((item) => {
+  const gallery = items.filter((item) => {
     if (!item.url || seen.has(item.url)) return false;
     seen.add(item.url);
     return true;
   });
+
+  return gallery.length
+    ? gallery
+    : castGalleryForSlug(cast.slug, cast.publicAlias ?? cast.stageName);
 }
 
 export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
@@ -156,7 +163,7 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
     tags: cast.tags,
     languages: cast.languages.length ? cast.languages : ["vi"],
     hourlyRateVnd: cast.hourlyRateVnd ?? null,
-    thumbnailUrl: cast.thumbnailUrl ?? null,
+    thumbnailUrl: cast.thumbnailUrl ?? castImageForSlug(cast.slug),
     gallery: galleryFromCast(cast),
     monthOfBirth: cast.monthOfBirth ?? null,
     zodiacSign: cast.zodiacSign ?? null,
@@ -170,7 +177,10 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
 }
 
 export function buildCastArea(profile: CastProfile) {
-  return [profile.store.area?.name ?? profile.store.district, cityLabels[profile.store.cityCode ?? ""] ?? profile.store.city]
+  return [
+    profile.store.area?.name ?? profile.store.district,
+    cityLabels[profile.store.cityCode ?? ""] ?? profile.store.city,
+  ]
     .filter(Boolean)
     .join(", ");
 }
@@ -190,22 +200,32 @@ export function videoEmbedUrl(url: string) {
     const parsed = new URL(url);
     if (parsed.hostname.includes("youtube.com")) {
       const id = parsed.searchParams.get("v") || parsed.pathname.split("/").filter(Boolean).at(-1);
-      return id ? { kind: "iframe" as const, url: `https://www.youtube.com/embed/${id}` } : { kind: "video" as const, url };
+      return id
+        ? { kind: "iframe" as const, url: `https://www.youtube.com/embed/${id}` }
+        : { kind: "video" as const, url };
     }
     if (parsed.hostname === "youtu.be") {
       const id = parsed.pathname.split("/").filter(Boolean)[0];
-      return id ? { kind: "iframe" as const, url: `https://www.youtube.com/embed/${id}` } : { kind: "video" as const, url };
+      return id
+        ? { kind: "iframe" as const, url: `https://www.youtube.com/embed/${id}` }
+        : { kind: "video" as const, url };
     }
     if (parsed.hostname.includes("vimeo.com")) {
       const id = parsed.pathname.split("/").filter(Boolean).at(-1);
-      return id ? { kind: "iframe" as const, url: `https://player.vimeo.com/video/${id}` } : { kind: "video" as const, url };
+      return id
+        ? { kind: "iframe" as const, url: `https://player.vimeo.com/video/${id}` }
+        : { kind: "video" as const, url };
     }
     if (parsed.hostname.includes("tiktok.com")) {
       const id = parsed.pathname.match(/video\/(\d+)/)?.[1];
-      return id ? { kind: "iframe" as const, url: `https://www.tiktok.com/embed/v2/${id}` } : { kind: "link" as const, url };
+      return id
+        ? { kind: "iframe" as const, url: `https://www.tiktok.com/embed/v2/${id}` }
+        : { kind: "link" as const, url };
     }
     if (parsed.hostname.includes("instagram.com")) {
-      const embedPath = parsed.pathname.endsWith("/") ? `${parsed.pathname}embed` : `${parsed.pathname}/embed`;
+      const embedPath = parsed.pathname.endsWith("/")
+        ? `${parsed.pathname}embed`
+        : `${parsed.pathname}/embed`;
       return { kind: "iframe" as const, url: `${parsed.origin}${embedPath}` };
     }
   } catch {

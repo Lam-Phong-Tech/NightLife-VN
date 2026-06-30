@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Clock3, Heart, Star, UsersRound } from "lucide-react";
 import type { RelatedCast } from "@/lib/api/cast-detail";
+import { castImageForSlug, storeImageForSlug } from "@/lib/demo-media";
 import {
   formatMonth,
   formatOptional,
@@ -26,9 +27,6 @@ type RelatedCastsProps = {
   variant: "mobile" | "desktop";
   onTrack?: CastProfileTrack;
 };
-
-const fallbackPortrait =
-  "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=480&q=76";
 
 export function CastInfo({
   profile,
@@ -75,7 +73,13 @@ export function CastInfo({
 
         <section className="cast-section">
           <SectionHeading title="Quán đang thuộc về" />
-          <VenueCard profile={profile} area={area} storeHref={storeHref} onTrack={onTrack} compact />
+          <VenueCard
+            profile={profile}
+            area={area}
+            storeHref={storeHref}
+            onTrack={onTrack}
+            compact
+          />
         </section>
       </>
     );
@@ -139,7 +143,6 @@ export function CastInfo({
 
       <SectionHeading title="Quán đang thuộc về" compact />
       <VenueCard profile={profile} area={area} storeHref={storeHref} onTrack={onTrack} />
-
     </section>
   );
 }
@@ -155,7 +158,7 @@ export function CastRelatedCasts({ relatedCasts, variant, onTrack }: RelatedCast
         <small>Xem tất cả</small>
       </div>
       <div className="cast-related-list">
-        {relatedCasts.slice(0, variant === "desktop" ? 4 : 6).map((cast) => (
+        {relatedCasts.slice(0, variant === "desktop" ? 4 : 6).map((cast, index) => (
           <Link
             key={cast.id}
             className="cast-related-card"
@@ -165,7 +168,7 @@ export function CastRelatedCasts({ relatedCasts, variant, onTrack }: RelatedCast
             <span
               className="cast-related-media"
               style={{
-                background: mediaBg(cast.thumbnailUrl || fallbackPortrait),
+                background: mediaBg(cast.thumbnailUrl || castImageForSlug(cast.slug, index)),
               }}
             />
             <span className="cast-related-copy">
@@ -180,7 +183,15 @@ export function CastRelatedCasts({ relatedCasts, variant, onTrack }: RelatedCast
   );
 }
 
-function SectionHeading({ title, meta, compact = false }: { title: string; meta?: string; compact?: boolean }) {
+function SectionHeading({
+  title,
+  meta,
+  compact = false,
+}: {
+  title: string;
+  meta?: string;
+  compact?: boolean;
+}) {
   return (
     <div className={`cast-section-heading${compact ? " compact" : ""}`}>
       <h2>{title}</h2>
@@ -229,7 +240,7 @@ function VenueCard({
   onTrack?: CastProfileTrack;
   compact?: boolean;
 }) {
-  const storeImage = profile.store.thumbnailUrl || profile.thumbnailUrl || fallbackPortrait;
+  const storeImage = profile.store.thumbnailUrl || storeImageForSlug(profile.store.slug);
 
   return (
     <Link
