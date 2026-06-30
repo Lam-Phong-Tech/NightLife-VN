@@ -80,14 +80,19 @@ export default function Page() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(() => {
+    if (typeof window === "undefined") return "";
+
+    return new URLSearchParams(window.location.search).get("line_error") || "";
+  });
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(buildTimeGoogleClientId);
   const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
-  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [googleReadyClientId, setGoogleReadyClientId] = useState("");
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
+  const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
 
@@ -99,25 +104,11 @@ export default function Page() {
 
     return redirect;
   }, []);
-  const lineError = useMemo(() => {
-    if (typeof window === "undefined") return "";
-
-    return new URLSearchParams(window.location.search).get("line_error") || "";
-  }, []);
 
   const title = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
   const subtitle = isReg
     ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ."
     : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
-
-  useEffect(() => {
-    if (!lineError) {
-      return;
-    }
-
-    setMessageTone("error");
-    setMessage(lineError);
-  }, [lineError]);
 
   const switchMode = (nextIsReg: boolean) => {
     setIsReg(nextIsReg);
@@ -249,10 +240,12 @@ export default function Page() {
 
   useEffect(() => {
     let mounted = true;
-    setIsGoogleReady(false);
+    googleTokenClientRef.current = null;
 
     if (!googleClientId) {
-      googleTokenClientRef.current = null;
+      return () => {
+        mounted = false;
+      };
     }
 
     const initializeGoogleTokenClient = () => {
@@ -265,7 +258,7 @@ export default function Page() {
         scope: "openid email profile",
         callback: handleGoogleTokenResponse,
       });
-      setIsGoogleReady(true);
+      setGoogleReadyClientId(googleClientId);
     };
 
     if (window.google?.accounts.oauth2) {
@@ -298,7 +291,7 @@ export default function Page() {
         return;
       }
 
-      setIsGoogleReady(false);
+      setGoogleReadyClientId("");
       setMessageTone("error");
       setMessage("Không tải được nút đăng nhập Google.");
     };
