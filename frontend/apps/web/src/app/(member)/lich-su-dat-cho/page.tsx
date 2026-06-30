@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
-import { Clock, MapPin, Phone, QrCode, UsersRound, XCircle } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  Clock,
+  Headphones,
+  MessageCircle,
+  QrCode,
+  RotateCcw,
+  Star,
+  XCircle,
+} from "lucide-react";
 import { getAuthUser } from "@/lib/auth/session";
 import {
   bookingApi,
@@ -13,40 +23,81 @@ import {
   mergeBookingHistories,
   rememberLastBooking,
   type BookingRecord,
+  type BookingStatusGroup,
 } from "@/lib/api/bookings";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
-
-const colors = {
-  bg: "#0c0c0f",
-  panel: "rgba(255,255,255,.045)",
-  panelStrong: "rgba(255,255,255,.07)",
-  border: "rgba(212,178,106,.22)",
-  borderStrong: "rgba(212,178,106,.34)",
-  text: "#f3f0ea",
-  muted: "#b6b1a6",
-  gold: "#d4b26a",
-  goldPale: "#f0dda8",
-  onGold: "#241a0a",
-  danger: "#ff6b8b",
-  success: "#81d89d",
-  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
-};
+import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
+const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
+
+const thumbnails = {
+  "Mới": "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=72')",
+  "Hoàn tất": "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=180&q=72')",
+  "Đã hủy": "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=72')",
+};
 
 const formatDateTime = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "medium",
-    timeStyle: "short",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(value));
 
-const bookingCode = (booking: BookingRecord) => `NL-BK-${booking.id.slice(0, 8).toUpperCase()}`;
+const toDateInputValue = (date: Date) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 10);
+};
+
+const getTomorrowDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return toDateInputValue(date);
+};
+
+const bookingCode = (booking: BookingRecord) => `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
 const bookingTitle = (booking: BookingRecord) => {
   const storeName = booking.store?.name ?? "NightLife";
   if (!booking.cast) return storeName;
   return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
+};
+
+const bookingTimeValue = (value: string) => {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "21:00";
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};
+
+const rebookHref = (booking: BookingRecord) => {
+  const params = new URLSearchParams({
+    ...(booking.store?.slug ? { storeSlug: booking.store.slug } : {}),
+    ...(booking.store?.name ? { storeName: booking.store.name } : {}),
+    ...(booking.cast?.slug ? { castSlug: booking.cast.slug } : {}),
+    ...(booking.cast ? { castName: booking.cast.publicAlias ?? booking.cast.stageName } : {}),
+    guests: String(booking.partySize || 4),
+    date: getTomorrowDate(),
+    time: bookingTimeValue(booking.scheduledAt),
+  });
+
+  return `/dat-cho?${params.toString()}`;
+};
+
+const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
+  if (group === "Hoàn tất") {
+    return "Hoàn tất · gắn điểm/hoá đơn khi đối soát";
+  }
+
+  if (group === "Đã hủy") {
+    return "Đã hủy trước giờ hẹn · không thu cọc";
+  }
+
+  return confirmedStatuses.has(booking.status)
+    ? `${bookingCode(booking)} · QR đã cấp`
+    : `${bookingCode(booking)} · Admin đang điều phối`;
 };
 
 export default function Page() {
@@ -132,285 +183,236 @@ export default function Page() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 48px" }}>
-        <div className="nl-member-page-head">
-          <div>
-            <h1
-              style={{
-                marginTop: 0,
-                fontSize: "clamp(26px,4vw,40px)",
-                lineHeight: 1.05,
-                fontWeight: 950,
-              }}
-            >
-              Đơn đặt chỗ
-            </h1>
-            <p style={{ marginTop: 10, color: colors.muted, fontSize: 14, lineHeight: 1.6 }}>
-              {isLoading
-                ? "Đang tải lịch sử đặt chỗ..."
-                : `${bookings.length} yêu cầu đặt chỗ đã lưu.`}
-            </p>
+    <main className={styles.bookingPage}>
+      <section className={`${styles.bookingViewport} ${styles.historyViewport}`}>
+        <div className={`${styles.bookingFrame} ${styles.wideFrame}`}>
+          <header className={styles.bookingHeader}>
+            <Link href="/tai-khoan" className={styles.backButton} aria-label="Quay lại tài khoản">
+              <ChevronLeft size={18} />
+            </Link>
+            <div className={styles.headerCopy}>
+              <h1 className={styles.headerTitle}>Đặt chỗ của tôi</h1>
+              <p className={styles.headerSubtitle}>Lịch sử & trạng thái đặt bàn</p>
+            </div>
+          </header>
+
+          <div className={styles.filterChips} role="tablist" aria-label="Lọc đặt chỗ">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`${styles.filterChip} ${activeTab === tab ? styles.selectedFilter : ""}`}
+                aria-selected={activeTab === tab}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
-          <Link href="/danh-sach-quan" style={primaryButtonStyle}>
-            Tìm quán để đặt
-          </Link>
-        </div>
 
-        {message ? (
-          <div
-            style={{
-              marginTop: 16,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 14,
-              background: colors.panel,
-              padding: 14,
-              color: colors.goldPale,
-              fontSize: 13,
-            }}
-          >
-            {message}
-          </div>
-        ) : null}
+          {message ? (
+            <div style={{ padding: "6px 16px 0" }}>
+              <div className={styles.toastMessage}>{message}</div>
+            </div>
+          ) : null}
 
-        <div
-          className="hscroll"
-          style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginTop: 22 }}
-        >
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              style={{
-                border: `1px solid ${activeTab === tab ? colors.gold : colors.border}`,
-                background: activeTab === tab ? colors.goldGrad : colors.panel,
-                color: activeTab === tab ? colors.onGold : colors.muted,
-                minHeight: 42,
-                borderRadius: 999,
-                padding: "10px 16px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 13,
-                fontWeight: 900,
-                lineHeight: 1,
-                textAlign: "center",
-                whiteSpace: "nowrap",
-                cursor: "pointer",
-              }}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+          <div className={styles.historyList}>
+            {isLoading ? <LoadingSkeleton rows={3} /> : null}
 
-        <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
-          {isLoading ? <LoadingSkeleton rows={3} /> : null}
-
-          {!isLoading
-            ? visibleBookings.map((booking) => {
-                const isOpenBooking = bookingStatusGroup(booking.status) === "Mới";
-                const cancelAllowed = isMember && canCancelBooking(booking);
-                const cancelDisabled = cancelingId === booking.id || !cancelAllowed;
-
-                return (
-                  <article
+            {!isLoading
+              ? visibleBookings.map((booking) => (
+                  <BookingCard
                     key={booking.id}
-                    className="nl-booking-history-card"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "72px minmax(0,1fr) auto",
-                      gap: 16,
-                      alignItems: "center",
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: 18,
-                      background: colors.panel,
-                      padding: 14,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 72,
-                        height: 72,
-                        borderRadius: 16,
-                        background:
-                          "url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=240&q=70') center/cover",
-                        border: `1px solid ${colors.borderStrong}`,
-                      }}
-                    />
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
-                      >
-                        <h2 style={{ fontSize: 16, fontWeight: 900 }}>{bookingTitle(booking)}</h2>
-                        <StatusBadge status={booking.status} />
-                      </div>
-                      <div className="nl-booking-meta-grid">
-                        <Meta
-                          icon={<MapPin size={15} />}
-                          text={booking.store?.slug ?? "nightlife"}
-                        />
-                        <Meta
-                          icon={<Clock size={15} />}
-                          text={formatDateTime(booking.scheduledAt)}
-                        />
-                        <Meta icon={<UsersRound size={15} />} text={`${booking.partySize} người`} />
-                        <Meta
-                          icon={<Phone size={15} />}
-                          text={booking.guest?.phone ?? "SĐT đã lưu"}
-                        />
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 10,
-                          color: colors.goldPale,
-                          fontSize: 12,
-                          fontWeight: 900,
-                        }}
-                      >
-                        Mã đặt chỗ: {bookingCode(booking)}
-                      </div>
-                    </div>
-                    <div
-                      className="nl-booking-actions"
-                      style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-                    >
-                      {isMember && isOpenBooking ? (
-                        <button
-                          type="button"
-                          onClick={() => handleCancelBooking(booking)}
-                          disabled={cancelDisabled}
-                          title={
-                            cancelAllowed
-                              ? "Hủy booking"
-                              : "Chỉ hủy được trước giờ hẹn ít nhất 1 giờ"
-                          }
-                          style={cancelButtonStyle(cancelDisabled)}
-                        >
-                          <XCircle size={14} />
-                          {cancelingId === booking.id
-                            ? "Đang hủy"
-                            : cancelAllowed
-                              ? "Hủy"
-                              : "Quá giờ"}
-                        </button>
-                      ) : null}
-                      <Link
-                        href={`/xac-nhan?bookingId=${booking.id}`}
-                        onClick={() => rememberLastBooking(booking, { history: true })}
-                        style={secondaryButtonStyle}
-                      >
-                        <QrCode size={14} />
-                        QR
-                      </Link>
-                      <Link
-                        href={
-                          booking.store?.slug ? `/stores/${booking.store.slug}` : "/danh-sach-quan"
-                        }
-                        style={secondaryButtonStyle}
-                      >
-                        Quán
-                      </Link>
-                    </div>
-                  </article>
-                );
-              })
-            : null}
+                    booking={booking}
+                    isMember={isMember}
+                    cancelingId={cancelingId}
+                    onCancel={handleCancelBooking}
+                  />
+                ))
+              : null}
+          </div>
+
+          {!isLoading && visibleBookings.length === 0 ? (
+            <div className={styles.emptyCard}>
+              <EmptyState
+                variant="bookings"
+                title={
+                  activeTab === tabs[0] ? "Chưa có đặt chỗ nào" : "Chưa có đặt chỗ ở trạng thái này"
+                }
+                description="Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây."
+                ctaLabel="Khám phá quán"
+                ctaHref="/danh-sach-quan"
+                compact
+              />
+            </div>
+          ) : null}
+
+          <div className={styles.historyFooter}>
+            <div className={styles.infoNote}>
+              <Clock size={15} />
+              <span>
+                Không sửa trực tiếp đặt chỗ cũ. Mỗi thay đổi tạo bản ghi mới - hủy trước 1 giờ rồi đặt lại hoặc liên hệ hỗ trợ.
+              </span>
+            </div>
+          </div>
         </div>
 
-        {!isLoading && visibleBookings.length === 0 ? (
-          <div style={{ marginTop: 28 }}>
-            <EmptyState
-              variant="bookings"
-              title={
-                activeTab === tabs[0] ? "Chưa có đặt chỗ nào" : "Chưa có đặt chỗ ở trạng thái này"
-              }
-              description="Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây."
-              ctaLabel="Khám phá quán"
-              ctaHref="/danh-sach-quan"
-            />
+        <aside className={styles.bookingSidePanel}>
+          <div className={styles.sideEyebrow}>Bước 3 · BOO-06</div>
+          <h2 className={styles.sideTitle}>3 trạng thái đặt chỗ</h2>
+          <p className={styles.sideText}>
+            Mới là booking đang chờ điều phối hoặc đã xác nhận. Hoàn tất dùng cho check-in/đối soát. Đã hủy giữ lịch sử minh bạch và không cho sửa trực tiếp bản ghi cũ.
+          </p>
+          <div className={styles.summaryList}>
+            <SummaryRow label="Mới" value={`${bookings.filter((booking) => bookingStatusGroup(booking.status) === "Mới").length} booking`} />
+            <SummaryRow label="Hoàn tất" value={`${bookings.filter((booking) => bookingStatusGroup(booking.status) === "Hoàn tất").length} booking`} />
+            <SummaryRow label="Đã hủy" value={`${bookings.filter((booking) => bookingStatusGroup(booking.status) === "Đã hủy").length} booking`} />
+            <SummaryRow label="Tổng" value={`${bookings.length} booking`} />
           </div>
-        ) : null}
+          <Link href="/danh-sach-quan" className={styles.primaryCta} style={{ marginTop: 18 }}>
+            <strong>Tìm quán để đặt</strong>
+          </Link>
+        </aside>
       </section>
     </main>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const group = bookingStatusGroup(status);
-  const color =
-    group === "Hoàn tất" ? colors.success : group === "Đã hủy" ? colors.danger : colors.goldPale;
+function BookingCard({
+  booking,
+  isMember,
+  cancelingId,
+  onCancel,
+}: {
+  booking: BookingRecord;
+  isMember: boolean;
+  cancelingId: string | null;
+  onCancel: (booking: BookingRecord) => void;
+}) {
+  const group = bookingStatusGroup(booking.status);
+  const isOpenBooking = group === "Mới";
+  const hasQr = confirmedStatuses.has(booking.status);
+  const cancelAllowed = isMember && canCancelBooking(booking);
+  const cancelDisabled = cancelingId === booking.id || !cancelAllowed;
+  const itemClass =
+    group === "Mới"
+      ? `${styles.historyItem} ${styles.historyItemOpen}`
+      : group === "Đã hủy"
+        ? `${styles.historyItem} ${styles.historyItemMuted}`
+        : styles.historyItem;
 
   return (
-    <span
-      style={{
-        borderRadius: 999,
-        padding: "5px 9px",
-        background: "rgba(255,255,255,.06)",
-        color,
-        fontSize: 11,
-        fontWeight: 900,
-      }}
-    >
+    <article className={itemClass}>
+      <div className={styles.historyMain}>
+        <span
+          className={styles.historyThumb}
+          style={{
+            backgroundImage: thumbnails[group],
+            filter: group === "Đã hủy" ? "grayscale(.4)" : undefined,
+          }}
+        />
+        <div className={styles.historyCopy}>
+          <div className={styles.historyHead}>
+            <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
+            <StatusBadge status={booking.status} />
+          </div>
+          <div className={styles.historyMeta}>
+            {formatDateTime(booking.scheduledAt)} · {booking.partySize} người
+          </div>
+          <div className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}>
+            {statusMeta(booking, group)}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.historyActions}>
+        {isOpenBooking ? (
+          <>
+            {hasQr ? (
+              <Link
+                href={`/xac-nhan?bookingId=${booking.id}`}
+                onClick={() => rememberLastBooking(booking, { history: true })}
+                className={styles.secondaryCta}
+              >
+                <QrCode size={14} />
+                Xem QR
+              </Link>
+            ) : isMember ? (
+              <button
+                type="button"
+                onClick={() => onCancel(booking)}
+                disabled={cancelDisabled}
+                title={
+                  cancelAllowed
+                    ? "Hủy đặt chỗ"
+                    : "Chỉ hủy được trước giờ hẹn ít nhất 1 giờ"
+                }
+                className={`${styles.dangerCta} ${cancelDisabled ? styles.disabledCta : ""}`}
+              >
+                <XCircle size={14} />
+                {cancelingId === booking.id ? "Đang hủy" : cancelAllowed ? "Hủy đặt chỗ" : "Quá giờ"}
+              </button>
+            ) : (
+              <Link
+                href={`/xac-nhan?bookingId=${booking.id}`}
+                onClick={() => rememberLastBooking(booking, { history: true })}
+                className={styles.ghostCta}
+              >
+                <MessageCircle size={14} />
+                Chi tiết
+              </Link>
+            )}
+            <Link href="/huong-dan" className={styles.secondaryCta}>
+              <Headphones size={14} />
+              Hỗ trợ
+            </Link>
+          </>
+        ) : group === "Hoàn tất" ? (
+          <>
+            <Link
+              href={booking.store?.slug ? `/stores/${booking.store.slug}` : "/danh-sach-quan"}
+              className={styles.ghostCta}
+            >
+              <Star size={14} />
+              Đánh giá
+            </Link>
+            <Link href={rebookHref(booking)} className={styles.primaryCta}>
+              <strong>Đặt lại</strong>
+            </Link>
+          </>
+        ) : (
+          <Link href={rebookHref(booking)} className={styles.secondaryCta}>
+            <RotateCcw size={14} />
+            Đặt lại
+          </Link>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const group = bookingStatusGroup(status);
+  const className =
+    group === "Hoàn tất"
+      ? `${styles.historyBadge} ${styles.historyBadgeDone}`
+      : group === "Đã hủy"
+        ? `${styles.historyBadge} ${styles.historyBadgeMuted}`
+        : styles.historyBadge;
+
+  return (
+    <span className={className}>
+      {group === "Hoàn tất" ? <Check size={9} /> : group === "Mới" ? <span className={styles.statusDot} /> : null}
       {bookingStatusLabel(status)}
     </span>
   );
 }
 
-function Meta({ icon, text }: { icon: React.ReactNode; text: string }) {
+function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        color: colors.muted,
-        fontSize: 12.5,
-      }}
-    >
-      <span style={{ color: colors.gold }}>{icon}</span>
-      {text}
-    </span>
+    <div className={styles.summaryRow}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
   );
 }
-
-const primaryButtonStyle: React.CSSProperties = {
-  alignSelf: "start",
-  minHeight: 44,
-  borderRadius: 999,
-  background: colors.goldGrad,
-  color: colors.onGold,
-  padding: "12px 18px",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 13,
-  fontWeight: 950,
-  lineHeight: 1,
-  textAlign: "center",
-  textDecoration: "none",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
-  minHeight: 44,
-  borderRadius: 12,
-  border: `1px solid ${colors.border}`,
-  background: colors.panelStrong,
-  color: colors.goldPale,
-  padding: "10px 13px",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  fontSize: 12,
-  fontWeight: 900,
-  textDecoration: "none",
-};
-
-const cancelButtonStyle = (disabled: boolean): React.CSSProperties => ({
-  ...secondaryButtonStyle,
-  color: disabled ? "rgba(255,255,255,.34)" : colors.danger,
-  cursor: disabled ? "not-allowed" : "pointer",
-  opacity: disabled ? 0.72 : 1,
-});

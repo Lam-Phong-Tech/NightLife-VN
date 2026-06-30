@@ -3,26 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, Clock, Minus, Plus, Sparkles } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  Minus,
+  Phone,
+  Plus,
+  ShieldCheck,
+  Star,
+  UserRound,
+} from "lucide-react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
+import styles from "../booking-flow.module.css";
 
-const colors = {
-  bg: "#0c0c0f",
-  panel: "rgba(255,255,255,.045)",
-  panelStrong: "rgba(255,255,255,.07)",
-  border: "rgba(212,178,106,.22)",
-  borderStrong: "rgba(212,178,106,.34)",
-  text: "#f3f0ea",
-  muted: "#b6b1a6",
-  gold: "#d4b26a",
-  goldPale: "#f0dda8",
-  onGold: "#241a0a",
-  danger: "#ff8aa0",
-  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
-};
-
-const couponItems = ["Happy Hour -30%", "Combo VIP 2+1", "Welcome -8%", "Không dùng mã"] as const;
+const bookingTimes = ["20:00", "21:00", "22:00", "23:00"] as const;
 
 type BookingContext = {
   storeSlug?: string;
@@ -42,10 +37,15 @@ const defaultContext: BookingContext = {
 
 const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
 
+const toDateInputValue = (date: Date) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 10);
+};
+
 const getTomorrowDate = () => {
   const date = new Date();
   date.setDate(date.getDate() + 1);
-  return date.toISOString().slice(0, 10);
+  return toDateInputValue(date);
 };
 
 const buildScheduledAt = (date: string, time: string) => {
@@ -55,10 +55,7 @@ const buildScheduledAt = (date: string, time: string) => {
 };
 
 const parseRequestedMode = (value: string | null) => {
-  if (value === "guest" || value === "member") {
-    return value;
-  }
-
+  if (value === "guest" || value === "member") return value;
   return null;
 };
 
@@ -91,9 +88,8 @@ export default function Page() {
   const [guestName, setGuestName] = useState("");
   const [phone, setPhone] = useState("");
   const [bookingDate, setBookingDate] = useState(getTomorrowDate);
-  const [bookingTime, setBookingTime] = useState("21:00");
+  const [bookingTime, setBookingTime] = useState<(typeof bookingTimes)[number]>("21:00");
   const [guests, setGuests] = useState(4);
-  const [coupon, setCoupon] = useState<(typeof couponItems)[number]>(couponItems[0]);
   const [note, setNote] = useState("");
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,11 +98,12 @@ export default function Page() {
   useEffect(() => {
     const parsed = parseContext();
     const authUser = getAuthUser();
+    const memberAccount = isMemberUser(authUser);
 
     queueMicrotask(() => {
       setContext(parsed.context);
       setBookingDate(parsed.date);
-      setBookingTime(parsed.time);
+      setBookingTime(bookingTimes.includes(parsed.time as (typeof bookingTimes)[number]) ? (parsed.time as (typeof bookingTimes)[number]) : "21:00");
       setGuests(Number.isFinite(parsed.guests) ? Math.max(1, parsed.guests) : 4);
 
       if (authUser) {
@@ -114,56 +111,40 @@ export default function Page() {
         setPhone(authUser.phone ?? "");
       }
 
-      const preferredMode = parsed.mode ?? (isMemberUser(authUser) ? "member" : "guest");
-
-      if (preferredMode === "member") {
-        if (isMemberUser(authUser)) {
-          setMode("member");
-        } else {
-          setShowLoginPrompt(true);
-        }
-      } else {
-        setMode("guest");
+      if (memberAccount) {
+        setMode("member");
+        return;
       }
+
+      if (parsed.mode === "member") {
+        setShowLoginPrompt(true);
+      }
+
+      setMode("guest");
     });
   }, []);
 
-  const memberLoginPath = useMemo(
-    () =>
-      `/dang-nhap?redirect=${encodeURIComponent(
-        `/dat-cho?${new URLSearchParams({
-          mode: "member",
-          ...(context.storeSlug ? { storeSlug: context.storeSlug } : {}),
-          storeName: context.storeName,
-          ...(context.area ? { area: context.area } : {}),
-          ...(context.castSlug ? { castSlug: context.castSlug } : {}),
-          ...(context.castName ? { castName: context.castName } : {}),
-          date: bookingDate,
-          time: bookingTime,
-          guests: String(guests),
-        }).toString()}`,
-      )}`,
-    [bookingDate, bookingTime, context, guests],
-  );
+  const memberLoginPath = useMemo(() => {
+    const redirectParams = new URLSearchParams({
+      mode: "member",
+      ...(context.storeSlug ? { storeSlug: context.storeSlug } : {}),
+      storeName: context.storeName,
+      ...(context.area ? { area: context.area } : {}),
+      ...(context.castSlug ? { castSlug: context.castSlug } : {}),
+      ...(context.castName ? { castName: context.castName } : {}),
+      date: bookingDate,
+      time: bookingTime,
+      guests: String(guests),
+    });
+
+    return `/dang-nhap?redirect=${encodeURIComponent(`/dat-cho?${redirectParams.toString()}`)}`;
+  }, [bookingDate, bookingTime, context, guests]);
 
   const targetLabel = context.castName
     ? `${context.castName} @ ${context.storeName}`
     : context.storeName;
   const contextSubtitle = context.castName ? "Đặt theo cast" : "Đặt bàn";
-
-  const selectMode = (nextMode: "guest" | "member") => {
-    if (nextMode === "member" && !isMemberUser(getAuthUser())) {
-      setShowLoginPrompt(true);
-      return;
-    }
-
-    setMode(nextMode);
-    const authUser = getAuthUser();
-    if (nextMode === "member" && authUser) {
-      setGuestName((value) => value || authUser.displayName || authUser.email || "");
-      setPhone((value) => value || authUser.phone || "");
-    }
-  };
+  const isMemberMode = mode === "member";
 
   const submit = async () => {
     setErrorMessage("");
@@ -180,7 +161,7 @@ export default function Page() {
       return;
     }
 
-    if (mode === "member" && !isMemberUser(getAuthUser())) {
+    if (isMemberMode && !isMemberUser(getAuthUser())) {
       setShowLoginPrompt(true);
       return;
     }
@@ -197,10 +178,9 @@ export default function Page() {
 
     try {
       setIsSubmitting(true);
-      const booking =
-        mode === "member"
-          ? await bookingApi.createMemberBooking(payload)
-          : await bookingApi.createGuestBooking(payload);
+      const booking = isMemberMode
+        ? await bookingApi.createMemberBooking(payload)
+        : await bookingApi.createGuestBooking(payload);
 
       rememberLastBooking(booking, { history: true });
       router.push(`/xac-nhan?bookingId=${booking.id}`);
@@ -213,205 +193,185 @@ export default function Page() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <section style={{ maxWidth: "1120px", margin: "0 auto", padding: "24px 18px 54px" }}>
-        <Link href={context.fromHref} style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.muted, fontSize: 13, fontWeight: 800 }}>
-          <ChevronLeft size={17} />
-          {targetLabel}
-        </Link>
-
-        <div className="nl-booking-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 22, marginTop: 18 }}>
-          <div style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, overflow: "hidden" }}>
-            <div
-              style={{
-                minHeight: 178,
-                padding: 24,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                background:
-                  "linear-gradient(180deg,rgba(12,12,15,.12),rgba(12,12,15,.9)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=80') center/cover",
-              }}
-            >
-              <span style={{ color: colors.goldPale, fontSize: 12, fontWeight: 900, letterSpacing: ".16em" }}>YÊU CẦU ĐẶT CHỖ</span>
-              <h1 style={{ marginTop: 8, fontSize: "clamp(26px,4vw,36px)", lineHeight: 1.08, fontWeight: 950 }}>{contextSubtitle} tại {targetLabel}</h1>
-              <p style={{ marginTop: 10, color: colors.muted, maxWidth: 620, fontSize: 14, lineHeight: 1.6 }}>
-                Gửi yêu cầu cho admin xác nhận với quán. Không thu cọc, không thanh toán online.
-              </p>
+    <main className={styles.bookingPage}>
+      <section className={styles.bookingViewport}>
+        <div className={styles.bookingFrame}>
+          <header className={styles.bookingHeader}>
+            <Link href={context.fromHref} className={styles.backButton} aria-label="Quay lại">
+              <ChevronLeft size={18} />
+            </Link>
+            <div className={styles.headerCopy}>
+              <h1 className={styles.headerTitle}>Đặt bàn</h1>
+              <p className={styles.headerSubtitle}>Gửi yêu cầu · Admin xác nhận</p>
             </div>
+          </header>
 
-            <div style={{ padding: 22, display: "grid", gap: 18 }}>
-              <div style={{ display: "flex", gap: 8, background: colors.panelStrong, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 5, maxWidth: 420 }}>
-                {[
-                  ["guest", "Đặt nhanh"],
-                  ["member", "Hội viên"],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => selectMode(value as "guest" | "member")}
-                    style={{
-                      flex: 1,
-                      border: 0,
-                      borderRadius: 10,
-                      padding: "11px 14px",
-                      background: mode === value ? colors.goldGrad : "transparent",
-                      color: mode === value ? colors.onGold : colors.muted,
-                      fontWeight: 900,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ color: colors.goldPale, background: "rgba(212,178,106,.09)", border: `1px solid ${colors.border}`, borderRadius: 12, padding: "11px 13px", fontSize: 13 }}>
-                {mode === "guest"
-                  ? "Guest: gửi yêu cầu nhanh, admin xác nhận qua điện thoại."
-                  : "Hội viên: booking được lưu vào lịch sử tài khoản."}
-              </div>
-
-              <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <Field label="Họ tên" placeholder="Nguyễn Văn A" value={guestName} onChange={setGuestName} />
-                <Field label="Số điện thoại" placeholder="0912 345 678" value={phone} onChange={setPhone} />
-                <Field label="Ngày" type="date" value={bookingDate} onChange={setBookingDate} icon={<CalendarDays size={16} />} />
-                <Field label="Giờ" type="time" value={bookingTime} onChange={setBookingTime} icon={<Clock size={16} />} />
-              </div>
-
-              <div className="nl-booking-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: 14 }}>
-                <div>
-                  <Label>Số khách</Label>
-                  <div style={{ marginTop: 7, height: 48, border: `1px solid ${colors.border}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", background: colors.panelStrong }}>
-                    <button type="button" onClick={() => setGuests((value) => Math.max(1, value - 1))} style={stepButtonStyle}><Minus size={15} /></button>
-                    <span style={{ fontWeight: 900 }}>{guests} người</span>
-                    <button type="button" onClick={() => setGuests((value) => Math.min(50, value + 1))} style={{ ...stepButtonStyle, background: colors.gold, color: colors.onGold }}><Plus size={15} /></button>
-                  </div>
+          <div className={styles.bookingBody}>
+            <section className={styles.venueCard}>
+              <span
+                className={styles.venueImage}
+                style={{
+                  backgroundImage:
+                    "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=160&q=72')",
+                }}
+              />
+              <div className={styles.venueCopy}>
+                <div className={styles.venueName}>{targetLabel}</div>
+                <div className={styles.venueMeta}>
+                  {context.castName ? context.storeName : "Lounge cao cấp"} · {context.area ?? "NightLife"}
                 </div>
               </div>
+              <Link href={context.fromHref} className={styles.changeLink}>
+                Đổi
+              </Link>
+            </section>
 
-              <div>
-                <Label>Mã ưu đãi</Label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                  {couponItems.map((item) => (
+            {isMemberMode ? (
+              <section className={styles.memberNudge}>
+                <span className={styles.nudgeIcon}>
+                  <ShieldCheck size={16} />
+                </span>
+                <div className={styles.nudgeCopy}>
+                  <div className={styles.nudgeTitle}>Hội viên NightLife</div>
+                  <div className={styles.nudgeText}>Booking được lưu vào lịch sử · ưu đãi 8-10%</div>
+                </div>
+              </section>
+            ) : (
+              <section className={styles.loginNudge}>
+                <span className={styles.nudgeIcon}>
+                  <Star size={16} />
+                </span>
+                <div className={styles.nudgeCopy}>
+                  <div className={styles.nudgeTitle}>Đăng nhập nhận giảm 8-10%</div>
+                  <div className={styles.nudgeText}>Bạn đang là Khách · ưu đãi -5%</div>
+                </div>
+                <Link href={memberLoginPath} className={styles.nudgeButton}>
+                  Đăng nhập
+                </Link>
+              </section>
+            )}
+
+            <div className={styles.formStack}>
+              <TextField
+                label="Họ tên"
+                value={guestName}
+                onChange={setGuestName}
+                placeholder="Nguyễn Minh"
+                icon={<UserRound size={16} />}
+              />
+
+              <PhoneField value={phone} onChange={setPhone} />
+
+              <div className={styles.twoColumn}>
+                <div className={styles.field}>
+                  <span className={styles.fieldLabel}>Số người</span>
+                  <div className={styles.stepper}>
                     <button
-                      key={item}
                       type="button"
-                      onClick={() => setCoupon(item)}
-                      style={{
-                        border: `1px solid ${coupon === item ? colors.gold : colors.border}`,
-                        background: coupon === item ? colors.goldGrad : colors.panelStrong,
-                        color: coupon === item ? colors.onGold : colors.muted,
-                        borderRadius: 999,
-                        padding: "8px 12px",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        cursor: "pointer",
-                      }}
+                      className={styles.stepButton}
+                      onClick={() => setGuests((value) => Math.max(1, value - 1))}
+                      aria-label="Giảm số người"
                     >
-                      {item}
+                      <Minus size={15} />
+                    </button>
+                    <span className={styles.stepValue}>{guests}</span>
+                    <button
+                      type="button"
+                      className={`${styles.stepButton} ${styles.stepButtonActive}`}
+                      onClick={() => setGuests((value) => Math.min(50, value + 1))}
+                      aria-label="Tăng số người"
+                    >
+                      <Plus size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <DateField value={bookingDate} onChange={setBookingDate} />
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.fieldLabel}>Khung giờ</span>
+                <div className={styles.timeChips} role="listbox" aria-label="Chọn khung giờ">
+                  {bookingTimes.map((time) => (
+                    <button
+                      key={time}
+                      type="button"
+                      onClick={() => setBookingTime(time)}
+                      className={`${styles.timeChip} ${bookingTime === time ? styles.selectedChip : ""}`}
+                      aria-selected={bookingTime === time}
+                    >
+                      {time}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <Label>Ghi chú</Label>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Ghi chú <span style={{ textTransform: "none", letterSpacing: 0 }}>(tùy chọn)</span></span>
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="Yêu cầu phòng VIP, nhân viên nói tiếng Nhật..."
-                  style={{ marginTop: 7, width: "100%", minHeight: 86, resize: "vertical", border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, color: colors.text, padding: "13px 14px", fontSize: 14, outline: "none" }}
+                  placeholder="Bàn gần sân khấu, có sinh nhật nhỏ - chuẩn bị giúp nến."
+                  className={styles.noteArea}
                 />
+              </label>
+
+              <div className={styles.infoNote}>
+                <ShieldCheck size={15} />
+                <span>
+                  Không thanh toán online, không thu cọc. Yêu cầu được gửi tới đội điều phối - Admin liên hệ xác nhận chỗ.
+                </span>
               </div>
 
-              {errorMessage ? <div style={{ color: colors.danger, fontSize: 13, fontWeight: 800 }}>{errorMessage}</div> : null}
-
-              <button type="button" onClick={submit} disabled={isSubmitting} style={{ border: 0, borderRadius: 14, background: colors.goldGrad, color: colors.onGold, padding: "15px 18px", fontWeight: 950, fontSize: 15, cursor: isSubmitting ? "wait" : "pointer", opacity: isSubmitting ? 0.72 : 1 }}>
-                {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu đặt chỗ"}
-              </button>
+              {errorMessage ? <div className={styles.errorMessage}>{errorMessage}</div> : null}
             </div>
           </div>
 
-          <aside style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 20, height: "fit-content", position: "sticky", top: 104 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: colors.goldPale, fontWeight: 950 }}>
-              <Sparkles size={18} />
-              Tóm tắt
-            </div>
-            <Summary label="Quán" value={context.storeName} />
-            {context.castName ? <Summary label="Cast" value={context.castName} /> : null}
-            <Summary label="Khu vực" value={context.area ?? "Chưa chọn"} />
-            <Summary label="Thời gian" value={`${bookingDate} · ${bookingTime}`} />
-            <Summary label="Số khách" value={`${guests} người`} />
-            <Summary label="Ưu đãi" value={coupon} />
-            <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${colors.border}`, color: colors.muted, fontSize: 12.5, lineHeight: 1.6 }}>
-              Admin sẽ liên hệ xác nhận sau khi bạn gửi yêu cầu.
-            </div>
-          </aside>
+          <div className={styles.bookingStickyCta}>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={isSubmitting}
+              className={styles.primaryCta}
+              style={{ opacity: isSubmitting ? 0.72 : 1, cursor: isSubmitting ? "wait" : "pointer" }}
+            >
+              <strong>{isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}</strong>
+              <small>Miễn phí · phản hồi nhanh qua LINE / điện thoại</small>
+            </button>
+          </div>
         </div>
+
+        <aside className={styles.bookingSidePanel}>
+          <div className={styles.sideEyebrow}>Bước 1 · BOO-03</div>
+          <h2 className={styles.sideTitle}>{contextSubtitle} không cần cọc</h2>
+          <p className={styles.sideText}>
+            Form chỉ lấy tên, SĐT, số người, ngày, khung giờ, quán tham chiếu và ghi chú. Sau khi gửi, booking ở trạng thái Mới để Admin điều phối với quán.
+          </p>
+          <div className={styles.summaryList}>
+            <SummaryRow label="Quán" value={context.storeName} />
+            {context.castName ? <SummaryRow label="Cast" value={context.castName} /> : null}
+            <SummaryRow label="Khu vực" value={context.area ?? "NightLife"} />
+            <SummaryRow label="Thời gian" value={`${bookingDate} · ${bookingTime}`} />
+            <SummaryRow label="Số người" value={`${guests} người`} />
+            <SummaryRow label="Ưu đãi" value={isMemberMode ? "Hội viên 8-10%" : "Khách -5%"} />
+          </div>
+          <p className={styles.sideText}>
+            Khi Admin xác nhận, khách nhận thông báo và mã QR giảm giá gắn với booking.
+          </p>
+        </aside>
       </section>
+
       {showLoginPrompt ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="member-login-title"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 60,
-            display: "grid",
-            placeItems: "center",
-            padding: 18,
-            background: "rgba(0,0,0,.66)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <div
-            style={{
-              width: "min(100%, 360px)",
-              border: `1px solid ${colors.borderStrong}`,
-              borderRadius: 18,
-              background: "linear-gradient(180deg,#18181c,#111114)",
-              color: colors.text,
-              boxShadow: "0 24px 70px rgba(0,0,0,.48)",
-              padding: 20,
-              textAlign: "center",
-            }}
-          >
-            <div id="member-login-title" style={{ fontSize: 18, fontWeight: 950, color: colors.goldPale }}>
-              Yêu cầu đăng nhập
-            </div>
-            <p style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
-              Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên.
-            </p>
-            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setShowLoginPrompt(false)}
-                style={{
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 12,
-                  background: colors.panelStrong,
-                  color: colors.muted,
-                  padding: "12px 14px",
-                  fontWeight: 900,
-                  cursor: "pointer",
-                }}
-              >
+        <div role="dialog" aria-modal="true" aria-labelledby="member-login-title" className={styles.dialogOverlay}>
+          <div className={styles.dialogPanel}>
+            <h2 id="member-login-title">Yêu cầu đăng nhập</h2>
+            <p>Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao hơn.</p>
+            <div className={styles.dialogActions}>
+              <button type="button" className={styles.ghostCta} onClick={() => setShowLoginPrompt(false)}>
                 Hủy
               </button>
-              <Link
-                href={memberLoginPath}
-                style={{
-                  borderRadius: 12,
-                  background: colors.goldGrad,
-                  color: colors.onGold,
-                  padding: "12px 14px",
-                  fontWeight: 950,
-                  textDecoration: "none",
-                }}
-              >
-                Đăng nhập
+              <Link href={memberLoginPath} className={styles.primaryCta}>
+                <strong>Đăng nhập</strong>
               </Link>
             </div>
           </div>
@@ -421,70 +381,73 @@ export default function Page() {
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <label style={{ color: colors.muted, fontSize: 12.5, fontWeight: 900 }}>{children}</label>;
-}
-
-function Field({
+function TextField({
   label,
-  placeholder,
   value,
   onChange,
-  type = "text",
+  placeholder,
   icon,
 }: {
   label: string;
-  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
-  type?: string;
+  placeholder?: string;
   icon?: React.ReactNode;
 }) {
   return (
-    <div>
-      <Label>{label}</Label>
-      <div style={{ marginTop: 7, position: "relative" }}>
-        {icon ? <span style={{ position: "absolute", left: 12, top: 15, color: colors.gold }}>{icon}</span> : null}
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <span className={styles.inputWrap}>
+        {icon}
         <input
-          type={type}
+          type="text"
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          style={{
-            width: "100%",
-            height: 48,
-            border: `1px solid ${colors.border}`,
-            borderRadius: 12,
-            background: colors.panelStrong,
-            color: colors.text,
-            padding: icon ? "0 14px 0 38px" : "0 14px",
-            fontSize: 14,
-            outline: "none",
-          }}
+          className={styles.input}
         />
-      </div>
-    </div>
+      </span>
+    </label>
   );
 }
 
-function Summary({ label, value }: { label: string; value: string }) {
+function PhoneField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 15, color: colors.text, fontSize: 13 }}>
-      <span style={{ color: colors.muted }}>{label}</span>
-      <span style={{ fontWeight: 900, textAlign: "right" }}>{value}</span>
-    </div>
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>Số điện thoại</span>
+      <span className={styles.phoneInput}>
+        <Phone size={15} />
+        <span className={styles.phonePrefix}>+84</span>
+        <span className={styles.phoneDivider} />
+        <input
+          type="tel"
+          value={value}
+          placeholder="0901 234 567"
+          onChange={(event) => onChange(event.target.value)}
+          className={styles.input}
+        />
+      </span>
+    </label>
   );
 }
 
-const stepButtonStyle: React.CSSProperties = {
-  width: 30,
-  height: 30,
-  borderRadius: 9,
-  border: 0,
-  background: "rgba(255,255,255,.08)",
-  color: colors.text,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-};
+function DateField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>Ngày</span>
+      <span className={styles.dateInput}>
+        <CalendarDays size={15} />
+        <input type="date" value={value} onChange={(event) => onChange(event.target.value)} />
+      </span>
+    </label>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.summaryRow}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}

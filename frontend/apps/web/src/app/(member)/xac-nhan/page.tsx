@@ -1,29 +1,14 @@
 "use client";
 
-import { Check, Clock3, MapPin, QrCode, UsersRound } from "lucide-react";
+import { AlertCircle, Check, Clock3, Headphones } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
-import { getAuthUser } from "@/lib/auth/session";
-import { bookingStatusLabel, getLastBooking, type BookingRecord } from "@/lib/api/bookings";
+import { getLastBooking, type BookingRecord } from "@/lib/api/bookings";
+import styles from "../booking-flow.module.css";
 
-const colors = {
-  bg: "#0c0c0f",
-  border: "rgba(212,178,106,.24)",
-  borderStrong: "rgba(212,178,106,.36)",
-  text: "#f7f2e8",
-  text2: "#d8d1c1",
-  muted: "#9b9488",
-  gold: "#d4b26a",
-  goldPale: "#f2dfaa",
-  onGold: "#241a0a",
-  success: "#24b56a",
-  goldGrad: "linear-gradient(135deg,#fff1bf 0%,#e4bf63 52%,#c09035 100%)",
-};
-
-const fallbackImage =
-  "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=75";
+const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
+const cancelledStatuses = new Set(["CANCELLED", "NO_SHOW"]);
 
 const formatDateTime = (value?: string) => {
   if (!value) return "Chưa có thời gian";
@@ -33,7 +18,7 @@ const formatDateTime = (value?: string) => {
   }).format(new Date(value));
 };
 
-const bookingCode = (booking: BookingRecord) => `NL-BK-${booking.id.slice(0, 8).toUpperCase()}`;
+const bookingCode = (booking: BookingRecord) => `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
 const bookingQrPayload = (booking: BookingRecord) =>
   [
@@ -49,311 +34,181 @@ const bookingQrImageUrl = (booking: BookingRecord) =>
     bookingQrPayload(booking),
   )}`;
 
-function DetailLine({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ color: colors.muted, fontSize: 12, lineHeight: 1.4 }}>{label}</div>
-      <div
-        style={{
-          marginTop: 5,
-          color: colors.text,
-          fontSize: 14,
-          fontWeight: 850,
-          lineHeight: 1.35,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
+const bookingTitle = (booking: BookingRecord | null) => {
+  if (!booking) return "Booking NightLife";
+  if (booking.cast) {
+    return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${booking.store?.name ?? "NightLife"}`;
+  }
+  return booking.store?.name ?? "Booking NightLife";
+};
+
+const guestLabel = (booking: BookingRecord) =>
+  `${booking.guest?.displayName ?? booking.user?.displayName ?? "Khách"} · ${
+    booking.guest?.phone ?? "SĐT đã lưu"
+  }`;
 
 export default function Page() {
   const [booking, setBooking] = useState<BookingRecord | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
       const bookingId = new URLSearchParams(window.location.search).get("bookingId");
       setBooking(getLastBooking(bookingId));
-      setIsLoggedIn(Boolean(getAuthUser()));
     });
   }, []);
 
-  const title = booking?.cast
-    ? `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${booking.store?.name ?? "NightLife"}`
-    : (booking?.store?.name ?? "Booking NightLife");
+  const hasQr = booking ? confirmedStatuses.has(booking.status) : false;
+  const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
+  const title = bookingTitle(booking);
+  const heroTitle = !booking
+    ? "Chưa tìm thấy booking"
+    : isCancelled
+      ? "Đặt chỗ đã hủy"
+      : hasQr
+        ? "Đặt chỗ đã xác nhận"
+        : "Đã gửi yêu cầu đặt bàn";
+  const heroText = !booking
+    ? "Booking vừa tạo không còn trong phiên này. Bạn có thể quay lại lịch sử hoặc đặt lại yêu cầu mới."
+    : isCancelled
+      ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
+      : hasQr
+        ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
+        : "Khi quán xác nhận, bạn nhận thông báo và mã QR giảm giá qua LINE OA hoặc trong app nếu đã đăng nhập.";
+  const statusText = !booking
+    ? "Không có dữ liệu"
+    : isCancelled
+      ? "Đã hủy"
+      : hasQr
+        ? "Đã xác nhận · QR đã cấp"
+        : "Mới · chờ xác nhận";
 
   return (
-    <main
-      style={{
-        minHeight: "calc(100vh - 82px)",
-        background:
-          "radial-gradient(circle at 82% 2%,rgba(212,178,106,.12),transparent 34%), linear-gradient(180deg,#121216 0%,#0c0c0f 100%)",
-        color: colors.text,
-        fontFamily: "var(--nl-font-sans)",
-        padding: "24px 16px calc(118px + env(safe-area-inset-bottom))",
-      }}
-    >
-      <section className="confirm-shell" style={{ width: "100%", maxWidth: 560, margin: "0 auto" }}>
-        <h1
-          style={{
-            margin: 0,
-            color: colors.text,
-            fontSize: "clamp(24px,4vw,34px)",
-            lineHeight: 1.08,
-            fontWeight: 950,
-          }}
-        >
-          Đặt chỗ của tôi
-        </h1>
-
-        <div
-          style={{
-            marginTop: 18,
-            borderRadius: 18,
-            border: "1px solid rgba(34,197,94,.34)",
-            background: "linear-gradient(135deg,rgba(34,197,94,.2),rgba(16,185,129,.08))",
-            padding: "15px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 13,
-          }}
-        >
-          <span
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: "50%",
-              background: colors.success,
-              color: "#fff",
-              display: "grid",
-              placeItems: "center",
-              flex: "none",
-            }}
-          >
-            <Check size={24} strokeWidth={3} />
-          </span>
-          <div>
-            <div style={{ color: "#a7f3d0", fontSize: 15, fontWeight: 950 }}>
-              Đã gửi yêu cầu đặt chỗ
-            </div>
-            <div style={{ marginTop: 3, color: colors.text2, fontSize: 13, lineHeight: 1.45 }}>
-              Trạng thái hiện tại: {bookingStatusLabel(booking?.status ?? "REQUESTED")}.
-            </div>
+    <main className={styles.bookingPage}>
+      <section className={styles.bookingViewport}>
+        <div className={styles.bookingFrame}>
+          <div className={styles.confirmHero}>
+            <span className={styles.heroMark}>
+              {isCancelled || !booking ? <AlertCircle size={34} /> : <Check size={34} />}
+            </span>
+            <h1 className={styles.confirmTitle}>{heroTitle}</h1>
+            <p className={styles.confirmText}>{heroText}</p>
+            <span className={styles.statusBadge}>
+              <span className={styles.statusDot} />
+              Trạng thái: {statusText}
+            </span>
           </div>
-        </div>
 
-        {booking ? (
-          <article
-            style={{
-              marginTop: 16,
-              borderRadius: 18,
-              border: `1px solid ${colors.border}`,
-              background:
-                "linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018)), #141416",
-              overflow: "hidden",
-            }}
-          >
-            <div style={{ padding: 16, display: "flex", gap: 13, alignItems: "center" }}>
-              <PlaceholderMedia
-                src={fallbackImage}
-                alt={title}
-                label=""
-                style={{
-                  width: 58,
-                  height: 58,
-                  borderRadius: 13,
-                  flex: "none",
-                  border: `1px solid ${colors.borderStrong}`,
-                }}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ color: colors.text, fontSize: 18, fontWeight: 950 }}>{title}</div>
-                <div
-                  style={{
-                    marginTop: 5,
-                    color: colors.text2,
-                    fontSize: 13,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                >
-                  <MapPin size={14} color={colors.gold} />
-                  {booking.store?.slug ?? "nightlife"}
-                </div>
-              </div>
-              <span
-                style={{
-                  borderRadius: 999,
-                  padding: "6px 10px",
-                  background: "rgba(212,178,106,.13)",
-                  border: `1px solid ${colors.border}`,
-                  color: colors.goldPale,
-                  fontSize: 11,
-                  fontWeight: 900,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {bookingStatusLabel(booking.status)}
-              </span>
-            </div>
+          {booking ? (
+            <section className={styles.summaryCard} aria-label="Tóm tắt đặt chỗ">
+              <SummaryRow label="Mã đặt chỗ" value={<span className={styles.bookingCode}>{bookingCode(booking)}</span>} />
+              <SummaryRow label="Quán" value={title} />
+              <SummaryRow label="Thời gian" value={formatDateTime(booking.scheduledAt)} />
+              <SummaryRow label="Số người" value={`${booking.partySize} người`} />
+              <SummaryRow label="Người đặt" value={guestLabel(booking)} />
+            </section>
+          ) : (
+            <div className={styles.emptyCard}>Chưa tìm thấy booking vừa tạo trong phiên này.</div>
+          )}
 
-            <div style={{ height: 1, background: colors.border }} />
+          <Timeline hasQr={hasQr} isCancelled={isCancelled} />
 
-            <div
-              style={{
-                padding: "15px 16px 17px",
-                display: "grid",
-                gridTemplateColumns: "repeat(2,minmax(0,1fr))",
-                gap: "14px 22px",
-              }}
-            >
-              <DetailLine
-                label="Mã"
-                value={
-                  <span style={{ fontFamily: "var(--nl-font-sans)", letterSpacing: ".04em" }}>
-                    {bookingCode(booking)}
-                  </span>
-                }
-              />
-              <DetailLine
-                label="Khách"
-                value={
-                  <span>
-                    <UsersRound size={14} /> {booking.partySize} người
-                  </span>
-                }
-              />
-              <DetailLine
-                label="Lúc"
-                value={
-                  <span>
-                    <Clock3 size={14} /> {formatDateTime(booking.scheduledAt)}
-                  </span>
-                }
-              />
-              <DetailLine
-                label="Người đặt"
-                value={`${booking.guest?.displayName ?? booking.user?.displayName ?? "Khách"} · ${booking.guest?.phone ?? "SĐT đã lưu"}`}
-              />
-            </div>
+          <div className={`${styles.infoNote} ${styles.confirmNote}`}>
+            <Clock3 size={15} />
+            <span>
+              {hasQr
+                ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
+                : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ."}
+            </span>
+          </div>
 
-            <div style={{ height: 1, background: colors.border }} />
-
-            <div
-              style={{
-                padding: 16,
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 16,
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 148,
-                  height: 148,
-                  borderRadius: 16,
-                  background: "#fff",
-                  border: `1px solid ${colors.borderStrong}`,
-                  display: "grid",
-                  placeItems: "center",
-                  flex: "none",
-                }}
-              >
+          {booking && hasQr ? (
+            <section className={styles.qrPanel} aria-label="Mã QR đặt chỗ">
+              <div className={styles.qrBox}>
                 <Image
                   src={bookingQrImageUrl(booking)}
                   alt={`QR đặt chỗ ${bookingCode(booking)}`}
-                  width={124}
-                  height={124}
+                  width={112}
+                  height={112}
                   unoptimized
-                  style={{ width: 124, height: 124, display: "block" }}
                 />
               </div>
-              <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-                <div
-                  style={{
-                    color: colors.goldPale,
-                    fontSize: 15,
-                    fontWeight: 950,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <QrCode size={18} color={colors.gold} />
-                  QR check-in tại quán
-                </div>
-                <p
-                  style={{
-                    marginTop: 8,
-                    marginBottom: 0,
-                    color: colors.text2,
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Đưa mã QR này cho nhân viên quán quét khi tới nơi. Mã gắn với đúng booking và dùng
-                  để đối chiếu lúc check-in.
-                </p>
-                <div
-                  style={{
-                    marginTop: 12,
-                    borderRadius: 12,
-                    border: `1px solid ${colors.border}`,
-                    background: "rgba(212,178,106,.1)",
-                    color: colors.goldPale,
-                    padding: "10px 12px",
-                    fontFamily: "var(--nl-font-sans)",
-                    fontSize: 13,
-                    fontWeight: 950,
-                    letterSpacing: ".08em",
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {bookingCode(booking)}
-                </div>
+              <div className={styles.qrCopy}>
+                <strong>QR giảm giá đã sẵn sàng</strong>
+                <p>Đưa mã này cho nhân viên quán quét khi tới nơi. Coupon được gắn với booking và đối soát sau check-in.</p>
               </div>
-            </div>
-          </article>
-        ) : (
-          <div
-            style={{
-              marginTop: 16,
-              borderRadius: 18,
-              border: `1px solid ${colors.border}`,
-              background: "#141416",
-              padding: 20,
-              color: colors.muted,
-              lineHeight: 1.6,
-            }}
-          >
-            Chưa tìm thấy booking vừa tạo trong phiên này.
-          </div>
-        )}
+            </section>
+          ) : null}
 
-        <Link
-          href={isLoggedIn ? "/lich-su-dat-cho" : "/"}
-          style={{
-            marginTop: 14,
-            minHeight: 54,
-            borderRadius: 16,
-            background: colors.goldGrad,
-            color: colors.onGold,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            textDecoration: "none",
-            fontWeight: 950,
-            fontSize: 15,
-          }}
-        >
-          {isLoggedIn ? "Xem lịch sử đặt chỗ" : "Về trang chủ"}
-        </Link>
+          <div className={styles.bottomActions}>
+            <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
+              <strong>Xem đặt chỗ của tôi</strong>
+            </Link>
+            <Link href="/huong-dan" className={styles.secondaryCta}>
+              <Headphones size={15} />
+              Liên hệ hỗ trợ (LINE OA)
+            </Link>
+          </div>
+        </div>
+
+        <aside className={styles.bookingSidePanel}>
+          <div className={styles.sideEyebrow}>Bước 2 · FLOW A</div>
+          <h2 className={styles.sideTitle}>Đã gửi là chờ Admin điều phối</h2>
+          <p className={styles.sideText}>
+            Hệ thống tạo booking trạng thái Mới và gửi thông báo nội bộ cho Admin. Khi Admin xác nhận, khách nhận thông báo kèm mã QR giảm giá gắn với booking.
+          </p>
+          <div className={styles.summaryList}>
+            <SummaryRow label="Không cọc" value="Không thanh toán online" />
+            <SummaryRow label="Hủy" value="Trước giờ hẹn ít nhất 1 giờ" />
+            <SummaryRow label="Đổi lịch" value="Hủy và đặt lại hoặc liên hệ hỗ trợ" />
+            <SummaryRow label="QR" value="Chỉ hiện sau khi Admin xác nhận" />
+          </div>
+        </aside>
       </section>
     </main>
+  );
+}
+
+function Timeline({ hasQr, isCancelled }: { hasQr: boolean; isCancelled: boolean }) {
+  const adminDone = hasQr && !isCancelled;
+  const qrDone = hasQr && !isCancelled;
+
+  return (
+    <div className={styles.timeline} aria-label="Tiến trình đặt chỗ">
+      <TimelineStep done label="Đã gửi" icon={<Check size={13} />} />
+      <span className={`${styles.timelineLine} ${adminDone ? styles.timelineLineDone : ""}`} />
+      <TimelineStep done={adminDone} label="Admin xác nhận" fallback="2" />
+      <span className={`${styles.timelineLine} ${qrDone ? styles.timelineLineDone : ""}`} />
+      <TimelineStep done={qrDone} label="Nhận mã QR giảm giá" fallback="3" />
+    </div>
+  );
+}
+
+function TimelineStep({
+  done,
+  label,
+  icon,
+  fallback,
+}: {
+  done: boolean;
+  label: string;
+  icon?: React.ReactNode;
+  fallback?: string;
+}) {
+  return (
+    <div className={`${styles.timelineStep} ${done ? styles.timelineStepDone : ""}`}>
+      <span className={`${styles.timelineIcon} ${done ? styles.timelineIconDone : ""}`}>
+        {done ? (icon ?? <Check size={13} />) : fallback}
+      </span>
+      <div className={styles.timelineLabel}>{label}</div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className={styles.summaryRow}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
   );
 }
