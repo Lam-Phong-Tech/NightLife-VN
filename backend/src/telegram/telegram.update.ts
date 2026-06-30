@@ -34,7 +34,7 @@ export class TelegramUpdate {
       // 2. Update Telegram Message
       if (ctx.callbackQuery?.message) {
         const message = ctx.callbackQuery.message as any;
-        const newText = message.text + `\n\n✅ *Accepted by ${adminName}*`;
+        const newText = message.text + `\n\n✅ *Đã xác nhận bởi ${adminName}*`;
         
         await ctx.telegram.editMessageText(
           message.chat.id,
@@ -45,7 +45,7 @@ export class TelegramUpdate {
         );
       }
 
-      await ctx.answerCbQuery('Booking accepted!');
+      await ctx.answerCbQuery('Đã xác nhận đặt bàn!');
 
       // 3. Notify Customer
       if (booking.userId) {

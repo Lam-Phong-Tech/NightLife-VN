@@ -28,18 +28,18 @@ export class TelegramService {
       const time = new Date(booking.scheduledAt).toLocaleString('vi-VN');
       const partySize = booking.partySize;
 
-      const message = `🔔 *New Booking Request*\n\n` +
-        `🏪 *Store:* ${storeName}\n` +
-        `👤 *Customer:* ${customerName}\n` +
-        `📞 *Phone:* ${phone}\n` +
-        `⏰ *Time:* ${time}\n` +
-        `👥 *Party Size:* ${partySize} pax\n\n` +
-        `Please accept or reject this booking.`;
+      const message = `🔔 *Yêu cầu đặt bàn mới*\n\n` +
+        `🏪 *Quán:* ${storeName}\n` +
+        `👤 *Khách hàng:* ${customerName}\n` +
+        `📞 *Số điện thoại:* ${phone}\n` +
+        `⏰ *Thời gian:* ${time}\n` +
+        `👥 *Số lượng khách:* ${partySize} người\n\n` +
+        `Vui lòng xác nhận yêu cầu đặt bàn này.`;
 
       await this.bot.telegram.sendMessage(this.chatId, message, {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
-          Markup.button.callback('✅ Accept', `accept_booking_${booking.id}`),
+          Markup.button.callback('✅ Xác nhận', `accept_booking_${booking.id}`),
         ]),
       });
       this.logger.log(`Booking ${booking.id} notification sent to Telegram.`);
