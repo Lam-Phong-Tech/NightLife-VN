@@ -66,7 +66,7 @@ export function CastStoreSidebar({
                 <span
                   className="cast-related-media"
                   style={{
-                    background: mediaBg(cast.thumbnailUrl || castImageForSlug(cast.slug, index)),
+                    background: mediaBg(castImageForSlug(cast.slug, index)),
                   }}
                 />
                 <span>

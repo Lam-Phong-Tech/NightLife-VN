@@ -97,6 +97,9 @@ const pickByIndex = (items: readonly string[], index: number) =>
   items[Math.abs(index) % items.length] ?? items[0]!;
 
 const isImageUrl = (value?: string): value is string => Boolean(value);
+const uniqueImageUrls = (items: Array<string | undefined>) => [
+  ...new Set(items.filter(isImageUrl)),
+];
 
 export function storeImageForSlug(slug?: string | null, index = 0) {
   return storeImageBySlug[normalizeSlug(slug)] ?? pickByIndex(storeFallbackImages, index);
@@ -109,16 +112,22 @@ export function castImageForSlug(slug?: string | null, index = 0) {
 export function storeGalleryForSlug(slug?: string | null, alt = "NightLife venue") {
   const base = storeImageForSlug(slug);
   const normalized = normalizeSlug(slug);
-  const second = normalized.includes("spa")
-    ? storeImageBySlug["opera-spa-hai-phong"]
-    : normalized.includes("kitchen") || normalized.includes("dining")
-      ? storeImageBySlug["hanami-dining"]
-      : storeImageBySlug["crimson-bar"];
-  const third = normalized.includes("ktv")
-    ? storeImageBySlug["harbor-ktv-hai-phong"]
-    : storeImageBySlug["neon-club"];
+  const isRestaurant = normalized.includes("kitchen") || normalized.includes("dining");
+  const isKtv = normalized.includes("ktv") || normalized.includes("karaoke");
+  const isSpa = normalized.includes("spa") || normalized.includes("massage");
+  const isRooftop = normalized.includes("rooftop") || normalized.includes("harbor");
+  const alternates = isSpa
+    ? ["lotus-massage-spa", "opera-spa-hai-phong", "lotus-massage-spa-quan-3"]
+    : isRestaurant
+      ? ["tokyo-kitchen", "hanami-dining", "tokyo-kitchen-old-quarter"]
+      : isKtv
+        ? ["star-ktv", "golden-voice-ktv", "harbor-ktv-hai-phong"]
+        : isRooftop
+          ? ["dragon-rooftop-da-nang", "son-tra-lounge", "harbor-ktv-hai-phong"]
+          : ["crimson-bar", "neon-club", "jade-lounge", "velvet-club"];
+  const gallery = uniqueImageUrls([base, ...alternates.map((item) => storeImageBySlug[item])]);
 
-  return [base, second, third].filter(isImageUrl).map((url, index) => ({
+  return gallery.slice(0, 4).map((url, index) => ({
     id: `fallback-${normalized || "store"}-${index + 1}`,
     type: "IMAGE" as const,
     url,
@@ -131,15 +140,18 @@ export function storeGalleryForSlug(slug?: string | null, alt = "NightLife venue
 export function castGalleryForSlug(slug?: string | null, alt = "Cast profile") {
   const base = castImageForSlug(slug);
   const normalized = normalizeSlug(slug);
+  const gallery = uniqueImageUrls([
+    base,
+    castImageForSlug(`${normalized}-gallery`, normalized.length + 1),
+    castImageForSlug(`${normalized}-portrait`, normalized.length + 5),
+  ]);
 
-  return [base, castImageForSlug(`${normalized}-gallery`, normalized.length + 1)]
-    .filter(isImageUrl)
-    .map((url, index) => ({
-      id: `fallback-${normalized || "cast"}-${index + 1}`,
-      type: "IMAGE" as const,
-      url,
-      purpose: index === 0 ? "avatar" : "gallery",
-      mimeType: "image/jpeg",
-      alt,
-    }));
+  return gallery.slice(0, 3).map((url, index) => ({
+    id: `fallback-${normalized || "cast"}-${index + 1}`,
+    type: "IMAGE" as const,
+    url,
+    purpose: index === 0 ? "avatar" : "gallery",
+    mimeType: "image/jpeg",
+    alt,
+  }));
 }

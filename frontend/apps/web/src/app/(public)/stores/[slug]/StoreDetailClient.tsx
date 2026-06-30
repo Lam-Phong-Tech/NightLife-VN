@@ -73,14 +73,14 @@ const bookingTimes = ["20:00", "21:00", "22:00", "23:00"];
 const fallbackHero: StoreGalleryItem = {
   id: "fallback-hero",
   type: "IMAGE",
-  url: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=82",
+  url: storeImageForSlug("crimson-bar"),
   alt: "Nightlife venue",
 };
 
 const fallbackTourImages = [
-  "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=700&q=78",
-  "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=700&q=78",
+  storeImageForSlug("crimson-bar"),
+  storeImageForSlug("neon-club"),
+  storeImageForSlug("tokyo-kitchen"),
 ];
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
@@ -261,7 +261,7 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
   return (
     <div className="cast-rail hscroll">
       {store.casts.slice(0, 10).map((cast, index) => {
-        const avatarUrl = cast.thumbnailUrl ?? castImageForSlug(cast.slug, index);
+        const avatarUrl = castImageForSlug(cast.slug, index);
 
         return (
           <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
@@ -590,7 +590,7 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
       <SectionTitle title="Quán tương tự" kicker="Similar venues" meta="Xem thêm" />
       <div className="related-grid">
         {stores.slice(0, 4).map((related, index) => {
-          const photoUrl = related.thumbnailUrl ?? storeImageForSlug(related.slug, index);
+          const photoUrl = storeImageForSlug(related.slug, index);
 
           return (
             <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
@@ -633,9 +633,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   );
 
   const displayName = readableName(store.name);
-  const gallery = store.gallery?.length
-    ? store.gallery
-    : storeGalleryForSlug(store.slug, displayName);
+  const localGallery = storeGalleryForSlug(store.slug, displayName);
+  const videoGallery = store.gallery?.filter((item) => item.type === "VIDEO" && item.url) ?? [];
+  const gallery = [...localGallery, ...videoGallery];
   const heroImage = gallery.find((item) => item.type === "IMAGE") ?? fallbackHero;
   const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? fallbackHero;
   const heroMedia = selectedMedia.type === "IMAGE" ? selectedMedia : heroImage;

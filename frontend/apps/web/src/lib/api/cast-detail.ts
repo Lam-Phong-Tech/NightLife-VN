@@ -82,8 +82,8 @@ const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
   if (!cast) return null;
 
   const displayName = cast.publicAlias ?? cast.name ?? cast.stageName;
-  const thumbnailUrl = cast.thumbnailUrl ?? castImageForSlug(cast.slug);
-  const storeThumbnailUrl = cast.store.thumbnailUrl ?? storeImageForSlug(cast.store.slug);
+  const thumbnailUrl = castImageForSlug(cast.slug);
+  const storeThumbnailUrl = storeImageForSlug(cast.store.slug);
 
   return {
     id: cast.id,

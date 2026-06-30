@@ -143,7 +143,7 @@ const buildStore = (
 
   return {
     ...storeFields,
-    thumbnailUrl: storeFields.thumbnailUrl ?? storeImageForSlug(storeFields.slug),
+    thumbnailUrl: storeImageForSlug(storeFields.slug),
     area: areaByCode.get(areaCode) ?? null,
     distanceKm: null,
   };
@@ -289,7 +289,7 @@ const buildCast = (
 
   return {
     ...castFields,
-    thumbnailUrl: castFields.thumbnailUrl ?? castImageForSlug(castFields.slug),
+    thumbnailUrl: castImageForSlug(castFields.slug),
     store,
     distanceKm: null,
   };

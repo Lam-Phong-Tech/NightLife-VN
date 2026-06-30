@@ -168,7 +168,7 @@ export function CastRelatedCasts({ relatedCasts, variant, onTrack }: RelatedCast
             <span
               className="cast-related-media"
               style={{
-                background: mediaBg(cast.thumbnailUrl || castImageForSlug(cast.slug, index)),
+                background: mediaBg(castImageForSlug(cast.slug, index)),
               }}
             />
             <span className="cast-related-copy">
@@ -240,7 +240,7 @@ function VenueCard({
   onTrack?: CastProfileTrack;
   compact?: boolean;
 }) {
-  const storeImage = profile.store.thumbnailUrl || storeImageForSlug(profile.store.slug);
+  const storeImage = storeImageForSlug(profile.store.slug);
 
   return (
     <Link

@@ -42,13 +42,13 @@ export const placeholderGallery: CastMedia[] = [
   {
     id: "placeholder-portrait-1",
     type: "IMAGE",
-    url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=720&q=78",
+    url: castImageForSlug("yuna-neon"),
     alt: "Ảnh profile cast",
   },
   {
     id: "placeholder-portrait-2",
     type: "IMAGE",
-    url: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=720&q=78",
+    url: castImageForSlug("akari-jade"),
     alt: "Ảnh gallery cast",
   },
   {
@@ -111,32 +111,22 @@ export function buildCastBio(cast: PublicCastDetail) {
 }
 
 export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
-  const items = [
-    ...(cast.thumbnailUrl
-      ? [
-          {
-            id: `${cast.id}-avatar`,
-            type: "IMAGE" as const,
-            url: cast.thumbnailUrl,
-            alt: cast.publicAlias ?? cast.stageName,
-          },
-        ]
-      : []),
-    ...cast.gallery.flatMap((media) => {
-      if (media.type !== "IMAGE" && media.type !== "VIDEO") return [];
+  const localGallery = castGalleryForSlug(cast.slug, cast.publicAlias ?? cast.stageName);
+  const videoItems = cast.gallery.flatMap((media) => {
+    if (media.type !== "VIDEO") return [];
 
-      return [
-        {
-          id: media.id,
-          type: media.type,
-          url: media.url,
-          alt: media.alt ?? cast.publicAlias ?? cast.stageName,
-          purpose: media.purpose,
-          mimeType: media.mimeType,
-        },
-      ];
-    }),
-  ];
+    return [
+      {
+        id: media.id,
+        type: media.type,
+        url: media.url,
+        alt: media.alt ?? cast.publicAlias ?? cast.stageName,
+        purpose: media.purpose,
+        mimeType: media.mimeType,
+      },
+    ];
+  });
+  const items = [...localGallery, ...videoItems];
   const seen = new Set<string>();
 
   const gallery = items.filter((item) => {
@@ -145,9 +135,7 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
     return true;
   });
 
-  return gallery.length
-    ? gallery
-    : castGalleryForSlug(cast.slug, cast.publicAlias ?? cast.stageName);
+  return gallery.length ? gallery : localGallery;
 }
 
 export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
@@ -163,7 +151,7 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
     tags: cast.tags,
     languages: cast.languages.length ? cast.languages : ["vi"],
     hourlyRateVnd: cast.hourlyRateVnd ?? null,
-    thumbnailUrl: cast.thumbnailUrl ?? castImageForSlug(cast.slug),
+    thumbnailUrl: castImageForSlug(cast.slug),
     gallery: galleryFromCast(cast),
     monthOfBirth: cast.monthOfBirth ?? null,
     zodiacSign: cast.zodiacSign ?? null,
