@@ -584,7 +584,7 @@ function SearchSuggestions({
           {casts.map((cast, index) => (
             <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
               <PlaceholderMedia
-                src={cast.thumbnailUrl ?? castImageForSlug(cast.slug, index)}
+                src={castImageForSlug(cast.slug, index)}
                 alt={cast.name}
                 label=""
                 className="cast-suggestion-avatar"
@@ -642,7 +642,7 @@ function SearchSuggestions({
 }
 
 function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number }) {
-  const image = cast.thumbnailUrl ?? castImageForSlug(cast.slug, index);
+  const image = castImageForSlug(cast.slug, index);
   const areaLabel = [
     cast.store.area?.name ?? cast.store.district,
     cityLabels[cast.store.cityCode ?? ""],
@@ -659,7 +659,11 @@ function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number })
 
   return (
     <Link href={`/casts/${cast.slug}`} className="cast-card">
-      <PlaceholderMedia src={image} alt={cast.name} label="" className="cast-card-media">
+      <div
+        className="cast-card-media"
+        aria-label={`Ảnh ${cast.name}`}
+        style={{ backgroundImage: `url("${image}")` }}
+      >
         <span className="cast-media-shade" />
         <span className={`cast-rank-badge ${isRanked ? "is-ranked" : ""}`}>
           {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}
@@ -677,7 +681,7 @@ function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number })
           <b>{cast.store.name}</b>
           {areaLabel ? <small>· {areaLabel}</small> : null}
         </span>
-      </PlaceholderMedia>
+      </div>
 
       <div className="cast-card-body">
         <div className="cast-card-meta">
@@ -1274,14 +1278,15 @@ const castSearchCss = `
 .cast-card-media {
   height: 250px;
   position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #19191d, #2a2418);
+  background-position: center;
+  background-size: cover;
+  transition: filter 360ms ease;
 }
 
-.cast-card-media img {
-  transition: transform 360ms ease;
-}
-
-.cast-card:hover .cast-card-media img {
-  transform: scale(1.035);
+.cast-card:hover .cast-card-media {
+  filter: saturate(1.08) contrast(1.04);
 }
 
 .cast-media-shade {

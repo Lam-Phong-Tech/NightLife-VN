@@ -107,14 +107,10 @@ const areaExample = {
   cityCode: 'hn',
 };
 
-const neonStoreImage =
-  'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1100&q=80';
-const crimsonStoreImage =
-  'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=1100&q=80';
-const yunaCastImage =
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80';
-const miyukiCastImage =
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80';
+const neonStoreImage = '/media/demo/stores/neon-club.jpg';
+const crimsonStoreImage = '/media/demo/stores/crimson-bar.jpg';
+const yunaCastImage = '/media/demo/casts/yuna-neon.jpg';
+const miyukiCastImage = '/media/demo/casts/miyuki-moonlight.jpg';
 
 const storeExample = {
   id: 'store_01',

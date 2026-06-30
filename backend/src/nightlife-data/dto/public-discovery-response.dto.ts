@@ -136,10 +136,7 @@ export class PublicCastGalleryItemDto {
   @ApiProperty({ enum: MediaType, example: MediaType.IMAGE })
   type!: MediaType;
 
-  @ApiProperty({
-    example:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
-  })
+  @ApiProperty({ example: '/media/demo/casts/yuna-neon.jpg' })
   url!: string;
 
   @ApiPropertyOptional({ example: 'cast-gallery', nullable: true })
@@ -236,10 +233,7 @@ export class PublicStoreGalleryItemDto {
   @ApiProperty({ enum: MediaType, example: MediaType.IMAGE })
   type!: MediaType;
 
-  @ApiProperty({
-    example:
-      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1100&q=80',
-  })
+  @ApiProperty({ example: '/media/demo/stores/neon-club.jpg' })
   url!: string;
 
   @ApiPropertyOptional({ example: 'Hero image', nullable: true })

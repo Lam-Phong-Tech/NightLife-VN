@@ -15,7 +15,6 @@ import {
 
 import { discoveryApi, type DiscoverySort, type PublicStore } from "@/lib/api/discovery";
 import { storeImageForSlug } from "@/lib/demo-media";
-import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 
 type Coordinates = {
   lat: number;
@@ -118,7 +117,7 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
   const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
-  const image = store.thumbnailUrl ?? storeImageForSlug(store.slug, index);
+  const image = storeImageForSlug(store.slug, index);
   const statusLabel = index % 3 === 2 ? "Mở đến 02:00" : "Đang mở";
 
   return {
@@ -133,7 +132,7 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
     tags: categoryTags[store.category] ?? ["Đặt bàn nhanh", "Không gian đẹp", "Ưu đãi"],
     statusLabel,
     dealLabel: pickByIndex(dealLabels, index, "-30% Happy Hour"),
-    image: `url('${image}') center/cover`,
+    image,
   };
 };
 
@@ -440,13 +439,11 @@ export default function Page() {
 function VenueResultCard({ venue }: { venue: VenueView }) {
   return (
     <Link href={`/stores/${venue.id}`} className="venue-card">
-      <div className="venue-card-media">
-        <PlaceholderMedia
-          src={venue.image}
-          alt={venue.name}
-          label=""
-          style={{ width: "100%", height: "100%" }}
-        />
+      <div
+        className="venue-card-media"
+        aria-label={`Ảnh ${venue.name}`}
+        style={{ backgroundImage: `url("${venue.image}")` }}
+      >
         <div className="venue-image-shade" />
         <span className={`venue-status ${venue.statusLabel.includes("02:00") ? "is-late" : ""}`}>
           <span />
@@ -821,6 +818,13 @@ const venueSearchCss = `
     min-height: 168px;
     overflow: hidden;
     background: linear-gradient(135deg, #19191d, #2a2418);
+    background-position: center;
+    background-size: cover;
+    transition: filter 360ms ease;
+  }
+
+  .venue-card:hover .venue-card-media {
+    filter: saturate(1.08) contrast(1.04);
   }
 
   .venue-image-shade {
