@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChevronDown, ChevronLeft, Crown, MapPin } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type RankingKind = "cast" | "quan";
 type RankingPeriod = "week" | "month";
@@ -257,9 +257,46 @@ function AreaSelect({
   area: RankingArea;
   onChange: (value: RankingArea) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selectedArea = areaOptions.find((option) => option.key === area) ?? areaOptions[0];
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && rootRef.current?.contains(target)) return;
+      setIsOpen(false);
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    window.addEventListener("pointerdown", closeOnOutsideClick);
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      window.removeEventListener("pointerdown", closeOnOutsideClick);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isOpen]);
+
   return (
-    <label className="vyr-ranking-area">
+    <div ref={rootRef} className={isOpen ? "vyr-ranking-area is-open" : "vyr-ranking-area"}>
       <MapPin size={15} strokeWidth={1.8} aria-hidden="true" />
+      <button
+        type="button"
+        className="vyr-ranking-area-trigger"
+        aria-label="Chá»n khu vá»±c"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span>{selectedArea.label}</span>
+        <ChevronDown size={13} strokeWidth={2} aria-hidden="true" />
+      </button>
       <select
         aria-label="Chọn khu vực"
         value={area}
@@ -271,8 +308,26 @@ function AreaSelect({
           </option>
         ))}
       </select>
-      <ChevronDown size={13} strokeWidth={2} aria-hidden="true" />
-    </label>
+      {isOpen ? (
+        <div className="vyr-ranking-area-menu" role="listbox" aria-label="Chá»n khu vá»±c">
+          {areaOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              role="option"
+              aria-selected={area === option.key}
+              className={area === option.key ? "is-selected" : ""}
+              onClick={() => {
+                onChange(option.key);
+                setIsOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -506,6 +561,7 @@ export default function Page() {
           color: #c5c0b6;
           background: transparent;
           position: relative;
+          z-index: 30;
         }
 
         .vyr-ranking-area svg:first-child {
@@ -519,23 +575,82 @@ export default function Page() {
           pointer-events: none;
         }
 
-        .vyr-ranking-area select {
+        .vyr-ranking-area-trigger {
           min-height: 34px;
-          appearance: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           border: 0;
-          outline: 0;
           background: transparent;
           color: #c5c0b6;
           cursor: pointer;
           font: inherit;
           font-size: 13px;
+          font-weight: 600;
           line-height: 1;
           padding: 0;
+          white-space: nowrap;
         }
 
-        .vyr-ranking-area option {
+        .vyr-ranking-area.is-open {
+          border-color: rgba(212, 178, 106, 0.34);
+          background: rgba(212, 178, 106, 0.07);
+        }
+
+        .vyr-ranking-area.is-open .vyr-ranking-area-trigger {
+          color: #f0dda8;
+        }
+
+        .vyr-ranking-area.is-open .vyr-ranking-area-trigger svg {
+          transform: rotate(180deg);
+        }
+
+        .vyr-ranking-area select {
+          display: none;
+        }
+
+        .vyr-ranking-area-menu {
+          position: absolute;
+          top: calc(100% + 7px);
+          right: 0;
+          min-width: 132px;
+          padding: 5px;
+          border: 1px solid rgba(212, 178, 106, 0.26);
+          border-radius: 12px;
           background: #15131a;
+          box-shadow: 0 18px 44px rgba(0, 0, 0, 0.52);
+          z-index: 90;
+        }
+
+        .vyr-ranking-area-menu button {
+          width: 100%;
+          min-height: 34px;
+          display: flex;
+          align-items: center;
+          border: 0;
+          border-radius: 8px;
+          background: transparent;
+          color: #c5c0b6;
+          cursor: pointer;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1;
+          padding: 0 10px;
+          text-align: left;
+          white-space: nowrap;
+        }
+
+        .vyr-ranking-area-menu button:hover,
+        .vyr-ranking-area-menu button:focus-visible {
+          background: rgba(255, 255, 255, 0.06);
           color: #f3f0ea;
+          outline: 0;
+        }
+
+        .vyr-ranking-area-menu button.is-selected {
+          background: linear-gradient(135deg, #f0dda8, #d4b26a);
+          color: #241a0a;
         }
 
         .vyr-ranking-list {
@@ -743,6 +858,22 @@ export default function Page() {
             justify-content: flex-end;
             background: transparent;
             font-size: 11.5px;
+          }
+
+          .vyr-ranking-area-trigger {
+            min-height: 29px;
+            color: #c5c0b6;
+            font-size: 11.5px;
+          }
+
+          .vyr-ranking-area-menu {
+            top: calc(100% + 6px);
+            min-width: 112px;
+          }
+
+          .vyr-ranking-area-menu button {
+            min-height: 32px;
+            font-size: 12px;
           }
 
           .vyr-ranking-area select {
