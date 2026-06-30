@@ -2525,6 +2525,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             display: block;
           }
 
+          .mobile-about-section {
+            margin-top: 10px;
+          }
+
           .section-title {
             margin-bottom: 12px;
           }
