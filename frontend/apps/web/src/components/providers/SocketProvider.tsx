@@ -54,6 +54,7 @@ export const SocketProvider = ({
       }
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSocket(socketInstance);
 
     return () => {
