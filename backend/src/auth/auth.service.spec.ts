@@ -1,5 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -258,6 +259,53 @@ describe('AuthService', () => {
       email: 'new-google@nightlife.vn',
       displayName: 'New Google Member',
     });
+  });
+
+  it('starts LINE OAuth with email scope and web login fallback', () => {
+    configService.get.mockImplementation((key: string, defaultValue?: string) => {
+      if (key === 'LINE_CHANNEL_ID') {
+        return '2010552841';
+      }
+
+      if (key === 'LINE_CALLBACK_URL') {
+        return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
+      }
+
+      if (key === 'JWT_EXPIRES_IN') {
+        return defaultValue ?? '1d';
+      }
+
+      return defaultValue;
+    });
+
+    const response = {
+      cookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as jest.Mocked<Response>;
+
+    service.redirectToLineLogin('/tai-khoan', response);
+
+    const redirectUrl = new URL(response.redirect.mock.calls[0][0]);
+    expect(redirectUrl.origin).toBe('https://access.line.me');
+    expect(redirectUrl.pathname).toBe('/oauth2/v2.1/authorize');
+    expect(redirectUrl.searchParams.get('client_id')).toBe('2010552841');
+    expect(redirectUrl.searchParams.get('redirect_uri')).toBe(
+      'https://demonightlight.test9.io.vn/api/backend/auth/line/callback',
+    );
+    expect(redirectUrl.searchParams.get('scope')).toBe(
+      'profile openid email',
+    );
+    expect(redirectUrl.searchParams.get('disable_auto_login')).toBe('true');
+    expect(response.cookie).toHaveBeenCalledWith(
+      'line_oauth_redirect',
+      '/tai-khoan',
+      expect.objectContaining({
+        httpOnly: true,
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      }),
+    );
   });
 
   it('revokes the current token on logout', async () => {

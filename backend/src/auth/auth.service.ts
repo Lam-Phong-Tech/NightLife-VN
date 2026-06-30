@@ -185,6 +185,7 @@ export class AuthService {
     authorizationUrl.searchParams.set('state', state);
     authorizationUrl.searchParams.set('scope', 'profile openid email');
     authorizationUrl.searchParams.set('nonce', nonce);
+    authorizationUrl.searchParams.set('disable_auto_login', 'true');
 
     return response.redirect(authorizationUrl.toString());
   }
