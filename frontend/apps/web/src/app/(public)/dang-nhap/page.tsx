@@ -258,11 +258,11 @@ export default function Page() {
 
       googleButtonRef.current.innerHTML = "";
       window.google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: "outline",
+        theme: "filled_black",
         size: "large",
         shape: "rectangular",
         text: isReg ? "signup_with" : "signin_with",
-        width: Math.min(360, googleButtonRef.current.offsetWidth || 180),
+        width: Math.max(130, Math.min(360, googleButtonRef.current.offsetWidth || 180)),
       });
     };
 
@@ -559,16 +559,28 @@ export default function Page() {
                   {googleClientId ? (
                     <div
                       style={{
-                        minHeight: 46,
+                        height: 46,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        minWidth: 0,
+                        padding: "0 4px",
+                        border: `1px solid ${colors.borderStrong}`,
+                        borderRadius: 13,
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)), #101013",
                         overflow: "hidden",
                         opacity: isGoogleSubmitting ? 0.68 : 1,
                         pointerEvents: isGoogleSubmitting ? "none" : "auto",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.22)",
                       }}
                     >
-                      <div ref={googleButtonRef} style={{ width: "100%", minHeight: 40 }} />
+                      <div
+                        ref={googleButtonRef}
+                        className="nl-google-login-button"
+                        style={{ width: "100%", height: 40, overflow: "hidden", borderRadius: 10 }}
+                      />
                     </div>
                   ) : (
                     <SocialButton
@@ -598,6 +610,16 @@ export default function Page() {
         </section>
       </div>
       <style jsx global>{`
+        .nl-google-login-button,
+        .nl-google-login-button > div,
+        .nl-google-login-button iframe {
+          max-width: 100% !important;
+        }
+
+        .nl-google-login-button iframe {
+          border-radius: 10px !important;
+        }
+
         @media (max-width: 767px) {
           .nl-login-page {
             overflow-x: hidden;
