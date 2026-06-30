@@ -11,7 +11,8 @@ export type RegisterPayload = LoginPayload & {
 };
 
 export type GoogleLoginPayload = {
-  credential: string;
+  credential?: string;
+  accessToken?: string;
 };
 
 export type GoogleLoginConfig = {

@@ -35,32 +35,26 @@ const buildTimeGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 const lineLogoSrc =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306C755'/%3E%3Cpath fill='%23fff' d='M32 14c-11.6 0-21 7.4-21 16.6 0 8.2 7.5 15.1 17.6 16.4.7.1 1.6.5 1.8 1.1.2.5.1 1.3.1 1.8l-.3 2c-.1.6-.4 2.2 1.8 1.2 2.2-1 11.8-7 16.1-12 3-3.3 4.9-6.7 4.9-10.5C53 21.4 43.6 14 32 14Z'/%3E%3Cpath fill='%2306C755' d='M20.4 35.2h8v-3.1h-4.5v-7.3h-3.5v10.4Zm10.2 0h3.5V24.8h-3.5v10.4Zm6 0H40v-5.6l4.3 5.6h3V24.8h-3.4v5.5l-4.2-5.5h-3.1v10.4Zm12.8 0v-3h-3.9v-1h3.5v-2.8h-3.5v-.7h3.9v-2.9h-7.2v10.4h7.2Z'/%3E%3C/svg%3E";
 
-type GoogleCredentialResponse = {
-  credential?: string;
+type GoogleTokenResponse = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
 };
 
-type GoogleButtonText = "signin_with" | "signup_with";
+type GoogleTokenClient = {
+  requestAccessToken: (options?: { prompt?: string }) => void;
+};
 
 declare global {
   interface Window {
     google?: {
       accounts: {
-        id: {
-          initialize: (options: {
+        oauth2: {
+          initTokenClient: (options: {
             client_id: string;
-            callback: (response: GoogleCredentialResponse) => void;
-            ux_mode?: "popup" | "redirect";
-          }) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: {
-              theme?: "outline" | "filled_blue" | "filled_black";
-              size?: "large" | "medium" | "small";
-              shape?: "rectangular" | "pill" | "circle" | "square";
-              text?: GoogleButtonText;
-              width?: number;
-            },
-          ) => void;
+            scope: string;
+            callback: (response: GoogleTokenResponse) => void;
+          }) => GoogleTokenClient;
         };
       };
     };
@@ -92,7 +86,7 @@ export default function Page() {
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [googleClientId, setGoogleClientId] = useState(buildTimeGoogleClientId);
   const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
-  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
 
@@ -176,9 +170,9 @@ export default function Page() {
     }
   };
 
-  const handleGoogleCredential = useCallback(
-    async (response: GoogleCredentialResponse) => {
-      if (!response.credential) {
+  const handleGoogleTokenResponse = useCallback(
+    async (response: GoogleTokenResponse) => {
+      if (response.error || !response.access_token) {
         setMessageTone("error");
         setMessage("Không nhận được thông tin xác thực từ Google.");
         return;
@@ -189,7 +183,7 @@ export default function Page() {
 
       try {
         const session = await loginGoogleMember({
-          credential: response.credential,
+          accessToken: response.access_token,
         });
         setAuthSession(session);
         window.location.href = redirectTo;
@@ -239,35 +233,27 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (!googleClientId || !googleButtonRef.current) {
+    if (!googleClientId) {
+      googleTokenClientRef.current = null;
       return;
     }
 
     let mounted = true;
 
-    const renderGoogleButton = () => {
-      if (!mounted || !window.google || !googleButtonRef.current) {
+    const initializeGoogleTokenClient = () => {
+      if (!mounted || !window.google?.accounts.oauth2) {
         return;
       }
 
-      window.google.accounts.id.initialize({
+      googleTokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
         client_id: googleClientId,
-        callback: handleGoogleCredential,
-        ux_mode: "popup",
-      });
-
-      googleButtonRef.current.innerHTML = "";
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: "filled_black",
-        size: "large",
-        shape: "rectangular",
-        text: isReg ? "signup_with" : "signin_with",
-        width: Math.max(130, Math.min(360, googleButtonRef.current.offsetWidth || 180)),
+        scope: "openid email profile",
+        callback: handleGoogleTokenResponse,
       });
     };
 
-    if (window.google) {
-      renderGoogleButton();
+    if (window.google?.accounts.oauth2) {
+      initializeGoogleTokenClient();
       return () => {
         mounted = false;
       };
@@ -276,12 +262,12 @@ export default function Page() {
     const existingScript = document.getElementById("google-identity-services");
 
     if (existingScript) {
-      existingScript.addEventListener("load", renderGoogleButton, {
+      existingScript.addEventListener("load", initializeGoogleTokenClient, {
         once: true,
       });
       return () => {
         mounted = false;
-        existingScript.removeEventListener("load", renderGoogleButton);
+        existingScript.removeEventListener("load", initializeGoogleTokenClient);
       };
     }
 
@@ -290,7 +276,7 @@ export default function Page() {
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
     script.defer = true;
-    script.onload = renderGoogleButton;
+    script.onload = initializeGoogleTokenClient;
     script.onerror = () => {
       if (!mounted) {
         return;
@@ -306,7 +292,38 @@ export default function Page() {
       script.onload = null;
       script.onerror = null;
     };
-  }, [googleClientId, handleGoogleCredential, isReg]);
+  }, [googleClientId, handleGoogleTokenResponse]);
+
+  const startGoogleLogin = () => {
+    if (isGoogleSubmitting) {
+      return;
+    }
+
+    if (isGoogleConfigLoading) {
+      setMessageTone("error");
+      setMessage("Đang tải cấu hình đăng nhập Google. Vui lòng thử lại sau vài giây.");
+      return;
+    }
+
+    if (!googleClientId) {
+      setMessageTone("error");
+      setMessage(
+        "Thiếu GOOGLE_CLIENT_ID trên backend hoặc NEXT_PUBLIC_GOOGLE_CLIENT_ID cho đăng nhập Google.",
+      );
+      return;
+    }
+
+    if (!googleTokenClientRef.current) {
+      setMessageTone("error");
+      setMessage("Google đang tải chưa xong. Vui lòng thử lại sau vài giây.");
+      return;
+    }
+
+    setMessage("");
+    googleTokenClientRef.current.requestAccessToken({
+      prompt: "select_account",
+    });
+  };
 
   const startLineConsent = () => {
     const params = new URLSearchParams({ redirect: redirectTo });
@@ -556,84 +573,13 @@ export default function Page() {
                     gap: 12,
                   }}
                 >
-                  {googleClientId ? (
-                    <div
-                      aria-label="Đăng nhập bằng Google"
-                      style={{
-                        height: 46,
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 10,
-                        minWidth: 0,
-                        padding: "0 14px",
-                        border: `1px solid ${colors.borderStrong}`,
-                        borderRadius: 13,
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)), #101013",
-                        overflow: "hidden",
-                        opacity: isGoogleSubmitting ? 0.68 : 1,
-                        pointerEvents: isGoogleSubmitting ? "none" : "auto",
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.22)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        title="Google"
-                        style={{
-                          width: 20,
-                          height: 20,
-                          flex: "none",
-                          background: `url("${googleLogoSrc}") center / contain no-repeat`,
-                        }}
-                      />
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          minWidth: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          color: colors.text,
-                          fontSize: 13.5,
-                          fontWeight: 850,
-                          lineHeight: 1,
-                        }}
-                      >
-                        Google
-                      </span>
-                      <div
-                        ref={googleButtonRef}
-                        className="nl-google-login-button"
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          width: "100%",
-                          height: "100%",
-                          opacity: 0,
-                          zIndex: 2,
-                          overflow: "hidden",
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <SocialButton
-                      logoSrc={googleLogoSrc}
-                      logoAlt="Google"
-                      label="Google"
-                      onClick={() => {
-                        setMessageTone("error");
-                        setMessage(
-                          isGoogleConfigLoading
-                            ? "Đang tải cấu hình đăng nhập Google. Vui lòng thử lại sau vài giây."
-                            : "Thiếu GOOGLE_CLIENT_ID trên backend hoặc NEXT_PUBLIC_GOOGLE_CLIENT_ID cho đăng nhập Google.",
-                        );
-                      }}
-                    />
-                  )}
+                  <SocialButton
+                    logoSrc={googleLogoSrc}
+                    logoAlt="Google"
+                    label="Google"
+                    onClick={startGoogleLogin}
+                    disabled={isGoogleSubmitting}
+                  />
                   <SocialButton
                     logoSrc={lineLogoSrc}
                     logoAlt="LINE"
@@ -647,17 +593,6 @@ export default function Page() {
         </section>
       </div>
       <style jsx global>{`
-        .nl-google-login-button,
-        .nl-google-login-button > div,
-        .nl-google-login-button iframe {
-          width: 100% !important;
-          height: 100% !important;
-        }
-
-        .nl-google-login-button iframe {
-          border-radius: 13px !important;
-        }
-
         @media (max-width: 767px) {
           .nl-login-page {
             overflow-x: hidden;
@@ -791,17 +726,20 @@ function SocialButton({
   logoAlt,
   label,
   onClick,
+  disabled = false,
 }: {
   logoSrc: string;
   logoAlt: string;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-label={`Đăng nhập bằng ${label}`}
       onClick={onClick}
+      disabled={disabled}
       style={{
         minHeight: 46,
         display: "inline-flex",
@@ -819,7 +757,8 @@ function SocialButton({
         fontSize: 13.5,
         fontWeight: 850,
         lineHeight: 1,
-        cursor: "pointer",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.68 : 1,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.22)",
       }}
     >

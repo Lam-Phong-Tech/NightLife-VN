@@ -261,6 +261,64 @@ describe('AuthService', () => {
     });
   });
 
+  it('creates a member with a verified Google access token from the popup flow', async () => {
+    const member = {
+      ...user,
+      id: 'member-3',
+      email: 'access-google@nightlife.vn',
+      displayName: 'Access Google Member',
+      role: 'USER',
+      tier: 'FREE',
+    };
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          audience: 'google-client-id',
+          email: 'Access-Google@Nightlife.vn',
+          verified_email: true,
+          user_id: 'google-access-sub',
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          email: 'Access-Google@Nightlife.vn',
+          name: 'Access Google Member',
+          sub: 'google-access-sub',
+        }),
+      });
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.createGoogleMember.mockResolvedValue(member as never);
+
+    await expect(
+      service.loginGoogleMember({
+        accessToken: 'google-access-token',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accessToken: 'jwt-token',
+      }),
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://oauth2.googleapis.com/tokeninfo?access_token=google-access-token',
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: 'Bearer google-access-token',
+        },
+      },
+    );
+    expect(usersService.createGoogleMember).toHaveBeenCalledWith({
+      email: 'access-google@nightlife.vn',
+      displayName: 'Access Google Member',
+    });
+  });
+
   it('exposes the public Google client id for runtime frontend config', () => {
     expect(service.googleLoginConfig()).toEqual({
       configured: true,

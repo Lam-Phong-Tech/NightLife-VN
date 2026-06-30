@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   ServiceUnavailableException,
@@ -31,6 +32,26 @@ type GoogleTokenInfoResponse = {
   sub?: string;
   error?: string;
   error_description?: string;
+};
+
+type GoogleAccessTokenInfoResponse = {
+  aud?: string;
+  audience?: string;
+  issued_to?: string;
+  email?: string;
+  email_verified?: boolean | string;
+  verified_email?: boolean | string;
+  sub?: string;
+  user_id?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type GoogleUserInfoResponse = {
+  email?: string;
+  email_verified?: boolean | string;
+  name?: string;
+  sub?: string;
 };
 
 type LineTokenResponse = {
@@ -132,7 +153,7 @@ export class AuthService {
   }
 
   async loginGoogleMember(dto: GoogleAuthDto, sessionContext?: SessionContext) {
-    const googleAccount = await this.verifyGoogleCredential(dto.credential);
+    const googleAccount = await this.verifyGoogleAccount(dto);
     const existingUser = await this.usersService.findByEmail(
       googleAccount.email,
     );
@@ -371,6 +392,18 @@ export class AuthService {
     };
   }
 
+  private async verifyGoogleAccount(dto: GoogleAuthDto) {
+    if (dto.credential) {
+      return this.verifyGoogleCredential(dto.credential);
+    }
+
+    if (dto.accessToken) {
+      return this.verifyGoogleAccessToken(dto.accessToken);
+    }
+
+    throw new BadRequestException('Google credential or access token required');
+  }
+
   private async verifyGoogleCredential(credential: string) {
     const clientId = this.getGoogleClientId();
 
@@ -417,6 +450,86 @@ export class AuthService {
       email: tokenInfo.email.toLowerCase(),
       displayName: tokenInfo.name?.trim() || undefined,
     };
+  }
+
+  private async verifyGoogleAccessToken(accessToken: string) {
+    const clientId = this.getGoogleClientId();
+
+    if (!clientId) {
+      throw new ServiceUnavailableException('Google login is not configured');
+    }
+
+    let tokenInfo: GoogleAccessTokenInfoResponse;
+
+    try {
+      const response = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(
+          accessToken,
+        )}`,
+      );
+
+      if (!response.ok) {
+        throw new UnauthorizedException('Invalid Google access token');
+      }
+
+      tokenInfo = (await response.json()) as GoogleAccessTokenInfoResponse;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException('Invalid Google access token');
+    }
+
+    const audience = tokenInfo.aud || tokenInfo.audience || tokenInfo.issued_to;
+    const emailVerified =
+      tokenInfo.email_verified === true ||
+      tokenInfo.email_verified === 'true' ||
+      tokenInfo.verified_email === true ||
+      tokenInfo.verified_email === 'true';
+
+    if (
+      tokenInfo.error ||
+      audience !== clientId ||
+      !tokenInfo.email ||
+      !emailVerified
+    ) {
+      throw new UnauthorizedException('Invalid Google access token');
+    }
+
+    const userInfo = await this.fetchGoogleUserInfo(accessToken);
+    const tokenEmail = tokenInfo.email.toLowerCase();
+    const userInfoEmail = userInfo?.email?.toLowerCase();
+
+    return {
+      sub: tokenInfo.sub || tokenInfo.user_id || userInfo?.sub,
+      email: tokenEmail,
+      displayName:
+        userInfoEmail === tokenEmail
+          ? userInfo?.name?.trim() || undefined
+          : undefined,
+    };
+  }
+
+  private async fetchGoogleUserInfo(accessToken: string) {
+    try {
+      const response = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        return undefined;
+      }
+
+      return (await response.json()) as GoogleUserInfoResponse;
+    } catch {
+      return undefined;
+    }
   }
 
   private getGoogleClientId() {
