@@ -15,6 +15,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\""
   },
   "dependencies": {
+    "socket.io-client": "^4.8.3",
     "turbo": "2.9.18"
   },
   "devDependencies": {

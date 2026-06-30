@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { SiteChrome } from "@/components/layout/SiteChrome";
+import { SocketProvider } from "@/components/providers/SocketProvider";
 
 // metadata: Next.js đọc object này để sinh ra thẻ <title>, <meta> trong <head>.
 // Đây là tính năng của App Router (không cần tự viết thẻ <head>).
@@ -25,7 +26,9 @@ export default function RootLayout({
         <Script src="/support.js" strategy="beforeInteractive" />
       </head>
       <body>
-        <SiteChrome>{children}</SiteChrome>
+        <SocketProvider>
+          <SiteChrome>{children}</SiteChrome>
+        </SocketProvider>
       </body>
     </html>
   );
