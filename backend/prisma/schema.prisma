@@ -394,6 +394,7 @@ model Area {
   ward      String?
   status    AreaStatus @default(ACTIVE)
   stores    Store[]
+  rankingConfigs RankingConfig[]
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
   deletedAt DateTime?  @map("deleted_at")
@@ -879,10 +880,16 @@ model RankingConfig {
   id          String              @id @default(uuid()) @db.Uuid
   createdById String?             @map("created_by_id") @db.Uuid
   createdBy   User?               @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  areaId      String?             @map("area_id") @db.Uuid
+  area        Area?               @relation(fields: [areaId], references: [id], onDelete: SetNull)
   targetType  RankingTargetType   @map("target_type")
   targetId    String              @map("target_id") @db.Uuid
+  cityCode    String              @default("all") @map("city_code")
+  category    StoreCategory?
+  scope       String              @default("global")
   manualScore Int                 @default(0) @map("manual_score")
   pinRank     Int?                @map("pin_rank")
+  sponsored   Boolean             @default(false)
   reason      String?
   status      RankingConfigStatus @default(ACTIVE)
   startsAt    DateTime?           @map("starts_at")
@@ -892,7 +899,9 @@ model RankingConfig {
   deletedAt   DateTime?           @map("deleted_at")
 
   @@index([createdById])
+  @@index([areaId])
   @@index([targetType, targetId])
+  @@index([targetType, cityCode, category, scope, pinRank])
   @@index([status])
   @@map("ranking_configs")
 }

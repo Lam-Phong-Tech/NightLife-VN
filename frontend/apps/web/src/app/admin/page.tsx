@@ -11,17 +11,27 @@ import {
   Home,
   LogOut,
   Newspaper,
+  Plus,
+  RefreshCcw,
   ReceiptText,
+  Save,
   Search,
   ShieldCheck,
   Star,
   TicketPercent,
   Trophy,
+  Trash2,
   UsersRound,
   type LucideIcon,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  adminRankingsApi,
+  type AdminRankingConfig,
+  type AdminRankingTargetOption,
+} from '@/lib/api/admin-rankings';
 import { ApiError, apiClient } from '@/lib/api/client';
+import type { RankingCategory, RankingCity, RankingTargetType } from '@/lib/api/rankings';
 import { clearAuthSession } from '@/lib/auth/session';
 
 const colors = {
@@ -80,6 +90,21 @@ type AdminNavItem = {
   count?: string;
 };
 
+type RankingFormState = {
+  targetType: RankingTargetType;
+  targetId: string;
+  cityCode: RankingCity;
+  category: 'all' | RankingCategory;
+  scope: string;
+  pinRank: string;
+  manualScore: string;
+  sponsored: boolean;
+  status: 'ACTIVE' | 'PAUSED' | 'EXPIRED';
+  startsAt: string;
+  endsAt: string;
+  reason: string;
+};
+
 const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
   {
     title: 'Vận hành',
@@ -110,6 +135,51 @@ const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
   },
 ];
 
+const rankingCityOptions: Array<{ value: RankingCity; label: string }> = [
+  { value: 'all', label: 'Tổng hợp' },
+  { value: 'hn', label: 'Hà Nội' },
+  { value: 'hcm', label: 'TP.HCM' },
+];
+
+const rankingCategoryOptions: Array<{ value: 'all' | RankingCategory; label: string }> = [
+  { value: 'all', label: 'Tất cả loại hình' },
+  { value: 'bar', label: 'Bar' },
+  { value: 'club', label: 'Club' },
+  { value: 'lounge', label: 'Lounge' },
+  { value: 'girls_bar', label: 'Girls bar' },
+  { value: 'karaoke', label: 'Karaoke' },
+  { value: 'massage_spa', label: 'Massage/Spa' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'casino', label: 'Casino' },
+];
+
+const defaultRankingForm: RankingFormState = {
+  targetType: 'CAST',
+  targetId: '',
+  cityCode: 'all',
+  category: 'all',
+  scope: 'global',
+  pinRank: '1',
+  manualScore: '100',
+  sponsored: false,
+  status: 'ACTIVE',
+  startsAt: '',
+  endsAt: '',
+  reason: '',
+};
+
+const formatDateInput = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 16) : '';
+};
+
+const displayCategory = (value?: string | null) =>
+  rankingCategoryOptions.find((option) => option.value.toUpperCase() === value)?.label ??
+  rankingCategoryOptions.find((option) => option.value === value)?.label ??
+  value ??
+  'Tất cả';
+
 
 const recentBookings = [
   ['Minh H.', 'Club Lumiere', '4', '21:30', 'Mới'],
@@ -124,19 +194,28 @@ export default function AdminDashboardPage() {
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
   const [statusMessage, setStatusMessage] = useState('Dang tai du lieu admin...');
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [rankings, setRankings] = useState<AdminRankingConfig[]>([]);
+  const [rankingOptions, setRankingOptions] = useState<AdminRankingTargetOption[]>([]);
+  const [rankingForm, setRankingForm] = useState<RankingFormState>(defaultRankingForm);
+  const [editingRankingId, setEditingRankingId] = useState<string | null>(null);
+  const [rankingSavingId, setRankingSavingId] = useState<string | null>(null);
+  const [rankingStatusMessage, setRankingStatusMessage] = useState('Đang tải cấu hình ranking...');
 
   const loadAdminData = async () => {
     try {
-      const [storeData, bookingData, billData] = await Promise.all([
+      const [storeData, bookingData, billData, rankingData] = await Promise.all([
         apiClient<AdminStore[]>('/partner/stores'),
         apiClient<AdminBooking[]>('/partner/bookings'),
         apiClient<SensitiveBill[]>('/admin/sensitive-bills'),
+        adminRankingsApi.list(),
       ]);
 
       setStores(storeData);
       setBookings(bookingData);
       setSensitiveBills(billData);
+      setRankings(rankingData);
       setStatusMessage('Admin dang xem va duyet du lieu nhay cam bang token ADMIN.');
+      setRankingStatusMessage(`Đã tải ${rankingData.length} cấu hình ranking.`);
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         clearAuthSession();
@@ -145,12 +224,39 @@ export default function AdminDashboardPage() {
       }
 
       setStatusMessage('Chua ket noi duoc backend. Kiem tra backend/NEXT_PUBLIC_API_URL.');
+      setRankingStatusMessage('Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.');
     }
   };
+
+  const loadRankingOptions = useCallback(async () => {
+    try {
+      const options = await adminRankingsApi.options({
+        targetType: rankingForm.targetType,
+        city: rankingForm.cityCode,
+        category: rankingForm.category,
+        limit: 80,
+      });
+
+      setRankingOptions(options);
+      setRankingForm((current) => {
+        if (current.targetId && options.some((option) => option.id === current.targetId)) {
+          return current;
+        }
+
+        return { ...current, targetId: options[0]?.id ?? '' };
+      });
+    } catch {
+      setRankingOptions([]);
+    }
+  }, [rankingForm.category, rankingForm.cityCode, rankingForm.targetType]);
 
   useEffect(() => {
     void Promise.resolve().then(loadAdminData);
   }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadRankingOptions);
+  }, [loadRankingOptions]);
 
   const stats = useMemo(
     () => [
@@ -190,6 +296,81 @@ export default function AdminDashboardPage() {
       await loadAdminData();
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  const resetRankingForm = () => {
+    setEditingRankingId(null);
+    setRankingForm(defaultRankingForm);
+  };
+
+  const editRanking = (ranking: AdminRankingConfig) => {
+    setEditingRankingId(ranking.id);
+    setRankingForm({
+      targetType: ranking.targetType,
+      targetId: ranking.targetId,
+      cityCode: ranking.cityCode,
+      category: (ranking.category?.toLowerCase() as RankingCategory | undefined) ?? 'all',
+      scope: ranking.scope,
+      pinRank: ranking.pinRank ? String(ranking.pinRank) : '',
+      manualScore: String(ranking.manualScore),
+      sponsored: ranking.sponsored,
+      status: ranking.status === 'DELETED' ? 'EXPIRED' : ranking.status,
+      startsAt: formatDateInput(ranking.startsAt),
+      endsAt: formatDateInput(ranking.endsAt),
+      reason: ranking.reason ?? '',
+    });
+    setRankingStatusMessage(`Đang sửa ${ranking.targetName}.`);
+  };
+
+  const saveRanking = async () => {
+    if (!rankingForm.targetId) {
+      setRankingStatusMessage('Chọn Cast hoặc Quán trước khi lưu ranking.');
+      return;
+    }
+
+    const payload = {
+      ...rankingForm,
+      pinRank: rankingForm.pinRank ? Number(rankingForm.pinRank) : null,
+      manualScore: rankingForm.manualScore ? Number(rankingForm.manualScore) : 0,
+      startsAt: rankingForm.startsAt || null,
+      endsAt: rankingForm.endsAt || null,
+      reason: rankingForm.reason || null,
+    };
+
+    setRankingSavingId(editingRankingId ?? 'new');
+    try {
+      if (editingRankingId) {
+        await adminRankingsApi.update(editingRankingId, payload);
+      } else {
+        await adminRankingsApi.create(payload);
+      }
+
+      const rankingData = await adminRankingsApi.list();
+      setRankings(rankingData);
+      setRankingStatusMessage(`Đã lưu ranking. Tổng ${rankingData.length} cấu hình.`);
+      resetRankingForm();
+    } catch (error) {
+      setRankingStatusMessage(error instanceof ApiError ? error.message : 'Không lưu được ranking.');
+    } finally {
+      setRankingSavingId(null);
+    }
+  };
+
+  const deleteRanking = async (rankingId: string) => {
+    setRankingSavingId(rankingId);
+    try {
+      await adminRankingsApi.delete(rankingId);
+      const rankingData = await adminRankingsApi.list();
+      setRankings(rankingData);
+      setRankingStatusMessage(`Đã xóa mềm ranking. Còn ${rankingData.length} cấu hình.`);
+      if (editingRankingId === rankingId) {
+        resetRankingForm();
+      }
+    } catch (error) {
+      setRankingStatusMessage(error instanceof ApiError ? error.message : 'Không xóa được ranking.');
+    } finally {
+      setRankingSavingId(null);
     }
   };
 
@@ -371,6 +552,202 @@ export default function AdminDashboardPage() {
                 );
               })}
             </div>
+
+            <article data-testid="admin-ranking-panel" style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                <div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Điều khiển ranking thủ công</h2>
+                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>CAST / STORE PINNING</div>
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                <button type="button" onClick={resetRankingForm} style={{ minHeight: 36, border: `1px solid ${colors.borderGold22}`, borderRadius: 10, background: colors.surface2, color: colors.gold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                  <Plus size={15} />
+                  Tạo mới
+                </button>
+                <button type="button" onClick={() => void loadAdminData()} style={{ minHeight: 36, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                  <RefreshCcw size={15} />
+                  Tải lại
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px,.92fr) minmax(0,1.08fr)', gap: '16px', padding: '18px 20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px', alignContent: 'start' }}>
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Loại target
+                    <select
+                      value={rankingForm.targetType}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, targetType: event.target.value as RankingTargetType, targetId: '' }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      <option value="CAST">Cast</option>
+                      <option value="STORE">Quán</option>
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    City
+                    <select
+                      value={rankingForm.cityCode}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, cityCode: event.target.value as RankingCity, targetId: '' }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      {rankingCityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Cast / Quán
+                    <select
+                      value={rankingForm.targetId}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, targetId: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      {rankingOptions.length ? null : <option value="">Không có target phù hợp</option>}
+                      {rankingOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name} · {option.area ?? option.city ?? 'All'} · {displayCategory(option.category)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Category
+                    <select
+                      value={rankingForm.category}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, category: event.target.value as RankingFormState['category'], targetId: '' }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      {rankingCategoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Scope
+                    <input
+                      value={rankingForm.scope}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, scope: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    pinRank
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={rankingForm.pinRank}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, pinRank: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    manualScore
+                    <input
+                      type="number"
+                      min={0}
+                      value={rankingForm.manualScore}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, manualScore: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Bắt đầu
+                    <input
+                      type="datetime-local"
+                      value={rankingForm.startsAt}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, startsAt: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Kết thúc
+                    <input
+                      type="datetime-local"
+                      value={rankingForm.endsAt}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, endsAt: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 9, color: colors.text2, fontSize: 12.5, fontWeight: 800 }}>
+                    <input
+                      type="checkbox"
+                      checked={rankingForm.sponsored}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, sponsored: event.target.checked }))}
+                    />
+                    Badge Tài trợ
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Trạng thái
+                    <select
+                      value={rankingForm.status}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, status: event.target.value as RankingFormState['status'] }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="PAUSED">PAUSED</option>
+                      <option value="EXPIRED">EXPIRED</option>
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Ghi chú vận hành
+                    <input
+                      value={rankingForm.reason}
+                      onChange={(event) => setRankingForm((current) => ({ ...current, reason: event.target.value }))}
+                      placeholder="VD: chiến dịch Top tháng 7, ưu tiên store sponsor..."
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <button type="button" disabled={rankingSavingId !== null} onClick={() => void saveRanking()} style={{ minHeight: 40, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontWeight: 900, cursor: 'pointer' }}>
+                    <Save size={16} />
+                    {editingRankingId ? 'Lưu thay đổi' : 'Tạo ranking'}
+                  </button>
+                  <div style={{ minHeight: 40, display: 'flex', alignItems: 'center', color: colors.muted, fontSize: 12 }}>
+                    {rankingStatusMessage}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: '9px', alignContent: 'start' }}>
+                  {rankings.map((ranking) => (
+                    <div key={ranking.id} data-testid="admin-ranking-row" style={{ display: 'grid', gridTemplateColumns: '40px minmax(0,1fr) 168px', gap: '10px', alignItems: 'center', border: `1px solid ${colors.borderSoft}`, borderRadius: 12, background: 'rgba(255,255,255,.025)', padding: '10px 12px' }}>
+                      <span style={{ width: 34, height: 34, borderRadius: 10, background: ranking.pinRank === 1 ? colors.goldGrad : 'rgba(212,178,106,.12)', color: ranking.pinRank === 1 ? colors.onGold : colors.gold, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
+                        {ranking.pinRank ?? '-'}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'flex', gap: 8, alignItems: 'center', color: colors.text, fontSize: 13, fontWeight: 900 }}>
+                          {ranking.targetName}
+                          {ranking.sponsored ? <span style={{ border: `1px solid ${colors.borderGold32}`, borderRadius: 999, color: colors.goldBright, padding: '3px 7px', fontSize: 10 }}>Tài trợ</span> : null}
+                        </span>
+                        <span style={{ display: 'block', marginTop: 4, color: colors.muted, fontSize: 11.5 }}>
+                          {ranking.targetType} · {ranking.cityCode.toUpperCase()} · {displayCategory(ranking.category)} · {ranking.scope} · score {ranking.manualScore}
+                        </span>
+                      </span>
+                      <span style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                        <button type="button" onClick={() => editRanking(ranking)} style={{ minHeight: 32, border: `1px solid ${colors.borderGold22}`, borderRadius: 9, background: colors.surface2, color: colors.gold, padding: '0 10px', fontWeight: 800, cursor: 'pointer' }}>
+                          Sửa
+                        </button>
+                        <button type="button" disabled={rankingSavingId === ranking.id} onClick={() => void deleteRanking(ranking.id)} aria-label={`Xóa ranking ${ranking.targetName}`} style={{ width: 34, minHeight: 32, border: `1px solid rgba(224,114,158,.35)`, borderRadius: 9, background: 'rgba(224,114,158,.08)', color: colors.neonPink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <Trash2 size={15} />
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                  {!rankings.length ? (
+                    <div style={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px dashed ${colors.borderGold22}`, borderRadius: 12, color: colors.muted, fontSize: 13 }}>
+                      Chưa có cấu hình ranking. Tạo Top đầu tiên ở form bên trái.
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </article>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.45fr) minmax(340px,.55fr)', gap: '14px', marginTop: '14px' }}>
               <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, padding: '20px' }}>

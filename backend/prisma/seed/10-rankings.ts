@@ -52,6 +52,7 @@ export async function seedRankings(
     const data = {
       manualScore: 100 - (r.pinRank - 1) * 10,
       pinRank: r.pinRank,
+      sponsored: r.pinRank === 1,
       reason: r.reason,
       status: 'ACTIVE' as const,
     };
@@ -86,6 +87,7 @@ export async function seedRankings(
     const data = {
       manualScore: 100 - (r.pinRank - 1) * 10,
       pinRank: r.pinRank,
+      sponsored: r.pinRank === 1,
       reason: r.reason,
       status: 'ACTIVE' as const,
     };

@@ -21,6 +21,85 @@ export class PublicDiscoveryMetaDto {
   sort!: 'newest' | 'nearest' | 'priority';
 }
 
+export class PublicRankingItemDto {
+  @ApiProperty({ example: 1 })
+  rank!: number;
+
+  @ApiProperty({ enum: ['CAST', 'STORE'], example: 'CAST' })
+  targetType!: 'CAST' | 'STORE';
+
+  @ApiProperty({ example: 'cast_01' })
+  targetId!: string;
+
+  @ApiProperty({ example: 'Yuna' })
+  name!: string;
+
+  @ApiProperty({ example: 'yuna-neon' })
+  slug!: string;
+
+  @ApiPropertyOptional({
+    example: '/media/demo/casts/yuna-neon.jpg',
+    nullable: true,
+  })
+  image?: string | null;
+
+  @ApiPropertyOptional({ example: 'Tay Ho', nullable: true })
+  area?: string | null;
+
+  @ApiProperty({ example: 'Ha Noi' })
+  city!: string;
+
+  @ApiPropertyOptional({ example: 'hn' })
+  cityCode?: string;
+
+  @ApiProperty({ enum: StoreCategory, example: StoreCategory.CLUB })
+  category!: StoreCategory;
+
+  @ApiProperty({ example: true })
+  sponsored!: boolean;
+
+  @ApiPropertyOptional({ example: 1, nullable: true })
+  pinRank?: number | null;
+
+  @ApiProperty({ example: 100 })
+  manualScore!: number;
+
+  @ApiProperty({ example: '/casts/yuna-neon' })
+  href!: string;
+
+  @ApiPropertyOptional({ example: '+84243456007', nullable: true })
+  phone?: string | null;
+}
+
+export class PublicRankingMetaDto {
+  @ApiProperty({ enum: ['CAST', 'STORE'], example: 'CAST' })
+  targetType!: 'CAST' | 'STORE';
+
+  @ApiProperty({ example: 'all' })
+  city!: string;
+
+  @ApiPropertyOptional({
+    enum: StoreCategory,
+    example: StoreCategory.CLUB,
+    nullable: true,
+  })
+  category?: StoreCategory | null;
+
+  @ApiProperty({ example: 5 })
+  limit!: number;
+
+  @ApiProperty({ example: 5 })
+  total!: number;
+}
+
+export class PublicRankingResponseDto {
+  @ApiProperty({ type: [PublicRankingItemDto] })
+  data!: PublicRankingItemDto[];
+
+  @ApiProperty({ type: () => PublicRankingMetaDto })
+  meta!: PublicRankingMetaDto;
+}
+
 export class PublicAreaDto {
   @ApiProperty({ example: 'area_01' })
   id!: string;

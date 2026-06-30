@@ -38,6 +38,9 @@ describe('NightlifeDataService', () => {
     },
     rankingConfig: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
     memberFavoriteCast: {
       findMany: jest.fn(),
@@ -82,6 +85,7 @@ describe('NightlifeDataService', () => {
     prisma.store.count.mockResolvedValue(1);
     prisma.cast.count.mockResolvedValue(1);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
+    prisma.rankingConfig.findFirst.mockResolvedValue(null as never);
     prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
     service = new NightlifeDataService(
       prisma,
@@ -645,6 +649,113 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+  });
+
+  it('creates an admin ranking config with scoped pin and sponsored flag', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const rankingId = '22222222-2222-4222-8222-222222222222';
+    const now = new Date('2026-06-30T10:00:00.000Z');
+
+    prisma.store.findFirst.mockResolvedValue({ id: storeId } as never);
+    prisma.rankingConfig.create.mockResolvedValue({
+      id: rankingId,
+      targetType: 'STORE',
+      targetId: storeId,
+      areaId: null,
+      cityCode: 'hn',
+      category: 'CLUB',
+      scope: 'global',
+      manualScore: 100,
+      pinRank: 1,
+      sponsored: true,
+      reason: 'Top club tháng 7',
+      status: 'ACTIVE',
+      startsAt: null,
+      endsAt: null,
+      createdAt: now,
+      updatedAt: now,
+      area: null,
+    } as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: storeId,
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'CLUB',
+        status: 'ACTIVE',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        area: { name: 'Tay Ho', city: 'Ha Noi' },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.createAdminRankingConfig(
+      { id: 'admin-1', role: 'ADMIN' },
+      {
+        targetType: 'STORE',
+        targetId: storeId,
+        cityCode: 'hn',
+        category: 'club',
+        scope: 'global',
+        pinRank: 1,
+        manualScore: 100,
+        sponsored: true,
+        reason: 'Top club tháng 7',
+      },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: rankingId,
+        targetName: 'Neon Club',
+        targetSlug: 'neon-club',
+        cityCode: 'hn',
+        category: 'CLUB',
+        pinRank: 1,
+        sponsored: true,
+      }),
+    );
+    expect(prisma.rankingConfig.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          createdById: 'admin-1',
+          targetType: 'STORE',
+          targetId: storeId,
+          cityCode: 'hn',
+          category: 'CLUB',
+          scope: 'global',
+          pinRank: 1,
+          manualScore: 100,
+          sponsored: true,
+        }),
+      }),
+    );
+  });
+
+  it('rejects duplicate admin ranking pins in the same city/category/scope', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+
+    prisma.store.findFirst.mockResolvedValue({ id: storeId } as never);
+    prisma.rankingConfig.findFirst.mockResolvedValue({
+      id: 'existing-ranking',
+      targetId: 'other-store',
+    } as never);
+
+    await expect(
+      service.createAdminRankingConfig(
+        { id: 'admin-1', role: 'ADMIN' },
+        {
+          targetType: 'STORE',
+          targetId: storeId,
+          cityCode: 'hn',
+          category: 'club',
+          scope: 'global',
+          pinRank: 1,
+        },
+      ),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    expect(prisma.rankingConfig.create).not.toHaveBeenCalled();
   });
 
   it('searches public casts by cast or store name and store filters', async () => {

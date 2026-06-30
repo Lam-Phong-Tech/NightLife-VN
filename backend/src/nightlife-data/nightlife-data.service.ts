@@ -5,23 +5,39 @@ import {
   Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Prisma, StoreCategory } from '@prisma/client';
+import {
+  Prisma,
+  RankingConfigStatus,
+  RankingTargetType,
+  StoreCategory,
+} from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
 import { AdminNotificationService } from '../notifications/admin-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  AdminRankingQueryDto,
+  AdminRankingTargetOptionsQueryDto,
+  CreateAdminRankingConfigDto,
+  UpdateAdminRankingConfigDto,
+} from './dto/admin-ranking.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
-import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
+import {
+  PublicDiscoveryQueryDto,
+  PublicRankingQueryDto,
+} from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { TelegramService } from '../telegram/telegram.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const DEFAULT_PUBLIC_LIMIT = 24;
+const DEFAULT_RANKING_LIMIT = 5;
+const MAX_RANKING_LIMIT = 20;
 const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
@@ -150,6 +166,74 @@ type RankingScore = {
   manualScore: number;
 };
 
+type PublicRankingConfig = {
+  targetId: string;
+  cityCode: string;
+  category: StoreCategory | null;
+  scope: string;
+  manualScore: number;
+  pinRank: number | null;
+  sponsored: boolean;
+  updatedAt: Date | string;
+};
+
+type PublicRankingItem = {
+  rank: number;
+  targetType: 'CAST' | 'STORE';
+  targetId: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  area: string | null;
+  city: string;
+  cityCode?: string;
+  category: StoreCategory;
+  sponsored: boolean;
+  pinRank: number | null;
+  manualScore: number;
+  href: string;
+  phone?: string | null;
+};
+
+type PublicRankingItemDraft = Omit<PublicRankingItem, 'rank'>;
+
+type AdminRankingConfigRecord = {
+  id: string;
+  targetType: RankingTargetType;
+  targetId: string;
+  areaId: string | null;
+  cityCode: string;
+  category: StoreCategory | null;
+  scope: string;
+  manualScore: number;
+  pinRank: number | null;
+  sponsored: boolean;
+  reason: string | null;
+  status: string;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  area: {
+    id: string;
+    code: string;
+    name: string;
+    city: string;
+    district: string | null;
+  } | null;
+};
+
+type RankingTargetSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  city: string;
+  area: string | null;
+  category: StoreCategory;
+  status: string;
+};
+
 type BookingTarget = {
   store: {
     id: string;
@@ -200,6 +284,430 @@ export class NightlifeDataService {
       ...area,
       cityCode: this.cityCodeFromAreaCode(area.code),
     }));
+  }
+
+  async listPublicRankings(query: PublicRankingQueryDto = {}) {
+    const targetType = this.resolveRankingTargetType(query.targetType);
+    const cityCode = this.normalizeCityCode(query.city ?? 'all', {
+      strict: true,
+    });
+    const category = this.normalizeCategory(query.category, { strict: true });
+    const limit = this.resolveRankingLimit(query.limit);
+    const now = new Date();
+    const configs = await this.prisma.rankingConfig.findMany({
+      where: {
+        targetType,
+        scope: 'global',
+        status: 'ACTIVE',
+        deletedAt: null,
+        ...(cityCode
+          ? { OR: [{ cityCode: 'all' }, { cityCode }] }
+          : {}),
+        ...(category ? { OR: [{ category: null }, { category }] } : {}),
+        AND: [
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        ],
+      },
+      orderBy: [
+        { pinRank: 'asc' },
+        { manualScore: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+      take: limit * 4,
+      select: {
+        targetId: true,
+        cityCode: true,
+        category: true,
+        scope: true,
+        manualScore: true,
+        pinRank: true,
+        sponsored: true,
+        updatedAt: true,
+      },
+    });
+    const configByTargetId = this.mapRankingConfigs(configs);
+    const rankedItems =
+      targetType === 'STORE'
+        ? await this.loadStoreRankingItems(configByTargetId, {
+            cityCode,
+            category,
+          })
+        : await this.loadCastRankingItems(configByTargetId, {
+            cityCode,
+            category,
+          });
+    const fallbackItems =
+      rankedItems.length < limit
+        ? await this.loadRankingFallbackItems(targetType, {
+            cityCode,
+            category,
+            excludeIds: rankedItems.map((item) => item.targetId),
+            take: limit - rankedItems.length,
+          })
+        : [];
+    const data = [...rankedItems, ...fallbackItems]
+      .slice(0, limit)
+      .map((item, index) => ({
+        ...item,
+        rank: index + 1,
+      }));
+
+    return {
+      data,
+      meta: {
+        targetType,
+        city: cityCode ?? 'all',
+        category: category ?? null,
+        limit,
+        total: data.length,
+      },
+    };
+  }
+
+  async listAdminRankingConfigs(query: AdminRankingQueryDto = {}) {
+    const targetType = query.targetType
+      ? this.resolveRankingTargetType(query.targetType)
+      : undefined;
+    const cityCode =
+      query.city !== undefined && query.city !== ''
+        ? this.resolveAdminRankingCityCode(query.city)
+        : undefined;
+    const hasCategoryFilter =
+      query.category !== undefined && query.category !== '';
+    const category = hasCategoryFilter
+      ? this.resolveAdminRankingCategory(query.category)
+      : undefined;
+    const scope = this.cleanText(query.scope);
+
+    const configs = await this.prisma.rankingConfig.findMany({
+      where: {
+        deletedAt: null,
+        ...(targetType ? { targetType } : {}),
+        ...(cityCode ? { cityCode } : {}),
+        ...(hasCategoryFilter ? { category } : {}),
+        ...(scope ? { scope } : {}),
+      },
+      orderBy: [
+        { targetType: 'asc' },
+        { cityCode: 'asc' },
+        { category: 'asc' },
+        { scope: 'asc' },
+        { pinRank: 'asc' },
+        { manualScore: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+      select: this.adminRankingConfigSelect(),
+    });
+
+    return this.mapAdminRankingConfigs(configs as AdminRankingConfigRecord[]);
+  }
+
+  async listAdminRankingTargetOptions(
+    query: AdminRankingTargetOptionsQueryDto = {},
+  ) {
+    const targetType = this.resolveRankingTargetType(query.targetType);
+    const cityCode = this.normalizeCityCode(query.city, { strict: true });
+    const category = this.resolveAdminRankingCategory(query.category) ?? undefined;
+    const q = this.cleanText(query.q);
+    const limit = Math.min(query.limit ?? 50, 100);
+
+    if (targetType === 'STORE') {
+      const stores = await this.prisma.store.findMany({
+        where: {
+          ...this.buildPublicStoreWhere(
+            { city: cityCode, category },
+            { includeTextSearch: false },
+          ),
+          ...(q
+            ? {
+                OR: [
+                  { name: this.containsInsensitive(q) },
+                  { slug: this.containsInsensitive(this.normalizeToken(q)) },
+                ],
+              }
+            : {}),
+        },
+        orderBy: [{ name: 'asc' }],
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          category: true,
+          status: true,
+          city: true,
+          district: true,
+          area: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              city: true,
+              district: true,
+            },
+          },
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { url: true },
+          },
+        },
+      });
+
+      return stores.map((store) => ({
+        id: store.id,
+        targetType: 'STORE' as const,
+        name: store.name,
+        slug: store.slug,
+        image: store.media[0]?.url ?? null,
+        area: store.area?.name ?? store.district,
+        city: store.area?.city ?? store.city,
+        cityCode: store.area?.code
+          ? this.cityCodeFromAreaCode(store.area.code)
+          : this.normalizeCityCode(store.city),
+        category: store.category,
+        status: store.status,
+      }));
+    }
+
+    const casts = await this.prisma.cast.findMany({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        store: this.buildPublicStoreWhere(
+          { city: cityCode, category },
+          { includeTextSearch: false },
+        ),
+        ...(q
+          ? {
+              OR: [
+                { stageName: this.containsInsensitive(q) },
+                { publicAlias: this.containsInsensitive(q) },
+                { slug: this.containsInsensitive(this.normalizeToken(q)) },
+                {
+                  store: {
+                    name: this.containsInsensitive(q),
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ stageName: 'asc' }],
+      take: limit,
+      select: {
+        id: true,
+        slug: true,
+        stageName: true,
+        publicAlias: true,
+        status: true,
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { url: true },
+        },
+        store: {
+          select: {
+            category: true,
+            city: true,
+            district: true,
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return casts.map((cast) => ({
+      id: cast.id,
+      targetType: 'CAST' as const,
+      name: cast.publicAlias ?? cast.stageName,
+      slug: cast.slug,
+      image: cast.media[0]?.url ?? null,
+      area: cast.store.area?.name ?? cast.store.district,
+      city: cast.store.area?.city ?? cast.store.city,
+      cityCode: cast.store.area?.code
+        ? this.cityCodeFromAreaCode(cast.store.area.code)
+        : this.normalizeCityCode(cast.store.city),
+      category: cast.store.category,
+      status: cast.status,
+    }));
+  }
+
+  async createAdminRankingConfig(
+    user: AuthenticatedUser,
+    dto: CreateAdminRankingConfigDto,
+  ) {
+    const targetType = this.resolveRankingTargetType(dto.targetType);
+    const cityCode = this.resolveAdminRankingCityCode(dto.cityCode);
+    const category = this.resolveAdminRankingCategory(dto.category);
+    const scope = this.resolveAdminRankingScope(dto.scope);
+    const pinRank = dto.pinRank ?? null;
+    const manualScore = dto.manualScore ?? 0;
+    const { startsAt, endsAt } = this.resolveRankingWindow(
+      dto.startsAt,
+      dto.endsAt,
+    );
+
+    await this.assertAdminRankingTargetExists(targetType, dto.targetId);
+    await this.assertNoPinnedRankingCollision({
+      targetType,
+      cityCode,
+      category,
+      scope,
+      pinRank,
+    });
+
+    const config = await this.prisma.rankingConfig.create({
+      data: {
+        createdById: user.id,
+        targetType,
+        targetId: dto.targetId,
+        areaId: dto.areaId ?? null,
+        cityCode,
+        category,
+        scope,
+        pinRank,
+        manualScore,
+        sponsored: dto.sponsored ?? false,
+        reason: this.cleanText(dto.reason ?? undefined) || null,
+        status: (dto.status ?? 'ACTIVE') as RankingConfigStatus,
+        startsAt,
+        endsAt,
+      },
+      select: this.adminRankingConfigSelect(),
+    });
+
+    return (await this.mapAdminRankingConfigs([
+      config as AdminRankingConfigRecord,
+    ]))[0];
+  }
+
+  async updateAdminRankingConfig(
+    rankingId: string,
+    dto: UpdateAdminRankingConfigDto,
+  ) {
+    const existing = await this.prisma.rankingConfig.findFirst({
+      where: { id: rankingId, deletedAt: null },
+      select: this.adminRankingConfigSelect(),
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Ranking config not found');
+    }
+
+    const current = existing as AdminRankingConfigRecord;
+    const targetType = dto.targetType
+      ? this.resolveRankingTargetType(dto.targetType)
+      : current.targetType;
+    const targetId = dto.targetId ?? current.targetId;
+    const cityCode =
+      dto.cityCode !== undefined
+        ? this.resolveAdminRankingCityCode(dto.cityCode)
+        : current.cityCode;
+    const category =
+      dto.category !== undefined
+        ? this.resolveAdminRankingCategory(dto.category)
+        : current.category;
+    const scope =
+      dto.scope !== undefined
+        ? this.resolveAdminRankingScope(dto.scope)
+        : current.scope;
+    const pinRank =
+      dto.pinRank !== undefined ? (dto.pinRank ?? null) : current.pinRank;
+    const startsAtInput =
+      dto.startsAt !== undefined
+        ? dto.startsAt
+        : current.startsAt?.toISOString() ?? null;
+    const endsAtInput =
+      dto.endsAt !== undefined ? dto.endsAt : current.endsAt?.toISOString() ?? null;
+    const { startsAt, endsAt } = this.resolveRankingWindow(
+      startsAtInput,
+      endsAtInput,
+    );
+
+    if (dto.targetType !== undefined || dto.targetId !== undefined) {
+      await this.assertAdminRankingTargetExists(targetType, targetId);
+    }
+    await this.assertNoPinnedRankingCollision({
+      targetType,
+      cityCode,
+      category,
+      scope,
+      pinRank,
+      excludeId: rankingId,
+    });
+
+    const config = await this.prisma.rankingConfig.update({
+      where: { id: rankingId },
+      data: {
+        ...(dto.targetType !== undefined ? { targetType } : {}),
+        ...(dto.targetId !== undefined ? { targetId } : {}),
+        ...(dto.areaId !== undefined ? { areaId: dto.areaId ?? null } : {}),
+        ...(dto.cityCode !== undefined ? { cityCode } : {}),
+        ...(dto.category !== undefined ? { category } : {}),
+        ...(dto.scope !== undefined ? { scope } : {}),
+        ...(dto.pinRank !== undefined ? { pinRank } : {}),
+        ...(dto.manualScore !== undefined ? { manualScore: dto.manualScore } : {}),
+        ...(dto.sponsored !== undefined ? { sponsored: dto.sponsored } : {}),
+        ...(dto.reason !== undefined
+          ? { reason: this.cleanText(dto.reason ?? undefined) || null }
+          : {}),
+        ...(dto.status !== undefined
+          ? { status: dto.status as RankingConfigStatus }
+          : {}),
+        ...(dto.startsAt !== undefined ? { startsAt } : {}),
+        ...(dto.endsAt !== undefined ? { endsAt } : {}),
+      },
+      select: this.adminRankingConfigSelect(),
+    });
+
+    return (await this.mapAdminRankingConfigs([
+      config as AdminRankingConfigRecord,
+    ]))[0];
+  }
+
+  async deleteAdminRankingConfig(rankingId: string) {
+    const existing = await this.prisma.rankingConfig.findFirst({
+      where: { id: rankingId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Ranking config not found');
+    }
+
+    await this.prisma.rankingConfig.update({
+      where: { id: rankingId },
+      data: {
+        status: 'DELETED',
+        deletedAt: new Date(),
+      },
+      select: { id: true },
+    });
+
+    return { id: rankingId, deleted: true };
   }
 
   async listPublicStores(query: PublicDiscoveryQueryDto = {}) {
@@ -2859,6 +3367,695 @@ export class NightlifeDataService {
     });
 
     return rankingMap;
+  }
+
+  private adminRankingConfigSelect(): Prisma.RankingConfigSelect {
+    return {
+      id: true,
+      targetType: true,
+      targetId: true,
+      areaId: true,
+      cityCode: true,
+      category: true,
+      scope: true,
+      manualScore: true,
+      pinRank: true,
+      sponsored: true,
+      reason: true,
+      status: true,
+      startsAt: true,
+      endsAt: true,
+      createdAt: true,
+      updatedAt: true,
+      area: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          city: true,
+          district: true,
+        },
+      },
+    };
+  }
+
+  private async mapAdminRankingConfigs(configs: AdminRankingConfigRecord[]) {
+    const targets = await this.loadAdminRankingTargets(configs);
+
+    return configs.map((config) => {
+      const target = targets.get(`${config.targetType}:${config.targetId}`);
+
+      return {
+        id: config.id,
+        targetType: config.targetType,
+        targetId: config.targetId,
+        targetName: target?.name ?? 'Unknown target',
+        targetSlug: target?.slug ?? null,
+        targetImage: target?.image ?? null,
+        targetStatus: target?.status ?? null,
+        targetCategory: target?.category ?? config.category,
+        targetCity: target?.city ?? null,
+        targetArea: target?.area ?? config.area?.name ?? null,
+        cityCode: config.cityCode,
+        areaId: config.areaId,
+        area: config.area,
+        category: config.category,
+        scope: config.scope,
+        manualScore: config.manualScore,
+        pinRank: config.pinRank,
+        sponsored: config.sponsored,
+        reason: config.reason,
+        status: config.status,
+        startsAt: config.startsAt,
+        endsAt: config.endsAt,
+        createdAt: config.createdAt,
+        updatedAt: config.updatedAt,
+      };
+    });
+  }
+
+  private async loadAdminRankingTargets(configs: AdminRankingConfigRecord[]) {
+    type StoreTargetRecord = {
+      id: string;
+      name: string;
+      slug: string;
+      category: StoreCategory;
+      status: string;
+      city: string;
+      district: string | null;
+      area: { name: string; city: string } | null;
+      media: Array<{ url: string }>;
+    };
+    type CastTargetRecord = {
+      id: string;
+      slug: string;
+      stageName: string;
+      publicAlias: string | null;
+      status: string;
+      media: Array<{ url: string }>;
+      store: {
+        category: StoreCategory;
+        city: string;
+        district: string | null;
+        area: { name: string; city: string } | null;
+      };
+    };
+    const storeIds = configs
+      .filter((config) => config.targetType === 'STORE')
+      .map((config) => config.targetId);
+    const castIds = configs
+      .filter((config) => config.targetType === 'CAST')
+      .map((config) => config.targetId);
+    const targetMap = new Map<string, RankingTargetSummary>();
+    const stores: StoreTargetRecord[] = storeIds.length
+      ? await this.prisma.store.findMany({
+            where: { id: { in: storeIds }, deletedAt: null },
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              category: true,
+              status: true,
+              city: true,
+              district: true,
+              area: {
+                select: {
+                  name: true,
+                  city: true,
+                },
+              },
+              media: {
+                where: {
+                  deletedAt: null,
+                  access: 'PUBLIC',
+                  status: 'READY',
+                  type: 'IMAGE',
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: { url: true },
+              },
+            },
+          })
+      : [];
+    const casts: CastTargetRecord[] = castIds.length
+      ? await this.prisma.cast.findMany({
+            where: { id: { in: castIds }, deletedAt: null },
+            select: {
+              id: true,
+              slug: true,
+              stageName: true,
+              publicAlias: true,
+              status: true,
+              media: {
+                where: {
+                  deletedAt: null,
+                  access: 'PUBLIC',
+                  status: 'READY',
+                  type: 'IMAGE',
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: { url: true },
+              },
+              store: {
+                select: {
+                  category: true,
+                  city: true,
+                  district: true,
+                  area: {
+                    select: {
+                      name: true,
+                      city: true,
+                    },
+                  },
+                },
+              },
+            },
+          })
+      : [];
+
+    stores.forEach((store) => {
+      targetMap.set(`STORE:${store.id}`, {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+        image: store.media[0]?.url ?? null,
+        city: store.area?.city ?? store.city,
+        area: store.area?.name ?? store.district,
+        category: store.category,
+        status: store.status,
+      });
+    });
+    casts.forEach((cast) => {
+      targetMap.set(`CAST:${cast.id}`, {
+        id: cast.id,
+        name: cast.publicAlias ?? cast.stageName,
+        slug: cast.slug,
+        image: cast.media[0]?.url ?? null,
+        city: cast.store.area?.city ?? cast.store.city,
+        area: cast.store.area?.name ?? cast.store.district,
+        category: cast.store.category,
+        status: cast.status,
+      });
+    });
+
+    return targetMap;
+  }
+
+  private resolveAdminRankingCityCode(value?: string | null) {
+    return this.normalizeCityCode(value ?? 'all', { strict: true }) ?? 'all';
+  }
+
+  private resolveAdminRankingCategory(value?: string | null) {
+    const token = this.normalizeToken(value);
+
+    if (!token || token === 'all' || token === 'tong-hop') {
+      return null;
+    }
+
+    return this.normalizeCategory(value, { strict: true }) ?? null;
+  }
+
+  private resolveAdminRankingScope(value?: string | null) {
+    const scope = this.normalizeToken(value) || 'global';
+
+    if (scope.length > 40) {
+      throw new BadRequestException('scope must be at most 40 characters');
+    }
+
+    return scope;
+  }
+
+  private resolveRankingWindow(
+    startsAt?: string | null,
+    endsAt?: string | null,
+  ) {
+    const startDate = startsAt ? new Date(startsAt) : null;
+    const endDate = endsAt ? new Date(endsAt) : null;
+
+    if (startDate && Number.isNaN(startDate.getTime())) {
+      throw new BadRequestException('startsAt must be a valid date');
+    }
+
+    if (endDate && Number.isNaN(endDate.getTime())) {
+      throw new BadRequestException('endsAt must be a valid date');
+    }
+
+    if (startDate && endDate && startDate >= endDate) {
+      throw new BadRequestException('startsAt must be before endsAt');
+    }
+
+    return { startsAt: startDate, endsAt: endDate };
+  }
+
+  private async assertAdminRankingTargetExists(
+    targetType: RankingTargetType,
+    targetId: string,
+  ) {
+    const target =
+      targetType === 'STORE'
+        ? await this.prisma.store.findFirst({
+            where: { id: targetId, deletedAt: null },
+            select: { id: true },
+          })
+        : await this.prisma.cast.findFirst({
+            where: { id: targetId, deletedAt: null },
+            select: { id: true },
+          });
+
+    if (!target) {
+      throw new NotFoundException('Ranking target not found');
+    }
+  }
+
+  private async assertNoPinnedRankingCollision(input: {
+    targetType: RankingTargetType;
+    cityCode: string;
+    category: StoreCategory | null;
+    scope: string;
+    pinRank: number | null;
+    excludeId?: string;
+  }) {
+    if (!input.pinRank) {
+      return;
+    }
+
+    const duplicate = await this.prisma.rankingConfig.findFirst({
+      where: {
+        deletedAt: null,
+        targetType: input.targetType,
+        cityCode: input.cityCode,
+        category: input.category,
+        scope: input.scope,
+        pinRank: input.pinRank,
+        ...(input.excludeId ? { id: { not: input.excludeId } } : {}),
+      },
+      select: {
+        id: true,
+        targetId: true,
+      },
+    });
+
+    if (duplicate) {
+      throw new UnprocessableEntityException(
+        `pinRank ${input.pinRank} already exists for ${input.targetType}/${input.cityCode}/${input.category ?? 'all'}/${input.scope}`,
+      );
+    }
+  }
+
+  private resolveRankingTargetType(value?: string | null): RankingTargetType {
+    const token = value?.trim().toUpperCase() || 'CAST';
+
+    if (token !== 'CAST' && token !== 'STORE') {
+      throw new BadRequestException('targetType must be CAST or STORE');
+    }
+
+    return token as RankingTargetType;
+  }
+
+  private resolveRankingLimit(limit?: string | number) {
+    if (limit === undefined || limit === null || limit === '') {
+      return DEFAULT_RANKING_LIMIT;
+    }
+
+    const parsed = Number(limit);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new BadRequestException('limit must be a positive number');
+    }
+
+    if (parsed > MAX_RANKING_LIMIT) {
+      throw new BadRequestException(
+        `limit must be less than or equal to ${MAX_RANKING_LIMIT}`,
+      );
+    }
+
+    return Math.floor(parsed);
+  }
+
+  private mapRankingConfigs(configs: PublicRankingConfig[]) {
+    const configByTargetId = new Map<string, PublicRankingConfig>();
+
+    configs.forEach((config) => {
+      if (!configByTargetId.has(config.targetId)) {
+        configByTargetId.set(config.targetId, config);
+      }
+    });
+
+    return configByTargetId;
+  }
+
+  private sortMappedRankingItems(items: PublicRankingItemDraft[]) {
+    return [...items].sort((first, second) => {
+      const firstPin = first.pinRank ?? Number.POSITIVE_INFINITY;
+      const secondPin = second.pinRank ?? Number.POSITIVE_INFINITY;
+
+      if (firstPin !== secondPin) {
+        return firstPin - secondPin;
+      }
+
+      const scoreDiff = second.manualScore - first.manualScore;
+      if (scoreDiff !== 0) {
+        return scoreDiff;
+      }
+
+      return first.name.localeCompare(second.name);
+    });
+  }
+
+  private async loadStoreRankingItems(
+    configByTargetId: Map<string, PublicRankingConfig>,
+    filters: { cityCode?: string; category?: StoreCategory },
+  ) {
+    const targetIds = [...configByTargetId.keys()];
+    if (!targetIds.length) {
+      return [];
+    }
+
+    const stores = await this.prisma.store.findMany({
+      where: {
+        ...this.buildPublicStoreWhere(
+          {
+            city: filters.cityCode,
+            category: filters.category,
+          },
+          { includeTextSearch: false },
+        ),
+        id: { in: targetIds },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        city: true,
+        district: true,
+        phone: true,
+        area: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            city: true,
+            district: true,
+          },
+        },
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            url: true,
+          },
+        },
+      },
+    });
+
+    return this.sortMappedRankingItems(
+      stores.map((store) =>
+        this.mapStoreRankingItem(store, configByTargetId.get(store.id)),
+      ),
+    );
+  }
+
+  private async loadCastRankingItems(
+    configByTargetId: Map<string, PublicRankingConfig>,
+    filters: { cityCode?: string; category?: StoreCategory },
+  ) {
+    const targetIds = [...configByTargetId.keys()];
+    if (!targetIds.length) {
+      return [];
+    }
+
+    const casts = await this.prisma.cast.findMany({
+      where: {
+        id: { in: targetIds },
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        store: this.buildPublicStoreWhere(
+          {
+            city: filters.cityCode,
+            category: filters.category,
+          },
+          { includeTextSearch: false },
+        ),
+      },
+      select: {
+        id: true,
+        slug: true,
+        stageName: true,
+        publicAlias: true,
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            url: true,
+          },
+        },
+        store: {
+          select: {
+            category: true,
+            city: true,
+            district: true,
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return this.sortMappedRankingItems(
+      casts.map((cast) =>
+        this.mapCastRankingItem(cast, configByTargetId.get(cast.id)),
+      ),
+    );
+  }
+
+  private async loadRankingFallbackItems(
+    targetType: RankingTargetType,
+    filters: {
+      cityCode?: string;
+      category?: StoreCategory;
+      excludeIds: string[];
+      take: number;
+    },
+  ) {
+    if (filters.take <= 0) {
+      return [];
+    }
+
+    if (targetType === 'STORE') {
+      const stores = await this.prisma.store.findMany({
+        where: {
+          ...this.buildPublicStoreWhere(
+            {
+              city: filters.cityCode,
+              category: filters.category,
+            },
+            { includeTextSearch: false },
+          ),
+          ...(filters.excludeIds.length
+            ? { id: { notIn: filters.excludeIds } }
+            : {}),
+        },
+        orderBy: { createdAt: 'desc' },
+        take: filters.take,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          category: true,
+          city: true,
+          district: true,
+          phone: true,
+          area: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              city: true,
+              district: true,
+            },
+          },
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              url: true,
+            },
+          },
+        },
+      });
+
+      return stores.map((store) => this.mapStoreRankingItem(store));
+    }
+
+    const casts = await this.prisma.cast.findMany({
+      where: {
+        ...(filters.excludeIds.length
+          ? { id: { notIn: filters.excludeIds } }
+          : {}),
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        store: this.buildPublicStoreWhere(
+          {
+            city: filters.cityCode,
+            category: filters.category,
+          },
+          { includeTextSearch: false },
+        ),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: filters.take,
+      select: {
+        id: true,
+        slug: true,
+        stageName: true,
+        publicAlias: true,
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            url: true,
+          },
+        },
+        store: {
+          select: {
+            category: true,
+            city: true,
+            district: true,
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return casts.map((cast) => this.mapCastRankingItem(cast));
+  }
+
+  private mapStoreRankingItem(
+    store: {
+      id: string;
+      name: string;
+      slug: string;
+      category: StoreCategory;
+      city: string;
+      district: string | null;
+      phone: string | null;
+      area: {
+        id: string;
+        code: string;
+        name: string;
+        city: string;
+        district?: string | null;
+      } | null;
+      media: Array<{ url: string }>;
+    },
+    config?: PublicRankingConfig,
+  ): PublicRankingItemDraft {
+    const cityCode = store.area?.code
+      ? this.cityCodeFromAreaCode(store.area.code)
+      : this.normalizeCityCode(store.city);
+
+    return {
+      targetType: 'STORE',
+      targetId: store.id,
+      name: store.name,
+      slug: store.slug,
+      image: store.media[0]?.url ?? null,
+      area: store.area?.name ?? store.district,
+      city: store.area?.city ?? store.city,
+      cityCode,
+      category: store.category,
+      sponsored: config?.sponsored ?? false,
+      pinRank: config?.pinRank ?? null,
+      manualScore: config?.manualScore ?? 0,
+      href: `/stores/${store.slug}`,
+      phone: store.phone,
+    };
+  }
+
+  private mapCastRankingItem(
+    cast: {
+      id: string;
+      slug: string;
+      stageName: string;
+      publicAlias: string | null;
+      media: Array<{ url: string }>;
+      store: {
+        category: StoreCategory;
+        city: string;
+        district: string | null;
+        area: {
+          id: string;
+          code: string;
+          name: string;
+          city: string;
+          district?: string | null;
+        } | null;
+      };
+    },
+    config?: PublicRankingConfig,
+  ): PublicRankingItemDraft {
+    const cityCode = cast.store.area?.code
+      ? this.cityCodeFromAreaCode(cast.store.area.code)
+      : this.normalizeCityCode(cast.store.city);
+
+    return {
+      targetType: 'CAST',
+      targetId: cast.id,
+      name: cast.publicAlias ?? cast.stageName,
+      slug: cast.slug,
+      image: cast.media[0]?.url ?? null,
+      area: cast.store.area?.name ?? cast.store.district,
+      city: cast.store.area?.city ?? cast.store.city,
+      cityCode,
+      category: cast.store.category,
+      sponsored: config?.sponsored ?? false,
+      pinRank: config?.pinRank ?? null,
+      manualScore: config?.manualScore ?? 0,
+      href: `/casts/${cast.slug}`,
+    };
   }
 
   private buildActiveCouponWhere(now: Date): Prisma.CouponWhereInput {

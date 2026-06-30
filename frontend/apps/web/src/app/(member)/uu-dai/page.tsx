@@ -341,11 +341,7 @@ export default function Page() {
     };
   }, []);
 
-  useEffect(() => {
-    if (hasStoreScope) {
-      setActiveFilter("store");
-    }
-  }, [hasStoreScope]);
+  const effectiveActiveFilter = hasStoreScope ? "store" : activeFilter;
 
   const scopedCoupons = useMemo(() => {
     return coupons.filter((coupon) => {
@@ -381,23 +377,23 @@ export default function Page() {
 
   const visibleCoupons = useMemo(() => {
     const filtered = scopedCoupons.filter((coupon) => {
-      if (activeFilter === "expiring") {
+      if (effectiveActiveFilter === "expiring") {
         return isExpiringSoon(coupon);
       }
 
-      if (activeFilter === "vip") {
+      if (effectiveActiveFilter === "vip") {
         return isVipCoupon(coupon);
       }
 
       return true;
     });
 
-    if (activeFilter === "store") {
+    if (effectiveActiveFilter === "store") {
       return [...filtered].sort((first, second) => first.store.name.localeCompare(second.store.name, "vi"));
     }
 
     return filtered;
-  }, [activeFilter, scopedCoupons]);
+  }, [effectiveActiveFilter, scopedCoupons]);
 
   const filterCounts = useMemo(
     () => ({
@@ -508,7 +504,7 @@ export default function Page() {
         <section className="coupon-controls" aria-label="Bộ lọc ưu đãi">
           <nav className="filter-chips hscroll">
             {(Object.keys(filterLabels) as CouponFilter[]).map((filter) => {
-              const active = activeFilter === filter;
+              const active = effectiveActiveFilter === filter;
               return (
                 <button
                   aria-pressed={active}

@@ -23,6 +23,7 @@ import {
   PublicCastFavoriteStateDto,
   PublicCastDetailResponseDto,
   PublicCastListResponseDto,
+  PublicRankingResponseDto,
   PublicStoreDetailResponseDto,
   PublicStoreListResponseDto,
 } from './dto/public-discovery-response.dto';
@@ -332,6 +333,34 @@ const castListExample = {
   },
 };
 
+const rankingExample = {
+  data: [
+    {
+      rank: 1,
+      targetType: 'CAST',
+      targetId: 'cast_01',
+      name: 'Yuna',
+      slug: 'yuna-neon',
+      image: yunaCastImage,
+      area: 'Tay Ho',
+      city: 'Ha Noi',
+      cityCode: 'hn',
+      category: 'CLUB',
+      sponsored: true,
+      pinRank: 1,
+      manualScore: 100,
+      href: '/casts/yuna-neon',
+    },
+  ],
+  meta: {
+    targetType: 'CAST',
+    city: 'all',
+    category: null,
+    limit: 5,
+    total: 1,
+  },
+};
+
 const guestClaimExample = {
   issue: {
     id: 'issue_01',
@@ -613,6 +642,45 @@ export function PublicAreasContract() {
     }),
     ApiBadRequestResponse({
       description: 'Invalid city filter.',
+      schema: { example: publicDiscoveryBadRequestExample },
+    }),
+  );
+}
+
+export function PublicRankingsContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public discovery: list curated rankings',
+      description:
+        'Auth guard: none. Returns public CAST or STORE rankings from active RankingConfig records scoped by city/category. Only active public casts and active stores are returned.',
+    }),
+    ApiQuery({
+      name: 'targetType',
+      required: false,
+      description: 'Ranking target type: CAST or STORE. Defaults to CAST.',
+      example: 'CAST',
+    }),
+    ApiQuery({
+      name: 'city',
+      required: false,
+      description: 'City filter: all, hn, or hcm. Defaults to all.',
+      example: 'all',
+    }),
+    ApiQuery({
+      name: 'category',
+      required: false,
+      description:
+        'P0 category: BAR, CLUB, LOUNGE, GIRLS_BAR, KARAOKE, MASSAGE_SPA, RESTAURANT, CASINO. Lowercase aliases such as girls_bar and massage_spa are accepted.',
+      example: 'club',
+    }),
+    ApiQuery({ name: 'limit', required: false, example: '5' }),
+    ApiOkResponse({
+      description: 'Curated public ranking response.',
+      type: PublicRankingResponseDto,
+      schema: { example: rankingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid ranking filter.',
       schema: { example: publicDiscoveryBadRequestExample },
     }),
   );
@@ -1146,7 +1214,7 @@ export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
       schema: {
         example: {
           statusCode: 422,
-          message: 'Coupon issue has expired',
+          message: 'Coupon issue is not claimable',
           error: 'Unprocessable Entity',
         },
       },

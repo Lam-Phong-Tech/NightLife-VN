@@ -1,0 +1,68 @@
+import { apiClient } from "./client";
+
+export type RankingTargetType = "CAST" | "STORE";
+export type RankingCity = "all" | "hn" | "hcm";
+export type RankingCategory =
+  | "bar"
+  | "club"
+  | "lounge"
+  | "girls_bar"
+  | "karaoke"
+  | "massage_spa"
+  | "restaurant"
+  | "casino";
+
+export type PublicRankingItem = {
+  rank: number;
+  targetType: RankingTargetType;
+  targetId: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+  area?: string | null;
+  city: string;
+  cityCode?: string;
+  category: string;
+  sponsored: boolean;
+  pinRank?: number | null;
+  manualScore: number;
+  href: string;
+  phone?: string | null;
+};
+
+export type PublicRankingResponse = {
+  data: PublicRankingItem[];
+  meta: {
+    targetType: RankingTargetType;
+    city: RankingCity;
+    category?: string | null;
+    limit: number;
+    total: number;
+  };
+};
+
+export type RankingParams = {
+  targetType?: RankingTargetType;
+  city?: RankingCity;
+  category?: RankingCategory;
+  limit?: number;
+};
+
+const toParams = (params: RankingParams) => {
+  const searchParams: Record<string, string> = {};
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    searchParams[key] = String(value);
+  });
+
+  return searchParams;
+};
+
+export const rankingsApi = {
+  list: (params: RankingParams = {}, options: RequestInit = {}) =>
+    apiClient<PublicRankingResponse>("/rankings", {
+      ...options,
+      params: toParams(params),
+    }),
+};

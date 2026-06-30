@@ -43,6 +43,7 @@ import {
   PublicAreasContract,
   PublicCastsContract,
   PublicCouponsContract,
+  PublicRankingsContract,
   PublicStoreDetailContract,
   PublicStoresContract,
   ReviewSensitiveBillContract,
@@ -52,7 +53,16 @@ import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
-import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
+import {
+  AdminRankingQueryDto,
+  AdminRankingTargetOptionsQueryDto,
+  CreateAdminRankingConfigDto,
+  UpdateAdminRankingConfigDto,
+} from './dto/admin-ranking.dto';
+import {
+  PublicDiscoveryQueryDto,
+  PublicRankingQueryDto,
+} from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
 
@@ -69,6 +79,58 @@ export class NightlifeDataController {
   @Get('areas')
   listPublicAreas(@Query() query: PublicDiscoveryQueryDto) {
     return this.nightlifeDataService.listPublicAreas(query);
+  }
+
+  @PublicRankingsContract()
+  @Get('rankings')
+  listPublicRankings(@Query() query: PublicRankingQueryDto) {
+    return this.nightlifeDataService.listPublicRankings(query);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/rankings')
+  listAdminRankingConfigs(@Query() query: AdminRankingQueryDto) {
+    return this.nightlifeDataService.listAdminRankingConfigs(query);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/rankings/options')
+  listAdminRankingTargetOptions(
+    @Query() query: AdminRankingTargetOptionsQueryDto,
+  ) {
+    return this.nightlifeDataService.listAdminRankingTargetOptions(query);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/rankings')
+  createAdminRankingConfig(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateAdminRankingConfigDto,
+  ) {
+    return this.nightlifeDataService.createAdminRankingConfig(
+      request.user,
+      dto,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/rankings/:rankingId')
+  updateAdminRankingConfig(
+    @Param('rankingId') rankingId: string,
+    @Body() dto: UpdateAdminRankingConfigDto,
+  ) {
+    return this.nightlifeDataService.updateAdminRankingConfig(rankingId, dto);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('admin/rankings/:rankingId')
+  deleteAdminRankingConfig(@Param('rankingId') rankingId: string) {
+    return this.nightlifeDataService.deleteAdminRankingConfig(rankingId);
   }
 
   @PublicStoresContract()

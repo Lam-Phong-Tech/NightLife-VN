@@ -217,6 +217,138 @@ describe('Public discovery listing API (e2e)', () => {
     );
   });
 
+  it('handles valid GET /rankings query for public casts', async () => {
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'cast-mika',
+        cityCode: 'hcm',
+        category: 'KARAOKE',
+        scope: 'global',
+        manualScore: 95,
+        pinRank: 1,
+        sponsored: true,
+        updatedAt: new Date('2026-06-20T00:00:00.000Z'),
+      },
+    ]);
+
+    const response = await request(app.getHttpServer())
+      .get('/rankings')
+      .query({
+        targetType: 'CAST',
+        city: 'hcm',
+        category: 'karaoke',
+        limit: '1',
+      })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      data: [
+        expect.objectContaining({
+          rank: 1,
+          targetType: 'CAST',
+          targetId: 'cast-mika',
+          name: 'Mika',
+          slug: 'mika-golden-ktv',
+          category: 'KARAOKE',
+          sponsored: true,
+          pinRank: 1,
+          manualScore: 95,
+          href: '/casts/mika-golden-ktv',
+        }),
+      ],
+      meta: expect.objectContaining({
+        targetType: 'CAST',
+        city: 'hcm',
+        category: 'KARAOKE',
+        limit: 1,
+        total: 1,
+      }),
+    });
+    expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          targetType: 'CAST',
+          scope: 'global',
+          status: 'ACTIVE',
+          deletedAt: null,
+        }),
+      }),
+    );
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { in: ['cast-mika'] },
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          store: expect.objectContaining({
+            category: 'KARAOKE',
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('handles valid GET /rankings query for public stores with phone', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-neon',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'CLUB',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        phone: '+84243456007',
+        area: {
+          id: 'area-hn',
+          code: 'hn-tayho',
+          name: 'Tay Ho',
+          city: 'Ha Noi',
+          district: 'Tay Ho',
+        },
+        media: [],
+      },
+    ]);
+    prisma.rankingConfig.findMany.mockResolvedValue([
+      {
+        targetId: 'store-neon',
+        cityCode: 'hn',
+        category: 'CLUB',
+        scope: 'global',
+        manualScore: 100,
+        pinRank: 1,
+        sponsored: true,
+        updatedAt: new Date('2026-06-20T00:00:00.000Z'),
+      },
+    ]);
+
+    const response = await request(app.getHttpServer())
+      .get('/rankings')
+      .query({
+        targetType: 'STORE',
+        city: 'hn',
+        category: 'club',
+        limit: '1',
+      })
+      .expect(200);
+
+    expect(response.body.data).toEqual([
+      expect.objectContaining({
+        rank: 1,
+        targetType: 'STORE',
+        targetId: 'store-neon',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'CLUB',
+        sponsored: true,
+        pinRank: 1,
+        manualScore: 100,
+        href: '/stores/neon-club',
+        phone: '+84243456007',
+      }),
+    ]);
+  });
+
   it('rejects an invalid category', async () => {
     await request(app.getHttpServer())
       .get('/stores')
@@ -233,6 +365,15 @@ describe('Public discovery listing API (e2e)', () => {
       .expect(400);
 
     expect(prisma.area.findMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid public ranking city filters', async () => {
+    await request(app.getHttpServer())
+      .get('/rankings')
+      .query({ city: 'dn' })
+      .expect(400);
+
+    expect(prisma.rankingConfig.findMany).not.toHaveBeenCalled();
   });
 
   it('rejects an oversized limit', async () => {

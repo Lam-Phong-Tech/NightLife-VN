@@ -67,3 +67,25 @@ export class PublicDiscoveryQueryDto {
   @Matches(/^(true|false|1|0)$/i)
   hasActiveCoupon?: string;
 }
+
+export class PublicRankingQueryDto {
+  @IsOptional()
+  @IsString()
+  @IsIn(['CAST', 'STORE', 'cast', 'store'])
+  targetType?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['all', 'hn', 'hcm'])
+  @MaxLength(24)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  category?: string;
+
+  @IsOptional()
+  @Matches(/^\d{1,2}$/)
+  limit?: string;
+}
