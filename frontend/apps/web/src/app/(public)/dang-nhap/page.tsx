@@ -558,13 +558,16 @@ export default function Page() {
                 >
                   {googleClientId ? (
                     <div
+                      aria-label="Đăng nhập bằng Google"
                       style={{
                         height: 46,
+                        position: "relative",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        gap: 10,
                         minWidth: 0,
-                        padding: "0 4px",
+                        padding: "0 14px",
                         border: `1px solid ${colors.borderStrong}`,
                         borderRadius: 13,
                         background:
@@ -574,12 +577,46 @@ export default function Page() {
                         pointerEvents: isGoogleSubmitting ? "none" : "auto",
                         boxShadow:
                           "inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.22)",
+                        cursor: "pointer",
                       }}
                     >
+                      <span
+                        aria-hidden="true"
+                        title="Google"
+                        style={{
+                          width: 20,
+                          height: 20,
+                          flex: "none",
+                          background: `url("${googleLogoSrc}") center / contain no-repeat`,
+                        }}
+                      />
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          color: colors.text,
+                          fontSize: 13.5,
+                          fontWeight: 850,
+                          lineHeight: 1,
+                        }}
+                      >
+                        Google
+                      </span>
                       <div
                         ref={googleButtonRef}
                         className="nl-google-login-button"
-                        style={{ width: "100%", height: 40, overflow: "hidden", borderRadius: 10 }}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          opacity: 0,
+                          zIndex: 2,
+                          overflow: "hidden",
+                        }}
                       />
                     </div>
                   ) : (
@@ -613,11 +650,12 @@ export default function Page() {
         .nl-google-login-button,
         .nl-google-login-button > div,
         .nl-google-login-button iframe {
-          max-width: 100% !important;
+          width: 100% !important;
+          height: 100% !important;
         }
 
         .nl-google-login-button iframe {
-          border-radius: 10px !important;
+          border-radius: 13px !important;
         }
 
         @media (max-width: 767px) {
