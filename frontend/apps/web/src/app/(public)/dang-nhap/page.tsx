@@ -3,7 +3,12 @@
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, Phone, Sparkles } from "lucide-react";
-import { loginGoogleMember, loginMember, registerMember } from "@/lib/api/auth";
+import {
+  getGoogleLoginConfig,
+  loginGoogleMember,
+  loginMember,
+  registerMember,
+} from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
 
@@ -26,7 +31,7 @@ const colors = {
 
 const demoPhoneEmailMap = new Map([["0912345678", "member@nightlife.vn"]]);
 const googleLogoSrc = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
-const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const buildTimeGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 const lineLogoSrc =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306C755'/%3E%3Cpath fill='%23fff' d='M32 14c-11.6 0-21 7.4-21 16.6 0 8.2 7.5 15.1 17.6 16.4.7.1 1.6.5 1.8 1.1.2.5.1 1.3.1 1.8l-.3 2c-.1.6-.4 2.2 1.8 1.2 2.2-1 11.8-7 16.1-12 3-3.3 4.9-6.7 4.9-10.5C53 21.4 43.6 14 32 14Z'/%3E%3Cpath fill='%2306C755' d='M20.4 35.2h8v-3.1h-4.5v-7.3h-3.5v10.4Zm10.2 0h3.5V24.8h-3.5v10.4Zm6 0H40v-5.6l4.3 5.6h3V24.8h-3.4v5.5l-4.2-5.5h-3.1v10.4Zm12.8 0v-3h-3.9v-1h3.5v-2.8h-3.5v-.7h3.9v-2.9h-7.2v10.4h7.2Z'/%3E%3C/svg%3E";
 
@@ -85,6 +90,8 @@ export default function Page() {
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState(buildTimeGoogleClientId);
+  const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
@@ -99,7 +106,9 @@ export default function Page() {
   }, []);
 
   const title = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
-  const subtitle = isReg ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ." : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
+  const subtitle = isReg
+    ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ."
+    : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
 
   const switchMode = (nextIsReg: boolean) => {
     setIsReg(nextIsReg);
@@ -186,9 +195,7 @@ export default function Page() {
         window.location.href = redirectTo;
       } catch (error) {
         const detail =
-          error instanceof ApiError
-            ? error.message
-            : "Không kết nối được API đăng nhập Google.";
+          error instanceof ApiError ? error.message : "Không kết nối được API đăng nhập Google.";
         setMessageTone("error");
         setMessage(detail);
       } finally {
@@ -197,6 +204,39 @@ export default function Page() {
     },
     [redirectTo],
   );
+
+  useEffect(() => {
+    if (buildTimeGoogleClientId) {
+      return;
+    }
+
+    let mounted = true;
+
+    getGoogleLoginConfig()
+      .then((config) => {
+        if (!mounted) {
+          return;
+        }
+
+        setGoogleClientId(config.clientId || "");
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
+
+        setGoogleClientId("");
+      })
+      .finally(() => {
+        if (mounted) {
+          setIsGoogleConfigLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!googleClientId || !googleButtonRef.current) {
@@ -266,12 +306,7 @@ export default function Page() {
       script.onload = null;
       script.onerror = null;
     };
-  }, [handleGoogleCredential, isReg]);
-
-  const showSocialComingSoon = (provider: "Google" | "LINE") => {
-    setMessageTone("error");
-    setMessage(`Đăng nhập bằng ${provider} sẽ được kết nối ở bước tiếp theo.`);
-  };
+  }, [googleClientId, handleGoogleCredential, isReg]);
 
   const startLineConsent = () => {
     const params = new URLSearchParams({ redirect: redirectTo });
@@ -279,8 +314,18 @@ export default function Page() {
   };
 
   return (
-    <main className="nl-login-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <div className="nl-login-shell" style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "minmax(0,1.05fr) minmax(0,.95fr)" }}>
+    <main
+      className="nl-login-page"
+      style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}
+    >
+      <div
+        className="nl-login-shell"
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1.05fr) minmax(0,.95fr)",
+        }}
+      >
         <section
           className="nl-login-visual"
           style={{
@@ -294,35 +339,122 @@ export default function Page() {
               "linear-gradient(180deg,rgba(12,12,15,.2),rgba(12,12,15,.88)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1400&q=80') center/cover",
           }}
         >
-          <Link href="/" style={{ display: "inline-flex", flexDirection: "column", textDecoration: "none", width: "fit-content" }}>
-            <span style={{ fontSize: 28, fontWeight: 900, lineHeight: 1, background: colors.goldGrad, WebkitBackgroundClip: "text", color: "transparent" }}>Vietyoru</span>
-            <span style={{ marginTop: 5, color: colors.goldPale, fontSize: 9, letterSpacing: ".38em" }}>VIETNAM NIGHTLIFE GUIDE</span>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              textDecoration: "none",
+              width: "fit-content",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 28,
+                fontWeight: 900,
+                lineHeight: 1,
+                background: colors.goldGrad,
+                WebkitBackgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              Vietyoru
+            </span>
+            <span
+              style={{ marginTop: 5, color: colors.goldPale, fontSize: 9, letterSpacing: ".38em" }}
+            >
+              VIETNAM NIGHTLIFE GUIDE
+            </span>
           </Link>
 
           <div>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.goldPale, border: `1px solid ${colors.borderStrong}`, borderRadius: 999, padding: "7px 12px", fontSize: 12, fontWeight: 800, background: "rgba(12,12,15,.42)" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                color: colors.goldPale,
+                border: `1px solid ${colors.borderStrong}`,
+                borderRadius: 999,
+                padding: "7px 12px",
+                fontSize: 12,
+                fontWeight: 800,
+                background: "rgba(12,12,15,.42)",
+              }}
+            >
               <Sparkles size={15} />
               MEMBER ACCESS
             </span>
-            <h1 style={{ marginTop: 18, maxWidth: 560, fontSize: 46, lineHeight: 1.05, fontWeight: 900 }}>Giữ mọi cuộc hẹn nightlife trong một tài khoản.</h1>
+            <h1
+              style={{
+                marginTop: 18,
+                maxWidth: 560,
+                fontSize: 46,
+                lineHeight: 1.05,
+                fontWeight: 900,
+              }}
+            >
+              Giữ mọi cuộc hẹn nightlife trong một tài khoản.
+            </h1>
           </div>
         </section>
 
-        <section className="nl-login-form-section" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "34px" }}>
+        <section
+          className="nl-login-form-section"
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "34px",
+          }}
+        >
           <div style={{ width: "100%", maxWidth: 430 }}>
-            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.muted, fontSize: 13, fontWeight: 800, marginBottom: 24 }}>
+            <Link
+              href="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                color: colors.muted,
+                fontSize: 13,
+                fontWeight: 800,
+                marginBottom: 24,
+              }}
+            >
               <ArrowLeft size={17} />
               Quay về trang chủ
             </Link>
 
-            <div className="nl-login-card" style={{ border: `1px solid ${colors.border}`, background: colors.panel, borderRadius: 18, padding: 22, boxShadow: "0 22px 60px rgba(0,0,0,.32)" }}>
-              <div style={{ display: "flex", background: colors.panelStrong, border: `1px solid ${colors.border}`, borderRadius: 14, padding: 5 }}>
+            <div
+              className="nl-login-card"
+              style={{
+                border: `1px solid ${colors.border}`,
+                background: colors.panel,
+                borderRadius: 18,
+                padding: 22,
+                boxShadow: "0 22px 60px rgba(0,0,0,.32)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  background: colors.panelStrong,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 14,
+                  padding: 5,
+                }}
+              >
                 <Tab active={!isReg} label="Đăng nhập" onClick={() => switchMode(false)} />
                 <Tab active={isReg} label="Đăng ký" onClick={() => switchMode(true)} />
               </div>
 
-              <h2 style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>{title}</h2>
-              <p style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>{subtitle}</p>
+              <h2 style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>
+                {title}
+              </h2>
+              <p style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
+                {subtitle}
+              </p>
 
               <form onSubmit={submit} style={{ marginTop: 24, display: "grid", gap: 14 }}>
                 {isReg ? (
@@ -359,7 +491,18 @@ export default function Page() {
                       type="button"
                       aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                       onClick={() => setShowPassword((current) => !current)}
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, border: 0, borderRadius: 8, background: "transparent", color: colors.gold, cursor: "pointer" }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 32,
+                        height: 32,
+                        border: 0,
+                        borderRadius: 8,
+                        background: "transparent",
+                        color: colors.gold,
+                        cursor: "pointer",
+                      }}
                     >
                       {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
@@ -370,8 +513,14 @@ export default function Page() {
                   <div
                     style={{
                       color: messageTone === "success" ? colors.success : colors.danger,
-                      background: messageTone === "success" ? "rgba(134,239,172,.10)" : "rgba(252,165,165,.08)",
-                      border: messageTone === "success" ? "1px solid rgba(134,239,172,.28)" : "1px solid rgba(252,165,165,.24)",
+                      background:
+                        messageTone === "success"
+                          ? "rgba(134,239,172,.10)"
+                          : "rgba(252,165,165,.08)",
+                      border:
+                        messageTone === "success"
+                          ? "1px solid rgba(134,239,172,.28)"
+                          : "1px solid rgba(252,165,165,.24)",
                       borderRadius: 12,
                       padding: "10px 12px",
                       fontSize: 12.5,
@@ -385,12 +534,28 @@ export default function Page() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ border: 0, borderRadius: 14, background: colors.goldGrad, color: colors.onGold, padding: "15px 18px", fontWeight: 900, fontSize: 15, cursor: isSubmitting ? "default" : "pointer", opacity: isSubmitting ? .72 : 1 }}
+                  style={{
+                    border: 0,
+                    borderRadius: 14,
+                    background: colors.goldGrad,
+                    color: colors.onGold,
+                    padding: "15px 18px",
+                    fontWeight: 900,
+                    fontSize: 15,
+                    cursor: isSubmitting ? "default" : "pointer",
+                    opacity: isSubmitting ? 0.72 : 1,
+                  }}
                 >
                   {isSubmitting ? "Đang xác thực..." : isReg ? "Tạo tài khoản" : "Đăng nhập"}
                 </button>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 12,
+                  }}
+                >
                   {googleClientId ? (
                     <div
                       style={{
@@ -399,7 +564,7 @@ export default function Page() {
                         alignItems: "center",
                         justifyContent: "center",
                         overflow: "hidden",
-                        opacity: isGoogleSubmitting ? .68 : 1,
+                        opacity: isGoogleSubmitting ? 0.68 : 1,
                         pointerEvents: isGoogleSubmitting ? "none" : "auto",
                       }}
                     >
@@ -411,9 +576,12 @@ export default function Page() {
                       logoAlt="Google"
                       label="Google"
                       onClick={() => {
-                        showSocialComingSoon("Google");
                         setMessageTone("error");
-                        setMessage("Thiếu NEXT_PUBLIC_GOOGLE_CLIENT_ID cho đăng nhập Google.");
+                        setMessage(
+                          isGoogleConfigLoading
+                            ? "Đang tải cấu hình đăng nhập Google. Vui lòng thử lại sau vài giây."
+                            : "Thiếu GOOGLE_CLIENT_ID trên backend hoặc NEXT_PUBLIC_GOOGLE_CLIENT_ID cho đăng nhập Google.",
+                        );
                       }}
                     />
                   )}
@@ -476,7 +644,16 @@ function Tab({ active, label, onClick }: { active: boolean; label: string; onCli
     <button
       type="button"
       onClick={onClick}
-      style={{ flex: 1, border: 0, borderRadius: 10, padding: "11px 12px", background: active ? colors.goldGrad : "transparent", color: active ? colors.onGold : colors.muted, fontWeight: 900, cursor: "pointer" }}
+      style={{
+        flex: 1,
+        border: 0,
+        borderRadius: 10,
+        padding: "11px 12px",
+        background: active ? colors.goldGrad : "transparent",
+        color: active ? colors.onGold : colors.muted,
+        fontWeight: 900,
+        cursor: "pointer",
+      }}
     >
       {label}
     </button>
@@ -509,7 +686,19 @@ function Field({
   return (
     <label style={{ display: "grid", gap: 7 }}>
       <span style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}>{label}</span>
-      <span style={{ height: 48, display: "flex", alignItems: "center", gap: 9, border: `1px solid ${colors.border}`, borderRadius: 12, background: colors.panelStrong, padding: "0 13px", color: colors.text }}>
+      <span
+        style={{
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          border: `1px solid ${colors.border}`,
+          borderRadius: 12,
+          background: colors.panelStrong,
+          padding: "0 13px",
+          color: colors.text,
+        }}
+      >
         {icon ? <span style={{ color: colors.gold, display: "inline-flex" }}>{icon}</span> : null}
         <input
           name={name}
@@ -519,9 +708,19 @@ function Field({
           placeholder={placeholder}
           autoComplete={autoComplete}
           inputMode={inputMode}
-          style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: colors.text, fontSize: 14 }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            border: 0,
+            outline: "none",
+            background: "transparent",
+            color: colors.text,
+            fontSize: 14,
+          }}
         />
-        {action ? <span style={{ color: colors.gold, display: "inline-flex" }}>{action}</span> : null}
+        {action ? (
+          <span style={{ color: colors.gold, display: "inline-flex" }}>{action}</span>
+        ) : null}
       </span>
     </label>
   );
@@ -553,7 +752,8 @@ function SocialButton({
         padding: "0 14px",
         border: `1px solid ${colors.borderStrong}`,
         borderRadius: 13,
-        background: "linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)), #101013",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.035)), #101013",
         color: colors.text,
         fontFamily: "inherit",
         fontSize: 13.5,
@@ -573,7 +773,11 @@ function SocialButton({
           background: `url("${logoSrc}") center / contain no-repeat`,
         }}
       />
-      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+      <span
+        style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+      >
+        {label}
+      </span>
     </button>
   );
 }

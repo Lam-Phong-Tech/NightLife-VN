@@ -95,7 +95,11 @@ jobs:
             pm2 delete app-api.demonightlight.test9.io.vn 2>/dev/null || true
             pm2 delete app-api.demonightlight.test9io.vn 2>/dev/null || true
             fuser -k 3012/tcp 2>/dev/null || true
-            GOOGLE_CLIENT_ID="${{ env.GOOGLE_CLIENT_ID }}" PORT=3012 pm2 start dist/src/main.js --name "app-api.demonightlight.test9.io.vn" --update-env
+            if [ -n "${{ env.GOOGLE_CLIENT_ID }}" ]; then
+              GOOGLE_CLIENT_ID="${{ env.GOOGLE_CLIENT_ID }}" PORT=3012 pm2 start dist/src/main.js --name "app-api.demonightlight.test9.io.vn" --update-env
+            else
+              PORT=3012 pm2 start dist/src/main.js --name "app-api.demonightlight.test9.io.vn" --update-env
+            fi
             pm2 save
             ok=0; for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:3012/areas >/dev/null; then ok=1; break; fi; sleep 2; done; if [ "$ok" != 1 ]; then echo "::error::Backend API khong tra loi /areas tren cong 3012 sau ~40s."; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
             booking_status=000; for i in $(seq 1 10); do booking_status=$(curl -sS -o /tmp/nightlife-backend-booking-check.json -w "%{http_code}" -X POST http://127.0.0.1:3012/bookings -H 'Content-Type: application/json' -d '{}' || true); if [ "$booking_status" = "400" ]; then break; fi; sleep 2; done; if [ "$booking_status" != "400" ]; then echo "::error::Backend POST /bookings chua tra validation 400. Status: $booking_status"; cat /tmp/nightlife-backend-booking-check.json 2>/dev/null || true; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi

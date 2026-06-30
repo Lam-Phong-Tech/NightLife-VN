@@ -159,6 +159,15 @@ export class AuthService {
     return this.toAuthResponse(user, sessionContext);
   }
 
+  googleLoginConfig() {
+    const clientId = this.getGoogleClientId();
+
+    return {
+      configured: Boolean(clientId),
+      clientId: clientId || null,
+    };
+  }
+
   redirectToLineLogin(redirect: string | undefined, response: Response) {
     const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
     const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL');
@@ -363,7 +372,7 @@ export class AuthService {
   }
 
   private async verifyGoogleCredential(credential: string) {
-    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    const clientId = this.getGoogleClientId();
 
     if (!clientId) {
       throw new ServiceUnavailableException('Google login is not configured');
@@ -408,6 +417,14 @@ export class AuthService {
       email: tokenInfo.email.toLowerCase(),
       displayName: tokenInfo.name?.trim() || undefined,
     };
+  }
+
+  private getGoogleClientId() {
+    return (
+      this.configService.get<string>('GOOGLE_CLIENT_ID') ||
+      this.configService.get<string>('NEXT_PUBLIC_GOOGLE_CLIENT_ID') ||
+      ''
+    ).trim();
   }
 
   private async verifyLineAuthorizationCode(

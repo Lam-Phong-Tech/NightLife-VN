@@ -44,6 +44,11 @@ export class AuthController {
     );
   }
 
+  @Get('google/config')
+  googleConfig() {
+    return this.authService.googleLoginConfig();
+  }
+
   @Get('line/start')
   startLineLogin(
     @Query('redirect') redirect: string | undefined,

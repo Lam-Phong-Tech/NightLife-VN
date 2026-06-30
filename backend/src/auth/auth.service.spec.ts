@@ -261,6 +261,13 @@ describe('AuthService', () => {
     });
   });
 
+  it('exposes the public Google client id for runtime frontend config', () => {
+    expect(service.googleLoginConfig()).toEqual({
+      configured: true,
+      clientId: 'google-client-id',
+    });
+  });
+
   it('starts LINE OAuth with email scope and web login fallback', () => {
     configService.get.mockImplementation(
       (key: string, defaultValue?: string) => {

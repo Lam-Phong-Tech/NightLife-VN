@@ -1,5 +1,5 @@
-import { ApiError, apiClient } from './client';
-import type { AuthResponse, AuthRole } from '../auth/session';
+import { ApiError, apiClient } from "./client";
+import type { AuthResponse, AuthRole } from "../auth/session";
 
 export type LoginPayload = {
   email: string;
@@ -14,6 +14,11 @@ export type GoogleLoginPayload = {
   credential: string;
 };
 
+export type GoogleLoginConfig = {
+  configured: boolean;
+  clientId: string | null;
+};
+
 type DemoAccount = {
   id: string;
   email: string;
@@ -24,58 +29,58 @@ type DemoAccount = {
   status: string;
 };
 
-const seedPassword = 'Str0ngPass!';
+const seedPassword = "Str0ngPass!";
 
 const demoAccounts: DemoAccount[] = [
   {
-    id: 'demo-member',
-    email: 'member@nightlife.vn',
-    displayName: 'Demo Member',
-    phone: '0912 345 678',
-    role: 'USER',
-    tier: 'VIP',
-    status: 'ACTIVE',
+    id: "demo-member",
+    email: "member@nightlife.vn",
+    displayName: "Demo Member",
+    phone: "0912 345 678",
+    role: "USER",
+    tier: "VIP",
+    status: "ACTIVE",
   },
   {
-    id: 'demo-partner',
-    email: 'partner@nightlife.vn',
-    displayName: 'Demo Partner',
-    phone: '0901 000 002',
-    role: 'PARTNER',
-    tier: 'PREMIUM',
-    status: 'ACTIVE',
+    id: "demo-partner",
+    email: "partner@nightlife.vn",
+    displayName: "Demo Partner",
+    phone: "0901 000 002",
+    role: "PARTNER",
+    tier: "PREMIUM",
+    status: "ACTIVE",
   },
   {
-    id: 'demo-partner-1',
-    email: 'partner1@nightlife.vn',
-    displayName: 'Demo Partner',
-    phone: '0901 000 002',
-    role: 'PARTNER',
-    tier: 'PREMIUM',
-    status: 'ACTIVE',
+    id: "demo-partner-1",
+    email: "partner1@nightlife.vn",
+    displayName: "Demo Partner",
+    phone: "0901 000 002",
+    role: "PARTNER",
+    tier: "PREMIUM",
+    status: "ACTIVE",
   },
   {
-    id: 'demo-partner-2',
-    email: 'partner2@nightlife.vn',
-    displayName: 'Demo Partner',
-    phone: '0901 000 003',
-    role: 'PARTNER',
-    tier: 'PREMIUM',
-    status: 'ACTIVE',
+    id: "demo-partner-2",
+    email: "partner2@nightlife.vn",
+    displayName: "Demo Partner",
+    phone: "0901 000 003",
+    role: "PARTNER",
+    tier: "PREMIUM",
+    status: "ACTIVE",
   },
   {
-    id: 'demo-admin',
-    email: 'admin@nightlife.vn',
-    displayName: 'NightLife Admin',
-    phone: '0901 000 001',
-    role: 'ADMIN',
-    tier: 'VIP',
-    status: 'ACTIVE',
+    id: "demo-admin",
+    email: "admin@nightlife.vn",
+    displayName: "NightLife Admin",
+    phone: "0901 000 001",
+    role: "ADMIN",
+    tier: "VIP",
+    status: "ACTIVE",
   },
 ];
 
 const createDemoToken = (account: DemoAccount) => {
-  const header = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0';
+  const header = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0";
   const payload = {
     sub: account.id,
     email: account.email,
@@ -83,25 +88,20 @@ const createDemoToken = (account: DemoAccount) => {
     tier: account.tier,
   };
   const encodedPayload =
-    typeof window !== 'undefined'
+    typeof window !== "undefined"
       ? window
           .btoa(JSON.stringify(payload))
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_')
-          .replace(/=+$/, '')
-      : 'e30';
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "")
+      : "e30";
 
   return `${header}.${encodedPayload}.demo`;
 };
 
-const getDemoSession = (
-  role: AuthRole,
-  payload: LoginPayload,
-): AuthResponse | null => {
+const getDemoSession = (role: AuthRole, payload: LoginPayload): AuthResponse | null => {
   const email = payload.email.trim().toLowerCase();
-  const account = demoAccounts.find(
-    (item) => item.email === email && item.role === role,
-  );
+  const account = demoAccounts.find((item) => item.email === email && item.role === role);
 
   if (!account || payload.password !== seedPassword) {
     return null;
@@ -121,14 +121,10 @@ const shouldUseDemoFallback = (error: unknown) => {
   return [401, 403, 404, 502, 503, 504].includes(error.status);
 };
 
-const loginWithRole = async (
-  role: AuthRole,
-  endpoint: string,
-  payload: LoginPayload,
-) => {
+const loginWithRole = async (role: AuthRole, endpoint: string, payload: LoginPayload) => {
   try {
     return await apiClient<AuthResponse>(endpoint, {
-      method: 'POST',
+      method: "POST",
       data: payload,
     });
   } catch (error) {
@@ -143,28 +139,31 @@ const loginWithRole = async (
 };
 
 export const loginPartner = (payload: LoginPayload) => {
-  return loginWithRole('PARTNER', '/auth/login/partner', payload);
+  return loginWithRole("PARTNER", "/auth/login/partner", payload);
 };
 
 export const loginAdmin = (payload: LoginPayload) => {
-  return loginWithRole('ADMIN', '/auth/login/admin', payload);
+  return loginWithRole("ADMIN", "/auth/login/admin", payload);
 };
 
 export const loginMember = (payload: LoginPayload) => {
-  return loginWithRole('USER', '/auth/login/member', payload);
+  return loginWithRole("USER", "/auth/login/member", payload);
 };
 
 export const loginGoogleMember = (payload: GoogleLoginPayload) => {
-  return apiClient<AuthResponse>('/auth/google/member', {
-    method: 'POST',
+  return apiClient<AuthResponse>("/auth/google/member", {
+    method: "POST",
     data: payload,
   });
+};
+
+export const getGoogleLoginConfig = () => {
+  return apiClient<GoogleLoginConfig>("/auth/google/config");
 };
 
 export const registerMember = (payload: RegisterPayload) => {
-  return apiClient<AuthResponse>('/auth/register', {
-    method: 'POST',
+  return apiClient<AuthResponse>("/auth/register", {
+    method: "POST",
     data: payload,
   });
 };
-
