@@ -10,13 +10,13 @@ export function CastProfileStyles() {
 
       .cast-mobile {
         min-height: 100vh;
-        padding-bottom: calc(92px + env(safe-area-inset-bottom));
+        padding-bottom: calc(168px + env(safe-area-inset-bottom));
         background: #0c0c0f;
       }
 
       .nl-page-content:has(.cast-page) {
         padding-bottom: 0 !important;
-        scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+        scroll-padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
       }
 
       .cast-mobile-hero {
@@ -616,14 +616,18 @@ export function CastProfileStyles() {
       }
 
       .cast-booking-cta.mobile {
-        position: sticky;
-        z-index: 30;
-        bottom: 0;
+        position: fixed;
+        z-index: 65;
+        left: 0;
+        right: 0;
+        bottom: calc(74px + env(safe-area-inset-bottom));
         gap: 11px;
-        margin-top: 18px;
-        padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
-        background: rgba(8,8,11,.92);
+        min-height: 76px;
+        margin: 0;
+        padding: 12px 16px;
+        background: rgba(8,8,11,.97);
         border-top: 1px solid rgba(212,178,106,.18);
+        box-shadow: 0 -18px 40px rgba(0,0,0,.34);
         backdrop-filter: blur(12px);
       }
 
@@ -638,6 +642,12 @@ export function CastProfileStyles() {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+      }
+
+      .cast-booking-favorite.is-active {
+        border-color: rgba(224,114,158,.38);
+        background: rgba(224,114,158,.12);
       }
 
       .cast-booking-button {
@@ -659,11 +669,15 @@ export function CastProfileStyles() {
       .cast-booking-button strong {
         font-size: 14.5px;
         font-weight: 800;
+        line-height: 1.05;
+        white-space: nowrap;
       }
 
       .cast-booking-button span {
         font-size: 10.5px;
+        line-height: 1.15;
         opacity: .82;
+        white-space: nowrap;
       }
 
       .cast-desktop {
