@@ -17,6 +17,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
 import { PublicDiscoveryQueryDto } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
+import { TelegramService } from '../telegram/telegram.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
@@ -157,6 +158,8 @@ export class NightlifeDataService {
     private readonly accessService: AccessService,
     @Optional()
     private readonly adminNotificationService?: AdminNotificationService,
+    @Optional()
+    private readonly telegramService?: TelegramService,
   ) {}
 
   async listPublicAreas(query: PublicDiscoveryQueryDto = {}) {
@@ -1148,6 +1151,9 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
+    if (this.telegramService) {
+      await this.telegramService.notifyNewBooking(booking);
+    }
 
     return booking;
   }
@@ -1175,6 +1181,9 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
+    if (this.telegramService) {
+      await this.telegramService.notifyNewBooking(booking);
+    }
 
     return booking;
   }
