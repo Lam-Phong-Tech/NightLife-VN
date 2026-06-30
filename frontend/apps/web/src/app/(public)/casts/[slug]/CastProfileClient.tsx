@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Heart } from "lucide-react";
 import { ApiError } from "@/lib/api/client";
 import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
@@ -190,12 +191,21 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                 activeIndex={activeMediaIndex}
                 variant="desktop"
                 isLightboxOpen={isLightboxOpen}
+                isFavorite={isFavorite}
                 onSelect={selectMedia}
                 onOpenLightbox={openLightbox}
                 onCloseLightbox={() => setIsLightboxOpen(false)}
+                onToggleFavorite={toggleFavorite}
               />
 
               <div className="cast-desktop-content">
+                <nav className="cast-desktop-breadcrumb" aria-label="Breadcrumb">
+                  <Link href="/">Trang chủ</Link>
+                  <span>/</span>
+                  <Link href="/danh-sach-cast">Cast</Link>
+                  <span>/</span>
+                  <strong>{profile.name}</strong>
+                </nav>
                 <div className="cast-desktop-favorite-anchor">
                   <CastInfo
                     profile={profile}

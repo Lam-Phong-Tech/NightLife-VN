@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Play, Star, X } from "lucide-react";
 import { mediaBg, videoEmbedUrl } from "./cast-profile.helpers";
 import type { CastGalleryAction, CastMedia } from "./cast-profile.types";
 
@@ -10,9 +10,11 @@ type CastGalleryProps = {
   activeIndex: number;
   variant: "mobile" | "desktop";
   isLightboxOpen: boolean;
+  isFavorite?: boolean;
   onSelect: (index: number, action?: CastGalleryAction) => void;
   onOpenLightbox: (index?: number) => void;
   onCloseLightbox: () => void;
+  onToggleFavorite?: () => void;
 };
 
 export function CastGallery({
@@ -20,9 +22,11 @@ export function CastGallery({
   activeIndex,
   variant,
   isLightboxOpen,
+  isFavorite = false,
   onSelect,
   onOpenLightbox,
   onCloseLightbox,
+  onToggleFavorite,
 }: CastGalleryProps) {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
@@ -109,6 +113,7 @@ export function CastGallery({
 
   return (
     <section className="cast-desktop-gallery" data-testid="cast-gallery-desktop">
+      <div className="cast-desktop-main-media-wrap">
       <button
         type="button"
         className="cast-desktop-main-media"
@@ -119,6 +124,24 @@ export function CastGallery({
         <span className="cast-media-label">{activeMedia.type === "VIDEO" ? "Video" : "Gallery"}</span>
         {activeMedia.type === "VIDEO" ? <span className="cast-play cast-play-desktop"><Play size={24} fill="currentColor" /></span> : null}
       </button>
+        <span className="cast-rank-badge cast-desktop-media-rank">
+          <Star size={13} fill="currentColor" />
+          #1 Ranking tháng 6
+        </span>
+        <span className="cast-live-badge cast-desktop-media-live">
+          <span />
+          Đang nhận đặt tối nay
+        </span>
+        <button
+          type="button"
+          className={`cast-desktop-media-fav${isFavorite ? " is-active" : ""}`}
+          onClick={onToggleFavorite}
+          aria-label={isFavorite ? "Bá» lÆ°u cast" : "LÆ°u cast"}
+          aria-pressed={isFavorite}
+        >
+          <Heart size={17} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
+        </button>
+      </div>
 
       <div className="cast-desktop-thumbs">
         {gallery.slice(0, 5).map((media, index) => (

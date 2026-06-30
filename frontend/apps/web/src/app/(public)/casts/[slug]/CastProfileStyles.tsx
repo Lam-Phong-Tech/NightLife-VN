@@ -980,6 +980,200 @@ export function CastProfileStyles() {
         font-size: 15px;
       }
 
+      .nl-page-content:has(.cast-page) {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        background: #0c0c0f !important;
+      }
+
+      .nl-page-content:has(.cast-page) .cast-page {
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+      }
+
+      .cast-desktop {
+        padding: 38px 28px 48px;
+      }
+
+      .cast-desktop-shell {
+        width: min(1240px, calc(100vw - 56px));
+        max-width: none;
+        padding: 22px 30px 30px;
+      }
+
+      .cast-desktop-grid {
+        grid-template-columns: 464px minmax(0, 1fr);
+        gap: 34px;
+      }
+
+      .cast-desktop-content {
+        min-width: 0;
+      }
+
+      .cast-desktop-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #8c8679;
+        font-size: 12.5px;
+        margin-bottom: 20px;
+      }
+
+      .cast-desktop-breadcrumb a {
+        color: #8c8679;
+        text-decoration: none;
+      }
+
+      .cast-desktop-breadcrumb strong {
+        color: #c5c0b6;
+        font-weight: 600;
+      }
+
+      .cast-desktop-main-media-wrap {
+        position: relative;
+      }
+
+      .cast-desktop-main-media {
+        height: 540px;
+        display: block;
+        box-shadow:
+          inset 0 -145px 90px -76px rgba(0,0,0,.92),
+          0 20px 44px -22px rgba(0,0,0,.7);
+      }
+
+      .cast-media-label,
+      .cast-desktop .cast-badge-row.desktop,
+      .cast-desktop-fav {
+        display: none;
+      }
+
+      .cast-desktop-media-rank {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        font-size: 11px;
+        padding: 7px 13px 7px 10px;
+      }
+
+      .cast-desktop-media-live {
+        position: absolute;
+        left: 14px;
+        bottom: 14px;
+        background: rgba(12,12,15,.5);
+      }
+
+      .cast-desktop-media-fav {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.2);
+        background: rgba(12,12,15,.5);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+      }
+
+      .cast-desktop-media-fav.is-active {
+        color: #e0729e;
+      }
+
+      .cast-desktop-thumbs {
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .cast-thumb {
+        height: 74px;
+        border-radius: 10px;
+      }
+
+      .cast-desktop-profile {
+        padding-right: 0;
+      }
+
+      .cast-desktop-name-block {
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .cast-desktop-name-block h1 {
+        font-size: 34px;
+        line-height: 1;
+        letter-spacing: -.02em;
+      }
+
+      .cast-desktop-name-block p {
+        margin: 0 0 4px;
+        color: #c5c0b6;
+        font-size: 14px;
+      }
+
+      .cast-desktop-stat-row {
+        gap: 22px;
+        margin-top: 18px;
+        padding: 14px 0;
+        border-top: 1px solid rgba(255,255,255,.07);
+        border-bottom: 1px solid rgba(255,255,255,.07);
+      }
+
+      .cast-desktop-stat-row span {
+        min-width: 0;
+      }
+
+      .cast-desktop-chips {
+        margin-top: 18px;
+      }
+
+      .cast-desktop-copy {
+        max-width: 100%;
+        margin-top: 18px;
+        color: #c5c0b6;
+      }
+
+      .cast-detail-list.desktop {
+        margin-top: 15px;
+        gap: 11px;
+      }
+
+      .cast-section-heading.compact {
+        margin-top: 24px;
+        margin-bottom: 13px;
+      }
+
+      .cast-venue-card:not(.compact) {
+        align-items: center;
+        gap: 15px;
+      }
+
+      .cast-venue-card:not(.compact) .cast-venue-action {
+        white-space: nowrap;
+      }
+
+      .cast-desktop-booking {
+        margin-top: 24px;
+      }
+
+      .cast-desktop-booking .cast-booking-button {
+        min-width: 190px;
+        padding: 12px 40px;
+      }
+
+      .cast-related-section.desktop {
+        margin-top: 34px;
+      }
+
+      .cast-related-section.desktop .cast-related-list {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
       .cast-lightbox {
         position: fixed;
         inset: 0;
@@ -1140,6 +1334,21 @@ export function CastProfileStyles() {
         .cast-schedule-grid.desktop {
           grid-template-columns: 1fr;
           gap: 8px;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .cast-desktop-shell {
+          width: min(760px, calc(100vw - 40px));
+          padding: 20px;
+        }
+
+        .cast-desktop-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .cast-desktop-main-media {
+          height: min(620px, 72vw);
         }
       }
 

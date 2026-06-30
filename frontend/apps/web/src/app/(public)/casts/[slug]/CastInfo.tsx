@@ -235,6 +235,7 @@ function VenueCard({
     <Link
       href={storeHref}
       className={`cast-venue-card${compact ? " compact" : ""}`}
+      data-testid={compact ? undefined : "cast-store-sidebar"}
       onClick={() => onTrack?.("store", { surface: compact ? "mobile-venue" : "desktop-venue" })}
     >
       <span className="cast-venue-media" style={{ background: mediaBg(storeImage) }} />
