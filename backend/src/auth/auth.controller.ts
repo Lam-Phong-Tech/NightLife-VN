@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -24,6 +25,14 @@ export class AuthController {
   @Post('login/member')
   loginMember(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.loginAs('USER', dto, this.sessionContext(request));
+  }
+
+  @Post('google/member')
+  loginGoogleMember(@Body() dto: GoogleAuthDto, @Req() request: Request) {
+    return this.authService.loginGoogleMember(
+      dto,
+      this.sessionContext(request),
+    );
   }
 
   @Post('login/partner')

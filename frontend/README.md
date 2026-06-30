@@ -30,6 +30,17 @@ frontend/
 └── turbo.json                  # định nghĩa task & cache của Turborepo
 ```
 
+## Environment
+
+Set these values for the web app when Google login/register is enabled:
+
+```env
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-web-client-id.apps.googleusercontent.com"
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+```
+
+The backend must use the same Google web client id in `GOOGLE_CLIENT_ID`.
+
 ## 🚀 Lệnh thường dùng
 
 > Chạy ở thư mục gốc `frontend/`. Mọi lệnh đi qua Turborepo, áp dụng cho tất cả package.

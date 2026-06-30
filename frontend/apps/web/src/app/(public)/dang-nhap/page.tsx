@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, Phone, Sparkles } from "lucide-react";
-import { loginMember, registerMember } from "@/lib/api/auth";
+import { loginGoogleMember, loginMember, registerMember } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
 
@@ -26,8 +26,41 @@ const colors = {
 
 const demoPhoneEmailMap = new Map([["0912345678", "member@nightlife.vn"]]);
 const googleLogoSrc = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const lineLogoSrc =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306C755'/%3E%3Cpath fill='%23fff' d='M32 14c-11.6 0-21 7.4-21 16.6 0 8.2 7.5 15.1 17.6 16.4.7.1 1.6.5 1.8 1.1.2.5.1 1.3.1 1.8l-.3 2c-.1.6-.4 2.2 1.8 1.2 2.2-1 11.8-7 16.1-12 3-3.3 4.9-6.7 4.9-10.5C53 21.4 43.6 14 32 14Z'/%3E%3Cpath fill='%2306C755' d='M20.4 35.2h8v-3.1h-4.5v-7.3h-3.5v10.4Zm10.2 0h3.5V24.8h-3.5v10.4Zm6 0H40v-5.6l4.3 5.6h3V24.8h-3.4v5.5l-4.2-5.5h-3.1v10.4Zm12.8 0v-3h-3.9v-1h3.5v-2.8h-3.5v-.7h3.9v-2.9h-7.2v10.4h7.2Z'/%3E%3C/svg%3E";
+
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+type GoogleButtonText = "signin_with" | "signup_with";
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+            ux_mode?: "popup" | "redirect";
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              shape?: "rectangular" | "pill" | "circle" | "square";
+              text?: GoogleButtonText;
+              width?: number;
+            },
+          ) => void;
+        };
+      };
+    };
+  }
+}
 
 function normalizePhone(value: string) {
   return value.replace(/[^\d+]/g, "");
@@ -51,6 +84,8 @@ export default function Page() {
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/tai-khoan";
 
@@ -131,6 +166,107 @@ export default function Page() {
       setIsSubmitting(false);
     }
   };
+
+  const handleGoogleCredential = useCallback(
+    async (response: GoogleCredentialResponse) => {
+      if (!response.credential) {
+        setMessageTone("error");
+        setMessage("Không nhận được thông tin xác thực từ Google.");
+        return;
+      }
+
+      setIsGoogleSubmitting(true);
+      setMessage("");
+
+      try {
+        const session = await loginGoogleMember({
+          credential: response.credential,
+        });
+        setAuthSession(session);
+        window.location.href = redirectTo;
+      } catch (error) {
+        const detail =
+          error instanceof ApiError
+            ? error.message
+            : "Không kết nối được API đăng nhập Google.";
+        setMessageTone("error");
+        setMessage(detail);
+      } finally {
+        setIsGoogleSubmitting(false);
+      }
+    },
+    [redirectTo],
+  );
+
+  useEffect(() => {
+    if (!googleClientId || !googleButtonRef.current) {
+      return;
+    }
+
+    let mounted = true;
+
+    const renderGoogleButton = () => {
+      if (!mounted || !window.google || !googleButtonRef.current) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential,
+        ux_mode: "popup",
+      });
+
+      googleButtonRef.current.innerHTML = "";
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        shape: "rectangular",
+        text: isReg ? "signup_with" : "signin_with",
+        width: Math.min(360, googleButtonRef.current.offsetWidth || 180),
+      });
+    };
+
+    if (window.google) {
+      renderGoogleButton();
+      return () => {
+        mounted = false;
+      };
+    }
+
+    const existingScript = document.getElementById("google-identity-services");
+
+    if (existingScript) {
+      existingScript.addEventListener("load", renderGoogleButton, {
+        once: true,
+      });
+      return () => {
+        mounted = false;
+        existingScript.removeEventListener("load", renderGoogleButton);
+      };
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-identity-services";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    script.onerror = () => {
+      if (!mounted) {
+        return;
+      }
+
+      setMessageTone("error");
+      setMessage("Không tải được nút đăng nhập Google.");
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      mounted = false;
+      script.onload = null;
+      script.onerror = null;
+    };
+  }, [handleGoogleCredential, isReg]);
 
   const showSocialComingSoon = (provider: "Google" | "LINE") => {
     setMessageTone("error");
@@ -250,12 +386,31 @@ export default function Page() {
                 </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-                  <SocialButton
-                    logoSrc={googleLogoSrc}
-                    logoAlt="Google"
-                    label="Google"
-                    onClick={() => showSocialComingSoon("Google")}
-                  />
+                  {googleClientId ? (
+                    <div
+                      style={{
+                        minHeight: 46,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                        opacity: isGoogleSubmitting ? .68 : 1,
+                        pointerEvents: isGoogleSubmitting ? "none" : "auto",
+                      }}
+                    >
+                      <div ref={googleButtonRef} style={{ width: "100%", minHeight: 40 }} />
+                    </div>
+                  ) : (
+                    <SocialButton
+                      logoSrc={googleLogoSrc}
+                      logoAlt="Google"
+                      label="Google"
+                      onClick={() => {
+                        setMessageTone("error");
+                        setMessage("Thiếu NEXT_PUBLIC_GOOGLE_CLIENT_ID cho đăng nhập Google.");
+                      }}
+                    />
+                  )}
                   <SocialButton
                     logoSrc={lineLogoSrc}
                     logoAlt="LINE"

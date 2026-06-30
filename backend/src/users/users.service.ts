@@ -4,6 +4,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../common/password.service';
 
@@ -54,6 +55,24 @@ export class UsersService {
         phone: input.phone,
         role: input.role ?? 'USER',
         tier: input.tier ?? 'FREE',
+      },
+    });
+  }
+
+  async createGoogleMember(input: { email: string; displayName?: string }) {
+    const email = input.email.toLowerCase();
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictException('Email is already registered');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: await this.passwordService.hash(`google:${randomUUID()}`),
+        displayName: input.displayName,
+        role: 'USER',
+        tier: 'FREE',
       },
     });
   }

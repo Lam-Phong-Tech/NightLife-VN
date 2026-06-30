@@ -18,6 +18,8 @@ describe('AuthService', () => {
 
   const usersService = {
     createUser: jest.fn(),
+    createGoogleMember: jest.fn(),
+    findByEmail: jest.fn(),
     validateCredentials: jest.fn(),
     findByIdOrThrow: jest.fn(),
     toPublicUser: jest.fn((value) => ({
@@ -34,7 +36,17 @@ describe('AuthService', () => {
   } as unknown as jest.Mocked<JwtService>;
 
   const configService = {
-    get: jest.fn(() => '1d'),
+    get: jest.fn((key: string, defaultValue?: string) => {
+      if (key === 'GOOGLE_CLIENT_ID') {
+        return 'google-client-id';
+      }
+
+      if (key === 'JWT_EXPIRES_IN') {
+        return defaultValue ?? '1d';
+      }
+
+      return defaultValue;
+    }),
   } as unknown as jest.Mocked<ConfigService>;
 
   const prisma = {
@@ -48,10 +60,22 @@ describe('AuthService', () => {
   } as unknown as jest.Mocked<PrismaService>;
 
   let service: AuthService;
+  const originalFetch = global.fetch;
+
+  const mockGoogleTokenInfo = (body: unknown, ok = true) => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok,
+      json: jest.fn().mockResolvedValue(body),
+    } as unknown as Response);
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     service = new AuthService(configService, jwtService, usersService, prisma);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
 
   it('registers a user and returns a JWT auth response', async () => {
@@ -155,6 +179,84 @@ describe('AuthService', () => {
         accessToken: 'jwt-token',
       }),
     );
+  });
+
+  it('logs in an existing member with a verified Google credential', async () => {
+    const member = {
+      ...user,
+      id: 'member-1',
+      email: 'google@nightlife.vn',
+      displayName: 'Google Member',
+      role: 'USER',
+      tier: 'FREE',
+      deletedAt: null,
+    };
+    mockGoogleTokenInfo({
+      aud: 'google-client-id',
+      email: 'Google@Nightlife.vn',
+      email_verified: 'true',
+      name: 'Google Member',
+      sub: 'google-sub',
+    });
+    usersService.findByEmail.mockResolvedValue(member as never);
+
+    await expect(
+      service.loginGoogleMember({
+        credential: 'google-id-token',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accessToken: 'jwt-token',
+      }),
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://oauth2.googleapis.com/tokeninfo?id_token=google-id-token',
+    );
+    expect(usersService.findByEmail).toHaveBeenCalledWith(
+      'google@nightlife.vn',
+    );
+    expect(usersService.createGoogleMember).not.toHaveBeenCalled();
+    expect(prisma.userSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: member.id,
+      }),
+    });
+  });
+
+  it('creates a member when Google credential email is new', async () => {
+    const member = {
+      ...user,
+      id: 'member-2',
+      email: 'new-google@nightlife.vn',
+      displayName: 'New Google Member',
+      role: 'USER',
+      tier: 'FREE',
+    };
+    mockGoogleTokenInfo({
+      aud: 'google-client-id',
+      email: 'New-Google@Nightlife.vn',
+      email_verified: true,
+      name: 'New Google Member',
+      sub: 'google-sub-new',
+    });
+    usersService.findByEmail.mockResolvedValue(null as never);
+    usersService.createGoogleMember.mockResolvedValue(member as never);
+
+    await expect(
+      service.loginGoogleMember({
+        credential: 'google-id-token',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accessToken: 'jwt-token',
+      }),
+    );
+
+    expect(usersService.createGoogleMember).toHaveBeenCalledWith({
+      email: 'new-google@nightlife.vn',
+      displayName: 'New Google Member',
+    });
   });
 
   it('revokes the current token on logout', async () => {

@@ -22,6 +22,7 @@ Default local values:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nightlife?schema=public"
 JWT_SECRET="change-me-in-production"
 JWT_EXPIRES_IN="1d"
+GOOGLE_CLIENT_ID=""
 PORT=3001
 STORAGE_LOCAL_DIR="uploads"
 PUBLIC_BASE_URL="http://localhost:3001"
@@ -67,10 +68,12 @@ Implemented endpoints:
 
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /auth/google/member`
 - `GET /auth/me` with `Authorization: Bearer <token>`
 - `GET /users/me` with `Authorization: Bearer <token>`
 
 Users are created through `UsersService`, with email lookup, password hashing, default `role`, default `tier`, and public-user serialization. Passwords are hashed with Node.js `crypto.scrypt`. JWT settings come from `JWT_SECRET` and `JWT_EXPIRES_IN`.
+Google member login/register uses Google Identity Services ID token credentials. Set `GOOGLE_CLIENT_ID` on the backend and the same value as `NEXT_PUBLIC_GOOGLE_CLIENT_ID` on the frontend.
 
 ## Storage
 

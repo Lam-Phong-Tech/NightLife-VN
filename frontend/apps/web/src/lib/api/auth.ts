@@ -10,6 +10,10 @@ export type RegisterPayload = LoginPayload & {
   displayName?: string;
 };
 
+export type GoogleLoginPayload = {
+  credential: string;
+};
+
 type DemoAccount = {
   id: string;
   email: string;
@@ -148,6 +152,13 @@ export const loginAdmin = (payload: LoginPayload) => {
 
 export const loginMember = (payload: LoginPayload) => {
   return loginWithRole('USER', '/auth/login/member', payload);
+};
+
+export const loginGoogleMember = (payload: GoogleLoginPayload) => {
+  return apiClient<AuthResponse>('/auth/google/member', {
+    method: 'POST',
+    data: payload,
+  });
 };
 
 export const registerMember = (payload: RegisterPayload) => {
