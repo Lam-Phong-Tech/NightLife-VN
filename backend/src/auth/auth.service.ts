@@ -104,6 +104,7 @@ type AuthCookiePayload = {
 const lineStateCookie = 'line_oauth_state';
 const lineNonceCookie = 'line_oauth_nonce';
 const lineRedirectCookie = 'line_oauth_redirect';
+const lineFallbackEmailDomain = 'line.vietyoru.local';
 const authCookieMaxAgeMs = 24 * 60 * 60 * 1000;
 const oauthCookieMaxAgeMs = 10 * 60 * 1000;
 
@@ -613,19 +614,25 @@ export class AuthService {
       idTokenInfo.error ||
       idTokenInfo.aud !== channelId ||
       (expectedNonce && idTokenInfo.nonce !== expectedNonce) ||
-      !idTokenInfo.sub ||
-      !idTokenInfo.email
+      !idTokenInfo.sub
     ) {
-      throw new UnauthorizedException(
-        'LINE email permission is required for login',
-      );
+      throw new UnauthorizedException('Invalid LINE ID token');
     }
 
     return {
       sub: idTokenInfo.sub,
-      email: idTokenInfo.email.toLowerCase(),
+      email:
+        idTokenInfo.email?.toLowerCase() ||
+        this.toLineFallbackEmail(idTokenInfo.sub),
       displayName: idTokenInfo.name?.trim() || undefined,
     };
+  }
+
+  private toLineFallbackEmail(lineSubject: string) {
+    const normalizedSubject =
+      lineSubject.toLowerCase().replace(/[^a-z0-9._-]/g, '-') || 'unknown';
+
+    return `line-${normalizedSubject}@${lineFallbackEmailDomain}`;
   }
 
   private setAuthCookies(response: Response, authResponse: AuthCookiePayload) {

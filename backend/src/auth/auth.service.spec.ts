@@ -71,8 +71,53 @@ describe('AuthService', () => {
     });
   };
 
+  const useDefaultConfig = () => {
+    configService.get.mockImplementation((key: string, defaultValue?: string) => {
+      if (key === 'GOOGLE_CLIENT_ID') {
+        return 'google-client-id';
+      }
+
+      if (key === 'JWT_EXPIRES_IN') {
+        return defaultValue ?? '1d';
+      }
+
+      return defaultValue;
+    });
+  };
+
+  const useLineConfig = () => {
+    configService.get.mockImplementation((key: string, defaultValue?: string) => {
+      if (key === 'LINE_CHANNEL_ID') {
+        return '2010552841';
+      }
+
+      if (key === 'LINE_CHANNEL_SECRET') {
+        return 'line-channel-secret';
+      }
+
+      if (key === 'LINE_CALLBACK_URL') {
+        return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
+      }
+
+      if (key === 'WEB_BASE_URL') {
+        return 'https://demonightlight.test9.io.vn';
+      }
+
+      if (key === 'GOOGLE_CLIENT_ID') {
+        return 'google-client-id';
+      }
+
+      if (key === 'JWT_EXPIRES_IN') {
+        return defaultValue ?? '1d';
+      }
+
+      return defaultValue;
+    });
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    useDefaultConfig();
     service = new AuthService(configService, jwtService, usersService, prisma);
   });
 
@@ -327,23 +372,7 @@ describe('AuthService', () => {
   });
 
   it('starts LINE OAuth with email scope and web login fallback', () => {
-    configService.get.mockImplementation(
-      (key: string, defaultValue?: string) => {
-        if (key === 'LINE_CHANNEL_ID') {
-          return '2010552841';
-        }
-
-        if (key === 'LINE_CALLBACK_URL') {
-          return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
-        }
-
-        if (key === 'JWT_EXPIRES_IN') {
-          return defaultValue ?? '1d';
-        }
-
-        return defaultValue;
-      },
-    );
+    useLineConfig();
 
     const response = {
       cookie: jest.fn(),
@@ -370,6 +399,78 @@ describe('AuthService', () => {
         sameSite: 'lax',
         secure: true,
       }),
+    );
+  });
+
+  it('creates a LINE member with a stable fallback email when LINE does not return email yet', async () => {
+    useLineConfig();
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          id_token: 'line-id-token',
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          aud: '2010552841',
+          sub: 'Ue611b37ac7eea14388f71e7eef27b835',
+          nonce: 'nonce-1',
+          name: 'LINE Member',
+        }),
+      });
+    const member = {
+      ...user,
+      id: 'line-member-1',
+      email: 'line-ue611b37ac7eea14388f71e7eef27b835@line.vietyoru.local',
+      displayName: 'LINE Member',
+      role: 'USER',
+      tier: 'FREE',
+      deletedAt: null,
+    };
+    usersService.findByEmail.mockResolvedValue(null);
+    usersService.createLineMember.mockResolvedValue(member);
+
+    const response = {
+      cookie: jest.fn(),
+      clearCookie: jest.fn(),
+      redirect: jest.fn(),
+    } as unknown as jest.Mocked<Response>;
+
+    await service.handleLineCallback(
+      {
+        code: 'line-code',
+        state: 'state-1',
+      },
+      {
+        headers: {
+          cookie:
+            'line_oauth_state=state-1; line_oauth_nonce=nonce-1; line_oauth_redirect=%2Ftai-khoan',
+        },
+      } as never,
+      response,
+    );
+
+    expect(usersService.findByEmail).toHaveBeenCalledWith(
+      'line-ue611b37ac7eea14388f71e7eef27b835@line.vietyoru.local',
+    );
+    expect(usersService.createLineMember).toHaveBeenCalledWith({
+      email: 'line-ue611b37ac7eea14388f71e7eef27b835@line.vietyoru.local',
+      displayName: 'LINE Member',
+    });
+    expect(response.cookie).toHaveBeenCalledWith(
+      'auth_token',
+      'jwt-token',
+      expect.objectContaining({
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      }),
+    );
+    expect(response.redirect).toHaveBeenCalledWith(
+      'https://demonightlight.test9.io.vn/tai-khoan',
     );
   });
 

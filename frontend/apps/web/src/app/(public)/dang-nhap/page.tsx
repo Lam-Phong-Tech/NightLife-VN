@@ -99,11 +99,25 @@ export default function Page() {
 
     return redirect;
   }, []);
+  const lineError = useMemo(() => {
+    if (typeof window === "undefined") return "";
+
+    return new URLSearchParams(window.location.search).get("line_error") || "";
+  }, []);
 
   const title = isReg ? "Tạo tài khoản hội viên" : "Đăng nhập hội viên";
   const subtitle = isReg
     ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ."
     : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
+
+  useEffect(() => {
+    if (!lineError) {
+      return;
+    }
+
+    setMessageTone("error");
+    setMessage(lineError);
+  }, [lineError]);
 
   const switchMode = (nextIsReg: boolean) => {
     setIsReg(nextIsReg);
