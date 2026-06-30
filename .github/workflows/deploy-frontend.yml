@@ -16,6 +16,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
     defaults:
       run:
         working-directory: ./frontend
@@ -34,6 +36,13 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --no-frozen-lockfile --prod=false || pnpm install --prod=false
+
+      - name: Validate Google OAuth client ID
+        run: |
+          if [ -z "${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}" ]; then
+            echo "::error::Thieu NEXT_PUBLIC_GOOGLE_CLIENT_ID hoac GOOGLE_CLIENT_ID secret cho Google login."
+            exit 1
+          fi
 
       - name: Build Project
         run: pnpm run build
@@ -112,7 +121,7 @@ jobs:
             pm2 delete app-demonightlight.test9.io.vn 2>/dev/null || true
             pm2 delete app-demonightlight.test9io.vn 2>/dev/null || true
             fuser -k 3009/tcp 2>/dev/null || true; sleep 1; fuser -k -9 3009/tcp 2>/dev/null || true; sleep 2
-            BACKEND_API_URL="$BACKEND_URL" BACKEND_API_FALLBACK_URLS="http://127.0.0.1:3012,http://localhost:3012,http://127.0.0.1:3000,http://localhost:3000" PORT=3009 pm2 start pnpm --name "app-demonightlight.test9io.vn" -- --dir apps/web run start
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID="${{ env.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}" BACKEND_API_URL="$BACKEND_URL" BACKEND_API_FALLBACK_URLS="http://127.0.0.1:3012,http://localhost:3012,http://127.0.0.1:3000,http://localhost:3000" PORT=3009 pm2 start pnpm --name "app-demonightlight.test9io.vn" -- --dir apps/web run start
             pm2 save
             ok=0; for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:3009/dat-cho >/dev/null; then ok=1; break; fi; sleep 2; done; if [ "$ok" != 1 ]; then echo "::error::Frontend khong tra loi /dat-cho tren cong 3009 sau ~40s."; pm2 logs app-demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
             if ! curl -fsS http://127.0.0.1:3009/api/backend/areas >/dev/null; then echo "::error::Frontend da len, nhung proxy /api/backend/areas khong noi duoc backend 3012."; pm2 logs app-demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; pm2 logs app-api.demonightlight.test9io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
