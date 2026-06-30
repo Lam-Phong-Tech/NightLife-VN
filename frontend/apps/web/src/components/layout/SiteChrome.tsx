@@ -10,7 +10,6 @@ import {
   Crown,
   Home,
   LogIn,
-  MessageCircle,
   Send,
   Settings,
   Search,
@@ -26,6 +25,7 @@ import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
+import { SupportChatWidget } from "./SupportChatWidget";
 
 const colors = {
   bg: "#0c0c0f",
@@ -670,6 +670,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldSimulate, setShouldSimulate] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
@@ -1022,29 +1023,21 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             <LanguagePicker isMobile={isMobile} />
 
             {/* Chat */}
-            <Link
-              href="#"
-              style={{
-                minHeight: "36px",
-                width: "36px",
-                borderRadius: "18px",
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "transparent",
-                textDecoration: "none",
-              }}
-            >
-              <MessageCircle size={16} />
-            </Link>
+            <SupportChatWidget
+              isMobile={isMobile}
+              isOpen={isChatOpen}
+              onOpen={() => setIsNotificationOpen(false)}
+              onOpenChange={setIsChatOpen}
+            />
 
             {showCustomerNotifications ? (
               <NotificationBellButton
                 isMobile={isMobile}
                 isOpen={isNotificationOpen}
-                onClick={() => setIsNotificationOpen((open) => !open)}
+                onClick={() => {
+                  setIsChatOpen(false);
+                  setIsNotificationOpen((open) => !open);
+                }}
               />
             ) : null}
 
@@ -1091,29 +1084,21 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             <LanguagePicker isMobile={isMobile} />
 
             {/* Chat */}
-            <Link
-              href="#"
-              style={{
-                minHeight: "40px",
-                width: "40px",
-                borderRadius: "20px",
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(255,255,255,.04)",
-                textDecoration: "none",
-              }}
-            >
-              <MessageCircle size={18} />
-            </Link>
+            <SupportChatWidget
+              isMobile={isMobile}
+              isOpen={isChatOpen}
+              onOpen={() => setIsNotificationOpen(false)}
+              onOpenChange={setIsChatOpen}
+            />
 
             {showCustomerNotifications ? (
               <NotificationBellButton
                 isMobile={isMobile}
                 isOpen={isNotificationOpen}
-                onClick={() => setIsNotificationOpen((open) => !open)}
+                onClick={() => {
+                  setIsChatOpen(false);
+                  setIsNotificationOpen((open) => !open);
+                }}
               />
             ) : null}
 
