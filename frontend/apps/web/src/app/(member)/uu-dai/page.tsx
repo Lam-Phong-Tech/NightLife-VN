@@ -6,13 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Copy,
+  Crown,
   Loader2,
   Mail,
   MapPin,
   Phone,
+  Search,
+  SlidersHorizontal,
   Store,
   Ticket,
   UserRound,
+  X,
 } from "lucide-react";
 import { ApiError } from "@/lib/api/client";
 import { couponApi, type CouponIssue, type PublicCoupon } from "@/lib/api/coupons";
@@ -23,6 +28,8 @@ type CouponQuery = {
   storeId?: string;
   storeSlug?: string;
 };
+
+type CouponFilter = "all" | "expiring" | "store" | "vip";
 
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
@@ -35,6 +42,33 @@ const categoryLabels: Record<string, string> = {
   CASINO: "Casino lounge",
 };
 
+const categoryImages: Record<string, string> = {
+  BAR: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=420&q=72",
+  CLUB: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=420&q=72",
+  LOUNGE: "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=420&q=72",
+  GIRLS_BAR: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=420&q=72",
+  KARAOKE: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=420&q=72",
+  MASSAGE_SPA: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=420&q=72",
+  RESTAURANT: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=420&q=72",
+};
+
+const fallbackImages = [
+  "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=420&q=72",
+  "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=420&q=72",
+  "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=420&q=72",
+  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=420&q=72",
+  "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=420&q=72",
+];
+
+const filterLabels: Record<CouponFilter, string> = {
+  all: "Tất cả",
+  expiring: "Sắp hết hạn",
+  store: "Theo quán",
+  vip: "VIP-only",
+};
+
+const dayMs = 1000 * 60 * 60 * 24;
+
 const formatVnd = (value?: number | null) => {
   if (!value) {
     return "0đ";
@@ -43,12 +77,12 @@ const formatVnd = (value?: number | null) => {
   return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
 };
 
-const formatDiscount = (coupon: PublicCoupon) => {
+const formatDiscount = (coupon: Pick<PublicCoupon, "discountType" | "discountValue">) => {
   if (coupon.discountType === "PERCENT") {
-    return `-${coupon.discountValue}%`;
+    return `−${coupon.discountValue}%`;
   }
 
-  return `-${formatVnd(coupon.discountValue)}`;
+  return `−${formatVnd(coupon.discountValue)}`;
 };
 
 const formatDate = (value?: string | null) => {
@@ -68,6 +102,22 @@ const formatDate = (value?: string | null) => {
   }).format(date);
 };
 
+const formatShortDate = (value?: string | null) => {
+  if (!value) {
+    return "Không giới hạn";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Đang cập nhật";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+};
+
 const expiryText = (value?: string | null) => {
   if (!value) {
     return "Không giới hạn";
@@ -83,11 +133,12 @@ const expiryText = (value?: string | null) => {
     return "Đã hết hạn";
   }
 
-  const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (days <= 1) {
-    return "Còn dưới 24 giờ";
+  if (diffMs < dayMs) {
+    const hours = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)));
+    return `Còn ${hours} giờ`;
   }
 
+  const days = Math.ceil(diffMs / dayMs);
   return `Còn ${days} ngày`;
 };
 
@@ -96,7 +147,118 @@ const readableName = (name: string) => {
   return parts[parts.length - 1]?.trim() || name;
 };
 
+const readableDescription = (description?: string | null) => {
+  if (!description) {
+    return "Xuất trình ưu đãi khi đặt bàn hoặc thanh toán tại quán.";
+  }
+
+  const lines = description
+    .split("\n")
+    .map((line) => line.replace(/^🇯🇵|^🇬🇧|^🇻🇳/u, "").trim())
+    .filter(Boolean);
+
+  return lines[lines.length - 1] || description;
+};
+
 const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
+
+const isVipCoupon = (coupon: PublicCoupon) => {
+  const text = `${coupon.code} ${coupon.name} ${coupon.description ?? ""}`.toLowerCase();
+  return text.includes("vip");
+};
+
+const isExpiringSoon = (coupon: PublicCoupon) => {
+  if (!coupon.endsAt) {
+    return false;
+  }
+
+  const diffMs = new Date(coupon.endsAt).getTime() - Date.now();
+  return diffMs > 0 && diffMs <= 2 * dayMs;
+};
+
+const getCouponImage = (coupon: PublicCoupon, index: number) =>
+  categoryImages[coupon.store.category] ?? fallbackImages[index % fallbackImages.length];
+
+const getStoreLocation = (coupon: PublicCoupon) =>
+  [coupon.store.district, coupon.store.city].filter(Boolean).join(", ");
+
+function ClaimedCouponModal({
+  copied,
+  coupon,
+  issue,
+  onClose,
+  onCopy,
+}: {
+  copied: boolean;
+  coupon: PublicCoupon | null;
+  issue: CouponIssue;
+  onClose: () => void;
+  onCopy: () => void;
+}) {
+  const visualCoupon =
+    coupon ??
+    ({
+      id: issue.coupon.id,
+      code: issue.coupon.code,
+      name: issue.coupon.name,
+      description: null,
+      discountType: issue.coupon.discountType ?? "PERCENT",
+      discountValue: issue.coupon.discountValue ?? 0,
+      maxDiscountVnd: issue.coupon.maxDiscountVnd,
+      minSpendVnd: issue.coupon.minSpendVnd,
+      startsAt: issue.createdAt ?? new Date().toISOString(),
+      endsAt: issue.expiresAt,
+      store: {
+        id: issue.coupon.store?.id ?? "",
+        name: issue.coupon.store?.name ?? "Vietyoru partner",
+        slug: issue.coupon.store?.slug ?? "",
+        category: "LOUNGE",
+        city: "Hà Nội",
+        district: null,
+      },
+    } satisfies PublicCoupon);
+
+  const storeName = readableName(visualCoupon.store.name);
+  const image = getCouponImage(visualCoupon, 0);
+
+  return (
+    <div className="coupon-modal-backdrop" role="presentation">
+      <section
+        aria-labelledby="claimed-coupon-title"
+        aria-modal="true"
+        className="coupon-modal"
+        role="dialog"
+      >
+        <div className="coupon-modal-cover" style={{ backgroundImage: `linear-gradient(180deg,rgba(12,12,15,.1),rgba(12,12,15,.75)), url(${image})` }}>
+          <button aria-label="Đóng mã ưu đãi" className="modal-close" onClick={onClose} type="button">
+            <X size={14} />
+          </button>
+          <div>
+            <strong id="claimed-coupon-title">{formatDiscount(visualCoupon)} {readableName(visualCoupon.name)}</strong>
+            <span>{storeName}</span>
+          </div>
+        </div>
+
+        <div className="coupon-modal-body">
+          <span className="modal-eyebrow">Mã ưu đãi của bạn</span>
+          <div className="claimed-code">
+            <strong>{issue.code}</strong>
+            <button aria-label="Sao chép mã ưu đãi" onClick={onCopy} type="button">
+              <Copy size={15} />
+            </button>
+          </div>
+          <button className="copy-button" onClick={onCopy} type="button">
+            <Copy size={16} />
+            {copied ? "Đã sao chép" : "Sao chép mã"}
+          </button>
+          <p>
+            Áp dụng tại {storeName} đến hết <b>{formatDate(issue.expiresAt)}</b>. Xuất trình mã khi đặt bàn hoặc thanh toán.
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 export default function Page() {
   const searchParams = useSearchParams();
@@ -111,11 +273,14 @@ export default function Page() {
     return user?.phone || "";
   });
   const [guestEmail, setGuestEmail] = useState("");
+  const [activeFilter, setActiveFilter] = useState<CouponFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [claimingCouponId, setClaimingCouponId] = useState<string | null>(null);
   const [claimError, setClaimError] = useState("");
   const [claimedIssue, setClaimedIssue] = useState<CouponIssue | null>(null);
+  const [claimedCoupon, setClaimedCoupon] = useState<PublicCoupon | null>(null);
+  const [copied, setCopied] = useState(false);
   const query = useMemo<CouponQuery>(
     () => ({
       couponId: searchParams.get("couponId") || undefined,
@@ -129,7 +294,6 @@ export default function Page() {
 
   useEffect(() => {
     let isMounted = true;
-
 
     couponApi
       .listPublicCoupons()
@@ -161,7 +325,13 @@ export default function Page() {
     };
   }, []);
 
-  const visibleCoupons = useMemo(() => {
+  useEffect(() => {
+    if (hasStoreScope) {
+      setActiveFilter("store");
+    }
+  }, [hasStoreScope]);
+
+  const scopedCoupons = useMemo(() => {
     return coupons.filter((coupon) => {
       const matchesStoreId = !query.storeId || coupon.store.id === query.storeId;
       const matchesStoreSlug = !query.storeSlug || coupon.store.slug === query.storeSlug;
@@ -193,19 +363,51 @@ export default function Page() {
     })?.store;
   }, [coupons, hasStoreScope, query.storeId, query.storeSlug, selectedCoupon]);
 
+  const visibleCoupons = useMemo(() => {
+    const filtered = scopedCoupons.filter((coupon) => {
+      if (activeFilter === "expiring") {
+        return isExpiringSoon(coupon);
+      }
+
+      if (activeFilter === "vip") {
+        return isVipCoupon(coupon);
+      }
+
+      return true;
+    });
+
+    if (activeFilter === "store") {
+      return [...filtered].sort((first, second) => first.store.name.localeCompare(second.store.name, "vi"));
+    }
+
+    return filtered;
+  }, [activeFilter, scopedCoupons]);
+
+  const filterCounts = useMemo(
+    () => ({
+      all: scopedCoupons.length,
+      expiring: scopedCoupons.filter(isExpiringSoon).length,
+      store: scopedCoupons.length,
+      vip: scopedCoupons.filter(isVipCoupon).length,
+    }),
+    [scopedCoupons],
+  );
+
   const isSelectedCouponOnly = hasCouponScope && !hasStoreScope;
   const isMember = isMemberUser(authUser);
-  const pageTitle = hasStoreScope && scopedStore
-    ? `Ưu đãi của ${readableName(scopedStore.name)}`
-    : isSelectedCouponOnly && selectedCoupon
-      ? selectedCoupon.name
-    : "Ưu đãi đang mở";
+  const pageTitle =
+    hasStoreScope && scopedStore
+      ? `Ưu đãi của ${readableName(scopedStore.name)}`
+      : isSelectedCouponOnly && selectedCoupon
+        ? readableName(selectedCoupon.name)
+        : "Ưu đãi đêm nay";
   const backHref = hasStoreScope && scopedStore ? `/stores/${scopedStore.slug}` : "/danh-sach-quan";
   const scopeLabel = hasStoreScope ? "Ưu đãi của quán" : isSelectedCouponOnly ? "Ưu đãi được chọn" : "Tất cả coupon";
 
   const claimCoupon = async (coupon: PublicCoupon) => {
     setClaimError("");
     setClaimedIssue(null);
+    setCopied(false);
 
     const phone = guestPhone.trim();
     if (!isMember && !phone) {
@@ -225,6 +427,7 @@ export default function Page() {
             })
           ).issue;
 
+      setClaimedCoupon(coupon);
       setClaimedIssue(issue);
     } catch (error) {
       const message =
@@ -237,47 +440,91 @@ export default function Page() {
     }
   };
 
+  const copyClaimedCode = async () => {
+    if (!claimedIssue) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(claimedIssue.code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setClaimError("Không sao chép được mã. Bạn có thể chọn và sao chép thủ công.");
+    }
+  };
+
   return (
     <main className="coupon-page">
       <section className="coupon-shell">
-        <header className="coupon-header">
-          <Link className="back-link" href={backHref}>
-            {hasStoreScope ? "Về chi tiết quán" : "Xem danh sách quán"}
-          </Link>
-          <div className="header-grid">
+        <header className="coupon-hero">
+          <div className="hero-copy">
+            <Link className="back-link" href={backHref}>
+              {hasStoreScope ? "Về chi tiết quán" : "Xem danh sách quán"}
+            </Link>
+            <div className="title-row">
+              <div>
+                <span className="eyebrow">HOT DEALS</span>
+                <h1>{pageTitle}</h1>
+                <p>Coupon & khuyến mãi từ các quán đối tác · Hà Nội</p>
+              </div>
+              <button aria-label="Tìm ưu đãi" className="search-button" type="button">
+                <Search size={17} />
+              </button>
+            </div>
+          </div>
+
+          <div className="hero-stats" aria-label="Tóm tắt ưu đãi">
             <div>
-              <h1>{pageTitle}</h1>
-              <p>
-                Chọn ưu đãi, lấy mã và đưa cho nhân viên quán quét khi đến nơi.
-              </p>
+              <span>Phạm vi</span>
+              <strong>{scopeLabel}</strong>
             </div>
-            <div className="summary-panel">
-              <div>
-                <span>Phạm vi</span>
-                <strong>{scopeLabel}</strong>
-              </div>
-              <div>
-                <span>Đang hiển thị</span>
-                <strong>{visibleCoupons.length} mã</strong>
-              </div>
-              {scopedStore ? (
-                <Link href={`/stores/${scopedStore.slug}`}>Mở trang quán</Link>
-              ) : null}
+            <div>
+              <span>Đang có</span>
+              <strong>{scopedCoupons.length} coupon</strong>
             </div>
+            {scopedStore ? (
+              <Link href={`/stores/${scopedStore.slug}`}>Mở trang quán</Link>
+            ) : null}
           </div>
         </header>
 
+        <section className="coupon-controls" aria-label="Bộ lọc ưu đãi">
+          <nav className="filter-chips hscroll">
+            {(Object.keys(filterLabels) as CouponFilter[]).map((filter) => {
+              const active = activeFilter === filter;
+              return (
+                <button
+                  aria-pressed={active}
+                  className={active ? "filter-chip active" : filter === "vip" ? "filter-chip vip-chip" : "filter-chip"}
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  type="button"
+                >
+                  {filter === "vip" ? <Crown size={13} /> : null}
+                  {filterLabels[filter]}
+                  <span>{filterCounts[filter]}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="sort-pill">
+            <SlidersHorizontal size={14} />
+            Mới nhất
+          </div>
+        </section>
+
         <section className="claim-panel">
           <div>
-            <span className="eyebrow muted">
-              <Ticket size={16} />
-              Cách nhận mã
+            <span className="claim-eyebrow">
+              <Ticket size={15} />
+              {isMember ? "Ví hội viên" : "Nhận mã khách"}
             </span>
-            <h2>{isMember ? "Nhận vào ví hội viên" : "Nhận mã khách"}</h2>
             <p>
               {isMember
-                ? "Bạn đang đăng nhập hội viên, mã sẽ được lưu vào ví ưu đãi."
-                : "Khách chưa đăng nhập cần để lại số điện thoại để nhận mã."}
+                ? "Mã sẽ được lưu vào ví ưu đãi của hội viên sau khi lấy."
+                : "Khách vãng lai chỉ cần số điện thoại để nhận mã dùng một lần."}
             </p>
           </div>
           {!isMember ? (
@@ -308,21 +555,13 @@ export default function Page() {
                 />
               </label>
             </div>
-          ) : null}
-        </section>
-
-        {claimedIssue ? (
-          <section className="result success" role="status">
-            <CheckCircle2 size={20} />
-            <div>
-              <strong>Đã tạo mã {claimedIssue.code}</strong>
-              <span>
-                Hiệu lực đến {formatDate(claimedIssue.expiresAt)} cho coupon{" "}
-                {claimedIssue.coupon.name}.
-              </span>
+          ) : (
+            <div className="member-note">
+              <CheckCircle2 size={18} />
+              Đang đăng nhập hội viên
             </div>
-          </section>
-        ) : null}
+          )}
+        </section>
 
         {claimError ? (
           <section className="result error" role="alert">
@@ -340,7 +579,7 @@ export default function Page() {
 
         {isLoading ? (
           <section className="coupon-grid" aria-label="Đang tải ưu đãi">
-            {[0, 1, 2].map((item) => (
+            {[0, 1, 2, 3].map((item) => (
               <div className="coupon-skeleton" key={item} />
             ))}
           </section>
@@ -355,7 +594,7 @@ export default function Page() {
                 ? "Quán này hiện không có ưu đãi active."
                 : isSelectedCouponOnly
                   ? "Ưu đãi từ CTA hiện không còn hoạt động."
-                : "Hiện chưa có ưu đãi đang mở."}
+                  : "Hiện chưa có ưu đãi phù hợp bộ lọc."}
             </p>
             <Link href="/danh-sach-quan">Tìm quán khác</Link>
           </section>
@@ -363,44 +602,67 @@ export default function Page() {
 
         {!isLoading && !loadError && visibleCoupons.length ? (
           <section className="coupon-grid" aria-label="Danh sách coupon">
-            {visibleCoupons.map((coupon) => {
+            {visibleCoupons.map((coupon, index) => {
               const isClaiming = claimingCouponId === coupon.id;
+              const isVip = isVipCoupon(coupon);
+              const isExpiring = isExpiringSoon(coupon);
               const storeLabel = readableName(coupon.store.name);
+              const image = getCouponImage(coupon, index);
+              const selected = query.couponId === coupon.id;
 
               return (
                 <article
-                  className={query.couponId === coupon.id ? "coupon-card selected" : "coupon-card"}
+                  className={[
+                    "coupon-ticket",
+                    isVip ? "vip" : "",
+                    isExpiring ? "expiring" : "",
+                    selected ? "selected" : "",
+                  ].filter(Boolean).join(" ")}
                   key={coupon.id}
                 >
-                  <div className="coupon-value">{formatDiscount(coupon)}</div>
-                  <div className="coupon-body">
-                    <div className="coupon-meta">
+                  {isVip ? <span className="vip-bar" aria-hidden="true" /> : null}
+                  <span
+                    aria-label="Ảnh ưu đãi"
+                    className="coupon-photo"
+                    role="img"
+                    style={{ backgroundImage: `linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.46)), url(${image})` }}
+                  />
+                  <div className="ticket-copy">
+                    <div className="ticket-value-row">
+                      <strong>{formatDiscount(coupon)}</strong>
+                      {isVip ? (
+                        <span className="vip-badge">
+                          <Crown size={11} />
+                          VIP
+                        </span>
+                      ) : null}
+                    </div>
+                    <h2>{readableName(coupon.name)}</h2>
+                    <p>{readableDescription(coupon.description)}</p>
+                    <div className="ticket-meta">
                       <span>
-                        <Store size={14} />
-                        {categoryLabels[coupon.store.category] ?? coupon.store.category}
+                        <Store size={13} />
+                        {storeLabel}
                       </span>
                       <span>
-                        <MapPin size={14} />
-                        {[coupon.store.district, coupon.store.city].filter(Boolean).join(", ")}
+                        <MapPin size={13} />
+                        {getStoreLocation(coupon) || categoryLabels[coupon.store.category] || coupon.store.category}
                       </span>
+                      <span>HSD {formatShortDate(coupon.endsAt)}</span>
                     </div>
-                    <h2>{coupon.name}</h2>
-                    <p>{coupon.description || "Coupon đang áp dụng tại quán này."}</p>
-                    <div className="store-line">
-                      <strong>{storeLabel}</strong>
-                      <Link href={`/stores/${coupon.store.slug}`}>Chi tiết quán</Link>
-                    </div>
-                    <dl>
+                    {isExpiring ? (
+                      <div className="countdown">
+                        <i aria-hidden="true" />
+                        <span>Sắp hết hạn · {expiryText(coupon.endsAt)}</span>
+                      </div>
+                    ) : null}
+                    <dl className="ticket-rules">
                       <div>
                         <dt>Mã gốc</dt>
                         <dd>{coupon.code}</dd>
                       </div>
                       <div>
-                        <dt>Hạn</dt>
-                        <dd>{expiryText(coupon.endsAt)}</dd>
-                      </div>
-                      <div>
-                        <dt>Đơn tối thiểu</dt>
+                        <dt>Tối thiểu</dt>
                         <dd>{coupon.minSpendVnd ? formatVnd(coupon.minSpendVnd) : "Không yêu cầu"}</dd>
                       </div>
                       <div>
@@ -408,15 +670,18 @@ export default function Page() {
                         <dd>{coupon.maxDiscountVnd ? formatVnd(coupon.maxDiscountVnd) : "Theo quy định"}</dd>
                       </div>
                     </dl>
+                    <Link className="store-link" href={`/stores/${coupon.store.slug}`}>
+                      Chi tiết quán
+                    </Link>
                   </div>
                   <button
-                    className="claim-button"
+                    className="ticket-action"
                     disabled={Boolean(claimingCouponId)}
                     onClick={() => claimCoupon(coupon)}
                     type="button"
                   >
-                    {isClaiming ? <Loader2 size={18} className="spin" /> : <Ticket size={18} />}
-                    {isMember ? "Lưu vào ví" : "Lấy mã"}
+                    {isClaiming ? <Loader2 size={16} className="spin" /> : null}
+                    <span>{isMember ? "Lưu ví" : "Lấy mã"}</span>
                   </button>
                 </article>
               );
@@ -425,124 +690,253 @@ export default function Page() {
         ) : null}
       </section>
 
+      {claimedIssue ? (
+        <ClaimedCouponModal
+          copied={copied}
+          coupon={claimedCoupon}
+          issue={claimedIssue}
+          onClose={() => {
+            setClaimedIssue(null);
+            setCopied(false);
+          }}
+          onCopy={copyClaimedCode}
+        />
+      ) : null}
+
       <style>{`
         .coupon-page {
           min-height: 100vh;
-          background: #101114;
-          color: #f7f1e7;
+          background:
+            radial-gradient(circle at 50% -18%, rgba(212,178,106,.12), transparent 34%),
+            #0c0c0f;
+          color: #f3f0ea;
           font-family: var(--nl-font-sans);
-          padding: 24px;
+          overflow-x: hidden;
+          padding: 28px 28px 58px;
         }
 
         .coupon-shell {
-          max-width: 1180px;
+          max-width: 1120px;
           margin: 0 auto;
           display: grid;
           gap: 18px;
         }
 
+        .coupon-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 318px;
+          gap: 22px;
+          align-items: end;
+          padding: 10px 0 2px;
+        }
+
+        .hero-copy {
+          min-width: 0;
+        }
+
         .back-link,
-        .store-line a,
-        .summary-panel a,
+        .store-link,
+        .hero-stats a,
         .empty-state a {
-          color: #f4d98d;
-          font-weight: 900;
+          color: #e3c27e;
+          font-size: 12px;
+          font-weight: 700;
           text-decoration: none;
         }
 
-        .coupon-header {
-          padding: 30px 0 8px;
+        .title-row {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-top: 12px;
         }
 
-        .header-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 320px;
-          gap: 18px;
-          align-items: end;
-        }
-
-        .eyebrow {
+        .eyebrow,
+        .modal-eyebrow,
+        .claim-eyebrow {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          color: #7ddbd2;
-          font-size: 12px;
-          font-weight: 950;
-          letter-spacing: .08em;
+          gap: 7px;
+          color: #8c8679;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 1.6px;
           text-transform: uppercase;
-        }
-
-        .eyebrow.muted {
-          color: #f0c96f;
         }
 
         h1,
         h2,
-        p {
+        p,
+        dl {
           margin: 0;
         }
 
         h1 {
-          margin-top: 10px;
-          font-size: clamp(32px, 5vw, 58px);
-          line-height: 1;
+          margin-top: 8px;
+          font-size: 30px;
+          line-height: 1.12;
+          font-weight: 700;
           letter-spacing: 0;
+          color: #f3f0ea;
         }
 
-        .coupon-header p,
-        .claim-panel p,
-        .empty-state p,
-        .coupon-card p {
-          color: #c8c0b1;
-          line-height: 1.6;
+        .coupon-hero p {
+          color: #8c8679;
+          font-size: 12.5px;
+          line-height: 1.55;
+          margin-top: 7px;
         }
 
-        .coupon-header p {
-          max-width: 680px;
-          margin-top: 12px;
+        .search-button {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 1px solid rgba(212,178,106,.32);
+          background: rgba(255,255,255,.04);
+          color: #d4b26a;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          flex: none;
         }
 
-        .summary-panel,
-        .claim-panel,
-        .result,
-        .empty-state,
-        .coupon-card {
-          border: 1px solid rgba(240, 201, 111, .2);
-          background: rgba(255, 255, 255, .055);
-          border-radius: 8px;
-        }
-
-        .summary-panel {
+        .hero-stats {
           display: grid;
-          gap: 12px;
-          padding: 16px;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          border: 1px solid rgba(212,178,106,.22);
+          background: rgba(255,255,255,.035);
+          border-radius: 16px;
+          padding: 14px;
         }
 
-        .summary-panel span,
-        dt {
-          display: block;
-          color: #a9a194;
-          font-size: 12px;
-          font-weight: 800;
+        .hero-stats div {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
         }
 
-        .summary-panel strong,
-        dd {
-          margin: 0;
-          font-weight: 950;
+        .hero-stats span,
+        .ticket-rules dt {
+          color: #8c8679;
+          font-size: 10.5px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .hero-stats strong,
+        .ticket-rules dd {
+          color: #f3f0ea;
+          font-size: 13px;
+          font-weight: 700;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .hero-stats a {
+          grid-column: 1 / -1;
+          border-top: 1px solid rgba(255,255,255,.07);
+          padding-top: 10px;
+        }
+
+        .coupon-controls {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          min-width: 0;
+        }
+
+        .filter-chips {
+          display: flex;
+          gap: 9px;
+          min-width: 0;
+          max-width: 100%;
+          overflow-x: auto;
+          padding: 1px 0 4px;
+        }
+
+        .filter-chip,
+        .sort-pill {
+          min-height: 36px;
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,.1);
+          background: rgba(255,255,255,.05);
+          color: #c5c0b6;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font: inherit;
+          font-size: 12.5px;
+          font-weight: 600;
+          padding: 0 15px;
+          white-space: nowrap;
+          cursor: pointer;
+          flex: none;
+        }
+
+        .filter-chip span {
+          min-width: 18px;
+          height: 18px;
+          border-radius: 9px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,.08);
+          color: #9b958a;
+          font-size: 10.5px;
+          padding: 0 5px;
+        }
+
+        .filter-chip.active {
+          border-color: transparent;
+          background: linear-gradient(135deg,#f0dda8,#d4b26a);
+          color: #241a0a;
+        }
+
+        .filter-chip.active span {
+          background: #241a0a;
+          color: #f0dda8;
+        }
+
+        .vip-chip {
+          border-color: rgba(212,178,106,.4);
+          background: rgba(212,178,106,.1);
+          color: #e3c27e;
+        }
+
+        .sort-pill {
+          cursor: default;
+          color: #e3c27e;
+          border-color: rgba(212,178,106,.22);
         }
 
         .claim-panel {
           display: grid;
-          grid-template-columns: minmax(0, .85fr) minmax(320px, 1.15fr);
-          gap: 18px;
-          padding: 18px;
+          grid-template-columns: minmax(0, .72fr) minmax(420px, 1fr);
+          gap: 16px;
           align-items: center;
+          border: 1px solid rgba(212,178,106,.18);
+          background: rgba(255,255,255,.03);
+          border-radius: 16px;
+          padding: 14px;
         }
 
-        .claim-panel h2 {
-          margin-top: 8px;
-          font-size: 22px;
+        .claim-panel p {
+          color: #8c8679;
+          font-size: 12.5px;
+          line-height: 1.55;
+          margin-top: 6px;
+        }
+
+        .claim-eyebrow {
+          color: #e3c27e;
+          letter-spacing: 1.2px;
         }
 
         .guest-form {
@@ -552,15 +946,16 @@ export default function Page() {
         }
 
         .guest-form label {
-          min-height: 46px;
-          border: 1px solid rgba(255, 255, 255, .12);
-          border-radius: 8px;
-          background: rgba(0, 0, 0, .18);
+          min-height: 44px;
+          border: 1px solid rgba(255,255,255,.1);
+          border-radius: 11px;
+          background: rgba(0,0,0,.18);
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 0 12px;
-          color: #f0c96f;
+          color: #d4b26a;
+          min-width: 0;
         }
 
         .guest-form input {
@@ -568,150 +963,233 @@ export default function Page() {
           border: 0;
           outline: 0;
           background: transparent;
-          color: #f7f1e7;
+          color: #f3f0ea;
           font: inherit;
+          font-size: 12.5px;
           min-width: 0;
         }
 
         .guest-form input::placeholder {
-          color: #8d8579;
+          color: #8c8679;
+        }
+
+        .member-note {
+          min-height: 44px;
+          border-radius: 11px;
+          border: 1px solid rgba(212,178,106,.22);
+          background: rgba(212,178,106,.08);
+          color: #f0dda8;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 700;
         }
 
         .result {
-          min-height: 56px;
+          min-height: 54px;
           display: flex;
           gap: 12px;
           align-items: center;
-          padding: 14px 16px;
-        }
-
-        .result.success {
-          border-color: rgba(125, 219, 210, .42);
-          background: rgba(48, 150, 140, .12);
-        }
-
-        .result.error {
-          border-color: rgba(255, 128, 150, .42);
-          background: rgba(255, 128, 150, .12);
+          border: 1px solid rgba(255,128,150,.42);
+          background: rgba(255,128,150,.12);
           color: #ffd1d9;
-        }
-
-        .result div {
-          display: grid;
-          gap: 2px;
-        }
-
-        .result span {
-          color: inherit;
+          border-radius: 14px;
+          padding: 13px 15px;
+          font-size: 13px;
         }
 
         .coupon-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px;
         }
 
-        .coupon-card {
-          min-height: 430px;
+        .coupon-ticket {
+          min-height: 136px;
+          position: relative;
           overflow: hidden;
+          border: 1px solid rgba(212,178,106,.22);
+          background: rgba(255,255,255,.035);
+          border-radius: 16px;
+          display: grid;
+          grid-template-columns: 104px minmax(0, 1fr) 58px;
+          box-shadow: 0 16px 34px -18px rgba(0,0,0,.7);
+          min-width: 0;
+        }
+
+        .coupon-ticket.vip {
+          border-color: rgba(212,178,106,.4);
+          background: rgba(255,255,255,.04);
+        }
+
+        .coupon-ticket.selected {
+          border-color: rgba(227,194,126,.72);
+          box-shadow: 0 0 0 1px rgba(227,194,126,.18), 0 16px 34px -18px rgba(0,0,0,.7);
+        }
+
+        .vip-bar {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
+          height: 3px;
+          background: linear-gradient(90deg,#f4e3b4,#d4b26a,#b6924a);
+          z-index: 2;
+        }
+
+        .coupon-photo {
+          min-height: 100%;
+          background-size: cover;
+          background-position: center;
+        }
+
+        .ticket-copy {
+          min-width: 0;
+          padding: 15px 8px 15px 17px;
           display: flex;
           flex-direction: column;
+          justify-content: center;
+          gap: 6px;
         }
 
-        .coupon-card.selected {
-          border-color: rgba(125, 219, 210, .72);
-          box-shadow: 0 0 0 1px rgba(125, 219, 210, .22);
-        }
-
-        .coupon-value {
-          min-height: 118px;
-          display: flex;
-          align-items: end;
-          padding: 18px;
-          font-size: 42px;
-          line-height: .9;
-          font-weight: 950;
-          color: #14100a;
-          background:
-            linear-gradient(135deg, rgba(255,255,255,.85), rgba(240,201,111,.95)),
-            radial-gradient(circle at 80% 20%, #7ddbd2, transparent 30%);
-        }
-
-        .coupon-body {
-          padding: 16px;
-          display: grid;
-          gap: 12px;
-          flex: 1;
-        }
-
-        .coupon-meta,
-        .store-line {
+        .ticket-value-row {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 10px;
+          gap: 9px;
+          min-width: 0;
         }
 
-        .coupon-meta {
-          flex-wrap: wrap;
+        .ticket-value-row strong {
+          color: #e3c27e;
+          font-size: 22px;
+          line-height: 1;
+          font-weight: 700;
+          white-space: nowrap;
         }
 
-        .coupon-meta span {
+        .vip-badge {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          color: #bcb3a6;
-          font-size: 12px;
+          gap: 4px;
+          border-radius: 6px;
+          background: linear-gradient(135deg,#f0dda8,#d4b26a);
+          color: #241a0a;
+          font-size: 9.5px;
           font-weight: 800;
+          letter-spacing: .5px;
+          padding: 3px 8px;
+          text-transform: uppercase;
         }
 
-        .coupon-card h2 {
-          font-size: 21px;
-          letter-spacing: 0;
-        }
-
-        .store-line {
-          padding-top: 4px;
-        }
-
-        .store-line strong {
+        .coupon-ticket h2 {
+          color: #f3f0ea;
+          font-size: 14px;
+          font-weight: 600;
+          line-height: 1.28;
           min-width: 0;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        dl {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
-          margin: 0;
+        .coupon-ticket p {
+          color: #8c8679;
+          display: none;
+          font-size: 11.5px;
+          line-height: 1.45;
+          overflow: hidden;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
         }
 
-        dl div {
-          min-height: 58px;
-          border: 1px solid rgba(255, 255, 255, .1);
-          border-radius: 8px;
-          padding: 10px;
-          background: rgba(0, 0, 0, .14);
+        .ticket-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px 10px;
+          color: #8c8679;
+          font-size: 11.5px;
         }
 
-        .claim-button {
-          min-height: 52px;
+        .ticket-meta span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          min-width: 0;
+        }
+
+        .countdown {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #e89bb6;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .countdown i {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #e0729e;
+          box-shadow: 0 0 7px #e0729e;
+          flex: none;
+        }
+
+        .ticket-rules {
+          display: none;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          padding-top: 4px;
+        }
+
+        .ticket-rules div {
+          min-width: 0;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 10px;
+          background: rgba(0,0,0,.12);
+          padding: 8px;
+        }
+
+        .ticket-rules dt {
+          font-size: 9px;
+          letter-spacing: .8px;
+        }
+
+        .ticket-rules dd {
+          margin: 3px 0 0;
+          font-size: 11px;
+        }
+
+        .store-link {
+          display: none;
+        }
+
+        .ticket-action {
           border: 0;
-          border-top: 1px solid rgba(240, 201, 111, .2);
-          background: #f0c96f;
-          color: #171109;
-          font: inherit;
-          font-weight: 950;
-          cursor: pointer;
+          border-left: 1px dashed rgba(212,178,106,.42);
+          background: rgba(212,178,106,.04);
+          color: #d4b26a;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
+          cursor: pointer;
+          font: inherit;
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 1px;
+          padding: 0;
+          text-transform: uppercase;
         }
 
-        .claim-button:disabled {
+        .ticket-action span {
+          writing-mode: vertical-rl;
+          transform: rotate(180deg);
+        }
+
+        .ticket-action:disabled {
           cursor: wait;
           opacity: .72;
         }
@@ -721,9 +1199,9 @@ export default function Page() {
         }
 
         .coupon-skeleton {
-          min-height: 420px;
-          border-radius: 8px;
-          background: linear-gradient(90deg, rgba(255,255,255,.055), rgba(240,201,111,.13), rgba(255,255,255,.055));
+          min-height: 136px;
+          border-radius: 16px;
+          background: linear-gradient(90deg, rgba(255,255,255,.035), rgba(212,178,106,.14), rgba(255,255,255,.035));
           background-size: 220% 100%;
           animation: shimmer 1.4s ease-in-out infinite;
         }
@@ -733,12 +1211,159 @@ export default function Page() {
           display: grid;
           place-items: center;
           text-align: center;
+          border: 1px solid rgba(212,178,106,.18);
+          background: rgba(255,255,255,.03);
+          border-radius: 16px;
           padding: 34px;
           gap: 10px;
         }
 
         .empty-state h2 {
-          font-size: 26px;
+          color: #f3f0ea;
+          font-size: 22px;
+        }
+
+        .empty-state p {
+          color: #8c8679;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .coupon-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 100;
+          background: rgba(6,6,8,.76);
+          backdrop-filter: blur(10px);
+          display: grid;
+          place-items: center;
+          padding: 18px;
+        }
+
+        .coupon-modal {
+          width: min(340px, 100%);
+          overflow: hidden;
+          border: 1px solid rgba(212,178,106,.25);
+          border-radius: 20px;
+          background: #121116;
+          color: #f3f0ea;
+          box-shadow: 0 30px 60px -20px rgba(0,0,0,.8);
+        }
+
+        .coupon-modal-cover {
+          height: 108px;
+          background-position: center;
+          background-size: cover;
+          position: relative;
+        }
+
+        .coupon-modal-cover div {
+          position: absolute;
+          left: 16px;
+          right: 52px;
+          bottom: 12px;
+          display: grid;
+          gap: 5px;
+        }
+
+        .coupon-modal-cover strong {
+          color: #e3c27e;
+          font-size: 21px;
+          font-weight: 700;
+          line-height: 1.08;
+        }
+
+        .coupon-modal-cover span {
+          color: #d8d3c7;
+          font-size: 11.5px;
+        }
+
+        .modal-close {
+          position: absolute;
+          top: 11px;
+          right: 11px;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,.2);
+          background: rgba(12,12,15,.5);
+          color: #f3f0ea;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .coupon-modal-body {
+          padding: 18px;
+          display: grid;
+          gap: 13px;
+          text-align: center;
+        }
+
+        .modal-eyebrow {
+          justify-content: center;
+        }
+
+        .claimed-code {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border: 1.5px dashed rgba(212,178,106,.55);
+          border-radius: 12px;
+          background: rgba(212,178,106,.05);
+          padding: 14px 12px;
+          min-width: 0;
+        }
+
+        .claimed-code strong {
+          color: #f0dda8;
+          font-size: 20px;
+          font-weight: 800;
+          letter-spacing: 2px;
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+
+        .claimed-code button {
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
+          border: 1px solid rgba(212,178,106,.3);
+          background: rgba(212,178,106,.14);
+          color: #e3c27e;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          flex: none;
+        }
+
+        .copy-button {
+          min-height: 44px;
+          border: 0;
+          border-radius: 12px;
+          background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
+          color: #241a0a;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font: inherit;
+          font-size: 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .coupon-modal-body p {
+          color: #8c8679;
+          font-size: 11.5px;
+          line-height: 1.6;
+        }
+
+        .coupon-modal-body b {
+          color: #c5c0b6;
         }
 
         @keyframes shimmer {
@@ -751,39 +1376,159 @@ export default function Page() {
         }
 
         @media (max-width: 980px) {
-          .header-grid,
+          .coupon-hero,
           .claim-panel,
           .coupon-grid {
             grid-template-columns: 1fr;
           }
 
+          .claim-panel {
+            gap: 12px;
+          }
+
           .guest-form {
             grid-template-columns: 1fr;
           }
+
+          .hero-stats {
+            grid-template-columns: 1fr 1fr;
+          }
         }
 
-        @media (max-width: 620px) {
+        @media (max-width: 640px) {
           .coupon-page {
-            padding: 16px;
+            padding: 18px 16px calc(96px + env(safe-area-inset-bottom));
           }
 
-          .coupon-header {
-            padding-top: 20px;
+          .coupon-shell {
+            gap: 13px;
           }
 
-          .coupon-value {
+          .coupon-hero {
+            gap: 12px;
+            padding-top: 4px;
+          }
+
+          .title-row {
+            align-items: center;
+            margin-top: 8px;
+          }
+
+          h1 {
+            font-size: 23px;
+          }
+
+          .coupon-hero p {
+            font-size: 11.5px;
+          }
+
+          .hero-stats {
+            display: none;
+          }
+
+          .coupon-controls {
+            align-items: stretch;
+          }
+
+          .sort-pill {
+            display: none;
+          }
+
+          .filter-chips {
+            margin: 0;
+            padding: 0 0 4px;
+            width: 100%;
+          }
+
+          .filter-chip {
+            min-height: 34px;
+            font-size: 12px;
+            padding: 0 14px;
+          }
+
+          .claim-panel {
+            border-radius: 14px;
+            padding: 12px;
+          }
+
+          .claim-panel p {
+            font-size: 11.5px;
+          }
+
+          .coupon-grid {
+            gap: 11px;
+          }
+
+          .coupon-ticket {
             min-height: 98px;
-            font-size: 36px;
+            border-radius: 14px;
+            grid-template-columns: 78px minmax(0, 1fr) 46px;
           }
 
-          dl {
-            grid-template-columns: 1fr;
+          .ticket-copy {
+            padding: 11px 6px 11px 13px;
+            gap: 4px;
           }
 
-          .coupon-meta,
-          .store-line {
-            align-items: flex-start;
-            flex-direction: column;
+          .ticket-value-row strong {
+            font-size: 18px;
+          }
+
+          .vip-badge {
+            font-size: 9px;
+            padding: 2px 7px;
+          }
+
+          .coupon-ticket h2 {
+            font-size: 12.5px;
+          }
+
+          .coupon-ticket p,
+          .ticket-rules,
+          .store-link {
+            display: none;
+          }
+
+          .ticket-meta {
+            display: block;
+            color: #8c8679;
+            font-size: 11px;
+            line-height: 1.4;
+          }
+
+          .ticket-meta span {
+            display: inline;
+          }
+
+          .ticket-meta svg {
+            display: none;
+          }
+
+          .ticket-meta span + span::before {
+            content: " · ";
+          }
+
+          .countdown {
+            font-size: 10.5px;
+            margin-top: 1px;
+          }
+
+          .ticket-action {
+            font-size: 11px;
+          }
+
+          .coupon-skeleton {
+            min-height: 98px;
+            border-radius: 14px;
+          }
+
+          .empty-state {
+            min-height: 230px;
+            padding: 28px 18px;
+          }
+
+          .coupon-modal-backdrop {
+            align-items: center;
           }
         }
       `}</style>
