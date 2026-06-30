@@ -185,7 +185,7 @@ export default function Page() {
   return (
     <main className={styles.bookingPage}>
       <section className={`${styles.bookingViewport} ${styles.historyViewport}`}>
-        <div className={`${styles.bookingFrame} ${styles.wideFrame}`}>
+        <div className={`${styles.bookingFrame} ${styles.historyFrame} ${styles.wideFrame}`}>
           <header className={styles.bookingHeader}>
             <Link href="/tai-khoan" className={styles.backButton} aria-label="Quay lại tài khoản">
               <ChevronLeft size={18} />
@@ -256,23 +256,6 @@ export default function Page() {
             </div>
           </div>
         </div>
-
-        <aside className={styles.bookingSidePanel}>
-          <div className={styles.sideEyebrow}>Bước 3 · BOO-06</div>
-          <h2 className={styles.sideTitle}>3 trạng thái đặt chỗ</h2>
-          <p className={styles.sideText}>
-            Mới là booking đang chờ điều phối hoặc đã xác nhận. Hoàn tất dùng cho check-in/đối soát. Đã hủy giữ lịch sử minh bạch và không cho sửa trực tiếp bản ghi cũ.
-          </p>
-          <div className={styles.summaryList}>
-            <SummaryRow label="Mới" value={`${bookings.filter((booking) => bookingStatusGroup(booking.status) === "Mới").length} booking`} />
-            <SummaryRow label="Hoàn tất" value={`${bookings.filter((booking) => bookingStatusGroup(booking.status) === "Hoàn tất").length} booking`} />
-            <SummaryRow label="Đã hủy" value={`${bookings.filter((booking) => bookingStatusGroup(booking.status) === "Đã hủy").length} booking`} />
-            <SummaryRow label="Tổng" value={`${bookings.length} booking`} />
-          </div>
-          <Link href="/danh-sach-quan" className={styles.primaryCta} style={{ marginTop: 18 }}>
-            <strong>Tìm quán để đặt</strong>
-          </Link>
-        </aside>
       </section>
     </main>
   );
@@ -405,14 +388,5 @@ function StatusBadge({ status }: { status: string }) {
       {group === "Hoàn tất" ? <Check size={9} /> : group === "Mới" ? <span className={styles.statusDot} /> : null}
       {bookingStatusLabel(status)}
     </span>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={styles.summaryRow}>
-      <span>{label}</span>
-      <span>{value}</span>
-    </div>
   );
 }

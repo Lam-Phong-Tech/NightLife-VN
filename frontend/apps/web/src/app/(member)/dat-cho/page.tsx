@@ -143,7 +143,6 @@ export default function Page() {
   const targetLabel = context.castName
     ? `${context.castName} @ ${context.storeName}`
     : context.storeName;
-  const contextSubtitle = context.castName ? "Đặt theo cast" : "Đặt bàn";
   const isMemberMode = mode === "member";
 
   const submit = async () => {
@@ -195,7 +194,7 @@ export default function Page() {
   return (
     <main className={styles.bookingPage}>
       <section className={styles.bookingViewport}>
-        <div className={styles.bookingFrame}>
+        <div className={`${styles.bookingFrame} ${styles.bookingFormFrame}`}>
           <header className={styles.bookingHeader}>
             <Link href={context.fromHref} className={styles.backButton} aria-label="Quay lại">
               <ChevronLeft size={18} />
@@ -340,25 +339,6 @@ export default function Page() {
             </button>
           </div>
         </div>
-
-        <aside className={styles.bookingSidePanel}>
-          <div className={styles.sideEyebrow}>Bước 1 · BOO-03</div>
-          <h2 className={styles.sideTitle}>{contextSubtitle} không cần cọc</h2>
-          <p className={styles.sideText}>
-            Form chỉ lấy tên, SĐT, số người, ngày, khung giờ, quán tham chiếu và ghi chú. Sau khi gửi, booking ở trạng thái Mới để Admin điều phối với quán.
-          </p>
-          <div className={styles.summaryList}>
-            <SummaryRow label="Quán" value={context.storeName} />
-            {context.castName ? <SummaryRow label="Cast" value={context.castName} /> : null}
-            <SummaryRow label="Khu vực" value={context.area ?? "NightLife"} />
-            <SummaryRow label="Thời gian" value={`${bookingDate} · ${bookingTime}`} />
-            <SummaryRow label="Số người" value={`${guests} người`} />
-            <SummaryRow label="Ưu đãi" value={isMemberMode ? "Hội viên 8-10%" : "Khách -5%"} />
-          </div>
-          <p className={styles.sideText}>
-            Khi Admin xác nhận, khách nhận thông báo và mã QR giảm giá gắn với booking.
-          </p>
-        </aside>
       </section>
 
       {showLoginPrompt ? (
@@ -440,14 +420,5 @@ function DateField({ value, onChange }: { value: string; onChange: (value: strin
         <input type="date" value={value} onChange={(event) => onChange(event.target.value)} />
       </span>
     </label>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={styles.summaryRow}>
-      <span>{label}</span>
-      <span>{value}</span>
-    </div>
   );
 }

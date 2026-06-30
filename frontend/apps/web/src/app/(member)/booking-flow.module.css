@@ -10,24 +10,32 @@
 .bookingViewport {
   width: min(100%, 1120px);
   margin: 0 auto;
-  padding: 24px 18px calc(108px + env(safe-area-inset-bottom));
-  display: grid;
-  grid-template-columns: minmax(380px, 460px) minmax(0, 1fr);
-  align-items: start;
-  gap: 24px;
+  padding: 32px 24px calc(108px + env(safe-area-inset-bottom));
+  display: block;
 }
 
 .historyViewport {
-  grid-template-columns: minmax(0, 740px) 320px;
+  width: min(100%, 1040px);
 }
 
 .bookingFrame {
   width: 100%;
   overflow: hidden;
   border: 1px solid rgba(212, 178, 106, 0.18);
-  border-radius: 28px;
-  background: #0c0c0f;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.01)), #0c0c0f;
   box-shadow: 0 32px 76px -38px rgba(0, 0, 0, 0.72);
+}
+
+.bookingFormFrame,
+.historyFrame {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.confirmFrame {
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .bookingHeader {
@@ -245,8 +253,7 @@
 }
 
 .input,
-.dateInput input,
-.noteArea {
+.dateInput input {
   width: 100%;
   border: 0;
   background: transparent;
@@ -389,9 +396,18 @@
 .noteArea {
   min-height: 64px;
   resize: vertical;
+  border: 1px solid rgba(212, 178, 106, 0.32);
+  background: rgba(255, 255, 255, 0.055);
   padding: 11px 14px;
   font-size: 13px;
   line-height: 1.55;
+  outline: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.noteArea:focus {
+  border-color: rgba(240, 221, 168, 0.72);
+  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
 }
 
 .infoNote {
@@ -709,7 +725,8 @@
 }
 
 .confirmNote {
-  margin: 20px 18px 0;
+  margin: 26px 24px 0;
+  padding: 14px 16px;
 }
 
 .qrPanel {
@@ -890,6 +907,98 @@
 }
 
 @media (min-width: 860px) {
+  .bookingHeader {
+    padding: 24px 28px 14px;
+    border-bottom: 1px solid rgba(212, 178, 106, 0.12);
+  }
+
+  .headerTitle {
+    font-size: 20px;
+  }
+
+  .headerSubtitle {
+    font-size: 12px;
+  }
+
+  .bookingFormFrame .bookingBody {
+    padding: 22px 28px 24px;
+    display: grid;
+    grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+    align-items: start;
+    gap: 14px 28px;
+  }
+
+  .bookingFormFrame .venueCard,
+  .bookingFormFrame .loginNudge,
+  .bookingFormFrame .memberNudge {
+    grid-column: 1;
+    margin-top: 0;
+  }
+
+  .bookingFormFrame .formStack {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin-top: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .bookingFormFrame .formStack > .twoColumn,
+  .bookingFormFrame .formStack > .field:nth-child(n + 4),
+  .bookingFormFrame .formStack > .infoNote,
+  .bookingFormFrame .formStack > .errorMessage {
+    grid-column: 1 / -1;
+  }
+
+  .bookingFormFrame .inputWrap,
+  .bookingFormFrame .phoneInput,
+  .bookingFormFrame .stepper,
+  .bookingFormFrame .dateInput {
+    min-height: 50px;
+  }
+
+  .bookingFormFrame .noteArea {
+    min-height: 96px;
+  }
+
+  .bookingStickyCta {
+    position: static;
+    margin-top: 0;
+    padding: 10px 28px 14px;
+    background: rgba(255, 255, 255, 0.018);
+    backdrop-filter: none;
+  }
+
+  .bookingStickyCta .primaryCta {
+    width: min(100%, 380px);
+    min-height: 48px;
+    margin-left: auto;
+  }
+
+  .confirmFrame .bottomActions {
+    padding: 16px 24px 24px;
+    background: rgba(255, 255, 255, 0.018);
+    backdrop-filter: none;
+  }
+
+  .confirmFrame .bottomActions .primaryCta,
+  .confirmFrame .bottomActions .secondaryCta {
+    width: min(100%, 360px);
+    margin: 0 auto;
+  }
+
+  .historyFrame .filterChips {
+    padding: 16px 24px 10px;
+  }
+
+  .historyFrame .historyList {
+    padding: 8px 24px 0;
+  }
+
+  .historyFrame .historyFooter {
+    padding: 18px 24px 24px;
+  }
+
   .wideFrame {
     max-width: none;
   }

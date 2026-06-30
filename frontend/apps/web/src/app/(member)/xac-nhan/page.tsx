@@ -85,7 +85,7 @@ export default function Page() {
   return (
     <main className={styles.bookingPage}>
       <section className={styles.bookingViewport}>
-        <div className={styles.bookingFrame}>
+        <div className={`${styles.bookingFrame} ${styles.confirmFrame}`}>
           <div className={styles.confirmHero}>
             <span className={styles.heroMark}>
               {isCancelled || !booking ? <AlertCircle size={34} /> : <Check size={34} />}
@@ -149,20 +149,6 @@ export default function Page() {
             </Link>
           </div>
         </div>
-
-        <aside className={styles.bookingSidePanel}>
-          <div className={styles.sideEyebrow}>Bước 2 · FLOW A</div>
-          <h2 className={styles.sideTitle}>Đã gửi là chờ Admin điều phối</h2>
-          <p className={styles.sideText}>
-            Hệ thống tạo booking trạng thái Mới và gửi thông báo nội bộ cho Admin. Khi Admin xác nhận, khách nhận thông báo kèm mã QR giảm giá gắn với booking.
-          </p>
-          <div className={styles.summaryList}>
-            <SummaryRow label="Không cọc" value="Không thanh toán online" />
-            <SummaryRow label="Hủy" value="Trước giờ hẹn ít nhất 1 giờ" />
-            <SummaryRow label="Đổi lịch" value="Hủy và đặt lại hoặc liên hệ hỗ trợ" />
-            <SummaryRow label="QR" value="Chỉ hiện sau khi Admin xác nhận" />
-          </div>
-        </aside>
       </section>
     </main>
   );
