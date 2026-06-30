@@ -937,7 +937,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
             alignItems: "center",
             gap: "34px",
             minWidth: 0,
-            flex: "none",
+            flex: isMobile ? "1 1 auto" : "none",
           }}
         >
           <Link
@@ -947,6 +947,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               flexDirection: "column",
               textDecoration: "none",
               flex: "none",
+              minWidth: 0,
+              maxWidth: "100%",
             }}
           >
             <span
@@ -958,6 +960,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 WebkitBackgroundClip: "text",
                 color: "transparent",
                 textShadow: "0 0 22px rgba(247,217,120,.28)",
+                whiteSpace: "nowrap",
               }}
             >
               Vietyoru
@@ -969,6 +972,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 letterSpacing: "3.6px",
                 color: colors.goldPale,
                 opacity: 0.72,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
               VIETNAM NIGHTLIFE GUIDE
@@ -1040,6 +1046,34 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 isOpen={isNotificationOpen}
                 onClick={() => setIsNotificationOpen((open) => !open)}
               />
+            ) : null}
+
+            {!authUser ? (
+              <Link
+                href="/dang-nhap"
+                aria-label="Đăng nhập"
+                style={{
+                  minHeight: "36px",
+                  padding: "0 12px",
+                  borderRadius: "18px",
+                  border: 0,
+                  color: colors.onGold,
+                  background: "linear-gradient(135deg,#f4e3b4,#d4b26a 58%,#b6924a)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "11.5px",
+                  fontWeight: 900,
+                  fontFamily: "var(--nl-font-sans)",
+                  lineHeight: 1,
+                  letterSpacing: 0,
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                  boxShadow: "0 8px 20px rgba(212,178,106,.18)",
+                }}
+              >
+                Đăng nhập
+              </Link>
             ) : null}
 
           </div>
