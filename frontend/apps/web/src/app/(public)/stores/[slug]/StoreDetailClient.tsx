@@ -2,43 +2,44 @@
 
 import Link from "next/link";
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Clock3,
+  Heart,
+  Info,
   MapPin,
+  Minus,
+  Navigation,
+  Play,
+  Plus,
+  Share2,
+  ShieldCheck,
+  Sparkles,
   Star,
-  Tag,
   Ticket,
   Users,
+  WalletCards,
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import type {
-  PublicStoreDetail,
-  StoreGalleryItem,
-} from "@/lib/api/store-detail";
+import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import {
   categoryLabels,
   formatDateOption,
+  formatDiscount,
   formatVnd,
+  getInitials,
   mapEmbedUrl,
+  mediaBackground,
   openingText,
   readableName,
-  storeDetailTabs as tabs,
   videoEmbedUrl,
   weekdayLabels,
 } from "./store-detail.helpers";
-import type { StoreTab } from "./store-detail.helpers";
 import { personalizeRelatedStores, recommendationLabel } from "./store-detail.recommendations";
 import { buildStoreStructuredData } from "./store-detail.schema";
 import { trackStoreDetailClick } from "./store-detail.tracking";
-import {
-  StoreDetailBookingPanel,
-  StoreDetailMobileBookingControls,
-  StoreDetailMobileCta,
-} from "./StoreDetailBookingPanel";
-import { StoreDetailHeader } from "./StoreDetailHeader";
 
 type StoreDetailClientProps = {
   store: PublicStoreDetail;
@@ -51,7 +52,8 @@ type IntroLine = {
 
 const introMarkerPattern = /(?:🇯🇵|🇻🇳|🇬🇧|🇺🇸|\bJP\b|\bVN\b|\bGB\b|\bEN\b)/gi;
 const japaneseTextPattern = /[\u3040-\u30ff\u3400-\u9fff]/;
-const vietnameseTextPattern = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+const vietnameseTextPattern =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 const languageLabels: Record<string, string> = {
   en: "Anh",
@@ -65,6 +67,21 @@ const nationalityLabels: Record<string, string> = {
   kr: "Hàn Quốc",
   vi: "Việt Nam",
 };
+
+const bookingTimes = ["20:00", "21:00", "22:00", "23:00"];
+
+const fallbackHero: StoreGalleryItem = {
+  id: "fallback-hero",
+  type: "IMAGE",
+  url: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=82",
+  alt: "Nightlife venue",
+};
+
+const fallbackTourImages = [
+  "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=700&q=78",
+  "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=700&q=78",
+  "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=700&q=78",
+];
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
 
@@ -94,7 +111,7 @@ const markerToIntroKey = (marker: string) => {
 };
 
 function buildIntroLines(description?: string | null): IntroLine[] {
-  const fallback = "Thông tin giới thiệu sẽ được quán cập nhật trước khi nhận đặt chỗ.";
+  const fallback = "Không gian, dịch vụ và cast của quán sẽ được cập nhật trước khi nhận đặt chỗ.";
   const source = description?.trim();
 
   if (!source) {
@@ -140,28 +157,415 @@ function buildIntroLines(description?: string | null): IntroLine[] {
   return detectedLines.length ? detectedLines : [{ key: "vi", text: source }];
 }
 
-function EmptyState({
-  icon,
-  title,
-  body,
-}: {
-  icon: ReactNode;
-  title: string;
-  body: string;
-}) {
+const plainMapsUrl = (store: PublicStoreDetail) => {
+  if (store.mapUrl) return store.mapUrl;
+  if (typeof store.latitude === "number" && typeof store.longitude === "number") {
+    return `https://www.google.com/maps?q=${store.latitude},${store.longitude}`;
+  }
+
+  return "";
+};
+
+const galleryImageUrl = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
+  if (media?.type === "IMAGE" && media.url) return media.url;
+  if (fallback?.type === "IMAGE" && fallback.url) return fallback.url;
+  return fallbackHero.url;
+};
+
+const imageBackground = (url: string) =>
+  `linear-gradient(180deg, rgba(12,12,15,.05), rgba(12,12,15,.66)), url("${url}")`;
+
+const priceRangeText = (store: PublicStoreDetail) => {
+  const values = store.priceReference.items
+    .map((item) => item.amountVnd)
+    .filter((value): value is number => typeof value === "number" && value > 0);
+
+  if (!values.length) return `Từ ${formatVnd(store.priceReference.startingFromVnd)}`;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  if (min === max) return formatVnd(min);
+  return `${formatVnd(min)} - ${formatVnd(max)}`;
+};
+
+const todayKey = () =>
+  ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    new Date().getDay()
+  ];
+
+function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
     <div className="empty-state">
-      <div className="empty-icon">{icon}</div>
+      <span>{icon}</span>
       <div>
-        <div className="empty-title">{title}</div>
+        <strong>{title}</strong>
         <p>{body}</p>
       </div>
     </div>
   );
 }
 
+function SectionTitle({
+  title,
+  kicker,
+  meta,
+  id,
+}: {
+  title: string;
+  kicker: string;
+  meta?: string;
+  id?: string;
+}) {
+  return (
+    <div className="section-title" id={id}>
+      <div>
+        <h2>{title}</h2>
+        <span>{kicker}</span>
+      </div>
+      <i aria-hidden="true" />
+      {meta ? <small>{meta}</small> : null}
+    </div>
+  );
+}
+
+function IconButton({
+  label,
+  children,
+  onClick,
+}: {
+  label: string;
+  children: ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <button className="round-action" type="button" aria-label={label} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+function CastRail({ store }: { store: PublicStoreDetail }) {
+  if (!store.casts.length) {
+    return (
+      <EmptyState
+        icon={<Users size={20} />}
+        title="Chưa có cast công khai"
+        body="Quán sẽ cập nhật hồ sơ cast khi lịch phục vụ sẵn sàng."
+      />
+    );
+  }
+
+  return (
+    <div className="cast-rail hscroll">
+      {store.casts.slice(0, 10).map((cast) => (
+        <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
+          <span
+            className="cast-avatar"
+            style={{
+              backgroundImage: cast.thumbnailUrl
+                ? `url("${cast.thumbnailUrl}")`
+                : "linear-gradient(135deg,#292a31,#776435)",
+            }}
+          />
+          <strong>{cast.publicAlias || cast.stageName}</strong>
+          <small>
+            <Star size={11} fill="currentColor" />
+            {formatNationalities(cast.languages) || "Cast"}
+          </small>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function CouponBlock({
+  store,
+  couponHref,
+  onCouponClick,
+}: {
+  store: PublicStoreDetail;
+  couponHref: string;
+  onCouponClick: (surface: string, couponId?: string | null) => void;
+}) {
+  const coupon = store.activeCoupons[0] ?? null;
+
+  if (!coupon) {
+    return (
+      <EmptyState
+        icon={<Ticket size={20} />}
+        title="Chưa có ưu đãi đang mở"
+        body="Bạn vẫn có thể gửi yêu cầu đặt bàn để Admin tư vấn khung giờ phù hợp."
+      />
+    );
+  }
+
+  return (
+    <Link className="coupon-strip" href={couponHref} onClick={() => onCouponClick("coupon-strip", coupon.id)}>
+      <span className="coupon-photo" aria-hidden="true" />
+      <span className="coupon-copy">
+        <b>{formatDiscount(coupon)}</b>
+        <strong>{coupon.name}</strong>
+        <small>{coupon.description || "Xuất trình ưu đãi khi đến quán."}</small>
+      </span>
+      <span className="coupon-ticket">Lấy mã</span>
+    </Link>
+  );
+}
+
+function PriceMenu({ store }: { store: PublicStoreDetail }) {
+  const items = store.priceReference.items;
+
+  return (
+    <section className="menu-panel">
+      <div className="menu-chips hscroll" aria-label="Nhóm thực đơn">
+        {["Set bàn", "Cocktail", "Champagne", "Đồ ăn"].map((chip, index) => (
+          <span className={index === 0 ? "active" : undefined} key={chip}>
+            {chip}
+          </span>
+        ))}
+      </div>
+
+      <div className="menu-list">
+        {items.length ? (
+          items.map((item, index) => (
+            <div className="menu-row" key={`${item.label}-${item.amountVnd ?? index}`}>
+              <span
+                className="menu-photo"
+                style={{
+                  backgroundImage: imageBackground(fallbackTourImages[index % fallbackTourImages.length] ?? fallbackHero.url),
+                }}
+                aria-hidden="true"
+              />
+              <span className="menu-copy">
+                <strong>
+                  {item.label}
+                  {index === 1 ? <em>Bán chạy</em> : null}
+                </strong>
+                <small>{item.note || (item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán")}</small>
+              </span>
+              <b>
+                {formatVnd(item.amountVnd)}
+                {item.unit === "hour" ? "/giờ" : ""}
+              </b>
+            </div>
+          ))
+        ) : (
+          <EmptyState
+            icon={<WalletCards size={20} />}
+            title="Chưa có bảng giá"
+            body="Quán chưa công khai thực đơn tham khảo."
+          />
+        )}
+      </div>
+
+      <div className="menu-note">
+        <Info size={15} />
+        <span>{store.priceReference.note || "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ."}</span>
+      </div>
+    </section>
+  );
+}
+
+function HoursList({ store, today }: { store: PublicStoreDetail; today: string }) {
+  return (
+    <div className="hours-list">
+      {weekdayLabels.map(([key, label]) => (
+        <div className={key === today ? "today" : undefined} key={key}>
+          <span>{key === today ? `Hôm nay · ${label}` : label}</span>
+          <strong>{openingText(store.openingHours?.[key])}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MapBlock({
+  store,
+  displayName,
+  embedUrl,
+  mapsUrl,
+  onMapClick,
+}: {
+  store: PublicStoreDetail;
+  displayName: string;
+  embedUrl: string;
+  mapsUrl: string;
+  onMapClick: () => void;
+}) {
+  return (
+    <div className="map-block">
+      {embedUrl ? (
+        <iframe
+          title={`${displayName} Google Map`}
+          src={embedUrl}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      ) : (
+        <span className="map-fallback" aria-hidden="true" />
+      )}
+      <div className="map-overlay">
+        <MapPin size={16} />
+        <span>{store.address || [store.area?.name, store.district, store.city].filter(Boolean).join(", ")}</span>
+      </div>
+      {mapsUrl ? (
+        <a className="map-open-link" href={mapsUrl} target="_blank" rel="noreferrer" onClick={onMapClick}>
+          <Navigation size={15} />
+          Chỉ đường
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+function BookingCard({
+  store,
+  dateOptions,
+  selectedDateIndex,
+  selectedTime,
+  guestCount,
+  bookingHref,
+  couponHref,
+  firstCoupon,
+  onDateSelect,
+  onTimeSelect,
+  onGuestCountChange,
+  onBookingClick,
+  onCouponClick,
+}: {
+  store: PublicStoreDetail;
+  dateOptions: Array<{ label: string; iso: string }>;
+  selectedDateIndex: number;
+  selectedTime: string;
+  guestCount: number;
+  bookingHref: string;
+  couponHref: string;
+  firstCoupon?: PublicStoreDetail["activeCoupons"][number] | null;
+  onDateSelect: (index: number) => void;
+  onTimeSelect: (time: string) => void;
+  onGuestCountChange: (guestCount: number) => void;
+  onBookingClick: (surface: string) => void;
+  onCouponClick: (surface: string) => void;
+}) {
+  return (
+    <aside className="booking-card" aria-label="Đặt bàn">
+      <div className="booking-card-head">
+        <span>
+          <strong>Đặt bàn</strong>
+          <small>Gửi yêu cầu · Admin xác nhận</small>
+        </span>
+        <b>{formatVnd(store.priceReference.startingFromVnd)}</b>
+      </div>
+
+      <div className="member-nudge">
+        <Sparkles size={15} fill="currentColor" />
+        <span>
+          Khách vãng lai nhận ưu đãi cơ bản. Đăng nhập để nâng mức giảm khi có coupon.
+        </span>
+      </div>
+
+      <label>Chọn ngày</label>
+      <div className="slot-row">
+        {dateOptions.map((date, index) => (
+          <button
+            key={date.iso}
+            type="button"
+            className={index === selectedDateIndex ? "slot active" : "slot"}
+            onClick={() => onDateSelect(index)}
+          >
+            {date.label}
+          </button>
+        ))}
+      </div>
+
+      <label>Khung giờ</label>
+      <div className="slot-row">
+        {bookingTimes.map((time) => (
+          <button
+            key={time}
+            type="button"
+            className={time === selectedTime ? "slot active" : "slot"}
+            onClick={() => onTimeSelect(time)}
+          >
+            {time}
+          </button>
+        ))}
+      </div>
+
+      <label>Số khách</label>
+      <div className="guest-stepper">
+        <button type="button" aria-label="Giảm số khách" onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}>
+          <Minus size={16} />
+        </button>
+        <strong>{guestCount} người</strong>
+        <button type="button" aria-label="Tăng số khách" onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}>
+          <Plus size={16} />
+        </button>
+      </div>
+
+      <Link
+        data-testid="store-booking-cta-sidebar"
+        className="primary-action full"
+        href={bookingHref}
+        onClick={() => onBookingClick("desktop-booking-card")}
+      >
+        <CalendarDays size={18} />
+        Gửi yêu cầu đặt bàn
+      </Link>
+
+      <Link
+        data-testid="store-coupon-cta-sidebar"
+        className="secondary-action full"
+        href={couponHref}
+        onClick={() => onCouponClick("desktop-booking-card")}
+      >
+        <Ticket size={18} />
+        {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Ưu đãi của quán"}
+      </Link>
+
+      <div className="booking-safe">
+        <ShieldCheck size={15} />
+        <span>Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.</span>
+      </div>
+    </aside>
+  );
+}
+
+function RelatedStores({ stores }: { stores: RelatedStore[] }) {
+  if (!stores.length) return null;
+
+  return (
+    <section className="related-section">
+      <SectionTitle title="Quán tương tự" kicker="Similar venues" meta="Xem thêm" />
+      <div className="related-grid">
+        {stores.slice(0, 4).map((related) => (
+          <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
+            <span
+              className="related-photo"
+              style={{
+                backgroundImage: related.thumbnailUrl
+                  ? imageBackground(related.thumbnailUrl)
+                  : "linear-gradient(135deg,#202126,#6d5b2f)",
+              }}
+            />
+            <span className="related-copy">
+              <strong>{readableName(related.name)}</strong>
+              <small>{recommendationLabel(related)}</small>
+              <em>
+                {[categoryLabels[related.category] ?? related.category, related.area?.name ?? related.district]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </em>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function StoreDetailClient({ store }: StoreDetailClientProps) {
-  const [activeTab, setActiveTab] = useState<StoreTab>("overview");
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
@@ -171,22 +575,29 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const recommendedStores = useMemo(() => personalizeRelatedStores(store.relatedStores), [store.relatedStores]);
 
   const displayName = readableName(store.name);
-  const gallery = store.gallery ?? [];
-  const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? null;
-  const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
-  const mainGalleryMedia = heroImage ?? selectedMedia;
-  const galleryTiles: StoreGalleryItem[] = gallery.length
-    ? Array.from({ length: Math.max(5, gallery.length) }, (_, index) => gallery[index % gallery.length]!)
-    : [];
+  const gallery = store.gallery?.length ? store.gallery : [fallbackHero];
+  const heroImage = gallery.find((item) => item.type === "IMAGE") ?? fallbackHero;
+  const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? fallbackHero;
+  const heroMedia = selectedMedia.type === "IMAGE" ? selectedMedia : heroImage;
+  const heroBackground = mediaBackground(heroMedia);
+  const galleryTiles = Array.from({ length: Math.min(Math.max(gallery.length, 5), 5) }, (_, index) => gallery[index % gallery.length]!);
+  const tourMedia = gallery.filter((item) => item.type === "VIDEO").length
+    ? gallery.filter((item) => item.type === "VIDEO")
+    : gallery.slice(0, 3);
   const firstCoupon = store.activeCoupons[0] ?? null;
-  const location = Array.from(new Set([store.area?.name, store.district, store.city].filter(Boolean))).join(", ");
+  const location = [store.area?.name, store.district, store.city].filter(Boolean).join(" · ");
+  const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
-  const hasMap = Boolean(embedUrl);
+  const today = todayKey() ?? "monday";
+  const todayOpening = openingText(store.openingHours?.[today]);
+  const openNow = todayOpening !== "Nghỉ" && todayOpening !== "Chưa cập nhật";
+  const categoryLabel = categoryLabels[store.category] ?? store.category;
+  const priceText = priceRangeText(store);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
+  const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const nationalityText = Array.from(new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))))
     .slice(0, 3)
     .join(" · ");
-  const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const languageCards = useMemo(() => {
     const languageCounts = new Map<string, number>();
     store.casts.forEach((cast) => {
@@ -197,28 +608,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     });
 
     const totalCasts = Math.max(store.casts.length, 1);
-    const topLanguages = [...languageCounts.entries()]
+    const cards = [...languageCounts.entries()]
       .sort((left, right) => right[1] - left[1])
       .slice(0, 2)
       .map(([language, count]) => ({
-        type: "language" as const,
         label: `Nói tiếng ${language}`,
         value: `${Math.round((count / totalCasts) * 100)}%`,
-        progress: Math.max(8, Math.round((count / totalCasts) * 100)),
       }));
 
     return [
-      ...topLanguages,
+      ...cards,
       {
-        type: "nationality" as const,
         label: "Quốc tịch cast",
-        value: nationalityText || "Chưa cập nhật",
-        progress: 0,
+        value: nationalityText || "Đang cập nhật",
       },
     ];
   }, [nationalityText, store.casts]);
-  const todayKey = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
-  const todayOpening = todayKey ? openingText(store.openingHours?.[todayKey]) : "";
 
   const dateOptions = useMemo(
     () =>
@@ -263,11 +668,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const couponHref = `/uu-dai?${couponQuery.toString()}`;
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
-  const showPreviousMedia = () => {
-    setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
-  };
-  const showNextMedia = () => {
-    setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+  const showPreviousMedia = () => setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
+  const showNextMedia = () => setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+  const openGallery = (index: number) => {
+    setSelectedGalleryIndex(index % gallery.length);
+    setIsLightboxOpen(true);
   };
   const trackBookingClick = (surface: string) =>
     trackStoreDetailClick(store, "booking", {
@@ -281,41 +686,282 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     trackStoreDetailClick(store, "coupon", { surface, couponId });
 
   return (
-    <main className="store-detail-page" data-testid="store-detail-page">
+    <main className="store-detail-page" data-testid="store-detail-page" data-no-scroll-reveal="true">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <StoreDetailHeader
-        store={store}
-        displayName={displayName}
-        gallery={gallery}
-        galleryTiles={galleryTiles}
-        heroImage={heroImage}
-        mainGalleryMedia={mainGalleryMedia}
-        location={location}
-        nationalityText={nationalityText}
-        todayOpening={todayOpening}
-        isFavorite={isFavorite}
-        onToggleFavorite={() => setIsFavorite((value) => !value)}
-        onOpenGallery={(index) => {
-          setSelectedGalleryIndex(index);
-          setIsLightboxOpen(true);
-        }}
-        onTrackCall={() => trackStoreDetailClick(store, "call", { surface: "summary", phone: store.phone })}
-      />
+
+      <section className="detail-shell">
+        <div className="detail-layout">
+          <div className="media-column">
+            <section className="hero-panel" style={{ backgroundImage: heroBackground }}>
+              <div className="hero-top">
+                <Link className="round-action" href="/danh-sach-quan" aria-label="Quay lại danh sách quán">
+                  <ChevronLeft size={20} />
+                </Link>
+                <div className="hero-actions">
+                  <IconButton label="Chia sẻ quán">
+                    <Share2 size={18} />
+                  </IconButton>
+                  <IconButton label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"} onClick={() => setIsFavorite((value) => !value)}>
+                    <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+                  </IconButton>
+                </div>
+              </div>
+
+              <button className="hero-play" type="button" aria-label="Mở video tour" onClick={() => openGallery(0)}>
+                <Play size={25} fill="currentColor" />
+              </button>
+
+              <button className="video-badge" type="button" onClick={() => openGallery(0)}>
+                <Play size={13} fill="currentColor" />
+                Video tour
+              </button>
+
+              <div className="hero-name">
+                <h1>{displayName}</h1>
+                <div>
+                  <span>{[categoryLabel, location].filter(Boolean).join(" · ")}</span>
+                  <b className={openNow ? "open" : "closed"}>
+                    <i />
+                    {openNow ? "Đang mở" : "Đang nghỉ"}
+                  </b>
+                </div>
+              </div>
+            </section>
+
+            <div className="quick-stats">
+              <div>
+                <strong>{todayOpening}</strong>
+                <span>Giờ mở cửa</span>
+              </div>
+              <i />
+              <div>
+                <strong>{priceText}</strong>
+                <span>Khoảng giá</span>
+              </div>
+              <i />
+              <div>
+                <strong>{store.casts.length || 0} cast</strong>
+                <span>Đang phục vụ</span>
+              </div>
+            </div>
+
+            <div className="secondary-actions">
+              {mapsUrl ? (
+                <a href={mapsUrl} target="_blank" rel="noreferrer" onClick={() => trackStoreDetailClick(store, "map", { surface: "hero-action" })}>
+                  <Navigation size={16} />
+                  Chỉ đường
+                </a>
+              ) : null}
+              <a href="#menu">
+                <WalletCards size={16} />
+                Menu
+              </a>
+            </div>
+
+            <div className="thumb-grid">
+              {galleryTiles.map((item, index) => (
+                <button
+                  key={`${item.id}-${index}`}
+                  className={index === selectedGalleryIndex ? "active" : undefined}
+                  type="button"
+                  style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
+                  aria-label={`Mở media ${index + 1}`}
+                  onClick={() => openGallery(index)}
+                >
+                  {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
+                </button>
+              ))}
+            </div>
+
+            <section className="desktop-only">
+              <SectionTitle title="Video tour" kicker="Venue tour" meta={`${tourMedia.length} media`} />
+              <div className="tour-grid">
+                {tourMedia.slice(0, 4).map((item, index) => (
+                  <button
+                    className="tour-card"
+                    type="button"
+                    key={`${item.id}-${index}`}
+                    style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
+                    onClick={() => openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)}
+                  >
+                    <Play size={18} fill="currentColor" />
+                    <span>{item.purpose || (item.type === "VIDEO" ? "Video tour" : "Không gian quán")}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="desktop-only">
+              <SectionTitle title="Vị trí" kicker="Location" />
+              <MapBlock
+                store={store}
+                displayName={displayName}
+                embedUrl={embedUrl}
+                mapsUrl={mapsUrl}
+                onMapClick={() => trackStoreDetailClick(store, "map", { surface: "desktop-map" })}
+              />
+            </section>
+          </div>
+
+          <div className="info-column">
+            <div className="desktop-title">
+              <div>
+                <span className="store-logo">{getInitials(store.name) || "NL"}</span>
+                <h1>{displayName}</h1>
+                <p>
+                  <Star size={15} fill="currentColor" />
+                  Được đề xuất · {[categoryLabel, location].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <b className={openNow ? "open-pill" : "closed-pill"}>
+                <i />
+                {openNow ? "Đang mở" : "Đang nghỉ"}
+              </b>
+            </div>
+
+            <div className="desktop-stats">
+              <div>
+                <strong>{todayOpening}</strong>
+                <span>Giờ mở cửa</span>
+              </div>
+              <div>
+                <strong>{priceText}</strong>
+                <span>Khoảng giá</span>
+              </div>
+              <div>
+                <strong>{store.casts.length} cast</strong>
+                <span>Đang phục vụ</span>
+              </div>
+            </div>
+
+            <BookingCard
+              store={store}
+              dateOptions={dateOptions}
+              selectedDateIndex={selectedDateIndex}
+              selectedTime={selectedTime}
+              guestCount={guestCount}
+              bookingHref={bookingHref}
+              couponHref={couponHref}
+              firstCoupon={firstCoupon}
+              onDateSelect={setSelectedDateIndex}
+              onTimeSelect={setSelectedTime}
+              onGuestCountChange={setGuestCount}
+              onBookingClick={trackBookingClick}
+              onCouponClick={trackCouponClick}
+            />
+
+            <section>
+              <SectionTitle title="Giới thiệu" kicker="About" />
+              <div className="intro-copy">
+                {introLines.map((line) => (
+                  <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
+                    {line.text}
+                  </p>
+                ))}
+              </div>
+              <div className="feature-chips">
+                {[categoryLabel, "Phòng VIP", "Hỗ trợ tiếng Nhật", "Đặt bàn qua Admin"].map((chip) => (
+                  <span key={chip}>{chip}</span>
+                ))}
+              </div>
+              <div className="language-grid">
+                {languageCards.map((card) => (
+                  <div key={card.label}>
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mobile-only">
+              <SectionTitle title="Video tour" kicker="Venue tour" meta={`${tourMedia.length} media`} />
+              <div className="tour-rail hscroll">
+                {tourMedia.slice(0, 6).map((item, index) => (
+                  <button
+                    className="tour-card"
+                    type="button"
+                    key={`${item.id}-${index}`}
+                    style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
+                    onClick={() => openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)}
+                  >
+                    <Play size={18} fill="currentColor" />
+                    <span>{item.purpose || "Không gian quán"}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <SectionTitle title="Cast đang làm" kicker="Cast on tonight" meta={`${store.casts.length} cast`} />
+              <CastRail store={store} />
+            </section>
+
+            <section>
+              <SectionTitle title="Ưu đãi" kicker="Hot deals" />
+              <CouponBlock store={store} couponHref={couponHref} onCouponClick={trackCouponClick} />
+            </section>
+
+            <section id="menu">
+              <SectionTitle title="Thực đơn" kicker="Menu" />
+              <PriceMenu store={store} />
+            </section>
+
+            <section>
+              <SectionTitle title="Giờ mở cửa" kicker="Opening hours" />
+              <HoursList store={store} today={today} />
+            </section>
+
+            <section className="mobile-only">
+              <SectionTitle title="Vị trí" kicker="Location" />
+              <MapBlock
+                store={store}
+                displayName={displayName}
+                embedUrl={embedUrl}
+                mapsUrl={mapsUrl}
+                onMapClick={() => trackStoreDetailClick(store, "map", { surface: "mobile-map" })}
+              />
+            </section>
+          </div>
+        </div>
+
+        <RelatedStores stores={recommendedStores} />
+      </section>
+
+      <div className="mobile-cta">
+        <div>
+          <span>Đặt bàn từ</span>
+          <strong>{formatVnd(store.priceReference.startingFromVnd)}</strong>
+        </div>
+        <Link
+          data-testid="store-booking-cta-mobile"
+          className="primary-action"
+          href={bookingHref}
+          onClick={() => trackBookingClick("mobile-sticky")}
+        >
+          <CalendarDays size={17} />
+          <span>
+            Đặt bàn ngay
+            <small>Gửi yêu cầu · không thu cọc</small>
+          </span>
+        </Link>
+      </div>
+
       {isLightboxOpen && lightboxMedia ? (
         <div className="lightbox" role="dialog" aria-modal="true" aria-label="Store gallery lightbox">
           <button
             className="lightbox-close"
             type="button"
-            aria-label="Close gallery"
+            aria-label="Đóng gallery"
             onClick={() => setIsLightboxOpen(false)}
           >
             <X size={22} />
           </button>
           {gallery.length > 1 ? (
-            <button className="lightbox-nav previous" type="button" aria-label="Previous media" onClick={showPreviousMedia}>
+            <button className="lightbox-nav previous" type="button" aria-label="Media trước" onClick={showPreviousMedia}>
               <ChevronLeft size={28} />
             </button>
           ) : null}
@@ -336,7 +982,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             )}
           </div>
           {gallery.length > 1 ? (
-            <button className="lightbox-nav next" type="button" aria-label="Next media" onClick={showNextMedia}>
+            <button className="lightbox-nav next" type="button" aria-label="Media sau" onClick={showNextMedia}>
               <ChevronRight size={28} />
             </button>
           ) : null}
@@ -347,621 +993,1098 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         </div>
       ) : null}
 
-      <section className="store-content">
-        <div className="main-column">
-          <nav className="tab-bar" aria-label="Nội dung quán">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                data-testid={`store-tab-${tab.id}`}
-                className={activeTab === tab.id ? "tab active" : "tab"}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
-          {activeTab === "overview" ? (
-            <section className="tab-section">
-              <div className="overview-description">
-                {introLines.map((line) => (
-                  <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
-                    {line.text}
-                  </p>
-                ))}
-              </div>
-
-              <div className="language-grid">
-                {languageCards.map((card) => (
-                  <div
-                    className={card.type === "nationality" ? "language-card nationality-card" : "language-card"}
-                    key={card.label}
-                  >
-                    <span>{card.label}</span>
-                    <strong>{card.value}</strong>
-                    {card.type === "language" ? (
-                      <div className="language-meter" aria-hidden="true">
-                        <i style={{ width: `${card.progress}%` }} />
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-
-              {store.campaigns.length ? (
-                <div className="campaign-list">
-                  {store.campaigns.map((campaign) => (
-                    <Link
-                      key={campaign.id}
-                      className="campaign-row"
-                      onClick={() => trackCouponClick("campaign", campaign.couponId)}
-                      href={`/uu-dai?${new URLSearchParams({
-                        storeId: store.id,
-                        storeSlug: store.slug,
-                        couponId: campaign.couponId,
-                      }).toString()}`}
-                    >
-                      <Tag size={18} />
-                      <span>
-                        <strong>{campaign.title}</strong>
-                        <small>{campaign.description || "Coupon đang áp dụng tại quán này."}</small>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Ticket size={20} />}
-                  title="Chưa có ưu đãi"
-                  body="Quán hiện chưa có ưu đãi đang mở."
-                />
-              )}
-
-              <div className="stat-grid compact">
-                <div>
-                  <span>Giá từ</span>
-                  <strong>{formatVnd(store.priceReference.startingFromVnd)}</strong>
-                </div>
-                <div>
-                  <span>Cast hiển thị</span>
-                  <strong>{store.casts.length} hồ sơ</strong>
-                </div>
-                <div>
-                  <span>Ưu đãi đang mở</span>
-                  <strong>{store.activeCoupons.length} mã</strong>
-                </div>
-                <div>
-                  <span>Khu vực</span>
-                  <strong>{store.area?.name ?? store.district ?? store.city}</strong>
-                </div>
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "pricing" ? (
-            <section className="tab-section" data-testid="store-pricing-panel">
-              <div className="section-heading">
-                <h2>Bảng giá tham khảo</h2>
-                <p>{store.priceReference.note}</p>
-              </div>
-              <div className="price-table">
-                {store.priceReference.items.length ? (
-                  store.priceReference.items.map((item) => (
-                    <div className="price-row" key={`${item.label}-${item.amountVnd ?? "custom"}`}>
-                      <span>
-                        <strong>{item.label}</strong>
-                        {item.note ? <small>{item.note}</small> : null}
-                      </span>
-                      <b>
-                        {formatVnd(item.amountVnd)}
-                        {item.unit === "hour" ? "/giờ" : ""}
-                      </b>
-                    </div>
-                  ))
-                ) : (
-                  <EmptyState
-                    icon={<Tag size={20} />}
-                    title="Chưa có bảng giá"
-                    body="Quán chưa công khai bảng giá tham khảo."
-                  />
-                )}
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "casts" ? (
-            <section className="tab-section" data-testid="store-casts-panel">
-              <div className="section-heading">
-                <h2>Cast của quán</h2>
-                <p>{store.casts.length ? `${store.casts.length} hồ sơ đang mở hiển thị.` : "Chưa có hồ sơ hiển thị."}</p>
-              </div>
-              {store.casts.length ? (
-                <div className="cast-grid">
-                  {store.casts.map((cast) => (
-                    <Link className="cast-card" key={cast.id} href={`/casts/${cast.slug}`}>
-                      <div
-                        className="cast-photo"
-                        style={{
-                          backgroundImage: cast.thumbnailUrl
-                            ? `url("${cast.thumbnailUrl}")`
-                            : "linear-gradient(135deg,#2a2c35,#705d2d)",
-                        }}
-                      />
-                      <div>
-                        <strong>{cast.publicAlias || cast.stageName}</strong>
-                        <span>{cast.publicHeadline || "Hồ sơ cast"}</span>
-                        <small>
-                          <Users size={13} />
-                          {formatNationalities(cast.languages) || "Chưa cập nhật"}
-                        </small>
-                        <small>
-                          <Tag size={13} />
-                          {cast.tags.length ? cast.tags.join(", ") : "Chưa cập nhật"}
-                        </small>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Users size={20} />}
-                  title="Chưa có cast"
-                  body="Quán chưa công khai hồ sơ cast."
-                />
-              )}
-            </section>
-          ) : null}
-
-          {activeTab === "reviews" ? (
-            <section className="tab-section" data-testid="store-reviews-panel">
-              <div className="review-empty">
-                <Star size={28} />
-                <h2>Chưa có đánh giá công khai</h2>
-                <p>Đánh giá sẽ xuất hiện khi có phản hồi đã xác thực.</p>
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === "map" ? (
-            <section className="tab-section" data-testid="store-map-panel">
-              <div className="map-grid">
-                <div className="map-frame">
-                  {hasMap ? (
-                    <iframe
-                      title={`${displayName} Google Map`}
-                      src={embedUrl}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  ) : (
-                    <EmptyState
-                      icon={<MapPin size={20} />}
-                      title="Chưa có bản đồ"
-                      body="Quán chưa cập nhật vị trí bản đồ."
-                    />
-                  )}
-                </div>
-                <div className="hours-panel">
-                  <h2>Giờ mở cửa</h2>
-                  <div className="hours-list">
-                    {weekdayLabels.map(([key, label]) => (
-                      <div key={key}>
-                        <span>{label}</span>
-                        <strong>{openingText(store.openingHours?.[key])}</strong>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="holiday-note">
-                    <Clock3 size={16} />
-                    <span>
-                      {typeof store.holidaySchedule?.note === "string"
-                        ? store.holidaySchedule.note
-                        : "Chưa có lịch nghỉ đặc biệt."}
-                    </span>
-                  </div>
-                  {store.mapUrl ? (
-                    <a
-                      className="map-link"
-                      href={store.mapUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={() => trackStoreDetailClick(store, "map", { surface: "map-panel" })}
-                    >
-                      Mở Google Maps
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-          ) : null}
-
-          <StoreDetailMobileBookingControls
-            dateOptions={dateOptions}
-            selectedDateIndex={selectedDateIndex}
-            selectedTime={selectedTime}
-            guestCount={guestCount}
-            onDateSelect={setSelectedDateIndex}
-            onTimeSelect={setSelectedTime}
-            onGuestCountChange={setGuestCount}
-          />
-
-          {recommendedStores.length ? (
-            <section className="related-section">
-              <h2>Quán liên quan</h2>
-              <div className="related-grid">
-                {recommendedStores.map((related) => (
-                  <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
-                    <div
-                      style={{
-                        backgroundImage: related.thumbnailUrl
-                          ? `url("${related.thumbnailUrl}")`
-                          : "linear-gradient(135deg,#202229,#6f6234)",
-                      }}
-                    />
-                    <strong>{readableName(related.name)}</strong>
-                    <small>{recommendationLabel(related)}</small>
-                    <span>{[categoryLabels[related.category] ?? related.category, related.area?.name ?? related.district].filter(Boolean).join(" · ")}</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </div>
-
-        <StoreDetailBookingPanel
-          startingFromVnd={store.priceReference.startingFromVnd}
-          dateOptions={dateOptions}
-          selectedDateIndex={selectedDateIndex}
-          selectedTime={selectedTime}
-          guestCount={guestCount}
-          bookingHref={bookingHref}
-          couponHref={couponHref}
-          firstCoupon={firstCoupon}
-          onDateSelect={setSelectedDateIndex}
-          onTimeSelect={setSelectedTime}
-          onGuestCountChange={setGuestCount}
-          onBookingClick={trackBookingClick}
-          onCouponClick={trackCouponClick}
-        />
-      </section>
-
-      <StoreDetailMobileCta
-        startingFromVnd={store.priceReference.startingFromVnd}
-        bookingHref={bookingHref}
-        couponHref={couponHref}
-        firstCoupon={firstCoupon}
-        onBookingClick={trackBookingClick}
-        onCouponClick={trackCouponClick}
-      />
-
       <style>{`
         .store-detail-page {
           min-height: 100vh;
-          background: #0d0e11;
-          color: #f7f1e7;
+          background: #0c0c0f;
+          color: #f3f0ea;
           font-family: var(--nl-font-sans);
-          padding-bottom: 72px;
+          padding-bottom: 86px;
         }
 
-        .legacy-shell {
-          width: 100%;
-          max-width: 1468px;
+        .detail-shell {
+          width: min(1240px, calc(100% - 36px));
           margin: 0 auto;
-          padding: 16px 26px 0;
+          padding: 24px 0 42px;
         }
 
-        .legacy-breadcrumb {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #9f9788;
-          font-size: 12px;
-          font-weight: 700;
-          margin-bottom: 16px;
-        }
-
-        .legacy-breadcrumb a {
-          color: #bfb5a0;
-          text-decoration: none;
-        }
-
-        .legacy-breadcrumb strong {
-          color: #fff7e8;
-        }
-
-        .legacy-gallery {
+        .detail-layout {
           display: grid;
-          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-          grid-template-rows: 134px 134px;
-          gap: 10px;
+          grid-template-columns: minmax(420px, 512px) minmax(0, 1fr);
+          gap: 34px;
+          align-items: start;
         }
 
-        .legacy-gallery-tile {
+        .media-column,
+        .info-column {
+          min-width: 0;
+        }
+
+        .info-column {
+          display: grid;
+          gap: 24px;
+        }
+
+        .hero-panel {
           position: relative;
-          border: 0;
+          min-height: 418px;
+          overflow: hidden;
           border-radius: 8px;
           background-size: cover;
           background-position: center;
-          overflow: hidden;
-          cursor: pointer;
-          color: #241a0a;
+          box-shadow: 0 24px 50px -28px rgba(0, 0, 0, .78);
         }
 
-        .legacy-gallery-tile.featured {
-          grid-row: span 2;
-        }
-
-        .legacy-play-center {
+        .hero-panel::after {
+          content: "";
           position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(12, 12, 15, .08), rgba(12, 12, 15, .15) 36%, rgba(12, 12, 15, .9));
+          pointer-events: none;
+        }
+
+        .hero-top,
+        .hero-name,
+        .hero-play,
+        .video-badge {
+          position: absolute;
+          z-index: 2;
+        }
+
+        .hero-top {
+          top: 14px;
+          left: 14px;
+          right: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .hero-actions {
+          display: flex;
+          gap: 9px;
+        }
+
+        .round-action {
+          width: 40px;
+          height: 40px;
+          border: 1px solid rgba(212, 178, 106, .34);
+          border-radius: 50%;
+          background: rgba(12, 12, 15, .48);
+          color: #f3f0ea;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          backdrop-filter: blur(8px);
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .hero-play {
           left: 50%;
           top: 50%;
           transform: translate(-50%, -50%);
-          width: 44px;
-          height: 44px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, .9);
-          color: #d4b26a;
-          display: grid;
-          place-items: center;
-          box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+          width: 70px;
+          height: 70px;
+          border: 1px solid rgba(212, 178, 106, .62);
+          border-radius: 50%;
+          background: rgba(12, 12, 15, .42);
+          color: #f0dda8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding-left: 4px;
+          backdrop-filter: blur(8px);
+          cursor: pointer;
+          box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .8);
         }
 
-        .legacy-video-badge {
-          position: absolute;
-          left: 10px;
-          bottom: 10px;
+        .video-badge {
+          left: 14px;
+          top: 68px;
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 7px;
+          border: 1px solid rgba(212, 178, 106, .42);
           border-radius: 999px;
-          background: rgba(10, 10, 12, .72);
-          color: #fff7e8;
-          font-size: 11px;
-          font-weight: 900;
-          padding: 5px 8px;
+          background: rgba(12, 12, 15, .5);
+          color: #f0e6d2;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0;
+          text-transform: uppercase;
+          padding: 7px 12px;
+          backdrop-filter: blur(6px);
+          cursor: pointer;
         }
 
-        .legacy-gallery-empty {
-          grid-column: 1 / -1;
-          min-height: 218px;
-          border: 1px solid rgba(226, 184, 94, .22);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
-          color: #f4dd9b;
-          display: grid;
-          place-items: center;
-          gap: 8px;
-          text-align: center;
-          padding: 24px;
+        .hero-name {
+          left: 20px;
+          right: 20px;
+          bottom: 18px;
         }
 
-        .legacy-gallery-empty span {
-          color: #a9a197;
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        .legacy-summary {
-          display: grid;
-          gap: 10px;
-          padding: 20px 360px 0 0;
-        }
-
-        .legacy-summary-main {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 14px;
-        }
-
-        .legacy-summary .store-logo {
-          display: flex;
-          width: 54px;
-          height: 54px;
-          flex: none;
+        .hero-name h1,
+        .desktop-title h1 {
           margin: 0;
-          border-radius: 8px;
+          color: #fff;
+          line-height: 1.02;
+          letter-spacing: 0;
         }
 
-        .legacy-summary-copy {
-          min-width: 0;
-          flex: 1;
+        .hero-name h1 {
+          font-size: 30px;
+          text-shadow: 0 1px 16px rgba(0, 0, 0, .56);
         }
 
-        .legacy-summary h1 {
-          margin: 0;
-          color: #fff7e8;
-          font-size: 24px;
-          line-height: 1.1;
-        }
-
-        .legacy-summary-meta,
-        .legacy-tags,
-        .legacy-summary-actions,
-        .legacy-location {
+        .hero-name div,
+        .desktop-title p {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
-        }
-
-        .legacy-summary-meta {
-          gap: 8px;
-          margin-top: 8px;
-          color: #a9a197;
+          gap: 9px;
+          margin: 10px 0 0;
+          color: #cfc9bd;
           font-size: 12px;
         }
 
-        .legacy-summary-meta span {
+        .hero-name b,
+        .open-pill,
+        .closed-pill {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          min-height: 22px;
-          white-space: nowrap;
-        }
-
-        .legacy-summary-meta svg {
-          color: #c8a95c;
-        }
-
-        .legacy-summary-meta .summary-price {
-          color: #d4b26a;
-          font-weight: 900;
-        }
-
-        .legacy-info-panel {
-          display: grid;
-          gap: 9px;
-          max-width: min(720px, calc(100% - 68px));
-          margin-left: 68px;
-          padding: 11px 12px;
-          border: 1px solid rgba(226, 184, 94, .14);
+          gap: 6px;
           border-radius: 8px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, .055), rgba(226, 184, 94, .035));
+          padding: 4px 9px;
+          font-size: 11px;
+          font-weight: 800;
         }
 
-        .legacy-location {
-          gap: 8px;
+        .hero-name b.open,
+        .open-pill {
+          color: #8be4ad;
+          background: rgba(95, 191, 134, .13);
+          border: 1px solid rgba(95, 191, 134, .38);
+        }
+
+        .hero-name b.closed,
+        .closed-pill {
+          color: #bfb7aa;
+          background: rgba(255, 255, 255, .06);
+          border: 1px solid rgba(255, 255, 255, .12);
+        }
+
+        .hero-name i,
+        .open-pill i,
+        .closed-pill i {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+
+        .quick-stats,
+        .desktop-stats {
+          display: flex;
+          align-items: stretch;
+          border-top: 1px solid rgba(255, 255, 255, .07);
+          border-bottom: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .quick-stats {
+          padding: 16px 4px 10px;
+        }
+
+        .quick-stats div,
+        .desktop-stats div {
+          flex: 1;
           min-width: 0;
-          color: #cfc6b8;
+        }
+
+        .quick-stats div {
+          text-align: center;
+        }
+
+        .quick-stats i,
+        .desktop-stats div + div {
+          border-left: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        .quick-stats strong,
+        .desktop-stats strong {
+          display: block;
+          color: #e3c27e;
+          font-size: 14px;
+          line-height: 1.25;
+        }
+
+        .quick-stats span,
+        .desktop-stats span {
+          display: block;
+          margin-top: 5px;
+          color: #8c8679;
+          font-size: 11px;
+        }
+
+        .secondary-actions {
+          display: flex;
+          gap: 9px;
+          padding: 12px 0 0;
+        }
+
+        .secondary-actions a,
+        .primary-action,
+        .secondary-action {
+          min-height: 44px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 900;
+          text-decoration: none;
+        }
+
+        .secondary-actions a {
+          flex: 1;
+          color: #e3c27e;
+          background: rgba(255, 255, 255, .045);
+          border: 1px solid rgba(212, 178, 106, .28);
+        }
+
+        .thumb-grid {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .thumb-grid button {
+          position: relative;
+          aspect-ratio: 1 / .76;
+          border: 1px solid transparent;
+          border-radius: 8px;
+          background-size: cover;
+          background-position: center;
+          color: #fff;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          overflow: hidden;
+        }
+
+        .thumb-grid button.active {
+          border-color: #d4b26a;
+          box-shadow: inset 0 0 0 1px rgba(212, 178, 106, .6);
+        }
+
+        .desktop-only {
+          display: block;
+          margin-top: 26px;
+        }
+
+        .mobile-only {
+          display: none;
+        }
+
+        .section-title {
+          display: flex;
+          align-items: flex-end;
+          gap: 12px;
+          margin-bottom: 13px;
+          scroll-margin-top: 96px;
+        }
+
+        .section-title h2 {
+          margin: 0;
+          color: #f3f0ea;
+          font-size: 21px;
+          line-height: 1.08;
+          font-weight: 700;
+          letter-spacing: 0;
+        }
+
+        .section-title span {
+          display: block;
+          margin-top: 4px;
+          color: #8c8679;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        .section-title i {
+          flex: 1;
+          height: 1px;
+          margin-bottom: 8px;
+          background: linear-gradient(90deg, rgba(212, 178, 106, .45), transparent);
+        }
+
+        .section-title small {
+          flex: none;
+          margin-bottom: 4px;
+          color: #9b958a;
+          font-size: 12px;
+        }
+
+        .tour-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .tour-rail {
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          padding-bottom: 2px;
+        }
+
+        .tour-rail .tour-card {
+          flex: 0 0 228px;
+        }
+
+        .tour-card {
+          position: relative;
+          min-height: 136px;
+          border: 0;
+          border-radius: 8px;
+          overflow: hidden;
+          background-size: cover;
+          background-position: center;
+          color: #f0dda8;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .tour-card::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(0, 0, 0, .08), rgba(12, 12, 15, .72));
+        }
+
+        .tour-card svg,
+        .tour-card span {
+          position: relative;
+          z-index: 1;
+        }
+
+        .tour-card svg {
+          width: 44px;
+          height: 44px;
+          padding: 13px;
+          border-radius: 50%;
+          border: 1px solid rgba(212, 178, 106, .55);
+          background: rgba(12, 12, 15, .46);
+        }
+
+        .tour-card span {
+          position: absolute;
+          left: 12px;
+          right: 12px;
+          bottom: 10px;
+          color: #f3f0ea;
+          font-size: 13px;
+          font-weight: 800;
+          text-align: left;
+        }
+
+        .map-block {
+          position: relative;
+          min-height: 186px;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #15161a;
+          border: 1px solid rgba(212, 178, 106, .18);
+        }
+
+        .map-block iframe {
+          width: 100%;
+          height: 100%;
+          min-height: 186px;
+          border: 0;
+          display: block;
+          filter: saturate(.86) contrast(.94);
+        }
+
+        .map-fallback {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(212, 178, 106, .16), rgba(255, 255, 255, .04));
+        }
+
+        .map-overlay {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 14px;
+          background: linear-gradient(0deg, rgba(12, 12, 15, .92), rgba(12, 12, 15, .02));
+          color: #e7e1d4;
           font-size: 12px;
           font-weight: 700;
-          line-height: 1.45;
         }
 
-        .legacy-location svg {
-          flex: none;
-          color: #d4b26a;
-        }
-
-        .legacy-location span {
+        .map-overlay span {
           min-width: 0;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .legacy-tags {
-          gap: 7px;
-          margin-top: 0;
-          padding-left: 0;
-        }
-
-        .legacy-tags span {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          min-height: 30px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, .06);
-          color: #d9d1c3;
-          border: 1px solid rgba(255, 255, 255, .08);
-          padding: 0 10px;
-          font-size: 11px;
-          font-weight: 800;
-          white-space: nowrap;
-        }
-
-        .legacy-tags span svg {
-          color: currentColor;
+        .map-overlay svg {
+          color: #d4b26a;
           flex: none;
         }
 
-        .legacy-tags .featured {
-          background: rgba(226, 184, 94, .13);
-          color: #f4dd9b;
-          border-color: rgba(226, 184, 94, .2);
-        }
-
-        .legacy-tags .open-now {
-          background: rgba(31, 138, 82, .16);
-          color: #baf7d2;
-          border-color: rgba(82, 215, 143, .28);
-        }
-
-        .legacy-summary-actions {
-          gap: 10px;
-        }
-
-        .legacy-summary-actions button,
-        .legacy-summary-actions a {
-          width: 36px;
-          height: 36px;
-          border: 1px solid rgba(226, 184, 94, .26);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
-          color: #d4b26a;
-          display: grid;
-          place-items: center;
-          cursor: pointer;
-          text-decoration: none;
-        }
-
-        .store-logo {
-          width: 64px;
-          height: 64px;
-          border-radius: 8px;
-          display: none;
+        .map-open-link {
+          position: absolute;
+          right: 12px;
+          top: 12px;
+          display: inline-flex;
           align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #ead08a, #b9913f);
-          color: #1b1508;
-          font-size: 20px;
-          font-weight: 900;
-          margin-bottom: 18px;
-          border: 1px solid rgba(255, 240, 190, .6);
-        }
-
-        h1 {
-          margin: 14px 0 0;
-          font-size: 34px;
-          line-height: 1.08;
-          letter-spacing: 0;
-          color: #fff7e8;
-        }
-
-        .primary-action,
-        .secondary-action,
-        .campaign-row,
-        .holiday-note,
-        .map-link {
-          display: flex;
-          align-items: center;
-        }
-
-        .primary-action,
-        .secondary-action {
-          justify-content: center;
-          gap: 8px;
-          min-height: 36px;
+          gap: 6px;
+          min-height: 34px;
+          padding: 0 11px;
           border-radius: 8px;
-          padding: 0 14px;
+          background: rgba(12, 12, 15, .66);
+          color: #f0dda8;
+          border: 1px solid rgba(212, 178, 106, .32);
           text-decoration: none;
           font-size: 12px;
           font-weight: 900;
+          backdrop-filter: blur(8px);
+        }
+
+        .desktop-title {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+        }
+
+        .store-logo {
+          width: 48px;
+          height: 48px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 12px;
+          color: #241a0a;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          font-size: 17px;
+          font-weight: 900;
+        }
+
+        .desktop-title h1 {
+          font-size: 34px;
+        }
+
+        .desktop-title p {
+          color: #c5c0b6;
+        }
+
+        .desktop-title p svg {
+          color: #e3c27e;
+        }
+
+        .open-pill,
+        .closed-pill {
+          flex: none;
+          margin-top: 2px;
+        }
+
+        .desktop-stats {
+          padding: 15px 0;
+        }
+
+        .desktop-stats div {
+          padding-left: 22px;
+        }
+
+        .desktop-stats div:first-child {
+          padding-left: 0;
+        }
+
+        .booking-card,
+        .menu-panel {
+          border: 1px solid rgba(212, 178, 106, .28);
+          border-radius: 8px;
+          background: linear-gradient(135deg, rgba(212, 178, 106, .1), rgba(255, 255, 255, .025));
+        }
+
+        .booking-card {
+          padding: 16px;
+        }
+
+        .booking-card-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+        }
+
+        .booking-card-head strong,
+        .booking-card-head small,
+        .booking-card-head b {
+          display: block;
+        }
+
+        .booking-card-head strong {
+          color: #f3f0ea;
+          font-size: 16px;
+        }
+
+        .booking-card-head small {
+          margin-top: 4px;
+          color: #8c8679;
+          font-size: 12px;
+        }
+
+        .booking-card-head b {
+          color: #e3c27e;
+          font-size: 15px;
+          white-space: nowrap;
+        }
+
+        .member-nudge,
+        .booking-safe,
+        .menu-note {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          color: #c5c0b6;
+          font-size: 12px;
+          line-height: 1.55;
+        }
+
+        .member-nudge {
+          margin: 12px 0 14px;
+          padding: 10px 11px;
+          border: 1px solid rgba(212, 178, 106, .28);
+          border-radius: 8px;
+          background: rgba(212, 178, 106, .1);
+        }
+
+        .member-nudge svg,
+        .booking-safe svg,
+        .menu-note svg {
+          flex: none;
+          color: #e3c27e;
+          margin-top: 2px;
+        }
+
+        .booking-card label {
+          display: block;
+          margin: 12px 0 8px;
+          color: #8c8679;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        .slot-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+
+        .slot {
+          min-height: 34px;
+          border: 1px solid rgba(255, 255, 255, .1);
+          border-radius: 8px;
+          background: rgba(12, 12, 15, .42);
+          color: #c5c0b6;
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .slot.active,
+        .guest-stepper button {
+          color: #241a0a;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          border-color: transparent;
+        }
+
+        .guest-stepper {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          min-height: 46px;
+          margin-bottom: 14px;
+          padding: 6px;
+          border: 1px solid rgba(255, 255, 255, .1);
+          border-radius: 8px;
+          background: rgba(12, 12, 15, .42);
+        }
+
+        .guest-stepper button {
+          width: 36px;
+          min-height: 34px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .guest-stepper strong {
+          color: #f3f0ea;
+          font-size: 14px;
         }
 
         .primary-action {
-          background: #e2b85e;
-          color: #1b1508;
+          background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+          border: 0;
         }
 
         .secondary-action {
-          background: rgba(255, 255, 255, .06);
-          color: #f4dd9b;
-          border: 1px solid rgba(226, 184, 94, .32);
+          color: #e3c27e;
+          background: rgba(255, 255, 255, .045);
+          border: 1px solid rgba(212, 178, 106, .3);
         }
 
         .full {
           width: 100%;
         }
 
+        .booking-card .primary-action + .secondary-action {
+          margin-top: 10px;
+        }
+
+        .booking-safe {
+          margin-top: 11px;
+        }
+
+        .intro-copy {
+          color: #c5c0b6;
+          font-size: 14px;
+          line-height: 1.8;
+        }
+
+        .intro-copy p {
+          margin: 0;
+        }
+
+        .intro-copy p + p {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px solid rgba(212, 178, 106, .14);
+        }
+
+        .feature-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 14px;
+        }
+
+        .feature-chips span,
+        .menu-chips span {
+          display: inline-flex;
+          align-items: center;
+          min-height: 31px;
+          border-radius: 999px;
+          padding: 0 12px;
+          color: #d9c08a;
+          background: rgba(212, 178, 106, .1);
+          border: 1px solid rgba(212, 178, 106, .26);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .feature-chips span:nth-child(n + 3) {
+          color: #c5c0b6;
+          background: rgba(255, 255, 255, .045);
+          border-color: rgba(255, 255, 255, .1);
+        }
+
+        .language-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 14px;
+        }
+
+        .language-grid div {
+          min-height: 74px;
+          padding: 12px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .04);
+          border: 1px solid rgba(212, 178, 106, .16);
+        }
+
+        .language-grid span,
+        .language-grid strong {
+          display: block;
+        }
+
+        .language-grid span {
+          color: #9b958a;
+          font-size: 11px;
+          line-height: 1.35;
+        }
+
+        .language-grid strong {
+          margin-top: 6px;
+          color: #f0dda8;
+          font-size: 14px;
+          line-height: 1.3;
+        }
+
+        .cast-rail {
+          display: flex;
+          gap: 16px;
+          overflow-x: auto;
+          padding-bottom: 2px;
+        }
+
+        .cast-bubble {
+          flex: 0 0 78px;
+          color: #f3f0ea;
+          text-align: center;
+          text-decoration: none;
+        }
+
+        .cast-avatar {
+          display: block;
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          background-size: cover;
+          background-position: center;
+          border: 1px solid rgba(255, 255, 255, .14);
+        }
+
+        .cast-bubble:first-child .cast-avatar {
+          border-color: rgba(212, 178, 106, .52);
+        }
+
+        .cast-bubble strong {
+          display: block;
+          margin-top: 8px;
+          font-size: 12px;
+          line-height: 1.25;
+        }
+
+        .cast-bubble small {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 4px;
+          margin-top: 3px;
+          color: #e3c27e;
+          font-size: 10px;
+          line-height: 1.25;
+        }
+
+        .coupon-strip {
+          display: flex;
+          align-items: stretch;
+          min-height: 88px;
+          border: 1px solid rgba(212, 178, 106, .22);
+          border-radius: 8px;
+          overflow: hidden;
+          background: rgba(255, 255, 255, .035);
+          color: #f3f0ea;
+          text-decoration: none;
+        }
+
+        .coupon-photo {
+          width: 78px;
+          flex: none;
+          background: ${imageBackground(fallbackTourImages[1] ?? fallbackHero.url)};
+          background-size: cover;
+          background-position: center;
+        }
+
+        .coupon-copy {
+          flex: 1;
+          min-width: 0;
+          padding: 12px 13px;
+        }
+
+        .coupon-copy b {
+          color: #e3c27e;
+          font-size: 20px;
+          margin-right: 8px;
+        }
+
+        .coupon-copy strong {
+          color: #f3f0ea;
+          font-size: 13px;
+        }
+
+        .coupon-copy small {
+          display: block;
+          margin-top: 6px;
+          color: #8c8679;
+          font-size: 11px;
+          line-height: 1.45;
+        }
+
+        .coupon-ticket {
+          width: 58px;
+          flex: none;
+          border-left: 1px dashed rgba(212, 178, 106, .42);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #d4b26a;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+          writing-mode: vertical-rl;
+          transform: rotate(180deg);
+        }
+
+        .menu-panel {
+          padding: 14px;
+        }
+
+        .menu-chips {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding-bottom: 8px;
+        }
+
+        .menu-chips span {
+          flex: none;
+          color: #c5c0b6;
+          background: rgba(255, 255, 255, .045);
+          border-color: rgba(255, 255, 255, .1);
+        }
+
+        .menu-chips span.active {
+          color: #241a0a;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          border-color: transparent;
+        }
+
+        .menu-list {
+          display: grid;
+        }
+
+        .menu-row {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          padding: 13px 0;
+          border-bottom: 1px solid rgba(255, 255, 255, .06);
+        }
+
+        .menu-row:last-child {
+          border-bottom: 0;
+        }
+
+        .menu-photo {
+          width: 66px;
+          height: 66px;
+          flex: none;
+          border-radius: 8px;
+          background-size: cover;
+          background-position: center;
+        }
+
+        .menu-copy {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .menu-copy strong {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 7px;
+          color: #f3f0ea;
+          font-size: 14px;
+          line-height: 1.35;
+        }
+
+        .menu-copy em {
+          border-radius: 6px;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a);
+          color: #241a0a;
+          padding: 2px 6px;
+          font-size: 9px;
+          font-style: normal;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .menu-copy small {
+          display: block;
+          margin-top: 4px;
+          color: #8c8679;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .menu-row > b {
+          flex: none;
+          color: #e3c27e;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+
+        .menu-note {
+          margin-top: 10px;
+          padding: 11px 12px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .035);
+          border: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .hours-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .hours-list div {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          min-height: 42px;
+          padding: 10px 13px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .03);
+          border: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .hours-list div.today {
+          background: linear-gradient(135deg, rgba(212, 178, 106, .14), rgba(255, 255, 255, .03));
+          border-color: rgba(212, 178, 106, .4);
+        }
+
+        .hours-list span {
+          color: #e7e1d4;
+          font-size: 13px;
+        }
+
+        .hours-list strong {
+          color: #e3c27e;
+          font-size: 13px;
+          text-align: right;
+        }
+
+        .empty-state {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px;
+          border: 1px solid rgba(212, 178, 106, .16);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .035);
+        }
+
+        .empty-state > span {
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          flex: none;
+          color: #e3c27e;
+          background: rgba(212, 178, 106, .1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .empty-state strong {
+          color: #f3f0ea;
+          font-size: 14px;
+        }
+
+        .empty-state p {
+          margin: 3px 0 0;
+          color: #9b958a;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .related-section {
+          margin-top: 34px;
+        }
+
+        .related-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .related-card {
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, .08);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .035);
+          color: #f3f0ea;
+          text-decoration: none;
+        }
+
+        .related-photo {
+          display: block;
+          height: 140px;
+          background-size: cover;
+          background-position: center;
+        }
+
+        .related-copy {
+          display: block;
+          padding: 12px 13px 14px;
+        }
+
+        .related-copy strong,
+        .related-copy small,
+        .related-copy em {
+          display: block;
+        }
+
+        .related-copy strong {
+          color: #f3f0ea;
+          font-size: 15px;
+          line-height: 1.3;
+        }
+
+        .related-copy small {
+          margin-top: 6px;
+          color: #e3c27e;
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        .related-copy em {
+          margin-top: 4px;
+          color: #8c8679;
+          font-size: 11px;
+          font-style: normal;
+          line-height: 1.35;
+        }
+
+        .mobile-cta {
+          display: none;
+        }
+
         .lightbox {
           position: fixed;
           inset: 0;
-          z-index: 80;
-          background: rgba(5, 6, 8, .92);
+          z-index: 120;
+          background: rgba(5, 6, 8, .94);
           display: grid;
           place-items: center;
           padding: 28px;
@@ -1029,609 +2152,140 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-weight: 800;
         }
 
-        .store-content {
-          max-width: 1468px;
-          margin: 0 auto;
-          padding: 14px 26px 32px;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 320px;
-          gap: 24px;
-          align-items: start;
+        .hscroll {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
         }
 
-        .main-column,
-        .booking-panel,
-        .tab-section,
-        .related-section {
-          min-width: 0;
-        }
-
-        .tab-bar {
-          display: flex;
-          gap: 24px;
-          padding: 0;
-          background: transparent;
-          border: 0;
-          border-bottom: 1px solid rgba(255, 255, 255, .28);
-          border-radius: 0;
-          overflow-x: auto;
-        }
-
-        .tab {
-          flex: none;
-          border: 0;
-          border-bottom: 2px solid transparent;
-          border-radius: 0;
-          padding: 0 0 12px;
-          background: transparent;
-          color: #bfb7aa;
-          font-size: 12px;
-          font-weight: 800;
-          cursor: pointer;
-        }
-
-        .tab.active {
-          color: #e2b85e;
-          background: transparent;
-          border-bottom-color: #e2b85e;
-        }
-
-        .tab-section {
-          margin-top: 18px;
-          background: transparent;
-          border: 0;
-          border-radius: 0;
-          padding: 0;
-        }
-
-        .overview-description {
-          margin: 0;
-          color: #f7f1e7;
-          font-size: 15px;
-          line-height: 1.75;
-        }
-
-        .overview-description p {
-          margin: 0;
-        }
-
-        .overview-description p + p {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(226, 184, 94, .14);
-        }
-
-        .language-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-          margin-top: 18px;
-        }
-
-        .language-card {
-          min-height: 86px;
-          border: 1px solid rgba(226, 184, 94, .18);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .045);
-          padding: 14px;
-        }
-
-        .language-card span {
-          display: block;
-          color: #bfb7aa;
-          font-size: 12px;
-          line-height: 1.35;
-        }
-
-        .language-card strong {
-          display: block;
-          margin-top: 5px;
-          color: #f4dd9b;
-          font-size: 17px;
-          line-height: 1.25;
-        }
-
-        .language-card.nationality-card strong {
-          color: #fff7e8;
-          font-size: 14px;
-          font-weight: 900;
-          line-height: 1.35;
-        }
-
-        .language-meter {
-          height: 5px;
-          margin-top: 12px;
-          overflow: hidden;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, .14);
-        }
-
-        .language-meter i {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: #e2b85e;
-        }
-
-        .tab-section .language-grid + .campaign-list,
-        .tab-section .language-grid + .empty-state {
-          margin-top: 24px;
-        }
-
-        .stat-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 10px;
-        }
-
-        .stat-grid div,
-        .price-row,
-        .campaign-row,
-        .cast-card,
-        .related-card,
-        .empty-state,
-        .review-empty,
-        .hours-panel,
-        .booking-panel {
-          border: 1px solid rgba(226, 184, 94, .16);
-          border-radius: 8px;
-          background: rgba(13, 14, 17, .58);
-        }
-
-        .stat-grid div {
-          padding: 12px;
-        }
-
-        .stat-grid span,
-        .booking-panel label,
-        .price-row small,
-        .cast-card span,
-        .related-card span,
-        .empty-state p,
-        .review-empty p,
-        .section-heading p {
-          color: #a9a197;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-
-        .stat-grid strong {
-          display: block;
-          margin-top: 6px;
-          color: #f4dd9b;
-          font-size: 14px;
-        }
-
-        .campaign-list {
-          display: grid;
-          gap: 10px;
-          margin-top: 16px;
-        }
-
-        .campaign-row {
-          gap: 12px;
-          padding: 12px;
-          color: #f7f1e7;
-          text-decoration: none;
-        }
-
-        .stat-grid.compact {
-          margin-top: 16px;
-        }
-
-        .campaign-row strong,
-        .campaign-row small {
-          display: block;
-        }
-
-        .campaign-row small {
-          margin-top: 3px;
-        }
-
-        .section-heading h2,
-        .related-section h2,
-        .review-empty h2,
-        .hours-panel h2 {
-          margin: 0;
-          color: #fff7e8;
-          font-size: 20px;
-          letter-spacing: 0;
-        }
-
-        .section-heading p {
-          margin: 6px 0 0;
-        }
-
-        .price-table {
-          display: grid;
-          gap: 10px;
-          margin-top: 14px;
-        }
-
-        .price-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 18px;
-          padding: 14px;
-        }
-
-        .price-row strong,
-        .price-row small {
-          display: block;
-        }
-
-        .price-row b {
-          color: #f4dd9b;
-          white-space: nowrap;
-        }
-
-        .cast-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
-          margin-top: 14px;
-        }
-
-        .cast-card {
-          overflow: hidden;
-          color: #f7f1e7;
-          text-decoration: none;
-        }
-
-        .cast-photo {
-          height: 176px;
-          background-size: cover;
-          background-position: center;
-        }
-
-        .cast-card div:last-child {
-          padding: 12px;
-          display: grid;
-          gap: 6px;
-        }
-
-        .cast-card strong,
-        .related-card strong {
-          color: #fff7e8;
-          font-size: 14px;
-        }
-
-        .cast-card small {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #bfb7aa;
-          font-size: 11px;
-        }
-
-        .review-empty {
-          padding: 34px 18px;
-          text-align: center;
-          color: #f4dd9b;
-        }
-
-        .review-empty p {
-          margin: 8px auto 0;
-          max-width: 520px;
-        }
-
-        .map-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr);
-          gap: 14px;
-        }
-
-        .map-frame {
-          min-height: 340px;
-          border-radius: 8px;
-          overflow: hidden;
-          background: #15161a;
-          border: 1px solid rgba(226, 184, 94, .16);
-        }
-
-        .map-frame iframe {
-          width: 100%;
-          height: 100%;
-          min-height: 340px;
-          border: 0;
-          display: block;
-        }
-
-        .hours-panel {
-          padding: 16px;
-        }
-
-        .hours-list {
-          display: grid;
-          gap: 7px;
-          margin-top: 14px;
-        }
-
-        .hours-list div {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          color: #bfb7aa;
-          font-size: 13px;
-        }
-
-        .hours-list strong {
-          color: #f4dd9b;
-          text-align: right;
-        }
-
-        .holiday-note {
-          gap: 8px;
-          margin-top: 14px;
-          padding: 12px;
-          color: #d6eee9;
-          background: rgba(20, 170, 156, .12);
-          border: 1px solid rgba(141, 219, 212, .2);
-          border-radius: 8px;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-
-        .map-link {
-          justify-content: center;
-          margin-top: 12px;
-          min-height: 40px;
-          color: #1b1508;
-          background: #8ddbd4;
-          border-radius: 8px;
-          text-decoration: none;
-          font-weight: 900;
-          font-size: 13px;
-        }
-
-        .empty-state {
-          padding: 14px;
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          min-width: 280px;
-        }
-
-        .empty-icon {
-          width: 38px;
-          height: 38px;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #f4dd9b;
-          background: rgba(226, 184, 94, .13);
-          flex: none;
-        }
-
-        .empty-title {
-          color: #fff7e8;
-          font-weight: 900;
-          margin-bottom: 2px;
-        }
-
-        .related-section {
-          margin-top: 16px;
-        }
-
-        .related-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 8px;
-          margin-top: 10px;
-        }
-
-        .related-card {
-          overflow: hidden;
-          color: #f7f1e7;
-          text-decoration: none;
-        }
-
-        .related-card div {
-          height: 78px;
-          background-size: cover;
-          background-position: center;
-        }
-
-        .related-card strong,
-        .related-card small,
-        .related-card span {
-          display: block;
-          padding: 0 9px;
-        }
-
-        .related-card strong {
-          padding-top: 9px;
-          font-size: 13px;
-        }
-
-        .related-card span {
-          padding-bottom: 10px;
-          margin-top: 3px;
-        }
-
-        .related-card small {
-          color: #7ddbd2;
-          font-size: 11px;
-          font-weight: 900;
-          margin-top: 4px;
-        }
-
-        .booking-panel {
-          position: sticky;
-          top: 18px;
-          margin-top: -126px;
-          padding: 20px;
-          box-shadow: 0 24px 60px rgba(0, 0, 0, .24);
-        }
-
-        .booking-title span,
-        .booking-title strong {
-          display: block;
-        }
-
-        .booking-title span {
-          color: #a9a197;
-          font-size: 13px;
-        }
-
-        .booking-title strong {
-          margin-top: 4px;
-          color: #fff7e8;
-          font-size: 22px;
-        }
-
-        .booking-panel label {
-          display: block;
-          margin: 14px 0 8px;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-
-        .slot-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 7px;
-        }
-
-        .slot,
-        .guest-stepper button {
-          border: 1px solid rgba(226, 184, 94, .2);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .05);
-          color: #f7f1e7;
-          min-height: 30px;
-          padding: 0 9px;
-          font-weight: 800;
-          font-size: 12px;
-          cursor: pointer;
-        }
-
-        .slot.active,
-        .guest-stepper button {
-          background: #e2b85e;
-          color: #1b1508;
-        }
-
-        .guest-stepper {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border: 1px solid rgba(226, 184, 94, .2);
-          border-radius: 8px;
-          padding: 7px;
-          margin-bottom: 14px;
-        }
-
-        .guest-stepper button {
-          width: 36px;
-          padding: 0;
-          font-size: 18px;
-        }
-
-        .booking-panel .primary-action.full + .secondary-action.full {
-          margin-top: 10px;
-        }
-
-        .mobile-booking-controls,
-        .mobile-cta {
+        .hscroll::-webkit-scrollbar {
           display: none;
         }
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: calc(176px + env(safe-area-inset-bottom));
+            padding-bottom: calc(170px + env(safe-area-inset-bottom));
           }
 
-          .legacy-summary {
-            padding-right: 0;
+          .detail-shell {
+            width: 100%;
+            padding: 0 0 26px;
           }
 
-          .store-content,
-          .map-grid {
-            grid-template-columns: 1fr;
+          .detail-layout {
+            display: block;
           }
 
-          .store-content {
-            max-width: 100%;
-            padding-left: 22px;
-            padding-right: 22px;
+          .media-column {
+            display: contents;
           }
 
-          h1 {
-            font-size: 34px;
+          .info-column {
+            display: grid;
+            gap: 22px;
+            padding: 0 18px;
           }
 
-          .booking-panel {
+          .hero-panel {
+            min-height: 326px;
+            border-radius: 0;
+          }
+
+          .hero-top {
+            top: 12px;
+            left: 16px;
+            right: 16px;
+          }
+
+          .hero-play {
+            width: 64px;
+            height: 64px;
+          }
+
+          .video-badge {
+            top: 118px;
+            left: 50%;
+            transform: translateX(-50%);
+          }
+
+          .hero-name {
+            left: 20px;
+            right: 20px;
+            bottom: 18px;
+          }
+
+          .hero-name h1 {
+            font-size: 28px;
+          }
+
+          .quick-stats {
+            margin: 0 18px;
+          }
+
+          .secondary-actions {
+            padding: 12px 18px 4px;
+          }
+
+          .thumb-grid,
+          .desktop-only,
+          .desktop-title,
+          .desktop-stats,
+          .booking-card {
             display: none;
           }
 
-          .mobile-booking-controls {
-            display: grid;
-            gap: 14px;
-            margin-top: 16px;
-            padding: 14px 0 2px;
+          .mobile-only {
+            display: block;
           }
 
-          .mobile-booking-group {
-            display: grid;
-            gap: 9px;
-          }
-
-          .mobile-booking-group h2 {
-            margin: 0;
-            color: #bfb7aa;
-            font-size: 12px;
-            font-weight: 900;
-            letter-spacing: .02em;
-            text-transform: uppercase;
-          }
-
-          .mobile-booking-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-          }
-
-          .mobile-booking-options .slot {
-            min-height: 40px;
-            padding: 0 14px;
-            flex: 1 0 94px;
-          }
-
-          .mobile-booking-stepper {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-          }
-
-          .mobile-booking-stepper button {
-            width: 48px;
-            min-height: 44px;
-            border: 0;
-            border-radius: 8px;
-            background: #e2b85e;
-            color: #1b1508;
-            font-size: 18px;
-            font-weight: 900;
-          }
-
-          .mobile-booking-stepper strong {
-            flex: 1;
-            text-align: center;
-            color: #fff7e8;
-          }
-
-          .stat-grid,
-          .cast-grid,
-          .related-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+          .section-title {
+            margin-bottom: 12px;
           }
 
           .language-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
+          }
+
+          .language-grid div {
+            min-height: 74px;
+            padding: 10px;
+          }
+
+          .language-grid span {
+            font-size: 10px;
+          }
+
+          .language-grid strong {
+            font-size: 13px;
+          }
+
+          .menu-panel {
+            margin-left: -2px;
+            margin-right: -2px;
+          }
+
+          .related-section {
+            margin: 24px 18px 0;
+          }
+
+          .related-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+          }
+
+          .related-grid::-webkit-scrollbar {
+            display: none;
+          }
+
+          .related-card {
+            flex: 0 0 226px;
+          }
+
+          .related-photo {
+            height: 118px;
           }
 
           .mobile-cta {
@@ -1639,182 +2293,105 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             left: 0;
             right: 0;
             bottom: calc(74px + env(safe-area-inset-bottom));
-            z-index: 65;
+            z-index: 70;
             display: grid;
             grid-template-columns: minmax(96px, .42fr) minmax(0, 1fr);
             align-items: center;
             gap: 12px;
-            min-height: 76px;
+            min-height: 80px;
             padding: 10px 14px;
-            background: rgba(13, 14, 17, .97);
-            border-top: 1px solid rgba(226, 184, 94, .22);
+            background: rgba(8, 8, 11, .94);
+            border-top: 1px solid rgba(212, 178, 106, .2);
             box-shadow: 0 -18px 40px rgba(0, 0, 0, .34);
             backdrop-filter: blur(12px);
           }
 
-          .mobile-cta-summary,
-          .mobile-cta-actions {
-            display: flex;
+          .mobile-cta div span,
+          .mobile-cta div strong {
+            display: block;
           }
 
-          .mobile-cta-summary {
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            gap: 2px;
-          }
-
-          .mobile-cta-summary span {
-            color: #a9a197;
-            font-size: 12px;
+          .mobile-cta div span {
+            color: #8c8679;
+            font-size: 11px;
             font-weight: 800;
           }
 
-          .mobile-cta-summary strong {
-            color: #fff7e8;
+          .mobile-cta div strong {
+            margin-top: 3px;
+            color: #f3f0ea;
             font-size: 16px;
-            font-weight: 900;
+            line-height: 1.2;
           }
 
-          .mobile-cta-actions {
+          .mobile-cta .primary-action {
+            min-height: 52px;
+            padding: 0 12px;
+          }
+
+          .mobile-cta .primary-action span {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(84px, .72fr);
-            gap: 10px;
+            gap: 2px;
+            line-height: 1.15;
           }
 
-          .mobile-cta-actions .primary-action,
-          .mobile-cta-actions .secondary-action {
-            min-height: 44px;
-            padding: 0 10px;
+          .mobile-cta .primary-action small {
+            font-size: 10px;
+            font-weight: 700;
+            opacity: .82;
           }
         }
 
         @media (max-width: 620px) {
-          .store-detail-page {
-            padding-bottom: calc(178px + env(safe-area-inset-bottom));
+          .info-column {
+            padding: 0 16px;
           }
 
-          .legacy-shell {
-            padding: 8px 16px 0;
+          .quick-stats {
+            margin: 0 18px;
           }
 
-          .legacy-breadcrumb {
-            display: none;
-          }
-
-          .legacy-gallery {
-            gap: 8px;
-          }
-
-          .legacy-summary {
-            gap: 10px;
-            padding-top: 16px;
-          }
-
-          .legacy-summary-main {
-            display: grid;
-            grid-template-columns: 52px minmax(0, 1fr) auto;
-            gap: 12px;
-            align-items: start;
-          }
-
-          .legacy-summary .store-logo {
-            width: 52px;
-            height: 52px;
-            font-size: 18px;
-          }
-
-          .legacy-summary h1 {
-            font-size: 23px;
-            line-height: 1.12;
-          }
-
-          .legacy-summary-meta {
-            gap: 8px;
-            margin-top: 6px;
-            font-size: 11px;
-          }
-
-          .legacy-summary-actions {
-            gap: 8px;
-            flex-wrap: nowrap;
-          }
-
-          .legacy-info-panel {
-            max-width: none;
-            margin-left: 0;
-            padding: 10px 0 0;
-            border: 0;
-            background: transparent;
-            gap: 8px;
-          }
-
-          .legacy-location {
-            flex-wrap: nowrap;
-            min-height: 34px;
-            padding: 0 10px;
-            border: 1px solid rgba(226, 184, 94, .14);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, .045);
-          }
-
-          .legacy-tags {
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            margin-right: -16px;
-            padding: 0 16px 2px 0;
-            scrollbar-width: none;
-          }
-
-          .legacy-tags::-webkit-scrollbar {
-            display: none;
-          }
-
-          .legacy-tags span {
-            flex: 0 0 auto;
-            min-height: 32px;
-          }
-
-          h1 {
-            font-size: 28px;
-          }
-
-          .store-content {
-            padding-left: 16px;
-            padding-right: 16px;
-          }
-
-          .stat-grid,
-          .cast-grid,
-          .related-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .language-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-          }
-
-          .language-card {
-            min-height: 76px;
-            padding: 10px;
-          }
-
-          .language-card span {
-            font-size: 10px;
-          }
-
-          .language-card strong {
-            font-size: 15px;
-          }
-
-          .language-card.nationality-card strong {
+          .quick-stats strong {
             font-size: 12px;
           }
 
-          .price-row {
-            flex-direction: column;
-            gap: 8px;
+          .quick-stats span {
+            font-size: 10px;
+          }
+
+          .section-title h2 {
+            font-size: 21px;
+          }
+
+          .tour-rail .tour-card {
+            flex-basis: 228px;
+          }
+
+          .menu-row {
+            align-items: flex-start;
+          }
+
+          .menu-row > b {
+            max-width: 92px;
+            text-align: right;
+            white-space: normal;
+          }
+
+          .hours-list div {
+            align-items: flex-start;
+          }
+
+          .hours-list strong {
+            max-width: 45%;
+          }
+
+          .lightbox {
+            padding: 18px;
+          }
+
+          .lightbox-nav {
+            width: 42px;
+            height: 42px;
           }
         }
       `}</style>
