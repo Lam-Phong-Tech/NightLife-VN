@@ -143,8 +143,8 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
 
   return (
     <>
-      <main className="cast-page" data-testid="cast-detail-page">
-        <div className="block md:hidden cast-mobile">
+      <main className="cast-page nl-scroll-reveal-skip" data-testid="cast-detail-page" data-no-scroll-reveal="true">
+        <div className="block md:hidden cast-mobile nl-scroll-reveal-skip" data-no-scroll-reveal="true">
           <CastHero
             profile={profile}
             activeMedia={activeMedia}

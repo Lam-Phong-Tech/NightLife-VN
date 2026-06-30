@@ -617,10 +617,12 @@ export function CastProfileStyles() {
 
       .cast-booking-cta.mobile {
         position: fixed;
-        z-index: 65;
+        z-index: 70;
         left: 0;
         right: 0;
         bottom: calc(74px + env(safe-area-inset-bottom));
+        display: flex;
+        align-items: center;
         gap: 11px;
         min-height: 76px;
         margin: 0;
@@ -629,6 +631,8 @@ export function CastProfileStyles() {
         border-top: 1px solid rgba(212,178,106,.18);
         box-shadow: 0 -18px 40px rgba(0,0,0,.34);
         backdrop-filter: blur(12px);
+        transform: translateZ(0);
+        pointer-events: auto;
       }
 
       .cast-booking-favorite {
