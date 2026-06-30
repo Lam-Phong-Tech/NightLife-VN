@@ -20,6 +20,7 @@ export interface Venue {
   favIconDark?: string;
   mainBg?: string;
   open?: (e?: React.SyntheticEvent) => void;
+  href?: string;
   id?: string | number;
   hasBadge?: boolean;
   badgeColor?: string;
@@ -49,6 +50,7 @@ export interface Cast {
   metric?: string | number;
   img?: string;
   open?: (e?: React.SyntheticEvent) => void;
+  href?: string;
 }
 
 export interface Coupon {

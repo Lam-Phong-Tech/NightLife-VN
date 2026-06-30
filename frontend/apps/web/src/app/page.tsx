@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   BookOpen,
   CalendarDays,
+  ChevronRight,
   Crown,
   Heart,
   MapPin,
@@ -94,7 +95,7 @@ type RankedItem = {
   img?: string;
   name?: string;
   area?: string;
-  metric?: string;
+  href?: string;
 };
 
 const shellStyle: CSSProperties = {
@@ -431,7 +432,9 @@ function RankingRow({ item }: { item: RankedItem }) {
   const hasCrown = rankNumber >= 1 && rankNumber <= 5;
 
   return (
-    <div
+    <Link
+      href={item.href ?? "/xep-hang"}
+      aria-label={`Xem chi tiết ${item.name ?? "mục xếp hạng"}`}
       style={{
         display: "grid",
         gridTemplateColumns: "64px minmax(0, 1fr) auto",
@@ -443,6 +446,8 @@ function RankingRow({ item }: { item: RankedItem }) {
         background: "rgba(255,255,255,.045)",
         border: "1px solid rgba(255,255,255,.12)",
         boxShadow: "0 16px 30px rgba(0,0,0,.14)",
+        color: colors.text,
+        textDecoration: "none",
       }}
     >
       <PlaceholderMedia
@@ -475,8 +480,19 @@ function RankingRow({ item }: { item: RankedItem }) {
         <div style={{ fontSize: "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
         <div style={{ marginTop: "5px", color: colors.muted, fontSize: "13px", lineHeight: 1.25 }}>{item.area}</div>
       </div>
-      <span style={{ color: colors.goldSoft, fontSize: "13px", fontWeight: 950, whiteSpace: "nowrap" }}>{item.metric}</span>
-    </div>
+      <span
+        aria-hidden="true"
+        style={{
+          width: 30,
+          height: 30,
+          display: "grid",
+          placeItems: "center",
+          color: "rgba(240,221,168,.58)",
+        }}
+      >
+        <ChevronRight size={24} strokeWidth={2.35} />
+      </span>
+    </Link>
   );
 }
 

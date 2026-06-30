@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 import { Venue, Cast } from '@/types/index';
 import { PlaceholderMedia } from './MediaPlaceholder';
 
@@ -10,7 +11,6 @@ interface RankingCardProps {
 
 type RankedCardItem = Venue & Cast & {
   crown?: string;
-  metric?: string;
   numColor?: string;
 };
 
@@ -60,7 +60,19 @@ export const RankingCard: React.FC<RankingCardProps> = ({ item, onClick, style }
         <div style={{ fontWeight: '700', fontSize: '13px' }}>{ranked.name}</div>
         <div style={{ fontSize: '10.5px', color: '#b6b1a6', marginTop: '1px' }}>{ranked.area}</div>
       </div>
-      <span style={{ fontSize: '11px', color: '#d4b26a', fontWeight: '700' }}>{ranked.metric}</span>
+      <span
+        aria-hidden="true"
+        style={{
+          width: '24px',
+          height: '24px',
+          flex: 'none',
+          display: 'grid',
+          placeItems: 'center',
+          color: 'rgba(212,178,106,.6)'
+        }}
+      >
+        <ChevronRight size={20} strokeWidth={2.35} />
+      </span>
     </div>
   );
 };
