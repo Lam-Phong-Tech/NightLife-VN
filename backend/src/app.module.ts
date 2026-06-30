@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 import { NightlifeDataModule } from './nightlife-data/nightlife-data.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { NightlifeDataModule } from './nightlife-data/nightlife-data.module';
     AuthModule,
     StorageModule,
     NightlifeDataModule,
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [AppService],
