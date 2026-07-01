@@ -6,6 +6,8 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
+  ContentStatus,
+  ContentType,
   Prisma,
   RankingConfigStatus,
   RankingTargetType,
@@ -21,8 +23,17 @@ import {
   CreateAdminRankingConfigDto,
   UpdateAdminRankingConfigDto,
 } from './dto/admin-ranking.dto';
-import { CancelBookingDto } from './dto/cancel-booking.dto';
+import {
+  CancelBookingDto,
+  CancelGuestBookingDto,
+} from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import {
+  AdminContentQueryDto,
+  CreateAdminContentDto,
+  PublicContentQueryDto,
+  UpdateAdminContentDto,
+} from './dto/content.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
@@ -43,6 +54,19 @@ const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
 const MVP_CITY_CODES = ['hn', 'hcm'] as const;
+
+type BookingCancelActorType = 'MEMBER' | 'GUEST';
+
+type BookingCancelTarget = {
+  id: string;
+  userId?: string | null;
+  guestId?: string | null;
+  user?: { id: string } | null;
+  guest?: { id: string } | null;
+  status: string;
+  scheduledAt?: Date | string | null;
+  cancelledAt?: Date | string | null;
+};
 const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   GUEST: 5,
   MEMBER: 8,
@@ -234,6 +258,93 @@ type RankingTargetSummary = {
   status: string;
 };
 
+const demoStoreImageSlugs = new Set([
+  'crimson-bar',
+  'crimson-bar-hoan-kiem',
+  'dragon-rooftop-da-nang',
+  'golden-voice-ktv',
+  'golden-voice-ktv-quan-7',
+  'hanami-dining',
+  'harbor-ktv-hai-phong',
+  'jade-casino-hoan-kiem',
+  'jade-lounge',
+  'lotus-massage-spa',
+  'lotus-massage-spa-quan-3',
+  'moonlight-bar',
+  'moonlight-q1-bar',
+  'neon-club',
+  'neon-district-club',
+  'opera-spa-hai-phong',
+  'sakura-lounge',
+  'sakura-lounge-quan-3',
+  'son-tra-lounge',
+  'star-ktv',
+  'tokyo-kitchen',
+  'tokyo-kitchen-old-quarter',
+  'velvet-club',
+]);
+
+const demoCastImageSlugs = new Set([
+  'akari-jade',
+  'aoi-tokyo',
+  'aya-velvet',
+  'eri-son-tra',
+  'erika-star',
+  'hana-harbor-ktv',
+  'hana-sakura-lounge',
+  'hikaru-jade',
+  'kaori-hanami',
+  'kotone-tokyo',
+  'kotone-tokyo-kitchen',
+  'lina-dragon-rooftop',
+  'linh-crimson-bar',
+  'mai-dragon-rooftop',
+  'mai-golden',
+  'mika-golden-ktv',
+  'mika-harbor-ktv',
+  'misaki-crimson',
+  'miyuki-moonlight',
+  'nami-son-tra',
+  'nana-golden',
+  'rei-crimson',
+  'rina-velvet',
+  'rumi-hanami',
+  'sakura-moonlight',
+  'sakura-moonlight-q1',
+  'sora-neon',
+  'sumi-lotus-massage-spa',
+  'sumi-opera-spa',
+  'tsubasa-star',
+  'yuki-sakura-lounge',
+  'yuna-neon',
+  'yuna-neon-district',
+  'yuri-opera-spa',
+]);
+
+type ContentRecord = {
+  id: string;
+  title: string;
+  slug: string;
+  type: ContentType;
+  status: ContentStatus;
+  excerpt: string | null;
+  body: string | null;
+  metadata: Prisma.JsonValue | null;
+  publishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  author: {
+    id: string;
+    displayName: string | null;
+    email: string;
+  } | null;
+  store: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+};
+
 type BookingTarget = {
   store: {
     id: string;
@@ -258,6 +369,203 @@ export class NightlifeDataService {
     @Optional()
     private readonly telegramService?: TelegramService,
   ) {}
+
+  async listPublicContents(query: PublicContentQueryDto = {}) {
+    const type = this.resolveContentType(query.type, { strict: true });
+    const q = this.cleanText(query.q);
+    const limit = Math.min(query.limit ?? 50, 100);
+    const now = new Date();
+
+    const contents = await this.prisma.content.findMany({
+      where: {
+        deletedAt: null,
+        status: 'PUBLISHED',
+        ...(type ? { type } : {}),
+        OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+        ...(q
+          ? {
+              AND: [
+                {
+                  OR: [
+                    { title: this.containsInsensitive(q) },
+                    { slug: this.containsInsensitive(this.normalizeToken(q)) },
+                    { excerpt: this.containsInsensitive(q) },
+                    { body: this.containsInsensitive(q) },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ publishedAt: 'desc' }, { updatedAt: 'desc' }],
+      take: limit,
+      select: this.contentSelect(),
+    });
+
+    return { data: contents.map((content) => this.mapContent(content)) };
+  }
+
+  async getPublicContentBySlug(slug: string) {
+    const now = new Date();
+    const content = await this.prisma.content.findFirst({
+      where: {
+        slug: this.normalizeContentSlug(slug),
+        deletedAt: null,
+        status: 'PUBLISHED',
+        OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+      },
+      select: this.contentSelect(),
+    });
+
+    if (!content) {
+      throw new NotFoundException('Content not found');
+    }
+
+    return this.mapContent(content);
+  }
+
+  async listAdminContents(query: AdminContentQueryDto = {}) {
+    const type = this.resolveContentType(query.type, { strict: true });
+    const status = this.resolveContentStatus(query.status, { strict: true });
+    const q = this.cleanText(query.q);
+    const limit = Math.min(query.limit ?? 100, 100);
+
+    const contents = await this.prisma.content.findMany({
+      where: {
+        deletedAt: null,
+        ...(type ? { type } : {}),
+        ...(status ? { status } : {}),
+        ...(q
+          ? {
+              OR: [
+                { title: this.containsInsensitive(q) },
+                { slug: this.containsInsensitive(this.normalizeToken(q)) },
+                { excerpt: this.containsInsensitive(q) },
+                { body: this.containsInsensitive(q) },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ updatedAt: 'desc' }],
+      take: limit,
+      select: this.contentSelect(),
+    });
+
+    return contents.map((content) => this.mapContent(content));
+  }
+
+  async createAdminContent(user: AuthenticatedUser, dto: CreateAdminContentDto) {
+    const type = this.resolveContentType(dto.type, { strict: true })!;
+    const status = this.resolveContentStatus(dto.status ?? 'DRAFT', {
+      strict: true,
+    })!;
+    const title = this.cleanRequiredText(dto.title, 'title');
+    const slug = this.normalizeContentSlug(dto.slug || title);
+    const publishedAt =
+      dto.publishedAt !== undefined
+        ? this.parseOptionalDate(dto.publishedAt, 'publishedAt')
+        : status === 'PUBLISHED'
+          ? new Date()
+          : null;
+
+    await this.assertContentSlugAvailable(slug);
+
+    const content = await this.prisma.content.create({
+      data: {
+        authorId: user.id,
+        storeId: dto.storeId ?? null,
+        title,
+        slug,
+        type,
+        status,
+        excerpt: this.cleanNullableText(dto.excerpt),
+        body: this.cleanNullableText(dto.body),
+        metadata: this.toPrismaJson(dto.metadata),
+        publishedAt,
+      },
+      select: this.contentSelect(),
+    });
+
+    return this.mapContent(content);
+  }
+
+  async updateAdminContent(contentId: string, dto: UpdateAdminContentDto) {
+    const existing = await this.prisma.content.findFirst({
+      where: { id: contentId, deletedAt: null },
+      select: { id: true, slug: true, status: true, publishedAt: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Content not found');
+    }
+
+    const nextSlug =
+      dto.slug !== undefined ? this.normalizeContentSlug(dto.slug) : undefined;
+    if (nextSlug && nextSlug !== existing.slug) {
+      await this.assertContentSlugAvailable(nextSlug, contentId);
+    }
+
+    const nextStatus =
+      dto.status !== undefined
+        ? this.resolveContentStatus(dto.status, { strict: true })
+        : undefined;
+    const publishedAt =
+      dto.publishedAt !== undefined
+        ? this.parseOptionalDate(dto.publishedAt, 'publishedAt')
+        : nextStatus === 'PUBLISHED' && !existing.publishedAt
+          ? new Date()
+          : undefined;
+
+    const content = await this.prisma.content.update({
+      where: { id: contentId },
+      data: {
+        ...(dto.type !== undefined
+          ? { type: this.resolveContentType(dto.type, { strict: true }) }
+          : {}),
+        ...(dto.title !== undefined
+          ? { title: this.cleanRequiredText(dto.title, 'title') }
+          : {}),
+        ...(nextSlug ? { slug: nextSlug } : {}),
+        ...(nextStatus ? { status: nextStatus } : {}),
+        ...(dto.excerpt !== undefined
+          ? { excerpt: this.cleanNullableText(dto.excerpt) }
+          : {}),
+        ...(dto.body !== undefined
+          ? { body: this.cleanNullableText(dto.body) }
+          : {}),
+        ...(dto.metadata !== undefined
+          ? { metadata: this.toPrismaJson(dto.metadata) }
+          : {}),
+        ...(dto.storeId !== undefined ? { storeId: dto.storeId ?? null } : {}),
+        ...(publishedAt !== undefined ? { publishedAt } : {}),
+      },
+      select: this.contentSelect(),
+    });
+
+    return this.mapContent(content);
+  }
+
+  async deleteAdminContent(contentId: string) {
+    const existing = await this.prisma.content.findFirst({
+      where: { id: contentId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Content not found');
+    }
+
+    const content = await this.prisma.content.update({
+      where: { id: contentId },
+      data: {
+        status: 'DELETED',
+        deletedAt: new Date(),
+      },
+      select: this.contentSelect(),
+    });
+
+    return this.mapContent(content);
+  }
 
   async listPublicAreas(query: PublicDiscoveryQueryDto = {}) {
     const cityCode = this.normalizeCityCode(query.city, { strict: true });
@@ -300,9 +608,7 @@ export class NightlifeDataService {
         scope: 'global',
         status: 'ACTIVE',
         deletedAt: null,
-        ...(cityCode
-          ? { OR: [{ cityCode: 'all' }, { cityCode }] }
-          : {}),
+        ...(cityCode ? { OR: [{ cityCode: 'all' }, { cityCode }] } : {}),
         ...(category ? { OR: [{ category: null }, { category }] } : {}),
         AND: [
           { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
@@ -408,7 +714,8 @@ export class NightlifeDataService {
   ) {
     const targetType = this.resolveRankingTargetType(query.targetType);
     const cityCode = this.normalizeCityCode(query.city, { strict: true });
-    const category = this.resolveAdminRankingCategory(query.category) ?? undefined;
+    const category =
+      this.resolveAdminRankingCategory(query.category) ?? undefined;
     const q = this.cleanText(query.q);
     const limit = Math.min(query.limit ?? 50, 100);
 
@@ -599,9 +906,9 @@ export class NightlifeDataService {
       select: this.adminRankingConfigSelect(),
     });
 
-    return (await this.mapAdminRankingConfigs([
-      config as AdminRankingConfigRecord,
-    ]))[0];
+    return (
+      await this.mapAdminRankingConfigs([config as AdminRankingConfigRecord])
+    )[0];
   }
 
   async updateAdminRankingConfig(
@@ -639,9 +946,11 @@ export class NightlifeDataService {
     const startsAtInput =
       dto.startsAt !== undefined
         ? dto.startsAt
-        : current.startsAt?.toISOString() ?? null;
+        : (current.startsAt?.toISOString() ?? null);
     const endsAtInput =
-      dto.endsAt !== undefined ? dto.endsAt : current.endsAt?.toISOString() ?? null;
+      dto.endsAt !== undefined
+        ? dto.endsAt
+        : (current.endsAt?.toISOString() ?? null);
     const { startsAt, endsAt } = this.resolveRankingWindow(
       startsAtInput,
       endsAtInput,
@@ -669,7 +978,9 @@ export class NightlifeDataService {
         ...(dto.category !== undefined ? { category } : {}),
         ...(dto.scope !== undefined ? { scope } : {}),
         ...(dto.pinRank !== undefined ? { pinRank } : {}),
-        ...(dto.manualScore !== undefined ? { manualScore: dto.manualScore } : {}),
+        ...(dto.manualScore !== undefined
+          ? { manualScore: dto.manualScore }
+          : {}),
         ...(dto.sponsored !== undefined ? { sponsored: dto.sponsored } : {}),
         ...(dto.reason !== undefined
           ? { reason: this.cleanText(dto.reason ?? undefined) || null }
@@ -683,9 +994,9 @@ export class NightlifeDataService {
       select: this.adminRankingConfigSelect(),
     });
 
-    return (await this.mapAdminRankingConfigs([
-      config as AdminRankingConfigRecord,
-    ]))[0];
+    return (
+      await this.mapAdminRankingConfigs([config as AdminRankingConfigRecord])
+    )[0];
   }
 
   async deleteAdminRankingConfig(rankingId: string) {
@@ -1759,9 +2070,11 @@ export class NightlifeDataService {
       },
       select: {
         id: true,
+        userId: true,
+        guestId: true,
         status: true,
         scheduledAt: true,
-        partySize: true,
+        cancelledAt: true,
       },
     });
 
@@ -1769,36 +2082,92 @@ export class NightlifeDataService {
       throw new NotFoundException('Booking not found');
     }
 
-    if (booking.status === 'CANCELLED') {
-      throw new UnprocessableEntityException(
-        'Booking has already been cancelled',
-      );
+    return this.cancelBookingRecord({
+      booking,
+      actorId: user.id,
+      actorType: 'MEMBER',
+      reason: dto.reason,
+    });
+  }
+
+  async cancelGuestBooking(bookingId: string, dto: CancelGuestBookingDto) {
+    const phone = this.cleanText(dto.phone);
+    if (!phone) {
+      throw new BadRequestException('phone is required');
     }
 
-    if (['CHECKED_IN', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
-      throw new UnprocessableEntityException(
-        'Booking cannot be cancelled in its current state',
-      );
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId: null,
+        deletedAt: null,
+        guest: {
+          is: {
+            phone,
+          },
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+        guestId: true,
+        status: true,
+        scheduledAt: true,
+        cancelledAt: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
     }
 
-    const msUntilBooking = new Date(booking.scheduledAt).getTime() - Date.now();
-    if (msUntilBooking < BOOKING_CANCEL_CUTOFF_MS) {
-      throw new UnprocessableEntityException(
-        'Booking can only be cancelled at least 1 hour before scheduled time',
-      );
-    }
+    return this.cancelBookingRecord({
+      booking,
+      actorType: 'GUEST',
+      reason: dto.reason,
+    });
+  }
 
+  private async cancelBookingRecord(input: {
+    booking: BookingCancelTarget;
+    actorId?: string | null;
+    actorType: BookingCancelActorType;
+    reason?: string | null;
+  }) {
+    this.assertBookingCanBeCancelled(input.booking);
+
+    const now = new Date();
+    const reason = this.cleanText(input.reason);
     const result = await this.prisma.booking.update({
-      where: { id: bookingId },
+      where: { id: input.booking.id },
       data: {
         status: 'CANCELLED',
-        cancelledAt: new Date(),
+        cancelledAt: now,
       },
       select: this.bookingNotificationSelect(),
     });
 
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: 'BOOKING_CANCELLED',
+        targetType: 'Booking',
+        targetId: input.booking.id,
+        beforeJson: this.buildBookingCancelAuditSnapshot(input.booking),
+        afterJson: this.buildBookingCancelAuditSnapshot(result),
+        metadata: {
+          actorType: input.actorType,
+          actorId: input.actorId ?? null,
+          reason: reason ?? null,
+          beforeStatus: input.booking.status,
+          afterStatus: result.status,
+          cancelledAt: now.toISOString(),
+        },
+      },
+    });
+
     await this.adminNotificationService?.notifyBookingCancelled(result, {
-      reason: dto.reason,
+      reason,
     });
 
     return result;
@@ -2681,6 +3050,52 @@ export class NightlifeDataService {
     } satisfies Prisma.BillSelect;
   }
 
+  private assertBookingCanBeCancelled(booking: BookingCancelTarget) {
+    if (booking.status === 'CANCELLED') {
+      throw new UnprocessableEntityException(
+        'Booking has already been cancelled',
+      );
+    }
+
+    if (['CHECKED_IN', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
+      throw new UnprocessableEntityException(
+        'Booking cannot be cancelled in its current state',
+      );
+    }
+
+    const msUntilBooking =
+      new Date(booking.scheduledAt ?? '').getTime() - Date.now();
+    if (!Number.isFinite(msUntilBooking)) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    if (msUntilBooking < BOOKING_CANCEL_CUTOFF_MS) {
+      throw new UnprocessableEntityException(
+        'Booking can only be cancelled at least 1 hour before scheduled time',
+      );
+    }
+  }
+
+  private buildBookingCancelAuditSnapshot(booking: BookingCancelTarget) {
+    return {
+      id: booking.id,
+      userId: booking.userId ?? booking.user?.id ?? null,
+      guestId: booking.guestId ?? booking.guest?.id ?? null,
+      status: booking.status,
+      scheduledAt: this.toAuditIso(booking.scheduledAt),
+      cancelledAt: this.toAuditIso(booking.cancelledAt),
+    };
+  }
+
+  private toAuditIso(value?: Date | string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+
   private buildBillReviewAuditSnapshot(bill: {
     id: string;
     status: string;
@@ -3469,70 +3884,70 @@ export class NightlifeDataService {
     const targetMap = new Map<string, RankingTargetSummary>();
     const stores: StoreTargetRecord[] = storeIds.length
       ? await this.prisma.store.findMany({
-            where: { id: { in: storeIds }, deletedAt: null },
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              category: true,
-              status: true,
-              city: true,
-              district: true,
-              area: {
-                select: {
-                  name: true,
-                  city: true,
-                },
-              },
-              media: {
-                where: {
-                  deletedAt: null,
-                  access: 'PUBLIC',
-                  status: 'READY',
-                  type: 'IMAGE',
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 1,
-                select: { url: true },
+          where: { id: { in: storeIds }, deletedAt: null },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            category: true,
+            status: true,
+            city: true,
+            district: true,
+            area: {
+              select: {
+                name: true,
+                city: true,
               },
             },
-          })
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { url: true },
+            },
+          },
+        })
       : [];
     const casts: CastTargetRecord[] = castIds.length
       ? await this.prisma.cast.findMany({
-            where: { id: { in: castIds }, deletedAt: null },
-            select: {
-              id: true,
-              slug: true,
-              stageName: true,
-              publicAlias: true,
-              status: true,
-              media: {
-                where: {
-                  deletedAt: null,
-                  access: 'PUBLIC',
-                  status: 'READY',
-                  type: 'IMAGE',
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 1,
-                select: { url: true },
+          where: { id: { in: castIds }, deletedAt: null },
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+            status: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
               },
-              store: {
-                select: {
-                  category: true,
-                  city: true,
-                  district: true,
-                  area: {
-                    select: {
-                      name: true,
-                      city: true,
-                    },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { url: true },
+            },
+            store: {
+              select: {
+                category: true,
+                city: true,
+                district: true,
+                area: {
+                  select: {
+                    name: true,
+                    city: true,
                   },
                 },
               },
             },
-          })
+          },
+        })
       : [];
 
     stores.forEach((store) => {
@@ -3540,7 +3955,7 @@ export class NightlifeDataService {
         id: store.id,
         name: store.name,
         slug: store.slug,
-        image: store.media[0]?.url ?? null,
+        image: this.resolveRankingStoreImage(store.slug, store.media),
         city: store.area?.city ?? store.city,
         area: store.area?.name ?? store.district,
         category: store.category,
@@ -3552,7 +3967,7 @@ export class NightlifeDataService {
         id: cast.id,
         name: cast.publicAlias ?? cast.stageName,
         slug: cast.slug,
-        image: cast.media[0]?.url ?? null,
+        image: this.resolveRankingCastImage(cast.slug, cast.media),
         city: cast.store.area?.city ?? cast.store.city,
         area: cast.store.area?.name ?? cast.store.district,
         category: cast.store.category,
@@ -4002,7 +4417,7 @@ export class NightlifeDataService {
       targetId: store.id,
       name: store.name,
       slug: store.slug,
-      image: store.media[0]?.url ?? null,
+      image: this.resolveRankingStoreImage(store.slug, store.media),
       area: store.area?.name ?? store.district,
       city: store.area?.city ?? store.city,
       cityCode,
@@ -4046,7 +4461,7 @@ export class NightlifeDataService {
       targetId: cast.id,
       name: cast.publicAlias ?? cast.stageName,
       slug: cast.slug,
-      image: cast.media[0]?.url ?? null,
+      image: this.resolveRankingCastImage(cast.slug, cast.media),
       area: cast.store.area?.name ?? cast.store.district,
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
@@ -4056,6 +4471,28 @@ export class NightlifeDataService {
       manualScore: config?.manualScore ?? 0,
       href: `/casts/${cast.slug}`,
     };
+  }
+
+  private resolveRankingStoreImage(
+    slug: string,
+    media: Array<{ url: string }>,
+  ) {
+    return (
+      media[0]?.url ??
+      (demoStoreImageSlugs.has(slug)
+        ? `/media/demo/stores/${slug}.jpg`
+        : null)
+    );
+  }
+
+  private resolveRankingCastImage(
+    slug: string,
+    media: Array<{ url: string }>,
+  ) {
+    return (
+      media[0]?.url ??
+      (demoCastImageSlugs.has(slug) ? `/media/demo/casts/${slug}.jpg` : null)
+    );
   }
 
   private buildActiveCouponWhere(now: Date): Prisma.CouponWhereInput {
@@ -4173,7 +4610,7 @@ export class NightlifeDataService {
     });
   }
 
-  private cleanText(value?: string) {
+  private cleanText(value?: string | null) {
     return value?.trim() ?? '';
   }
 
@@ -4292,6 +4729,173 @@ export class NightlifeDataService {
     return { equals: value, mode: 'insensitive' };
   }
 
+  private contentSelect(): Prisma.ContentSelect {
+    return {
+      id: true,
+      title: true,
+      slug: true,
+      type: true,
+      status: true,
+      excerpt: true,
+      body: true,
+      metadata: true,
+      publishedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      author: {
+        select: {
+          id: true,
+          displayName: true,
+          email: true,
+        },
+      },
+      store: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    };
+  }
+
+  private mapContent(content: ContentRecord) {
+    const metadata = this.asRecord(content.metadata) ?? {};
+
+    return {
+      id: content.id,
+      title: content.title,
+      slug: content.slug,
+      type: content.type,
+      status: content.status,
+      excerpt: content.excerpt,
+      body: content.body,
+      metadata,
+      noindex: metadata.noindex === true,
+      publishedAt: content.publishedAt?.toISOString() ?? null,
+      createdAt: content.createdAt.toISOString(),
+      updatedAt: content.updatedAt.toISOString(),
+      author: content.author,
+      store: content.store,
+    };
+  }
+
+  private resolveContentType(
+    value?: string | null,
+    options: { strict?: boolean } = {},
+  ): ContentType | undefined {
+    const token = this.normalizeToken(value).replace(/-/g, '_').toUpperCase();
+    if (!token) {
+      return undefined;
+    }
+
+    if (this.isContentType(token)) {
+      return token;
+    }
+
+    if (options.strict) {
+      throw new BadRequestException('type must be BLOG or POLICY');
+    }
+
+    return undefined;
+  }
+
+  private isContentType(value: string): value is ContentType {
+    return ['BLOG', 'POLICY'].includes(value);
+  }
+
+  private resolveContentStatus(
+    value?: string | null,
+    options: { strict?: boolean } = {},
+  ): ContentStatus | undefined {
+    const token = this.normalizeToken(value).replace(/-/g, '_').toUpperCase();
+    if (!token) {
+      return undefined;
+    }
+
+    if (this.isContentStatus(token)) {
+      return token;
+    }
+
+    if (options.strict) {
+      throw new BadRequestException(
+        'status must be DRAFT, PUBLISHED, ARCHIVED, or DELETED',
+      );
+    }
+
+    return undefined;
+  }
+
+  private isContentStatus(value: string): value is ContentStatus {
+    return ['DRAFT', 'PUBLISHED', 'ARCHIVED', 'DELETED'].includes(value);
+  }
+
+  private cleanRequiredText(value: string, field: string) {
+    const text = this.cleanText(value);
+    if (!text) {
+      throw new BadRequestException(`${field} is required`);
+    }
+
+    return text;
+  }
+
+  private cleanNullableText(value?: string | null) {
+    const text = this.cleanText(value);
+    return text || null;
+  }
+
+  private normalizeContentSlug(value: string) {
+    const slug = this.normalizeToken(value);
+    if (!slug) {
+      throw new BadRequestException('slug is required');
+    }
+
+    return slug;
+  }
+
+  private parseOptionalDate(value: string | null | undefined, field: string) {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null || value === '') {
+      return null;
+    }
+
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) {
+      throw new BadRequestException(`${field} must be a valid ISO date`);
+    }
+
+    return date;
+  }
+
+  private toPrismaJson(value?: Record<string, unknown> | null) {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return Prisma.JsonNull;
+    }
+
+    return value as Prisma.InputJsonValue;
+  }
+
+  private async assertContentSlugAvailable(slug: string, excludeId?: string) {
+    const existing = await this.prisma.content.findFirst({
+      where: {
+        slug,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Content slug already exists');
+    }
+  }
+
   private toNumber(value: unknown) {
     if (value === null || value === undefined) {
       return null;
@@ -4395,9 +4999,7 @@ export class NightlifeDataService {
     T extends { code: string; status: string; metadata?: unknown },
   >(issue: T) {
     const metadata = this.asRecord(issue.metadata);
-    const discountRuleSnapshot = this.asRecord(
-      metadata?.discountRuleSnapshot,
-    );
+    const discountRuleSnapshot = this.asRecord(metadata?.discountRuleSnapshot);
     const discountPercent = this.toNumber(metadata?.discountPercent);
 
     return {

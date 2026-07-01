@@ -6,7 +6,7 @@ import {
   Check,
   ChevronLeft,
   Clock,
-  Headphones,
+  Mail,
   MessageCircle,
   QrCode,
   RotateCcw,
@@ -31,11 +31,18 @@ import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
+const supportLineUrl = process.env.NEXT_PUBLIC_LINE_OA_URL ?? "https://line.me/R/ti/p/@vietyoru";
+const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@vietyoru.vn";
+const supportMailHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Vietyoru booking support")}`;
+const supportCancelMessage =
+  "Chỉ có thể hủy booking trước giờ hẹn ít nhất 1 giờ. Nếu cần đổi thông tin hoặc hủy sát giờ, vui lòng liên hệ Admin qua LINE OA hoặc Mail.";
 
 const thumbnails = {
-  "Mới": "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=72')",
-  "Hoàn tất": "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=180&q=72')",
-  "Đã hủy": "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=72')",
+  Mới: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=72')",
+  "Hoàn tất":
+    "url('https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=180&q=72')",
+  "Đã hủy":
+    "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=72')",
 };
 
 const formatDateTime = (value: string) =>
@@ -151,8 +158,14 @@ export default function Page() {
 
   const handleCancelBooking = async (booking: BookingRecord) => {
     if (!canCancelBooking(booking)) {
+      setMessage(supportCancelMessage);
+      return;
+    }
+
+    const guestPhone = booking.guest?.phone?.trim() ?? "";
+    if (!isMember && !guestPhone) {
       setMessage(
-        "Chỉ có thể hủy booking trước giờ hẹn ít nhất 1 giờ. Nếu cần đổi thông tin sát giờ, vui lòng liên hệ Admin.",
+        "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua LINE OA hoặc Mail để hủy hoặc đổi thông tin.",
       );
       return;
     }
@@ -165,10 +178,13 @@ export default function Page() {
     setMessage("");
 
     try {
-      const cancelledBooking = await bookingApi.cancelMemberBooking(
-        booking.id,
-        "Customer cancelled from booking history",
-      );
+      const cancelReason = "Customer cancelled from booking history";
+      const cancelledBooking = isMember
+        ? await bookingApi.cancelMemberBooking(booking.id, cancelReason)
+        : await bookingApi.cancelGuestBooking(booking.id, {
+            phone: guestPhone,
+            reason: cancelReason,
+          });
       const mergedBooking = { ...booking, ...cancelledBooking };
       setBookings((current) =>
         current.map((item) => (item.id === booking.id ? mergedBooking : item)),
@@ -251,7 +267,8 @@ export default function Page() {
             <div className={styles.infoNote}>
               <Clock size={15} />
               <span>
-                Không sửa trực tiếp đặt chỗ cũ. Mỗi thay đổi tạo bản ghi mới - hủy trước 1 giờ rồi đặt lại hoặc liên hệ hỗ trợ.
+                Không sửa trực tiếp đặt chỗ cũ. Mỗi thay đổi tạo bản ghi mới - hủy trước 1 giờ rồi
+                đặt lại hoặc liên hệ Admin qua LINE OA / Mail.
               </span>
             </div>
           </div>
@@ -275,7 +292,8 @@ function BookingCard({
   const group = bookingStatusGroup(booking.status);
   const isOpenBooking = group === "Mới";
   const hasQr = confirmedStatuses.has(booking.status);
-  const cancelAllowed = isMember && canCancelBooking(booking);
+  const hasCancelIdentity = isMember || Boolean(booking.guest?.phone?.trim());
+  const cancelAllowed = isOpenBooking && canCancelBooking(booking) && hasCancelIdentity;
   const cancelDisabled = cancelingId === booking.id || !cancelAllowed;
   const itemClass =
     group === "Mới"
@@ -302,7 +320,9 @@ function BookingCard({
           <div className={styles.historyMeta}>
             {formatDateTime(booking.scheduledAt)} · {booking.partySize} người
           </div>
-          <div className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}>
+          <div
+            className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}
+          >
             {statusMeta(booking, group)}
           </div>
         </div>
@@ -320,22 +340,7 @@ function BookingCard({
                 <QrCode size={14} />
                 Xem QR
               </Link>
-            ) : isMember ? (
-              <button
-                type="button"
-                onClick={() => onCancel(booking)}
-                disabled={cancelDisabled}
-                title={
-                  cancelAllowed
-                    ? "Hủy đặt chỗ"
-                    : "Chỉ hủy được trước giờ hẹn ít nhất 1 giờ"
-                }
-                className={`${styles.dangerCta} ${cancelDisabled ? styles.disabledCta : ""}`}
-              >
-                <XCircle size={14} />
-                {cancelingId === booking.id ? "Đang hủy" : cancelAllowed ? "Hủy đặt chỗ" : "Quá giờ"}
-              </button>
-            ) : (
+            ) : !cancelAllowed ? (
               <Link
                 href={`/xac-nhan?bookingId=${booking.id}`}
                 onClick={() => rememberLastBooking(booking, { history: true })}
@@ -344,11 +349,39 @@ function BookingCard({
                 <MessageCircle size={14} />
                 Chi tiết
               </Link>
+            ) : null}
+            {cancelAllowed ? (
+              <button
+                type="button"
+                onClick={() => onCancel(booking)}
+                disabled={cancelDisabled}
+                title={cancelAllowed ? "Hủy đặt chỗ" : "Chỉ hủy được trước giờ hẹn ít nhất 1 giờ"}
+                className={`${styles.dangerCta} ${cancelDisabled ? styles.disabledCta : ""}`}
+              >
+                <XCircle size={14} />
+                {cancelingId === booking.id
+                  ? "Đang hủy"
+                  : cancelAllowed
+                    ? "Hủy đặt chỗ"
+                    : "Quá giờ"}
+              </button>
+            ) : (
+              <>
+                <a
+                  href={supportLineUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.secondaryCta}
+                >
+                  <MessageCircle size={14} />
+                  LINE OA
+                </a>
+                <a href={supportMailHref} className={styles.ghostCta}>
+                  <Mail size={14} />
+                  Mail Admin
+                </a>
+              </>
             )}
-            <Link href="/huong-dan" className={styles.secondaryCta}>
-              <Headphones size={14} />
-              Hỗ trợ
-            </Link>
           </>
         ) : group === "Hoàn tất" ? (
           <>
@@ -385,7 +418,11 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span className={className}>
-      {group === "Hoàn tất" ? <Check size={9} /> : group === "Mới" ? <span className={styles.statusDot} /> : null}
+      {group === "Hoàn tất" ? (
+        <Check size={9} />
+      ) : group === "Mới" ? (
+        <span className={styles.statusDot} />
+      ) : null}
       {bookingStatusLabel(status)}
     </span>
   );

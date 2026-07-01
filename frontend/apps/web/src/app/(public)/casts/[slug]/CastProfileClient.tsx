@@ -18,6 +18,7 @@ import {
   profileFromCastDetail,
 } from "./cast-profile.helpers";
 import { personalizeRelatedCasts } from "./cast-profile.recommendations";
+import { buildCastStructuredData } from "./cast-profile.schema";
 import { trackCastDetailClick } from "./cast-profile.tracking";
 import type { CastGalleryAction } from "./cast-profile.types";
 
@@ -61,6 +62,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const storeHref = `/stores/${profile.store.slug}`;
   const bookingHref = buildBookingHref(profile, area);
   const languageText = profile.languages.map(labelLanguage).join(" · ");
+  const structuredData = useMemo(() => buildCastStructuredData(cast), [cast]);
   const relatedCasts = useMemo(
     () => personalizeRelatedCasts(profile, profile.relatedCasts),
     [profile],
@@ -144,6 +146,11 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   return (
     <>
       <main className="cast-page nl-scroll-reveal-skip" data-testid="cast-detail-page" data-no-scroll-reveal="true">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+
         <div className="block md:hidden cast-mobile nl-scroll-reveal-skip" data-no-scroll-reveal="true">
           <CastHero
             profile={profile}

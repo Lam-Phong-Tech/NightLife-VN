@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { SocketProvider } from "@/components/providers/SocketProvider";
+import { jsonLdGraph, organizationJsonLd } from "@/lib/seo/structured-data";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -37,6 +38,12 @@ export default function RootLayout({
         <Script src="/shared.js" strategy="beforeInteractive" />
         <Script src="/theme.js" strategy="beforeInteractive" />
         <Script src="/support.js" strategy="beforeInteractive" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLdGraph([organizationJsonLd()])),
+          }}
+        />
       </head>
       <body>
         <SocketProvider>

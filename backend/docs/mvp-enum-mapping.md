@@ -41,7 +41,7 @@ Customer-facing booking status is grouped into three PM labels:
 - `Hoàn tất`: `CHECKED_IN` or `COMPLETED`.
 - `Đã hủy`: `CANCELLED` or `NO_SHOW`.
 
-Booking details are not edited in place. If customer information or schedule changes, the customer cancels and rebooks before the 1 hour cutoff, or contacts Admin after that cutoff.
+Booking details are not edited in place. Guests cancel with booking id + submitted phone, members cancel with bearer token, and both can only self-cancel before the 1 hour cutoff. If customer information or schedule changes, the customer cancels and rebooks before the cutoff, or contacts Admin via LINE OA / Mail after that cutoff.
 
 ## BillStatus
 

@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getLegalSection, legalPlaceholderNotice, legalSections } from "@/lib/content/legal";
+import {
+  getLegalSection,
+  getPublishedLegalSections,
+  legalPlaceholderNotice,
+} from "@/lib/content/legal";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export const revalidate = 300;
+export const dynamicParams = false;
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
@@ -14,18 +21,23 @@ const formatDate = (value: string) =>
     year: "numeric",
   }).format(new Date(value));
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const legalSections = await getPublishedLegalSections();
   return legalSections.map((section) => ({ slug: section.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const section = getLegalSection(slug);
+  const section = await getLegalSection(slug);
 
   if (!section) {
     return {
       title: "Không tìm thấy chính sách",
       description: "Trang chính sách này chưa tồn tại trên Vietyoru.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -35,12 +47,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: {
       canonical: `/legal/${section.slug}`,
     },
+    robots: {
+      index: !section.noindex,
+      follow: !section.noindex,
+    },
   };
 }
 
 export default async function LegalDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const section = getLegalSection(slug);
+  const section = await getLegalSection(slug);
 
   if (!section) notFound();
 
@@ -116,7 +132,9 @@ export default async function LegalDetailPage({ params }: PageProps) {
               <h2 style={{ margin: 0, fontSize: "23px", lineHeight: 1.25, fontWeight: 900 }}>
                 {index + 1}. {item.heading}
               </h2>
-              <p style={{ margin: "10px 0 0", color: "#d7d0c3", fontSize: "16px", lineHeight: 1.85 }}>
+              <p
+                style={{ margin: "10px 0 0", color: "#d7d0c3", fontSize: "16px", lineHeight: 1.85 }}
+              >
                 {item.body}
               </p>
             </section>

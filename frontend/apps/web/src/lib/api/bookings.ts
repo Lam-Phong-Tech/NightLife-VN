@@ -63,6 +63,11 @@ export type CreateBookingPayload = {
   note?: string;
 };
 
+export type CancelGuestBookingPayload = {
+  phone: string;
+  reason?: string;
+};
+
 const bookingCancelCutoffMs = 60 * 60 * 1000;
 const lastBookingKey = "nightlife_last_booking";
 const guestBookingsKey = "nightlife_guest_bookings";
@@ -178,6 +183,11 @@ export const bookingApi = {
     apiClient<BookingRecord>("/bookings", { data: payload }),
   createMemberBooking: (payload: CreateBookingPayload) =>
     apiClient<BookingRecord>("/member/bookings", { data: payload }),
+  cancelGuestBooking: (bookingId: string, payload: CancelGuestBookingPayload) =>
+    apiClient<BookingRecord>(`/bookings/${encodeURIComponent(bookingId)}/cancel`, {
+      method: "PATCH",
+      data: payload,
+    }),
   cancelMemberBooking: (bookingId: string, reason?: string) =>
     apiClient<BookingRecord>(`/member/bookings/${encodeURIComponent(bookingId)}/cancel`, {
       method: "PATCH",

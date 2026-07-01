@@ -883,7 +883,8 @@ textarea::placeholder {
 
 @media (max-width: 767px) {
   .nl-page-content .nl-blog-feature,
-  .nl-page-content .nl-blog-detail-layout {
+  .nl-page-content .nl-blog-detail-layout,
+  .nl-page-content .nl-blog-filter {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 

@@ -49,6 +49,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: cast.seo.description,
       alternates: {
         canonical: canonicalPath,
+        languages: {
+          vi: canonicalPath,
+          "x-default": canonicalPath,
+        },
       },
       openGraph: {
         title: cast.seo.title,

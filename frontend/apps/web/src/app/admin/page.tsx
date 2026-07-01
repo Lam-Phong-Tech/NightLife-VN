@@ -31,6 +31,12 @@ import {
   type AdminRankingTargetOption,
 } from '@/lib/api/admin-rankings';
 import { ApiError, apiClient } from '@/lib/api/client';
+import {
+  contentApi,
+  type CmsContentItem,
+  type CmsContentStatus,
+  type CmsContentType,
+} from '@/lib/api/content';
 import type { RankingCategory, RankingCity, RankingTargetType } from '@/lib/api/rankings';
 import { clearAuthSession } from '@/lib/auth/session';
 
@@ -105,6 +111,21 @@ type RankingFormState = {
   reason: string;
 };
 
+type ContentFormState = {
+  type: CmsContentType;
+  title: string;
+  slug: string;
+  status: Exclude<CmsContentStatus, 'DELETED'>;
+  excerpt: string;
+  body: string;
+  publishedAt: string;
+  noindex: boolean;
+  category: string;
+  tags: string;
+  image: string;
+  imageAlt: string;
+};
+
 const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
   {
     title: 'Vận hành',
@@ -168,6 +189,21 @@ const defaultRankingForm: RankingFormState = {
   reason: '',
 };
 
+const defaultContentForm: ContentFormState = {
+  type: 'BLOG',
+  title: '',
+  slug: '',
+  status: 'DRAFT',
+  excerpt: '',
+  body: '',
+  publishedAt: '',
+  noindex: false,
+  category: '',
+  tags: '',
+  image: '',
+  imageAlt: '',
+};
+
 const formatDateInput = (value?: string | null) => {
   if (!value) return '';
   const date = new Date(value);
@@ -200,22 +236,30 @@ export default function AdminDashboardPage() {
   const [editingRankingId, setEditingRankingId] = useState<string | null>(null);
   const [rankingSavingId, setRankingSavingId] = useState<string | null>(null);
   const [rankingStatusMessage, setRankingStatusMessage] = useState('Đang tải cấu hình ranking...');
+  const [contentItems, setContentItems] = useState<CmsContentItem[]>([]);
+  const [contentForm, setContentForm] = useState<ContentFormState>(defaultContentForm);
+  const [editingContentId, setEditingContentId] = useState<string | null>(null);
+  const [contentSavingId, setContentSavingId] = useState<string | null>(null);
+  const [contentStatusMessage, setContentStatusMessage] = useState('Đang tải blog/chính sách...');
 
   const loadAdminData = async () => {
     try {
-      const [storeData, bookingData, billData, rankingData] = await Promise.all([
+      const [storeData, bookingData, billData, rankingData, contentData] = await Promise.all([
         apiClient<AdminStore[]>('/partner/stores'),
         apiClient<AdminBooking[]>('/partner/bookings'),
         apiClient<SensitiveBill[]>('/admin/sensitive-bills'),
         adminRankingsApi.list(),
+        contentApi.adminList({ limit: 100 }),
       ]);
 
       setStores(storeData);
       setBookings(bookingData);
       setSensitiveBills(billData);
       setRankings(rankingData);
+      setContentItems(contentData);
       setStatusMessage('Admin dang xem va duyet du lieu nhay cam bang token ADMIN.');
       setRankingStatusMessage(`Đã tải ${rankingData.length} cấu hình ranking.`);
+      setContentStatusMessage(`Đã tải ${contentData.length} bài viết/chính sách.`);
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         clearAuthSession();
@@ -225,6 +269,7 @@ export default function AdminDashboardPage() {
 
       setStatusMessage('Chua ket noi duoc backend. Kiem tra backend/NEXT_PUBLIC_API_URL.');
       setRankingStatusMessage('Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.');
+      setContentStatusMessage('Chưa tải được content CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.');
     }
   };
 
@@ -371,6 +416,99 @@ export default function AdminDashboardPage() {
       setRankingStatusMessage(error instanceof ApiError ? error.message : 'Không xóa được ranking.');
     } finally {
       setRankingSavingId(null);
+    }
+  };
+
+  const resetContentForm = () => {
+    setEditingContentId(null);
+    setContentForm(defaultContentForm);
+  };
+
+  const editContent = (content: CmsContentItem) => {
+    const metadata = content.metadata ?? {};
+    const tags = Array.isArray(metadata.tags)
+      ? metadata.tags.filter((item): item is string => typeof item === 'string').join(', ')
+      : '';
+
+    setEditingContentId(content.id);
+    setContentForm({
+      type: content.type,
+      title: content.title,
+      slug: content.slug,
+      status: content.status === 'DELETED' ? 'ARCHIVED' : content.status,
+      excerpt: content.excerpt ?? '',
+      body: content.body ?? '',
+      publishedAt: formatDateInput(content.publishedAt),
+      noindex: content.noindex === true || metadata.noindex === true,
+      category: typeof metadata.category === 'string' ? metadata.category : '',
+      tags,
+      image: typeof metadata.image === 'string' ? metadata.image : '',
+      imageAlt: typeof metadata.imageAlt === 'string' ? metadata.imageAlt : '',
+    });
+    setContentStatusMessage(`Đang sửa ${content.title}.`);
+  };
+
+  const saveContent = async () => {
+    if (!contentForm.title.trim()) {
+      setContentStatusMessage('Nhập tiêu đề trước khi lưu content.');
+      return;
+    }
+
+    const tagList = contentForm.tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    const metadata = {
+      noindex: contentForm.noindex,
+      ...(contentForm.category.trim() ? { category: contentForm.category.trim() } : {}),
+      ...(tagList.length ? { tags: tagList } : {}),
+      ...(contentForm.image.trim() ? { image: contentForm.image.trim() } : {}),
+      ...(contentForm.imageAlt.trim() ? { imageAlt: contentForm.imageAlt.trim() } : {}),
+    };
+    const payload = {
+      type: contentForm.type,
+      title: contentForm.title.trim(),
+      slug: contentForm.slug.trim() || undefined,
+      status: contentForm.status,
+      excerpt: contentForm.excerpt.trim() || null,
+      body: contentForm.body.trim() || null,
+      publishedAt: contentForm.publishedAt || null,
+      metadata,
+    };
+
+    setContentSavingId(editingContentId ?? 'new');
+    try {
+      if (editingContentId) {
+        await contentApi.adminUpdate(editingContentId, payload);
+      } else {
+        await contentApi.adminCreate(payload);
+      }
+
+      const nextContent = await contentApi.adminList({ limit: 100 });
+      setContentItems(nextContent);
+      setContentStatusMessage(`Đã lưu content. Tổng ${nextContent.length} bài viết/chính sách.`);
+      resetContentForm();
+    } catch (error) {
+      setContentStatusMessage(error instanceof ApiError ? error.message : 'Không lưu được content.');
+    } finally {
+      setContentSavingId(null);
+    }
+  };
+
+  const deleteContent = async (contentId: string) => {
+    setContentSavingId(contentId);
+    try {
+      await contentApi.adminDelete(contentId);
+      const nextContent = await contentApi.adminList({ limit: 100 });
+      setContentItems(nextContent);
+      setContentStatusMessage(`Đã xóa mềm content. Còn ${nextContent.length} bài viết/chính sách.`);
+      if (editingContentId === contentId) {
+        resetContentForm();
+      }
+    } catch (error) {
+      setContentStatusMessage(error instanceof ApiError ? error.message : 'Không xóa được content.');
+    } finally {
+      setContentSavingId(null);
     }
   };
 
@@ -743,6 +881,187 @@ export default function AdminDashboardPage() {
                   {!rankings.length ? (
                     <div style={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px dashed ${colors.borderGold22}`, borderRadius: 12, color: colors.muted, fontSize: 13 }}>
                       Chưa có cấu hình ranking. Tạo Top đầu tiên ở form bên trái.
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+
+            <article data-testid="admin-content-panel" style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                <div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Blog / Chính sách CMS</h2>
+                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>CONTENT STATUS / NOINDEX</div>
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                <button type="button" onClick={resetContentForm} style={{ minHeight: 36, border: `1px solid ${colors.borderGold22}`, borderRadius: 10, background: colors.surface2, color: colors.gold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                  <Plus size={15} />
+                  Tạo mới
+                </button>
+                <button type="button" onClick={() => void loadAdminData()} style={{ minHeight: 36, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                  <RefreshCcw size={15} />
+                  Tải lại
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px,.95fr) minmax(0,1.05fr)', gap: '16px', padding: '18px 20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px', alignContent: 'start' }}>
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Loại
+                    <select
+                      value={contentForm.type}
+                      onChange={(event) => setContentForm((current) => ({ ...current, type: event.target.value as CmsContentType, noindex: event.target.value === 'POLICY' ? true : current.noindex }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      <option value="BLOG">Blog</option>
+                      <option value="POLICY">Chính sách</option>
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Trạng thái
+                    <select
+                      value={contentForm.status}
+                      onChange={(event) => setContentForm((current) => ({ ...current, status: event.target.value as ContentFormState['status'] }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    >
+                      <option value="DRAFT">DRAFT</option>
+                      <option value="PUBLISHED">PUBLISHED</option>
+                      <option value="ARCHIVED">ARCHIVED</option>
+                    </select>
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Tiêu đề
+                    <input
+                      value={contentForm.title}
+                      onChange={(event) => setContentForm((current) => ({ ...current, title: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Slug
+                    <input
+                      value={contentForm.slug}
+                      onChange={(event) => setContentForm((current) => ({ ...current, slug: event.target.value }))}
+                      placeholder="tu-dong-neu-bo-trong"
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    PublishedAt
+                    <input
+                      type="datetime-local"
+                      value={contentForm.publishedAt}
+                      onChange={(event) => setContentForm((current) => ({ ...current, publishedAt: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Category
+                    <input
+                      value={contentForm.category}
+                      onChange={(event) => setContentForm((current) => ({ ...current, category: event.target.value }))}
+                      placeholder="Cẩm nang khu vực"
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                    Tags
+                    <input
+                      value={contentForm.tags}
+                      onChange={(event) => setContentForm((current) => ({ ...current, tags: event.target.value }))}
+                      placeholder="Tây Hồ, Lounge"
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Mô tả SEO
+                    <input
+                      value={contentForm.excerpt}
+                      onChange={(event) => setContentForm((current) => ({ ...current, excerpt: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Ảnh OG/LCP
+                    <input
+                      value={contentForm.image}
+                      onChange={(event) => setContentForm((current) => ({ ...current, image: event.target.value }))}
+                      placeholder="https://..."
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Alt ảnh
+                    <input
+                      value={contentForm.imageAlt}
+                      onChange={(event) => setContentForm((current) => ({ ...current, imageAlt: event.target.value }))}
+                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                    Nội dung
+                    <textarea
+                      value={contentForm.body}
+                      onChange={(event) => setContentForm((current) => ({ ...current, body: event.target.value }))}
+                      rows={5}
+                      style={{ minHeight: 116, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '10px', resize: 'vertical' }}
+                    />
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 9, color: colors.text2, fontSize: 12.5, fontWeight: 800 }}>
+                    <input
+                      type="checkbox"
+                      checked={contentForm.noindex}
+                      onChange={(event) => setContentForm((current) => ({ ...current, noindex: event.target.checked }))}
+                    />
+                    Noindex
+                  </label>
+
+                  <button type="button" disabled={contentSavingId !== null} onClick={() => void saveContent()} style={{ minHeight: 40, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontWeight: 900, cursor: 'pointer' }}>
+                    <Save size={16} />
+                    {editingContentId ? 'Lưu content' : 'Tạo content'}
+                  </button>
+                  <div style={{ minHeight: 40, display: 'flex', alignItems: 'center', color: colors.muted, fontSize: 12, gridColumn: '1 / -1' }}>
+                    {contentStatusMessage}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: '9px', alignContent: 'start' }}>
+                  {contentItems.map((content) => (
+                    <div key={content.id} data-testid="admin-content-row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 172px', gap: '10px', alignItems: 'center', border: `1px solid ${colors.borderSoft}`, borderRadius: 12, background: 'rgba(255,255,255,.025)', padding: '10px 12px' }}>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'flex', gap: 8, alignItems: 'center', color: colors.text, fontSize: 13, fontWeight: 900 }}>
+                          {content.title}
+                          <span style={{ border: `1px solid ${colors.borderGold32}`, borderRadius: 999, color: colors.goldBright, padding: '3px 7px', fontSize: 10 }}>{content.type}</span>
+                          {content.noindex ? <span style={{ border: `1px solid rgba(224,114,158,.35)`, borderRadius: 999, color: colors.neonPink, padding: '3px 7px', fontSize: 10 }}>noindex</span> : null}
+                        </span>
+                        <span style={{ display: 'block', marginTop: 4, color: colors.muted, fontSize: 11.5 }}>
+                          /{content.type === 'BLOG' ? 'blog' : 'legal'}/{content.slug} · {content.status} · {content.publishedAt ? new Date(content.publishedAt).toLocaleDateString('vi-VN') : 'chưa publish'}
+                        </span>
+                      </span>
+                      <span style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                        <button type="button" onClick={() => editContent(content)} style={{ minHeight: 32, border: `1px solid ${colors.borderGold22}`, borderRadius: 9, background: colors.surface2, color: colors.gold, padding: '0 10px', fontWeight: 800, cursor: 'pointer' }}>
+                          Sửa
+                        </button>
+                        <button type="button" disabled={contentSavingId === content.id} onClick={() => void deleteContent(content.id)} aria-label={`Xóa content ${content.title}`} style={{ width: 34, minHeight: 32, border: `1px solid rgba(224,114,158,.35)`, borderRadius: 9, background: 'rgba(224,114,158,.08)', color: colors.neonPink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <Trash2 size={15} />
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                  {!contentItems.length ? (
+                    <div style={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px dashed ${colors.borderGold22}`, borderRadius: 12, color: colors.muted, fontSize: 13 }}>
+                      Chưa có content CMS. Tạo blog hoặc chính sách ở form bên trái.
                     </div>
                   ) : null}
                 </div>

@@ -1,25 +1,48 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { blogPosts, featuredBlogPost } from "@/lib/content/blog";
+import {
+  filterBlogPosts,
+  getBlogCategories,
+  getBlogTags,
+  getFeaturedBlogPost,
+  getPublishedBlogPosts,
+  slugifyBlogTerm,
+} from "@/lib/content/blog";
+import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Blog và cẩm nang nightlife",
-  description:
-    "Cẩm nang đi đêm, đặt chỗ, ưu đãi và văn hóa nightlife tại Hà Nội, TP.HCM trên Vietyoru.",
-  alternates: {
-    canonical: "/blog",
-  },
-  openGraph: {
-    title: "Blog và cẩm nang nightlife | Vietyoru",
-    description:
-      "Cập nhật hướng dẫn chọn quán, đặt bàn và dùng ưu đãi nightlife tại Việt Nam.",
-    url: absoluteSiteUrl("/blog"),
-    images: [{ url: featuredBlogPost.image, alt: featuredBlogPost.imageAlt }],
-  },
+type BlogPageProps = {
+  searchParams?: Promise<{
+    q?: string;
+    category?: string;
+    tag?: string;
+  }>;
 };
 
-const categories = ["Tất cả", ...Array.from(new Set(blogPosts.map((post) => post.category)))];
+export async function generateMetadata(): Promise<Metadata> {
+  const featuredPost = await getFeaturedBlogPost();
+
+  return {
+    title: "Blog và cẩm nang nightlife",
+    description:
+      "Cẩm nang đi đêm, đặt chỗ, ưu đãi và văn hóa nightlife tại Hà Nội, TP.HCM trên Vietyoru.",
+    alternates: {
+      canonical: "/blog",
+      languages: {
+        vi: "/blog",
+        "x-default": "/blog",
+      },
+    },
+    openGraph: {
+      title: "Blog và cẩm nang nightlife | Vietyoru",
+      description:
+        "Cập nhật hướng dẫn chọn quán, đặt bàn và dùng ưu đãi nightlife tại Việt Nam.",
+      url: absoluteSiteUrl("/blog"),
+      images: [{ url: featuredPost.image, alt: featuredPost.imageAlt }],
+    },
+  };
+}
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
@@ -28,8 +51,30 @@ const formatDate = (value: string) =>
     year: "numeric",
   }).format(new Date(value));
 
-export default function BlogPage() {
-  const posts = blogPosts.filter((post) => post.slug !== featuredBlogPost.slug);
+export default async function BlogPage({ searchParams }: BlogPageProps) {
+  const params = (await searchParams) ?? {};
+  const allPosts = await getPublishedBlogPosts();
+  const featuredPost = await getFeaturedBlogPost();
+  const categories = getBlogCategories(allPosts);
+  const tags = getBlogTags(allPosts);
+  const filteredPosts = filterBlogPosts(allPosts, {
+    q: params.q,
+    category: params.category,
+    tag: params.tag,
+  });
+  const hasFilter = Boolean(params.q || params.category || params.tag);
+  const posts = hasFilter
+    ? filteredPosts
+    : allPosts.filter((post) => !post.noindex && post.slug !== featuredPost.slug);
+  const structuredData = jsonLdGraph([
+    breadcrumbJsonLd(
+      [
+        { name: "Trang chủ", path: "/" },
+        { name: "Blog", path: "/blog" },
+      ],
+      "/blog",
+    ),
+  ]);
 
   return (
     <main
@@ -40,14 +85,13 @@ export default function BlogPage() {
         padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)",
       }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       <section style={{ maxWidth: "1180px", margin: "0 auto" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr)",
-            gap: "20px",
-          }}
-        >
+        <div style={{ display: "grid", gap: "20px" }}>
           <div>
             <p
               style={{
@@ -87,6 +131,84 @@ export default function BlogPage() {
             </p>
           </div>
 
+          <form
+            className="nl-blog-filter"
+            action="/blog"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(220px, 1fr) minmax(180px, 240px) minmax(160px, 220px) auto",
+              gap: "10px",
+              alignItems: "center",
+            }}
+          >
+            <input
+              name="q"
+              defaultValue={params.q ?? ""}
+              placeholder="Tìm bài viết..."
+              style={{
+                minHeight: "42px",
+                border: "1px solid rgba(212,178,106,.22)",
+                borderRadius: "8px",
+                background: "rgba(255,255,255,.045)",
+                color: "#f3f0ea",
+                padding: "0 13px",
+              }}
+            />
+            <select
+              name="category"
+              defaultValue={params.category ?? ""}
+              style={{
+                minHeight: "42px",
+                border: "1px solid rgba(212,178,106,.22)",
+                borderRadius: "8px",
+                background: "#111114",
+                color: "#f3f0ea",
+                padding: "0 12px",
+              }}
+            >
+              <option value="">Tất cả chủ đề</option>
+              {categories.map((category) => (
+                <option key={category} value={slugifyBlogTerm(category)}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            <select
+              name="tag"
+              defaultValue={params.tag ?? ""}
+              style={{
+                minHeight: "42px",
+                border: "1px solid rgba(212,178,106,.22)",
+                borderRadius: "8px",
+                background: "#111114",
+                color: "#f3f0ea",
+                padding: "0 12px",
+              }}
+            >
+              <option value="">Tất cả tag</option>
+              {tags.map((tag) => (
+                <option key={tag} value={slugifyBlogTerm(tag)}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              style={{
+                minHeight: "42px",
+                border: 0,
+                borderRadius: "8px",
+                background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
+                color: "#241a0a",
+                padding: "0 18px",
+                fontWeight: 900,
+                cursor: "pointer",
+              }}
+            >
+              Lọc
+            </button>
+          </form>
+
           <div
             aria-label="Chủ đề blog"
             style={{
@@ -96,98 +218,135 @@ export default function BlogPage() {
               paddingBottom: "2px",
             }}
           >
-            {categories.map((category, index) => (
-              <span
+            <Link
+              href="/blog"
+              style={{
+                flex: "none",
+                border: "1px solid rgba(212,178,106,.58)",
+                background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
+                color: "#241a0a",
+                borderRadius: "999px",
+                padding: "8px 13px",
+                fontSize: "12.5px",
+                fontWeight: 800,
+                whiteSpace: "nowrap",
+                textDecoration: "none",
+              }}
+            >
+              Tất cả
+            </Link>
+            {categories.map((category) => (
+              <Link
                 key={category}
+                href={`/blog/category/${slugifyBlogTerm(category)}`}
                 style={{
                   flex: "none",
-                  border: `1px solid ${index === 0 ? "rgba(212,178,106,.58)" : "rgba(255,255,255,.1)"}`,
-                  background: index === 0 ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : "rgba(255,255,255,.045)",
-                  color: index === 0 ? "#241a0a" : "#dcd6ca",
+                  border: "1px solid rgba(255,255,255,.1)",
+                  background: "rgba(255,255,255,.045)",
+                  color: "#dcd6ca",
                   borderRadius: "999px",
                   padding: "8px 13px",
                   fontSize: "12.5px",
                   fontWeight: 800,
                   whiteSpace: "nowrap",
+                  textDecoration: "none",
                 }}
               >
                 {category}
-              </span>
+              </Link>
             ))}
           </div>
         </div>
 
-        <Link
-          className="nl-blog-feature"
-          href={`/blog/${featuredBlogPost.slug}`}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.08fr) minmax(300px, .92fr)",
-            gap: "0",
-            marginTop: "28px",
-            border: "1px solid rgba(212,178,106,.24)",
-            borderRadius: "8px",
-            overflow: "hidden",
-            color: "inherit",
-            textDecoration: "none",
-            background: "rgba(255,255,255,.04)",
-          }}
-        >
-          <div
-            aria-label={featuredBlogPost.imageAlt}
-            role="img"
+        {!hasFilter ? (
+          <Link
+            className="nl-blog-feature"
+            href={`/blog/${featuredPost.slug}`}
             style={{
-              minHeight: "360px",
-              background: `linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.5)), url('${featuredBlogPost.image}') center/cover`,
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1.08fr) minmax(300px, .92fr)",
+              gap: "0",
+              marginTop: "28px",
+              border: "1px solid rgba(212,178,106,.24)",
+              borderRadius: "8px",
+              overflow: "hidden",
+              color: "inherit",
+              textDecoration: "none",
+              background: "rgba(255,255,255,.04)",
             }}
-          />
-          <article style={{ padding: "clamp(22px, 4vw, 42px)" }}>
+          >
             <span
               style={{
-                display: "inline-flex",
-                borderRadius: "999px",
-                padding: "6px 10px",
-                color: "#241a0a",
-                background: "#f0dda8",
-                fontSize: "11px",
-                fontWeight: 900,
+                position: "relative",
+                minHeight: "360px",
+                display: "block",
               }}
             >
-              Nổi bật · {featuredBlogPost.category}
+              <Image
+                src={featuredPost.image}
+                alt={featuredPost.imageAlt}
+                fill
+                priority
+                sizes="(max-width: 767px) 100vw, 56vw"
+                style={{ objectFit: "cover" }}
+              />
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.5))",
+                }}
+              />
             </span>
-            <h2
-              style={{
-                margin: "16px 0 0",
-                fontSize: "clamp(26px, 4vw, 40px)",
-                lineHeight: 1.12,
-                fontWeight: 900,
-                letterSpacing: 0,
-              }}
-            >
-              {featuredBlogPost.title}
-            </h2>
-            <p style={{ margin: "14px 0 0", color: "#c5c0b6", fontSize: "15px", lineHeight: 1.7 }}>
-              {featuredBlogPost.description}
-            </p>
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                flexWrap: "wrap",
-                alignItems: "center",
-                marginTop: "22px",
-                color: "#8c8679",
-                fontSize: "12.5px",
-                fontWeight: 700,
-              }}
-            >
-              <span>{formatDate(featuredBlogPost.date)}</span>
-              <span aria-hidden="true">·</span>
-              <span>{featuredBlogPost.readTime}</span>
-              <span style={{ marginLeft: "auto", color: "#f0dda8" }}>Đọc tiếp</span>
-            </div>
-          </article>
-        </Link>
+            <article style={{ padding: "clamp(22px, 4vw, 42px)" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  borderRadius: "999px",
+                  padding: "6px 10px",
+                  color: "#241a0a",
+                  background: "#f0dda8",
+                  fontSize: "11px",
+                  fontWeight: 900,
+                }}
+              >
+                Nổi bật · {featuredPost.category}
+              </span>
+              <h2
+                style={{
+                  margin: "16px 0 0",
+                  fontSize: "clamp(26px, 4vw, 40px)",
+                  lineHeight: 1.12,
+                  fontWeight: 900,
+                  letterSpacing: 0,
+                }}
+              >
+                {featuredPost.title}
+              </h2>
+              <p style={{ margin: "14px 0 0", color: "#c5c0b6", fontSize: "15px", lineHeight: 1.7 }}>
+                {featuredPost.description}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  marginTop: "22px",
+                  color: "#8c8679",
+                  fontSize: "12.5px",
+                  fontWeight: 700,
+                }}
+              >
+                <span>{formatDate(featuredPost.publishedAt)}</span>
+                <span aria-hidden="true">·</span>
+                <span>{featuredPost.readTime}</span>
+                <span style={{ marginLeft: "auto", color: "#f0dda8" }}>Đọc tiếp</span>
+              </div>
+            </article>
+          </Link>
+        ) : null}
 
         <section
           aria-label="Danh sách bài viết"
@@ -211,14 +370,29 @@ export default function BlogPage() {
                 background: "rgba(255,255,255,.035)",
               }}
             >
-              <div
-                role="img"
-                aria-label={post.imageAlt}
+              <span
                 style={{
+                  position: "relative",
+                  display: "block",
                   height: "164px",
-                  background: `linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.45)), url('${post.image}') center/cover`,
                 }}
-              />
+              >
+                <Image
+                  src={post.image}
+                  alt={post.imageAlt}
+                  fill
+                  sizes="(max-width: 767px) 100vw, 33vw"
+                  style={{ objectFit: "cover" }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.45))",
+                  }}
+                />
+              </span>
               <article style={{ padding: "16px" }}>
                 <span style={{ color: "#d4b26a", fontSize: "11px", fontWeight: 900 }}>
                   {post.category}
@@ -230,12 +404,27 @@ export default function BlogPage() {
                   {post.description}
                 </p>
                 <div style={{ marginTop: "14px", color: "#8c8679", fontSize: "12px", fontWeight: 700 }}>
-                  {formatDate(post.date)} · {post.readTime}
+                  {formatDate(post.publishedAt)} · {post.readTime}
                 </div>
               </article>
             </Link>
           ))}
         </section>
+
+        {!posts.length ? (
+          <div
+            style={{
+              marginTop: "18px",
+              border: "1px dashed rgba(212,178,106,.26)",
+              borderRadius: "8px",
+              padding: "24px",
+              color: "#c5c0b6",
+              textAlign: "center",
+            }}
+          >
+            Chưa có bài viết phù hợp.
+          </div>
+        ) : null}
       </section>
     </main>
   );

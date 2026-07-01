@@ -20,7 +20,10 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminSensitiveBillsContract,
+  CancelGuestBookingContract,
   CancelMemberBookingContract,
+  AdminContentMutationContract,
+  AdminContentsContract,
   ClaimGuestCouponContract,
   CreateGuestBookingContract,
   CreateMemberBillContract,
@@ -42,14 +45,25 @@ import {
   PublicCastDetailContract,
   PublicAreasContract,
   PublicCastsContract,
+  PublicContentDetailContract,
+  PublicContentsContract,
   PublicCouponsContract,
   PublicRankingsContract,
   PublicStoreDetailContract,
   PublicStoresContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
-import { CancelBookingDto } from './dto/cancel-booking.dto';
+import {
+  CancelBookingDto,
+  CancelGuestBookingDto,
+} from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import {
+  AdminContentQueryDto,
+  CreateAdminContentDto,
+  PublicContentQueryDto,
+  UpdateAdminContentDto,
+} from './dto/content.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
@@ -133,6 +147,56 @@ export class NightlifeDataController {
     return this.nightlifeDataService.deleteAdminRankingConfig(rankingId);
   }
 
+  @PublicContentsContract()
+  @Get('contents')
+  listPublicContents(@Query() query: PublicContentQueryDto) {
+    return this.nightlifeDataService.listPublicContents(query);
+  }
+
+  @PublicContentDetailContract()
+  @Get('contents/:slug')
+  getPublicContentBySlug(@Param('slug') slug: string) {
+    return this.nightlifeDataService.getPublicContentBySlug(slug);
+  }
+
+  @AdminContentsContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/contents')
+  listAdminContents(@Query() query: AdminContentQueryDto) {
+    return this.nightlifeDataService.listAdminContents(query);
+  }
+
+  @AdminContentMutationContract('create')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/contents')
+  createAdminContent(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateAdminContentDto,
+  ) {
+    return this.nightlifeDataService.createAdminContent(request.user, dto);
+  }
+
+  @AdminContentMutationContract('update')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/contents/:contentId')
+  updateAdminContent(
+    @Param('contentId') contentId: string,
+    @Body() dto: UpdateAdminContentDto,
+  ) {
+    return this.nightlifeDataService.updateAdminContent(contentId, dto);
+  }
+
+  @AdminContentMutationContract('delete')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('admin/contents/:contentId')
+  deleteAdminContent(@Param('contentId') contentId: string) {
+    return this.nightlifeDataService.deleteAdminContent(contentId);
+  }
+
   @PublicStoresContract()
   @Get('stores')
   listPublicStores(@Query() query: PublicDiscoveryQueryDto) {
@@ -167,6 +231,15 @@ export class NightlifeDataController {
   @Post('bookings')
   createGuestBooking(@Body() dto: CreateBookingDto) {
     return this.nightlifeDataService.createGuestBooking(dto);
+  }
+
+  @CancelGuestBookingContract()
+  @Patch('bookings/:bookingId/cancel')
+  cancelGuestBooking(
+    @Param('bookingId') bookingId: string,
+    @Body() dto: CancelGuestBookingDto,
+  ) {
+    return this.nightlifeDataService.cancelGuestBooking(bookingId, dto);
   }
 
   @CreatePartnerRequestContract()

@@ -1,155 +1,198 @@
-"use client";
-import { Venue, Cast, FAQ } from '@/types';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
-import { MockItem } from '@/types';
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
+import { absoluteSiteUrl } from "@/lib/site";
 
-  export default function Page() {
-    const onSearch: MockItem | undefined = undefined;
-    const count = 3;
+export const metadata: Metadata = {
+  title: "Tour nightlife và trải nghiệm đêm",
+  description:
+    "Gợi ý tour nightlife theo khu vực, itinerary mẫu và cách gửi yêu cầu tư vấn tour qua Vietyoru.",
+  alternates: {
+    canonical: "/tour",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
-    const tours: MockItem[] = [
-      { name: 'Tour đêm Tây Hồ', info: '3 điểm · 4 giờ · có hướng dẫn viên', price: '1.5tr / người', img: "url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#5d3da8,#3a1f6e)" },
-      { name: 'Phố cổ & Ẩm thực đêm', info: '5 điểm · 3 giờ · tự do', price: '800K / người', img: "url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b)" },
-      { name: 'Bar Hopping Hà Nội', info: '4 quán · 5 giờ · free 1 drink/quán', price: '2.5tr / người', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#e0598a,#a8336b)" }
-    ];
+const tours = [
+  {
+    name: "Tour đêm Tây Hồ",
+    area: "Hà Nội",
+    duration: "4 giờ",
+    price: "từ 1.500.000đ / khách",
+    image:
+      "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=78",
+    imageAlt: "Không gian lounge ban đêm tại khu Tây Hồ",
+    itinerary: ["Lounge mở đầu", "Club hoặc bar có bàn nhóm", "Điểm ăn khuya gần hồ"],
+  },
+  {
+    name: "Phố cổ và ẩm thực đêm",
+    area: "Hà Nội",
+    duration: "3 giờ",
+    price: "từ 800.000đ / khách",
+    image:
+      "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=1200&q=78",
+    imageAlt: "Đồ uống trong không gian nightlife",
+    itinerary: ["Điểm hẹn phố cổ", "Quán đồ uống nhẹ", "Ăn khuya theo khẩu vị nhóm"],
+  },
+  {
+    name: "Bar hopping Quận 1",
+    area: "TP.HCM",
+    duration: "5 giờ",
+    price: "từ 2.500.000đ / khách",
+    image:
+      "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=1200&q=78",
+    imageAlt: "Quầy bar sáng đèn trong buổi tối",
+    itinerary: ["Rooftop trung tâm", "Bar cocktail", "Club hoặc lounge cuối đêm"],
+  },
+];
 
-    return (
-      <React.Fragment>
-        <div className="block md:hidden">
+export default function TourPage() {
+  const structuredData = jsonLdGraph([
+    breadcrumbJsonLd(
+      [
+        { name: "Trang chủ", path: "/" },
+        { name: "Tour", path: "/tour" },
+      ],
+      "/tour",
+    ),
+    {
+      "@type": "ItemList",
+      "@id": `${absoluteSiteUrl("/tour")}#tour-list`,
+      name: "Tour nightlife Vietyoru",
+      itemListElement: tours.map((tour, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "TouristTrip",
+          name: tour.name,
+          description: `${tour.area} · ${tour.duration} · ${tour.price}`,
+          image: tour.image,
+        },
+      })),
+    },
+  ]);
 
-<>
-<>
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#0c0c0f",
+        color: "#f3f0ea",
+        padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)",
+      }}
+    >
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <section style={{ maxWidth: "1180px", margin: "0 auto" }}>
+        <p style={{ margin: 0, color: "#d4b26a", fontSize: 12, fontWeight: 850, letterSpacing: "1.8px", textTransform: "uppercase" }}>
+          Tour
+        </p>
+        <h1 style={{ margin: "8px 0 0", maxWidth: 760, fontSize: "clamp(34px, 6vw, 58px)", lineHeight: 1.04, fontWeight: 950 }}>
+          Tour nightlife theo khu vực
+        </h1>
+        <p style={{ maxWidth: 720, margin: "16px 0 0", color: "#c5c0b6", fontSize: 16, lineHeight: 1.75 }}>
+          Các lịch trình dưới đây là gói tư vấn mẫu để khách chọn hướng đi trước khi admin kiểm tra tình trạng quán, bàn, cast và ưu đãi trong ngày.
+        </p>
 
+        <section
+          aria-label="Danh sách tour"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: 16,
+            marginTop: 28,
+          }}
+        >
+          {tours.map((tour) => (
+            <article
+              key={tour.name}
+              style={{
+                border: "1px solid rgba(212,178,106,.22)",
+                borderRadius: 8,
+                overflow: "hidden",
+                background: "rgba(255,255,255,.035)",
+              }}
+            >
+              <div style={{ position: "relative", minHeight: 190 }}>
+                <Image
+                  src={tour.image}
+                  alt={tour.imageAlt}
+                  fill
+                  sizes="(max-width: 767px) 100vw, 33vw"
+                  style={{ objectFit: "cover" }}
+                />
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(180deg,rgba(12,12,15,.02),rgba(12,12,15,.58))",
+                  }}
+                />
+              </div>
+              <div style={{ padding: 18 }}>
+                <div style={{ color: "#d4b26a", fontSize: 12, fontWeight: 900 }}>
+                  {tour.area} · {tour.duration}
+                </div>
+                <h2 style={{ margin: "8px 0 0", fontSize: 22, lineHeight: 1.25, fontWeight: 900 }}>
+                  {tour.name}
+                </h2>
+                <div style={{ marginTop: 8, color: "#f0dda8", fontSize: 14, fontWeight: 850 }}>
+                  {tour.price}
+                </div>
+                <ol style={{ margin: "14px 0 0", paddingLeft: 18, color: "#d7d0c3", lineHeight: 1.7 }}>
+                  {tour.itinerary.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ol>
+              </div>
+            </article>
+          ))}
+        </section>
 
-
-
-</>
-
-<div style={{"width":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
-
-  <div style={{"margin":"0 auto","width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.16)","color":"#1f1d29","border":"1px solid #e3e0da"}}>
-    <div style={{"background":"#fff","padding":"8px 18px 12px","display":"flex","alignItems":"center","gap":"12px"}}><Link href="/" style={{"fontSize":"22px","color":"#5b5870","lineHeight":"1"}}>‹</Link><span style={{"fontWeight":"800","fontSize":"16px"}}>Tour & Trải nghiệm</span></div>
-    <div style={{"padding":"0 18px 12px","background":"#fff"}}><div style={{"display":"flex","alignItems":"center","gap":"9px","background":"#f3f2f5","borderRadius":"12px","padding":"11px 13px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/9A98A6/search.png" style={{"width":"16px","height":"16px","display":"inline-block"}} alt="" /><input onInput={onSearch} placeholder="Tìm tour..." style={{"flex":"1","border":"none","fontSize":"13px","color":"#1f1d29","background":"transparent"}} /></div></div>
-
-    <div style={{"padding":"12px 18px 6px","fontSize":"12.5px","color":"#5b5870"}}><b style={{"color":"#1f1d29"}}>{count} tour</b> phù hợp</div>
-    <div style={{"padding":"0 18px 12px","display":"flex","flexDirection":"column","gap":"12px"}}>
-      {tours?.map((t, index) => (<React.Fragment key={index}>
-        <div style={{"display":"flex","gap":"12px","background":"#fff","borderRadius":"14px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
-          <div style={{"width":"108px","flex":"none","background":t.img,"position":"relative"}}></div>
-          <div style={{"padding":"11px 12px 11px 0","flex":"1","minWidth":"0"}}>
-            <div style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"fontWeight":"600","fontSize":"14px"}}>{t.name}</span></div>
-            <div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"2px"}}>{t.info}</div>
-            <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginTop":"8px"}}><span style={{"fontSize":"12px","fontWeight":"600"}}>từ {t.price}</span></div>
+        <section
+          style={{
+            marginTop: 26,
+            border: "1px solid rgba(212,178,106,.26)",
+            borderRadius: 8,
+            padding: "clamp(18px, 4vw, 26px)",
+            background: "rgba(212,178,106,.08)",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
+          <div style={{ flex: "1 1 340px" }}>
+            <h2 style={{ margin: 0, fontSize: 22, lineHeight: 1.25, fontWeight: 900 }}>
+              Cần chốt tour theo ngày đi
+            </h2>
+            <p style={{ margin: "8px 0 0", color: "#efe4c9", lineHeight: 1.65 }}>
+              Giá, điểm dừng và số lượng khách cần admin xác nhận lại với từng quán trước khi phát hành tour public chính thức.
+            </p>
           </div>
-        </div>
-      </React.Fragment>))}
-    </div>
-
-    <div style={{"height":"64px","background":"#fff","borderTop":"1px solid #ececec","display":"flex","alignItems":"center","justifyContent":"space-around","paddingBottom":"6px"}}>
-      <Link href="/" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/home.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Trang chủ</span></Link>
-      <Link href="/danh-sach-quan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/search.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tìm quán</span></Link>
-      <Link href="/uu-dai" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/gift.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Ưu đãi</span></Link>
-      <Link href="/lich-su-dat-cho" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/calendar.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Đặt chỗ</span></Link>
-      <Link href="/tai-khoan" style={{"display":"flex","flexDirection":"column","alignItems":"center","gap":"3px"}}><Image width={100} height={100} src="https://img.icons8.com/ios/100/B6B3C0/user.png" style={{"width":"21px","height":"21px","display":"inline-block"}} alt="" /><span style={{"fontSize":"10px","color":"#b6b3c0"}}>Tài khoản</span></Link>
-    </div>
-  </div>
-</div>
-</>
-
-</div>
-        <div className="hidden md:block">
-
-<>
-<>
-
-
-
-
-</>
-
-<div style={{"width":"100%","minWidth":"100%","minHeight":"100vh","boxSizing":"border-box","padding":"0px","background":"#e7e5df","fontFamily":"var(--nl-font-sans)"}}>
-
-  <div style={{"width":"100%","background":"#f5f4f2","borderRadius":"0px","overflow":"hidden","boxShadow":"0 12px 40px rgba(0,0,0,.10)","color":"#1f1d29"}}>
-    {/* header */}
-    <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","padding":"18px 34px","background":"#fff","borderBottom":"1px solid #ececec"}}>
-      <div style={{"display":"flex","alignItems":"center","gap":"34px"}}>
-        <Link href="/" style={{"fontWeight":"800","fontSize":"20px","color":"#6d28d9"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-        <div style={{"display":"flex","gap":"22px","fontSize":"14px","color":"#5b5870","fontWeight":"500"}}><Link href="/" className="lk">Trang chủ</Link><Link href="/danh-sach-quan" className="lk">Tìm quán</Link><Link href="/danh-sach-cast" className="lk">Cast</Link><Link href="/xep-hang" className="lk">Bảng xếp hạng</Link><Link href="/tour" style={{"color":"#6d28d9","fontWeight":600}}>Tour</Link><Link href="/blog" className="lk">Blog</Link></div>
-      </div>
-      <div style={{"display":"flex","alignItems":"center","gap":"14px"}}><div style={{"fontSize":"13px","color":"#6d28d9","background":"#f1ebff","borderRadius":"20px","padding":"6px 12px","fontWeight":"600"}}>VI · 日本語</div><Link href="/dang-nhap" className="lk" style={{"fontSize":"13px","color":"#5b5870"}}>Đăng nhập</Link><div style={{"fontSize":"13px","fontWeight":"600","color":"#fff","background":"#6d28d9","borderRadius":"22px","padding":"9px 18px"}}>Đăng ký đối tác</div></div>
-    </div>
-
-    <div style={{"padding":"40px 34px","background":"#fff"}}>
-      <div style={{"fontWeight":"700","fontSize":"24px","marginBottom":"20px"}}>Tour & Trải nghiệm</div>
-      
-      {/* results */}
-      <div style={{"display":"grid","gridTemplateColumns":"repeat(4,1fr)","gap":"20px","minHeight":"50vh"}}>
-        {tours?.map((t, index) => (<React.Fragment key={index}>
-          <div className="card" style={{"background":"#fff","borderRadius":"16px","overflow":"hidden","boxShadow":"0 3px 12px rgba(40,20,60,.06)","cursor":"pointer"}}>
-            <div style={{"height":"160px","background":t.img,"position":"relative"}}>
-            </div>
-            <div style={{"padding":"16px"}}>
-              <div style={{"fontWeight":"600","fontSize":"16px"}}>{t.name}</div>
-              <div style={{"fontSize":"13px","color":"#8a879a","marginTop":"6px"}}>{t.info}</div>
-              <div style={{"display":"flex","alignItems":"center","justifyContent":"space-between","marginTop":"12px"}}><span style={{"fontSize":"14px","color":"#1f1d29","fontWeight":"600"}}>từ {t.price}</span></div>
-            </div>
-          </div>
-        </React.Fragment>))}
-      </div>
-    </div>
-  </div>
-
-  <div style={{"background":"#fff","borderTop":"1px solid #ececec","padding":"60px 0 20px","fontFamily":"var(--nl-font-sans)","color":"#5b5870"}}>
-    <div style={{"maxWidth":"1100px","margin":"0 auto","padding":"0 34px"}}>
-      <div style={{"display":"flex","justifyContent":"space-between","gap":"40px","marginBottom":"60px"}}>
-        <div style={{"maxWidth":"300px"}}>
-          <Link href="/" style={{"fontWeight":"800","fontSize":"28px","color":"#6d28d9","textDecoration":"none"}}>nightlife<span style={{"color":"#1f1d29"}}>.hn</span></Link>
-          <div style={{"fontSize":"14px","color":"#5b5870","marginTop":"16px","lineHeight":"1.6"}}>Khám phá cuộc sống về đêm tại Việt Nam</div>
-          <div style={{"display":"flex","gap":"10px","marginTop":"20px"}}>
-            <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/facebook-new.png" style={{"width":"18px","height":"18px"}} alt="FB" /></a>
-            <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/tiktok.png" style={{"width":"18px","height":"18px"}} alt="TikTok" /></a>
-            <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/instagram-new.png" style={{"width":"18px","height":"18px"}} alt="IG" /></a>
-            <a href="#" style={{"width":"36px","height":"36px","borderRadius":"10px","background":"#f5f4f2","display":"flex","alignItems":"center","justifyContent":"center","color":"#5b5870"}}><Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/5b5870/youtube-play.png" style={{"width":"18px","height":"18px"}} alt="YT" /></a>
-          </div>
-        </div>
-        <div style={{"display":"flex","justifyContent":"space-between","flex":"1","maxWidth":"600px"}}>
-          <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-            <Link href="/danh-sach-quan" className="lk" style={{"color":"#1f1d29"}}>Tìm quán</Link>
-            <Link href="/uu-dai" className="lk" style={{"color":"#1f1d29"}}>Ưu đãi</Link>
-            <Link href="/blog" className="lk" style={{"color":"#1f1d29"}}>Blog</Link>
-          </div>
-          <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-            <Link href="/danh-sach-cast" className="lk" style={{"color":"#1f1d29"}}>Cast</Link>
-            <Link href="/tour" className="lk" style={{"color":"#1f1d29"}}>Tour</Link>
-            <Link href="/dang-ky-doi-tac" className="lk" style={{"color":"#1f1d29"}}>Đăng ký đối tác</Link>
-          </div>
-          <div style={{"display":"flex","flexDirection":"column","gap":"20px","fontSize":"14px","fontWeight":"500"}}>
-            <Link href="/xep-hang" className="lk" style={{"color":"#1f1d29"}}>Bảng xếp hạng</Link>
-            <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Chính sách BM</Link>
-            <Link href="/legal" className="lk" style={{"color":"#1f1d29"}}>Điều khoản DV</Link>
-          </div>
-        </div>
-      </div>
-      <div style={{"background":"#fef1f2","border":"1px solid #fecdd3","borderRadius":"12px","padding":"16px 20px","color":"#be123c","fontSize":"13.5px","display":"flex","alignItems":"center","justifyContent":"center","gap":"10px","marginBottom":"40px","textAlign":"center"}}>
-        <Image width={100} height={100} src="https://img.icons8.com/color/96/high-importance--v1.png" style={{"width":"20px","height":"20px"}} alt="!" />
-        <span><b style={{"fontWeight":"700"}}>Cảnh báo:</b> Website này chỉ dành cho người <b style={{"fontWeight":"700"}}>từ 18 tuổi trở lên</b>. Bằng cách tiếp tục sử dụng, bạn xác nhận đã đủ điều kiện độ tuổi theo quy định pháp luật Việt Nam.</span>
-      </div>
-      <div style={{"borderTop":"1px solid #ececec","paddingTop":"24px","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center","gap":"6px","fontSize":"12px","color":"#9a98a6","position":"relative"}}>
-        <div>© 2026 Nightlife Hà Nội. Bảo lưu mọi quyền.</div>
-        <div>v2.0.0 • Nightlife Platform</div>
-        <div onClick={() => window.scrollTo({top:0,behavior:'smooth'})} style={{"position":"absolute","right":"0","top":"24px","width":"44px","height":"44px","borderRadius":"50%","background":"#fb4b81","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","cursor":"pointer","boxShadow":"0 4px 12px rgba(251,75,129,.3)"}}>
-          <Image width={100} height={100} src="https://img.icons8.com/ios-filled/100/ffffff/up.png" style={{"width":"24px","height":"24px"}} alt="Top" />
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-</>
-
-</div>
-      </React.Fragment>
-    );
-  }
-
+          <Link
+            href="/dang-ky-doi-tac"
+            style={{
+              minHeight: 42,
+              borderRadius: 8,
+              background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
+              color: "#241a0a",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0 18px",
+              fontWeight: 900,
+              textDecoration: "none",
+            }}
+          >
+            Gửi yêu cầu tư vấn
+          </Link>
+        </section>
+      </section>
+    </main>
+  );
+}

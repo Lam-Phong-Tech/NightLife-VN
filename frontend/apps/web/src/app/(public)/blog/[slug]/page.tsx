@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { blogPosts, getBlogPost } from "@/lib/content/blog";
+import { articleJsonLd, breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
+import { getBlogPost, getPublishedBlogPosts } from "@/lib/content/blog";
 import { absoluteSiteUrl } from "@/lib/site";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export const revalidate = 300;
+export const dynamicParams = false;
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
@@ -15,18 +20,23 @@ const formatDate = (value: string) =>
     year: "numeric",
   }).format(new Date(value));
 
-export function generateStaticParams() {
-  return blogPosts.map((post) => ({ slug: post.slug }));
+export async function generateStaticParams() {
+  const posts = await getPublishedBlogPosts();
+  return posts.map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await getBlogPost(slug);
 
   if (!post) {
     return {
       title: "Không tìm thấy bài viết",
       description: "Bài viết này chưa tồn tại hoặc đã được gỡ khỏi Vietyoru.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -37,13 +47,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: post.description,
     alternates: {
       canonical,
+      languages: {
+        vi: canonical,
+        "x-default": canonical,
+      },
     },
+    robots: post.noindex
+      ? {
+          index: false,
+          follow: false,
+        }
+      : undefined,
     openGraph: {
       title: `${post.title} | Vietyoru`,
       description: post.description,
       type: "article",
       url: absoluteSiteUrl(canonical),
-      publishedTime: post.date,
+      publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       authors: [post.author],
       tags: post.tags,
@@ -60,14 +80,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await getBlogPost(slug);
 
   if (!post) notFound();
 
-  const relatedPosts = blogPosts
-    .filter((item) => item.slug !== post.slug)
+  const allPosts = await getPublishedBlogPosts();
+  const relatedPosts = allPosts
+    .filter((item) => item.slug !== post.slug && !item.noindex)
     .filter((item) => item.category === post.category || item.tags.some((tag) => post.tags.includes(tag)))
     .slice(0, 3);
+  const structuredData = jsonLdGraph([
+    articleJsonLd(post),
+    breadcrumbJsonLd(
+      [
+        { name: "Trang chủ", path: "/" },
+        { name: "Blog", path: "/blog" },
+        { name: post.title, path: `/blog/${post.slug}` },
+      ],
+      `/blog/${post.slug}`,
+    ),
+  ]);
 
   return (
     <main
@@ -78,6 +110,11 @@ export default async function BlogDetailPage({ params }: PageProps) {
         padding: "clamp(20px, 5vw, 54px) clamp(16px, 5vw, 48px)",
       }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       <article style={{ maxWidth: "980px", margin: "0 auto" }}>
         <nav style={{ marginBottom: "18px", color: "#8c8679", fontSize: "13px", fontWeight: 700 }}>
           <Link href="/" style={{ color: "#8c8679", textDecoration: "none" }}>
@@ -132,23 +169,39 @@ export default async function BlogDetailPage({ params }: PageProps) {
           >
             <span>{post.author}</span>
             <span aria-hidden="true">·</span>
-            <time dateTime={post.date}>{formatDate(post.date)}</time>
+            <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
             <span aria-hidden="true">·</span>
             <span>{post.readTime}</span>
           </div>
         </header>
 
         <div
-          role="img"
-          aria-label={post.imageAlt}
           style={{
+            position: "relative",
             minHeight: "clamp(260px, 48vw, 500px)",
             marginTop: "26px",
             borderRadius: "8px",
             border: "1px solid rgba(212,178,106,.22)",
-            background: `linear-gradient(180deg,rgba(12,12,15,.04),rgba(12,12,15,.48)), url('${post.image}') center/cover`,
+            overflow: "hidden",
           }}
-        />
+        >
+          <Image
+            src={post.image}
+            alt={post.imageAlt}
+            fill
+            priority
+            sizes="(max-width: 767px) 100vw, 980px"
+            style={{ objectFit: "cover" }}
+          />
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(180deg,rgba(12,12,15,.04),rgba(12,12,15,.48))",
+            }}
+          />
+        </div>
 
         <div
           className="nl-blog-detail-layout"
@@ -218,12 +271,21 @@ export default async function BlogDetailPage({ params }: PageProps) {
                   <span
                     aria-hidden="true"
                     style={{
+                      position: "relative",
                       width: "64px",
                       height: "64px",
                       borderRadius: "8px",
-                      background: `url('${item.image}') center/cover`,
+                      overflow: "hidden",
                     }}
-                  />
+                  >
+                    <Image
+                      src={item.image}
+                      alt=""
+                      fill
+                      sizes="64px"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </span>
                   <span style={{ minWidth: 0 }}>
                     <strong style={{ display: "block", fontSize: "13px", lineHeight: 1.35 }}>
                       {item.title}

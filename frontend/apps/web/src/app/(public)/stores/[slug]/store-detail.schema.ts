@@ -1,7 +1,7 @@
 import type { PublicStoreDetail, StoreOpeningHour } from "@/lib/api/store-detail";
+import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
+import { absoluteSiteUrl } from "@/lib/site";
 import { readableName } from "./store-detail.helpers";
-
-const baseUrl = "https://nightlife.hn";
 
 const schemaDayMap: Record<string, string> = {
   monday: "Monday",
@@ -11,6 +11,17 @@ const schemaDayMap: Record<string, string> = {
   friday: "Friday",
   saturday: "Saturday",
   sunday: "Sunday",
+};
+
+const schemaTypeByCategory: Record<string, string> = {
+  BAR: "BarOrPub",
+  CLUB: "NightClub",
+  LOUNGE: "BarOrPub",
+  GIRLS_BAR: "NightClub",
+  KARAOKE: "EntertainmentBusiness",
+  MASSAGE_SPA: "HealthAndBeautyBusiness",
+  RESTAURANT: "Restaurant",
+  CASINO: "Casino",
 };
 
 const openingSpec = (openingHours?: Record<string, StoreOpeningHour> | null) => {
@@ -35,13 +46,16 @@ export function buildStoreStructuredData(store: PublicStoreDetail) {
     .filter((item) => item.type === "IMAGE")
     .map((item) => item.url)
     .slice(0, 6);
-  const url = `${baseUrl}${store.seo.canonicalPath}`;
+  const canonicalPath = store.seo.canonicalPath || `/stores/${store.slug}`;
+  const url = absoluteSiteUrl(canonicalPath);
+  const storeName = readableName(store.name);
+  const businessType = schemaTypeByCategory[store.category] ?? "LocalBusiness";
 
-  return {
-    "@context": "https://schema.org",
-    "@type": "NightClub",
+  return jsonLdGraph([
+    {
+    "@type": ["LocalBusiness", businessType],
     "@id": `${url}#store`,
-    name: readableName(store.name),
+    name: storeName,
     description: store.seo.description,
     url,
     image: imageUrls.length ? imageUrls : undefined,
@@ -65,10 +79,22 @@ export function buildStoreStructuredData(store: PublicStoreDetail) {
     priceRange: store.priceReference.startingFromVnd
       ? `From ${store.priceReference.startingFromVnd} VND`
       : undefined,
+    event: store.campaigns.length
+      ? store.campaigns.map((campaign) => ({
+          "@type": "Event",
+          name: campaign.title,
+          description: campaign.description ?? undefined,
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          location: {
+            "@id": `${url}#store`,
+          },
+        }))
+      : undefined,
     hasOfferCatalog: store.activeCoupons.length
       ? {
           "@type": "OfferCatalog",
-          name: `Active coupons for ${readableName(store.name)}`,
+          name: `Active coupons for ${storeName}`,
           itemListElement: store.activeCoupons.map((coupon) => ({
             "@type": "Offer",
             name: coupon.name,
@@ -78,5 +104,14 @@ export function buildStoreStructuredData(store: PublicStoreDetail) {
           })),
         }
       : undefined,
-  };
+    },
+    breadcrumbJsonLd(
+      [
+        { name: "Trang chủ", path: "/" },
+        { name: "Tìm quán", path: "/danh-sach-quan" },
+        { name: storeName, path: canonicalPath },
+      ],
+      canonicalPath,
+    ),
+  ]);
 }

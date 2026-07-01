@@ -1,7 +1,15 @@
 import type { MetadataRoute } from "next";
-import { blogPosts } from "@/lib/content/blog";
-import { legalSections } from "@/lib/content/legal";
-import { discoveryApi } from "@/lib/api/discovery";
+import {
+  getBlogCategories,
+  getBlogTags,
+  getSitemapBlogPosts,
+  slugifyBlogTerm,
+} from "@/lib/content/blog";
+import {
+  discoveryApi,
+  type PublicCast,
+  type PublicStore,
+} from "@/lib/api/discovery";
 import { absoluteSiteUrl } from "@/lib/site";
 
 const staticRoutes: Array<{
@@ -13,18 +21,28 @@ const staticRoutes: Array<{
   { path: "/danh-sach-quan", changeFrequency: "daily", priority: 0.86 },
   { path: "/danh-sach-cast", changeFrequency: "daily", priority: 0.84 },
   { path: "/xep-hang", changeFrequency: "daily", priority: 0.78 },
-  { path: "/tour", changeFrequency: "weekly", priority: 0.66 },
   { path: "/uu-dai", changeFrequency: "daily", priority: 0.76 },
   { path: "/blog", changeFrequency: "weekly", priority: 0.72 },
-  { path: "/legal", changeFrequency: "monthly", priority: 0.36 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const [stores, casts] = await Promise.all([
-    discoveryApi.listStores({ limit: 50, sort: "priority" }),
-    discoveryApi.listCasts({ limit: 50, sort: "priority" }),
-  ]);
+  let stores: PublicStore[] = [];
+  let casts: PublicCast[] = [];
+
+  try {
+    [stores, casts] = await Promise.all([
+      discoveryApi.listStores({ limit: 50, sort: "priority" }),
+      discoveryApi.listCasts({ limit: 50, sort: "priority" }),
+    ]);
+  } catch {
+    stores = [];
+    casts = [];
+  }
+
+  const blogPosts = await getSitemapBlogPosts();
+  const blogCategories = getBlogCategories(blogPosts);
+  const blogTags = getBlogTags(blogPosts);
 
   return [
     ...staticRoutes.map((route) => ({
@@ -51,11 +69,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: post.featured ? 0.72 : 0.64,
     })),
-    ...legalSections.map((section) => ({
-      url: absoluteSiteUrl(`/legal/${section.slug}`),
-      lastModified: new Date(section.updatedAt),
-      changeFrequency: "monthly" as const,
-      priority: 0.32,
+    ...blogCategories.map((category) => ({
+      url: absoluteSiteUrl(`/blog/category/${slugifyBlogTerm(category)}`),
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.58,
+    })),
+    ...blogTags.map((tag) => ({
+      url: absoluteSiteUrl(`/blog/tag/${slugifyBlogTerm(tag)}`),
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.54,
     })),
   ];
 }

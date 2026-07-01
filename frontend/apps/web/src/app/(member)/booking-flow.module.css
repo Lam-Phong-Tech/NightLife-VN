@@ -23,7 +23,8 @@
   overflow: hidden;
   border: 1px solid rgba(212, 178, 106, 0.18);
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.01)), #0c0c0f;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.01)), #0c0c0f;
   box-shadow: 0 32px 76px -38px rgba(0, 0, 0, 0.72);
 }
 
@@ -844,12 +845,14 @@
 
 .historyActions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
 
 .historyActions > * {
-  flex: 1;
+  flex: 1 1 98px;
+  min-width: 0;
 }
 
 .historyFooter {

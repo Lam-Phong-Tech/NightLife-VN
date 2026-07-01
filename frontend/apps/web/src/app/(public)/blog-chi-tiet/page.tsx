@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { featuredBlogPost } from "@/lib/content/blog";
+import { getFeaturedBlogPost } from "@/lib/content/blog";
 
-export default function LegacyBlogDetailPage() {
+export default async function LegacyBlogDetailPage() {
+  const featuredBlogPost = await getFeaturedBlogPost();
   redirect(`/blog/${featuredBlogPost.slug}`);
 }

@@ -13,7 +13,10 @@ import {
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
-import { CancelBookingDto } from './dto/cancel-booking.dto';
+import {
+  CancelBookingDto,
+  CancelGuestBookingDto,
+} from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -623,6 +626,118 @@ const partnerRequestExample = {
   message: 'Partner request submitted for admin review',
 };
 
+const contentExample = {
+  id: 'content_01',
+  title: 'Hướng dẫn trọn vẹn một đêm ở Tây Hồ',
+  slug: 'tay-ho-night-guide',
+  type: 'BLOG',
+  status: 'PUBLISHED',
+  excerpt: 'Lộ trình gợi ý cho khách muốn đi lounge, club và ăn khuya ở Tây Hồ.',
+  body: null,
+  metadata: {
+    category: 'Cẩm nang khu vực',
+    tags: ['Tây Hồ', 'Lounge'],
+    image:
+      'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1200&q=78',
+    imageAlt: 'Không gian lounge ban đêm với ánh đèn ấm',
+    noindex: false,
+  },
+  noindex: false,
+  publishedAt: '2026-06-21T00:00:00.000Z',
+  createdAt: '2026-06-20T10:00:00.000Z',
+  updatedAt: '2026-06-30T10:00:00.000Z',
+};
+
+export function PublicContentsContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public content: list published blog/policy content',
+      description:
+        'Auth guard: none. Returns PUBLISHED Content records for blog and policy pages. Draft, archived, deleted, and future-published records are excluded.',
+    }),
+    ApiQuery({
+      name: 'type',
+      required: false,
+      description: 'Content type: BLOG or POLICY.',
+      example: 'BLOG',
+    }),
+    ApiQuery({ name: 'q', required: false, example: 'tay ho' }),
+    ApiQuery({ name: 'limit', required: false, example: '50' }),
+    ApiOkResponse({
+      description: 'Published content list.',
+      schema: { example: { data: [contentExample] } },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid content filter.',
+      schema: { example: publicDiscoveryBadRequestExample },
+    }),
+  );
+}
+
+export function PublicContentDetailContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Public content: get published content by slug',
+      description:
+        'Auth guard: none. Returns one PUBLISHED Content record by slug for public blog/policy detail pages.',
+    }),
+    ApiParam({
+      name: 'slug',
+      description: 'Public content slug.',
+      example: 'tay-ho-night-guide',
+    }),
+    ApiOkResponse({
+      description: 'Published content detail.',
+      schema: { example: contentExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Content does not exist or is not published.',
+      schema: { example: { ...notFoundExample, message: 'Content not found' } },
+    }),
+  );
+}
+
+export function AdminContentsContract() {
+  return guardedListContract(
+    'Admin content: list blog and policy records',
+    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists non-deleted Content records with type/status/search filters for CMS review.',
+    contentExample,
+  );
+}
+
+export function AdminContentMutationContract(action: 'create' | 'update' | 'delete') {
+  const summaries = {
+    create: 'Admin content: create blog or policy record',
+    update: 'Admin content: update blog or policy record',
+    delete: 'Admin content: soft delete blog or policy record',
+  };
+
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: summaries[action],
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Mutates Content records used by public blog and legal/policy pages.',
+    }),
+    ApiOkResponse({
+      description: 'Content mutation result.',
+      schema: { example: contentExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Content does not exist.',
+      schema: { example: { ...notFoundExample, message: 'Content not found' } },
+    }),
+  );
+}
+
 export function PublicAreasContract() {
   return applyDecorators(
     ApiOperation({
@@ -929,6 +1044,49 @@ export function CreateGuestBookingContract() {
     ApiNotFoundResponse({
       description: 'Store or cast does not exist or is not bookable.',
       schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function CancelGuestBookingContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Booking action: guest cancels own booking by phone',
+      description:
+        'Auth guard: none. Verifies the submitted phone against the guest booking contact snapshot, marks a guest booking as CANCELLED only when it is at least 1 hour before scheduledAt, writes AuditLog action BOOKING_CANCELLED with reason/beforeStatus/afterStatus, then sends P0 Telegram admin notification using template telegram.admin.booking.cancelled.v1.',
+    }),
+    ApiParam({ name: 'bookingId', example: 'booking_01' }),
+    ApiBody({ type: CancelGuestBookingDto }),
+    ApiOkResponse({
+      description: 'Guest booking cancelled.',
+      schema: { example: cancelledBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid cancel request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiNotFoundResponse({
+      description:
+        'Booking does not exist, is not a guest booking, or phone does not match.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Booking not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Booking cannot be cancelled in its current state or is inside the 1 hour cutoff.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message:
+            'Booking can only be cancelled at least 1 hour before scheduled time',
+          error: 'Unprocessable Entity',
+        },
+      },
     }),
   );
 }

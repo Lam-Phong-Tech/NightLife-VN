@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { legalPlaceholderNotice, legalSections } from "@/lib/content/legal";
+import { getPublishedLegalSections, legalPlaceholderNotice } from "@/lib/content/legal";
 
-export const metadata: Metadata = {
-  title: "Pháp lý và chính sách",
-  description:
-    "Các trang chính sách placeholder của Vietyoru: bảo mật, điều khoản sử dụng và chính sách hoạt động.",
-  alternates: {
-    canonical: "/legal",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const legalSections = await getPublishedLegalSections();
+  const shouldNoindex = legalSections.length === 0 || legalSections.some((section) => section.noindex);
+
+  return {
+    title: "Pháp lý và chính sách",
+    description:
+      "Các trang chính sách của Vietyoru: bảo mật, điều khoản sử dụng và chính sách hoạt động.",
+    alternates: {
+      canonical: "/legal",
+    },
+    robots: {
+      index: !shouldNoindex,
+      follow: !shouldNoindex,
+    },
+  };
+}
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
@@ -18,7 +27,9 @@ const formatDate = (value: string) =>
     year: "numeric",
   }).format(new Date(value));
 
-export default function LegalPage() {
+export default async function LegalPage() {
+  const legalSections = await getPublishedLegalSections();
+
   return (
     <main
       style={{

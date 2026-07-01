@@ -21,7 +21,7 @@ If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_ADMIN_CHAT_ID` is missing, the action still
 | Event             | Template key                          | Trigger                                                                                                    | CMS link                            | Web link           |
 | ----------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------ |
 | Booking new       | `telegram.admin.booking.created.v1`   | `POST /bookings`, `POST /member/bookings`                                                                  | `/admin?tab=bookings&bookingId=...` | `/stores/:slug`    |
-| Booking cancelled | `telegram.admin.booking.cancelled.v1` | `PATCH /member/bookings/:bookingId/cancel`                                                                 | `/admin?tab=bookings&bookingId=...` | `/stores/:slug`    |
+| Booking cancelled | `telegram.admin.booking.cancelled.v1` | `PATCH /bookings/:bookingId/cancel`, `PATCH /member/bookings/:bookingId/cancel`                            | `/admin?tab=bookings&bookingId=...` | `/stores/:slug`    |
 | Bill new          | `telegram.admin.bill.submitted.v1`    | `POST /member/bills`                                                                                       | `/admin?tab=bills&billId=...`       | `/stores/:slug`    |
 | Bill approved     | `telegram.admin.bill.verified.v1`     | `PATCH /admin/sensitive-bills/:billId/review`, `PATCH /operator/bills/:billId/review` with `approve=true`  | `/admin?tab=bills&billId=...`       | `/stores/:slug`    |
 | Bill rejected     | `telegram.admin.bill.rejected.v1`     | `PATCH /admin/sensitive-bills/:billId/review`, `PATCH /operator/bills/:billId/review` with `approve=false` | `/admin?tab=bills&billId=...`       | `/stores/:slug`    |
@@ -44,4 +44,4 @@ Web: http://localhost:3000/stores/luna-lounge
 
 The same structure is used for bill and partner request events, with fields adjusted to the event.
 
-Booking cancellation notifications are sent only after a successful `PATCH /member/bookings/:bookingId/cancel`. Requests inside the 1 hour cancellation cutoff return 422 and do not create an Admin cancellation notification.
+Booking cancellation notifications are sent only after a successful guest or member cancellation route. Requests inside the 1 hour cancellation cutoff return 422 and do not create an Admin cancellation notification.

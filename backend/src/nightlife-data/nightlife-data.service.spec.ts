@@ -710,6 +710,7 @@ describe('NightlifeDataService', () => {
         id: rankingId,
         targetName: 'Neon Club',
         targetSlug: 'neon-club',
+        targetImage: '/media/demo/stores/neon-club.jpg',
         cityCode: 'hn',
         category: 'CLUB',
         pinRank: 1,
@@ -1216,16 +1217,22 @@ describe('NightlifeDataService', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
+      userId: 'member-1',
+      guestId: 'guest-1',
       status: 'REQUESTED',
       scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
-      partySize: 2,
+      cancelledAt: null,
     });
     prisma.booking.update.mockResolvedValue({
       id: 'booking-1',
       status: 'CANCELLED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: new Date('2026-06-30T12:30:00.000Z'),
+      user: { id: 'member-1', displayName: 'Member', tier: 'REGULAR' },
       store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
       guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
     });
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
 
     await service.cancelMemberBooking(
       { id: 'member-1', role: 'USER' },
@@ -1241,9 +1248,11 @@ describe('NightlifeDataService', () => {
       },
       select: {
         id: true,
+        userId: true,
+        guestId: true,
         status: true,
         scheduledAt: true,
-        partySize: true,
+        cancelledAt: true,
       },
     });
     expect(prisma.booking.update).toHaveBeenCalledWith(
@@ -1255,6 +1264,33 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'member-1',
+        action: 'BOOKING_CANCELLED',
+        targetType: 'Booking',
+        targetId: 'booking-1',
+        beforeJson: expect.objectContaining({
+          id: 'booking-1',
+          status: 'REQUESTED',
+          userId: 'member-1',
+          guestId: 'guest-1',
+        }),
+        afterJson: expect.objectContaining({
+          id: 'booking-1',
+          status: 'CANCELLED',
+          userId: 'member-1',
+          guestId: 'guest-1',
+        }),
+        metadata: expect.objectContaining({
+          actorType: 'MEMBER',
+          actorId: 'member-1',
+          reason: 'Change of plans',
+          beforeStatus: 'REQUESTED',
+          afterStatus: 'CANCELLED',
+        }),
+      }),
+    });
     expect(
       adminNotificationService.notifyBookingCancelled,
     ).toHaveBeenCalledWith(
@@ -1270,9 +1306,11 @@ describe('NightlifeDataService', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-30T13:10:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
+      userId: 'member-1',
+      guestId: 'guest-1',
       status: 'REQUESTED',
       scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
-      partySize: 2,
+      cancelledAt: null,
     });
 
     await expect(
@@ -1286,9 +1324,77 @@ describe('NightlifeDataService', () => {
     );
 
     expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
     expect(
       adminNotificationService.notifyBookingCancelled,
     ).not.toHaveBeenCalled();
+  });
+
+  it('cancels a guest booking by matching the submitted phone', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      userId: null,
+      guestId: 'guest-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: null,
+    });
+    prisma.booking.update.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CANCELLED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: new Date('2026-06-30T12:30:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    });
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
+
+    await service.cancelGuestBooking('booking-1', {
+      phone: ' +84901234567 ',
+      reason: 'Change of plans',
+    });
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        userId: null,
+        deletedAt: null,
+        guest: { is: { phone: '+84901234567' } },
+      },
+      select: {
+        id: true,
+        userId: true,
+        guestId: true,
+        status: true,
+        scheduledAt: true,
+        cancelledAt: true,
+      },
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: undefined,
+        action: 'BOOKING_CANCELLED',
+        targetType: 'Booking',
+        targetId: 'booking-1',
+        metadata: expect.objectContaining({
+          actorType: 'GUEST',
+          actorId: null,
+          reason: 'Change of plans',
+          beforeStatus: 'REQUESTED',
+          afterStatus: 'CANCELLED',
+        }),
+      }),
+    });
+    expect(
+      adminNotificationService.notifyBookingCancelled,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'CANCELLED',
+      }),
+      { reason: 'Change of plans' },
+    );
   });
 
   it('limits partner stores to their accessible store ids', async () => {

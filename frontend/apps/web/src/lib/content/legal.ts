@@ -1,7 +1,14 @@
+import { contentApi, type CmsContentItem } from "@/lib/api/content";
+
+export type LegalStatus = "DRAFT" | "PUBLISHED";
+
 export type LegalSection = {
   slug: string;
   title: string;
   description: string;
+  status: LegalStatus;
+  noindex: boolean;
+  publishedAt: string | null;
   updatedAt: string;
   items: Array<{
     heading: string;
@@ -18,6 +25,9 @@ export const legalSections: LegalSection[] = [
     title: "Chính sách bảo mật",
     description:
       "Placeholder về cách Vietyoru thu thập, sử dụng và bảo vệ dữ liệu người dùng trong quá trình đặt chỗ.",
+    status: "PUBLISHED",
+    noindex: true,
+    publishedAt: null,
     updatedAt: "2026-06-30",
     items: [
       {
@@ -42,6 +52,9 @@ export const legalSections: LegalSection[] = [
     title: "Điều khoản sử dụng",
     description:
       "Placeholder về điều kiện sử dụng nền tảng, giới hạn trách nhiệm và quy tắc đặt chỗ qua Vietyoru.",
+    status: "PUBLISHED",
+    noindex: true,
+    publishedAt: null,
     updatedAt: "2026-06-30",
     items: [
       {
@@ -66,6 +79,9 @@ export const legalSections: LegalSection[] = [
     title: "Chính sách hoạt động",
     description:
       "Placeholder về cách Vietyoru điều phối đặt chỗ, xử lý ưu đãi, tích điểm và hỗ trợ sau trải nghiệm.",
+    status: "PUBLISHED",
+    noindex: true,
+    publishedAt: null,
     updatedAt: "2026-06-30",
     items: [
       {
@@ -87,5 +103,76 @@ export const legalSections: LegalSection[] = [
   },
 ];
 
-export const getLegalSection = (slug: string) =>
-  legalSections.find((section) => section.slug === slug);
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const asItems = (value: unknown): LegalSection["items"] =>
+  Array.isArray(value)
+    ? value
+        .map((item) => {
+          const record = asRecord(item);
+          if (!record || typeof record.heading !== "string" || typeof record.body !== "string") {
+            return null;
+          }
+
+          return { heading: record.heading, body: record.body };
+        })
+        .filter((item): item is LegalSection["items"][number] => Boolean(item))
+    : [];
+
+const mapCmsContentToLegalSection = (content: CmsContentItem): LegalSection | null => {
+  if (content.type !== "POLICY" || content.status !== "PUBLISHED") return null;
+
+  const metadata = asRecord(content.metadata) ?? {};
+  const items = asItems(metadata.items);
+
+  return {
+    slug: content.slug,
+    title: content.title,
+    description: content.excerpt ?? content.title,
+    status: "PUBLISHED",
+    noindex: content.noindex !== false || metadata.noindex !== false,
+    publishedAt: content.publishedAt?.slice(0, 10) ?? null,
+    updatedAt: content.updatedAt.slice(0, 10),
+    items: items.length
+      ? items
+      : content.body
+        ? [{ heading: content.title, body: content.body }]
+        : [],
+  };
+};
+
+const staticPublishedLegalSections = () =>
+  legalSections.filter((section) => section.status === "PUBLISHED");
+
+const mergeLegalSections = (cmsSections: LegalSection[]) => {
+  const sectionsBySlug = new Map(
+    staticPublishedLegalSections().map((section) => [section.slug, section]),
+  );
+
+  for (const section of cmsSections) {
+    sectionsBySlug.set(section.slug, section);
+  }
+
+  return Array.from(sectionsBySlug.values());
+};
+
+export const getPublishedLegalSections = async () => {
+  try {
+    const response = await contentApi.list({ type: "POLICY", limit: 50 });
+    const cmsSections = response.data
+      .map(mapCmsContentToLegalSection)
+      .filter((section): section is LegalSection => Boolean(section));
+
+    if (cmsSections.length) return mergeLegalSections(cmsSections);
+  } catch {
+    // Legal placeholders stay available until final CMS policy content is published.
+  }
+
+  return staticPublishedLegalSections();
+};
+
+export const getLegalSection = async (slug: string) =>
+  (await getPublishedLegalSections()).find((section) => section.slug === slug);
