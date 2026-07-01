@@ -807,6 +807,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+  const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
 
@@ -950,6 +951,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   }, [isMobile, isNotificationOpen]);
 
   useEffect(() => {
+    if (!enableScrollReveal) return;
+
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
 
@@ -1031,7 +1034,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
         delete element.dataset.revealDir;
       });
     };
-  }, [pathname]);
+  }, [enableScrollReveal]);
 
   if (shouldSimulate) return <MobileSimulator />;
 
