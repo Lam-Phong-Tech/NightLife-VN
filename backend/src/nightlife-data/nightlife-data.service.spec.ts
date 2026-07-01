@@ -1882,12 +1882,14 @@ describe('NightlifeDataService', () => {
   it('scans a coupon issue only after store access and without guest phone', async () => {
     prisma.couponIssue.findUnique.mockResolvedValue({
       id: 'issue-1',
+      couponId: 'coupon-1',
       code: 'GUEST-code',
+      guestId: 'guest-1',
+      userId: null,
       status: 'ISSUED',
       expiresAt: null,
       usedAt: null,
-      user: null,
-      guest: { id: 'guest-1', displayName: 'Guest' },
+      metadata: { userType: 'GUEST', discountPercent: 5 },
       booking: null,
       coupon: {
         id: 'coupon-1',
@@ -1897,9 +1899,30 @@ describe('NightlifeDataService', () => {
         store: { id: 'store-1', name: 'Store', slug: 'store' },
       },
     });
-    prisma.couponIssue.update.mockResolvedValue({ id: 'issue-1' });
+    prisma.couponIssue.update.mockResolvedValue({
+      id: 'issue-1',
+      couponId: 'coupon-1',
+      code: 'GUEST-code',
+      guestId: 'guest-1',
+      userId: null,
+      status: 'ISSUED',
+      expiresAt: null,
+      usedAt: null,
+      metadata: { userType: 'GUEST', discountPercent: 5 },
+      booking: null,
+      coupon: {
+        id: 'coupon-1',
+        code: 'GUEST5',
+        name: 'Guest',
+        discountType: 'PERCENT',
+        discountValue: 5,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+        store: { id: 'store-1', name: 'Store', slug: 'store' },
+      },
+    });
 
-    await service.scanCouponIssue('GUEST-code', {
+    const result = await service.scanCouponIssue('GUEST-code', {
       id: 'partner-1',
       role: 'PARTNER',
     });
@@ -1912,22 +1935,34 @@ describe('NightlifeDataService', () => {
     expect(prisma.couponIssue.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { scannedById: 'partner-1' },
-        select: expect.objectContaining({
-          guest: { select: { id: true, displayName: true } },
-        }),
       }),
     );
+    const updateArgs = prisma.couponIssue.update.mock.calls[0][0] as {
+      select: Record<string, unknown>;
+    };
+    expect(updateArgs.select).not.toHaveProperty('user');
+    expect(updateArgs.select).not.toHaveProperty('guest');
+    expect(result).toMatchObject({
+      id: 'issue-1',
+      code: 'GUEST-code',
+      status: 'ISSUED',
+      customer: { type: 'GUEST', label: 'Khách vãng lai' },
+    });
+    expect(result).not.toHaveProperty('user');
+    expect(result).not.toHaveProperty('guest');
   });
 
   it('marks an expired coupon issue before rejecting QR scan', async () => {
     prisma.couponIssue.findUnique.mockResolvedValue({
       id: 'issue-1',
+      couponId: 'coupon-1',
       code: 'GUEST-code',
+      guestId: 'guest-1',
+      userId: null,
       status: 'ISSUED',
       expiresAt: new Date(Date.now() - 60_000),
       usedAt: null,
-      user: null,
-      guest: { id: 'guest-1', displayName: 'Guest' },
+      metadata: { userType: 'GUEST' },
       booking: null,
       coupon: {
         id: 'coupon-1',
@@ -1966,9 +2001,15 @@ describe('NightlifeDataService', () => {
     prisma.couponIssue.findUnique
       .mockResolvedValueOnce({
         id: 'issue-1',
+        code: 'GUEST-code',
         couponId: 'coupon-1',
+        userId: 'member-1',
+        guestId: 'guest-1',
         status: 'ISSUED',
         expiresAt: null,
+        usedAt: null,
+        scannedById: null,
+        metadata: { userType: 'VIP', discountPercent: 10 },
         coupon: { storeId: 'store-1' },
         booking: {
           id: 'booking-1',
@@ -1981,11 +2022,15 @@ describe('NightlifeDataService', () => {
       })
       .mockResolvedValueOnce({
         id: 'issue-1',
+        couponId: 'coupon-1',
         code: 'GUEST-code',
+        userId: 'member-1',
+        guestId: 'guest-1',
         status: 'USED',
         expiresAt: null,
         usedAt: new Date(),
         scannedById: 'partner-1',
+        metadata: { userType: 'VIP', discountPercent: 10 },
         coupon: {
           id: 'coupon-1',
           code: 'GUEST5',
@@ -2006,7 +2051,7 @@ describe('NightlifeDataService', () => {
       guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
     });
 
-    await service.confirmCouponIssueCheckIn('issue-1', {
+    const result = await service.confirmCouponIssueCheckIn('issue-1', {
       id: 'partner-1',
       role: 'PARTNER',
     });
@@ -2042,6 +2087,31 @@ describe('NightlifeDataService', () => {
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: 'partner-1',
+        action: 'COUPON_ISSUE_USED',
+        targetType: 'CouponIssue',
+        targetId: 'issue-1',
+        beforeJson: expect.objectContaining({
+          id: 'issue-1',
+          status: 'ISSUED',
+          couponId: 'coupon-1',
+        }),
+        afterJson: expect.objectContaining({
+          id: 'issue-1',
+          status: 'USED',
+          couponId: 'coupon-1',
+          scannedById: 'partner-1',
+        }),
+        metadata: expect.objectContaining({
+          source: 'PARTNER_CONFIRM_CHECK_IN',
+          couponId: 'coupon-1',
+          previousStatus: 'ISSUED',
+          nextStatus: 'USED',
+        }),
+      }),
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'partner-1',
         action: 'BOOKING_STATUS_CHANGED',
         targetType: 'Booking',
         targetId: 'booking-1',
@@ -2056,10 +2126,31 @@ describe('NightlifeDataService', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: 'member-1',
+        guestId: 'guest-1',
+        storeId: 'store-1',
+        recipient: 'couponIssue:issue-1',
+        templateKey: 'coupon.issue.used.v1',
+        payload: expect.objectContaining({
+          couponIssueId: 'issue-1',
+          status: 'USED',
+          source: 'PARTNER_CONFIRM_CHECK_IN',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
         bookingId: 'booking-1',
         templateKey: 'customer.booking.checked_in.v1',
       }),
     });
+    expect(result).toMatchObject({
+      id: 'issue-1',
+      status: 'USED',
+      customer: { type: 'VIP', label: 'Hội viên VIP' },
+    });
+    expect(result).not.toHaveProperty('user');
+    expect(result).not.toHaveProperty('guest');
   });
 
   it('does not reuse a coupon issue when the one-time update loses the race', async () => {

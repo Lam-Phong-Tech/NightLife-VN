@@ -504,13 +504,11 @@ const scannedCouponIssueExample = {
     'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
   qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'GUEST',
+  customer: { type: 'GUEST', label: 'Khách vãng lai' },
   discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
   usedAt: null,
-  user: null,
-  guest: { id: 'guest_01', displayName: 'Guest Name' },
   booking: {
-    id: 'booking_01',
     status: 'CONFIRMED',
     scheduledAt: '2026-06-30T13:00:00.000Z',
   },
@@ -535,6 +533,7 @@ const confirmedCheckInExample = {
   expiresAt: '2026-06-27T10:00:00.000Z',
   usedAt: '2026-06-26T10:15:00.000Z',
   scannedById: 'partner_01',
+  customer: { type: 'GUEST', label: 'Khách vãng lai' },
   coupon: {
     id: 'coupon_01',
     code: 'GUEST5',
@@ -1475,7 +1474,7 @@ export function PartnerScanCouponPayloadContract() {
     ApiOperation({
       summary: 'Partner action: scan a signed coupon QR payload',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR). Validates an opaque signed QR/deep-link payload generated server-side, enforces store access after resolving the coupon issue, supports offline queued scan replay, and records audit/analytics events.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR). Validates an opaque signed QR/deep-link payload generated server-side, enforces store access after resolving the coupon issue, supports offline queued scan replay, records audit/analytics events, and returns only masked customer summary data.',
     }),
     ApiBody({ type: ScanCouponIssueDto }),
     ApiOkResponse({
@@ -1524,7 +1523,7 @@ export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
     ApiOperation({
       summary: 'Partner action: confirm customer check-in',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canConfirmCheckIn). Atomically marks the one-time coupon issue USED and linked booking checked in.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canConfirmCheckIn). Atomically marks the one-time coupon issue USED, writes coupon usage audit/log events, and updates the linked booking checked in.',
     }),
     ApiParam({ name: paramName, example: 'issue_01' }),
     ApiOkResponse({

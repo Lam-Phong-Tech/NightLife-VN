@@ -12,9 +12,14 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
     TelegrafModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        token: configService.get<string>('TELEGRAM_BOT_TOKEN') || '',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const token = configService.get<string>('TELEGRAM_BOT_TOKEN')?.trim();
+
+        return {
+          token: token || '',
+          launchOptions: token ? undefined : false,
+        };
+      },
       inject: [ConfigService],
     }),
   ],

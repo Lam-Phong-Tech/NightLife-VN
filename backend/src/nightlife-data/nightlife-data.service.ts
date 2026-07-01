@@ -221,6 +221,29 @@ const COUPON_ISSUE_STATUS_LABELS: Record<string, string> = {
 
 type CouponUserType = keyof typeof COUPON_DISCOUNT_PERCENT_BY_USER_TYPE;
 
+type PartnerCouponIssueRecord = {
+  id: string;
+  code: string;
+  status: string;
+  expiresAt?: Date | string | null;
+  usedAt?: Date | string | null;
+  scannedById?: string | null;
+  userId?: string | null;
+  guestId?: string | null;
+  metadata?: unknown;
+  booking?: { status: string; scheduledAt?: Date | string | null } | null;
+  coupon?: {
+    id?: string;
+    code?: string;
+    name?: string;
+    discountType?: string;
+    discountValue?: number;
+    maxDiscountVnd?: number | null;
+    minSpendVnd?: number | null;
+    store?: { id?: string; name?: string; slug?: string } | null;
+  } | null;
+};
+
 const CITY_ALIASES: Record<string, string> = {
   all: 'all',
   'tat-ca': 'all',
@@ -1953,6 +1976,7 @@ export class NightlifeDataService {
       },
       select: {
         id: true,
+        couponId: true,
         code: true,
         guestId: true,
         userId: true,
@@ -2945,6 +2969,7 @@ export class NightlifeDataService {
       where,
       select: {
         id: true,
+        couponId: true,
         code: true,
         guestId: true,
         userId: true,
@@ -2952,8 +2977,6 @@ export class NightlifeDataService {
         expiresAt: true,
         usedAt: true,
         metadata: true,
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: {
           select: {
@@ -2985,6 +3008,7 @@ export class NightlifeDataService {
       metadata: {
         source: metadata.source,
         offline: Boolean(metadata.offline),
+        couponId: issue.couponId,
         status: issue.status,
       },
     });
@@ -2994,6 +3018,7 @@ export class NightlifeDataService {
       data: { scannedById: user.id },
       select: {
         id: true,
+        couponId: true,
         code: true,
         guestId: true,
         userId: true,
@@ -3001,8 +3026,6 @@ export class NightlifeDataService {
         expiresAt: true,
         usedAt: true,
         metadata: true,
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: {
           select: {
@@ -3029,7 +3052,7 @@ export class NightlifeDataService {
       },
     );
 
-    return this.decorateCouponIssue(scannedIssue);
+    return this.decoratePartnerCouponIssue(scannedIssue);
   }
 
   async confirmCouponIssueCheckIn(
@@ -3040,11 +3063,15 @@ export class NightlifeDataService {
       where: { id: couponIssueId },
       select: {
         id: true,
+        code: true,
         couponId: true,
         guestId: true,
         userId: true,
         status: true,
         expiresAt: true,
+        usedAt: true,
+        scannedById: true,
+        metadata: true,
         coupon: { select: { storeId: true } },
         booking: {
           select: {
@@ -3095,6 +3122,7 @@ export class NightlifeDataService {
       where: { id: issue.id },
       select: {
         id: true,
+        couponId: true,
         code: true,
         guestId: true,
         userId: true,
@@ -3127,12 +3155,17 @@ export class NightlifeDataService {
       issue: {
         ...issue,
         code: updatedIssue.code,
+        couponId: issue.couponId,
         coupon: {
           storeId: issue.coupon.storeId,
         },
       },
       actorId: user.id,
+      beforeJson: this.buildCouponIssueUsageAuditSnapshot(issue),
+      afterJson: this.buildCouponIssueUsageAuditSnapshot(updatedIssue),
       metadata: {
+        source: 'PARTNER_CONFIRM_CHECK_IN',
+        couponId: issue.couponId,
         previousStatus: issue.status,
         nextStatus: 'USED',
         usedAt: now.toISOString(),
@@ -3144,6 +3177,7 @@ export class NightlifeDataService {
       updatedIssue,
       {
         actorId: user.id,
+        source: 'PARTNER_CONFIRM_CHECK_IN',
         previousStatus: issue.status,
         usedAt: now.toISOString(),
       },
@@ -3165,7 +3199,7 @@ export class NightlifeDataService {
       });
     }
 
-    return this.decorateCouponIssue(updatedIssue);
+    return this.decoratePartnerCouponIssue(updatedIssue);
   }
 
   async listPartnerBills(user: AuthenticatedUser) {
@@ -6765,6 +6799,65 @@ export class NightlifeDataService {
     return COUPON_ISSUE_STATUS_LABELS[status] ?? status;
   }
 
+  private decoratePartnerCouponIssue(issue: PartnerCouponIssueRecord) {
+    const metadata = this.asRecord(issue.metadata);
+    const discountRuleSnapshot = this.asRecord(metadata?.discountRuleSnapshot);
+    const userType = this.partnerCouponUserType(issue, metadata);
+    const discountPercent =
+      this.toNumber(metadata?.discountPercent) ??
+      this.toNumber(discountRuleSnapshot?.discountPercent) ??
+      this.toNumber(discountRuleSnapshot?.value);
+
+    return {
+      id: issue.id,
+      code: issue.code,
+      status: issue.status,
+      statusLabel: this.couponIssueStatusLabel(issue.status),
+      expiresAt: issue.expiresAt ?? null,
+      usedAt: issue.usedAt ?? null,
+      scannedById: issue.scannedById ?? null,
+      userType,
+      customer: this.partnerCouponCustomerSummary(userType),
+      discountPercent,
+      discountRuleSnapshot: discountRuleSnapshot ?? null,
+      booking: issue.booking
+        ? {
+            status: issue.booking.status,
+            scheduledAt: issue.booking.scheduledAt ?? null,
+          }
+        : null,
+      coupon: issue.coupon ?? null,
+    };
+  }
+
+  private partnerCouponUserType(
+    issue: Pick<PartnerCouponIssueRecord, 'userId'>,
+    metadata?: Record<string, unknown>,
+  ) {
+    const metadataUserType = metadata?.userType ?? metadata?.recipientType;
+    if (typeof metadataUserType === 'string' && metadataUserType.trim()) {
+      return metadataUserType.trim().toUpperCase();
+    }
+
+    return issue.userId ? 'MEMBER' : 'GUEST';
+  }
+
+  private partnerCouponCustomerSummary(userType: string) {
+    if (userType === 'VIP') {
+      return { type: userType, label: 'Hội viên VIP' };
+    }
+
+    if (userType === 'MEMBER') {
+      return { type: userType, label: 'Hội viên' };
+    }
+
+    if (userType === 'GUEST') {
+      return { type: userType, label: 'Khách vãng lai' };
+    }
+
+    return { type: userType, label: 'Khách hàng' };
+  }
+
   private async decorateCouponIssue<
     T extends { id?: string; code: string; status: string; metadata?: unknown },
   >(issue: T) {
@@ -6982,11 +7075,14 @@ export class NightlifeDataService {
     issue: {
       id: string;
       code?: string;
+      couponId?: string | null;
       status: string;
       coupon?: { storeId?: string | null } | null;
     };
     actorId?: string | null;
     metadata?: Record<string, unknown>;
+    beforeJson?: Record<string, unknown>;
+    afterJson?: Record<string, unknown>;
   }) {
     await this.prisma.auditLog.create({
       data: {
@@ -6994,14 +7090,35 @@ export class NightlifeDataService {
         action: input.action,
         targetType: 'CouponIssue',
         targetId: input.issue.id,
+        beforeJson: this.toPrismaJson(input.beforeJson),
+        afterJson: this.toPrismaJson(input.afterJson),
         metadata: {
           issueCode: input.issue.code ?? null,
+          couponId: input.issue.couponId ?? null,
           storeId: input.issue.coupon?.storeId ?? null,
           status: input.issue.status,
           ...(input.metadata ?? {}),
         },
       },
     });
+  }
+
+  private buildCouponIssueUsageAuditSnapshot(issue: {
+    id: string;
+    code?: string | null;
+    couponId?: string | null;
+    status: string;
+    usedAt?: Date | string | null;
+    scannedById?: string | null;
+  }) {
+    return {
+      id: issue.id,
+      code: issue.code ?? null,
+      couponId: issue.couponId ?? null,
+      status: issue.status,
+      usedAt: this.toAuditIso(issue.usedAt),
+      scannedById: issue.scannedById ?? null,
+    };
   }
 
   private async recordCouponLifecycleEvent(

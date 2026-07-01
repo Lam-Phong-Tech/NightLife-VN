@@ -97,7 +97,7 @@ Coupon inventory uses `Coupon` as the campaign/rule and `CouponIssue` as the iss
   and `EXPIRED` to `Hết hạn`; `REVOKED` remains an operational cancel state.
 - `Bill.couponIssueId` and `Booking.couponIssueId`: attach the scanned coupon to a booking or bill.
 
-For MVP scan evidence, set `CouponIssue.scannedById`, `CouponIssue.usedAt`, and `CouponIssue.status = USED`.
+For MVP scan evidence, set `CouponIssue.scannedById`, `CouponIssue.usedAt`, and `CouponIssue.status = USED`. Successful redemption also writes `AuditLog.action = COUPON_ISSUE_USED` and queues `NotificationLog.templateKey = coupon.issue.used.v1`.
 
 Guest coupon issues expire at `min(now + 24h, Coupon.endsAt)` when `endsAt`
 exists and snapshot a 5% discount. Member coupon issues expire at
@@ -110,6 +110,8 @@ Stale `ISSUED` issues are marked `EXPIRED` before partner scan/check-in and
 before member wallet responses. A Nest scheduler runs every 5 minutes and
 expires stale issued coupon issues globally. Check-in uses a conditional
 `status = ISSUED` write so each coupon issue is one-time only.
+Partner scan/check-in responses return only masked customer summary fields
+(`customer.type`, `customer.label`) and never raw member/guest contact details.
 
 `Coupon.usageLimit` is the maximum number of successful redemptions. It is
 compared with `Coupon.usedCount`, and `usedCount` increments only after a
