@@ -547,10 +547,11 @@ const billExample = {
   storeId: 'store_01',
   billNumber: 'BILL-2026-0001',
   status: 'SUBMITTED',
-  subtotalVnd: 2000000,
-  discountVnd: 200000,
+  subtotalVnd: 1800000,
+  discountVnd: 0,
   totalVnd: 1800000,
-  submittedAt: '2026-06-26T10:00:00.000Z',
+  usedAt: '2026-06-30T14:00:00.000Z',
+  submittedAt: '2026-07-01T10:00:00.000Z',
   reviewedAt: null,
   verifiedAt: null,
   rejectedAt: null,
@@ -1570,6 +1571,48 @@ export function PartnerBillsContract() {
   );
 }
 
+export function CreatePartnerBillContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Bill action: partner submits a bill',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Creates a SUBMITTED bill within the actor store scope. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected.',
+    }),
+    ApiBody({ type: CreateBillDto }),
+    ApiCreatedResponse({
+      description: 'Bill submitted for admin review.',
+      schema: { example: billExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid bill request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated partner cannot submit for this store.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking or store does not exist.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Bill is outside the accepted submission window.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Bill can only be submitted within 10 days of usage time',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
 export function MemberBookingsContract() {
   return guardedListContract(
     'Booking action: member lists own bookings',
@@ -1628,7 +1671,7 @@ export function CreateMemberBillContract() {
     ApiOperation({
       summary: 'Bill action: member submits a bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected.',
     }),
     ApiBody({ type: CreateBillDto }),
     ApiCreatedResponse({
@@ -1652,11 +1695,12 @@ export function CreateMemberBillContract() {
       schema: { example: notFoundExample },
     }),
     ApiUnprocessableEntityResponse({
-      description: 'Bill cannot be submitted for the requested booking.',
+      description:
+        'Bill cannot be submitted for the requested booking or usage date.',
       schema: {
         example: {
           statusCode: 422,
-          message: 'Booking already has a submitted bill',
+          message: 'Bill can only be submitted within 10 days of usage time',
           error: 'Unprocessable Entity',
         },
       },

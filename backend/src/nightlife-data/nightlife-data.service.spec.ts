@@ -2355,9 +2355,11 @@ describe('NightlifeDataService', () => {
   });
 
   it('submits a member bill and sends the admin alert', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
       status: 'CONFIRMED',
+      userId: 'member-1',
       storeId: 'store-1',
       guestId: 'guest-1',
       couponId: 'coupon-1',
@@ -2383,6 +2385,7 @@ describe('NightlifeDataService', () => {
       {
         bookingId: 'booking-1',
         totalVnd: 1800000,
+        usedAt: '2026-06-30T14:00:00.000Z',
       },
     );
 
@@ -2396,9 +2399,91 @@ describe('NightlifeDataService', () => {
           couponId: 'coupon-1',
           couponIssueId: 'issue-1',
           status: 'SUBMITTED',
+          subtotalVnd: 1800000,
+          discountVnd: 0,
+          serviceChargeVnd: 0,
+          taxVnd: 0,
           totalVnd: 1800000,
           paidVnd: 1800000,
+          usedAt: new Date('2026-06-30T14:00:00.000Z'),
           submittedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(adminNotificationService.notifyBillSubmitted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'bill-1',
+        status: 'SUBMITTED',
+      }),
+    );
+  });
+
+  it('rejects member bill submissions after the 10 day deadline', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+
+    await expect(
+      service.submitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        {
+          storeSlug: 'neon-club',
+          totalVnd: 1800000,
+          usedAt: '2026-06-20T09:59:59.000Z',
+        },
+      ),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    expect(prisma.bill.create).not.toHaveBeenCalled();
+  });
+
+  it('submits a partner bill within the accessible store scope', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.bill.create.mockResolvedValue({
+      id: 'bill-1',
+      billNumber: 'BILL-20260701-ABC12345',
+      status: 'SUBMITTED',
+      totalVnd: 1800000,
+      usedAt: new Date('2026-06-30T14:00:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: null,
+      guest: null,
+    } as never);
+
+    await service.submitPartnerBill(
+      { id: 'partner-1', role: 'PARTNER' },
+      {
+        storeSlug: 'neon-club',
+        totalVnd: 1800000,
+        usedAt: '2026-06-30T14:00:00.000Z',
+      },
+    );
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+      'bill.partner.view',
+    );
+    expect(prisma.bill.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeId: 'store-1',
+          status: 'SUBMITTED',
+          subtotalVnd: 1800000,
+          discountVnd: 0,
+          serviceChargeVnd: 0,
+          taxVnd: 0,
+          totalVnd: 1800000,
+          paidVnd: 1800000,
+          usedAt: new Date('2026-06-30T14:00:00.000Z'),
         }),
       }),
     );

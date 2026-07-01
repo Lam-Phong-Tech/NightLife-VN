@@ -31,6 +31,7 @@ import {
   CreateGuestBookingContract,
   CreateMemberBillContract,
   CreateMemberBookingContract,
+  CreatePartnerBillContract,
   CreatePartnerRequestContract,
   GuestBookingLookupContract,
   MemberBookingsContract,
@@ -275,10 +276,7 @@ export class NightlifeDataController {
     @Param('bookingId') bookingId: string,
     @Query('phone') phone: string,
   ) {
-    return this.nightlifeDataService.listGuestBookingMessages(
-      bookingId,
-      phone,
-    );
+    return this.nightlifeDataService.listGuestBookingMessages(bookingId, phone);
   }
 
   @Post('bookings/:bookingId/messages')
@@ -369,10 +367,7 @@ export class NightlifeDataController {
     @Req() request: RequestWithUser,
     @Body() dto: ScanCouponIssueDto,
   ) {
-    return this.nightlifeDataService.scanCouponIssuePayload(
-      dto,
-      request.user,
-    );
+    return this.nightlifeDataService.scanCouponIssuePayload(dto, request.user);
   }
 
   @PartnerScanCouponContract()
@@ -424,6 +419,17 @@ export class NightlifeDataController {
   @Get('partner/bills')
   listPartnerBills(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerBills(request.user);
+  }
+
+  @CreatePartnerBillContract()
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/bills')
+  submitPartnerBill(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBillDto,
+  ) {
+    return this.nightlifeDataService.submitPartnerBill(request.user, dto);
   }
 
   @PartnerBookingsContract()
@@ -861,8 +867,8 @@ export class NightlifeDataController {
         request.ip ||
         request.socket.remoteAddress ||
         null,
-      userAgent: Array.isArray(userAgent) ? userAgent[0] : userAgent ?? null,
-      deviceId: Array.isArray(deviceId) ? deviceId[0] : deviceId ?? null,
+      userAgent: Array.isArray(userAgent) ? userAgent[0] : (userAgent ?? null),
+      deviceId: Array.isArray(deviceId) ? deviceId[0] : (deviceId ?? null),
     };
   }
 }

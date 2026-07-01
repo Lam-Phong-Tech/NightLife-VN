@@ -22,7 +22,12 @@ import {
   RankingTargetType,
   StoreCategory,
 } from '@prisma/client';
-import { createHash, createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  timingSafeEqual,
+  randomUUID,
+} from 'node:crypto';
 import QRCode from 'qrcode';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
 import {
@@ -70,6 +75,8 @@ import {
 import { ReviewBillDto } from './dto/review-bill.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const BILL_SUBMISSION_DEADLINE_DAYS = 10;
+const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const BOOKING_CREATE_RATE_LIMIT = 5;
@@ -160,7 +167,11 @@ type BookingChangeRequestRecord = {
     publicAlias: string | null;
   } | null;
   requestedBy?: { id: string; displayName: string | null } | null;
-  guest?: { id: string; displayName: string | null; phone: string | null } | null;
+  guest?: {
+    id: string;
+    displayName: string | null;
+    phone: string | null;
+  } | null;
   reviewedBy?: { id: string; displayName: string | null } | null;
 };
 
@@ -176,7 +187,11 @@ type BookingChatMessageRecord = {
   body: string;
   createdAt: Date | string;
   senderUser?: { id: string; displayName: string | null; role: string } | null;
-  guest?: { id: string; displayName: string | null; phone: string | null } | null;
+  guest?: {
+    id: string;
+    displayName: string | null;
+    phone: string | null;
+  } | null;
 };
 
 type CancelAnalyticsMetric = Record<string, unknown> & {
@@ -1926,11 +1941,7 @@ export class NightlifeDataService {
       );
     }
 
-    await this.assertNoDuplicateActiveGuestCouponIssue(
-      coupon.id,
-      phone,
-      now,
-    );
+    await this.assertNoDuplicateActiveGuestCouponIssue(coupon.id, phone, now);
 
     const guest = await this.prisma.guest.create({
       data: {
@@ -2610,9 +2621,7 @@ export class NightlifeDataService {
       'customer.booking.rescheduled.v1',
       {
         requestId: approved.id,
-        previousScheduledAt: this.toAuditIso(
-          changeRequest.currentScheduledAt,
-        ),
+        previousScheduledAt: this.toAuditIso(changeRequest.currentScheduledAt),
         scheduledAt: requestedScheduledAt.toISOString(),
         note: note || null,
       },
@@ -2639,7 +2648,9 @@ export class NightlifeDataService {
         cutoff as (typeof BOOKING_POLICY_CUTOFF_MINUTES)[number],
       )
     ) {
-      throw new BadRequestException('cancelCutoffMinutes must be 30, 60, or 120');
+      throw new BadRequestException(
+        'cancelCutoffMinutes must be 30, 60, or 120',
+      );
     }
 
     const store = await this.prisma.store.findFirst({
@@ -2726,10 +2737,7 @@ export class NightlifeDataService {
     bookingId: string,
     dto: GuestBookingChatMessageDto,
   ) {
-    const booking = await this.findGuestBookingChatTarget(
-      bookingId,
-      dto.phone,
-    );
+    const booking = await this.findGuestBookingChatTarget(bookingId, dto.phone);
     return this.createBookingChatMessage({
       booking,
       dto,
@@ -2738,10 +2746,7 @@ export class NightlifeDataService {
     });
   }
 
-  async listAdminBookingMessages(
-    user: AuthenticatedUser,
-    bookingId: string,
-  ) {
+  async listAdminBookingMessages(user: AuthenticatedUser, bookingId: string) {
     const booking = await this.findAdminBookingChatTarget(user, bookingId);
     return this.listBookingChatMessages(booking.id);
   }
@@ -2812,27 +2817,42 @@ export class NightlifeDataService {
 
     for (const booking of bookings) {
       const cancelled = booking.status === 'CANCELLED';
-      this.addCancelAnalyticsMetric(byStore, booking.storeId, {
-        storeId: booking.storeId,
-        storeName: booking.store.name,
-        storeSlug: booking.store.slug,
-        cancelCutoffMinutes: booking.store.bookingCancelCutoffMinutes,
-      }, cancelled);
+      this.addCancelAnalyticsMetric(
+        byStore,
+        booking.storeId,
+        {
+          storeId: booking.storeId,
+          storeName: booking.store.name,
+          storeSlug: booking.store.slug,
+          cancelCutoffMinutes: booking.store.bookingCancelCutoffMinutes,
+        },
+        cancelled,
+      );
 
       if (booking.cast) {
-        this.addCancelAnalyticsMetric(byCast, booking.cast.id, {
-          castId: booking.cast.id,
-          castName: booking.cast.publicAlias ?? booking.cast.stageName,
-          castSlug: booking.cast.slug,
-          storeId: booking.storeId,
-        }, cancelled);
+        this.addCancelAnalyticsMetric(
+          byCast,
+          booking.cast.id,
+          {
+            castId: booking.cast.id,
+            castName: booking.cast.publicAlias ?? booking.cast.stageName,
+            castSlug: booking.cast.slug,
+            storeId: booking.storeId,
+          },
+          cancelled,
+        );
       } else {
-        this.addCancelAnalyticsMetric(byCast, 'none', {
-          castId: null,
-          castName: 'No cast selected',
-          castSlug: null,
-          storeId: null,
-        }, cancelled);
+        this.addCancelAnalyticsMetric(
+          byCast,
+          'none',
+          {
+            castId: null,
+            castName: 'No cast selected',
+            castSlug: null,
+            storeId: null,
+          },
+          cancelled,
+        );
       }
 
       const channel = booking.userId ? 'MEMBER' : 'GUEST';
@@ -2938,11 +2958,9 @@ export class NightlifeDataService {
   }
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
-    return this.scanCouponIssueByUnique(
-      { code },
-      user,
-      { source: 'LEGACY_CODE' },
-    );
+    return this.scanCouponIssueByUnique({ code }, user, {
+      source: 'LEGACY_CODE',
+    });
   }
 
   async scanCouponIssuePayload(
@@ -2950,14 +2968,10 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
   ) {
     const couponIssueId = this.resolveCouponIssueIdFromQrPayload(dto.payload);
-    return this.scanCouponIssueByUnique(
-      { id: couponIssueId },
-      user,
-      {
-        source: 'SIGNED_QR_PAYLOAD',
-        offline: Boolean(dto.offline),
-      },
-    );
+    return this.scanCouponIssueByUnique({ id: couponIssueId }, user, {
+      source: 'SIGNED_QR_PAYLOAD',
+      offline: Boolean(dto.offline),
+    });
   }
 
   private async scanCouponIssueByUnique(
@@ -3230,9 +3244,20 @@ export class NightlifeDataService {
         verifiedById: true,
         rejectedById: true,
         rejectReason: true,
+        usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        media: {
+          select: {
+            id: true,
+            storageKey: true,
+            originalName: true,
+            mimeType: true,
+            access: true,
+            url: true,
+          },
+        },
       },
     });
   }
@@ -3456,9 +3481,7 @@ export class NightlifeDataService {
     const issues = await this.prisma.couponIssue.findMany({
       where: {
         ...(query.couponId ? { couponId: query.couponId } : {}),
-        ...(query.status
-          ? { status: query.status as CouponIssueStatus }
-          : {}),
+        ...(query.status ? { status: query.status as CouponIssueStatus } : {}),
         coupon: {
           deletedAt: null,
           ...(query.storeId ? { storeId: query.storeId } : {}),
@@ -3509,6 +3532,7 @@ export class NightlifeDataService {
           select: {
             id: true,
             status: true,
+            userId: true,
             storeId: true,
             guestId: true,
             couponId: true,
@@ -3549,6 +3573,9 @@ export class NightlifeDataService {
 
     const store = booking?.store ?? (await this.resolveBillStore(dto));
     const now = new Date();
+    const usedAt = this.resolveBillUsedAt(dto);
+    this.assertBillSubmissionWindow(usedAt, now);
+
     const bill = await this.prisma.bill.create({
       data: {
         bookingId: booking?.id,
@@ -3559,12 +3586,13 @@ export class NightlifeDataService {
         couponIssueId: booking?.couponIssueId,
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
-        subtotalVnd: dto.subtotalVnd ?? dto.totalVnd,
-        discountVnd: dto.discountVnd ?? 0,
-        serviceChargeVnd: dto.serviceChargeVnd ?? 0,
-        taxVnd: dto.taxVnd ?? 0,
+        subtotalVnd: dto.totalVnd,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
         totalVnd: dto.totalVnd,
-        paidVnd: dto.paidVnd ?? dto.totalVnd,
+        paidVnd: dto.totalVnd,
+        usedAt,
         submittedAt: now,
       },
       select: this.billNotificationSelect(),
@@ -3599,6 +3627,92 @@ export class NightlifeDataService {
       );
     }
 
+    return bill;
+  }
+
+  async submitPartnerBill(user: AuthenticatedUser, dto: CreateBillDto) {
+    const booking = dto.bookingId
+      ? await this.prisma.booking.findFirst({
+          where: {
+            id: dto.bookingId,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            status: true,
+            userId: true,
+            storeId: true,
+            guestId: true,
+            couponId: true,
+            couponIssueId: true,
+            scheduledAt: true,
+            store: { select: { id: true, name: true, slug: true } },
+            guest: { select: { id: true, displayName: true, phone: true } },
+            coupon: { select: { id: true, code: true, name: true } },
+          },
+        })
+      : null;
+
+    if (dto.bookingId && !booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking?.status === 'CANCELLED') {
+      throw new UnprocessableEntityException(
+        'Cancelled booking cannot submit a bill',
+      );
+    }
+
+    if (booking?.id) {
+      const existingBill = await this.prisma.bill.findFirst({
+        where: {
+          bookingId: booking.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+
+      if (existingBill) {
+        throw new UnprocessableEntityException(
+          'Booking already has a submitted bill',
+        );
+      }
+    }
+
+    const store = booking?.store ?? (await this.resolveBillStore(dto));
+    await this.accessService.ensureStoreAccess(
+      user,
+      store.id,
+      'bill.partner.view',
+    );
+
+    const now = new Date();
+    const usedAt = this.resolveBillUsedAt(dto);
+    this.assertBillSubmissionWindow(usedAt, now);
+
+    const bill = await this.prisma.bill.create({
+      data: {
+        bookingId: booking?.id,
+        userId: booking?.userId,
+        guestId: booking?.guestId,
+        storeId: store.id,
+        couponId: booking?.couponId,
+        couponIssueId: booking?.couponIssueId,
+        status: 'SUBMITTED',
+        billNumber: this.buildBillNumber(now),
+        subtotalVnd: dto.totalVnd,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: dto.totalVnd,
+        paidVnd: dto.totalVnd,
+        usedAt,
+        submittedAt: now,
+      },
+      select: this.billNotificationSelect(),
+    });
+
+    await this.adminNotificationService?.notifyBillSubmitted(bill);
     return bill;
   }
 
@@ -3679,6 +3793,7 @@ export class NightlifeDataService {
         verifiedById: true,
         rejectedById: true,
         rejectReason: true,
+        usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
@@ -3903,6 +4018,28 @@ export class NightlifeDataService {
       phone,
       note: this.cleanText(dto.note),
     };
+  }
+
+  private resolveBillUsedAt(dto: CreateBillDto) {
+    const usedAt = new Date(dto.usedAt);
+    if (Number.isNaN(usedAt.getTime())) {
+      throw new BadRequestException('usedAt must be a valid ISO date');
+    }
+
+    return usedAt;
+  }
+
+  private assertBillSubmissionWindow(usedAt: Date, now: Date) {
+    const usageAgeMs = now.getTime() - usedAt.getTime();
+    if (usageAgeMs < 0) {
+      throw new BadRequestException('usedAt cannot be in the future');
+    }
+
+    if (usageAgeMs > BILL_SUBMISSION_DEADLINE_MS) {
+      throw new UnprocessableEntityException(
+        `Bill can only be submitted within ${BILL_SUBMISSION_DEADLINE_DAYS} days of usage time`,
+      );
+    }
   }
 
   private async resolveBillStore(dto: CreateBillDto) {
@@ -4407,14 +4544,16 @@ export class NightlifeDataService {
     const isStaffMessage = ['ADMIN', 'OPERATOR'].includes(message.senderType);
     await this.prisma.notificationLog.create({
       data: {
-        userId: isStaffMessage ? undefined : message.senderUserId ?? undefined,
+        userId: isStaffMessage
+          ? undefined
+          : (message.senderUserId ?? undefined),
         guestId: message.guestId ?? undefined,
         storeId: message.storeId,
         bookingId: message.bookingId,
         channel: 'IN_APP',
         status: 'QUEUED',
         recipient: isStaffMessage
-          ? message.guest?.phone ?? message.guestId ?? message.bookingId
+          ? (message.guest?.phone ?? message.guestId ?? message.bookingId)
           : 'ADMIN',
         templateKey: isStaffMessage
           ? 'customer.booking.chat_message.v1'
@@ -4483,7 +4622,10 @@ export class NightlifeDataService {
     });
   }
 
-  private calculateCancelRate(cancelledBookings: number, totalBookings: number) {
+  private calculateCancelRate(
+    cancelledBookings: number,
+    totalBookings: number,
+  ) {
     if (!totalBookings) {
       return 0;
     }
@@ -4540,6 +4682,7 @@ export class NightlifeDataService {
       verifiedById: true,
       rejectedById: true,
       rejectReason: true,
+      usedAt: true,
       updatedAt: true,
       store: { select: { id: true, name: true, slug: true } },
       booking: { select: { id: true, status: true, scheduledAt: true } },
@@ -6780,7 +6923,11 @@ export class NightlifeDataService {
 
     try {
       const url = new URL(value);
-      return url.searchParams.get('scanToken') ?? url.searchParams.get('token') ?? value;
+      return (
+        url.searchParams.get('scanToken') ??
+        url.searchParams.get('token') ??
+        value
+      );
     } catch {
       return value;
     }
