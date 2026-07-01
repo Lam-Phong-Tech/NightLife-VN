@@ -29,6 +29,7 @@ type AdminTelegramNotification = AdminNotificationRelations & {
   lines: Array<[label: string, value: unknown]>;
   cmsPath: string;
   webPath?: string;
+  actions?: Array<{ text: string; callbackData: string }>;
   payload?: Record<string, unknown>;
 };
 
@@ -130,6 +131,12 @@ export class AdminNotificationService {
         ['So khach', booking.partySize],
         ['Cast', this.castLabel(booking.cast)],
         ['Ghi chu', booking.note],
+      ],
+      actions: [
+        {
+          text: 'Xac nhan',
+          callbackData: `accept_booking_${booking.id}`,
+        },
       ],
       payload: this.bookingPayload(booking),
     });
@@ -253,9 +260,7 @@ export class AdminNotificationService {
 
   private async notifyAdmin(input: AdminTelegramNotification) {
     const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN')?.trim();
-    const chatId = this.configService
-      .get<string>('TELEGRAM_ADMIN_CHAT_ID')
-      ?.trim();
+    const chatId = this.telegramAdminChatId();
     const text = this.buildMessage(input);
     const actionUrl = this.absoluteUrl(
       this.configService.get<string>('CMS_BASE_URL', 'http://localhost:3000'),
@@ -277,7 +282,7 @@ export class AdminNotificationService {
     const configured = Boolean(token && chatId);
     const missingConfigError = configured
       ? undefined
-      : 'TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID are required';
+      : 'TELEGRAM_BOT_TOKEN and an admin chat id are required';
 
     try {
       const log = await this.prisma.notificationLog.create({
@@ -300,7 +305,12 @@ export class AdminNotificationService {
         return;
       }
 
-      await this.sendTelegramMessage(token as string, chatId as string, text);
+      await this.sendTelegramMessage(
+        token as string,
+        chatId as string,
+        text,
+        input.actions,
+      );
       await this.prisma.notificationLog.update({
         where: { id: log.id },
         data: {
@@ -353,6 +363,7 @@ export class AdminNotificationService {
     token: string,
     chatId: string,
     text: string,
+    actions: AdminTelegramNotification['actions'] = [],
   ) {
     const threadId = this.parseThreadId(
       this.configService.get<string>('TELEGRAM_ADMIN_THREAD_ID'),
@@ -365,6 +376,17 @@ export class AdminNotificationService {
 
     if (threadId) {
       body.message_thread_id = threadId;
+    }
+
+    if (actions.length) {
+      body.reply_markup = {
+        inline_keyboard: [
+          actions.map((action) => ({
+            text: action.text,
+            callback_data: action.callbackData,
+          })),
+        ],
+      };
     }
 
     const response = await fetch(
@@ -382,6 +404,14 @@ export class AdminNotificationService {
         `Telegram sendMessage failed with ${response.status}${detail ? `: ${detail}` : ''}`,
       );
     }
+  }
+
+  private telegramAdminChatId() {
+    return (
+      this.configService.get<string>('TELEGRAM_ADMIN_CHAT_ID')?.trim() ||
+      this.configService.get<string>('TELEGRAM_CHAT_ID')?.trim() ||
+      this.configService.get<string>('TELEGRAM_OPS_CHAT_ID')?.trim()
+    );
   }
 
   private buildMessage(input: AdminTelegramNotification) {

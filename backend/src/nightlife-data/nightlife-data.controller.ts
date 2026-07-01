@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
+  AdminPartnerRequestsContract,
   AdminSensitiveBillsContract,
   CancelGuestBookingContract,
   CancelMemberBookingContract,
@@ -490,6 +491,14 @@ export class NightlifeDataController {
   @Get('admin/sensitive-bills')
   listSensitiveBillsForAdmin(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listSensitiveBillsForAdmin(request.user);
+  }
+
+  @AdminPartnerRequestsContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/partner-requests')
+  listAdminPartnerRequests() {
+    return this.nightlifeDataService.listAdminPartnerRequests();
   }
 
   @ReviewSensitiveBillContract()

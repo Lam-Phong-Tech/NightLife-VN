@@ -626,6 +626,21 @@ const partnerRequestExample = {
   message: 'Partner request submitted for admin review',
 };
 
+const adminPartnerRequestExample = {
+  id: 'PARTNER-7F3A91BC',
+  notificationId: 'notification_01',
+  notificationStatus: 'SENT',
+  submittedAt: '2026-06-26T10:20:00.000Z',
+  status: 'PENDING_REVIEW',
+  businessName: 'Neon Club',
+  businessType: 'Club / Lounge',
+  area: 'Ha Noi - Tay Ho',
+  contactName: 'Nguyen Van A',
+  contactPhone: '+84901234567',
+  contactEmail: 'owner@example.com',
+  note: 'We want to join the booking and coupon program.',
+};
+
 const contentExample = {
   id: 'content_01',
   title: 'Hướng dẫn trọn vẹn một đêm ở Tây Hồ',
@@ -702,6 +717,14 @@ export function AdminContentsContract() {
     'Admin content: list blog and policy records',
     'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists non-deleted Content records with type/status/search filters for CMS review.',
     contentExample,
+  );
+}
+
+export function AdminPartnerRequestsContract() {
+  return guardedListContract(
+    'Admin partner: list partner requests from Telegram notification logs',
+    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists partner request payloads persisted in NotificationLog so Telegram CMS links with requestId can open a reviewable record.',
+    adminPartnerRequestExample,
   );
 }
 

@@ -15,7 +15,10 @@ import {
 } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
-import { AdminNotificationService } from '../notifications/admin-notification.service';
+import {
+  ADMIN_TELEGRAM_TEMPLATES,
+  AdminNotificationService,
+} from '../notifications/admin-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AdminRankingQueryDto,
@@ -42,7 +45,6 @@ import {
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
-import { TelegramService } from '../telegram/telegram.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
@@ -66,6 +68,15 @@ type BookingCancelTarget = {
   status: string;
   scheduledAt?: Date | string | null;
   cancelledAt?: Date | string | null;
+};
+
+type PartnerRequestNotificationLog = {
+  id: string;
+  status: string;
+  payload: Prisma.JsonValue | null;
+  error: string | null;
+  sentAt: Date | null;
+  createdAt: Date;
 };
 const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   GUEST: 5,
@@ -366,8 +377,6 @@ export class NightlifeDataService {
     private readonly accessService: AccessService,
     @Optional()
     private readonly adminNotificationService?: AdminNotificationService,
-    @Optional()
-    private readonly telegramService?: TelegramService,
   ) {}
 
   async listPublicContents(query: PublicContentQueryDto = {}) {
@@ -2020,9 +2029,6 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
-    if (this.telegramService) {
-      await this.telegramService.notifyNewBooking(booking);
-    }
 
     return booking;
   }
@@ -2050,9 +2056,6 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
-    if (this.telegramService) {
-      await this.telegramService.notifyNewBooking(booking);
-    }
 
     return booking;
   }
@@ -2670,6 +2673,31 @@ export class NightlifeDataService {
       submittedAt,
       message: 'Partner request submitted for admin review',
     };
+  }
+
+  async listAdminPartnerRequests() {
+    const logs = await this.prisma.notificationLog.findMany({
+      where: {
+        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
+        channel: 'TELEGRAM',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        status: true,
+        payload: true,
+        error: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    return logs.map((log) =>
+      this.mapPartnerRequestNotification(
+        log as PartnerRequestNotificationLog,
+      ),
+    );
   }
 
   async listSensitiveBillsForAdmin(user: AuthenticatedUser) {
@@ -4612,6 +4640,35 @@ export class NightlifeDataService {
 
   private cleanText(value?: string | null) {
     return value?.trim() ?? '';
+  }
+
+  private mapPartnerRequestNotification(log: PartnerRequestNotificationLog) {
+    const payload =
+      log.payload && typeof log.payload === 'object' && !Array.isArray(log.payload)
+        ? (log.payload as Record<string, unknown>)
+        : {};
+
+    return {
+      id: this.payloadString(payload.requestId) ?? log.id,
+      notificationId: log.id,
+      notificationStatus: log.status,
+      notificationError: log.error,
+      notifiedAt: log.sentAt?.toISOString() ?? null,
+      submittedAt:
+        this.payloadString(payload.submittedAt) ?? log.createdAt.toISOString(),
+      status: 'PENDING_REVIEW',
+      businessName: this.payloadString(payload.businessName) ?? 'Unknown',
+      businessType: this.payloadString(payload.businessType),
+      area: this.payloadString(payload.area),
+      contactName: this.payloadString(payload.contactName) ?? 'Unknown',
+      contactPhone: this.payloadString(payload.contactPhone) ?? '',
+      contactEmail: this.payloadString(payload.contactEmail),
+      note: this.payloadString(payload.note),
+    };
+  }
+
+  private payloadString(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value : null;
   }
 
   private normalizeCityCode(

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   BarChart3,
   Bell,
@@ -87,6 +88,23 @@ type SensitiveBill = {
   store: { name: string };
   user?: { email: string; displayName: string | null; phone: string | null } | null;
   guest?: { email: string | null; displayName: string | null; phone: string | null } | null;
+};
+
+type AdminPartnerRequest = {
+  id: string;
+  notificationId: string;
+  notificationStatus: string;
+  notificationError: string | null;
+  notifiedAt: string | null;
+  submittedAt: string;
+  status: string;
+  businessName: string;
+  businessType: string | null;
+  area: string | null;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string | null;
+  note: string | null;
 };
 
 type AdminNavItem = {
@@ -224,10 +242,35 @@ const recentBookings = [
   ['Kenji M.', 'Roppongi Night', '3', '23:00', 'Đã hủy'],
 ];
 
+function prioritizeById<T extends { id: string }>(items: T[], focusedId: string | null) {
+  if (!focusedId) {
+    return items;
+  }
+
+  const index = items.findIndex((item) => item.id === focusedId);
+  if (index <= 0) {
+    return items;
+  }
+
+  const next = [...items];
+  const focused = next.splice(index, 1)[0];
+  if (!focused) {
+    return items;
+  }
+
+  return [focused, ...next];
+}
+
 export default function AdminDashboardPage() {
+  const searchParams = useSearchParams();
+  const focusedBookingId = searchParams.get('bookingId');
+  const focusedBillId = searchParams.get('billId');
+  const focusedRequestId = searchParams.get('requestId');
+  const focusedTab = searchParams.get('tab');
   const [stores, setStores] = useState<AdminStore[]>([]);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
+  const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
   const [statusMessage, setStatusMessage] = useState('Dang tai du lieu admin...');
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [rankings, setRankings] = useState<AdminRankingConfig[]>([]);
@@ -244,10 +287,11 @@ export default function AdminDashboardPage() {
 
   const loadAdminData = async () => {
     try {
-      const [storeData, bookingData, billData, rankingData, contentData] = await Promise.all([
+      const [storeData, bookingData, billData, partnerRequestData, rankingData, contentData] = await Promise.all([
         apiClient<AdminStore[]>('/partner/stores'),
         apiClient<AdminBooking[]>('/partner/bookings'),
         apiClient<SensitiveBill[]>('/admin/sensitive-bills'),
+        apiClient<AdminPartnerRequest[]>('/admin/partner-requests'),
         adminRankingsApi.list(),
         contentApi.adminList({ limit: 100 }),
       ]);
@@ -255,6 +299,7 @@ export default function AdminDashboardPage() {
       setStores(storeData);
       setBookings(bookingData);
       setSensitiveBills(billData);
+      setPartnerRequests(partnerRequestData);
       setRankings(rankingData);
       setContentItems(contentData);
       setStatusMessage('Admin dang xem va duyet du lieu nhay cam bang token ADMIN.');
@@ -309,6 +354,7 @@ export default function AdminDashboardPage() {
       { icon: UsersRound, label: 'Khach/booking', value: String(bookings.length), note: 'admin xem toan he thong' },
       { icon: CalendarCheck, label: 'Booking moi', value: String(bookings.filter((item) => item.status !== 'CANCELLED').length), note: 'can dieu phoi', hot: true },
       { icon: ReceiptText, label: 'Bill cho duyet', value: String(sensitiveBills.length), note: 'du lieu nhay cam', hot: true },
+      { icon: Handshake, label: 'Partner request', value: String(partnerRequests.length), note: 'tu Telegram log', hot: partnerRequests.length > 0 },
       {
         icon: BarChart3,
         label: 'Tong gia tri bill',
@@ -316,18 +362,48 @@ export default function AdminDashboardPage() {
         note: 'tu sensitive-bills',
       },
     ],
-    [bookings, sensitiveBills, stores.length],
+    [bookings, partnerRequests.length, sensitiveBills, stores.length],
   );
 
-  const adminBookingRows = bookings.length
-    ? bookings.slice(0, 5).map((booking) => [
+  const orderedBookings = useMemo(
+    () => prioritizeById(bookings, focusedBookingId),
+    [bookings, focusedBookingId],
+  );
+  const orderedSensitiveBills = useMemo(
+    () => prioritizeById(sensitiveBills, focusedBillId),
+    [focusedBillId, sensitiveBills],
+  );
+  const orderedPartnerRequests = useMemo(
+    () => prioritizeById(partnerRequests, focusedRequestId),
+    [focusedRequestId, partnerRequests],
+  );
+  const telegramFocusLabel = focusedRequestId
+    ? `Partner ${focusedRequestId}`
+    : focusedBillId
+      ? `Bill ${focusedBillId}`
+      : focusedBookingId
+        ? `Booking ${focusedBookingId}`
+        : focusedTab
+          ? `Muc ${focusedTab}`
+          : null;
+
+  const adminBookingRows = orderedBookings.length
+    ? orderedBookings.slice(0, 5).map((booking) => [
+        booking.id,
         booking.user?.displayName ?? booking.guest?.displayName ?? booking.guest?.phone ?? 'Guest',
         booking.store.name,
         String(booking.partySize),
         new Date(booking.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         booking.status,
       ])
-    : recentBookings;
+    : recentBookings.map(([guest, place, people, time, status], index) => [
+        `sample-${index}`,
+        guest,
+        place,
+        people,
+        time,
+        status,
+      ]);
 
   const reviewBill = async (billId: string, approve: boolean) => {
     setReviewingId(billId);
@@ -671,11 +747,11 @@ export default function AdminDashboardPage() {
               }}
             >
               <ShieldCheck size={18} color={colors.gold} />
-              Admin scope: <b style={{ color: colors.goldBright }}>{sensitiveBills.length} bill nhay cam</b>, <b style={{ color: colors.goldBright }}>{stores.length} quan</b>, <b style={{ color: colors.goldBright }}>{bookings.length} booking</b>. {statusMessage}
+              Admin scope: <b style={{ color: colors.goldBright }}>{sensitiveBills.length} bill nhay cam</b>, <b style={{ color: colors.goldBright }}>{stores.length} quan</b>, <b style={{ color: colors.goldBright }}>{bookings.length} booking</b>, <b style={{ color: colors.goldBright }}>{partnerRequests.length} partner request</b>. {telegramFocusLabel ? `Dang mo tu Telegram: ${telegramFocusLabel}. ` : ''}{statusMessage}
               <span style={{ marginLeft: 'auto', color: colors.gold, fontWeight: 800 }}>Xử lý ngay</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '14px' }}>
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
@@ -1120,8 +1196,8 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
                 <span>Bill</span><span>Quan</span><span>Khach</span><span>Tong tien</span><span>Duyet</span>
               </div>
-              {(sensitiveBills.length ? sensitiveBills : []).map((bill) => (
-                <div key={bill.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${colors.borderSoft}`, fontSize: '13px', gap: '10px' }}>
+              {(orderedSensitiveBills.length ? orderedSensitiveBills : []).map((bill) => (
+                <div key={bill.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${bill.id === focusedBillId ? colors.borderGold32 : colors.borderSoft}`, background: bill.id === focusedBillId ? 'rgba(212,178,106,.09)' : 'transparent', fontSize: '13px', gap: '10px' }}>
                   <span style={{ fontWeight: 800, color: colors.gold }}>{bill.billNumber ?? bill.id.slice(0, 8)}</span>
                   <span>{bill.store.name}</span>
                   <span>{bill.user?.displayName ?? bill.guest?.displayName ?? bill.user?.email ?? bill.guest?.phone ?? 'Guest'}</span>
@@ -1144,6 +1220,41 @@ export default function AdminDashboardPage() {
             <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
                 <div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Partner request</h2>
+                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>ADMIN PARTNER REVIEW</div>
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr 1fr 1fr .75fr', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                <span>Co so</span><span>Khu vuc</span><span>Lien he</span><span>Ghi chu</span><span>Notify</span>
+              </div>
+              {orderedPartnerRequests.slice(0, 6).map((request) => (
+                <div key={request.id} style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr 1fr 1fr .75fr', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${request.id === focusedRequestId ? colors.borderGold32 : colors.borderSoft}`, background: request.id === focusedRequestId ? 'rgba(212,178,106,.09)' : 'transparent', fontSize: '13px', gap: '10px' }}>
+                  <span>
+                    <span style={{ display: 'block', fontWeight: 800, color: colors.gold }}>{request.businessName}</span>
+                    <span style={{ display: 'block', marginTop: 3, color: colors.muted, fontSize: '11px' }}>{request.businessType ?? request.id}</span>
+                  </span>
+                  <span>{request.area ?? '-'}</span>
+                  <span>
+                    <span style={{ display: 'block', fontWeight: 700 }}>{request.contactName}</span>
+                    <span style={{ display: 'block', marginTop: 3, color: colors.muted, fontSize: '11px' }}>{request.contactPhone}</span>
+                  </span>
+                  <span style={{ color: colors.text2 }}>{request.note ?? request.contactEmail ?? '-'}</span>
+                  <span>
+                    <span style={{ borderRadius: '999px', padding: '4px 10px', color: request.notificationStatus === 'SENT' ? colors.goldBright : colors.neonPink, background: 'rgba(255,255,255,.05)', fontSize: '11px', fontWeight: 800 }}>
+                      {request.notificationStatus}
+                    </span>
+                  </span>
+                </div>
+              ))}
+              {!partnerRequests.length ? (
+                <div style={{ padding: '16px 20px', color: colors.muted, fontSize: '13px' }}>Chua co partner request tu Telegram log.</div>
+              ) : null}
+            </article>
+
+            <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                <div>
                   <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Yêu cầu đặt chỗ gần đây</h2>
                   <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>RECENT BOOKINGS</div>
                 </div>
@@ -1152,8 +1263,8 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
                 <span>Khách</span><span>Quán / Cast</span><span>Số người</span><span>Khung giờ</span><span>Trạng thái</span>
               </div>
-              {adminBookingRows.map(([guest, place, people, time, status]) => (
-                <div key={`${guest}-${time}`} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${colors.borderSoft}`, fontSize: '13px' }}>
+              {adminBookingRows.map(([id, guest, place, people, time, status]) => (
+                <div key={id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${id === focusedBookingId ? colors.borderGold32 : colors.borderSoft}`, background: id === focusedBookingId ? 'rgba(212,178,106,.09)' : 'transparent', fontSize: '13px' }}>
                   <span style={{ fontWeight: 700 }}>{guest}</span>
                   <span>{place}</span>
                   <span>{people}</span>

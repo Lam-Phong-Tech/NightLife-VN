@@ -115,7 +115,7 @@ MVP enum mapping is documented in `docs/mvp-enum-mapping.md`.
 ## Admin Telegram Notifications
 
 P0 admin notifications are documented in `docs/admin-telegram-notifications.md`.
-Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_ID` to send messages to the admin group.
+Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_ID` to send messages to the admin group. Existing `TELEGRAM_CHAT_ID` or `TELEGRAM_OPS_CHAT_ID` values are accepted as compatibility fallbacks.
 When Telegram is not configured, the API still completes the business action and records a failed `NotificationLog` for follow-up.
 
 ## Seed

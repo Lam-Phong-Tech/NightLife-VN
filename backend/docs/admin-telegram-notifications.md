@@ -8,13 +8,17 @@ Each message includes a short template, key business fields, one CMS link, and o
 ```env
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_ADMIN_CHAT_ID=""
+TELEGRAM_CHAT_ID=""
+TELEGRAM_OPS_CHAT_ID=""
 TELEGRAM_ADMIN_THREAD_ID=""
 TELEGRAM_NOTIFICATION_TIME_ZONE="Asia/Bangkok"
 CMS_BASE_URL="http://localhost:3000"
 WEB_BASE_URL="http://localhost:3000"
 ```
 
-If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_ADMIN_CHAT_ID` is missing, the action still succeeds and `notification_logs` records the Telegram row as `FAILED`.
+`TELEGRAM_ADMIN_CHAT_ID` is the preferred admin group id. `TELEGRAM_CHAT_ID` and `TELEGRAM_OPS_CHAT_ID` are accepted as compatibility fallbacks for environments that already had booking notifications running.
+
+If `TELEGRAM_BOT_TOKEN` or every admin chat id is missing, the action still succeeds and `notification_logs` records the Telegram row as `FAILED`.
 
 ## Templates
 
