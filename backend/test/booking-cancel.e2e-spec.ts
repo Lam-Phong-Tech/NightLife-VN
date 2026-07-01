@@ -54,6 +54,7 @@ describe('Booking cancellation API (e2e)', () => {
   const prisma = {
     booking: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       update: jest.fn(),
     },
     auditLog: {
@@ -66,6 +67,7 @@ describe('Booking cancellation API (e2e)', () => {
   };
   const accessService = {
     canViewMemberBooking: jest.fn(),
+    ensureStoreAccess: jest.fn(),
   };
   const configService = {
     get: jest.fn((_key: string, defaultValue?: string) => defaultValue),
@@ -75,6 +77,7 @@ describe('Booking cancellation API (e2e)', () => {
     jest.clearAllMocks();
     jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
     accessService.canViewMemberBooking.mockResolvedValue(true);
+    accessService.ensureStoreAccess.mockResolvedValue(undefined);
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     prisma.notificationLog.create.mockResolvedValue({ id: 'notification-1' });
 
@@ -142,6 +145,18 @@ describe('Booking cancellation API (e2e)', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         bookingId: 'booking-1',
+        channel: 'IN_APP',
+        recipient: 'member-1',
+        templateKey: 'customer.booking.cancelled.v1',
+        payload: expect.objectContaining({
+          actorType: 'MEMBER',
+          reason: 'Change of plans',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        bookingId: 'booking-1',
         templateKey: ADMIN_TELEGRAM_TEMPLATES.bookingCancelled,
       }),
     });
@@ -191,7 +206,123 @@ describe('Booking cancellation API (e2e)', () => {
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         bookingId: 'booking-1',
+        channel: 'LINE',
+        recipient: '+84901234567',
+        templateKey: 'customer.booking.cancelled.v1',
+        payload: expect.objectContaining({
+          actorType: 'GUEST',
+          reason: 'Wrong time',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        bookingId: 'booking-1',
         templateKey: ADMIN_TELEGRAM_TEMPLATES.bookingCancelled,
+      }),
+    });
+  });
+
+  it.each([
+    ['admin', '/admin/bookings/booking-1/cancel', 'ADMIN', 'admin-1'],
+    [
+      'operator',
+      '/operator/bookings/booking-1/cancel',
+      'OPERATOR',
+      'operator-1',
+    ],
+  ])(
+    'lets %s cancel a customer booking on behalf of the customer with a reason',
+    async (_label, route, role, userId) => {
+      prisma.booking.findFirst.mockResolvedValue({
+        ...openMemberBooking(),
+        scheduledAt: new Date('2026-06-30T13:00:00.000Z'),
+      });
+      prisma.booking.update.mockResolvedValue(cancelledBooking());
+
+      await request(app.getHttpServer())
+        .patch(route)
+        .set('x-test-role', role)
+        .set('x-test-user-id', userId)
+        .send({ reason: 'Customer called admin' })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body).toEqual(
+            expect.objectContaining({ id: 'booking-1', status: 'CANCELLED' }),
+          );
+        });
+
+      expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+        { id: userId, role },
+        'store-1',
+        'booking.cancel',
+      );
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorId: userId,
+          action: 'BOOKING_CANCELLED',
+          targetType: 'Booking',
+          targetId: 'booking-1',
+          metadata: expect.objectContaining({
+            actorType: role,
+            actorId: userId,
+            reason: 'Customer called admin',
+            beforeStatus: 'REQUESTED',
+            afterStatus: 'CANCELLED',
+          }),
+        }),
+      });
+      expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          bookingId: 'booking-1',
+          templateKey: 'customer.booking.cancelled.v1',
+          payload: expect.objectContaining({
+            actorType: role,
+            reason: 'Customer called admin',
+          }),
+        }),
+      });
+      expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          bookingId: 'booking-1',
+          templateKey: ADMIN_TELEGRAM_TEMPLATES.bookingCancelled,
+        }),
+      });
+    },
+  );
+
+  it('lets a guest look up a booking by booking code and matching phone', async () => {
+    const booking = {
+      ...cancelledBooking({ user: null }),
+      id: '550e8400-e29b-41d4-a716-446655440000',
+    };
+    prisma.booking.findMany.mockResolvedValue([booking]);
+
+    await request(app.getHttpServer())
+      .get('/bookings/BK-550E8400')
+      .query({ phone: '+84901234567' })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.objectContaining({
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            status: 'CANCELLED',
+          }),
+        );
+      });
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: null,
+        deletedAt: null,
+        guest: { is: { phone: '+84901234567' } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: expect.objectContaining({
+        id: true,
+        status: true,
+        guest: { select: { id: true, displayName: true, phone: true } },
       }),
     });
   });
@@ -271,6 +402,7 @@ describe('Booking cancellation API (e2e)', () => {
   function openMemberBooking() {
     return {
       id: 'booking-1',
+      storeId: 'store-1',
       userId: 'member-1',
       guestId: 'guest-1',
       status: 'REQUESTED',

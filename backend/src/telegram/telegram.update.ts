@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { Action, Ctx, Update } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
-import { PrismaService } from '../prisma/prisma.service';
-import { SocketGateway } from '../notifications/socket.gateway';
 import { LineService } from '../notifications/line.service';
+import { SocketGateway } from '../notifications/socket.gateway';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Update()
 export class TelegramUpdate {
@@ -18,36 +18,37 @@ export class TelegramUpdate {
   @Action(/^accept_booking_(.+)$/)
   async onAcceptBooking(@Ctx() ctx: Context) {
     try {
-      const callbackQuery = ctx.callbackQuery as any;
-      const data = callbackQuery.data;
+      const callbackQuery = ctx.callbackQuery as
+        | { data?: string; from?: { first_name?: string }; message?: unknown }
+        | undefined;
+      const data = callbackQuery?.data ?? '';
       const bookingId = data.replace('accept_booking_', '');
-      
-      const adminName = callbackQuery.from?.first_name || 'Admin';
+      const adminName = callbackQuery?.from?.first_name || 'Admin';
 
-      // 1. Update DB
       const booking = await this.prisma.booking.update({
         where: { id: bookingId },
         data: { status: 'CONFIRMED' },
         include: { user: true, guest: true, store: true },
       });
 
-      // 2. Update Telegram Message
       if (ctx.callbackQuery?.message) {
-        const message = ctx.callbackQuery.message as any;
-        const newText = message.text + `\n\n✅ *Đã xác nhận bởi ${adminName}*`;
-        
+        const message = ctx.callbackQuery.message as {
+          chat: { id: number | string };
+          message_id: number;
+          text?: string;
+        };
+        const newText = `${message.text ?? ''}\n\nDa xac nhan boi ${adminName}`;
+
         await ctx.telegram.editMessageText(
           message.chat.id,
           message.message_id,
           undefined,
           newText,
-          { parse_mode: 'Markdown' } // Remove the inline keyboard
         );
       }
 
-      await ctx.answerCbQuery('Đã xác nhận đặt bàn!');
+      await ctx.answerCbQuery('Da xac nhan dat ban!');
 
-      // 3. Notify Customer
       if (booking.userId) {
         this.socketGateway.notifyBookingStatusUpdate(booking.userId, booking);
       } else if (booking.guestId) {
@@ -57,7 +58,10 @@ export class TelegramUpdate {
 
       this.logger.log(`Booking ${bookingId} confirmed by Telegram Admin`);
     } catch (error) {
-      this.logger.error(`Error handling accept_booking: ${(error as any).message}`, (error as any).stack);
+      this.logger.error(
+        `Error handling accept_booking: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
       await ctx.answerCbQuery('Error accepting booking.');
     }
   }

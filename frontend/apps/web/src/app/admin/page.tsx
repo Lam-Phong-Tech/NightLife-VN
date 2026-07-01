@@ -1,7 +1,7 @@
 "use client";
 
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Bell,
@@ -11,6 +11,7 @@ import {
   Handshake,
   Home,
   LogOut,
+  MessageCircle,
   Newspaper,
   Plus,
   RefreshCcw,
@@ -23,46 +24,55 @@ import {
   Trophy,
   Trash2,
   UsersRound,
+  XCircle,
   type LucideIcon,
-} from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+} from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   adminRankingsApi,
   type AdminRankingConfig,
   type AdminRankingTargetOption,
-} from '@/lib/api/admin-rankings';
-import { ApiError, apiClient } from '@/lib/api/client';
+} from "@/lib/api/admin-rankings";
+import { ApiError, apiClient } from "@/lib/api/client";
 import {
   contentApi,
   type CmsContentItem,
   type CmsContentStatus,
   type CmsContentType,
-} from '@/lib/api/content';
-import type { RankingCategory, RankingCity, RankingTargetType } from '@/lib/api/rankings';
-import { clearAuthSession } from '@/lib/auth/session';
+} from "@/lib/api/content";
+import {
+  bookingApi,
+  type BookingCancelAnalytics,
+  type BookingChangeRequest,
+  type BookingChatMessage,
+} from "@/lib/api/bookings";
+import type { RankingCategory, RankingCity, RankingTargetType } from "@/lib/api/rankings";
+import { clearAuthSession } from "@/lib/auth/session";
+import { useSocket } from "@/components/providers/SocketProvider";
 
 const colors = {
-  bg: '#0c0c0f',
-  navBg: 'rgba(8,8,11,.92)',
-  surface1: 'rgba(255,255,255,.035)',
-  surface2: 'rgba(255,255,255,.04)',
-  borderSoft: 'rgba(255,255,255,.06)',
-  borderGold12: 'rgba(212,178,106,.18)',
-  borderGold22: 'rgba(212,178,106,.22)',
-  borderGold32: 'rgba(212,178,106,.32)',
-  text: '#f3f0ea',
-  text2: '#c5c0b6',
-  muted: '#8c8679',
-  onGold: '#241a0a',
-  gold: '#d4b26a',
-  goldBright: '#e3c27e',
-  goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
-  neonPink: '#e0729e',
+  bg: "#0c0c0f",
+  navBg: "rgba(8,8,11,.92)",
+  surface1: "rgba(255,255,255,.035)",
+  surface2: "rgba(255,255,255,.04)",
+  borderSoft: "rgba(255,255,255,.06)",
+  borderGold12: "rgba(212,178,106,.18)",
+  borderGold22: "rgba(212,178,106,.22)",
+  borderGold32: "rgba(212,178,106,.32)",
+  text: "#f3f0ea",
+  text2: "#c5c0b6",
+  muted: "#8c8679",
+  onGold: "#241a0a",
+  gold: "#d4b26a",
+  goldBright: "#e3c27e",
+  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
+  neonPink: "#e0729e",
 };
 
 type AdminStore = {
   id: string;
   name: string;
+  slug?: string;
   status: string;
 };
 
@@ -71,9 +81,21 @@ type AdminBooking = {
   status: string;
   scheduledAt: string;
   partySize: number;
-  store: { name: string };
+  store: { id?: string; name: string; slug?: string };
   user?: { displayName: string | null } | null;
   guest?: { displayName: string | null; phone: string | null } | null;
+};
+
+type AdminBookingRow = {
+  id: string;
+  guest: string;
+  place: string;
+  people: string;
+  time: string;
+  status: string;
+  focused: boolean;
+  canCancel: boolean;
+  booking: AdminBooking | null;
 };
 
 type SensitiveBill = {
@@ -107,6 +129,27 @@ type AdminPartnerRequest = {
   note: string | null;
 };
 
+type AdminCouponIssue = {
+  id: string;
+  code: string;
+  status: string;
+  statusLabel?: string;
+  discountPercent?: number | null;
+  expiresAt?: string | null;
+  usedAt?: string | null;
+  createdAt?: string | null;
+  userType?: string | null;
+  user?: { id: string; displayName?: string | null; tier?: string | null } | null;
+  guest?: { id: string; displayName?: string | null } | null;
+  scannedBy?: { id: string; displayName?: string | null } | null;
+  coupon: {
+    id: string;
+    code: string;
+    name: string;
+    store?: { id: string; name: string; slug: string } | null;
+  };
+};
+
 type AdminNavItem = {
   icon: LucideIcon;
   label: string;
@@ -118,12 +161,12 @@ type RankingFormState = {
   targetType: RankingTargetType;
   targetId: string;
   cityCode: RankingCity;
-  category: 'all' | RankingCategory;
+  category: "all" | RankingCategory;
   scope: string;
   pinRank: string;
   manualScore: string;
   sponsored: boolean;
-  status: 'ACTIVE' | 'PAUSED' | 'EXPIRED';
+  status: "ACTIVE" | "PAUSED" | "EXPIRED";
   startsAt: string;
   endsAt: string;
   reason: string;
@@ -133,7 +176,7 @@ type ContentFormState = {
   type: CmsContentType;
   title: string;
   slug: string;
-  status: Exclude<CmsContentStatus, 'DELETED'>;
+  status: Exclude<CmsContentStatus, "DELETED">;
   excerpt: string;
   body: string;
   publishedAt: string;
@@ -146,100 +189,111 @@ type ContentFormState = {
 
 const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
   {
-    title: 'Vận hành',
+    title: "Vận hành",
     items: [
-      { icon: Home, label: 'Tổng quan', active: true },
-      { icon: CalendarCheck, label: 'Đặt chỗ', count: '18' },
-      { icon: ReceiptText, label: 'Duyệt hóa đơn', count: '7' },
-      { icon: Handshake, label: 'Duyệt đối tác', count: '3' },
+      { icon: Home, label: "Tổng quan", active: true },
+      { icon: CalendarCheck, label: "Đặt chỗ", count: "18" },
+      { icon: ReceiptText, label: "Duyệt hóa đơn", count: "7" },
+      { icon: Handshake, label: "Duyệt đối tác", count: "3" },
     ],
   },
   {
-    title: 'Nội dung',
+    title: "Nội dung",
     items: [
-      { icon: Building2, label: 'Quán / Địa điểm' },
-      { icon: UsersRound, label: 'Cast' },
-      { icon: Camera, label: 'Thư viện media' },
-      { icon: TicketPercent, label: 'Campaign / Ưu đãi' },
-      { icon: Newspaper, label: 'Blog / Nội dung' },
-      { icon: Trophy, label: 'Xếp hạng thủ công' },
+      { icon: Building2, label: "Quán / Địa điểm" },
+      { icon: UsersRound, label: "Cast" },
+      { icon: Camera, label: "Thư viện media" },
+      { icon: TicketPercent, label: "Campaign / Ưu đãi" },
+      { icon: Newspaper, label: "Blog / Nội dung" },
+      { icon: Trophy, label: "Xếp hạng thủ công" },
     ],
   },
   {
-    title: 'Phân tích',
+    title: "Phân tích",
     items: [
-      { icon: BarChart3, label: 'Báo cáo doanh thu' },
-      { icon: Star, label: 'Membership & điểm' },
+      { icon: BarChart3, label: "Báo cáo doanh thu" },
+      { icon: Star, label: "Membership & điểm" },
     ],
   },
 ];
 
 const rankingCityOptions: Array<{ value: RankingCity; label: string }> = [
-  { value: 'all', label: 'Tổng hợp' },
-  { value: 'hn', label: 'Hà Nội' },
-  { value: 'hcm', label: 'TP.HCM' },
+  { value: "all", label: "Tổng hợp" },
+  { value: "hn", label: "Hà Nội" },
+  { value: "hcm", label: "TP.HCM" },
 ];
 
-const rankingCategoryOptions: Array<{ value: 'all' | RankingCategory; label: string }> = [
-  { value: 'all', label: 'Tất cả loại hình' },
-  { value: 'bar', label: 'Bar' },
-  { value: 'club', label: 'Club' },
-  { value: 'lounge', label: 'Lounge' },
-  { value: 'girls_bar', label: 'Girls bar' },
-  { value: 'karaoke', label: 'Karaoke' },
-  { value: 'massage_spa', label: 'Massage/Spa' },
-  { value: 'restaurant', label: 'Restaurant' },
-  { value: 'casino', label: 'Casino' },
+const rankingCategoryOptions: Array<{ value: "all" | RankingCategory; label: string }> = [
+  { value: "all", label: "Tất cả loại hình" },
+  { value: "bar", label: "Bar" },
+  { value: "club", label: "Club" },
+  { value: "lounge", label: "Lounge" },
+  { value: "girls_bar", label: "Girls bar" },
+  { value: "karaoke", label: "Karaoke" },
+  { value: "massage_spa", label: "Massage/Spa" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "casino", label: "Casino" },
 ];
 
 const defaultRankingForm: RankingFormState = {
-  targetType: 'CAST',
-  targetId: '',
-  cityCode: 'all',
-  category: 'all',
-  scope: 'global',
-  pinRank: '1',
-  manualScore: '100',
+  targetType: "CAST",
+  targetId: "",
+  cityCode: "all",
+  category: "all",
+  scope: "global",
+  pinRank: "1",
+  manualScore: "100",
   sponsored: false,
-  status: 'ACTIVE',
-  startsAt: '',
-  endsAt: '',
-  reason: '',
+  status: "ACTIVE",
+  startsAt: "",
+  endsAt: "",
+  reason: "",
 };
 
 const defaultContentForm: ContentFormState = {
-  type: 'BLOG',
-  title: '',
-  slug: '',
-  status: 'DRAFT',
-  excerpt: '',
-  body: '',
-  publishedAt: '',
+  type: "BLOG",
+  title: "",
+  slug: "",
+  status: "DRAFT",
+  excerpt: "",
+  body: "",
+  publishedAt: "",
   noindex: false,
-  category: '',
-  tags: '',
-  image: '',
-  imageAlt: '',
+  category: "",
+  tags: "",
+  image: "",
+  imageAlt: "",
 };
 
 const formatDateInput = (value?: string | null) => {
-  if (!value) return '';
+  if (!value) return "";
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 16) : '';
+  return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 16) : "";
 };
 
 const displayCategory = (value?: string | null) =>
   rankingCategoryOptions.find((option) => option.value.toUpperCase() === value)?.label ??
   rankingCategoryOptions.find((option) => option.value === value)?.label ??
   value ??
-  'Tất cả';
+  "Tất cả";
 
+const canStaffCancelBooking = (status: string) => ["REQUESTED", "CONFIRMED"].includes(status);
 
-const recentBookings = [
-  ['Minh H.', 'Club Lumiere', '4', '21:30', 'Mới'],
-  ['Yuki T.', 'KTV Hoàng Gia · Michi', '2', '20:00', 'Hoàn tất'],
-  ['Tuấn A.', 'Sakura Lounge', '6', '22:00', 'Mới'],
-  ['Kenji M.', 'Roppongi Night', '3', '23:00', 'Đã hủy'],
+const adminBookingStatusLabel = (status: string) => {
+  if (status === "REQUESTED" || status === "CONFIRMED") return "Mới";
+  if (status === "CHECKED_IN" || status === "COMPLETED") return "Hoàn tất";
+  if (status === "CANCELLED" || status === "NO_SHOW") return "Đã hủy";
+  return status;
+};
+
+const bookingGuestLabel = (booking: AdminBooking) =>
+  booking.user?.displayName ?? booking.guest?.displayName ?? booking.guest?.phone ?? "Guest";
+
+const recentBookings: Array<[string, string, string, string, string]> = [
+  ["Minh H.", "Club Lumiere", "4", "21:30", "Mới"],
+  ["Yuki T.", "KTV Hoàng Gia · Michi", "2", "20:00", "Hoàn tất"],
+  ["Tuấn A.", "Sakura Lounge", "6", "22:00", "Mới"],
+  ["Kenji M.", "Roppongi Night", "3", "23:00", "Đã hủy"],
 ];
 
 function prioritizeById<T extends { id: string }>(items: T[], focusedId: string | null) {
@@ -262,59 +316,93 @@ function prioritizeById<T extends { id: string }>(items: T[], focusedId: string 
 }
 
 export default function AdminDashboardPage() {
+  const { socket } = useSocket();
   const searchParams = useSearchParams();
-  const focusedBookingId = searchParams.get('bookingId');
-  const focusedBillId = searchParams.get('billId');
-  const focusedRequestId = searchParams.get('requestId');
-  const focusedTab = searchParams.get('tab');
+  const focusedBookingId = searchParams.get("bookingId");
+  const focusedBillId = searchParams.get("billId");
+  const focusedRequestId = searchParams.get("requestId");
+  const focusedTab = searchParams.get("tab");
   const [stores, setStores] = useState<AdminStore[]>([]);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
-  const [statusMessage, setStatusMessage] = useState('Dang tai du lieu admin...');
+  const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
+  const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
+  const [statusMessage, setStatusMessage] = useState("Dang tai du lieu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [cancelBookingTarget, setCancelBookingTarget] = useState<AdminBooking | null>(null);
+  const [cancelBookingReason, setCancelBookingReason] = useState("");
+  const [cancelingBookingId, setCancelingBookingId] = useState<string | null>(null);
   const [rankings, setRankings] = useState<AdminRankingConfig[]>([]);
   const [rankingOptions, setRankingOptions] = useState<AdminRankingTargetOption[]>([]);
   const [rankingForm, setRankingForm] = useState<RankingFormState>(defaultRankingForm);
   const [editingRankingId, setEditingRankingId] = useState<string | null>(null);
   const [rankingSavingId, setRankingSavingId] = useState<string | null>(null);
-  const [rankingStatusMessage, setRankingStatusMessage] = useState('Đang tải cấu hình ranking...');
+  const [rankingStatusMessage, setRankingStatusMessage] = useState("Đang tải cấu hình ranking...");
   const [contentItems, setContentItems] = useState<CmsContentItem[]>([]);
   const [contentForm, setContentForm] = useState<ContentFormState>(defaultContentForm);
   const [editingContentId, setEditingContentId] = useState<string | null>(null);
   const [contentSavingId, setContentSavingId] = useState<string | null>(null);
-  const [contentStatusMessage, setContentStatusMessage] = useState('Đang tải blog/chính sách...');
+  const [contentStatusMessage, setContentStatusMessage] = useState("Đang tải blog/chính sách...");
+  const [bookingChangeRequests, setBookingChangeRequests] = useState<BookingChangeRequest[]>([]);
+  const [cancelAnalytics, setCancelAnalytics] = useState<BookingCancelAnalytics | null>(null);
+  const [reviewingChangeRequestId, setReviewingChangeRequestId] = useState<string | null>(null);
+  const [bookingPolicyStoreId, setBookingPolicyStoreId] = useState("");
+  const [bookingPolicyCutoff, setBookingPolicyCutoff] = useState<30 | 60 | 120>(60);
+  const [savingBookingPolicy, setSavingBookingPolicy] = useState(false);
+  const [adminChatBooking, setAdminChatBooking] = useState<AdminBooking | null>(null);
+  const [adminChatMessages, setAdminChatMessages] = useState<BookingChatMessage[]>([]);
+  const [adminChatInput, setAdminChatInput] = useState("");
+  const [adminChatLoading, setAdminChatLoading] = useState(false);
+  const [adminChatSending, setAdminChatSending] = useState(false);
 
   const loadAdminData = async () => {
     try {
-      const [storeData, bookingData, billData, partnerRequestData, rankingData, contentData] = await Promise.all([
-        apiClient<AdminStore[]>('/partner/stores'),
-        apiClient<AdminBooking[]>('/partner/bookings'),
-        apiClient<SensitiveBill[]>('/admin/sensitive-bills'),
-        apiClient<AdminPartnerRequest[]>('/admin/partner-requests'),
-        adminRankingsApi.list(),
-        contentApi.adminList({ limit: 100 }),
-      ]);
+      const [
+        storeData,
+        bookingData,
+        billData,
+        partnerRequestData,
+        couponIssueData,
+        rankingData,
+        contentData,
+        bookingChangeRequestData,
+        cancelAnalyticsData,
+      ] = await Promise.all([
+          apiClient<AdminStore[]>("/partner/stores"),
+          apiClient<AdminBooking[]>("/partner/bookings"),
+          apiClient<SensitiveBill[]>("/admin/sensitive-bills"),
+          apiClient<AdminPartnerRequest[]>("/admin/partner-requests"),
+          apiClient<AdminCouponIssue[]>("/admin/coupon-issues"),
+          adminRankingsApi.list(),
+          contentApi.adminList({ limit: 100 }),
+          bookingApi.listAdminBookingChangeRequests({ status: "REQUESTED" }),
+          bookingApi.getAdminCancelAnalytics(30),
+        ]);
 
       setStores(storeData);
       setBookings(bookingData);
       setSensitiveBills(billData);
       setPartnerRequests(partnerRequestData);
+      setCouponIssues(couponIssueData);
       setRankings(rankingData);
       setContentItems(contentData);
-      setStatusMessage('Admin dang xem va duyet du lieu nhay cam bang token ADMIN.');
+      setBookingChangeRequests(bookingChangeRequestData);
+      setCancelAnalytics(cancelAnalyticsData);
+      setBookingPolicyStoreId((current) => current || storeData[0]?.id || "");
+      setStatusMessage("Admin dang xem va duyet du lieu nhay cam bang token ADMIN.");
       setRankingStatusMessage(`Đã tải ${rankingData.length} cấu hình ranking.`);
       setContentStatusMessage(`Đã tải ${contentData.length} bài viết/chính sách.`);
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         clearAuthSession();
-        window.location.href = '/admin/dang-nhap?redirect=/admin';
+        window.location.href = "/admin/dang-nhap?redirect=/admin";
         return;
       }
 
-      setStatusMessage('Chua ket noi duoc backend. Kiem tra backend/NEXT_PUBLIC_API_URL.');
-      setRankingStatusMessage('Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.');
-      setContentStatusMessage('Chưa tải được content CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.');
+      setStatusMessage("Chua ket noi duoc backend. Kiem tra backend/NEXT_PUBLIC_API_URL.");
+      setRankingStatusMessage("Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
+      setContentStatusMessage("Chưa tải được content CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
     }
   };
 
@@ -333,7 +421,7 @@ export default function AdminDashboardPage() {
           return current;
         }
 
-        return { ...current, targetId: options[0]?.id ?? '' };
+        return { ...current, targetId: options[0]?.id ?? "" };
       });
     } catch {
       setRankingOptions([]);
@@ -348,23 +436,80 @@ export default function AdminDashboardPage() {
     void Promise.resolve().then(loadRankingOptions);
   }, [loadRankingOptions]);
 
+  useEffect(() => {
+    if (!socket || !adminChatBooking) {
+      return;
+    }
+
+    socket.emit("join_room", { bookingId: adminChatBooking.id });
+    const onMessage = (nextMessage: BookingChatMessage) => {
+      if (nextMessage.bookingId !== adminChatBooking.id) {
+        return;
+      }
+
+      setAdminChatMessages((current) =>
+        current.some((item) => item.id === nextMessage.id) ? current : [...current, nextMessage],
+      );
+    };
+    socket.on("booking_chat_message_created", onMessage);
+
+    return () => {
+      socket.off("booking_chat_message_created", onMessage);
+    };
+  }, [adminChatBooking, socket]);
+
   const stats = useMemo(
     () => [
-      { icon: Building2, label: 'Quan', value: String(stores.length), note: 'lay tu store scope admin' },
-      { icon: UsersRound, label: 'Khach/booking', value: String(bookings.length), note: 'admin xem toan he thong' },
-      { icon: CalendarCheck, label: 'Booking moi', value: String(bookings.filter((item) => item.status !== 'CANCELLED').length), note: 'can dieu phoi', hot: true },
-      { icon: ReceiptText, label: 'Bill cho duyet', value: String(sensitiveBills.length), note: 'du lieu nhay cam', hot: true },
-      { icon: Handshake, label: 'Partner request', value: String(partnerRequests.length), note: 'tu Telegram log', hot: partnerRequests.length > 0 },
+      {
+        icon: Building2,
+        label: "Quan",
+        value: String(stores.length),
+        note: "lay tu store scope admin",
+      },
+      {
+        icon: UsersRound,
+        label: "Khach/booking",
+        value: String(bookings.length),
+        note: "admin xem toan he thong",
+      },
+      {
+        icon: CalendarCheck,
+        label: "Booking moi",
+        value: String(bookings.filter((item) => item.status !== "CANCELLED").length),
+        note: "can dieu phoi",
+        hot: true,
+      },
+      {
+        icon: ReceiptText,
+        label: "Bill cho duyet",
+        value: String(sensitiveBills.length),
+        note: "du lieu nhay cam",
+        hot: true,
+      },
+      {
+        icon: Handshake,
+        label: "Partner request",
+        value: String(partnerRequests.length),
+        note: "tu Telegram log",
+        hot: partnerRequests.length > 0,
+      },
+      {
+        icon: TicketPercent,
+        label: "Coupon issues",
+        value: String(couponIssues.length),
+        note: `${couponIssues.filter((item) => item.status === "ISSUED").length} dang giu cho`,
+      },
       {
         icon: BarChart3,
-        label: 'Tong gia tri bill',
+        label: "Tong gia tri bill",
         value: `${Math.round(sensitiveBills.reduce((sum, item) => sum + (item.totalVnd ?? 0), 0) / 1000000)}tr`,
-        note: 'tu sensitive-bills',
+        note: "tu sensitive-bills",
       },
     ],
-    [bookings, partnerRequests.length, sensitiveBills, stores.length],
+    [bookings, couponIssues, partnerRequests.length, sensitiveBills, stores.length],
   );
 
+  const hasLiveBookingRows = bookings.length > 0;
   const orderedBookings = useMemo(
     () => prioritizeById(bookings, focusedBookingId),
     [bookings, focusedBookingId],
@@ -377,6 +522,41 @@ export default function AdminDashboardPage() {
     () => prioritizeById(partnerRequests, focusedRequestId),
     [focusedRequestId, partnerRequests],
   );
+  const visibleCouponIssues = useMemo(
+    () =>
+      couponIssues.filter((issue) =>
+        couponIssueStatusFilter === "all"
+          ? true
+          : issue.status === couponIssueStatusFilter,
+      ),
+    [couponIssueStatusFilter, couponIssues],
+  );
+  const adminBookingRows: AdminBookingRow[] = hasLiveBookingRows
+    ? orderedBookings.slice(0, 5).map((booking) => ({
+        id: booking.id,
+        guest: bookingGuestLabel(booking),
+        place: booking.store.name,
+        people: String(booking.partySize),
+        time: new Date(booking.scheduledAt).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: adminBookingStatusLabel(booking.status),
+        focused: booking.id === focusedBookingId,
+        canCancel: canStaffCancelBooking(booking.status),
+        booking,
+      }))
+    : recentBookings.map(([guest, place, people, time, status], index) => ({
+        id: `sample-${index}`,
+        guest,
+        place,
+        people,
+        time,
+        status,
+        focused: false,
+        canCancel: false,
+        booking: null,
+      }));
   const telegramFocusLabel = focusedRequestId
     ? `Partner ${focusedRequestId}`
     : focusedBillId
@@ -387,36 +567,140 @@ export default function AdminDashboardPage() {
           ? `Muc ${focusedTab}`
           : null;
 
-  const adminBookingRows = orderedBookings.length
-    ? orderedBookings.slice(0, 5).map((booking) => [
-        booking.id,
-        booking.user?.displayName ?? booking.guest?.displayName ?? booking.guest?.phone ?? 'Guest',
-        booking.store.name,
-        String(booking.partySize),
-        new Date(booking.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        booking.status,
-      ])
-    : recentBookings.map(([guest, place, people, time, status], index) => [
-        `sample-${index}`,
-        guest,
-        place,
-        people,
-        time,
-        status,
-      ]);
-
   const reviewBill = async (billId: string, approve: boolean) => {
     setReviewingId(billId);
 
     try {
       await apiClient(`/admin/sensitive-bills/${billId}/review`, {
-        method: 'PATCH',
-        data: approve ? { approve: true } : { approve: false, rejectReason: 'Rejected from admin dashboard' },
+        method: "PATCH",
+        data: approve
+          ? { approve: true }
+          : { approve: false, rejectReason: "Rejected from admin dashboard" },
       });
 
       await loadAdminData();
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  const openCancelBookingDialog = (booking: AdminBooking) => {
+    setCancelBookingTarget(booking);
+    setCancelBookingReason("");
+  };
+
+  const closeCancelBookingDialog = () => {
+    if (cancelingBookingId) return;
+    setCancelBookingTarget(null);
+    setCancelBookingReason("");
+  };
+
+  const submitAdminCancelBooking = async () => {
+    const booking = cancelBookingTarget;
+    const reason = cancelBookingReason.trim();
+
+    if (!booking) return;
+
+    if (!reason) {
+      setStatusMessage("Nhap ly do huy booking truoc khi xac nhan.");
+      return;
+    }
+
+    setCancelingBookingId(booking.id);
+    try {
+      await apiClient(`/admin/bookings/${booking.id}/cancel`, {
+        method: "PATCH",
+        data: { reason },
+      });
+      setStatusMessage("Da huy booking, luu audit reason va tao notification cho khach/Admin.");
+      setCancelBookingTarget(null);
+      setCancelBookingReason("");
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong huy duoc booking.");
+    } finally {
+      setCancelingBookingId(null);
+    }
+  };
+
+  const reviewBookingChangeRequest = async (requestId: string, approve: boolean) => {
+    setReviewingChangeRequestId(requestId);
+
+    try {
+      await bookingApi.reviewAdminBookingChangeRequest(requestId, {
+        approve,
+        note: approve ? "Approved from admin dashboard" : "Rejected from admin dashboard",
+      });
+      setStatusMessage(approve ? "Da duyet doi lich booking." : "Da tu choi yeu cau doi lich.");
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong duyet duoc yeu cau doi lich.");
+    } finally {
+      setReviewingChangeRequestId(null);
+    }
+  };
+
+  const saveBookingPolicy = async () => {
+    if (!bookingPolicyStoreId) {
+      setStatusMessage("Chon quan truoc khi luu policy booking.");
+      return;
+    }
+
+    setSavingBookingPolicy(true);
+    try {
+      await bookingApi.updateAdminStoreBookingPolicy(bookingPolicyStoreId, bookingPolicyCutoff);
+      setStatusMessage(`Da cap nhat cutoff huy/doi lich ${bookingPolicyCutoff} phut cho quan.`);
+      const analytics = await bookingApi.getAdminCancelAnalytics(30);
+      setCancelAnalytics(analytics);
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong luu duoc policy booking.");
+    } finally {
+      setSavingBookingPolicy(false);
+    }
+  };
+
+  const openAdminBookingChat = async (booking: AdminBooking) => {
+    setAdminChatBooking(booking);
+    setAdminChatMessages([]);
+    setAdminChatInput("");
+    setAdminChatLoading(true);
+
+    try {
+      const messages = await bookingApi.listAdminBookingMessages(booking.id);
+      setAdminChatMessages(messages);
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong tai duoc chat booking.");
+    } finally {
+      setAdminChatLoading(false);
+    }
+  };
+
+  const closeAdminBookingChat = () => {
+    if (adminChatSending) return;
+    setAdminChatBooking(null);
+    setAdminChatMessages([]);
+    setAdminChatInput("");
+  };
+
+  const sendAdminChatMessage = async () => {
+    const booking = adminChatBooking;
+    const body = adminChatInput.trim();
+    if (!booking || !body) return;
+
+    setAdminChatSending(true);
+    try {
+      const sentMessage = await bookingApi.sendAdminBookingMessage(booking.id, {
+        message: body,
+        topic: "GENERAL",
+      });
+      setAdminChatMessages((current) =>
+        current.some((item) => item.id === sentMessage.id) ? current : [...current, sentMessage],
+      );
+      setAdminChatInput("");
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong gui duoc tin nhan booking.");
+    } finally {
+      setAdminChatSending(false);
     }
   };
 
@@ -431,22 +715,22 @@ export default function AdminDashboardPage() {
       targetType: ranking.targetType,
       targetId: ranking.targetId,
       cityCode: ranking.cityCode,
-      category: (ranking.category?.toLowerCase() as RankingCategory | undefined) ?? 'all',
+      category: (ranking.category?.toLowerCase() as RankingCategory | undefined) ?? "all",
       scope: ranking.scope,
-      pinRank: ranking.pinRank ? String(ranking.pinRank) : '',
+      pinRank: ranking.pinRank ? String(ranking.pinRank) : "",
       manualScore: String(ranking.manualScore),
       sponsored: ranking.sponsored,
-      status: ranking.status === 'DELETED' ? 'EXPIRED' : ranking.status,
+      status: ranking.status === "DELETED" ? "EXPIRED" : ranking.status,
       startsAt: formatDateInput(ranking.startsAt),
       endsAt: formatDateInput(ranking.endsAt),
-      reason: ranking.reason ?? '',
+      reason: ranking.reason ?? "",
     });
     setRankingStatusMessage(`Đang sửa ${ranking.targetName}.`);
   };
 
   const saveRanking = async () => {
     if (!rankingForm.targetId) {
-      setRankingStatusMessage('Chọn Cast hoặc Quán trước khi lưu ranking.');
+      setRankingStatusMessage("Chọn Cast hoặc Quán trước khi lưu ranking.");
       return;
     }
 
@@ -459,7 +743,7 @@ export default function AdminDashboardPage() {
       reason: rankingForm.reason || null,
     };
 
-    setRankingSavingId(editingRankingId ?? 'new');
+    setRankingSavingId(editingRankingId ?? "new");
     try {
       if (editingRankingId) {
         await adminRankingsApi.update(editingRankingId, payload);
@@ -472,7 +756,9 @@ export default function AdminDashboardPage() {
       setRankingStatusMessage(`Đã lưu ranking. Tổng ${rankingData.length} cấu hình.`);
       resetRankingForm();
     } catch (error) {
-      setRankingStatusMessage(error instanceof ApiError ? error.message : 'Không lưu được ranking.');
+      setRankingStatusMessage(
+        error instanceof ApiError ? error.message : "Không lưu được ranking.",
+      );
     } finally {
       setRankingSavingId(null);
     }
@@ -489,7 +775,9 @@ export default function AdminDashboardPage() {
         resetRankingForm();
       }
     } catch (error) {
-      setRankingStatusMessage(error instanceof ApiError ? error.message : 'Không xóa được ranking.');
+      setRankingStatusMessage(
+        error instanceof ApiError ? error.message : "Không xóa được ranking.",
+      );
     } finally {
       setRankingSavingId(null);
     }
@@ -503,35 +791,35 @@ export default function AdminDashboardPage() {
   const editContent = (content: CmsContentItem) => {
     const metadata = content.metadata ?? {};
     const tags = Array.isArray(metadata.tags)
-      ? metadata.tags.filter((item): item is string => typeof item === 'string').join(', ')
-      : '';
+      ? metadata.tags.filter((item): item is string => typeof item === "string").join(", ")
+      : "";
 
     setEditingContentId(content.id);
     setContentForm({
       type: content.type,
       title: content.title,
       slug: content.slug,
-      status: content.status === 'DELETED' ? 'ARCHIVED' : content.status,
-      excerpt: content.excerpt ?? '',
-      body: content.body ?? '',
+      status: content.status === "DELETED" ? "ARCHIVED" : content.status,
+      excerpt: content.excerpt ?? "",
+      body: content.body ?? "",
       publishedAt: formatDateInput(content.publishedAt),
       noindex: content.noindex === true || metadata.noindex === true,
-      category: typeof metadata.category === 'string' ? metadata.category : '',
+      category: typeof metadata.category === "string" ? metadata.category : "",
       tags,
-      image: typeof metadata.image === 'string' ? metadata.image : '',
-      imageAlt: typeof metadata.imageAlt === 'string' ? metadata.imageAlt : '',
+      image: typeof metadata.image === "string" ? metadata.image : "",
+      imageAlt: typeof metadata.imageAlt === "string" ? metadata.imageAlt : "",
     });
     setContentStatusMessage(`Đang sửa ${content.title}.`);
   };
 
   const saveContent = async () => {
     if (!contentForm.title.trim()) {
-      setContentStatusMessage('Nhập tiêu đề trước khi lưu content.');
+      setContentStatusMessage("Nhập tiêu đề trước khi lưu content.");
       return;
     }
 
     const tagList = contentForm.tags
-      .split(',')
+      .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
     const metadata = {
@@ -552,7 +840,7 @@ export default function AdminDashboardPage() {
       metadata,
     };
 
-    setContentSavingId(editingContentId ?? 'new');
+    setContentSavingId(editingContentId ?? "new");
     try {
       if (editingContentId) {
         await contentApi.adminUpdate(editingContentId, payload);
@@ -565,7 +853,9 @@ export default function AdminDashboardPage() {
       setContentStatusMessage(`Đã lưu content. Tổng ${nextContent.length} bài viết/chính sách.`);
       resetContentForm();
     } catch (error) {
-      setContentStatusMessage(error instanceof ApiError ? error.message : 'Không lưu được content.');
+      setContentStatusMessage(
+        error instanceof ApiError ? error.message : "Không lưu được content.",
+      );
     } finally {
       setContentSavingId(null);
     }
@@ -582,7 +872,9 @@ export default function AdminDashboardPage() {
         resetContentForm();
       }
     } catch (error) {
-      setContentStatusMessage(error instanceof ApiError ? error.message : 'Không xóa được content.');
+      setContentStatusMessage(
+        error instanceof ApiError ? error.message : "Không xóa được content.",
+      );
     } finally {
       setContentSavingId(null);
     }
@@ -590,32 +882,75 @@ export default function AdminDashboardPage() {
 
   const logout = () => {
     clearAuthSession();
-    window.location.href = '/admin/dang-nhap';
+    window.location.href = "/admin/dang-nhap";
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)" }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '264px minmax(0,1fr)', minHeight: '100vh' }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: colors.bg,
+        color: colors.text,
+        fontFamily: "var(--nl-font-sans)",
+      }}
+    >
+      <div
+        style={{ display: "grid", gridTemplateColumns: "264px minmax(0,1fr)", minHeight: "100vh" }}
+      >
         <aside
           style={{
             borderRight: `1px solid ${colors.borderGold12}`,
             background: colors.navBg,
-            padding: '22px 16px',
-            display: 'flex',
-            flexDirection: 'column',
+            padding: "22px 16px",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <Link href="/" style={{ display: 'inline-flex', flexDirection: 'column', textDecoration: 'none', margin: '0 6px 24px' }}>
-            <span style={{ fontSize: '25px', fontWeight: 800, background: colors.goldGrad, WebkitBackgroundClip: 'text', color: 'transparent' }}>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              textDecoration: "none",
+              margin: "0 6px 24px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "25px",
+                fontWeight: 800,
+                background: colors.goldGrad,
+                WebkitBackgroundClip: "text",
+                color: "transparent",
+              }}
+            >
               Vietyoru
             </span>
-            <span style={{ marginTop: '4px', fontSize: '8.5px', letterSpacing: '3.2px', color: colors.muted }}>ADMIN CMS</span>
+            <span
+              style={{
+                marginTop: "4px",
+                fontSize: "8.5px",
+                letterSpacing: "3.2px",
+                color: colors.muted,
+              }}
+            >
+              ADMIN CMS
+            </span>
           </Link>
 
-          <div style={{ overflow: 'auto', paddingRight: '2px' }}>
+          <div style={{ overflow: "auto", paddingRight: "2px" }}>
             {navGroups.map((group) => (
-              <div key={group.title} style={{ marginBottom: '12px' }}>
-                <div style={{ padding: '8px 12px 6px', color: colors.muted, fontSize: '10px', fontWeight: 800, letterSpacing: '1.6px', textTransform: 'uppercase' }}>
+              <div key={group.title} style={{ marginBottom: "12px" }}>
+                <div
+                  style={{
+                    padding: "8px 12px 6px",
+                    color: colors.muted,
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    letterSpacing: "1.6px",
+                    textTransform: "uppercase",
+                  }}
+                >
                   {group.title}
                 </div>
                 {group.items.map((item) => {
@@ -624,17 +959,17 @@ export default function AdminDashboardPage() {
                     <div
                       key={item.label}
                       style={{
-                        minHeight: '42px',
-                        borderRadius: '12px',
-                        padding: '0 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '11px',
+                        minHeight: "42px",
+                        borderRadius: "12px",
+                        padding: "0 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "11px",
                         color: item.active ? colors.onGold : colors.text2,
-                        background: item.active ? colors.goldGrad : 'transparent',
-                        fontSize: '13px',
+                        background: item.active ? colors.goldGrad : "transparent",
+                        fontSize: "13px",
                         fontWeight: item.active ? 800 : 600,
-                        marginBottom: '4px',
+                        marginBottom: "4px",
                       }}
                     >
                       <Icon size={18} />
@@ -642,15 +977,15 @@ export default function AdminDashboardPage() {
                       {item.count ? (
                         <span
                           style={{
-                            minWidth: '22px',
-                            height: '20px',
-                            borderRadius: '10px',
+                            minWidth: "22px",
+                            height: "20px",
+                            borderRadius: "10px",
                             background: item.active ? colors.onGold : colors.neonPink,
-                            color: item.active ? colors.goldBright : '#fff',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '10px',
+                            color: item.active ? colors.goldBright : "#fff",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "10px",
                             fontWeight: 800,
                           }}
                         >
@@ -664,27 +999,57 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          <div style={{ marginTop: 'auto', borderTop: `1px solid ${colors.borderGold12}`, paddingTop: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              marginTop: "auto",
+              borderTop: `1px solid ${colors.borderGold12}`,
+              paddingTop: "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
             <span
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
+                width: "42px",
+                height: "42px",
+                borderRadius: "50%",
                 background: colors.goldGrad,
                 color: colors.onGold,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 fontWeight: 900,
               }}
             >
               A
             </span>
             <span style={{ flex: 1 }}>
-              <span style={{ display: 'block', fontSize: '13px', fontWeight: 700 }}>Admin Test</span>
-              <span style={{ display: 'block', marginTop: '2px', fontSize: '11px', color: colors.muted }}>Quản trị viên</span>
+              <span style={{ display: "block", fontSize: "13px", fontWeight: 700 }}>
+                Admin Test
+              </span>
+              <span
+                style={{
+                  display: "block",
+                  marginTop: "2px",
+                  fontSize: "11px",
+                  color: colors.muted,
+                }}
+              >
+                Quản trị viên
+              </span>
             </span>
-            <button type="button" onClick={logout} title="Đăng xuất" style={{ color: colors.gold, background: 'transparent', border: 0, cursor: 'pointer' }}>
+            <button
+              type="button"
+              onClick={logout}
+              title="Đăng xuất"
+              style={{
+                color: colors.gold,
+                background: "transparent",
+                border: 0,
+                cursor: "pointer",
+              }}
+            >
               <LogOut size={18} />
             </button>
           </div>
@@ -693,216 +1058,914 @@ export default function AdminDashboardPage() {
         <section style={{ minWidth: 0 }}>
           <header
             style={{
-              minHeight: '78px',
+              minHeight: "78px",
               borderBottom: `1px solid ${colors.borderGold12}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0 30px',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 30px",
             }}
           >
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.7px', color: colors.gold }}>ADMIN OVERVIEW</div>
-              <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>Tổng quan vận hành</h1>
+              <div
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "1.7px",
+                  color: colors.gold,
+                }}
+              >
+                ADMIN OVERVIEW
+              </div>
+              <h1 style={{ margin: "5px 0 0", fontSize: "24px", fontWeight: 700 }}>
+                Tổng quan vận hành
+              </h1>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span
                 style={{
-                  height: '38px',
-                  width: '310px',
-                  borderRadius: '19px',
+                  height: "38px",
+                  width: "310px",
+                  borderRadius: "19px",
                   border: `1px solid ${colors.borderGold22}`,
                   background: colors.surface2,
                   color: colors.muted,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '9px',
-                  padding: '0 13px',
-                  fontSize: '12px',
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "9px",
+                  padding: "0 13px",
+                  fontSize: "12px",
                 }}
               >
                 <Search size={15} color={colors.gold} />
                 Tìm quán, cast, booking...
               </span>
-              <span style={{ position: 'relative', width: 38, height: 38, borderRadius: '50%', border: `1px solid ${colors.borderGold32}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: colors.gold, background: colors.surface2 }}>
+              <span
+                style={{
+                  position: "relative",
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  border: `1px solid ${colors.borderGold32}`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: colors.gold,
+                  background: colors.surface2,
+                }}
+              >
                 <Bell size={17} />
-                <span style={{ position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%', background: colors.neonPink }} />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 5,
+                    right: 5,
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: colors.neonPink,
+                  }}
+                />
               </span>
             </div>
           </header>
 
-          <div style={{ padding: '26px 30px 34px' }}>
+          <div style={{ padding: "26px 30px 34px" }}>
             <div
               style={{
                 border: `1px solid ${colors.borderGold22}`,
-                borderRadius: '14px',
-                background: 'rgba(212,178,106,.08)',
+                borderRadius: "14px",
+                background: "rgba(212,178,106,.08)",
                 color: colors.text2,
-                padding: '13px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                marginBottom: '14px',
-                fontSize: '12.5px',
+                padding: "13px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "14px",
+                fontSize: "12.5px",
               }}
             >
               <ShieldCheck size={18} color={colors.gold} />
-              Admin scope: <b style={{ color: colors.goldBright }}>{sensitiveBills.length} bill nhay cam</b>, <b style={{ color: colors.goldBright }}>{stores.length} quan</b>, <b style={{ color: colors.goldBright }}>{bookings.length} booking</b>, <b style={{ color: colors.goldBright }}>{partnerRequests.length} partner request</b>. {telegramFocusLabel ? `Dang mo tu Telegram: ${telegramFocusLabel}. ` : ''}{statusMessage}
-              <span style={{ marginLeft: 'auto', color: colors.gold, fontWeight: 800 }}>Xử lý ngay</span>
+              Admin scope:{" "}
+              <b style={{ color: colors.goldBright }}>
+                {sensitiveBills.length} bill nhay cam
+              </b>, <b style={{ color: colors.goldBright }}>{stores.length} quan</b>,{" "}
+              <b style={{ color: colors.goldBright }}>{bookings.length} booking</b>,{" "}
+              <b style={{ color: colors.goldBright }}>{partnerRequests.length} partner request</b>.{" "}
+              {telegramFocusLabel ? `Dang mo tu Telegram: ${telegramFocusLabel}. ` : ""}
+              {statusMessage}
+              <span style={{ marginLeft: "auto", color: colors.gold, fontWeight: 800 }}>
+                Xử lý ngay
+              </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '14px' }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+                gap: "14px",
+              }}
+            >
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
-                  <article key={stat.label} style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.muted, fontSize: '12px' }}>
+                  <article
+                    key={stat.label}
+                    style={{
+                      border: `1px solid ${colors.borderGold22}`,
+                      borderRadius: "16px",
+                      background: colors.surface1,
+                      padding: "16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        color: colors.muted,
+                        fontSize: "12px",
+                      }}
+                    >
                       <Icon size={18} color={colors.gold} />
                       {stat.label}
                     </div>
-                    <div style={{ marginTop: '8px', fontSize: '30px', fontWeight: 800 }}>{stat.value}</div>
-                    <div style={{ marginTop: '4px', color: stat.hot ? colors.neonPink : colors.goldBright, fontSize: '11.5px' }}>{stat.note}</div>
+                    <div style={{ marginTop: "8px", fontSize: "30px", fontWeight: 800 }}>
+                      {stat.value}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        color: stat.hot ? colors.neonPink : colors.goldBright,
+                        fontSize: "11.5px",
+                      }}
+                    >
+                      {stat.note}
+                    </div>
                   </article>
                 );
               })}
             </div>
 
-            <article data-testid="admin-ranking-panel" style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+            <article
+              data-testid="admin-booking-p2-panel"
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+                  gap: "14px",
+                  padding: "16px",
+                }}
+              >
+                <section>
+                  <div style={{ color: colors.gold, fontSize: "11px", fontWeight: 900 }}>
+                    DOI LICH
+                  </div>
+                  <h2 style={{ margin: "5px 0 12px", fontSize: "17px" }}>
+                    Yeu cau doi lich dang cho
+                  </h2>
+                  <div style={{ display: "grid", gap: "9px" }}>
+                    {bookingChangeRequests.slice(0, 4).map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          border: `1px solid ${colors.borderSoft}`,
+                          borderRadius: "12px",
+                          padding: "10px",
+                          background: colors.surface2,
+                        }}
+                      >
+                        <div style={{ color: colors.text, fontWeight: 800, fontSize: "13px" }}>
+                          {item.store?.name ?? item.booking?.store?.name ?? "Booking"} ·{" "}
+                          {item.requestedScheduledAt
+                            ? new Date(item.requestedScheduledAt).toLocaleString("vi-VN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "Chua co gio moi"}
+                        </div>
+                        <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
+                          {item.reason || "Khach chua nhap ly do"}
+                        </div>
+                        <div style={{ display: "flex", gap: "8px", marginTop: "9px" }}>
+                          <button
+                            type="button"
+                            disabled={reviewingChangeRequestId === item.id}
+                            onClick={() => reviewBookingChangeRequest(item.id, true)}
+                            style={{
+                              border: 0,
+                              borderRadius: "9px",
+                              padding: "7px 10px",
+                              background: colors.goldGrad,
+                              color: colors.onGold,
+                              fontWeight: 900,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Duyet
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reviewingChangeRequestId === item.id}
+                            onClick={() => reviewBookingChangeRequest(item.id, false)}
+                            style={{
+                              border: `1px solid ${colors.borderGold22}`,
+                              borderRadius: "9px",
+                              padding: "7px 10px",
+                              background: colors.surface2,
+                              color: colors.neonPink,
+                              fontWeight: 900,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Tu choi
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {bookingChangeRequests.length === 0 ? (
+                      <div style={{ color: colors.muted, fontSize: "12px" }}>
+                        Chua co yeu cau doi lich dang cho.
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+
+                <section>
+                  <div style={{ color: colors.gold, fontSize: "11px", fontWeight: 900 }}>
+                    POLICY
+                  </div>
+                  <h2 style={{ margin: "5px 0 12px", fontSize: "17px" }}>
+                    Cutoff huy/doi lich theo quan
+                  </h2>
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    <select
+                      value={bookingPolicyStoreId}
+                      onChange={(event) => setBookingPolicyStoreId(event.target.value)}
+                      style={{
+                        minHeight: "38px",
+                        border: `1px solid ${colors.borderGold22}`,
+                        borderRadius: "10px",
+                        background: colors.surface2,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
+                    >
+                      {stores.map((store) => (
+                        <option key={store.id} value={store.id}>
+                          {store.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                      {[30, 60, 120].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setBookingPolicyCutoff(value as 30 | 60 | 120)}
+                          style={{
+                            border: `1px solid ${bookingPolicyCutoff === value ? colors.borderGold32 : colors.borderSoft}`,
+                            borderRadius: "10px",
+                            padding: "9px 6px",
+                            background:
+                              bookingPolicyCutoff === value ? "rgba(212,178,106,.16)" : colors.surface2,
+                            color: bookingPolicyCutoff === value ? colors.goldBright : colors.text2,
+                            fontWeight: 900,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {value}p
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={savingBookingPolicy}
+                      onClick={saveBookingPolicy}
+                      style={{
+                        border: 0,
+                        borderRadius: "10px",
+                        padding: "10px 12px",
+                        background: colors.goldGrad,
+                        color: colors.onGold,
+                        fontWeight: 900,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {savingBookingPolicy ? "Dang luu" : "Luu policy"}
+                    </button>
+                  </div>
+                </section>
+
+                <section>
+                  <div style={{ color: colors.gold, fontSize: "11px", fontWeight: 900 }}>
+                    CANCEL RATE
+                  </div>
+                  <h2 style={{ margin: "5px 0 12px", fontSize: "17px" }}>
+                    Theo quan / cast / kenh
+                  </h2>
+                  <div style={{ display: "grid", gap: "8px", color: colors.text2, fontSize: "12px" }}>
+                    <strong style={{ color: colors.goldBright, fontSize: "24px" }}>
+                      {cancelAnalytics?.meta.cancelRate ?? 0}%
+                    </strong>
+                    {(cancelAnalytics?.byStore ?? []).slice(0, 3).map((item) => (
+                      <span key={item.storeId}>
+                        {item.storeName}: {item.cancelledBookings}/{item.totalBookings} · cutoff{" "}
+                        {item.cancelCutoffMinutes}p
+                      </span>
+                    ))}
+                    {(cancelAnalytics?.byChannel ?? []).map((item) => (
+                      <span key={item.channel}>
+                        {item.channel}: {item.cancelRate}% cancel
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </article>
+
+            <article
+              data-testid="admin-coupon-issues-panel"
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "18px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
                 <div>
-                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Điều khiển ranking thủ công</h2>
-                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>CAST / STORE PINNING</div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}>
+                    Coupon issues
+                  </h2>
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "1.6px",
+                      color: colors.muted,
+                    }}
+                  >
+                    STORE / CAMPAIGN / STATUS
+                  </div>
                 </div>
-                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
-                <button type="button" onClick={resetRankingForm} style={{ minHeight: 36, border: `1px solid ${colors.borderGold22}`, borderRadius: 10, background: colors.surface2, color: colors.gold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                  }}
+                />
+                {["all", "ISSUED", "USED", "EXPIRED"].map((status) => {
+                  const active = couponIssueStatusFilter === status;
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => setCouponIssueStatusFilter(status)}
+                      type="button"
+                      style={{
+                        minHeight: 34,
+                        border: `1px solid ${active ? colors.borderGold32 : colors.borderSoft}`,
+                        borderRadius: 10,
+                        background: active ? colors.goldGrad : colors.surface2,
+                        color: active ? colors.onGold : colors.text2,
+                        padding: "0 11px",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {status}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.1fr 1.1fr .7fr .8fr .8fr",
+                  padding: "12px 20px",
+                  color: colors.muted,
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <span>Coupon</span>
+                <span>Store</span>
+                <span>Status</span>
+                <span>Holder</span>
+                <span>Expiry</span>
+              </div>
+
+              {visibleCouponIssues.slice(0, 8).map((issue) => (
+                <div
+                  key={issue.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.1fr 1.1fr .7fr .8fr .8fr",
+                    padding: "13px 20px",
+                    alignItems: "center",
+                    borderBottom: `1px solid ${colors.borderSoft}`,
+                    fontSize: "13px",
+                    gap: "10px",
+                  }}
+                >
+                  <span>
+                    <span style={{ display: "block", fontWeight: 800, color: colors.gold }}>
+                      {issue.code}
+                    </span>
+                    <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: "11px" }}>
+                      {issue.coupon.name} {typeof issue.discountPercent === "number" ? `-${issue.discountPercent}%` : ""}
+                    </span>
+                  </span>
+                  <span>{issue.coupon.store?.name ?? "-"}</span>
+                  <span>
+                    <span
+                      style={{
+                        borderRadius: "999px",
+                        padding: "4px 10px",
+                        color: issue.status === "USED" ? colors.muted : colors.goldBright,
+                        background: "rgba(255,255,255,.05)",
+                        fontSize: "11px",
+                        fontWeight: 800,
+                      }}
+                    >
+                      {issue.statusLabel ?? issue.status}
+                    </span>
+                  </span>
+                  <span>{issue.user?.displayName ?? issue.guest?.displayName ?? issue.userType ?? "Guest"}</span>
+                  <span style={{ color: colors.text2 }}>
+                    {issue.status === "USED" && issue.usedAt
+                      ? new Date(issue.usedAt).toLocaleDateString("vi-VN")
+                      : issue.expiresAt
+                        ? new Date(issue.expiresAt).toLocaleDateString("vi-VN")
+                        : "-"}
+                  </span>
+                </div>
+              ))}
+
+              {!visibleCouponIssues.length ? (
+                <div style={{ padding: "16px 20px", color: colors.muted, fontSize: "13px" }}>
+                  Chua co coupon issue phu hop bo loc.
+                </div>
+              ) : null}
+            </article>
+
+            <article
+              data-testid="admin-ranking-panel"
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "18px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}>
+                    Điều khiển ranking thủ công
+                  </h2>
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "1.6px",
+                      color: colors.muted,
+                    }}
+                  >
+                    CAST / STORE PINNING
+                  </div>
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={resetRankingForm}
+                  style={{
+                    minHeight: 36,
+                    border: `1px solid ${colors.borderGold22}`,
+                    borderRadius: 10,
+                    background: colors.surface2,
+                    color: colors.gold,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "0 12px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
                   <Plus size={15} />
                   Tạo mới
                 </button>
-                <button type="button" onClick={() => void loadAdminData()} style={{ minHeight: 36, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                <button
+                  type="button"
+                  onClick={() => void loadAdminData()}
+                  style={{
+                    minHeight: 36,
+                    border: 0,
+                    borderRadius: 10,
+                    background: colors.goldGrad,
+                    color: colors.onGold,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "0 12px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
                   <RefreshCcw size={15} />
                   Tải lại
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px,.92fr) minmax(0,1.08fr)', gap: '16px', padding: '18px 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px', alignContent: 'start' }}>
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(320px,.92fr) minmax(0,1.08fr)",
+                  gap: "16px",
+                  padding: "18px 20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+                    gap: "10px",
+                    alignContent: "start",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Loại target
                     <select
                       value={rankingForm.targetType}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, targetType: event.target.value as RankingTargetType, targetId: '' }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({
+                          ...current,
+                          targetType: event.target.value as RankingTargetType,
+                          targetId: "",
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     >
                       <option value="CAST">Cast</option>
                       <option value="STORE">Quán</option>
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     City
                     <select
                       value={rankingForm.cityCode}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, cityCode: event.target.value as RankingCity, targetId: '' }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({
+                          ...current,
+                          cityCode: event.target.value as RankingCity,
+                          targetId: "",
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     >
-                      {rankingCityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                    </select>
-                  </label>
-
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
-                    Cast / Quán
-                    <select
-                      value={rankingForm.targetId}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, targetId: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
-                    >
-                      {rankingOptions.length ? null : <option value="">Không có target phù hợp</option>}
-                      {rankingOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.name} · {option.area ?? option.city ?? 'All'} · {displayCategory(option.category)}
+                      {rankingCityOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
-                    Category
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
+                    Cast / Quán
                     <select
-                      value={rankingForm.category}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, category: event.target.value as RankingFormState['category'], targetId: '' }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      value={rankingForm.targetId}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({ ...current, targetId: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     >
-                      {rankingCategoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      {rankingOptions.length ? null : (
+                        <option value="">Không có target phù hợp</option>
+                      )}
+                      {rankingOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name} · {option.area ?? option.city ?? "All"} ·{" "}
+                          {displayCategory(option.category)}
+                        </option>
+                      ))}
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
+                    Category
+                    <select
+                      value={rankingForm.category}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({
+                          ...current,
+                          category: event.target.value as RankingFormState["category"],
+                          targetId: "",
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
+                    >
+                      {rankingCategoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Scope
                     <input
                       value={rankingForm.scope}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, scope: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({ ...current, scope: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     pinRank
                     <input
                       type="number"
                       min={1}
                       max={100}
                       value={rankingForm.pinRank}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, pinRank: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({ ...current, pinRank: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     manualScore
                     <input
                       type="number"
                       min={0}
                       value={rankingForm.manualScore}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, manualScore: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({
+                          ...current,
+                          manualScore: event.target.value,
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Bắt đầu
                     <input
                       type="datetime-local"
                       value={rankingForm.startsAt}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, startsAt: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({ ...current, startsAt: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Kết thúc
                     <input
                       type="datetime-local"
                       value={rankingForm.endsAt}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, endsAt: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({ ...current, endsAt: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 9, color: colors.text2, fontSize: 12.5, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      color: colors.text2,
+                      fontSize: 12.5,
+                      fontWeight: 800,
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={rankingForm.sponsored}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, sponsored: event.target.checked }))}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({
+                          ...current,
+                          sponsored: event.target.checked,
+                        }))
+                      }
                     />
                     Badge Tài trợ
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Trạng thái
                     <select
                       value={rankingForm.status}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, status: event.target.value as RankingFormState['status'] }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({
+                          ...current,
+                          status: event.target.value as RankingFormState["status"],
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     >
                       <option value="ACTIVE">ACTIVE</option>
                       <option value="PAUSED">PAUSED</option>
@@ -910,52 +1973,192 @@ export default function AdminDashboardPage() {
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     Ghi chú vận hành
                     <input
                       value={rankingForm.reason}
-                      onChange={(event) => setRankingForm((current) => ({ ...current, reason: event.target.value }))}
+                      onChange={(event) =>
+                        setRankingForm((current) => ({ ...current, reason: event.target.value }))
+                      }
                       placeholder="VD: chiến dịch Top tháng 7, ưu tiên store sponsor..."
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <button type="button" disabled={rankingSavingId !== null} onClick={() => void saveRanking()} style={{ minHeight: 40, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontWeight: 900, cursor: 'pointer' }}>
+                  <button
+                    type="button"
+                    disabled={rankingSavingId !== null}
+                    onClick={() => void saveRanking()}
+                    style={{
+                      minHeight: 40,
+                      border: 0,
+                      borderRadius: 10,
+                      background: colors.goldGrad,
+                      color: colors.onGold,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                    }}
+                  >
                     <Save size={16} />
-                    {editingRankingId ? 'Lưu thay đổi' : 'Tạo ranking'}
+                    {editingRankingId ? "Lưu thay đổi" : "Tạo ranking"}
                   </button>
-                  <div style={{ minHeight: 40, display: 'flex', alignItems: 'center', color: colors.muted, fontSize: 12 }}>
+                  <div
+                    style={{
+                      minHeight: 40,
+                      display: "flex",
+                      alignItems: "center",
+                      color: colors.muted,
+                      fontSize: 12,
+                    }}
+                  >
                     {rankingStatusMessage}
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gap: '9px', alignContent: 'start' }}>
+                <div style={{ display: "grid", gap: "9px", alignContent: "start" }}>
                   {rankings.map((ranking) => (
-                    <div key={ranking.id} data-testid="admin-ranking-row" style={{ display: 'grid', gridTemplateColumns: '40px minmax(0,1fr) 168px', gap: '10px', alignItems: 'center', border: `1px solid ${colors.borderSoft}`, borderRadius: 12, background: 'rgba(255,255,255,.025)', padding: '10px 12px' }}>
-                      <span style={{ width: 34, height: 34, borderRadius: 10, background: ranking.pinRank === 1 ? colors.goldGrad : 'rgba(212,178,106,.12)', color: ranking.pinRank === 1 ? colors.onGold : colors.gold, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
-                        {ranking.pinRank ?? '-'}
+                    <div
+                      key={ranking.id}
+                      data-testid="admin-ranking-row"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "40px minmax(0,1fr) 168px",
+                        gap: "10px",
+                        alignItems: "center",
+                        border: `1px solid ${colors.borderSoft}`,
+                        borderRadius: 12,
+                        background: "rgba(255,255,255,.025)",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 10,
+                          background:
+                            ranking.pinRank === 1 ? colors.goldGrad : "rgba(212,178,106,.12)",
+                          color: ranking.pinRank === 1 ? colors.onGold : colors.gold,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 900,
+                        }}
+                      >
+                        {ranking.pinRank ?? "-"}
                       </span>
                       <span style={{ minWidth: 0 }}>
-                        <span style={{ display: 'flex', gap: 8, alignItems: 'center', color: colors.text, fontSize: 13, fontWeight: 900 }}>
+                        <span
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                            color: colors.text,
+                            fontSize: 13,
+                            fontWeight: 900,
+                          }}
+                        >
                           {ranking.targetName}
-                          {ranking.sponsored ? <span style={{ border: `1px solid ${colors.borderGold32}`, borderRadius: 999, color: colors.goldBright, padding: '3px 7px', fontSize: 10 }}>Tài trợ</span> : null}
+                          {ranking.sponsored ? (
+                            <span
+                              style={{
+                                border: `1px solid ${colors.borderGold32}`,
+                                borderRadius: 999,
+                                color: colors.goldBright,
+                                padding: "3px 7px",
+                                fontSize: 10,
+                              }}
+                            >
+                              Tài trợ
+                            </span>
+                          ) : null}
                         </span>
-                        <span style={{ display: 'block', marginTop: 4, color: colors.muted, fontSize: 11.5 }}>
-                          {ranking.targetType} · {ranking.cityCode.toUpperCase()} · {displayCategory(ranking.category)} · {ranking.scope} · score {ranking.manualScore}
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 4,
+                            color: colors.muted,
+                            fontSize: 11.5,
+                          }}
+                        >
+                          {ranking.targetType} · {ranking.cityCode.toUpperCase()} ·{" "}
+                          {displayCategory(ranking.category)} · {ranking.scope} · score{" "}
+                          {ranking.manualScore}
                         </span>
                       </span>
-                      <span style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                        <button type="button" onClick={() => editRanking(ranking)} style={{ minHeight: 32, border: `1px solid ${colors.borderGold22}`, borderRadius: 9, background: colors.surface2, color: colors.gold, padding: '0 10px', fontWeight: 800, cursor: 'pointer' }}>
+                      <span style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => editRanking(ranking)}
+                          style={{
+                            minHeight: 32,
+                            border: `1px solid ${colors.borderGold22}`,
+                            borderRadius: 9,
+                            background: colors.surface2,
+                            color: colors.gold,
+                            padding: "0 10px",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                          }}
+                        >
                           Sửa
                         </button>
-                        <button type="button" disabled={rankingSavingId === ranking.id} onClick={() => void deleteRanking(ranking.id)} aria-label={`Xóa ranking ${ranking.targetName}`} style={{ width: 34, minHeight: 32, border: `1px solid rgba(224,114,158,.35)`, borderRadius: 9, background: 'rgba(224,114,158,.08)', color: colors.neonPink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <button
+                          type="button"
+                          disabled={rankingSavingId === ranking.id}
+                          onClick={() => void deleteRanking(ranking.id)}
+                          aria-label={`Xóa ranking ${ranking.targetName}`}
+                          style={{
+                            width: 34,
+                            minHeight: 32,
+                            border: `1px solid rgba(224,114,158,.35)`,
+                            borderRadius: 9,
+                            background: "rgba(224,114,158,.08)",
+                            color: colors.neonPink,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                          }}
+                        >
                           <Trash2 size={15} />
                         </button>
                       </span>
                     </div>
                   ))}
                   {!rankings.length ? (
-                    <div style={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px dashed ${colors.borderGold22}`, borderRadius: 12, color: colors.muted, fontSize: 13 }}>
+                    <div
+                      style={{
+                        minHeight: 140,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: `1px dashed ${colors.borderGold22}`,
+                        borderRadius: 12,
+                        color: colors.muted,
+                        fontSize: 13,
+                      }}
+                    >
                       Chưa có cấu hình ranking. Tạo Top đầu tiên ở form bên trái.
                     </div>
                   ) : null}
@@ -963,43 +2166,165 @@ export default function AdminDashboardPage() {
               </div>
             </article>
 
-            <article data-testid="admin-content-panel" style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+            <article
+              data-testid="admin-content-panel"
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "18px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
                 <div>
-                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Blog / Chính sách CMS</h2>
-                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>CONTENT STATUS / NOINDEX</div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}>
+                    Blog / Chính sách CMS
+                  </h2>
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "1.6px",
+                      color: colors.muted,
+                    }}
+                  >
+                    CONTENT STATUS / NOINDEX
+                  </div>
                 </div>
-                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
-                <button type="button" onClick={resetContentForm} style={{ minHeight: 36, border: `1px solid ${colors.borderGold22}`, borderRadius: 10, background: colors.surface2, color: colors.gold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={resetContentForm}
+                  style={{
+                    minHeight: 36,
+                    border: `1px solid ${colors.borderGold22}`,
+                    borderRadius: 10,
+                    background: colors.surface2,
+                    color: colors.gold,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "0 12px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
                   <Plus size={15} />
                   Tạo mới
                 </button>
-                <button type="button" onClick={() => void loadAdminData()} style={{ minHeight: 36, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', gap: 7, padding: '0 12px', fontWeight: 800, cursor: 'pointer' }}>
+                <button
+                  type="button"
+                  onClick={() => void loadAdminData()}
+                  style={{
+                    minHeight: 36,
+                    border: 0,
+                    borderRadius: 10,
+                    background: colors.goldGrad,
+                    color: colors.onGold,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "0 12px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
                   <RefreshCcw size={15} />
                   Tải lại
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px,.95fr) minmax(0,1.05fr)', gap: '16px', padding: '18px 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '10px', alignContent: 'start' }}>
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(320px,.95fr) minmax(0,1.05fr)",
+                  gap: "16px",
+                  padding: "18px 20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+                    gap: "10px",
+                    alignContent: "start",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Loại
                     <select
                       value={contentForm.type}
-                      onChange={(event) => setContentForm((current) => ({ ...current, type: event.target.value as CmsContentType, noindex: event.target.value === 'POLICY' ? true : current.noindex }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setContentForm((current) => ({
+                          ...current,
+                          type: event.target.value as CmsContentType,
+                          noindex: event.target.value === "POLICY" ? true : current.noindex,
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     >
                       <option value="BLOG">Blog</option>
                       <option value="POLICY">Chính sách</option>
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Trạng thái
                     <select
                       value={contentForm.status}
-                      onChange={(event) => setContentForm((current) => ({ ...current, status: event.target.value as ContentFormState['status'] }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setContentForm((current) => ({
+                          ...current,
+                          status: event.target.value as ContentFormState["status"],
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     >
                       <option value="DRAFT">DRAFT</option>
                       <option value="PUBLISHED">PUBLISHED</option>
@@ -1007,136 +2332,431 @@ export default function AdminDashboardPage() {
                     </select>
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     Tiêu đề
                     <input
                       value={contentForm.title}
-                      onChange={(event) => setContentForm((current) => ({ ...current, title: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, title: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Slug
                     <input
                       value={contentForm.slug}
-                      onChange={(event) => setContentForm((current) => ({ ...current, slug: event.target.value }))}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, slug: event.target.value }))
+                      }
                       placeholder="tu-dong-neu-bo-trong"
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     PublishedAt
                     <input
                       type="datetime-local"
                       value={contentForm.publishedAt}
-                      onChange={(event) => setContentForm((current) => ({ ...current, publishedAt: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setContentForm((current) => ({
+                          ...current,
+                          publishedAt: event.target.value,
+                        }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Category
                     <input
                       value={contentForm.category}
-                      onChange={(event) => setContentForm((current) => ({ ...current, category: event.target.value }))}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, category: event.target.value }))
+                      }
                       placeholder="Cẩm nang khu vực"
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Tags
                     <input
                       value={contentForm.tags}
-                      onChange={(event) => setContentForm((current) => ({ ...current, tags: event.target.value }))}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, tags: event.target.value }))
+                      }
                       placeholder="Tây Hồ, Lounge"
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     Mô tả SEO
                     <input
                       value={contentForm.excerpt}
-                      onChange={(event) => setContentForm((current) => ({ ...current, excerpt: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, excerpt: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     Ảnh OG/LCP
                     <input
                       value={contentForm.image}
-                      onChange={(event) => setContentForm((current) => ({ ...current, image: event.target.value }))}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, image: event.target.value }))
+                      }
                       placeholder="https://..."
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     Alt ảnh
                     <input
                       value={contentForm.imageAlt}
-                      onChange={(event) => setContentForm((current) => ({ ...current, imageAlt: event.target.value }))}
-                      style={{ minHeight: 38, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '0 10px' }}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, imageAlt: event.target.value }))
+                      }
+                      style={{
+                        minHeight: 38,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "0 10px",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'grid', gap: 6, color: colors.muted, fontSize: 11, fontWeight: 800, gridColumn: '1 / -1' }}>
+                  <label
+                    style={{
+                      display: "grid",
+                      gap: 6,
+                      color: colors.muted,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     Nội dung
                     <textarea
                       value={contentForm.body}
-                      onChange={(event) => setContentForm((current) => ({ ...current, body: event.target.value }))}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, body: event.target.value }))
+                      }
                       rows={5}
-                      style={{ minHeight: 116, borderRadius: 10, border: `1px solid ${colors.borderGold22}`, background: colors.bg, color: colors.text, padding: '10px', resize: 'vertical' }}
+                      style={{
+                        minHeight: 116,
+                        borderRadius: 10,
+                        border: `1px solid ${colors.borderGold22}`,
+                        background: colors.bg,
+                        color: colors.text,
+                        padding: "10px",
+                        resize: "vertical",
+                      }}
                     />
                   </label>
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 9, color: colors.text2, fontSize: 12.5, fontWeight: 800 }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      color: colors.text2,
+                      fontSize: 12.5,
+                      fontWeight: 800,
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={contentForm.noindex}
-                      onChange={(event) => setContentForm((current) => ({ ...current, noindex: event.target.checked }))}
+                      onChange={(event) =>
+                        setContentForm((current) => ({ ...current, noindex: event.target.checked }))
+                      }
                     />
                     Noindex
                   </label>
 
-                  <button type="button" disabled={contentSavingId !== null} onClick={() => void saveContent()} style={{ minHeight: 40, border: 0, borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontWeight: 900, cursor: 'pointer' }}>
+                  <button
+                    type="button"
+                    disabled={contentSavingId !== null}
+                    onClick={() => void saveContent()}
+                    style={{
+                      minHeight: 40,
+                      border: 0,
+                      borderRadius: 10,
+                      background: colors.goldGrad,
+                      color: colors.onGold,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 7,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                    }}
+                  >
                     <Save size={16} />
-                    {editingContentId ? 'Lưu content' : 'Tạo content'}
+                    {editingContentId ? "Lưu content" : "Tạo content"}
                   </button>
-                  <div style={{ minHeight: 40, display: 'flex', alignItems: 'center', color: colors.muted, fontSize: 12, gridColumn: '1 / -1' }}>
+                  <div
+                    style={{
+                      minHeight: 40,
+                      display: "flex",
+                      alignItems: "center",
+                      color: colors.muted,
+                      fontSize: 12,
+                      gridColumn: "1 / -1",
+                    }}
+                  >
                     {contentStatusMessage}
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gap: '9px', alignContent: 'start' }}>
+                <div style={{ display: "grid", gap: "9px", alignContent: "start" }}>
                   {contentItems.map((content) => (
-                    <div key={content.id} data-testid="admin-content-row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 172px', gap: '10px', alignItems: 'center', border: `1px solid ${colors.borderSoft}`, borderRadius: 12, background: 'rgba(255,255,255,.025)', padding: '10px 12px' }}>
+                    <div
+                      key={content.id}
+                      data-testid="admin-content-row"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0,1fr) 172px",
+                        gap: "10px",
+                        alignItems: "center",
+                        border: `1px solid ${colors.borderSoft}`,
+                        borderRadius: 12,
+                        background: "rgba(255,255,255,.025)",
+                        padding: "10px 12px",
+                      }}
+                    >
                       <span style={{ minWidth: 0 }}>
-                        <span style={{ display: 'flex', gap: 8, alignItems: 'center', color: colors.text, fontSize: 13, fontWeight: 900 }}>
+                        <span
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                            color: colors.text,
+                            fontSize: 13,
+                            fontWeight: 900,
+                          }}
+                        >
                           {content.title}
-                          <span style={{ border: `1px solid ${colors.borderGold32}`, borderRadius: 999, color: colors.goldBright, padding: '3px 7px', fontSize: 10 }}>{content.type}</span>
-                          {content.noindex ? <span style={{ border: `1px solid rgba(224,114,158,.35)`, borderRadius: 999, color: colors.neonPink, padding: '3px 7px', fontSize: 10 }}>noindex</span> : null}
+                          <span
+                            style={{
+                              border: `1px solid ${colors.borderGold32}`,
+                              borderRadius: 999,
+                              color: colors.goldBright,
+                              padding: "3px 7px",
+                              fontSize: 10,
+                            }}
+                          >
+                            {content.type}
+                          </span>
+                          {content.noindex ? (
+                            <span
+                              style={{
+                                border: `1px solid rgba(224,114,158,.35)`,
+                                borderRadius: 999,
+                                color: colors.neonPink,
+                                padding: "3px 7px",
+                                fontSize: 10,
+                              }}
+                            >
+                              noindex
+                            </span>
+                          ) : null}
                         </span>
-                        <span style={{ display: 'block', marginTop: 4, color: colors.muted, fontSize: 11.5 }}>
-                          /{content.type === 'BLOG' ? 'blog' : 'legal'}/{content.slug} · {content.status} · {content.publishedAt ? new Date(content.publishedAt).toLocaleDateString('vi-VN') : 'chưa publish'}
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 4,
+                            color: colors.muted,
+                            fontSize: 11.5,
+                          }}
+                        >
+                          /{content.type === "BLOG" ? "blog" : "legal"}/{content.slug} ·{" "}
+                          {content.status} ·{" "}
+                          {content.publishedAt
+                            ? new Date(content.publishedAt).toLocaleDateString("vi-VN")
+                            : "chưa publish"}
                         </span>
                       </span>
-                      <span style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                        <button type="button" onClick={() => editContent(content)} style={{ minHeight: 32, border: `1px solid ${colors.borderGold22}`, borderRadius: 9, background: colors.surface2, color: colors.gold, padding: '0 10px', fontWeight: 800, cursor: 'pointer' }}>
+                      <span style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => editContent(content)}
+                          style={{
+                            minHeight: 32,
+                            border: `1px solid ${colors.borderGold22}`,
+                            borderRadius: 9,
+                            background: colors.surface2,
+                            color: colors.gold,
+                            padding: "0 10px",
+                            fontWeight: 800,
+                            cursor: "pointer",
+                          }}
+                        >
                           Sửa
                         </button>
-                        <button type="button" disabled={contentSavingId === content.id} onClick={() => void deleteContent(content.id)} aria-label={`Xóa content ${content.title}`} style={{ width: 34, minHeight: 32, border: `1px solid rgba(224,114,158,.35)`, borderRadius: 9, background: 'rgba(224,114,158,.08)', color: colors.neonPink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <button
+                          type="button"
+                          disabled={contentSavingId === content.id}
+                          onClick={() => void deleteContent(content.id)}
+                          aria-label={`Xóa content ${content.title}`}
+                          style={{
+                            width: 34,
+                            minHeight: 32,
+                            border: `1px solid rgba(224,114,158,.35)`,
+                            borderRadius: 9,
+                            background: "rgba(224,114,158,.08)",
+                            color: colors.neonPink,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                          }}
+                        >
                           <Trash2 size={15} />
                         </button>
                       </span>
                     </div>
                   ))}
                   {!contentItems.length ? (
-                    <div style={{ minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px dashed ${colors.borderGold22}`, borderRadius: 12, color: colors.muted, fontSize: 13 }}>
+                    <div
+                      style={{
+                        minHeight: 140,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: `1px dashed ${colors.borderGold22}`,
+                        borderRadius: 12,
+                        color: colors.muted,
+                        fontSize: 13,
+                      }}
+                    >
                       Chưa có content CMS. Tạo blog hoặc chính sách ở form bên trái.
                     </div>
                   ) : null}
@@ -1144,142 +2764,879 @@ export default function AdminDashboardPage() {
               </div>
             </article>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.45fr) minmax(340px,.55fr)', gap: '14px', marginTop: '14px' }}>
-              <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, padding: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0,1.45fr) minmax(340px,.55fr)",
+                gap: "14px",
+                marginTop: "14px",
+              }}
+            >
+              <article
+                style={{
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: "16px",
+                  background: colors.surface1,
+                  padding: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "14px",
+                    marginBottom: "18px",
+                  }}
+                >
                   <div>
-                    <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Doanh thu & hoa hồng 7 ngày</h2>
-                    <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>REVENUE & COMMISSION</div>
+                    <h2
+                      style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}
+                    >
+                      Doanh thu & hoa hồng 7 ngày
+                    </h2>
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        fontSize: "9px",
+                        fontWeight: 600,
+                        letterSpacing: "1.6px",
+                        color: colors.muted,
+                      }}
+                    >
+                      REVENUE & COMMISSION
+                    </div>
                   </div>
-                  <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                    }}
+                  />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '220px' }}>
+                <div
+                  style={{ display: "flex", alignItems: "flex-end", gap: "14px", height: "220px" }}
+                >
                   {[46, 62, 40, 74, 96, 88, 54].map((height, index) => (
-                    <div key={index} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                      <div style={{ width: '62%', height: `${Math.max(18, height * 0.38)}%`, background: 'rgba(212,178,106,.22)', borderRadius: '7px 7px 0 0' }} />
-                      <div style={{ width: '100%', height: `${height}%`, background: index === 4 ? colors.goldGrad : 'rgba(212,178,106,.34)', borderRadius: '8px 8px 0 0' }} />
-                      <span style={{ color: colors.muted, fontSize: '11px' }}>{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][index]}</span>
+                    <div
+                      key={index}
+                      style={{
+                        flex: 1,
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "62%",
+                          height: `${Math.max(18, height * 0.38)}%`,
+                          background: "rgba(212,178,106,.22)",
+                          borderRadius: "7px 7px 0 0",
+                        }}
+                      />
+                      <div
+                        style={{
+                          width: "100%",
+                          height: `${height}%`,
+                          background: index === 4 ? colors.goldGrad : "rgba(212,178,106,.34)",
+                          borderRadius: "8px 8px 0 0",
+                        }}
+                      />
+                      <span style={{ color: colors.muted, fontSize: "11px" }}>
+                        {["T2", "T3", "T4", "T5", "T6", "T7", "CN"][index]}
+                      </span>
                     </div>
                   ))}
                 </div>
               </article>
 
-              <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, padding: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+              <article
+                style={{
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: "16px",
+                  background: colors.surface1,
+                  padding: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "14px",
+                    marginBottom: "16px",
+                  }}
+                >
                   <div>
-                    <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Top quán</h2>
-                    <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>BY BOOKINGS</div>
+                    <h2
+                      style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}
+                    >
+                      Top quán
+                    </h2>
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        fontSize: "9px",
+                        fontWeight: 600,
+                        letterSpacing: "1.6px",
+                        color: colors.muted,
+                      }}
+                    >
+                      BY BOOKINGS
+                    </div>
                   </div>
-                  <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                    }}
+                  />
                 </div>
-                {['Club Lumiere', 'KTV Hoàng Gia', 'Spa Hồng Ngọc', 'Sakura Lounge', 'Casino Diamond'].map((name, index) => (
-                  <div key={name} style={{ display: 'grid', gridTemplateColumns: '32px 1fr auto', gap: '10px', alignItems: 'center', padding: '10px 0', borderBottom: index < 4 ? `1px solid ${colors.borderSoft}` : 0 }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 10, background: index === 0 ? colors.goldGrad : 'rgba(212,178,106,.12)', color: index === 0 ? colors.onGold : colors.gold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>{index + 1}</span>
-                    <span>
-                      <span style={{ display: 'block', fontSize: '13px', fontWeight: 700 }}>{name}</span>
-                      <span style={{ display: 'block', marginTop: 3, color: colors.muted, fontSize: '11px' }}>Hà Nội</span>
+                {[
+                  "Club Lumiere",
+                  "KTV Hoàng Gia",
+                  "Spa Hồng Ngọc",
+                  "Sakura Lounge",
+                  "Casino Diamond",
+                ].map((name, index) => (
+                  <div
+                    key={name}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "32px 1fr auto",
+                      gap: "10px",
+                      alignItems: "center",
+                      padding: "10px 0",
+                      borderBottom: index < 4 ? `1px solid ${colors.borderSoft}` : 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 10,
+                        background: index === 0 ? colors.goldGrad : "rgba(212,178,106,.12)",
+                        color: index === 0 ? colors.onGold : colors.gold,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 900,
+                      }}
+                    >
+                      {index + 1}
                     </span>
-                    <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>{[312, 208, 210, 156, 89][index]}</span>
+                    <span>
+                      <span style={{ display: "block", fontSize: "13px", fontWeight: 700 }}>
+                        {name}
+                      </span>
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 3,
+                          color: colors.muted,
+                          fontSize: "11px",
+                        }}
+                      >
+                        Hà Nội
+                      </span>
+                    </span>
+                    <span style={{ color: colors.goldBright, fontSize: "12px", fontWeight: 800 }}>
+                      {[312, 208, 210, 156, 89][index]}
+                    </span>
                   </div>
                 ))}
               </article>
             </div>
 
-            <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+            <article
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "18px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
                 <div>
-                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Bill nhay cam cho duyet</h2>
-                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>ADMIN SENSITIVE REVIEW</div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}>
+                    Bill nhay cam cho duyet
+                  </h2>
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "1.6px",
+                      color: colors.muted,
+                    }}
+                  >
+                    ADMIN SENSITIVE REVIEW
+                  </div>
                 </div>
-                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                  }}
+                />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
-                <span>Bill</span><span>Quan</span><span>Khach</span><span>Tong tien</span><span>Duyet</span>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr .8fr .8fr 190px",
+                  padding: "12px 20px",
+                  color: colors.muted,
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <span>Bill</span>
+                <span>Quan</span>
+                <span>Khach</span>
+                <span>Tong tien</span>
+                <span>Duyet</span>
               </div>
               {(orderedSensitiveBills.length ? orderedSensitiveBills : []).map((bill) => (
-                <div key={bill.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr .8fr .8fr 190px', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${bill.id === focusedBillId ? colors.borderGold32 : colors.borderSoft}`, background: bill.id === focusedBillId ? 'rgba(212,178,106,.09)' : 'transparent', fontSize: '13px', gap: '10px' }}>
-                  <span style={{ fontWeight: 800, color: colors.gold }}>{bill.billNumber ?? bill.id.slice(0, 8)}</span>
+                <div
+                  key={bill.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr .8fr .8fr 190px",
+                    padding: "13px 20px",
+                    alignItems: "center",
+                    borderBottom: `1px solid ${bill.id === focusedBillId ? colors.borderGold32 : colors.borderSoft}`,
+                    background: bill.id === focusedBillId ? "rgba(212,178,106,.09)" : "transparent",
+                    fontSize: "13px",
+                    gap: "10px",
+                  }}
+                >
+                  <span style={{ fontWeight: 800, color: colors.gold }}>
+                    {bill.billNumber ?? bill.id.slice(0, 8)}
+                  </span>
                   <span>{bill.store.name}</span>
-                  <span>{bill.user?.displayName ?? bill.guest?.displayName ?? bill.user?.email ?? bill.guest?.phone ?? 'Guest'}</span>
-                  <span>{(bill.totalVnd ?? 0).toLocaleString('vi-VN')}đ</span>
-                  <span style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" disabled={reviewingId === bill.id} onClick={() => reviewBill(bill.id, true)} style={{ border: 0, borderRadius: '9px', padding: '8px 10px', background: colors.goldGrad, color: colors.onGold, fontWeight: 800, cursor: 'pointer' }}>
+                  <span>
+                    {bill.user?.displayName ??
+                      bill.guest?.displayName ??
+                      bill.user?.email ??
+                      bill.guest?.phone ??
+                      "Guest"}
+                  </span>
+                  <span>{(bill.totalVnd ?? 0).toLocaleString("vi-VN")}đ</span>
+                  <span style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      disabled={reviewingId === bill.id}
+                      onClick={() => reviewBill(bill.id, true)}
+                      style={{
+                        border: 0,
+                        borderRadius: "9px",
+                        padding: "8px 10px",
+                        background: colors.goldGrad,
+                        color: colors.onGold,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
                       Duyet
                     </button>
-                    <button type="button" disabled={reviewingId === bill.id} onClick={() => reviewBill(bill.id, false)} style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '9px', padding: '8px 10px', background: colors.surface2, color: colors.neonPink, fontWeight: 800, cursor: 'pointer' }}>
+                    <button
+                      type="button"
+                      disabled={reviewingId === bill.id}
+                      onClick={() => reviewBill(bill.id, false)}
+                      style={{
+                        border: `1px solid ${colors.borderGold22}`,
+                        borderRadius: "9px",
+                        padding: "8px 10px",
+                        background: colors.surface2,
+                        color: colors.neonPink,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
                       Tu choi
                     </button>
                   </span>
                 </div>
               ))}
               {!sensitiveBills.length ? (
-                <div style={{ padding: '16px 20px', color: colors.muted, fontSize: '13px' }}>Khong co bill nhay cam dang cho duyet, hoac backend chua co du lieu seed.</div>
+                <div style={{ padding: "16px 20px", color: colors.muted, fontSize: "13px" }}>
+                  Khong co bill nhay cam dang cho duyet, hoac backend chua co du lieu seed.
+                </div>
               ) : null}
             </article>
 
-            <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+            <article
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "18px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
                 <div>
-                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Partner request</h2>
-                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>ADMIN PARTNER REVIEW</div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}>
+                    Partner request
+                  </h2>
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "1.6px",
+                      color: colors.muted,
+                    }}
+                  >
+                    ADMIN PARTNER REVIEW
+                  </div>
                 </div>
-                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                  }}
+                />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr 1fr 1fr .75fr', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
-                <span>Co so</span><span>Khu vuc</span><span>Lien he</span><span>Ghi chu</span><span>Notify</span>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.1fr .9fr 1fr 1fr .75fr",
+                  padding: "12px 20px",
+                  color: colors.muted,
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <span>Co so</span>
+                <span>Khu vuc</span>
+                <span>Lien he</span>
+                <span>Ghi chu</span>
+                <span>Notify</span>
               </div>
               {orderedPartnerRequests.slice(0, 6).map((request) => (
-                <div key={request.id} style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr 1fr 1fr .75fr', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${request.id === focusedRequestId ? colors.borderGold32 : colors.borderSoft}`, background: request.id === focusedRequestId ? 'rgba(212,178,106,.09)' : 'transparent', fontSize: '13px', gap: '10px' }}>
+                <div
+                  key={request.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.1fr .9fr 1fr 1fr .75fr",
+                    padding: "13px 20px",
+                    alignItems: "center",
+                    borderBottom: `1px solid ${request.id === focusedRequestId ? colors.borderGold32 : colors.borderSoft}`,
+                    background:
+                      request.id === focusedRequestId ? "rgba(212,178,106,.09)" : "transparent",
+                    fontSize: "13px",
+                    gap: "10px",
+                  }}
+                >
                   <span>
-                    <span style={{ display: 'block', fontWeight: 800, color: colors.gold }}>{request.businessName}</span>
-                    <span style={{ display: 'block', marginTop: 3, color: colors.muted, fontSize: '11px' }}>{request.businessType ?? request.id}</span>
+                    <span style={{ display: "block", fontWeight: 800, color: colors.gold }}>
+                      {request.businessName}
+                    </span>
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 3,
+                        color: colors.muted,
+                        fontSize: "11px",
+                      }}
+                    >
+                      {request.businessType ?? request.id}
+                    </span>
                   </span>
-                  <span>{request.area ?? '-'}</span>
+                  <span>{request.area ?? "-"}</span>
                   <span>
-                    <span style={{ display: 'block', fontWeight: 700 }}>{request.contactName}</span>
-                    <span style={{ display: 'block', marginTop: 3, color: colors.muted, fontSize: '11px' }}>{request.contactPhone}</span>
+                    <span style={{ display: "block", fontWeight: 700 }}>{request.contactName}</span>
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 3,
+                        color: colors.muted,
+                        fontSize: "11px",
+                      }}
+                    >
+                      {request.contactPhone}
+                    </span>
                   </span>
-                  <span style={{ color: colors.text2 }}>{request.note ?? request.contactEmail ?? '-'}</span>
+                  <span style={{ color: colors.text2 }}>
+                    {request.note ?? request.contactEmail ?? "-"}
+                  </span>
                   <span>
-                    <span style={{ borderRadius: '999px', padding: '4px 10px', color: request.notificationStatus === 'SENT' ? colors.goldBright : colors.neonPink, background: 'rgba(255,255,255,.05)', fontSize: '11px', fontWeight: 800 }}>
+                    <span
+                      style={{
+                        borderRadius: "999px",
+                        padding: "4px 10px",
+                        color:
+                          request.notificationStatus === "SENT"
+                            ? colors.goldBright
+                            : colors.neonPink,
+                        background: "rgba(255,255,255,.05)",
+                        fontSize: "11px",
+                        fontWeight: 800,
+                      }}
+                    >
                       {request.notificationStatus}
                     </span>
                   </span>
                 </div>
               ))}
               {!partnerRequests.length ? (
-                <div style={{ padding: '16px 20px', color: colors.muted, fontSize: '13px' }}>Chua co partner request tu Telegram log.</div>
+                <div style={{ padding: "16px 20px", color: colors.muted, fontSize: "13px" }}>
+                  Chua co partner request tu Telegram log.
+                </div>
               ) : null}
             </article>
 
-            <article style={{ border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', background: colors.surface1, overflow: 'hidden', marginTop: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '18px 20px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+            <article
+              style={{
+                border: `1px solid ${colors.borderGold22}`,
+                borderRadius: "16px",
+                background: colors.surface1,
+                overflow: "hidden",
+                marginTop: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                  padding: "18px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
                 <div>
-                  <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>Yêu cầu đặt chỗ gần đây</h2>
-                  <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>RECENT BOOKINGS</div>
+                  <h2 style={{ margin: 0, color: colors.text, fontSize: "21px", fontWeight: 600 }}>
+                    Yêu cầu đặt chỗ gần đây
+                  </h2>
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "1.6px",
+                      color: colors.muted,
+                    }}
+                  >
+                    RECENT BOOKINGS
+                  </div>
                 </div>
-                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "linear-gradient(90deg, rgba(212,178,106,.45), transparent)",
+                  }}
+                />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '12px 20px', color: colors.muted, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: `1px solid ${colors.borderSoft}` }}>
-                <span>Khách</span><span>Quán / Cast</span><span>Số người</span><span>Khung giờ</span><span>Trạng thái</span>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.1fr 1.4fr .6fr .7fr .75fr 156px",
+                  padding: "12px 20px",
+                  color: colors.muted,
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                <span>Khách</span>
+                <span>Quán / Cast</span>
+                <span>Số người</span>
+                <span>Khung giờ</span>
+                <span>Trạng thái</span>
+                <span>Thao tac</span>
               </div>
-              {adminBookingRows.map(([id, guest, place, people, time, status]) => (
-                <div key={id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr .7fr .8fr .9fr', padding: '13px 20px', alignItems: 'center', borderBottom: `1px solid ${id === focusedBookingId ? colors.borderGold32 : colors.borderSoft}`, background: id === focusedBookingId ? 'rgba(212,178,106,.09)' : 'transparent', fontSize: '13px' }}>
-                  <span style={{ fontWeight: 700 }}>{guest}</span>
-                  <span>{place}</span>
-                  <span>{people}</span>
-                  <span>{time}</span>
-                  <span>
-                    <span style={{ borderRadius: '999px', padding: '4px 10px', color: status === 'Hoàn tất' ? colors.goldBright : status === 'Đã hủy' ? colors.neonPink : colors.onGold, background: status === 'Mới' ? colors.goldGrad : 'rgba(255,255,255,.05)', fontSize: '11px', fontWeight: 800 }}>
-                      {status}
+              {adminBookingRows.map(
+                ({ id, guest, place, people, time, status, focused, canCancel, booking }) => (
+                  <div
+                    key={id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1.1fr 1.4fr .6fr .7fr .75fr 156px",
+                      padding: "13px 20px",
+                      alignItems: "center",
+                      borderBottom: `1px solid ${focused ? colors.borderGold32 : colors.borderSoft}`,
+                      background: focused ? "rgba(212,178,106,.09)" : "transparent",
+                      fontSize: "13px",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ fontWeight: 700 }}>{guest}</span>
+                    <span>{place}</span>
+                    <span>{people}</span>
+                    <span>{time}</span>
+                    <span>
+                      <span
+                        style={{
+                          borderRadius: "999px",
+                          padding: "4px 10px",
+                          color:
+                            status === "Hoàn tất"
+                              ? colors.goldBright
+                              : status === "Đã hủy"
+                                ? colors.neonPink
+                                : colors.onGold,
+                          background: status === "Mới" ? colors.goldGrad : "rgba(255,255,255,.05)",
+                          fontSize: "11px",
+                          fontWeight: 800,
+                        }}
+                      >
+                        {status}
+                      </span>
                     </span>
-                  </span>
-                </div>
-              ))}
+                    <span style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}>
+                      {booking ? (
+                        <button
+                          type="button"
+                          onClick={() => openAdminBookingChat(booking)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            border: `1px solid ${colors.borderGold22}`,
+                            borderRadius: "9px",
+                            padding: "7px 9px",
+                            background: colors.surface2,
+                            color: colors.goldBright,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <MessageCircle size={13} />
+                          Chat
+                        </button>
+                      ) : null}
+                      {canCancel && booking ? (
+                        <button
+                          type="button"
+                          disabled={cancelingBookingId === booking.id}
+                          onClick={() => openCancelBookingDialog(booking)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            border: `1px solid ${colors.borderGold22}`,
+                            borderRadius: "9px",
+                            padding: "7px 9px",
+                            background: colors.surface2,
+                            color: colors.neonPink,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <XCircle size={13} />
+                          Huy
+                        </button>
+                      ) : null}
+                      {!booking ? <span style={{ color: colors.muted, fontSize: "12px" }}>-</span> : null}
+                    </span>
+                  </div>
+                ),
+              )}
             </article>
           </div>
         </section>
       </div>
+      {cancelBookingTarget ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-cancel-booking-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 80,
+            display: "grid",
+            placeItems: "center",
+            padding: "18px",
+            background: "rgba(0,0,0,.68)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(100%, 420px)",
+              border: `1px solid ${colors.borderGold32}`,
+              borderRadius: "14px",
+              background: "#121216",
+              boxShadow: "0 24px 70px rgba(0,0,0,.48)",
+              padding: "20px",
+            }}
+          >
+            <h2
+              id="admin-cancel-booking-title"
+              style={{ margin: 0, color: colors.goldBright, fontSize: "19px" }}
+            >
+              Huy booking thay khach
+            </h2>
+            <p
+              style={{ margin: "10px 0 0", color: colors.text2, fontSize: "13px", lineHeight: 1.6 }}
+            >
+              Booking cua {bookingGuestLabel(cancelBookingTarget)} tai{" "}
+              {cancelBookingTarget.store.name}. Ly do se duoc luu vao audit log va notification.
+            </p>
+            <label
+              style={{
+                display: "grid",
+                gap: "8px",
+                marginTop: "16px",
+                color: colors.text2,
+                fontSize: "12px",
+                fontWeight: 800,
+              }}
+            >
+              Ly do huy
+              <textarea
+                value={cancelBookingReason}
+                onChange={(event) => setCancelBookingReason(event.target.value)}
+                rows={4}
+                maxLength={300}
+                placeholder="Vi du: khach bao doi lich qua LINE OA"
+                style={{
+                  width: "100%",
+                  minHeight: "104px",
+                  resize: "vertical",
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: "12px",
+                  background: "rgba(255,255,255,.055)",
+                  color: colors.text,
+                  padding: "12px",
+                  font: "inherit",
+                  lineHeight: 1.45,
+                  outline: "none",
+                }}
+              />
+            </label>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "10px",
+                marginTop: "18px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeCancelBookingDialog}
+                disabled={Boolean(cancelingBookingId)}
+                style={{
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: "10px",
+                  padding: "11px 12px",
+                  background: colors.surface2,
+                  color: colors.text,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Quay lai
+              </button>
+              <button
+                type="button"
+                onClick={submitAdminCancelBooking}
+                disabled={Boolean(cancelingBookingId)}
+                style={{
+                  border: 0,
+                  borderRadius: "10px",
+                  padding: "11px 12px",
+                  background: colors.neonPink,
+                  color: "#17070c",
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                {cancelingBookingId ? "Dang huy" : "Xac nhan huy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {adminChatBooking ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-booking-chat-title"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 80,
+            display: "grid",
+            placeItems: "center",
+            padding: "18px",
+            background: "rgba(0,0,0,.68)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(100%, 460px)",
+              border: `1px solid ${colors.borderGold32}`,
+              borderRadius: "14px",
+              background: "#121216",
+              boxShadow: "0 24px 70px rgba(0,0,0,.48)",
+              padding: "20px",
+            }}
+          >
+            <h2
+              id="admin-booking-chat-title"
+              style={{ margin: 0, color: colors.goldBright, fontSize: "19px" }}
+            >
+              Chat booking
+            </h2>
+            <p style={{ margin: "10px 0 0", color: colors.text2, fontSize: "13px" }}>
+              {bookingGuestLabel(adminChatBooking)} · {adminChatBooking.store.name}
+            </p>
+            <div
+              style={{
+                maxHeight: "280px",
+                overflow: "auto",
+                display: "grid",
+                gap: "8px",
+                marginTop: "14px",
+                padding: "10px",
+                border: `1px solid ${colors.borderSoft}`,
+                borderRadius: "12px",
+                background: "rgba(0,0,0,.18)",
+              }}
+            >
+              {adminChatLoading ? (
+                <span style={{ color: colors.muted, fontSize: "12px" }}>Dang tai tin nhan...</span>
+              ) : null}
+              {!adminChatLoading && adminChatMessages.length === 0 ? (
+                <span style={{ color: colors.muted, fontSize: "12px" }}>Chua co tin nhan.</span>
+              ) : null}
+              {adminChatMessages.map((item) => {
+                const fromStaff = item.senderType === "ADMIN" || item.senderType === "OPERATOR";
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      width: "min(88%, 310px)",
+                      justifySelf: fromStaff ? "end" : "start",
+                      border: `1px solid ${fromStaff ? colors.borderGold32 : colors.borderSoft}`,
+                      borderRadius: "12px",
+                      background: fromStaff ? "rgba(212,178,106,.12)" : colors.surface2,
+                      padding: "9px 10px",
+                    }}
+                  >
+                    <div style={{ color: colors.gold, fontSize: "10px", fontWeight: 900 }}>
+                      {item.senderType}
+                    </div>
+                    <div style={{ marginTop: "4px", color: colors.text, fontSize: "12.5px" }}>
+                      {item.body}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <label
+              style={{
+                display: "grid",
+                gap: "8px",
+                marginTop: "16px",
+                color: colors.text2,
+                fontSize: "12px",
+                fontWeight: 800,
+              }}
+            >
+              Tin nhan
+              <textarea
+                value={adminChatInput}
+                onChange={(event) => setAdminChatInput(event.target.value)}
+                rows={3}
+                maxLength={800}
+                placeholder="Nhap noi dung phan hoi khach..."
+                style={{
+                  width: "100%",
+                  minHeight: "92px",
+                  resize: "vertical",
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: "12px",
+                  background: "rgba(255,255,255,.055)",
+                  color: colors.text,
+                  padding: "12px",
+                  font: "inherit",
+                  lineHeight: 1.45,
+                  outline: "none",
+                }}
+              />
+            </label>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "10px",
+                marginTop: "18px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeAdminBookingChat}
+                disabled={adminChatSending}
+                style={{
+                  border: `1px solid ${colors.borderGold22}`,
+                  borderRadius: "10px",
+                  padding: "11px 12px",
+                  background: colors.surface2,
+                  color: colors.text,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Dong
+              </button>
+              <button
+                type="button"
+                onClick={sendAdminChatMessage}
+                disabled={adminChatSending || !adminChatInput.trim()}
+                style={{
+                  border: 0,
+                  borderRadius: "10px",
+                  padding: "11px 12px",
+                  background: colors.goldGrad,
+                  color: colors.onGold,
+                  fontWeight: 900,
+                  cursor: "pointer",
+                }}
+              >
+                {adminChatSending ? "Dang gui" : "Gui tin"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

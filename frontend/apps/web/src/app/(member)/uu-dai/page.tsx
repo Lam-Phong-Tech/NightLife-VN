@@ -183,10 +183,53 @@ const getCouponImage = (coupon: PublicCoupon, index: number) =>
 const getStoreLocation = (coupon: PublicCoupon) =>
   [coupon.store.district, coupon.store.city].filter(Boolean).join(", ");
 
-const couponQrImageUrl = (issue: CouponIssue) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(
-    issue.qrPayload || issue.code,
-  )}`;
+const couponQrImageUrl = (issue: CouponIssue) => issue.qrImageDataUrl || "";
+
+const isCouponIssueExpired = (issue: CouponIssue) => {
+  if (!issue.expiresAt) {
+    return false;
+  }
+
+  const expiresAt = new Date(issue.expiresAt).getTime();
+  return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+};
+
+const canShowIssueQr = (issue: CouponIssue) =>
+  issue.status === "ISSUED" && !isCouponIssueExpired(issue) && Boolean(issue.qrImageDataUrl);
+
+const couponIssueStatusText = (issue: CouponIssue) => {
+  if (issue.status === "USED") {
+    return "Đã sử dụng";
+  }
+
+  if (issue.status === "EXPIRED" || isCouponIssueExpired(issue)) {
+    return "Hết hạn";
+  }
+
+  if (issue.status === "ISSUED") {
+    return issue.statusLabel || "Đang giữ chỗ";
+  }
+
+  return issue.statusLabel || issue.status;
+};
+
+const issueDiscountText = (issue: CouponIssue) => {
+  if (typeof issue.discountPercent === "number") {
+    return `-${issue.discountPercent}%`;
+  }
+
+  if (issue.coupon.discountType && typeof issue.coupon.discountValue === "number") {
+    return formatDiscount({
+      discountType: issue.coupon.discountType,
+      discountValue: issue.coupon.discountValue,
+    });
+  }
+
+  return "Ưu đãi";
+};
+
+const issueStoreName = (issue: CouponIssue) =>
+  issue.coupon.store?.name ? readableName(issue.coupon.store.name) : "Vietyoru partner";
 
 function ClaimedCouponModal({
   copied,
@@ -247,22 +290,24 @@ function ClaimedCouponModal({
 
         <div className="coupon-modal-body">
           <span className="modal-eyebrow">Mã ưu đãi của bạn</span>
-          <div className="claimed-qr" aria-label="QR coupon">
-            <Image
-              src={couponQrImageUrl(issue)}
-              alt={`QR ${issue.code}`}
-              width={148}
-              height={148}
-              unoptimized
-            />
-          </div>
+          {canShowIssueQr(issue) ? (
+            <div className="claimed-qr" aria-label="QR coupon">
+              <Image
+                src={couponQrImageUrl(issue)}
+                alt={`QR ${issue.code}`}
+                width={148}
+                height={148}
+                unoptimized
+              />
+            </div>
+          ) : null}
           <div className="claimed-code">
             <strong>{issue.code}</strong>
             <button aria-label="Sao chép mã ưu đãi" onClick={onCopy} type="button">
               <Copy size={15} />
             </button>
           </div>
-          {issue.statusLabel ? <span className="claimed-status">{issue.statusLabel}</span> : null}
+          <span className="claimed-status">{couponIssueStatusText(issue)}</span>
           <button className="copy-button" onClick={onCopy} type="button">
             <Copy size={16} />
             {copied ? "Đã sao chép" : "Sao chép mã"}
@@ -273,6 +318,111 @@ function ClaimedCouponModal({
         </div>
       </section>
     </div>
+  );
+}
+
+function MemberCouponWallet({
+  copiedIssueId,
+  error,
+  isLoading,
+  issues,
+  onCopy,
+}: {
+  copiedIssueId: string | null;
+  error: string;
+  isLoading: boolean;
+  issues: CouponIssue[];
+  onCopy: (issue: CouponIssue) => void;
+}) {
+  return (
+    <section className="coupon-wallet" aria-label="Ví coupon đã claim">
+      <div className="wallet-heading">
+        <div>
+          <span className="claim-eyebrow">
+            <Ticket size={15} />
+            Ví coupon
+          </span>
+          <h2>Mã đã lưu</h2>
+        </div>
+        <span>{issues.length} mã</span>
+      </div>
+
+      {isLoading ? (
+        <div className="wallet-state">
+          <Loader2 className="spin" size={16} />
+          Đang tải ví coupon
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="wallet-state error">
+          <AlertCircle size={16} />
+          {error}
+        </div>
+      ) : null}
+
+      {!isLoading && !error && issues.length === 0 ? (
+        <div className="wallet-state">Chưa có mã nào trong ví.</div>
+      ) : null}
+
+      {issues.length ? (
+        <div className="wallet-list">
+          {issues.map((issue) => {
+            const showQr = canShowIssueQr(issue);
+            const statusText = couponIssueStatusText(issue);
+            const statusDetail =
+              issue.status === "USED"
+                ? `Dùng lúc ${formatDate(issue.usedAt)}`
+                : issue.status === "EXPIRED" || isCouponIssueExpired(issue)
+                  ? `HSD ${formatDate(issue.expiresAt)}`
+                  : `HSD ${formatDate(issue.expiresAt)}`;
+
+            return (
+              <article className={`wallet-item ${showQr ? "active" : "inactive"}`} key={issue.id}>
+                <div className="wallet-copy">
+                  <div className="wallet-value-row">
+                    <strong>{issueDiscountText(issue)}</strong>
+                    <span className={showQr ? "claimed-status" : "claimed-status inactive"}>{statusText}</span>
+                  </div>
+                  <h3>{readableName(issue.coupon.name)}</h3>
+                  <p>{issueStoreName(issue)}</p>
+                  <div className="wallet-meta">
+                    <span>{statusDetail}</span>
+                    <span>{issue.userType || "MEMBER"}</span>
+                  </div>
+                  <div className="wallet-code-row">
+                    <code>{issue.code}</code>
+                    {showQr ? (
+                      <button aria-label="Sao chép mã trong ví" onClick={() => onCopy(issue)} type="button">
+                        <Copy size={14} />
+                        {copiedIssueId === issue.id ? "Đã sao chép" : "Sao chép"}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {showQr ? (
+                  <div className="wallet-qr" aria-label="QR coupon đang giữ chỗ">
+                    <Image
+                      src={couponQrImageUrl(issue)}
+                      alt={`QR ${issue.code}`}
+                      width={116}
+                      height={116}
+                      unoptimized
+                    />
+                  </div>
+                ) : (
+                  <div className="wallet-status-card">
+                    <strong>{statusText}</strong>
+                    <span>{issue.status === "USED" ? "Không cho dùng lại" : "QR đã ẩn"}</span>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -297,6 +447,11 @@ export default function Page() {
   const [claimedIssue, setClaimedIssue] = useState<CouponIssue | null>(null);
   const [claimedCoupon, setClaimedCoupon] = useState<PublicCoupon | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedIssueId, setCopiedIssueId] = useState<string | null>(null);
+  const [memberIssues, setMemberIssues] = useState<CouponIssue[]>([]);
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
+  const [walletError, setWalletError] = useState("");
+  const isMember = isMemberUser(authUser);
   const query = useMemo<CouponQuery>(
     () => ({
       couponId: searchParams.get("couponId") || undefined,
@@ -340,6 +495,47 @@ export default function Page() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMember) {
+      setMemberIssues([]);
+      setWalletError("");
+      setIsWalletLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsWalletLoading(true);
+
+    couponApi
+      .listMemberCouponIssues()
+      .then((issues) => {
+        if (isMounted) {
+          setMemberIssues(issues);
+          setWalletError("");
+        }
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : "Không tải được ví coupon đã lưu.";
+        setWalletError(message);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsWalletLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isMember]);
 
   const effectiveActiveFilter = hasStoreScope ? "store" : activeFilter;
 
@@ -406,7 +602,6 @@ export default function Page() {
   );
 
   const isSelectedCouponOnly = hasCouponScope && !hasStoreScope;
-  const isMember = isMemberUser(authUser);
   const pageTitle =
     hasStoreScope && scopedStore
       ? `Ưu đãi của ${readableName(scopedStore.name)}`
@@ -441,6 +636,13 @@ export default function Page() {
 
       setClaimedCoupon(coupon);
       setClaimedIssue(issue);
+      if (isMember) {
+        setMemberIssues((current) => [
+          issue,
+          ...current.filter((item) => item.id !== issue.id),
+        ]);
+        setWalletError("");
+      }
     } catch (error) {
       const message =
         error instanceof ApiError
@@ -463,6 +665,16 @@ export default function Page() {
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       setClaimError("Không sao chép được mã. Bạn có thể chọn và sao chép thủ công.");
+    }
+  };
+
+  const copyWalletIssueCode = async (issue: CouponIssue) => {
+    try {
+      await navigator.clipboard.writeText(issue.code);
+      setCopiedIssueId(issue.id);
+      window.setTimeout(() => setCopiedIssueId(null), 1800);
+    } catch {
+      setWalletError("Không sao chép được mã. Bạn có thể chọn và sao chép thủ công.");
     }
   };
 
@@ -574,6 +786,16 @@ export default function Page() {
             </div>
           )}
         </section>
+
+        {isMember ? (
+          <MemberCouponWallet
+            copiedIssueId={copiedIssueId}
+            error={walletError}
+            isLoading={isWalletLoading}
+            issues={memberIssues}
+            onCopy={copyWalletIssueCode}
+          />
+        ) : null}
 
         {claimError ? (
           <section className="result error" role="alert">
@@ -999,6 +1221,212 @@ export default function Page() {
           font-weight: 700;
         }
 
+        .coupon-wallet {
+          border: 1px solid rgba(212,178,106,.18);
+          background: rgba(255,255,255,.03);
+          border-radius: 16px;
+          padding: 14px;
+          display: grid;
+          gap: 13px;
+        }
+
+        .wallet-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .wallet-heading h2 {
+          margin-top: 5px;
+          color: #f3f0ea;
+          font-size: 18px;
+          line-height: 1.2;
+        }
+
+        .wallet-heading > span {
+          border: 1px solid rgba(212,178,106,.25);
+          border-radius: 999px;
+          color: #e3c27e;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 5px 9px;
+          white-space: nowrap;
+        }
+
+        .wallet-state {
+          min-height: 42px;
+          border: 1px dashed rgba(212,178,106,.2);
+          border-radius: 12px;
+          color: #c5c0b6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 12.5px;
+          text-align: center;
+        }
+
+        .wallet-state.error {
+          border-color: rgba(255,128,150,.38);
+          background: rgba(255,128,150,.1);
+          color: #ffd1d9;
+        }
+
+        .wallet-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .wallet-item {
+          min-width: 0;
+          border: 1px solid rgba(212,178,106,.18);
+          border-radius: 14px;
+          background: rgba(0,0,0,.15);
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 132px;
+          gap: 12px;
+          padding: 12px;
+        }
+
+        .wallet-item.inactive {
+          border-color: rgba(255,255,255,.1);
+          background: rgba(255,255,255,.025);
+        }
+
+        .wallet-copy {
+          min-width: 0;
+          display: grid;
+          gap: 7px;
+        }
+
+        .wallet-value-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .wallet-value-row strong {
+          color: #e3c27e;
+          font-size: 20px;
+          line-height: 1;
+        }
+
+        .wallet-value-row .claimed-status {
+          margin: 0;
+        }
+
+        .claimed-status.inactive {
+          border-color: rgba(255,255,255,.14);
+          background: rgba(255,255,255,.06);
+          color: #c5c0b6;
+        }
+
+        .wallet-item h3 {
+          color: #f3f0ea;
+          font-size: 13.5px;
+          line-height: 1.28;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .wallet-item p {
+          color: #8c8679;
+          font-size: 11.5px;
+          line-height: 1.45;
+        }
+
+        .wallet-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          color: #9b958a;
+          font-size: 11px;
+        }
+
+        .wallet-meta span {
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 999px;
+          padding: 3px 7px;
+        }
+
+        .wallet-code-row {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .wallet-code-row code {
+          min-width: 0;
+          color: #f0dda8;
+          font-family: inherit;
+          font-size: 11.5px;
+          font-weight: 800;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .wallet-code-row button {
+          min-height: 30px;
+          border: 1px solid rgba(212,178,106,.28);
+          border-radius: 8px;
+          background: rgba(212,178,106,.1);
+          color: #e3c27e;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font: inherit;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 0 9px;
+          cursor: pointer;
+          flex: none;
+        }
+
+        .wallet-qr,
+        .wallet-status-card {
+          min-height: 132px;
+          border-radius: 13px;
+          display: grid;
+          place-items: center;
+        }
+
+        .wallet-qr {
+          border: 1px solid rgba(212,178,106,.24);
+          background: #f8f5ee;
+        }
+
+        .wallet-qr img {
+          width: 116px;
+          height: 116px;
+          display: block;
+        }
+
+        .wallet-status-card {
+          border: 1px solid rgba(255,255,255,.1);
+          background: rgba(255,255,255,.05);
+          color: #c5c0b6;
+          align-content: center;
+          gap: 5px;
+          text-align: center;
+          padding: 12px;
+        }
+
+        .wallet-status-card strong {
+          color: #f3f0ea;
+          font-size: 13px;
+        }
+
+        .wallet-status-card span {
+          color: #8c8679;
+          font-size: 11px;
+        }
+
         .result {
           min-height: 54px;
           display: flex;
@@ -1420,7 +1848,8 @@ export default function Page() {
         @media (max-width: 980px) {
           .coupon-hero,
           .claim-panel,
-          .coupon-grid {
+          .coupon-grid,
+          .wallet-list {
             grid-template-columns: 1fr;
           }
 
@@ -1491,6 +1920,20 @@ export default function Page() {
           .claim-panel {
             border-radius: 14px;
             padding: 12px;
+          }
+
+          .coupon-wallet {
+            border-radius: 14px;
+            padding: 12px;
+          }
+
+          .wallet-item {
+            grid-template-columns: 1fr;
+          }
+
+          .wallet-qr,
+          .wallet-status-card {
+            min-height: 124px;
           }
 
           .claim-panel p {

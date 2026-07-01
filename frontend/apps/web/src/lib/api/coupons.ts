@@ -24,9 +24,10 @@ export type PublicCoupon = {
 export type CouponIssue = {
   id: string;
   code: string;
-  status: string;
+  status: "ISSUED" | "USED" | "EXPIRED" | "REVOKED" | string;
   statusLabel?: string;
   qrPayload?: string;
+  qrImageDataUrl?: string | null;
   userType?: "GUEST" | "MEMBER" | "VIP" | string;
   discountPercent?: number | null;
   discountRuleSnapshot?: {
@@ -40,7 +41,8 @@ export type CouponIssue = {
     sourceType?: string;
     sourceValue?: number;
   } | null;
-  expiresAt: string;
+  expiresAt?: string | null;
+  usedAt?: string | null;
   createdAt?: string;
   coupon: {
     id: string;
@@ -79,4 +81,5 @@ export const couponApi = {
     apiClient<CouponIssue>(`/coupons/${encodeURIComponent(couponId)}/member-claims`, {
       data: {},
     }),
+  listMemberCouponIssues: () => apiClient<CouponIssue[]>("/member/coupon-issues"),
 };

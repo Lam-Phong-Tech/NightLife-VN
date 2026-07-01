@@ -27,6 +27,7 @@ export type BookingRecord = {
     id: string;
     name: string;
     slug: string;
+    bookingCancelCutoffMinutes?: number | null;
   } | null;
   cast?: {
     id: string;
@@ -68,10 +69,118 @@ export type CancelGuestBookingPayload = {
   reason?: string;
 };
 
-const bookingCancelCutoffMs = 60 * 60 * 1000;
+export type BookingReschedulePayload = {
+  scheduledAt: string;
+  reason?: string;
+};
+
+export type GuestBookingReschedulePayload = BookingReschedulePayload & {
+  phone: string;
+};
+
+export type BookingChangeRequest = {
+  id: string;
+  bookingId: string;
+  storeId: string;
+  castId?: string | null;
+  requestedById?: string | null;
+  guestId?: string | null;
+  reviewedById?: string | null;
+  type: "RESCHEDULE";
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED";
+  currentScheduledAt: string;
+  requestedScheduledAt?: string | null;
+  reason?: string | null;
+  adminNote?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  booking?: BookingRecord | null;
+  store?: { id: string; name: string; slug: string } | null;
+  cast?: {
+    id: string;
+    slug: string;
+    stageName: string;
+    publicAlias?: string | null;
+  } | null;
+  requestedBy?: { id: string; displayName?: string | null } | null;
+  guest?: { id: string; displayName?: string | null; phone?: string | null } | null;
+  reviewedBy?: { id: string; displayName?: string | null } | null;
+};
+
+export type BookingChatMessage = {
+  id: string;
+  bookingId: string;
+  changeRequestId?: string | null;
+  storeId: string;
+  senderUserId?: string | null;
+  guestId?: string | null;
+  senderType: "GUEST" | "MEMBER" | "ADMIN" | "OPERATOR" | "SYSTEM";
+  topic: "GENERAL" | "RESCHEDULE" | "CANCEL";
+  body: string;
+  createdAt: string;
+  senderUser?: { id: string; displayName?: string | null; role?: string } | null;
+  guest?: { id: string; displayName?: string | null; phone?: string | null } | null;
+};
+
+export type BookingChatPayload = {
+  message: string;
+  topic?: "GENERAL" | "RESCHEDULE" | "CANCEL";
+  changeRequestId?: string;
+};
+
+export type GuestBookingChatPayload = BookingChatPayload & {
+  phone: string;
+};
+
+export type BookingCancelAnalytics = {
+  meta: {
+    from: string;
+    to: string;
+    days: number;
+    totalBookings: number;
+    cancelledBookings: number;
+    cancelRate: number;
+  };
+  byStore: Array<{
+    storeId: string;
+    storeName: string;
+    storeSlug: string;
+    cancelCutoffMinutes: number;
+    totalBookings: number;
+    cancelledBookings: number;
+    cancelRate: number;
+  }>;
+  byCast: Array<{
+    castId: string | null;
+    castName: string;
+    castSlug: string | null;
+    storeId: string | null;
+    totalBookings: number;
+    cancelledBookings: number;
+    cancelRate: number;
+  }>;
+  byChannel: Array<{
+    channel: "MEMBER" | "GUEST";
+    totalBookings: number;
+    cancelledBookings: number;
+    cancelRate: number;
+  }>;
+};
+
+const defaultBookingCancelCutoffMinutes = 60;
 const lastBookingKey = "nightlife_last_booking";
 const guestBookingsKey = "nightlife_guest_bookings";
 const maxStoredBookings = 20;
+
+const toApiParams = (params?: Record<string, string | number | undefined>) => {
+  if (!params) return undefined;
+  return Object.fromEntries(
+    Object.entries(params)
+      .filter((entry): entry is [string, string | number] => entry[1] !== undefined && entry[1] !== "")
+      .map(([key, value]) => [key, String(value)]),
+  );
+};
 
 export const bookingStatusGroup = (status: string): BookingStatusGroup => {
   if (status === "COMPLETED" || status === "CHECKED_IN") return "Hoàn tất";
@@ -81,13 +190,15 @@ export const bookingStatusGroup = (status: string): BookingStatusGroup => {
 
 export const bookingStatusLabel = bookingStatusGroup;
 
-export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "scheduledAt">) => {
+export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "scheduledAt" | "store">) => {
   if (booking.status !== "REQUESTED" && booking.status !== "CONFIRMED") {
     return false;
   }
 
+  const cutoffMinutes =
+    booking.store?.bookingCancelCutoffMinutes ?? defaultBookingCancelCutoffMinutes;
   const scheduledAt = new Date(booking.scheduledAt).getTime();
-  return Number.isFinite(scheduledAt) && scheduledAt - Date.now() >= bookingCancelCutoffMs;
+  return Number.isFinite(scheduledAt) && scheduledAt - Date.now() >= cutoffMinutes * 60 * 1000;
 };
 
 const bookingTimeValue = (booking: BookingRecord) => {
@@ -183,6 +294,10 @@ export const bookingApi = {
     apiClient<BookingRecord>("/bookings", { data: payload }),
   createMemberBooking: (payload: CreateBookingPayload) =>
     apiClient<BookingRecord>("/member/bookings", { data: payload }),
+  getGuestBookingByCode: (bookingCode: string, phone: string) =>
+    apiClient<BookingRecord>(
+      `/bookings/${encodeURIComponent(bookingCode)}?${new URLSearchParams({ phone }).toString()}`,
+    ),
   cancelGuestBooking: (bookingId: string, payload: CancelGuestBookingPayload) =>
     apiClient<BookingRecord>(`/bookings/${encodeURIComponent(bookingId)}/cancel`, {
       method: "PATCH",
@@ -193,5 +308,54 @@ export const bookingApi = {
       method: "PATCH",
       data: reason ? { reason } : {},
     }),
+  requestMemberReschedule: (bookingId: string, payload: BookingReschedulePayload) =>
+    apiClient<BookingChangeRequest>(`/member/bookings/${encodeURIComponent(bookingId)}/reschedule`, {
+      data: payload,
+    }),
+  requestGuestReschedule: (bookingId: string, payload: GuestBookingReschedulePayload) =>
+    apiClient<BookingChangeRequest>(`/bookings/${encodeURIComponent(bookingId)}/reschedule`, {
+      data: payload,
+    }),
+  listMemberBookingMessages: (bookingId: string) =>
+    apiClient<BookingChatMessage[]>(`/member/bookings/${encodeURIComponent(bookingId)}/messages`),
+  sendMemberBookingMessage: (bookingId: string, payload: BookingChatPayload) =>
+    apiClient<BookingChatMessage>(`/member/bookings/${encodeURIComponent(bookingId)}/messages`, {
+      data: payload,
+    }),
+  listGuestBookingMessages: (bookingId: string, phone: string) =>
+    apiClient<BookingChatMessage[]>(
+      `/bookings/${encodeURIComponent(bookingId)}/messages?${new URLSearchParams({ phone }).toString()}`,
+    ),
+  sendGuestBookingMessage: (bookingId: string, payload: GuestBookingChatPayload) =>
+    apiClient<BookingChatMessage>(`/bookings/${encodeURIComponent(bookingId)}/messages`, {
+      data: payload,
+    }),
+  listAdminBookingChangeRequests: (params?: { status?: string; storeId?: string }) =>
+    apiClient<BookingChangeRequest[]>("/admin/booking-change-requests", {
+      params: toApiParams(params),
+    }),
+  reviewAdminBookingChangeRequest: (requestId: string, payload: { approve: boolean; note?: string }) =>
+    apiClient<BookingChangeRequest>(`/admin/booking-change-requests/${encodeURIComponent(requestId)}/review`, {
+      method: "PATCH",
+      data: payload,
+    }),
+  listAdminBookingMessages: (bookingId: string) =>
+    apiClient<BookingChatMessage[]>(`/admin/bookings/${encodeURIComponent(bookingId)}/messages`),
+  sendAdminBookingMessage: (bookingId: string, payload: BookingChatPayload) =>
+    apiClient<BookingChatMessage>(`/admin/bookings/${encodeURIComponent(bookingId)}/messages`, {
+      data: payload,
+    }),
+  getAdminCancelAnalytics: (days = 30) =>
+    apiClient<BookingCancelAnalytics>("/admin/bookings/cancel-analytics", {
+      params: toApiParams({ days }),
+    }),
+  updateAdminStoreBookingPolicy: (storeId: string, cancelCutoffMinutes: 30 | 60 | 120) =>
+    apiClient<{ id: string; name: string; slug: string; bookingCancelCutoffMinutes: number }>(
+      `/admin/stores/${encodeURIComponent(storeId)}/booking-policy`,
+      {
+        method: "PATCH",
+        data: { cancelCutoffMinutes },
+      },
+    ),
   listMemberBookings: () => apiClient<BookingRecord[]>("/member/bookings"),
 };

@@ -41,7 +41,25 @@ Customer-facing booking status is grouped into three PM labels:
 - `Hoàn tất`: `CHECKED_IN` or `COMPLETED`.
 - `Đã hủy`: `CANCELLED` or `NO_SHOW`.
 
-Booking details are not edited in place. Guests cancel with booking id + submitted phone, members cancel with bearer token, and both can only self-cancel before the 1 hour cutoff. If customer information or schedule changes, the customer cancels and rebooks before the cutoff, or contacts Admin via LINE OA / Mail after that cutoff.
+Booking details are not edited in place. Guests cancel with booking id + submitted phone, or look up a guest booking with `GET /bookings/:bookingCode?phone=...`; members cancel with bearer token. Self-service cancel and reschedule use the store cutoff policy (`Store.bookingCancelCutoffMinutes`) and accepted values are 30, 60, or 120 minutes. If customer information changes after cutoff, the customer contacts Admin via LINE OA / Mail.
+
+## BookingChangeRequestStatus
+
+- `REQUESTED`: guest/member requested a booking schedule change.
+- `APPROVED`: Admin/Operator approved the request and `Booking.scheduledAt` was updated.
+- `REJECTED`: Admin/Operator rejected the request; original booking schedule remains unchanged.
+- `CANCELLED`: request was cancelled before review.
+- `EXPIRED`: request is no longer actionable.
+
+`BookingChangeRequest.type` is currently `RESCHEDULE`. This keeps the workflow separate from `BookingStatus` and avoids direct booking edits from customer surfaces.
+
+## BookingChat
+
+- `BookingChatSenderType`: `GUEST`, `MEMBER`, `ADMIN`, `OPERATOR`, or `SYSTEM`.
+- `BookingChatTopic`: `GENERAL`, `RESCHEDULE`, or `CANCEL`.
+- Chat messages are persisted in `booking_chat_messages` and emitted via socket event `booking_chat_message_created` to room `booking_{bookingId}`.
+
+Admin and Operator can cancel a booking on behalf of the customer with a reason after store access checks. This staff cancel path bypasses the self-service cutoff but still rejects `CHECKED_IN`, `COMPLETED`, `NO_SHOW`, and already `CANCELLED` bookings.
 
 ## BillStatus
 
@@ -89,11 +107,22 @@ VIP discount in `CouponIssue.metadata`.
 Each issued coupon stores the QR payload, campaign/store snapshot, user type,
 and immutable discount percent snapshot in `CouponIssue.metadata`.
 Stale `ISSUED` issues are marked `EXPIRED` before partner scan/check-in and
-before member wallet responses. Check-in uses a conditional `status = ISSUED`
-write so each coupon issue is one-time only.
+before member wallet responses. A Nest scheduler runs every 5 minutes and
+expires stale issued coupon issues globally. Check-in uses a conditional
+`status = ISSUED` write so each coupon issue is one-time only.
+
+`Coupon.usageLimit` is the maximum number of successful redemptions. It is
+compared with `Coupon.usedCount`, and `usedCount` increments only after a
+coupon issue is confirmed `USED`; it is not the number of claimed/issued codes.
 
 ## Audit And Session Security
 
 - Bill review writes `AuditLog` with actor, action, target bill, review metadata, and `beforeJson` / `afterJson` snapshots.
+- Booking cancellation writes `AuditLog.action = BOOKING_CANCELLED` with `beforeStatus`, `afterStatus`, `reason`, and `actorId` when available. Coupon check-in writes `BOOKING_STATUS_CHANGED` for the linked booking and queues the customer status notification.
 - Login writes `UserSession` by JWT `jti`; logout writes `TokenBlacklist`, marks the session revoked, and `JwtStrategy` rejects blacklisted or inactive-session tokens.
 - Admin impersonation, if enabled later, should write `AuditLog.action = admin.impersonation.start` and `admin.impersonation.stop`.
+
+## Booking P2 Dashboard
+
+- `GET /admin/bookings/cancel-analytics` and `GET /operator/bookings/cancel-analytics` aggregate cancel rate by store, cast, and channel (`MEMBER` / `GUEST`).
+- `PATCH /admin/stores/:storeId/booking-policy` and `PATCH /operator/stores/:storeId/booking-policy` update the per-store cutoff policy.

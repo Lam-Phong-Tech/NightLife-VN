@@ -1,4 +1,5 @@
 import {
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -19,6 +20,7 @@ describe('NightlifeDataService', () => {
     couponIssue: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -63,6 +65,11 @@ describe('NightlifeDataService', () => {
     auditLog: {
       create: jest.fn(),
     },
+    notificationLog: {
+      create: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+    },
   } as unknown as jest.Mocked<PrismaService>;
 
   const accessService = {
@@ -86,7 +93,12 @@ describe('NightlifeDataService', () => {
     prisma.cast.count.mockResolvedValue(1);
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
     prisma.rankingConfig.findFirst.mockResolvedValue(null as never);
+    prisma.couponIssue.findFirst.mockResolvedValue(null as never);
     prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
+    prisma.notificationLog.create.mockResolvedValue({
+      id: 'notification-1',
+    } as never);
+    prisma.notificationLog.findMany.mockResolvedValue([] as never);
     service = new NightlifeDataService(
       prisma,
       accessService,
@@ -1240,21 +1252,23 @@ describe('NightlifeDataService', () => {
       { reason: 'Change of plans' },
     );
 
-    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'booking-1',
-        userId: 'member-1',
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        userId: true,
-        guestId: true,
-        status: true,
-        scheduledAt: true,
-        cancelledAt: true,
-      },
-    });
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'booking-1',
+          userId: 'member-1',
+          deletedAt: null,
+        },
+        select: expect.objectContaining({
+          id: true,
+          userId: true,
+          guestId: true,
+          status: true,
+          scheduledAt: true,
+          cancelledAt: true,
+        }),
+      }),
+    );
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'booking-1' },
@@ -1288,6 +1302,24 @@ describe('NightlifeDataService', () => {
           reason: 'Change of plans',
           beforeStatus: 'REQUESTED',
           afterStatus: 'CANCELLED',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
+        guestId: 'guest-1',
+        storeId: 'store-1',
+        bookingId: 'booking-1',
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'member-1',
+        templateKey: 'customer.booking.cancelled.v1',
+        payload: expect.objectContaining({
+          bookingId: 'booking-1',
+          status: 'CANCELLED',
+          reason: 'Change of plans',
+          actorType: 'MEMBER',
         }),
       }),
     });
@@ -1325,6 +1357,7 @@ describe('NightlifeDataService', () => {
 
     expect(prisma.booking.update).not.toHaveBeenCalled();
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(prisma.notificationLog.create).not.toHaveBeenCalled();
     expect(
       adminNotificationService.notifyBookingCancelled,
     ).not.toHaveBeenCalled();
@@ -1355,22 +1388,24 @@ describe('NightlifeDataService', () => {
       reason: 'Change of plans',
     });
 
-    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'booking-1',
-        userId: null,
-        deletedAt: null,
-        guest: { is: { phone: '+84901234567' } },
-      },
-      select: {
-        id: true,
-        userId: true,
-        guestId: true,
-        status: true,
-        scheduledAt: true,
-        cancelledAt: true,
-      },
-    });
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'booking-1',
+          userId: null,
+          deletedAt: null,
+          guest: { is: { phone: '+84901234567' } },
+        },
+        select: expect.objectContaining({
+          id: true,
+          userId: true,
+          guestId: true,
+          status: true,
+          scheduledAt: true,
+          cancelledAt: true,
+        }),
+      }),
+    );
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         actorId: undefined,
@@ -1386,6 +1421,24 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: undefined,
+        guestId: 'guest-1',
+        storeId: 'store-1',
+        bookingId: 'booking-1',
+        channel: 'LINE',
+        status: 'QUEUED',
+        recipient: '+84901234567',
+        templateKey: 'customer.booking.cancelled.v1',
+        payload: expect.objectContaining({
+          bookingId: 'booking-1',
+          status: 'CANCELLED',
+          reason: 'Change of plans',
+          actorType: 'GUEST',
+        }),
+      }),
+    });
     expect(
       adminNotificationService.notifyBookingCancelled,
     ).toHaveBeenCalledWith(
@@ -1395,6 +1448,149 @@ describe('NightlifeDataService', () => {
       }),
       { reason: 'Change of plans' },
     );
+  });
+
+  it('lets admin cancel a customer booking with a reason without the self-service cutoff', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-30T13:30:00.000Z'));
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      userId: 'member-1',
+      guestId: 'guest-1',
+      status: 'CONFIRMED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: null,
+    });
+    prisma.booking.update.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      status: 'CANCELLED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: new Date('2026-06-30T13:30:00.000Z'),
+      user: { id: 'member-1', displayName: 'Member', tier: 'REGULAR' },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    });
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
+
+    await service.cancelAdminBooking(
+      { id: 'admin-1', role: 'ADMIN' },
+      'booking-1',
+      { reason: 'Customer called admin' },
+    );
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'admin-1', role: 'ADMIN' },
+      'store-1',
+      'booking.cancel',
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-1',
+        action: 'BOOKING_CANCELLED',
+        targetType: 'Booking',
+        targetId: 'booking-1',
+        metadata: expect.objectContaining({
+          actorType: 'ADMIN',
+          actorId: 'admin-1',
+          reason: 'Customer called admin',
+          beforeStatus: 'CONFIRMED',
+          afterStatus: 'CANCELLED',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
+        bookingId: 'booking-1',
+        templateKey: 'customer.booking.cancelled.v1',
+        payload: expect.objectContaining({
+          actorType: 'ADMIN',
+          reason: 'Customer called admin',
+        }),
+      }),
+    });
+    expect(
+      adminNotificationService.notifyBookingCancelled,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'CANCELLED',
+      }),
+      { reason: 'Customer called admin' },
+    );
+  });
+
+  it('looks up a guest booking by booking code and phone', async () => {
+    const booking = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 2,
+      cancelledAt: null,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    };
+    prisma.booking.findMany.mockResolvedValue([booking]);
+
+    await expect(
+      service.getGuestBookingByCode('BK-550E8400', ' +84901234567 '),
+    ).resolves.toEqual(booking);
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: null,
+        deletedAt: null,
+        guest: { is: { phone: '+84901234567' } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: expect.objectContaining({
+        id: true,
+        status: true,
+        guest: { select: { id: true, displayName: true, phone: true } },
+      }),
+    });
+  });
+
+  it('rate-limits repeated member cancellation attempts', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      userId: 'rate-member-1',
+      guestId: 'guest-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: null,
+    });
+    prisma.booking.update.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      status: 'CANCELLED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: new Date('2026-06-30T12:30:00.000Z'),
+      user: { id: 'rate-member-1', displayName: 'Member', tier: 'REGULAR' },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    });
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
+
+    for (let index = 0; index < 5; index += 1) {
+      await service.cancelMemberBooking(
+        { id: 'rate-member-1', role: 'USER' },
+        'booking-1',
+        { reason: 'Repeated click' },
+      );
+    }
+
+    await expect(
+      service.cancelMemberBooking(
+        { id: 'rate-member-1', role: 'USER' },
+        'booking-1',
+        { reason: 'Repeated click' },
+      ),
+    ).rejects.toThrow('Too many cancellation requests');
+    expect(prisma.booking.findFirst).toHaveBeenCalledTimes(5);
   });
 
   it('limits partner stores to their accessible store ids', async () => {
@@ -1482,7 +1678,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           expiresAt: expect.any(Date),
-          metadata: {
+          metadata: expect.objectContaining({
             recipientType: 'GUEST',
             userType: 'GUEST',
             validityHours: 24,
@@ -1497,13 +1693,13 @@ describe('NightlifeDataService', () => {
               sourceType: 'PERCENT',
               sourceValue: 5,
             }),
-            qrPayload: expect.stringMatching(/^GUEST-/),
+            qrPayload: expect.stringContaining('scanToken='),
             campaignSnapshot: expect.objectContaining({
               id: 'coupon-1',
               code: 'WELCOME',
               storeId: 'store-1',
             }),
-          },
+          }),
           qrPayloadHash: expect.any(String),
         }),
       }),
@@ -1615,7 +1811,7 @@ describe('NightlifeDataService', () => {
             validityDays: 7,
             statusLabel: 'Đang giữ chỗ',
             discountPercent: 10,
-            qrPayload: expect.stringMatching(/^MEMBER-/),
+            qrPayload: expect.stringContaining('scanToken='),
             campaignSnapshot: expect.objectContaining({
               id: 'coupon-1',
               code: 'MEMBER8',
@@ -1774,7 +1970,14 @@ describe('NightlifeDataService', () => {
         status: 'ISSUED',
         expiresAt: null,
         coupon: { storeId: 'store-1' },
-        booking: { id: 'booking-1', status: 'CONFIRMED' },
+        booking: {
+          id: 'booking-1',
+          userId: 'member-1',
+          guestId: 'guest-1',
+          status: 'CONFIRMED',
+          scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+          cancelledAt: null,
+        },
       })
       .mockResolvedValueOnce({
         id: 'issue-1',
@@ -1792,7 +1995,16 @@ describe('NightlifeDataService', () => {
       });
     prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.coupon.update.mockResolvedValue({ id: 'coupon-1' });
-    prisma.booking.update.mockResolvedValue({ id: 'booking-1' });
+    prisma.booking.update.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      status: 'CHECKED_IN',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      cancelledAt: null,
+      user: { id: 'member-1', displayName: 'Member', tier: 'REGULAR' },
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+    });
 
     await service.confirmCouponIssueCheckIn('issue-1', {
       id: 'partner-1',
@@ -1821,9 +2033,32 @@ describe('NightlifeDataService', () => {
       where: { id: 'coupon-1' },
       data: { usedCount: { increment: 1 } },
     });
-    expect(prisma.booking.update).toHaveBeenCalledWith({
-      where: { id: 'booking-1' },
-      data: { status: 'CHECKED_IN' },
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'booking-1' },
+        data: { status: 'CHECKED_IN' },
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'partner-1',
+        action: 'BOOKING_STATUS_CHANGED',
+        targetType: 'Booking',
+        targetId: 'booking-1',
+        metadata: expect.objectContaining({
+          actorType: 'PARTNER',
+          reason: 'Coupon check-in confirmed',
+          beforeStatus: 'CONFIRMED',
+          afterStatus: 'CHECKED_IN',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
+        bookingId: 'booking-1',
+        templateKey: 'customer.booking.checked_in.v1',
+      }),
     });
   });
 
@@ -1899,6 +2134,91 @@ describe('NightlifeDataService', () => {
       },
       data: { status: 'EXPIRED' },
     });
+  });
+
+  it('expires issued coupon issues from the scheduled maintenance job', async () => {
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    prisma.couponIssue.updateMany.mockResolvedValueOnce({
+      count: 3,
+    } as never);
+
+    await expect(service.expireCouponIssuesEveryFiveMinutes()).resolves.toEqual(
+      { count: 3 },
+    );
+
+    expect(prisma.couponIssue.updateMany).toHaveBeenCalledWith({
+      where: {
+        status: 'ISSUED',
+        expiresAt: { lte: expect.any(Date) },
+      },
+      data: { status: 'EXPIRED' },
+    });
+    expect(logSpy).toHaveBeenCalledWith(
+      'Expired 3 coupon issue(s) from scheduled maintenance.',
+    );
+    logSpy.mockRestore();
+  });
+
+  it('lists admin coupon issues by store, coupon, and status', async () => {
+    prisma.couponIssue.findMany.mockResolvedValue([
+      {
+        id: 'issue-1',
+        code: 'MEMBER-code',
+        status: 'ISSUED',
+        expiresAt: null,
+        usedAt: null,
+        createdAt: new Date('2026-06-30T10:00:00.000Z'),
+        metadata: {
+          qrPayload:
+            'https://nightlife.vn/partner?scanToken=opaque-token.signature',
+          discountPercent: 8,
+        },
+        user: { id: 'user-1', displayName: 'Member', tier: 'FREE' },
+        guest: null,
+        scannedBy: null,
+        booking: null,
+        coupon: {
+          id: 'coupon-1',
+          code: 'MEMBER8',
+          name: 'Member',
+          discountType: 'PERCENT',
+          discountValue: 8,
+          maxDiscountVnd: 800000,
+          minSpendVnd: null,
+          store: { id: 'store-1', name: 'Store', slug: 'store' },
+        },
+      },
+    ] as never);
+
+    await expect(
+      service.listAdminCouponIssues({
+        storeId: 'store-1',
+        couponId: 'coupon-1',
+        status: 'ISSUED',
+        limit: 25,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: 'issue-1',
+        status: 'ISSUED',
+        qrImageDataUrl: expect.stringContaining('data:image/png;base64,'),
+        discountPercent: 8,
+      }),
+    ]);
+
+    expect(prisma.couponIssue.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          couponId: 'coupon-1',
+          status: 'ISSUED',
+          coupon: {
+            deletedAt: null,
+            storeId: 'store-1',
+          },
+        },
+        take: 25,
+      }),
+    );
   });
 
   it('submits a member bill and sends the admin alert', async () => {
@@ -1985,6 +2305,48 @@ describe('NightlifeDataService', () => {
         contactPhone: '+84901234567',
         contactEmail: 'owner@example.com',
         note: 'Please call after 6PM',
+      }),
+    );
+  });
+
+  it('lists partner requests from admin Telegram notification logs', async () => {
+    prisma.notificationLog.findMany.mockResolvedValue([
+      {
+        id: 'notification-1',
+        status: 'SENT',
+        payload: {
+          requestId: 'PARTNER-ABC12345',
+          businessName: 'Neon Club',
+          businessType: 'Club',
+          area: 'Ha Noi',
+          contactName: 'Owner',
+          contactPhone: '+84901234567',
+          contactEmail: 'owner@example.com',
+          note: 'Please call after 6PM',
+          submittedAt: '2026-06-30T10:00:00.000Z',
+        },
+        error: null,
+        sentAt: new Date('2026-06-30T10:00:01.000Z'),
+        createdAt: new Date('2026-06-30T10:00:00.000Z'),
+      },
+    ] as never);
+
+    await expect(service.listAdminPartnerRequests()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'PARTNER-ABC12345',
+        notificationId: 'notification-1',
+        notificationStatus: 'SENT',
+        status: 'PENDING_REVIEW',
+        businessName: 'Neon Club',
+        contactPhone: '+84901234567',
+      }),
+    ]);
+    expect(prisma.notificationLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          templateKey: 'telegram.admin.partner.requested.v1',
+          channel: 'TELEGRAM',
+        }),
       }),
     );
   });

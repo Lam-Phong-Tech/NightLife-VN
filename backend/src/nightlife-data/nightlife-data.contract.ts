@@ -18,6 +18,7 @@ import {
   CancelGuestBookingDto,
 } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { ScanCouponIssueDto } from './dto/coupon-issue.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
@@ -370,7 +371,9 @@ const guestClaimExample = {
     code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
     status: 'ISSUED',
     statusLabel: 'Đang giữ chỗ',
-    qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+    qrPayload:
+      'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+    qrImageDataUrl: 'data:image/png;base64,...',
     userType: 'GUEST',
     discountPercent: 5,
     discountRuleSnapshot: {
@@ -403,7 +406,9 @@ const memberClaimExample = {
   code: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
   status: 'ISSUED',
   statusLabel: 'Đang giữ chỗ',
-  qrPayload: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'VIP',
   discountPercent: 10,
   discountRuleSnapshot: {
@@ -495,7 +500,9 @@ const scannedCouponIssueExample = {
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
   status: 'ISSUED',
   statusLabel: 'Đang giữ chỗ',
-  qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'GUEST',
   discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
@@ -520,7 +527,9 @@ const confirmedCheckInExample = {
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
   status: 'USED',
   statusLabel: 'Đã sử dụng',
-  qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: null,
   userType: 'GUEST',
   discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
@@ -564,7 +573,9 @@ const memberCouponIssueExample = {
   code: 'MEMBER-2026-0001',
   status: 'ISSUED',
   statusLabel: 'Đang giữ chỗ',
-  qrPayload: 'MEMBER-2026-0001',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'VIP',
   discountPercent: 10,
   expiresAt: '2026-07-01T00:00:00.000Z',
@@ -575,6 +586,14 @@ const memberCouponIssueExample = {
     name: 'Welcome 20%',
     store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
   },
+};
+
+const adminCouponIssueExample = {
+  ...memberCouponIssueExample,
+  user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'VIP' },
+  guest: null,
+  scannedBy: { id: 'partner_01', displayName: 'Partner Staff' },
+  createdAt: '2026-06-26T10:00:00.000Z',
 };
 
 const sensitiveBillExample = {
@@ -647,7 +666,8 @@ const contentExample = {
   slug: 'tay-ho-night-guide',
   type: 'BLOG',
   status: 'PUBLISHED',
-  excerpt: 'Lộ trình gợi ý cho khách muốn đi lounge, club và ăn khuya ở Tây Hồ.',
+  excerpt:
+    'Lộ trình gợi ý cho khách muốn đi lounge, club và ăn khuya ở Tây Hồ.',
   body: null,
   metadata: {
     category: 'Cẩm nang khu vực',
@@ -728,7 +748,9 @@ export function AdminPartnerRequestsContract() {
   );
 }
 
-export function AdminContentMutationContract(action: 'create' | 'update' | 'delete') {
+export function AdminContentMutationContract(
+  action: 'create' | 'update' | 'delete',
+) {
   const summaries = {
     create: 'Admin content: create blog or policy record',
     update: 'Admin content: update blog or policy record',
@@ -1114,6 +1136,41 @@ export function CancelGuestBookingContract() {
   );
 }
 
+export function GuestBookingLookupContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Booking action: guest looks up a booking by code and phone',
+      description:
+        'Auth guard: none. Resolves #BK-style booking codes or id prefixes for guest bookings only when the submitted phone matches the guest contact snapshot.',
+    }),
+    ApiParam({ name: 'bookingCode', example: 'BK-550E8400' }),
+    ApiQuery({
+      name: 'phone',
+      required: true,
+      example: '+84901234567',
+      description: 'Phone number submitted with the guest booking.',
+    }),
+    ApiOkResponse({
+      description: 'Guest booking found.',
+      schema: { example: createBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid lookup request.',
+      schema: { example: badRequestExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking code does not exist or phone does not match.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Booking not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+  );
+}
+
 export function CreatePartnerRequestContract() {
   return applyDecorators(
     ApiOperation({
@@ -1254,6 +1311,60 @@ export function CancelMemberBookingContract() {
   );
 }
 
+export function CancelAdminBookingContract(scope: 'admin' | 'operator') {
+  const isAdmin = scope === 'admin';
+
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: `Booking action: ${isAdmin ? 'admin' : 'operator'} cancels a customer booking`,
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN/OPERATOR). Cancels a customer booking on behalf of the customer with a reason, bypasses the self-service 1 hour cutoff, writes AuditLog action BOOKING_CANCELLED with beforeStatus/afterStatus/reason/actorId, queues a customer notification log, then sends P0 Telegram admin notification.',
+    }),
+    ApiParam({ name: 'bookingId', example: 'booking_01' }),
+    ApiBody({ type: CancelBookingDto }),
+    ApiOkResponse({
+      description: 'Booking cancelled by staff.',
+      schema: { example: cancelledBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid cancel request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: isAdmin
+        ? 'Authenticated user is not an admin.'
+        : 'Authenticated user is not an operator/admin or lacks store access.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking does not exist.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Booking not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Booking has already ended, checked in, no-show, or cancelled.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Booking cannot be cancelled in its current state',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
 export function MemberClaimCouponContract() {
   return applyDecorators(
     ApiBearerAuth(),
@@ -1297,7 +1408,7 @@ export function PartnerStoresContract() {
 export function PartnerCouponsContract() {
   return guardedListContract(
     'Partner action: list own coupons',
-    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN) + ActionPolicy(canViewPartnerCoupon).',
+    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN) + ActionPolicy(canViewPartnerCoupon). usageLimit is the successful USED redemption cap, not the number of issued codes.',
     partnerCouponExample,
   );
 }
@@ -1358,6 +1469,55 @@ export function PartnerScanCouponContract() {
   );
 }
 
+export function PartnerScanCouponPayloadContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: scan a signed coupon QR payload',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR). Validates an opaque signed QR/deep-link payload generated server-side, enforces store access after resolving the coupon issue, supports offline queued scan replay, and records audit/analytics events.',
+    }),
+    ApiBody({ type: ScanCouponIssueDto }),
+    ApiOkResponse({
+      description: 'Coupon issue scan result.',
+      schema: { example: scannedCouponIssueExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid signed QR payload.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user cannot access the coupon store.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Coupon issue does not exist.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Coupon issue not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Coupon issue is expired, used, revoked, or otherwise not valid.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Coupon issue has expired',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
 export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
   return applyDecorators(
     ApiBearerAuth(),
@@ -1395,7 +1555,7 @@ export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
       schema: {
         example: {
           statusCode: 422,
-          message: 'Coupon issue is not claimable',
+          message: 'Coupon issue has already been used',
           error: 'Unprocessable Entity',
         },
       },
@@ -1429,6 +1589,37 @@ export function MemberCouponIssuesContract() {
     'Coupon action: member lists own coupon issues',
     'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberCoupon). Own-resource route; stale ISSUED codes are marked EXPIRED before returning.',
     memberCouponIssueExample,
+  );
+}
+
+export function AdminCouponIssuesContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin action: list coupon issues by store, coupon, and status',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). CMS view for issued coupon wallet/history across stores and campaigns; stale ISSUED codes are marked EXPIRED before returning.',
+    }),
+    ApiQuery({ name: 'storeId', required: false }),
+    ApiQuery({ name: 'couponId', required: false }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: ['ISSUED', 'USED', 'EXPIRED', 'REVOKED'],
+    }),
+    ApiQuery({ name: 'limit', required: false, example: 50 }),
+    ApiOkResponse({
+      description: 'Coupon issues for admin CMS.',
+      schema: { example: [adminCouponIssueExample] },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
   );
 }
 

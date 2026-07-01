@@ -14,6 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { getAuthUser } from "@/lib/auth/session";
+import { useSocket } from "@/components/providers/SocketProvider";
 import {
   bookingApi,
   bookingStatusGroup,
@@ -22,6 +23,7 @@ import {
   getGuestBookingHistory,
   mergeBookingHistories,
   rememberLastBooking,
+  type BookingChatMessage,
   type BookingRecord,
   type BookingStatusGroup,
 } from "@/lib/api/bookings";
@@ -79,6 +81,13 @@ const bookingTimeValue = (value: string) => {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
 
+const toDateTimeInputValue = (value: string) => {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+};
+
 const rebookHref = (booking: BookingRecord) => {
   const params = new URLSearchParams({
     ...(booking.store?.slug ? { storeSlug: booking.store.slug } : {}),
@@ -108,11 +117,23 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
 };
 
 export default function Page() {
+  const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [pendingCancelBooking, setPendingCancelBooking] = useState<BookingRecord | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [pendingRescheduleBooking, setPendingRescheduleBooking] = useState<BookingRecord | null>(null);
+  const [rescheduleAt, setRescheduleAt] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [chatBooking, setChatBooking] = useState<BookingRecord | null>(null);
+  const [chatMessages, setChatMessages] = useState<BookingChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -148,6 +169,28 @@ export default function Page() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!socket || !chatBooking) {
+      return;
+    }
+
+    socket.emit("join_room", { bookingId: chatBooking.id });
+    const onMessage = (nextMessage: BookingChatMessage) => {
+      if (nextMessage.bookingId !== chatBooking.id) {
+        return;
+      }
+
+      setChatMessages((current) =>
+        current.some((item) => item.id === nextMessage.id) ? current : [...current, nextMessage],
+      );
+    };
+    socket.on("booking_chat_message_created", onMessage);
+
+    return () => {
+      socket.off("booking_chat_message_created", onMessage);
+    };
+  }, [chatBooking, socket]);
+
   const visibleBookings = useMemo(
     () =>
       activeTab === "Tất cả"
@@ -156,7 +199,7 @@ export default function Page() {
     [activeTab, bookings],
   );
 
-  const handleCancelBooking = async (booking: BookingRecord) => {
+  const handleCancelBooking = (booking: BookingRecord) => {
     if (!canCancelBooking(booking)) {
       setMessage(supportCancelMessage);
       return;
@@ -170,31 +213,184 @@ export default function Page() {
       return;
     }
 
-    if (!window.confirm("Hủy booking này? Nếu cần đổi thông tin, bạn hãy đặt lại sau khi hủy.")) {
+    setMessage("");
+    setCancelReason("");
+    setPendingCancelBooking(booking);
+  };
+
+  const closeCancelDialog = () => {
+    if (cancelingId) {
       return;
     }
 
+    setPendingCancelBooking(null);
+    setCancelReason("");
+  };
+
+  const submitCancelBooking = async () => {
+    const booking = pendingCancelBooking;
+    if (!booking) {
+      return;
+    }
+
+    const guestPhone = booking.guest?.phone?.trim() ?? "";
     setCancelingId(booking.id);
     setMessage("");
 
     try {
-      const cancelReason = "Customer cancelled from booking history";
+      const reason = cancelReason.trim();
       const cancelledBooking = isMember
-        ? await bookingApi.cancelMemberBooking(booking.id, cancelReason)
+        ? await bookingApi.cancelMemberBooking(booking.id, reason || undefined)
         : await bookingApi.cancelGuestBooking(booking.id, {
             phone: guestPhone,
-            reason: cancelReason,
+            ...(reason ? { reason } : {}),
           });
       const mergedBooking = { ...booking, ...cancelledBooking };
       setBookings((current) =>
         current.map((item) => (item.id === booking.id ? mergedBooking : item)),
       );
       rememberLastBooking(mergedBooking, { history: true });
+      setPendingCancelBooking(null);
+      setCancelReason("");
       setMessage("Đã hủy booking. Admin đã nhận thông báo.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không hủy được booking.");
     } finally {
       setCancelingId(null);
+    }
+  };
+
+  const handleRescheduleBooking = (booking: BookingRecord) => {
+    if (!canCancelBooking(booking)) {
+      setMessage(supportCancelMessage);
+      return;
+    }
+
+    const guestPhone = booking.guest?.phone?.trim() ?? "";
+    if (!isMember && !guestPhone) {
+      setMessage(
+        "Booking guest thiáº¿u sá»‘ Ä‘iá»‡n thoáº¡i xÃ¡c thá»±c. Vui lÃ²ng liÃªn há»‡ Admin qua LINE OA hoáº·c Mail Ä‘á»ƒ Ä‘á»•i lá»‹ch.",
+      );
+      return;
+    }
+
+    setMessage("");
+    setPendingRescheduleBooking(booking);
+    setRescheduleAt(toDateTimeInputValue(booking.scheduledAt));
+    setRescheduleReason("");
+  };
+
+  const closeRescheduleDialog = () => {
+    if (reschedulingId) {
+      return;
+    }
+
+    setPendingRescheduleBooking(null);
+    setRescheduleAt("");
+    setRescheduleReason("");
+  };
+
+  const submitRescheduleRequest = async () => {
+    const booking = pendingRescheduleBooking;
+    if (!booking) {
+      return;
+    }
+
+    const guestPhone = booking.guest?.phone?.trim() ?? "";
+    const requestedDate = new Date(rescheduleAt);
+    if (!Number.isFinite(requestedDate.getTime())) {
+      setMessage("Chá»n ngÃ y giá» má»›i há»£p lá»‡ trÆ°á»›c khi gá»­i yÃªu cáº§u.");
+      return;
+    }
+
+    setReschedulingId(booking.id);
+    setMessage("");
+
+    try {
+      const payload = {
+        scheduledAt: requestedDate.toISOString(),
+        ...(rescheduleReason.trim() ? { reason: rescheduleReason.trim() } : {}),
+      };
+      await (isMember
+        ? bookingApi.requestMemberReschedule(booking.id, payload)
+        : bookingApi.requestGuestReschedule(booking.id, { ...payload, phone: guestPhone }));
+      setPendingRescheduleBooking(null);
+      setRescheduleAt("");
+      setRescheduleReason("");
+      setMessage("ÄÃ£ gá»­i yÃªu cáº§u Ä‘á»•i lá»‹ch. Admin sáº½ xÃ¡c nháº­n trÆ°á»›c khi cáº­p nháº­t booking.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "KhÃ´ng gá»­i Ä‘Æ°á»£c yÃªu cáº§u Ä‘á»•i lá»‹ch.");
+    } finally {
+      setReschedulingId(null);
+    }
+  };
+
+  const openBookingChat = async (booking: BookingRecord) => {
+    const guestPhone = booking.guest?.phone?.trim() ?? "";
+    if (!isMember && !guestPhone) {
+      setMessage(
+        "Booking guest thiáº¿u sá»‘ Ä‘iá»‡n thoáº¡i xÃ¡c thá»±c. Vui lÃ²ng liÃªn há»‡ Admin qua LINE OA hoáº·c Mail.",
+      );
+      return;
+    }
+
+    setChatBooking(booking);
+    setChatMessages([]);
+    setChatInput("");
+    setChatLoading(true);
+    setMessage("");
+
+    try {
+      const messages = isMember
+        ? await bookingApi.listMemberBookingMessages(booking.id)
+        : await bookingApi.listGuestBookingMessages(booking.id, guestPhone);
+      setChatMessages(messages);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "KhÃ´ng táº£i Ä‘Æ°á»£c chat booking.");
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const closeBookingChat = () => {
+    if (chatSending) {
+      return;
+    }
+
+    setChatBooking(null);
+    setChatMessages([]);
+    setChatInput("");
+  };
+
+  const submitChatMessage = async () => {
+    const booking = chatBooking;
+    const body = chatInput.trim();
+    if (!booking || !body) {
+      return;
+    }
+
+    const guestPhone = booking.guest?.phone?.trim() ?? "";
+    setChatSending(true);
+
+    try {
+      const sentMessage = isMember
+        ? await bookingApi.sendMemberBookingMessage(booking.id, {
+            message: body,
+            topic: "GENERAL",
+          })
+        : await bookingApi.sendGuestBookingMessage(booking.id, {
+            phone: guestPhone,
+            message: body,
+            topic: "GENERAL",
+          });
+      setChatMessages((current) =>
+        current.some((item) => item.id === sentMessage.id) ? current : [...current, sentMessage],
+      );
+      setChatInput("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "KhÃ´ng gá»­i Ä‘Æ°á»£c tin nháº¯n.");
+    } finally {
+      setChatSending(false);
     }
   };
 
@@ -243,6 +439,8 @@ export default function Page() {
                     isMember={isMember}
                     cancelingId={cancelingId}
                     onCancel={handleCancelBooking}
+                    onReschedule={handleRescheduleBooking}
+                    onChat={openBookingChat}
                   />
                 ))
               : null}
@@ -274,6 +472,168 @@ export default function Page() {
           </div>
         </div>
       </section>
+
+      {pendingCancelBooking ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-booking-title"
+          className={styles.dialogOverlay}
+        >
+          <div className={styles.dialogPanel}>
+            <h2 id="cancel-booking-title">Hủy booking</h2>
+            <p>
+              Nếu cần đổi ngày, số khách hoặc thông tin liên hệ, hãy hủy booking này rồi đặt lại.
+              Trường hợp sát giờ, vui lòng liên hệ Admin qua LINE OA hoặc Mail.
+            </p>
+            <label className={styles.dialogField}>
+              <span>Lý do hủy</span>
+              <textarea
+                value={cancelReason}
+                onChange={(event) => setCancelReason(event.target.value)}
+                placeholder="Ví dụ: đổi lịch, nhầm thời gian, không thể đến..."
+                maxLength={300}
+                rows={4}
+                className={styles.dialogTextArea}
+              />
+            </label>
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.ghostCta}
+                onClick={closeCancelDialog}
+                disabled={Boolean(cancelingId)}
+              >
+                Quay lại
+              </button>
+              <button
+                type="button"
+                className={`${styles.dangerCta} ${cancelingId ? styles.disabledCta : ""}`}
+                onClick={submitCancelBooking}
+                disabled={Boolean(cancelingId)}
+              >
+                <XCircle size={14} />
+                {cancelingId ? "Đang hủy" : "Xác nhận hủy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {pendingRescheduleBooking ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reschedule-booking-title"
+          className={styles.dialogOverlay}
+        >
+          <div className={styles.dialogPanel}>
+            <h2 id="reschedule-booking-title">Äá»•i lá»‹ch booking</h2>
+            <p>
+              YÃªu cáº§u sáº½ á»Ÿ tráº¡ng thÃ¡i chá» duyá»‡t. Booking chá»‰ Ä‘á»•i giá» sau khi Admin xÃ¡c nháº­n.
+            </p>
+            <label className={styles.dialogField}>
+              <span>NgÃ y giá» má»›i</span>
+              <input
+                type="datetime-local"
+                value={rescheduleAt}
+                onChange={(event) => setRescheduleAt(event.target.value)}
+                className={styles.dialogInput}
+              />
+            </label>
+            <label className={styles.dialogField}>
+              <span>LÃ½ do Ä‘á»•i lá»‹ch</span>
+              <textarea
+                value={rescheduleReason}
+                onChange={(event) => setRescheduleReason(event.target.value)}
+                placeholder="VÃ­ dá»¥: Ä‘á»•i ngÃ y Ä‘i, muá»‘n khung giá» muá»™n hÆ¡n..."
+                maxLength={300}
+                rows={4}
+                className={styles.dialogTextArea}
+              />
+            </label>
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.ghostCta}
+                onClick={closeRescheduleDialog}
+                disabled={Boolean(reschedulingId)}
+              >
+                Quay láº¡i
+              </button>
+              <button
+                type="button"
+                className={`${styles.primaryCta} ${reschedulingId ? styles.disabledCta : ""}`}
+                onClick={submitRescheduleRequest}
+                disabled={Boolean(reschedulingId)}
+              >
+                {reschedulingId ? "Äang gá»­i" : "Gá»­i yÃªu cáº§u"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {chatBooking ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="booking-chat-title"
+          className={styles.dialogOverlay}
+        >
+          <div className={styles.dialogPanel}>
+            <h2 id="booking-chat-title">Chat vá»›i Admin</h2>
+            <p>
+              {bookingTitle(chatBooking)} Â· {bookingCode(chatBooking)}
+            </p>
+            <div className={styles.chatList}>
+              {chatLoading ? <div className={styles.chatEmpty}>Äang táº£i tin nháº¯n...</div> : null}
+              {!chatLoading && chatMessages.length === 0 ? (
+                <div className={styles.chatEmpty}>ChÆ°a cÃ³ tin nháº¯n nÃ o.</div>
+              ) : null}
+              {chatMessages.map((item) => {
+                const fromCustomer = item.senderType === "GUEST" || item.senderType === "MEMBER";
+                return (
+                  <div
+                    key={item.id}
+                    className={`${styles.chatBubble} ${fromCustomer ? styles.chatBubbleMine : ""}`}
+                  >
+                    <span>{item.senderType}</span>
+                    <p>{item.body}</p>
+                  </div>
+                );
+              })}
+            </div>
+            <label className={styles.dialogField}>
+              <span>Tin nháº¯n</span>
+              <textarea
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder="Nháº­p ná»™i dung cáº§n Ä‘á»•i/há»§y booking..."
+                maxLength={800}
+                rows={3}
+                className={styles.dialogTextArea}
+              />
+            </label>
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.ghostCta}
+                onClick={closeBookingChat}
+                disabled={chatSending}
+              >
+                ÄÃ³ng
+              </button>
+              <button
+                type="button"
+                className={`${styles.primaryCta} ${chatSending ? styles.disabledCta : ""}`}
+                onClick={submitChatMessage}
+                disabled={chatSending || !chatInput.trim()}
+              >
+                {chatSending ? "Äang gá»­i" : "Gá»­i tin"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
@@ -283,11 +643,15 @@ function BookingCard({
   isMember,
   cancelingId,
   onCancel,
+  onReschedule,
+  onChat,
 }: {
   booking: BookingRecord;
   isMember: boolean;
   cancelingId: string | null;
   onCancel: (booking: BookingRecord) => void;
+  onReschedule: (booking: BookingRecord) => void;
+  onChat: (booking: BookingRecord) => void;
 }) {
   const group = bookingStatusGroup(booking.status);
   const isOpenBooking = group === "Mới";
@@ -331,6 +695,16 @@ function BookingCard({
       <div className={styles.historyActions}>
         {isOpenBooking ? (
           <>
+            <button type="button" onClick={() => onChat(booking)} className={styles.secondaryCta}>
+              <MessageCircle size={14} />
+              Chat Admin
+            </button>
+            {cancelAllowed ? (
+              <button type="button" onClick={() => onReschedule(booking)} className={styles.ghostCta}>
+                <Clock size={14} />
+                Äá»•i lá»‹ch
+              </button>
+            ) : null}
             {hasQr ? (
               <Link
                 href={`/xac-nhan?bookingId=${booking.id}`}
