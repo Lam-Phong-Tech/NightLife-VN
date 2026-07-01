@@ -817,6 +817,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
     const payload: CreateBookingPayload = {
       storeSlug: store.slug,
+      ...(firstCoupon?.id ? { couponId: firstCoupon.id } : {}),
       displayName,
       phone: normalizedPhone,
       scheduledAt: buildScheduledAt(selectedDate.iso, selectedTime),

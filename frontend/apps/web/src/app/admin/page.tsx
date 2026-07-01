@@ -82,6 +82,8 @@ type AdminBooking = {
   scheduledAt: string;
   partySize: number;
   store: { id?: string; name: string; slug?: string };
+  coupon?: { id: string; code: string; name: string } | null;
+  couponIssue?: { id: string; code: string; status: string } | null;
   user?: { displayName: string | null } | null;
   guest?: { displayName: string | null; phone: string | null } | null;
 };
@@ -107,7 +109,10 @@ type SensitiveBill = {
   commissionAmountVnd: number | null;
   pointsEarned: number | null;
   submittedAt: string | null;
-  store: { name: string };
+  store: { id?: string; name: string; slug?: string };
+  booking?: { id: string; status: string; scheduledAt?: string | null } | null;
+  coupon?: { id: string; code: string; name: string } | null;
+  couponIssue?: { id: string; code: string; status: string } | null;
   user?: { email: string; displayName: string | null; phone: string | null } | null;
   guest?: { email: string | null; displayName: string | null; phone: string | null } | null;
 };
@@ -142,6 +147,8 @@ type AdminCouponIssue = {
   user?: { id: string; displayName?: string | null; tier?: string | null } | null;
   guest?: { id: string; displayName?: string | null } | null;
   scannedBy?: { id: string; displayName?: string | null } | null;
+  booking?: { id: string; status: string; scheduledAt?: string | null } | null;
+  bill?: { id: string; billNumber?: string | null; status: string; totalVnd?: number | null } | null;
   coupon: {
     id: string;
     code: string;
@@ -288,6 +295,26 @@ const adminBookingStatusLabel = (status: string) => {
 
 const bookingGuestLabel = (booking: AdminBooking) =>
   booking.user?.displayName ?? booking.guest?.displayName ?? booking.guest?.phone ?? "Guest";
+
+const shortCode = (value?: string | null) => (value ? value.slice(0, 8).toUpperCase() : "-");
+
+const bookingRelationLabel = (booking?: { id: string; status?: string | null } | null) =>
+  booking ? `BK-${shortCode(booking.id)}${booking.status ? ` · ${booking.status}` : ""}` : "-";
+
+const couponRelationLabel = (
+  coupon?: { code?: string | null; name?: string | null } | null,
+  issue?: { code?: string | null; status?: string | null } | null,
+) => {
+  if (issue?.code) {
+    return `${issue.code}${issue.status ? ` · ${issue.status}` : ""}`;
+  }
+
+  if (coupon?.code || coupon?.name) {
+    return coupon.code ?? coupon.name ?? "-";
+  }
+
+  return "-";
+};
 
 const recentBookings: Array<[string, string, string, string, string]> = [
   ["Minh H.", "Club Lumiere", "4", "21:30", "Mới"],
@@ -1507,7 +1534,7 @@ export default function AdminDashboardPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1.1fr 1.1fr .7fr .8fr .8fr",
+                  gridTemplateColumns: "1.1fr 1fr .7fr .8fr .8fr 1fr",
                   padding: "12px 20px",
                   color: colors.muted,
                   fontSize: "11px",
@@ -1522,6 +1549,7 @@ export default function AdminDashboardPage() {
                 <span>Status</span>
                 <span>Holder</span>
                 <span>Expiry</span>
+                <span>Link</span>
               </div>
 
               {visibleCouponIssues.slice(0, 8).map((issue) => (
@@ -1529,7 +1557,7 @@ export default function AdminDashboardPage() {
                   key={issue.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1.1fr 1.1fr .7fr .8fr .8fr",
+                    gridTemplateColumns: "1.1fr 1fr .7fr .8fr .8fr 1fr",
                     padding: "13px 20px",
                     alignItems: "center",
                     borderBottom: `1px solid ${colors.borderSoft}`,
@@ -1567,6 +1595,11 @@ export default function AdminDashboardPage() {
                       : issue.expiresAt
                         ? new Date(issue.expiresAt).toLocaleDateString("vi-VN")
                         : "-"}
+                  </span>
+                  <span style={{ color: colors.text2 }}>
+                    {issue.bill
+                      ? `Bill ${issue.bill.billNumber ?? shortCode(issue.bill.id)}`
+                      : bookingRelationLabel(issue.booking)}
                   </span>
                 </div>
               ))}
@@ -3040,7 +3073,7 @@ export default function AdminDashboardPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr .8fr .8fr 190px",
+                  gridTemplateColumns: "1fr 1fr .8fr 1.1fr .8fr 190px",
                   padding: "12px 20px",
                   color: colors.muted,
                   fontSize: "11px",
@@ -3053,6 +3086,7 @@ export default function AdminDashboardPage() {
                 <span>Bill</span>
                 <span>Quan</span>
                 <span>Khach</span>
+                <span>Lien ket</span>
                 <span>Tong tien</span>
                 <span>Duyet</span>
               </div>
@@ -3061,7 +3095,7 @@ export default function AdminDashboardPage() {
                   key={bill.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr .8fr .8fr 190px",
+                    gridTemplateColumns: "1fr 1fr .8fr 1.1fr .8fr 190px",
                     padding: "13px 20px",
                     alignItems: "center",
                     borderBottom: `1px solid ${bill.id === focusedBillId ? colors.borderGold32 : colors.borderSoft}`,
@@ -3080,6 +3114,14 @@ export default function AdminDashboardPage() {
                       bill.user?.email ??
                       bill.guest?.phone ??
                       "Guest"}
+                  </span>
+                  <span style={{ color: colors.text2 }}>
+                    <span style={{ display: "block", color: colors.goldBright }}>
+                      {bookingRelationLabel(bill.booking)}
+                    </span>
+                    <span style={{ display: "block", marginTop: 3, fontSize: "11px" }}>
+                      {couponRelationLabel(bill.coupon, bill.couponIssue)}
+                    </span>
                   </span>
                   <span>{(bill.totalVnd ?? 0).toLocaleString("vi-VN")}đ</span>
                   <span style={{ display: "flex", gap: "8px" }}>
@@ -3337,7 +3379,14 @@ export default function AdminDashboardPage() {
                     }}
                   >
                     <span style={{ fontWeight: 700 }}>{guest}</span>
-                    <span>{place}</span>
+                    <span>
+                      <span style={{ display: "block" }}>{place}</span>
+                      {booking?.coupon || booking?.couponIssue ? (
+                        <span style={{ display: "block", marginTop: 3, color: colors.goldBright, fontSize: "11px" }}>
+                          {couponRelationLabel(booking.coupon, booking.couponIssue)}
+                        </span>
+                      ) : null}
+                    </span>
                     <span>{people}</span>
                     <span>{time}</span>
                     <span>

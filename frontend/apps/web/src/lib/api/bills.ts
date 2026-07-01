@@ -40,6 +40,11 @@ export type BillRecord = {
     code: string;
     name: string;
   } | null;
+  couponIssue?: {
+    id: string;
+    code: string;
+    status: string;
+  } | null;
   media?: BillMedia[];
 };
 
@@ -47,6 +52,8 @@ export type CreateBillPayload = {
   bookingId?: string;
   storeId?: string;
   storeSlug?: string;
+  couponId?: string;
+  couponIssueId?: string;
   totalVnd: number;
   usedAt: string;
 };

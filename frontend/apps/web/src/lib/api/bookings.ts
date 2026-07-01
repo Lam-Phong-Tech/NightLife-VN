@@ -50,6 +50,11 @@ export type BookingRecord = {
     code: string;
     name: string;
   } | null;
+  couponIssue?: {
+    id: string;
+    code: string;
+    status: string;
+  } | null;
 };
 
 export type CreateBookingPayload = {
@@ -57,6 +62,8 @@ export type CreateBookingPayload = {
   storeSlug?: string;
   castId?: string;
   castSlug?: string;
+  couponId?: string;
+  couponIssueId?: string;
   displayName: string;
   phone: string;
   scheduledAt: string;

@@ -39,6 +39,24 @@ export class CreateBillDto {
   @MaxLength(120)
   storeSlug?: string;
 
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440020',
+    description:
+      'Optional coupon campaign id to connect this bill when there is no booking or the booking has no coupon.',
+  })
+  @IsOptional()
+  @IsUUID()
+  couponId?: string;
+
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440021',
+    description:
+      'Optional issued coupon id to connect this bill for reconciliation. Store can be inferred from the issue when bookingId/store are omitted.',
+  })
+  @IsOptional()
+  @IsUUID()
+  couponIssueId?: string;
+
   @ApiProperty({
     example: 1800000,
     minimum: 1,

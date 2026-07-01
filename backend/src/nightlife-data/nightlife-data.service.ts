@@ -537,6 +537,18 @@ type BookingTarget = {
   };
 };
 
+type StoreSummary = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type CouponSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
 @Injectable()
 export class NightlifeDataService {
   private readonly logger = new Logger(NightlifeDataService.name);
@@ -2242,6 +2254,7 @@ export class NightlifeDataService {
           },
         },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
         note: true,
@@ -2277,6 +2290,7 @@ export class NightlifeDataService {
       target,
       note: contact.note,
       guestId: guest.id,
+      phone: contact.phone,
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
@@ -2309,6 +2323,7 @@ export class NightlifeDataService {
       note: contact.note,
       userId: user.id,
       guestId: guest.id,
+      phone: contact.phone,
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
@@ -3248,6 +3263,7 @@ export class NightlifeDataService {
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         media: {
           select: {
             id: true,
@@ -3291,6 +3307,7 @@ export class NightlifeDataService {
           },
         },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
         note: true,
         createdAt: true,
@@ -3505,6 +3522,14 @@ export class NightlifeDataService {
         guest: { select: { id: true, displayName: true } },
         scannedBy: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
+        bill: {
+          select: {
+            id: true,
+            billNumber: true,
+            status: true,
+            totalVnd: true,
+          },
+        },
         coupon: {
           select: {
             id: true,
@@ -3543,6 +3568,7 @@ export class NightlifeDataService {
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
             coupon: { select: { id: true, code: true, name: true } },
+            couponIssue: { select: { id: true, code: true, status: true } },
           },
         })
       : null;
@@ -3560,8 +3586,13 @@ export class NightlifeDataService {
     if (booking?.id) {
       const existingBill = await this.prisma.bill.findFirst({
         where: {
-          bookingId: booking.id,
           deletedAt: null,
+          OR: [
+            { bookingId: booking.id },
+            ...(booking.couponIssueId
+              ? [{ couponIssueId: booking.couponIssueId }]
+              : []),
+          ],
         },
         select: { id: true },
       });
@@ -3574,6 +3605,12 @@ export class NightlifeDataService {
     }
 
     const store = booking?.store ?? (await this.resolveBillStore(dto));
+    const couponLink = await this.resolveBillCouponLink({
+      dto,
+      booking,
+      store,
+      user,
+    });
     const now = new Date();
     const usedAt = this.resolveBillUsedAt(dto);
     this.assertBillSubmissionWindow(usedAt, now);
@@ -3584,8 +3621,8 @@ export class NightlifeDataService {
         userId: user.id,
         guestId: booking?.guestId,
         storeId: store.id,
-        couponId: booking?.couponId,
-        couponIssueId: booking?.couponIssueId,
+        couponId: couponLink.couponId,
+        couponIssueId: couponLink.couponIssueId,
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
         subtotalVnd: dto.totalVnd,
@@ -3601,19 +3638,19 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBillSubmitted(bill);
-    if (booking?.couponIssueId) {
+    if (couponLink.couponIssueId) {
       await this.recordCouponLifecycleEvent(
         'coupon.analytics.bill_submitted.v1',
         {
-          id: booking.couponIssueId,
-          code: booking.coupon?.code ?? booking.couponIssueId,
-          status: 'USED',
+          id: couponLink.couponIssueId,
+          code: couponLink.couponIssueCode ?? couponLink.couponIssueId,
+          status: couponLink.couponIssueStatus ?? 'USED',
           userId: user.id,
-          guestId: booking.guestId,
+          guestId: booking?.guestId,
           coupon: {
-            id: booking.couponId ?? booking.couponIssueId,
-            code: booking.coupon?.code ?? '',
-            name: booking.coupon?.name ?? 'Coupon',
+            id: couponLink.couponId ?? couponLink.couponIssueId,
+            code: couponLink.coupon?.code ?? '',
+            name: couponLink.coupon?.name ?? 'Coupon',
             store: {
               id: store.id,
               name: store.name,
@@ -3624,7 +3661,7 @@ export class NightlifeDataService {
         {
           billId: bill.id,
           totalVnd: bill.totalVnd,
-          bookingId: booking.id,
+          bookingId: booking?.id ?? null,
         },
       );
     }
@@ -3651,6 +3688,7 @@ export class NightlifeDataService {
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
             coupon: { select: { id: true, code: true, name: true } },
+            couponIssue: { select: { id: true, code: true, status: true } },
           },
         })
       : null;
@@ -3668,8 +3706,13 @@ export class NightlifeDataService {
     if (booking?.id) {
       const existingBill = await this.prisma.bill.findFirst({
         where: {
-          bookingId: booking.id,
           deletedAt: null,
+          OR: [
+            { bookingId: booking.id },
+            ...(booking.couponIssueId
+              ? [{ couponIssueId: booking.couponIssueId }]
+              : []),
+          ],
         },
         select: { id: true },
       });
@@ -3687,6 +3730,12 @@ export class NightlifeDataService {
       store.id,
       'bill.partner.view',
     );
+    const couponLink = await this.resolveBillCouponLink({
+      dto,
+      booking,
+      store,
+      user,
+    });
 
     const now = new Date();
     const usedAt = this.resolveBillUsedAt(dto);
@@ -3698,8 +3747,8 @@ export class NightlifeDataService {
         userId: booking?.userId,
         guestId: booking?.guestId,
         storeId: store.id,
-        couponId: booking?.couponId,
-        couponIssueId: booking?.couponIssueId,
+        couponId: couponLink.couponId,
+        couponIssueId: couponLink.couponIssueId,
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
         subtotalVnd: dto.totalVnd,
@@ -3799,6 +3848,7 @@ export class NightlifeDataService {
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         user: {
           select: {
             id: true,
@@ -3859,6 +3909,7 @@ export class NightlifeDataService {
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
       },
@@ -4022,6 +4073,119 @@ export class NightlifeDataService {
     };
   }
 
+  private async resolveBookingCouponLink(input: {
+    dto: CreateBookingDto;
+    target: BookingTarget;
+    userId?: string;
+    phone: string;
+  }) {
+    const couponId = this.cleanText(input.dto.couponId);
+    const couponIssueId = this.cleanText(input.dto.couponIssueId);
+
+    if (!couponId && !couponIssueId) {
+      return {};
+    }
+
+    const now = new Date();
+
+    if (couponIssueId) {
+      const issue = await this.prisma.couponIssue.findFirst({
+        where: {
+          id: couponIssueId,
+          coupon: { deletedAt: null },
+        },
+        select: {
+          id: true,
+          couponId: true,
+          userId: true,
+          status: true,
+          expiresAt: true,
+          guest: { select: { phone: true } },
+          booking: { select: { id: true } },
+          coupon: {
+            select: {
+              id: true,
+              storeId: true,
+            },
+          },
+        },
+      });
+
+      if (!issue) {
+        throw new NotFoundException('Coupon issue not found');
+      }
+
+      if (couponId && couponId !== issue.couponId) {
+        throw new BadRequestException(
+          'couponId must match couponIssue.couponId',
+        );
+      }
+
+      if (issue.coupon.storeId !== input.target.store.id) {
+        throw new UnprocessableEntityException(
+          'Coupon issue does not belong to the booking store',
+        );
+      }
+
+      if (issue.booking) {
+        throw new UnprocessableEntityException(
+          'Coupon issue is already linked to a booking',
+        );
+      }
+
+      if (input.userId) {
+        if (issue.userId && issue.userId !== input.userId) {
+          throw new UnprocessableEntityException(
+            'Coupon issue does not belong to this member',
+          );
+        }
+      } else if (issue.userId) {
+        throw new UnprocessableEntityException(
+          'Member coupon issue cannot be linked to a guest booking',
+        );
+      }
+
+      if (issue.guest?.phone && issue.guest.phone !== input.phone) {
+        throw new UnprocessableEntityException(
+          'Coupon issue phone does not match booking phone',
+        );
+      }
+
+      if (issue.status !== 'ISSUED') {
+        throw new UnprocessableEntityException(
+          'Coupon issue is not available for booking',
+        );
+      }
+
+      if (issue.expiresAt && issue.expiresAt <= now) {
+        await this.expireIssuedCouponIssues({ id: issue.id });
+        throw new UnprocessableEntityException('Coupon issue has expired');
+      }
+
+      return {
+        couponId: issue.couponId,
+        couponIssueId: issue.id,
+      };
+    }
+
+    const coupon = await this.prisma.coupon.findFirst({
+      where: {
+        id: couponId,
+        storeId: input.target.store.id,
+        status: 'ACTIVE',
+        deletedAt: null,
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      select: { id: true },
+    });
+
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    return { couponId: coupon.id };
+  }
+
   private resolveBillUsedAt(dto: CreateBillDto) {
     const usedAt = new Date(dto.usedAt);
     if (Number.isNaN(usedAt.getTime())) {
@@ -4044,13 +4208,227 @@ export class NightlifeDataService {
     }
   }
 
+  private async resolveBillCouponLink(input: {
+    dto: CreateBillDto;
+    booking?: {
+      id: string;
+      guestId: string | null;
+      couponId: string | null;
+      couponIssueId: string | null;
+      coupon?: CouponSummary | null;
+      couponIssue?: { id: string; code: string; status: string } | null;
+    } | null;
+    store: StoreSummary;
+    user?: AuthenticatedUser;
+  }) {
+    const requestedCouponId = this.cleanText(input.dto.couponId);
+    const requestedCouponIssueId = this.cleanText(input.dto.couponIssueId);
+    let couponId = input.booking?.couponId ?? undefined;
+    let couponIssueId = input.booking?.couponIssueId ?? undefined;
+    let couponIssueCode = input.booking?.couponIssue?.code;
+    let couponIssueStatus = input.booking?.couponIssue?.status;
+    let coupon = input.booking?.coupon ?? null;
+
+    if (
+      requestedCouponIssueId &&
+      input.booking?.couponIssueId &&
+      requestedCouponIssueId !== input.booking.couponIssueId
+    ) {
+      throw new BadRequestException(
+        'couponIssueId must match the booking couponIssueId',
+      );
+    }
+
+    if (
+      requestedCouponId &&
+      input.booking?.couponId &&
+      requestedCouponId !== input.booking.couponId
+    ) {
+      throw new BadRequestException('couponId must match the booking couponId');
+    }
+
+    if (requestedCouponIssueId) {
+      const issue = await this.prisma.couponIssue.findFirst({
+        where: {
+          id: requestedCouponIssueId,
+          coupon: { deletedAt: null },
+        },
+        select: {
+          id: true,
+          code: true,
+          couponId: true,
+          userId: true,
+          guestId: true,
+          status: true,
+          expiresAt: true,
+          bill: { select: { id: true } },
+          coupon: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              storeId: true,
+            },
+          },
+        },
+      });
+
+      if (!issue) {
+        throw new NotFoundException('Coupon issue not found');
+      }
+
+      if (issue.coupon.storeId !== input.store.id) {
+        throw new UnprocessableEntityException(
+          'Coupon issue does not belong to the bill store',
+        );
+      }
+
+      if (issue.bill) {
+        throw new UnprocessableEntityException(
+          'Coupon issue is already linked to a bill',
+        );
+      }
+
+      if (input.user?.role === 'USER') {
+        if (issue.userId && issue.userId !== input.user.id) {
+          throw new UnprocessableEntityException(
+            'Coupon issue does not belong to this member',
+          );
+        }
+
+        if (!issue.userId && !input.booking) {
+          throw new UnprocessableEntityException(
+            'Guest coupon issue requires a linked booking for member bill submission',
+          );
+        }
+
+        if (
+          !issue.userId &&
+          input.booking?.guestId &&
+          issue.guestId !== input.booking.guestId
+        ) {
+          throw new UnprocessableEntityException(
+            'Coupon issue does not belong to the bill booking guest',
+          );
+        }
+      }
+
+      if (!['ISSUED', 'USED'].includes(issue.status)) {
+        throw new UnprocessableEntityException(
+          'Coupon issue is not available for bill reconciliation',
+        );
+      }
+
+      if (
+        issue.status === 'ISSUED' &&
+        issue.expiresAt &&
+        issue.expiresAt <= new Date()
+      ) {
+        await this.expireIssuedCouponIssues({ id: issue.id });
+        throw new UnprocessableEntityException('Coupon issue has expired');
+      }
+
+      couponId = issue.couponId;
+      couponIssueId = issue.id;
+      couponIssueCode = issue.code;
+      couponIssueStatus = issue.status;
+      coupon = {
+        id: issue.coupon.id,
+        code: issue.coupon.code,
+        name: issue.coupon.name,
+      };
+    }
+
+    if (requestedCouponId) {
+      if (couponId && requestedCouponId !== couponId) {
+        throw new BadRequestException(
+          'couponId must match couponIssue.couponId',
+        );
+      }
+
+      const requestedCoupon = await this.prisma.coupon.findFirst({
+        where: {
+          id: requestedCouponId,
+          storeId: input.store.id,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+        },
+      });
+
+      if (!requestedCoupon) {
+        throw new NotFoundException('Coupon not found');
+      }
+
+      couponId = requestedCoupon.id;
+      coupon = requestedCoupon;
+    }
+
+    return {
+      couponId,
+      couponIssueId,
+      couponIssueCode,
+      couponIssueStatus,
+      coupon,
+    };
+  }
+
   private async resolveBillStore(dto: CreateBillDto) {
     const storeId = this.cleanText(dto.storeId);
     const storeSlug = this.cleanText(dto.storeSlug);
+    const couponId = this.cleanText(dto.couponId);
+    const couponIssueId = this.cleanText(dto.couponIssueId);
 
     if (!storeId && !storeSlug) {
+      if (couponIssueId) {
+        const issue = await this.prisma.couponIssue.findFirst({
+          where: {
+            id: couponIssueId,
+            coupon: {
+              deletedAt: null,
+              store: { deletedAt: null, status: 'ACTIVE' },
+            },
+          },
+          select: {
+            coupon: {
+              select: {
+                store: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+        });
+
+        if (!issue) {
+          throw new NotFoundException('Coupon issue not found');
+        }
+
+        return issue.coupon.store;
+      }
+
+      if (couponId) {
+        const coupon = await this.prisma.coupon.findFirst({
+          where: {
+            id: couponId,
+            deletedAt: null,
+            store: { deletedAt: null, status: 'ACTIVE' },
+          },
+          select: {
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        });
+
+        if (!coupon) {
+          throw new NotFoundException('Coupon not found');
+        }
+
+        return coupon.store;
+      }
+
       throw new BadRequestException(
-        'bookingId, storeId, or storeSlug is required',
+        'bookingId, storeId, storeSlug, couponId, or couponIssueId is required',
       );
     }
 
@@ -4081,11 +4459,12 @@ export class NightlifeDataService {
     return `BILL-${dateToken}-${randomToken}`;
   }
 
-  private createBookingRecord(input: {
+  private async createBookingRecord(input: {
     dto: CreateBookingDto;
     target: BookingTarget;
     userId?: string;
     guestId: string;
+    phone: string;
     note?: string;
   }) {
     const scheduledAt = new Date(input.dto.scheduledAt);
@@ -4093,12 +4472,21 @@ export class NightlifeDataService {
       throw new BadRequestException('scheduledAt must be a valid ISO date');
     }
 
+    const couponLink = await this.resolveBookingCouponLink({
+      dto: input.dto,
+      target: input.target,
+      userId: input.userId,
+      phone: input.phone,
+    });
+
     return this.prisma.booking.create({
       data: {
         userId: input.userId,
         guestId: input.guestId,
         storeId: input.target.store.id,
         castId: input.target.cast?.id,
+        couponId: couponLink.couponId,
+        couponIssueId: couponLink.couponIssueId,
         status: 'REQUESTED',
         scheduledAt,
         partySize: input.dto.partySize,
@@ -4660,6 +5048,8 @@ export class NightlifeDataService {
       },
       user: { select: { id: true, displayName: true, tier: true } },
       guest: { select: { id: true, displayName: true, phone: true } },
+      coupon: { select: { id: true, code: true, name: true } },
+      couponIssue: { select: { id: true, code: true, status: true } },
     } satisfies Prisma.BookingSelect;
   }
 
@@ -4689,6 +5079,7 @@ export class NightlifeDataService {
       store: { select: { id: true, name: true, slug: true } },
       booking: { select: { id: true, status: true, scheduledAt: true } },
       coupon: { select: { id: true, code: true, name: true } },
+      couponIssue: { select: { id: true, code: true, status: true } },
       user: { select: { id: true, displayName: true, tier: true } },
       guest: { select: { id: true, displayName: true, phone: true } },
     } satisfies Prisma.BillSelect;

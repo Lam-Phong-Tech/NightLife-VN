@@ -231,6 +231,20 @@ const issueDiscountText = (issue: CouponIssue) => {
 const issueStoreName = (issue: CouponIssue) =>
   issue.coupon.store?.name ? readableName(issue.coupon.store.name) : "Vietyoru partner";
 
+const issueBookingHref = (issue: CouponIssue, coupon?: PublicCoupon | null) => {
+  const store = coupon?.store ?? issue.coupon.store;
+  const params = new URLSearchParams({
+    couponId: issue.coupon.id,
+    couponIssueId: issue.id,
+  });
+
+  if (store?.id) params.set("storeId", store.id);
+  if (store?.slug) params.set("storeSlug", store.slug);
+  if (store?.name) params.set("storeName", readableName(store.name));
+
+  return `/dat-cho?${params.toString()}`;
+};
+
 function ClaimedCouponModal({
   copied,
   coupon,
@@ -312,6 +326,9 @@ function ClaimedCouponModal({
             <Copy size={16} />
             {copied ? "Đã sao chép" : "Sao chép mã"}
           </button>
+          <Link className="copy-button secondary" href={issueBookingHref(issue, visualCoupon)}>
+            Đặt chỗ với coupon
+          </Link>
           <p>
             Áp dụng tại {storeName} đến hết <b>{formatDate(issue.expiresAt)}</b>. Xuất trình mã khi đặt bàn hoặc thanh toán.
           </p>
@@ -397,6 +414,11 @@ function MemberCouponWallet({
                         <Copy size={14} />
                         {copiedIssueId === issue.id ? "Đã sao chép" : "Sao chép"}
                       </button>
+                    ) : null}
+                    {showQr ? (
+                      <Link className="wallet-book-link" href={issueBookingHref(issue)}>
+                        Đặt chỗ
+                      </Link>
                     ) : null}
                   </div>
                 </div>
@@ -1375,7 +1397,8 @@ export default function Page() {
           white-space: nowrap;
         }
 
-        .wallet-code-row button {
+        .wallet-code-row button,
+        .wallet-code-row .wallet-book-link {
           min-height: 30px;
           border: 1px solid rgba(212,178,106,.28);
           border-radius: 8px;
@@ -1390,6 +1413,7 @@ export default function Page() {
           padding: 0 9px;
           cursor: pointer;
           flex: none;
+          text-decoration: none;
         }
 
         .wallet-qr,
@@ -1828,6 +1852,13 @@ export default function Page() {
           font-size: 14px;
           font-weight: 800;
           cursor: pointer;
+          text-decoration: none;
+        }
+
+        .copy-button.secondary {
+          border: 1px solid rgba(212,178,106,.3);
+          background: rgba(212,178,106,.1);
+          color: #e3c27e;
         }
 
         .coupon-modal-body p {

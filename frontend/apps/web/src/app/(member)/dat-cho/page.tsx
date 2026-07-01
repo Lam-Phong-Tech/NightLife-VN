@@ -25,6 +25,8 @@ type BookingContext = {
   area?: string;
   castSlug?: string;
   castName?: string;
+  couponId?: string;
+  couponIssueId?: string;
   fromHref: string;
 };
 
@@ -64,6 +66,8 @@ const parseContext = () => {
   const castSlug = params.get("castSlug") || undefined;
   const rawStoreSlug = params.get("storeSlug") || undefined;
   const storeSlug = rawStoreSlug || (castSlug ? undefined : defaultContext.storeSlug);
+  const couponId = params.get("couponId") || undefined;
+  const couponIssueId = params.get("couponIssueId") || undefined;
 
   return {
     context: {
@@ -72,6 +76,8 @@ const parseContext = () => {
       area: params.get("area") || defaultContext.area,
       castSlug,
       castName: params.get("castName") || undefined,
+      couponId,
+      couponIssueId,
       fromHref: castSlug ? `/casts/${castSlug}` : `/stores/${storeSlug ?? defaultContext.storeSlug}`,
     },
     mode: parseRequestedMode(params.get("mode")),
@@ -131,6 +137,8 @@ export default function Page() {
       storeName: context.storeName,
       ...(context.area ? { area: context.area } : {}),
       ...(context.castSlug ? { castSlug: context.castSlug } : {}),
+      ...(context.couponId ? { couponId: context.couponId } : {}),
+      ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       ...(context.castName ? { castName: context.castName } : {}),
       date: bookingDate,
       time: bookingTime,
@@ -168,6 +176,8 @@ export default function Page() {
     const payload: CreateBookingPayload = {
       ...(context.storeSlug ? { storeSlug: context.storeSlug } : {}),
       ...(context.castSlug ? { castSlug: context.castSlug } : {}),
+      ...(context.couponId ? { couponId: context.couponId } : {}),
+      ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       displayName,
       phone: normalizedPhone,
       scheduledAt: buildScheduledAt(bookingDate, bookingTime),
@@ -219,6 +229,11 @@ export default function Page() {
                 <div className={styles.venueMeta}>
                   {context.castName ? context.storeName : "Lounge cao cấp"} · {context.area ?? "NightLife"}
                 </div>
+                {context.couponIssueId || context.couponId ? (
+                  <div className={styles.venueMeta}>
+                    Coupon link: {(context.couponIssueId ?? context.couponId)?.slice(0, 8)}
+                  </div>
+                ) : null}
               </div>
               <Link href={context.fromHref} className={styles.changeLink}>
                 Đổi

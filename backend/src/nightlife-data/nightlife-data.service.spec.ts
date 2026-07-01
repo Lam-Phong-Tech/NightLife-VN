@@ -1159,6 +1159,51 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('creates a guest booking with an optional coupon campaign link', async () => {
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    });
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+    });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+    });
+
+    await service.createGuestBooking({
+      storeSlug: 'neon-club',
+      couponId: 'coupon-1',
+      displayName: 'Guest Name',
+      phone: '+84901234567',
+      scheduledAt: '2026-06-30T14:00:00.000Z',
+      partySize: 4,
+    });
+
+    expect(prisma.coupon.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'coupon-1',
+          storeId: 'store-1',
+          status: 'ACTIVE',
+          deletedAt: null,
+        }),
+      }),
+    );
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          storeId: 'store-1',
+          couponId: 'coupon-1',
+          couponIssueId: undefined,
+        }),
+      }),
+    );
+  });
+
   it('creates a member booking request for a cast with a contact snapshot', async () => {
     prisma.cast.findFirst.mockResolvedValue({
       id: 'cast-1',
@@ -2431,6 +2476,76 @@ describe('NightlifeDataService', () => {
           paidVnd: 1800000,
           usedAt: new Date('2026-06-30T14:00:00.000Z'),
           submittedAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(adminNotificationService.notifyBillSubmitted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'bill-1',
+        status: 'SUBMITTED',
+      }),
+    );
+  });
+
+  it('submits a member bill with a coupon issue without requiring a booking', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.couponIssue.findFirst
+      .mockResolvedValueOnce({
+        coupon: {
+          store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        },
+      } as never)
+      .mockResolvedValueOnce({
+        id: 'issue-1',
+        code: 'MEMBER-code',
+        couponId: 'coupon-1',
+        userId: 'member-1',
+        guestId: null,
+        status: 'USED',
+        expiresAt: null,
+        bill: null,
+        coupon: {
+          id: 'coupon-1',
+          code: 'WELCOME20',
+          name: 'Welcome 20%',
+          storeId: 'store-1',
+        },
+      } as never);
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME20',
+      name: 'Welcome 20%',
+    } as never);
+    prisma.bill.create.mockResolvedValue({
+      id: 'bill-1',
+      billNumber: 'BILL-20260701-ABC12345',
+      status: 'SUBMITTED',
+      totalVnd: 1800000,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: null,
+      coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+      couponIssue: { id: 'issue-1', code: 'MEMBER-code', status: 'USED' },
+    } as never);
+
+    await service.submitMemberBill(
+      { id: 'member-1', role: 'USER' },
+      {
+        couponId: 'coupon-1',
+        couponIssueId: 'issue-1',
+        totalVnd: 1800000,
+        usedAt: '2026-06-30T14:00:00.000Z',
+      },
+    );
+
+    expect(prisma.bill.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bookingId: undefined,
+          userId: 'member-1',
+          storeId: 'store-1',
+          couponId: 'coupon-1',
+          couponIssueId: 'issue-1',
+          status: 'SUBMITTED',
         }),
       }),
     );

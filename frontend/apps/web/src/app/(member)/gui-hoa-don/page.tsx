@@ -19,6 +19,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { billApi, type BillRecord } from "@/lib/api/bills";
 import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
+import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
 
 const colors = {
@@ -68,6 +69,15 @@ const formatDateTime = (value?: string | null) => {
 
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
 
+const canAttachCouponIssueToBill = (issue: CouponIssue) =>
+  issue.status === "ISSUED" || issue.status === "USED";
+
+const couponIssueOptionLabel = (issue: CouponIssue) => {
+  const storeName = issue.coupon.store?.name ?? "Coupon";
+  const status = issue.statusLabel ?? issue.status;
+  return `${issue.coupon.name} - ${storeName} - ${status}`;
+};
+
 const cleanApiMessage = (error: unknown) => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
@@ -88,8 +98,10 @@ export default function Page() {
   const [mode, setMode] = useState<SubmitMode>("member");
   const [stores, setStores] = useState<PublicStore[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [couponIssues, setCouponIssues] = useState<CouponIssue[]>([]);
   const [storeSlug, setStoreSlug] = useState("");
   const [bookingId, setBookingId] = useState("");
+  const [couponIssueId, setCouponIssueId] = useState("");
   const [amountInput, setAmountInput] = useState("");
   const [usedAt, setUsedAt] = useState(() => toDatetimeLocalValue(new Date()));
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
@@ -107,14 +119,16 @@ export default function Page() {
     const loadOptions = async () => {
       setIsLoadingOptions(true);
       try {
-        const [storeItems, bookingItems] = await Promise.all([
+        const [storeItems, bookingItems, couponIssueItems] = await Promise.all([
           discoveryApi.listStores({ city: "all", limit: 80 }),
           bookingApi.listMemberBookings().catch(() => [] as BookingRecord[]),
+          couponApi.listMemberCouponIssues().catch(() => [] as CouponIssue[]),
         ]);
 
         if (!active) return;
         setStores(storeItems);
         setBookings(bookingItems);
+        setCouponIssues(couponIssueItems.filter(canAttachCouponIssueToBill));
         setStoreSlug((current) => current || storeItems[0]?.slug || "");
       } finally {
         if (active) {
@@ -148,13 +162,22 @@ export default function Page() {
     [bookingId, bookings],
   );
 
+  const selectedCouponIssue = useMemo(
+    () => couponIssues.find((issue) => issue.id === couponIssueId) ?? null,
+    [couponIssueId, couponIssues],
+  );
+
   const selectedStore = useMemo(() => {
     if (selectedBooking?.store?.slug) {
       return stores.find((storeItem) => storeItem.slug === selectedBooking.store?.slug) ?? null;
     }
 
+    if (selectedCouponIssue?.coupon.store?.slug) {
+      return stores.find((storeItem) => storeItem.slug === selectedCouponIssue.coupon.store?.slug) ?? null;
+    }
+
     return stores.find((storeItem) => storeItem.slug === storeSlug) ?? null;
-  }, [selectedBooking, storeSlug, stores]);
+  }, [selectedBooking, selectedCouponIssue, storeSlug, stores]);
 
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
@@ -177,9 +200,20 @@ export default function Page() {
 
   const handleBookingChange = (value: string) => {
     setBookingId(value);
+    if (value) {
+      setCouponIssueId("");
+    }
     const booking = bookings.find((item) => item.id === value);
     if (booking?.store?.slug) {
       setStoreSlug(booking.store.slug);
+    }
+  };
+
+  const handleCouponIssueChange = (value: string) => {
+    setCouponIssueId(value);
+    const issue = couponIssues.find((item) => item.id === value);
+    if (issue?.coupon.store?.slug) {
+      setStoreSlug(issue.coupon.store.slug);
     }
   };
 
@@ -203,7 +237,17 @@ export default function Page() {
     setIsSubmitting(true);
     try {
       const payload = {
-        ...(bookingId ? { bookingId } : { storeSlug }),
+        ...(bookingId
+          ? { bookingId }
+          : {
+              storeSlug,
+              ...(selectedCouponIssue
+                ? {
+                    couponId: selectedCouponIssue.coupon.id,
+                    couponIssueId: selectedCouponIssue.id,
+                  }
+                : {}),
+            }),
         totalVnd: amount,
         usedAt: usedAtDate.toISOString(),
       };
@@ -229,6 +273,7 @@ export default function Page() {
       });
       setAmountInput("");
       setBookingId("");
+      setCouponIssueId("");
       setEvidenceFile(null);
       setUsedAt(toDatetimeLocalValue(new Date()));
     } catch (error) {
@@ -296,7 +341,7 @@ export default function Page() {
                   id="bill-store"
                   value={storeSlug}
                   onChange={(event) => setStoreSlug(event.target.value)}
-                  disabled={isLoadingOptions || Boolean(selectedBooking)}
+                  disabled={isLoadingOptions || Boolean(selectedBooking || selectedCouponIssue)}
                 >
                   {stores.map((storeItem) => (
                     <option key={storeItem.id} value={storeItem.slug}>
@@ -320,6 +365,24 @@ export default function Page() {
                   {bookings.map((booking) => (
                     <option key={booking.id} value={booking.id}>
                       {booking.store?.name ?? "Booking"} - {formatDateTime(booking.scheduledAt)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            {mode === "member" && !selectedBooking && couponIssues.length ? (
+              <div className="nl-field">
+                <label htmlFor="bill-coupon-issue">Coupon link</label>
+                <select
+                  id="bill-coupon-issue"
+                  value={couponIssueId}
+                  onChange={(event) => handleCouponIssueChange(event.target.value)}
+                >
+                  <option value="">Khong lien ket coupon</option>
+                  {couponIssues.map((issue) => (
+                    <option key={issue.id} value={issue.id}>
+                      {couponIssueOptionLabel(issue)}
                     </option>
                   ))}
                 </select>
@@ -412,6 +475,15 @@ export default function Page() {
             <div className="nl-side-row">
               <span>Quán</span>
               <strong>{selectedStore?.name ?? "Chọn quán"}</strong>
+            </div>
+            <div className="nl-side-row">
+              <span>Coupon link</span>
+              <strong>
+                {selectedBooking?.coupon?.name ??
+                  selectedBooking?.couponIssue?.code ??
+                  selectedCouponIssue?.coupon.name ??
+                  "Khong lien ket"}
+              </strong>
             </div>
             <div className="nl-side-row">
               <span>Tổng tiền</span>

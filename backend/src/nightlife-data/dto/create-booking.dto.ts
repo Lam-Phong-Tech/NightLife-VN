@@ -47,6 +47,24 @@ export class CreateBookingDto {
   @MaxLength(120)
   castSlug?: string;
 
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440002',
+    description:
+      'Optional coupon campaign id to attach to this booking for reconciliation.',
+  })
+  @IsOptional()
+  @IsUUID()
+  couponId?: string;
+
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440003',
+    description:
+      'Optional issued coupon id to attach to this booking for QR/check-in reconciliation.',
+  })
+  @IsOptional()
+  @IsUUID()
+  couponIssueId?: string;
+
   @ApiProperty({ example: 'Nguyen Van A' })
   @IsNotEmpty()
   @IsString()
