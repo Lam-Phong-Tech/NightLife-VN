@@ -23,6 +23,7 @@ import {
   XCircle,
   type LucideIcon,
 } from 'lucide-react';
+import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiClient } from '@/lib/api/client';
@@ -132,6 +133,41 @@ const isSignedQrPayload = (value: string) => {
   } catch {
     return false;
   }
+};
+
+const readQrFromVideoFrame = async (
+  video: HTMLVideoElement,
+  detector: BarcodeDetectorInstance | null,
+  canvas: HTMLCanvasElement,
+) => {
+  if (detector) {
+    try {
+      const codes = await detector.detect(video);
+      const nativeValue = codes.find((code) => code.rawValue)?.rawValue?.trim();
+      if (nativeValue) {
+        return nativeValue;
+      }
+    } catch {
+      // Fall back to jsQR below for browsers with partial BarcodeDetector support.
+    }
+  }
+
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) {
+    return null;
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) {
+    return null;
+  }
+
+  context.drawImage(video, 0, 0, width, height);
+  const imageData = context.getImageData(0, 0, width, height);
+  return jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })?.data.trim() ?? null;
 };
 
 const readOfflineScanQueue = () => {
@@ -524,10 +560,9 @@ export default function PartnerPage() {
       return;
     }
 
-    const Detector = (window as BarcodeDetectorWindow).BarcodeDetector;
-    if (!Detector || !navigator.mediaDevices?.getUserMedia) {
+    if (!navigator.mediaDevices?.getUserMedia) {
       setCameraStatus('unsupported');
-      setCameraMessage('Trình duyệt hiện tại chưa hỗ trợ quét QR bằng camera. Vẫn có thể dán link hoặc nhập mã.');
+      setCameraMessage('Trình duyệt hiện tại chưa cho phép mở camera. Vẫn có thể dán link hoặc nhập mã.');
       return;
     }
 
@@ -535,11 +570,18 @@ export default function PartnerPage() {
     setCameraMessage('Đang mở camera...');
 
     try {
+      const Detector = (window as BarcodeDetectorWindow).BarcodeDetector;
+      let detector: BarcodeDetectorInstance | null = null;
+      try {
+        detector = Detector ? new Detector({ formats: ['qr_code'] }) : null;
+      } catch {
+        detector = null;
+      }
+      const scanCanvas = document.createElement('canvas');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
         audio: false,
       });
-      const detector = new Detector({ formats: ['qr_code'] });
       cameraStreamRef.current = stream;
 
       if (videoRef.current) {
@@ -548,7 +590,11 @@ export default function PartnerPage() {
       }
 
       setCameraStatus('active');
-      setCameraMessage('Đưa QR vào khung để tự nhận mã.');
+      setCameraMessage(
+        detector
+          ? 'Đưa QR vào khung để tự nhận mã.'
+          : 'Camera đã mở bằng bộ đọc QR dự phòng. Đưa QR vào khung để tự nhận mã.',
+      );
 
       const scanFrame = async () => {
         if (!videoRef.current || !cameraStreamRef.current) {
@@ -556,8 +602,7 @@ export default function PartnerPage() {
         }
 
         try {
-          const codes = await detector.detect(videoRef.current);
-          const rawValue = codes.find((code) => code.rawValue)?.rawValue?.trim();
+          const rawValue = await readQrFromVideoFrame(videoRef.current, detector, scanCanvas);
           if (rawValue && rawValue !== lastCameraPayloadRef.current) {
             lastCameraPayloadRef.current = rawValue;
             setScanPayload(rawValue);
