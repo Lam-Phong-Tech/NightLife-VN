@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function Page() {
-  redirect("/uu-dai");
+  redirect("/vi-uu-dai");
 }
