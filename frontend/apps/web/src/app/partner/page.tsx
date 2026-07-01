@@ -118,8 +118,17 @@ type BarcodeDetectorWindow = Window & { BarcodeDetector?: BarcodeDetectorConstru
 type PanelKey = 'overview' | 'scan' | 'settlement' | 'listing' | 'settings';
 type ListingTabKey = 'store' | 'cast' | 'pricing' | 'media';
 type PeriodKey = 'today' | 'seven' | 'thirty';
+type OfflineScanQueueItem = {
+  payload: string;
+  queuedAt: string;
+  attempts: number;
+  lastError?: string | null;
+};
 
 const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
+const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
+const offlineScanQueueMaxAttempts = 3;
+const offlineScanQueueMaxItems = 25;
 const signedQrTokenPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 
 const isSignedQrPayload = (value: string) => {
@@ -170,7 +179,65 @@ const readQrFromVideoFrame = async (
   return jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })?.data.trim() ?? null;
 };
 
-const readOfflineScanQueue = () => {
+const pruneOfflineScanQueue = (items: OfflineScanQueueItem[], now = Date.now()) => {
+  const seen = new Set<string>();
+  const pruned: OfflineScanQueueItem[] = [];
+
+  for (const item of items) {
+    const payload = item.payload.trim();
+    if (!payload || seen.has(payload)) {
+      continue;
+    }
+
+    const queuedAtMs = Date.parse(item.queuedAt);
+    const safeQueuedAtMs = Number.isFinite(queuedAtMs) ? queuedAtMs : now;
+    const attempts = Number.isFinite(item.attempts) ? Math.max(0, Math.trunc(item.attempts)) : 0;
+    if (now - safeQueuedAtMs > offlineScanQueueTtlMs || attempts >= offlineScanQueueMaxAttempts) {
+      continue;
+    }
+
+    seen.add(payload);
+    pruned.push({
+      payload,
+      queuedAt: new Date(safeQueuedAtMs).toISOString(),
+      attempts,
+      lastError: item.lastError ?? null,
+    });
+  }
+
+  return pruned.slice(-offlineScanQueueMaxItems);
+};
+
+const normalizeOfflineScanQueue = (value: unknown, now = Date.now()) => {
+  const rawItems = Array.isArray(value) ? value : [];
+  const items = rawItems.flatMap((item): OfflineScanQueueItem[] => {
+    if (typeof item === 'string') {
+      return [{ payload: item, queuedAt: new Date(now).toISOString(), attempts: 0, lastError: null }];
+    }
+
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const raw = item as Partial<OfflineScanQueueItem>;
+    if (typeof raw.payload !== 'string') {
+      return [];
+    }
+
+    return [
+      {
+        payload: raw.payload,
+        queuedAt: typeof raw.queuedAt === 'string' ? raw.queuedAt : new Date(now).toISOString(),
+        attempts: typeof raw.attempts === 'number' ? raw.attempts : 0,
+        lastError: typeof raw.lastError === 'string' ? raw.lastError : null,
+      },
+    ];
+  });
+
+  return pruneOfflineScanQueue(items, now);
+};
+
+const readOfflineScanQueue = (): OfflineScanQueueItem[] => {
   if (typeof window === 'undefined') {
     return [];
   }
@@ -178,18 +245,22 @@ const readOfflineScanQueue = () => {
   try {
     const rawValue = window.localStorage.getItem(offlineScanQueueKey);
     const parsed = rawValue ? JSON.parse(rawValue) : [];
-    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+    const queue = normalizeOfflineScanQueue(parsed);
+    if (rawValue !== JSON.stringify(queue)) {
+      window.localStorage.setItem(offlineScanQueueKey, JSON.stringify(queue));
+    }
+    return queue;
   } catch {
     return [];
   }
 };
 
-const writeOfflineScanQueue = (items: string[]) => {
+const writeOfflineScanQueue = (items: OfflineScanQueueItem[]) => {
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.localStorage.setItem(offlineScanQueueKey, JSON.stringify(items));
+  window.localStorage.setItem(offlineScanQueueKey, JSON.stringify(pruneOfflineScanQueue(items)));
 };
 
 const moneyVnd = (value: number) => `${Math.abs(value).toLocaleString('vi-VN')}đ`;
@@ -473,7 +544,7 @@ export default function PartnerPage() {
   const [scanMessage, setScanMessage] = useState('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
   const [isScanning, setIsScanning] = useState(false);
   const [isConfirmingScan, setIsConfirmingScan] = useState(false);
-  const [offlineScanQueue, setOfflineScanQueue] = useState<string[]>(() => readOfflineScanQueue());
+  const [offlineScanQueue, setOfflineScanQueue] = useState<OfflineScanQueueItem[]>(() => readOfflineScanQueue());
   const [cameraStatus, setCameraStatus] = useState<'idle' | 'starting' | 'active' | 'unsupported' | 'error'>('idle');
   const [cameraMessage, setCameraMessage] = useState('');
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -501,9 +572,12 @@ export default function PartnerPage() {
 
   const queueOfflineScan = useCallback((payload: string) => {
     setOfflineScanQueue((current) => {
-      const next = current.includes(payload) ? current : [...current, payload];
+      const queuedAt = new Date().toISOString();
+      const next = current.some((item) => item.payload === payload)
+        ? current.map((item) => (item.payload === payload ? { ...item, lastError: null } : item))
+        : [...current, { payload, queuedAt, attempts: 0, lastError: null }];
       writeOfflineScanQueue(next);
-      return next;
+      return pruneOfflineScanQueue(next);
     });
     setScanMessage('Đang offline, đã lưu mã vào hàng đợi để gửi lại.');
   }, []);
@@ -517,7 +591,11 @@ export default function PartnerPage() {
       }
 
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        queueOfflineScan(trimmedPayload);
+        if (options.fromQueue) {
+          setScanMessage('Vẫn offline, giữ mã trong hàng đợi để thử lại.');
+        } else {
+          queueOfflineScan(trimmedPayload);
+        }
         return false;
       }
 
@@ -542,7 +620,11 @@ export default function PartnerPage() {
         return true;
       } catch (error) {
         if (!(error instanceof ApiError) && typeof navigator !== 'undefined' && !navigator.onLine) {
-          queueOfflineScan(trimmedPayload);
+          if (options.fromQueue) {
+            setScanMessage('Vẫn offline, giữ mã trong hàng đợi để thử lại.');
+          } else {
+            queueOfflineScan(trimmedPayload);
+          }
           return false;
         }
 
@@ -642,17 +724,18 @@ export default function PartnerPage() {
       return;
     }
 
-    const remaining: string[] = [];
-    for (const payload of queuedItems) {
-      const sent = await scanCouponPayload(payload, { fromQueue: true });
+    const remaining: OfflineScanQueueItem[] = [];
+    for (const item of queuedItems) {
+      const sent = await scanCouponPayload(item.payload, { fromQueue: true });
       if (!sent) {
-        remaining.push(payload);
+        remaining.push({ ...item, attempts: item.attempts + 1, lastError: new Date().toISOString() });
       }
     }
 
-    writeOfflineScanQueue(remaining);
-    setOfflineScanQueue(remaining);
-    if (!remaining.length) {
+    const nextQueue = pruneOfflineScanQueue(remaining);
+    writeOfflineScanQueue(nextQueue);
+    setOfflineScanQueue(nextQueue);
+    if (!nextQueue.length) {
       setScanMessage('Đã gửi hết mã offline đang chờ.');
     }
   }, [scanCouponPayload]);
@@ -1009,6 +1092,10 @@ export default function PartnerPage() {
             <Upload size={16} />
             Gửi offline
           </GhostButton>
+        </div>
+
+        <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
+          Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
         </div>
 
         {cameraMessage ? (

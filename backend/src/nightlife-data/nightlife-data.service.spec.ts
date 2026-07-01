@@ -2289,6 +2289,30 @@ describe('NightlifeDataService', () => {
     expect(logSpy).toHaveBeenCalledWith(
       'Expired 3 coupon issue(s) from scheduled maintenance.',
     );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        recipient: 'system',
+        templateKey: 'coupon.issue.expired.v1',
+        payload: expect.objectContaining({
+          expiredCount: 3,
+        }),
+      }),
+    });
+    logSpy.mockRestore();
+  });
+
+  it('does not write maintenance logs when no coupon issue expires', async () => {
+    const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    prisma.couponIssue.updateMany.mockResolvedValueOnce({
+      count: 0,
+    } as never);
+
+    await expect(service.expireCouponIssuesEveryFiveMinutes()).resolves.toEqual(
+      { count: 0 },
+    );
+
+    expect(logSpy).not.toHaveBeenCalled();
+    expect(prisma.notificationLog.create).not.toHaveBeenCalled();
     logSpy.mockRestore();
   });
 

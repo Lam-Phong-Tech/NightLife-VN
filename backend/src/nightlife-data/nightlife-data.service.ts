@@ -3436,9 +3436,11 @@ export class NightlifeDataService {
   @Cron('*/5 * * * *')
   async expireCouponIssuesEveryFiveMinutes() {
     const result = await this.expireIssuedCouponIssues({});
-    this.logger.log(
-      `Expired ${result.count} coupon issue(s) from scheduled maintenance.`,
-    );
+    if (result.count > 0) {
+      this.logger.log(
+        `Expired ${result.count} coupon issue(s) from scheduled maintenance.`,
+      );
+    }
     return result;
   }
 
@@ -6838,14 +6840,27 @@ export class NightlifeDataService {
 
   private buildCouponQrPayload(issueId: string) {
     const token = this.buildSignedCouponQrToken(issueId);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    const baseUrl =
-      process.env.COUPON_QR_PARTNER_URL ??
-      (appUrl ? `${appUrl.replace(/\/$/, '')}/partner` : undefined) ??
-      'https://nightlife.vn/partner';
+    const baseUrl = this.couponQrPartnerUrl();
     const url = new URL(baseUrl);
     url.searchParams.set('scanToken', token);
     return url.toString();
+  }
+
+  private couponQrPartnerUrl() {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const configuredUrl =
+      process.env.COUPON_QR_PARTNER_URL ??
+      (appUrl ? `${appUrl.replace(/\/$/, '')}/partner` : undefined);
+
+    if (configuredUrl) {
+      return configuredUrl;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('COUPON_QR_PARTNER_URL is required in production');
+    }
+
+    return 'https://nightlife.vn/partner';
   }
 
   private buildCouponQrPayloadHash(payload: string) {
@@ -6881,11 +6896,15 @@ export class NightlifeDataService {
   }
 
   private couponQrSecret() {
-    return (
-      process.env.COUPON_QR_SECRET ??
-      process.env.JWT_SECRET ??
-      'nightlife-dev-coupon-qr-secret'
-    );
+    if (process.env.COUPON_QR_SECRET) {
+      return process.env.COUPON_QR_SECRET;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('COUPON_QR_SECRET is required in production');
+    }
+
+    return process.env.JWT_SECRET ?? 'nightlife-dev-coupon-qr-secret';
   }
 
   private resolveCouponIssueIdFromQrPayload(payload: string) {
@@ -7340,7 +7359,9 @@ export class NightlifeDataService {
       data: { status: 'EXPIRED' },
     });
 
-    await this.recordCouponExpireEvent(result.count, where);
+    if (result.count > 0) {
+      await this.recordCouponExpireEvent(result.count, where);
+    }
     return result;
   }
 

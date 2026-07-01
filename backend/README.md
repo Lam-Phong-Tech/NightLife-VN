@@ -28,9 +28,17 @@ STORAGE_LOCAL_DIR="uploads"
 PUBLIC_BASE_URL="http://localhost:3001"
 WEB_BASE_URL="http://localhost:3000"
 CMS_BASE_URL="http://localhost:3000"
+COUPON_QR_SECRET="replace-with-32-byte-random-secret"
+COUPON_QR_PARTNER_URL="http://localhost:3000/partner"
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_ADMIN_CHAT_ID=""
 ```
+
+Coupon QR production settings:
+
+- `COUPON_QR_SECRET` is required when `NODE_ENV=production`; use a strong random secret of at least 32 characters.
+- `COUPON_QR_PARTNER_URL` is required when `NODE_ENV=production` and must be an absolute HTTPS URL such as `https://domain/partner`.
+- Local development can use fallback values, but production startup validation blocks the dev fallback `nightlife-dev-coupon-qr-secret`.
 
 ## Database
 

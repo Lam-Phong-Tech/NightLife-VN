@@ -531,6 +531,15 @@ export default function AdminDashboardPage() {
       ),
     [couponIssueStatusFilter, couponIssues],
   );
+  const couponIssueCounts = useMemo(
+    () => ({
+      all: couponIssues.length,
+      ISSUED: couponIssues.filter((issue) => issue.status === "ISSUED").length,
+      USED: couponIssues.filter((issue) => issue.status === "USED").length,
+      EXPIRED: couponIssues.filter((issue) => issue.status === "EXPIRED").length,
+    }),
+    [couponIssues],
+  );
   const adminBookingRows: AdminBookingRow[] = hasLiveBookingRows
     ? orderedBookings.slice(0, 5).map((booking) => ({
         id: booking.id,
@@ -1428,6 +1437,9 @@ export default function AdminDashboardPage() {
                   >
                     STORE / CAMPAIGN / STATUS
                   </div>
+                  <div style={{ marginTop: "7px", color: colors.text2, fontSize: "12px" }}>
+                    API /admin/coupon-issues · {couponIssueCounts.all} total
+                  </div>
                 </div>
                 <div
                   style={{
@@ -1459,6 +1471,37 @@ export default function AdminDashboardPage() {
                     </button>
                   );
                 })}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  gap: "8px",
+                  padding: "12px 20px",
+                  borderBottom: `1px solid ${colors.borderSoft}`,
+                }}
+              >
+                {[
+                  ["All", couponIssueCounts.all],
+                  ["ISSUED", couponIssueCounts.ISSUED],
+                  ["USED", couponIssueCounts.USED],
+                  ["EXPIRED", couponIssueCounts.EXPIRED],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      minHeight: 54,
+                      border: `1px solid ${colors.borderSoft}`,
+                      borderRadius: 10,
+                      background: colors.surface2,
+                      padding: "9px 11px",
+                    }}
+                  >
+                    <div style={{ color: colors.muted, fontSize: 10, fontWeight: 900 }}>{label}</div>
+                    <div style={{ marginTop: 4, color: colors.goldBright, fontSize: 20, fontWeight: 900 }}>{value}</div>
+                  </div>
+                ))}
               </div>
 
               <div
