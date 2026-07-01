@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Logger,
   NotFoundException,
   UnprocessableEntityException,
@@ -1950,6 +1951,47 @@ describe('NightlifeDataService', () => {
     });
     expect(result).not.toHaveProperty('user');
     expect(result).not.toHaveProperty('guest');
+  });
+
+  it('rejects a partner scanning a coupon issue from another store', async () => {
+    prisma.couponIssue.findUnique.mockResolvedValue({
+      id: 'issue-2',
+      couponId: 'coupon-2',
+      code: 'OTHER-store-code',
+      guestId: 'guest-2',
+      userId: null,
+      status: 'ISSUED',
+      expiresAt: null,
+      usedAt: null,
+      metadata: { userType: 'GUEST' },
+      booking: null,
+      coupon: {
+        id: 'coupon-2',
+        code: 'OTHER5',
+        name: 'Other store coupon',
+        storeId: 'store-2',
+        store: { id: 'store-2', name: 'Other Store', slug: 'other-store' },
+      },
+    });
+    accessService.ensureStoreAccess.mockRejectedValueOnce(
+      new ForbiddenException('No access to this store'),
+    );
+
+    await expect(
+      service.scanCouponIssue('OTHER-store-code', {
+        id: 'partner-1',
+        role: 'PARTNER',
+      }),
+    ).rejects.toThrow('No access to this store');
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-2',
+      'coupon.scan',
+    );
+    expect(prisma.couponIssue.update).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(prisma.notificationLog.create).not.toHaveBeenCalled();
   });
 
   it('marks an expired coupon issue before rejecting QR scan', async () => {

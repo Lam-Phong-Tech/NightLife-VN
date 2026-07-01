@@ -406,8 +406,8 @@ function MemberCouponWallet({
                     <Image
                       src={couponQrImageUrl(issue)}
                       alt={`QR ${issue.code}`}
-                      width={116}
-                      height={116}
+                      width={176}
+                      height={176}
                       unoptimized
                     />
                   </div>
@@ -498,24 +498,24 @@ export default function Page() {
 
   useEffect(() => {
     if (!isMember) {
-      setMemberIssues([]);
-      setWalletError("");
-      setIsWalletLoading(false);
       return;
     }
 
     let isMounted = true;
-    setIsWalletLoading(true);
+    void Promise.resolve().then(async () => {
+      if (!isMounted) {
+        return;
+      }
 
-    couponApi
-      .listMemberCouponIssues()
-      .then((issues) => {
+      setIsWalletLoading(true);
+
+      try {
+        const issues = await couponApi.listMemberCouponIssues();
         if (isMounted) {
           setMemberIssues(issues);
           setWalletError("");
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         if (!isMounted) {
           return;
         }
@@ -525,17 +525,21 @@ export default function Page() {
             ? error.message
             : "Không tải được ví coupon đã lưu.";
         setWalletError(message);
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) {
           setIsWalletLoading(false);
         }
-      });
+      }
+    });
 
     return () => {
       isMounted = false;
     };
   }, [isMember]);
+
+  const visibleMemberIssues = isMember ? memberIssues : [];
+  const visibleWalletError = isMember ? walletError : "";
+  const visibleIsWalletLoading = isMember ? isWalletLoading : false;
 
   const effectiveActiveFilter = hasStoreScope ? "store" : activeFilter;
 
@@ -790,9 +794,9 @@ export default function Page() {
         {isMember ? (
           <MemberCouponWallet
             copiedIssueId={copiedIssueId}
-            error={walletError}
-            isLoading={isWalletLoading}
-            issues={memberIssues}
+            error={visibleWalletError}
+            isLoading={visibleIsWalletLoading}
+            issues={visibleMemberIssues}
             onCopy={copyWalletIssueCode}
           />
         ) : null}
@@ -1390,7 +1394,7 @@ export default function Page() {
 
         .wallet-qr,
         .wallet-status-card {
-          min-height: 132px;
+          min-height: 194px;
           border-radius: 13px;
           display: grid;
           place-items: center;
@@ -1402,8 +1406,8 @@ export default function Page() {
         }
 
         .wallet-qr img {
-          width: 116px;
-          height: 116px;
+          width: 176px;
+          height: 176px;
           display: block;
         }
 
@@ -1746,8 +1750,8 @@ export default function Page() {
         }
 
         .claimed-qr {
-          width: 164px;
-          height: 164px;
+          width: 208px;
+          height: 208px;
           margin: 0 auto;
           border-radius: 16px;
           border: 1px solid rgba(212,178,106,.24);
@@ -1758,8 +1762,8 @@ export default function Page() {
         }
 
         .claimed-qr img {
-          width: 148px;
-          height: 148px;
+          width: 188px;
+          height: 188px;
           display: block;
         }
 
@@ -1933,7 +1937,7 @@ export default function Page() {
 
           .wallet-qr,
           .wallet-status-card {
-            min-height: 124px;
+            min-height: 184px;
           }
 
           .claim-panel p {
