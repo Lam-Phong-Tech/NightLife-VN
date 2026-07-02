@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   BookOpen,
   CalendarDays,
+  ChevronDown,
   ChevronRight,
   Crown,
   Heart,
@@ -69,8 +70,8 @@ const serviceRegionTabs = [
 ] as const;
 
 const rankTabs = [
-  { id: "cast", label: "Cast" },
   { id: "quan", label: "Quán" },
+  { id: "cast", label: "Cast" },
 ];
 
 const contentPlaceholders = [
@@ -114,16 +115,25 @@ function normalizeArea(value = "") {
     .toLowerCase();
 }
 
-function getServiceRegion(item: ServiceItem): Exclude<ServiceRegion, "all"> {
-  const area = normalizeArea(item.area);
+function getAreaRegion(areaValue = ""): Exclude<ServiceRegion, "all"> {
+  const area = normalizeArea(areaValue);
   return area.includes("quan 1") || area.includes("hcm") || area.includes("ho chi minh")
     ? "hcm"
     : "hanoi";
 }
 
+function getServiceRegion(item: ServiceItem): Exclude<ServiceRegion, "all"> {
+  return getAreaRegion(item.area);
+}
+
 function filterServicesByRegion(items: ServiceItem[], region: ServiceRegion) {
   if (region === "all") return items;
   return items.filter((item) => getServiceRegion(item) === region);
+}
+
+function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
+  const filteredItems = region === "all" ? items : items.filter((item) => getAreaRegion(item.area) === region);
+  return filteredItems.map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
 function useBannerSwipe(
@@ -231,11 +241,6 @@ const pillStyle: CSSProperties = {
   fontSize: "12px",
   fontWeight: 700,
 };
-
-function formatRankingPeriod() {
-  const period = new Intl.DateTimeFormat("vi-VN", { month: "long", year: "numeric" }).format(new Date());
-  return period.charAt(0).toUpperCase() + period.slice(1);
-}
 
 function HeaderBar({ desktop = false }: { desktop?: boolean }) {
   void desktop;
@@ -960,16 +965,182 @@ function ServiceRegionSwitch({
   );
 }
 
+function RankingRegionDropdown({
+  active,
+  onChange,
+}: {
+  active: ServiceRegion;
+  onChange: (value: ServiceRegion) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = serviceRegionTabs.find((item) => item.id === active) ?? serviceRegionTabs[0];
+
+  return (
+    <div
+      style={{ position: "relative", flex: "none" }}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget as Node | null;
+        if (!nextTarget || !event.currentTarget.contains(nextTarget)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        style={{
+          minHeight: 38,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "7px",
+          border: `1px solid ${colors.line}`,
+          borderRadius: "999px",
+          background: "rgba(255,255,255,.04)",
+          color: colors.goldSoft,
+          padding: "0 13px 0 15px",
+          fontSize: "12px",
+          fontWeight: 850,
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+          boxShadow: open ? "0 12px 28px rgba(0,0,0,.28)" : "none",
+        }}
+      >
+        {selected.label}
+        <ChevronDown
+          size={14}
+          style={{
+            flex: "none",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 160ms ease",
+          }}
+        />
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-label="Chọn khu vực xếp hạng"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            right: 0,
+            zIndex: 30,
+            minWidth: "152px",
+            padding: "6px",
+            borderRadius: "16px",
+            border: `1px solid ${colors.line}`,
+            background: "linear-gradient(180deg, rgba(28,28,32,.98), rgba(14,14,17,.98))",
+            boxShadow: "0 20px 42px rgba(0,0,0,.45)",
+            backdropFilter: "blur(16px)",
+          }}
+        >
+          {serviceRegionTabs.map((item) => {
+            const selectedOption = active === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="option"
+                aria-selected={selectedOption}
+                onClick={() => {
+                  onChange(item.id);
+                  setOpen(false);
+                }}
+                style={{
+                  width: "100%",
+                  minHeight: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  border: 0,
+                  borderRadius: "12px",
+                  background: selectedOption ? "rgba(212,178,106,.18)" : "transparent",
+                  color: selectedOption ? colors.goldSoft : colors.muted,
+                  padding: "0 10px",
+                  fontSize: "12px",
+                  fontWeight: 820,
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <span>{item.label}</span>
+                {selectedOption ? (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "999px",
+                      background: colors.gold,
+                      boxShadow: "0 0 0 4px rgba(212,178,106,.12)",
+                    }}
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RankingSectionHeader({
+  activeTab,
+  onTabChange,
+  activeRegion,
+  onRegionChange,
+}: {
+  activeTab: string;
+  onTabChange: (value: string) => void;
+  activeRegion: ServiceRegion;
+  onRegionChange: (value: ServiceRegion) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: "12px", marginBottom: "13px" }}>
+      <div style={{ display: "flex", alignItems: "end", gap: "13px" }}>
+        <div style={{ minWidth: 0, flex: "none" }}>
+          <h2 style={{ fontSize: "24px", lineHeight: 1.08, fontWeight: 950 }}>Bảng xếp hạng</h2>
+          <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "11px", fontWeight: 900, letterSpacing: "2.2px" }}>
+            RANKING
+          </div>
+        </div>
+        <span
+          aria-hidden="true"
+          style={{
+            flex: 1,
+            height: 1,
+            marginBottom: "22px",
+            background: "linear-gradient(90deg, rgba(212,178,106,.62), rgba(212,178,106,0))",
+          }}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <TabSwitch items={rankTabs} active={activeTab} onChange={onTabChange} />
+        <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} />
+      </div>
+    </div>
+  );
+}
+
 function BottomNav() {
   return null;
 }
 
 export default function Page() {
-  const [activeRankTab, setActiveRankTab] = useState("cast");
+  const [activeRankTab, setActiveRankTab] = useState("quan");
+  const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
-  const rankList = (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[];
-  const rankingPeriod = formatRankingPeriod();
+  const rankList = filterRankingsByRegion(
+    (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[],
+    activeRankRegion,
+  );
   const svc = filterServicesByRegion(activeSvcTab === "nhahang" ? svcData : spaData, activeServiceRegion);
 
   useEffect(() => {
@@ -1014,19 +1185,12 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "22px" }}>
-              <div style={sectionTitleStyle}>
-                <div style={{ minWidth: 0 }}>
-                  <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
-                  <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>
-                    {rankingPeriod}
-                  </div>
-                </div>
-                <TabSwitch items={rankTabs} active={activeRankTab} onChange={setActiveRankTab} />
-              </div>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                <span style={{ ...pillStyle, background: colors.gold, color: "#241a0a" }}>Hà Nội</span>
-                <span style={pillStyle}>TP.HCM</span>
-              </div>
+              <RankingSectionHeader
+                activeTab={activeRankTab}
+                onTabChange={setActiveRankTab}
+                activeRegion={activeRankRegion}
+                onRegionChange={setActiveRankRegion}
+              />
               <div style={{ display: "grid", gap: "10px" }}>
                 {rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)}
               </div>
@@ -1097,15 +1261,12 @@ export default function Page() {
                 </div>
               </div>
               <div style={{ marginTop: "34px" }}>
-                <div style={sectionTitleStyle}>
-                  <div style={{ minWidth: 0 }}>
-                    <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
-                    <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>
-                      {rankingPeriod}
-                    </div>
-                  </div>
-                  <TabSwitch items={rankTabs} active={activeRankTab} onChange={setActiveRankTab} />
-                </div>
+                <RankingSectionHeader
+                  activeTab={activeRankTab}
+                  onTabChange={setActiveRankTab}
+                  activeRegion={activeRankRegion}
+                  onRegionChange={setActiveRankRegion}
+                />
                 <div style={{ display: "grid", gap: "12px" }}>
                   {rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)}
                 </div>
