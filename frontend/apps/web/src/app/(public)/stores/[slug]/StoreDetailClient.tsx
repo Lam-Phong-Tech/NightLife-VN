@@ -289,7 +289,7 @@ function SectionTitle({
   id,
 }: {
   title: string;
-  kicker: string;
+  kicker?: string;
   kickerTone?: "label" | "address";
   meta?: string;
   id?: string;
@@ -298,9 +298,11 @@ function SectionTitle({
     <div className="section-title" id={id}>
       <div>
         <h2>{title}</h2>
-        <span className={kickerTone === "address" ? "section-kicker-address" : undefined}>
-          {kicker}
-        </span>
+        {kicker ? (
+          <span className={kickerTone === "address" ? "section-kicker-address" : undefined}>
+            {kicker}
+          </span>
+        ) : null}
       </div>
       <i aria-hidden="true" />
       {meta ? <small>{meta}</small> : null}
@@ -705,7 +707,7 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
 
   return (
     <section className="related-section">
-      <SectionTitle title="Quán tương tự" kicker="Similar venues" meta="Xem thêm" />
+      <SectionTitle title="Quán tương tự" meta="Xem thêm" />
       <div className="related-grid">
         {stores.slice(0, 4).map((related, index) => {
           const photoUrl = storeImageForSlug(related.slug, index);
@@ -1001,7 +1003,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
               <button className="video-badge" type="button" onClick={() => openGallery(selectedGalleryIndex)}>
                 <Play size={13} fill="currentColor" />
-                Video tour
+                Video quán
               </button>
 
               <div className="hero-name">
@@ -1030,7 +1032,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     className={index === selectedGalleryIndex ? "active" : undefined}
                     type="button"
                     style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                    aria-label={`Mở media ${index + 1}`}
+                    aria-label={`Mở nội dung ${index + 1}`}
                     onClick={() => openGallery(index)}
                   >
                     {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
@@ -1079,7 +1081,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               ) : null}
               <a href="#menu">
                 <WalletCards size={16} />
-                Menu
+                Thực đơn
               </a>
             </div>
 
@@ -1090,7 +1092,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   className={index === selectedGalleryIndex ? "active" : undefined}
                   type="button"
                   style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                  aria-label={`Mở media ${index + 1}`}
+                  aria-label={`Mở nội dung ${index + 1}`}
                   onClick={() => openGallery(index)}
                 >
                   {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
@@ -1100,9 +1102,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <section className="desktop-only">
               <SectionTitle
-                title="Video tour"
-                kicker="Venue tour"
-                meta={`${tourMedia.length} media`}
+                title="Video quán"
+                meta={`${tourMedia.length} nội dung`}
               />
               <div className="tour-grid">
                 {tourMedia.slice(0, 4).map((item, index) => (
@@ -1117,7 +1118,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   >
                     <Play size={18} fill="currentColor" />
                     <span>
-                      {item.purpose || (item.type === "VIDEO" ? "Video tour" : "Không gian quán")}
+                      {item.purpose || (item.type === "VIDEO" ? "Video quán" : "Không gian quán")}
                     </span>
                   </button>
                 ))}
@@ -1127,8 +1128,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <section className="desktop-only">
               <SectionTitle
                 title="Vị trí"
-                kicker={addressText || "Location"}
-                kickerTone={addressText ? "address" : "label"}
+                kicker={addressText || undefined}
+                kickerTone="address"
               />
               <MapBlock
                 store={store}
@@ -1215,7 +1216,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="mobile-about-section">
-              <SectionTitle title="Giới thiệu" kicker="About" />
+              <SectionTitle title="Giới thiệu" />
               <div className="intro-copy">
                 {introLines.map((line) => (
                   <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
@@ -1242,9 +1243,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <section className="mobile-only">
               <SectionTitle
-                title="Video tour"
-                kicker="Venue tour"
-                meta={`${tourMedia.length} media`}
+                title="Video quán"
+                meta={`${tourMedia.length} nội dung`}
               />
               <div className="tour-rail hscroll">
                 {tourMedia.slice(0, 6).map((item, index) => (
@@ -1267,32 +1267,31 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <section>
               <SectionTitle
                 title="Cast đang làm"
-                kicker="Cast on tonight"
                 meta={`${store.casts.length} cast`}
               />
               <CastRail store={store} />
             </section>
 
             <section className="mobile-only">
-              <SectionTitle title="Ưu đãi" kicker="Hot deals" />
+              <SectionTitle title="Ưu đãi" />
               <CouponBlock store={store} couponHref={couponHref} onCouponClick={trackCouponClick} />
             </section>
 
             <section id="menu" className="mobile-only">
-              <SectionTitle title="Thực đơn" kicker="Menu" />
+              <SectionTitle title="Thực đơn" />
               <PriceMenu store={store} />
             </section>
 
             <section>
-              <SectionTitle title="Giờ mở cửa" kicker="Opening hours" />
+              <SectionTitle title="Giờ mở cửa" />
               <HoursList store={store} today={today} />
             </section>
 
             <section className="mobile-only">
               <SectionTitle
                 title="Vị trí"
-                kicker={addressText || "Location"}
-                kickerTone={addressText ? "address" : "label"}
+                kicker={addressText || undefined}
+                kickerTone="address"
               />
               <MapBlock
                 store={store}
