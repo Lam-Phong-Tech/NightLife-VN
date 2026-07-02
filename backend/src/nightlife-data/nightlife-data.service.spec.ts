@@ -4,6 +4,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import QRCode from 'qrcode';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NightlifeDataService } from './nightlife-data.service';
@@ -100,10 +101,17 @@ describe('NightlifeDataService', () => {
     notifyPartnerRequest: jest.fn(),
   };
 
+  const emailNotificationService = {
+    sendBookingQrEmail: jest.fn(),
+  };
+
   let service: NightlifeDataService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest
+      .spyOn(QRCode, 'toDataURL')
+      .mockResolvedValue('data:image/png;base64,test-booking-qr');
     prisma.store.count.mockResolvedValue(1);
     prisma.store.create.mockResolvedValue({
       id: 'store-draft-1',
@@ -137,10 +145,15 @@ describe('NightlifeDataService', () => {
     } as never);
     prisma.notificationLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.findMany.mockResolvedValue([] as never);
+    emailNotificationService.sendBookingQrEmail.mockResolvedValue({
+      messageId: 'smtp-message-1',
+    });
     service = new NightlifeDataService(
       prisma,
       accessService,
       adminNotificationService as never,
+      undefined,
+      emailNotificationService as never,
     );
   });
 
@@ -1214,6 +1227,26 @@ describe('NightlifeDataService', () => {
           bookingCode: 'BK-BOOKING-',
           qrPayload: expect.stringContaining('NLBOOKING|booking-1|BK-BOOKING-'),
           qrImageUrl: expect.stringContaining('api.qrserver.com'),
+          amountLabel: 'Miễn phí - không thu cọc',
+        }),
+      }),
+    });
+    expect(emailNotificationService.sendBookingQrEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'guest@example.com',
+        bookingId: 'booking-1',
+        bookingCode: 'BK-BOOKING-',
+        qrPayload: expect.stringContaining('NLBOOKING|booking-1|BK-BOOKING-'),
+        qrImageDataUrl: expect.stringContaining('data:image/png;base64,'),
+      }),
+    );
+    expect(prisma.notificationLog.update).toHaveBeenCalledWith({
+      where: { id: 'notification-1' },
+      data: expect.objectContaining({
+        status: 'SENT',
+        error: null,
+        payload: expect.objectContaining({
+          providerMessageId: 'smtp-message-1',
         }),
       }),
     });
@@ -1226,33 +1259,40 @@ describe('NightlifeDataService', () => {
   });
 
   it.each([
-    ['a past booking date', '2026-06-19T14:00:00.000Z', 'scheduledAt cannot be in the past'],
+    [
+      'a past booking date',
+      '2026-06-19T14:00:00.000Z',
+      'scheduledAt cannot be in the past',
+    ],
     [
       'a booking date after the 2 week window',
       '2026-07-05T14:00:00.000Z',
       'scheduledAt can only be within 14 days',
     ],
-  ])('rejects %s before creating a guest contact', async (_, scheduledAt, message) => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
-    prisma.store.findFirst.mockResolvedValue({
-      id: 'store-1',
-      name: 'Neon Club',
-      slug: 'neon-club',
-    });
+  ])(
+    'rejects %s before creating a guest contact',
+    async (_, scheduledAt, message) => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+      prisma.store.findFirst.mockResolvedValue({
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+      });
 
-    await expect(
-      service.createGuestBooking({
-        storeSlug: 'neon-club',
-        displayName: 'Guest Name',
-        email: 'guest@example.com',
-        scheduledAt,
-        partySize: 4,
-      }),
-    ).rejects.toThrow(message);
+      await expect(
+        service.createGuestBooking({
+          storeSlug: 'neon-club',
+          displayName: 'Guest Name',
+          email: 'guest@example.com',
+          scheduledAt,
+          partySize: 4,
+        }),
+      ).rejects.toThrow(message);
 
-    expect(prisma.guest.create).not.toHaveBeenCalled();
-    expect(prisma.booking.create).not.toHaveBeenCalled();
-  });
+      expect(prisma.guest.create).not.toHaveBeenCalled();
+      expect(prisma.booking.create).not.toHaveBeenCalled();
+    },
+  );
 
   it('creates a guest booking with an optional coupon campaign link', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
@@ -2522,7 +2562,11 @@ describe('NightlifeDataService', () => {
         beforeJson: null,
         afterJson: { status: 'ISSUED' },
         createdAt: new Date('2026-06-30T10:05:00.000Z'),
-        actor: { id: 'partner-1', displayName: 'Partner Staff', role: 'PARTNER' },
+        actor: {
+          id: 'partner-1',
+          displayName: 'Partner Staff',
+          role: 'PARTNER',
+        },
       },
     ] as never);
 

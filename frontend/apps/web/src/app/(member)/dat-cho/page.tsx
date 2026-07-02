@@ -143,7 +143,9 @@ const parseContext = () => {
       castName: params.get("castName") || undefined,
       couponId,
       couponIssueId,
-      fromHref: castSlug ? `/casts/${castSlug}` : `/stores/${storeSlug ?? defaultContext.storeSlug}`,
+      fromHref: castSlug
+        ? `/casts/${castSlug}`
+        : `/stores/${storeSlug ?? defaultContext.storeSlug}`,
     },
     mode: parseRequestedMode(params.get("mode")),
     date: clampBookingDate(params.get("date")),
@@ -174,8 +176,14 @@ export default function Page() {
     queueMicrotask(() => {
       setContext(parsed.context);
       setBookingDate(parsed.date);
-      setBookingTime(bookingTimes.includes(parsed.time as (typeof bookingTimes)[number]) ? (parsed.time as (typeof bookingTimes)[number]) : "21:00");
-      setGuests(Number.isFinite(parsed.guests) ? Math.min(maxGuests, Math.max(1, parsed.guests)) : 4);
+      setBookingTime(
+        bookingTimes.includes(parsed.time as (typeof bookingTimes)[number])
+          ? (parsed.time as (typeof bookingTimes)[number])
+          : "21:00",
+      );
+      setGuests(
+        Number.isFinite(parsed.guests) ? Math.min(maxGuests, Math.max(1, parsed.guests)) : 4,
+      );
 
       if (authUser) {
         setGuestName(authUser.displayName ?? authUser.email ?? "");
@@ -301,7 +309,8 @@ export default function Page() {
               <div className={styles.venueCopy}>
                 <div className={styles.venueName}>{targetLabel}</div>
                 <div className={styles.venueMeta}>
-                  {context.castName ? context.storeName : "Lounge cao cấp"} · {context.area ?? "NightLife"}
+                  {context.castName ? context.storeName : "Lounge cao cấp"} ·{" "}
+                  {context.area ?? "NightLife"}
                 </div>
                 {context.couponIssueId || context.couponId ? (
                   <div className={styles.venueMeta}>
@@ -309,9 +318,6 @@ export default function Page() {
                   </div>
                 ) : null}
               </div>
-              <Link href={context.fromHref} className={styles.changeLink}>
-                Đổi
-              </Link>
             </section>
 
             {isMemberMode ? (
@@ -321,7 +327,9 @@ export default function Page() {
                 </span>
                 <div className={styles.nudgeCopy}>
                   <div className={styles.nudgeTitle}>Hội viên NightLife</div>
-                  <div className={styles.nudgeText}>Booking được lưu vào lịch sử · ưu đãi 8-10%</div>
+                  <div className={styles.nudgeText}>
+                    Booking được lưu vào lịch sử · ưu đãi 8-10%
+                  </div>
                 </div>
               </section>
             ) : (
@@ -377,7 +385,10 @@ export default function Page() {
                   </div>
                 </div>
 
-                <DateField value={bookingDate} onChange={(value) => setBookingDate(clampBookingDate(value))} />
+                <DateField
+                  value={bookingDate}
+                  onChange={(value) => setBookingDate(clampBookingDate(value))}
+                />
               </div>
 
               <div className={styles.field}>
@@ -399,7 +410,10 @@ export default function Page() {
               </div>
 
               <label className={styles.field}>
-                <span className={styles.fieldLabel}>Ghi chú <span style={{ textTransform: "none", letterSpacing: 0 }}>(tùy chọn)</span></span>
+                <span className={styles.fieldLabel}>
+                  Ghi chú{" "}
+                  <span style={{ textTransform: "none", letterSpacing: 0 }}>(tùy chọn)</span>
+                </span>
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
@@ -412,7 +426,8 @@ export default function Page() {
               <div className={styles.infoNote}>
                 <ShieldCheck size={15} />
                 <span>
-                  Không thanh toán online, không thu cọc. Yêu cầu được gửi tới đội điều phối - Admin liên hệ xác nhận chỗ.
+                  Không thanh toán online, không thu cọc. Yêu cầu được gửi tới đội điều phối - Admin
+                  liên hệ xác nhận chỗ.
                 </span>
               </div>
 
@@ -426,7 +441,10 @@ export default function Page() {
               onClick={submit}
               disabled={isSubmitting}
               className={styles.primaryCta}
-              style={{ opacity: isSubmitting ? 0.72 : 1, cursor: isSubmitting ? "wait" : "pointer" }}
+              style={{
+                opacity: isSubmitting ? 0.72 : 1,
+                cursor: isSubmitting ? "wait" : "pointer",
+              }}
             >
               <strong>{isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}</strong>
               <small>Miễn phí · mã QR gửi qua email sau khi đặt</small>
@@ -436,12 +454,24 @@ export default function Page() {
       </section>
 
       {showLoginPrompt ? (
-        <div role="dialog" aria-modal="true" aria-labelledby="member-login-title" className={styles.dialogOverlay}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="member-login-title"
+          className={styles.dialogOverlay}
+        >
           <div className={styles.dialogPanel}>
             <h2 id="member-login-title">Yêu cầu đăng nhập</h2>
-            <p>Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao hơn.</p>
+            <p>
+              Bạn cần đăng nhập tài khoản để lưu booking vào lịch sử Hội viên và nhận ưu đãi cao
+              hơn.
+            </p>
             <div className={styles.dialogActions}>
-              <button type="button" className={styles.ghostCta} onClick={() => setShowLoginPrompt(false)}>
+              <button
+                type="button"
+                className={styles.ghostCta}
+                onClick={() => setShowLoginPrompt(false)}
+              >
                 Hủy
               </button>
               <Link href={memberLoginPath} className={styles.primaryCta}>

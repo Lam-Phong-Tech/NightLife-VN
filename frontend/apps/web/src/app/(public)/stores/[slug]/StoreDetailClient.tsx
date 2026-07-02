@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Heart,
   Info,
-  MapPin,
   Minus,
   Navigation,
   PhoneCall,
@@ -204,9 +203,7 @@ const todayKey = () =>
 
 const buildScheduledAt = (date: string, time: string) => {
   const [hours = "21", minutes = "00"] = time.split(":");
-  return new Date(
-    `${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`,
-  ).toISOString();
+  return new Date(`${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`).toISOString();
 };
 
 const toDateInputValue = (date: Date) => {
@@ -475,13 +472,11 @@ function HoursList({ store, today }: { store: PublicStoreDetail; today: string }
 }
 
 function MapBlock({
-  store,
   displayName,
   embedUrl,
   mapsUrl,
   onMapClick,
 }: {
-  store: PublicStoreDetail;
   displayName: string;
   embedUrl: string;
   mapsUrl: string;
@@ -499,10 +494,6 @@ function MapBlock({
       ) : (
         <span className="map-fallback" aria-hidden="true" />
       )}
-      <div className="map-overlay">
-        <MapPin size={16} />
-        <span>{storeAddressText(store)}</span>
-      </div>
       {mapsUrl ? (
         <a
           className="map-open-link"
@@ -571,131 +562,131 @@ function BookingCard({
           onSubmit();
         }}
       >
-      <div className="booking-card-head">
-        <span>
-          <strong>Đặt bàn</strong>
-          <small>Gửi yêu cầu · Admin xác nhận</small>
-        </span>
-        <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
-      </div>
-
-      <div className="member-nudge">
-        <Sparkles size={15} fill="currentColor" />
-        <span>Khách vãng lai nhận ưu đãi cơ bản. Đăng nhập để nâng mức giảm khi có coupon.</span>
-      </div>
-
-      <div className="booking-form-grid">
-        <label className="booking-field booking-input-field">
-          <span>Họ tên</span>
-          <input
-            value={guestName}
-            onChange={(event) => onGuestNameChange(event.target.value)}
-            placeholder="Vui lòng nhập họ tên"
-            autoComplete="name"
-            maxLength={maxBookingNameLength}
-          />
-        </label>
-        <label className="booking-field booking-input-field">
-          <span>Email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => onEmailChange(event.target.value)}
-            placeholder="Vui lòng nhập email"
-            autoComplete="email"
-            inputMode="email"
-            maxLength={maxBookingEmailLength}
-          />
-        </label>
-        <div className="booking-field">
-          <span>Số người</span>
-          <div className="guest-stepper">
-            <button
-              type="button"
-              aria-label="Giảm số khách"
-              onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
-              disabled={guestCount <= 1}
-            >
-              <Minus size={15} />
-            </button>
-            <strong>{guestCount} người</strong>
-            <button
-              type="button"
-              aria-label="Tăng số khách"
-              onClick={() => onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1))}
-              disabled={guestCount >= maxBookingGuests}
-            >
-              <Plus size={15} />
-            </button>
-          </div>
+        <div className="booking-card-head">
+          <span>
+            <strong>Đặt bàn</strong>
+            <small>Gửi yêu cầu · Admin xác nhận</small>
+          </span>
+          <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
         </div>
-        <label className="booking-field">
-          <span>Ngày</span>
-          <select
-            aria-label="Chọn ngày"
-            value={selectedDateIndex}
-            onChange={(event) => onDateSelect(Number(event.target.value))}
-          >
-            {dateOptions.map((date, index) => (
-              <option key={date.iso} value={index}>
-                {date.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
 
-      <label>Khung giờ</label>
-      <div className="slot-row">
-        {bookingTimes.map((time) => (
-          <button
-            key={time}
-            type="button"
-            className={time === selectedTime ? "slot active" : "slot"}
-            onClick={() => onTimeSelect(time)}
-          >
-            {time}
-          </button>
-        ))}
-      </div>
+        <div className="member-nudge">
+          <Sparkles size={15} fill="currentColor" />
+          <span>Khách vãng lai nhận ưu đãi cơ bản. Đăng nhập để nâng mức giảm khi có coupon.</span>
+        </div>
 
-      <label>Ghi chú tuỳ chọn</label>
-      <textarea
-        className="booking-note-box"
-        value={note}
-        onChange={(event) => onNoteChange(event.target.value)}
-        placeholder="Vui lòng nhập ghi chú nếu có"
-        maxLength={maxBookingNoteLength}
-      />
+        <div className="booking-form-grid">
+          <label className="booking-field booking-input-field">
+            <span>Họ tên</span>
+            <input
+              value={guestName}
+              onChange={(event) => onGuestNameChange(event.target.value)}
+              placeholder="Vui lòng nhập họ tên"
+              autoComplete="name"
+              maxLength={maxBookingNameLength}
+            />
+          </label>
+          <label className="booking-field booking-input-field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => onEmailChange(event.target.value)}
+              placeholder="Vui lòng nhập email"
+              autoComplete="email"
+              inputMode="email"
+              maxLength={maxBookingEmailLength}
+            />
+          </label>
+          <div className="booking-field">
+            <span>Số người</span>
+            <div className="guest-stepper">
+              <button
+                type="button"
+                aria-label="Giảm số khách"
+                onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
+                disabled={guestCount <= 1}
+              >
+                <Minus size={15} />
+              </button>
+              <strong>{guestCount} người</strong>
+              <button
+                type="button"
+                aria-label="Tăng số khách"
+                onClick={() => onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1))}
+                disabled={guestCount >= maxBookingGuests}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+          </div>
+          <label className="booking-field">
+            <span>Ngày</span>
+            <select
+              aria-label="Chọn ngày"
+              value={selectedDateIndex}
+              onChange={(event) => onDateSelect(Number(event.target.value))}
+            >
+              {dateOptions.map((date, index) => (
+                <option key={date.iso} value={index}>
+                  {date.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
+        <label>Khung giờ</label>
+        <div className="slot-row">
+          {bookingTimes.map((time) => (
+            <button
+              key={time}
+              type="button"
+              className={time === selectedTime ? "slot active" : "slot"}
+              onClick={() => onTimeSelect(time)}
+            >
+              {time}
+            </button>
+          ))}
+        </div>
 
-      <button
-        type="submit"
-        data-testid="store-booking-cta-sidebar"
-        className="primary-action full"
-        disabled={isSubmitting}
-      >
-        <CalendarDays size={18} />
-        {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}
-      </button>
+        <label>Ghi chú tuỳ chọn</label>
+        <textarea
+          className="booking-note-box"
+          value={note}
+          onChange={(event) => onNoteChange(event.target.value)}
+          placeholder="Vui lòng nhập ghi chú nếu có"
+          maxLength={maxBookingNoteLength}
+        />
 
-      <Link
-        data-testid="store-coupon-cta-sidebar"
-        className="secondary-action full"
-        href={couponHref}
-        onClick={() => onCouponClick("desktop-booking-card")}
-      >
-        <Ticket size={18} />
-        {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Ưu đãi của quán"}
-      </Link>
+        {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
 
-      <div className="booking-safe">
-        <ShieldCheck size={15} />
-        <span>
-          Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.
-        </span>
-      </div>
+        <button
+          type="submit"
+          data-testid="store-booking-cta-sidebar"
+          className="primary-action full"
+          disabled={isSubmitting}
+        >
+          <CalendarDays size={18} />
+          {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}
+        </button>
+
+        <Link
+          data-testid="store-coupon-cta-sidebar"
+          className="secondary-action full"
+          href={couponHref}
+          onClick={() => onCouponClick("desktop-booking-card")}
+        >
+          <Ticket size={18} />
+          {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Ưu đãi của quán"}
+        </Link>
+
+        <div className="booking-safe">
+          <ShieldCheck size={15} />
+          <span>
+            Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.
+          </span>
+        </div>
       </form>
     </aside>
   );
@@ -916,8 +907,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       rememberLastBooking(booking, { history: true });
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Không gửi được yêu cầu đặt bàn.";
+      const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt bàn.";
       setBookingErrorMessage(message);
     } finally {
       setIsBookingSubmitting(false);
@@ -997,7 +987,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </>
               ) : null}
 
-              <button className="video-badge" type="button" onClick={() => openGallery(selectedGalleryIndex)}>
+              <button
+                className="video-badge"
+                type="button"
+                onClick={() => openGallery(selectedGalleryIndex)}
+              >
                 <Play size={13} fill="currentColor" />
                 Video quán
               </button>
@@ -1097,10 +1091,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </div>
 
             <section className="desktop-only">
-              <SectionTitle
-                title="Video quán"
-                meta={`${tourMedia.length} nội dung`}
-              />
+              <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
               <div className="tour-grid">
                 {tourMedia.slice(0, 4).map((item, index) => (
                   <button
@@ -1122,13 +1113,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="desktop-only">
-              <SectionTitle
-                title="Vị trí"
-                kicker={addressText || undefined}
-                kickerTone="address"
-              />
+              <SectionTitle title="Vị trí" kicker={addressText || undefined} kickerTone="address" />
               <MapBlock
-                store={store}
                 displayName={displayName}
                 embedUrl={embedUrl}
                 mapsUrl={mapsUrl}
@@ -1238,10 +1224,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="mobile-only">
-              <SectionTitle
-                title="Video quán"
-                meta={`${tourMedia.length} nội dung`}
-              />
+              <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
               <div className="tour-rail hscroll">
                 {tourMedia.slice(0, 6).map((item, index) => (
                   <button
@@ -1261,10 +1244,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section>
-              <SectionTitle
-                title="Cast đang làm"
-                meta={`${store.casts.length} cast`}
-              />
+              <SectionTitle title="Cast đang làm" meta={`${store.casts.length} cast`} />
               <CastRail store={store} />
             </section>
 
@@ -1284,13 +1264,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="mobile-only">
-              <SectionTitle
-                title="Vị trí"
-                kicker={addressText || undefined}
-                kickerTone="address"
-              />
+              <SectionTitle title="Vị trí" kicker={addressText || undefined} kickerTone="address" />
               <MapBlock
-                store={store}
                 displayName={displayName}
                 embedUrl={embedUrl}
                 mapsUrl={mapsUrl}
@@ -1937,33 +1912,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           position: absolute;
           inset: 0;
           background: linear-gradient(135deg, rgba(212, 178, 106, .16), rgba(255, 255, 255, .04));
-        }
-
-        .map-overlay {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px 14px;
-          background: linear-gradient(0deg, rgba(12, 12, 15, .92), rgba(12, 12, 15, .02));
-          color: #e7e1d4;
-          font-size: 12px;
-          font-weight: 700;
-        }
-
-        .map-overlay span {
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .map-overlay svg {
-          color: #d4b26a;
-          flex: none;
         }
 
         .map-open-link {
