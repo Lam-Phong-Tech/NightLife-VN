@@ -154,12 +154,13 @@ export default function Page() {
     <main className="coupon-page">
       <section className="coupon-shell">
         <header className="coupon-hero">
-          <Link className="back-link" href="/danh-sach-quan">
-            Xem danh sách quán
-          </Link>
           <div className="title-row">
-            <div>
-              <span className="eyebrow">HOT DEALS</span>
+            <div className="hero-copy">
+              <div className="hero-topline">
+                <Link className="back-link" href="/danh-sach-quan">
+                  Xem danh sách quán
+                </Link>
+              </div>
               <h1>Ưu đãi đêm nay</h1>
               <p>Coupon & khuyến mãi từ các quán đối tác · Hà Nội</p>
             </div>
@@ -233,12 +234,25 @@ export default function Page() {
           text-decoration: none;
         }
 
+        .back-link {
+          display: inline-flex;
+          align-items: center;
+          line-height: 1;
+        }
+
+        .hero-topline {
+          display: flex;
+          align-items: center;
+          min-height: 16px;
+          margin-bottom: 7px;
+        }
+
         .title-row {
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           justify-content: space-between;
           gap: 16px;
-          margin-top: 14px;
+          margin-top: 2px;
         }
 
         .eyebrow {
@@ -256,7 +270,6 @@ export default function Page() {
         }
 
         h1 {
-          margin-top: 8px;
           color: #f3f0ea;
           font-size: 30px;
           line-height: 1.12;
@@ -366,7 +379,7 @@ export default function Page() {
 
         .coupon-action::after {
           content: "›";
-          color: #f0dda8;
+          color: #ff7a9a;
           font-size: 14px;
           margin-left: 5px;
           transform: translateY(-1px);
@@ -457,8 +470,8 @@ export default function Page() {
           }
 
           .title-row {
-            align-items: center;
-            margin-top: 8px;
+            align-items: flex-start;
+            margin-top: 0;
           }
 
           h1 {

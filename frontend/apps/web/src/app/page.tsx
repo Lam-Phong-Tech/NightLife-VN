@@ -695,7 +695,7 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
         <div style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.place}</div>
       </div>
-      <span style={{ color: colors.gold, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".08em" }}>LẤY MÃ</span>
+      <span style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".08em" }}>LẤY MÃ</span>
     </Link>
   );
 }
