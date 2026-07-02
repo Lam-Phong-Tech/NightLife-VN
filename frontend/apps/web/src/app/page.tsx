@@ -70,8 +70,8 @@ const serviceRegionTabs = [
 ] as const;
 
 const rankTabs = [
-  { id: "quan", label: "Quán" },
   { id: "cast", label: "Cast" },
+  { id: "quan", label: "Quán" },
 ];
 
 const contentPlaceholders = [
@@ -1093,7 +1093,7 @@ function BottomNav() {
 }
 
 export default function Page() {
-  const [activeRankTab, setActiveRankTab] = useState("quan");
+  const [activeRankTab, setActiveRankTab] = useState("cast");
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
