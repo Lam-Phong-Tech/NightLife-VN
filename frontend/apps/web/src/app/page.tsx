@@ -1167,8 +1167,8 @@ export default function Page() {
       <div className="block md:hidden" style={shellStyle}>
         <div style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
           <HeaderBar />
-          <main style={{ padding: "8px 18px 0" }}>
-            <div style={{ marginTop: "22px" }}>
+          <main style={{ padding: "0 18px 0" }}>
+            <div style={{ marginTop: "12px" }}>
               <SearchPanel />
             </div>
             <div style={{ marginTop: "18px" }}>
