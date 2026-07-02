@@ -14,7 +14,6 @@ import {
   PhoneCall,
   Play,
   Plus,
-  Share2,
   ShieldCheck,
   Sparkles,
   Star,
@@ -957,9 +956,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <ChevronLeft size={20} />
                 </Link>
                 <div className="hero-actions">
-                  <IconButton label="Chia sẻ quán">
-                    <Share2 size={18} />
-                  </IconButton>
                   <IconButton
                     label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
                     onClick={() => setIsFavorite((value) => !value)}
