@@ -171,6 +171,9 @@ const plainMapsUrl = (store: PublicStoreDetail) => {
   return "";
 };
 
+const storeAddressText = (store: PublicStoreDetail) =>
+  store.address || [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
+
 const galleryImageUrl = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
   if (media?.type === "IMAGE" && media.url) return media.url;
   if (fallback?.type === "IMAGE" && fallback.url) return fallback.url;
@@ -215,11 +218,13 @@ function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; bod
 function SectionTitle({
   title,
   kicker,
+  kickerTone = "label",
   meta,
   id,
 }: {
   title: string;
   kicker: string;
+  kickerTone?: "label" | "address";
   meta?: string;
   id?: string;
 }) {
@@ -227,7 +232,9 @@ function SectionTitle({
     <div className="section-title" id={id}>
       <div>
         <h2>{title}</h2>
-        <span>{kicker}</span>
+        <span className={kickerTone === "address" ? "section-kicker-address" : undefined}>
+          {kicker}
+        </span>
       </div>
       <i aria-hidden="true" />
       {meta ? <small>{meta}</small> : null}
@@ -427,10 +434,7 @@ function MapBlock({
       )}
       <div className="map-overlay">
         <MapPin size={16} />
-        <span>
-          {store.address ||
-            [store.area?.name, store.district, store.city].filter(Boolean).join(", ")}
-        </span>
+        <span>{storeAddressText(store)}</span>
       </div>
       {mapsUrl ? (
         <a
@@ -697,6 +701,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     : gallery.slice(0, 3);
   const firstCoupon = store.activeCoupons[0] ?? null;
   const location = [store.area?.name, store.district, store.city].filter(Boolean).join(" · ");
+  const addressText = storeAddressText(store);
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
   const today = todayKey() ?? "monday";
@@ -1039,7 +1044,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="desktop-only">
-              <SectionTitle title="Vị trí" kicker="Location" />
+              <SectionTitle
+                title="Vị trí"
+                kicker={addressText || "Location"}
+                kickerTone={addressText ? "address" : "label"}
+              />
               <MapBlock
                 store={store}
                 displayName={displayName}
@@ -1199,7 +1208,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             </section>
 
             <section className="mobile-only">
-              <SectionTitle title="Vị trí" kicker="Location" />
+              <SectionTitle
+                title="Vị trí"
+                kicker={addressText || "Location"}
+                kickerTone={addressText ? "address" : "label"}
+              />
               <MapBlock
                 store={store}
                 displayName={displayName}
@@ -1731,6 +1744,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-weight: 800;
           letter-spacing: 0;
           text-transform: uppercase;
+        }
+
+        .section-title > div {
+          min-width: 0;
+        }
+
+        .section-title span.section-kicker-address {
+          max-width: min(440px, 72vw);
+          color: #d5c9b7;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 1.35;
+          text-transform: none;
+          overflow-wrap: anywhere;
         }
 
         .section-title i {
@@ -2833,6 +2860,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .section-title {
             margin-bottom: 12px;
+          }
+
+          .section-title span.section-kicker-address {
+            max-width: 82vw;
+            font-size: 11px;
           }
 
           .tour-rail .tour-card {
