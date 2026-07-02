@@ -276,8 +276,8 @@ export default function Page() {
   };
 
   return (
-    <main className={styles.bookingPage}>
-      <section className={styles.bookingViewport}>
+    <main className={`${styles.bookingPage} ${styles.bookingFormPage}`}>
+      <section className={`${styles.bookingViewport} ${styles.bookingFormViewport}`}>
         <div className={`${styles.bookingFrame} ${styles.bookingFormFrame}`}>
           <header className={styles.bookingHeader}>
             <Link href={context.fromHref} className={styles.backButton} aria-label="Quay lại">

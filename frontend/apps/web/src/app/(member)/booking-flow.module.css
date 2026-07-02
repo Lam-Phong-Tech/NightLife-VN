@@ -7,11 +7,19 @@
   font-family: var(--nl-font-sans);
 }
 
+.bookingFormPage {
+  min-height: auto;
+}
+
 .bookingViewport {
   width: min(100%, 1120px);
   margin: 0 auto;
   padding: 32px 24px calc(108px + env(safe-area-inset-bottom));
   display: block;
+}
+
+.bookingFormViewport {
+  padding-bottom: 24px;
 }
 
 .historyViewport {
@@ -277,6 +285,7 @@
 }
 
 .phoneInput {
+  gap: 9px;
   padding: 0 14px;
 }
 
@@ -1152,6 +1161,18 @@
     padding-bottom: 86px;
   }
 
+  .bookingFormViewport {
+    padding-bottom: 0;
+  }
+
+  .bookingFormPage .bookingFrame {
+    min-height: auto;
+  }
+
+  .bookingFormPage .bookingBody {
+    padding-bottom: 0;
+  }
+
   .bookingStickyCta {
     position: fixed;
     right: 0;
@@ -1160,6 +1181,16 @@
     z-index: 40;
     margin-top: 0;
     box-shadow: 0 -18px 36px -26px rgba(0, 0, 0, 0.86);
+  }
+
+  .bookingFormPage .bookingStickyCta {
+    position: static;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: auto;
+    margin-top: 8px;
+    box-shadow: none;
   }
 
   .bottomActions {
