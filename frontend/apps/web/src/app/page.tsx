@@ -134,7 +134,7 @@ function filterServicesByRegion(items: ServiceItem[], region: ServiceRegion) {
 
 function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
   const filteredItems = region === "all" ? items : items.filter((item) => getAreaRegion(item.area) === region);
-  return filteredItems.map((item, index) => ({ ...item, rank: index + 1 }));
+  return filteredItems.slice(0, 5).map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
 function filterVideosByRegion(items: VideoItem[], region: ServiceRegion) {
@@ -1077,19 +1077,7 @@ function RankingSectionHeader({
       <div style={{ display: "flex", alignItems: "end", gap: "13px" }}>
         <div style={{ minWidth: 0, flex: "none" }}>
           <h2 style={{ fontSize: "24px", lineHeight: 1.08, fontWeight: 950 }}>Bảng xếp hạng</h2>
-          <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "11px", fontWeight: 900, letterSpacing: "2.2px" }}>
-            RANKING
-          </div>
         </div>
-        <span
-          aria-hidden="true"
-          style={{
-            flex: 1,
-            height: 1,
-            marginBottom: "22px",
-            background: "linear-gradient(90deg, rgba(212,178,106,.62), rgba(212,178,106,0))",
-          }}
-        />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
