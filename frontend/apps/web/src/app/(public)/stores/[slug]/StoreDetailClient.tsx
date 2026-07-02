@@ -1297,6 +1297,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding-bottom: 86px;
         }
 
+        .nl-page-content:has(.store-detail-page) {
+          padding-bottom: 0 !important;
+          scroll-padding-bottom: calc(152px + env(safe-area-inset-bottom)) !important;
+        }
+
         .detail-shell {
           width: min(1240px, calc(100% - 36px));
           margin: 0 auto;
@@ -2698,7 +2703,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: calc(34px + env(safe-area-inset-bottom));
+            padding-bottom: 0;
           }
 
           .detail-shell {
