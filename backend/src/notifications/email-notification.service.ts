@@ -65,7 +65,7 @@ export class EmailNotificationService {
     return [
       `Xin chào ${input.guestName || 'quý khách'},`,
       '',
-      'NightLife đã ghi nhận yêu cầu đặt bàn của bạn.',
+      'NightLife xác nhận đơn đặt bàn của bạn đã thành công.',
       '',
       `Mã đặt bàn: ${input.bookingCode}`,
       `Quán: ${input.storeName || 'NightLife'}`,
@@ -110,7 +110,7 @@ export class EmailNotificationService {
       <div style="border:1px solid rgba(245,217,130,.28);border-radius:14px;background:#141417;padding:22px;">
         <h2 style="margin:0 0 12px;font-size:22px;color:#fff;">Thông tin hóa đơn đặt bàn</h2>
         <p style="margin:0 0 20px;color:#cfc7b6;line-height:1.55;">
-          Xin chào ${this.escapeHtml(input.guestName || 'quý khách')}, yêu cầu đặt bàn của bạn đã được ghi nhận.
+          Xin chào ${this.escapeHtml(input.guestName || 'quý khách')}, đơn đặt bàn của bạn đã thành công.
         </p>
         <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px;">
           ${rows
