@@ -121,6 +121,14 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     });
   };
 
+  const showPreviousMedia = () => {
+    selectMedia(activeMediaIndex <= 0 ? gallery.length - 1 : activeMediaIndex - 1, "previous");
+  };
+
+  const showNextMedia = () => {
+    selectMedia(activeMediaIndex >= gallery.length - 1 ? 0 : activeMediaIndex + 1, "next");
+  };
+
   const toggleFavorite = async () => {
     const nextValue = !isFavorite;
     setIsFavorite(nextValue);
@@ -159,6 +167,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
             onOpenGallery={() => openLightbox(activeMediaIndex)}
+            onPreviousMedia={showPreviousMedia}
+            onNextMedia={showNextMedia}
+            showMediaNavigation={gallery.length > 1}
           />
           <CastGallery
             gallery={gallery}

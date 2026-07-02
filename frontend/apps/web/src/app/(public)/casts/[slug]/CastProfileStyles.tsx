@@ -79,6 +79,41 @@ export function CastProfileStyles() {
         color: #e0729e;
       }
 
+      .cast-hero-media-nav {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+      }
+
+      .cast-hero-media-nav button {
+        position: absolute;
+        top: 47%;
+        width: 38px;
+        height: 38px;
+        border: 1px solid rgba(212,178,106,.35);
+        border-radius: 999px;
+        background: rgba(12,12,15,.48);
+        color: #f3f0ea;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        pointer-events: auto;
+        transform: translateY(-50%);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 12px 26px rgba(0,0,0,.28);
+      }
+
+      .cast-hero-media-nav .previous {
+        left: 14px;
+      }
+
+      .cast-hero-media-nav .next {
+        right: 14px;
+      }
+
       .cast-play {
         position: absolute;
         left: 50%;
