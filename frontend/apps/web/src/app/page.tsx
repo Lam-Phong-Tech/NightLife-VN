@@ -98,6 +98,80 @@ type RankedItem = {
   href?: string;
 };
 
+function useBannerSwipe(
+  bannerCount: number,
+  setActiveBanner: React.Dispatch<React.SetStateAction<number>>,
+) {
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef(0);
+  const suppressClickRef = useRef(false);
+
+  const moveBanner = (direction: 1 | -1) => {
+    if (bannerCount < 2) return;
+    setActiveBanner((current) => (current + direction + bannerCount) % bannerCount);
+  };
+
+  const beginSwipe = (clientX: number) => {
+    touchStartXRef.current = clientX;
+    touchDeltaXRef.current = 0;
+    suppressClickRef.current = false;
+  };
+
+  const updateSwipe = (clientX: number) => {
+    if (touchStartXRef.current === null) return;
+    touchDeltaXRef.current = clientX - touchStartXRef.current;
+    if (Math.abs(touchDeltaXRef.current) > 8) {
+      suppressClickRef.current = true;
+    }
+  };
+
+  const endSwipe = () => {
+    const deltaX = touchDeltaXRef.current;
+    const shouldSuppressClick = Math.abs(deltaX) > 8;
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
+
+    if (Math.abs(deltaX) >= 46) {
+      moveBanner(deltaX < 0 ? 1 : -1);
+    }
+
+    if (shouldSuppressClick) {
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 220);
+    } else {
+      suppressClickRef.current = false;
+    }
+  };
+
+  return {
+    onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (suppressClickRef.current) {
+        event.preventDefault();
+        suppressClickRef.current = false;
+      }
+    },
+    onTouchCancel: () => {
+      touchStartXRef.current = null;
+      touchDeltaXRef.current = 0;
+      suppressClickRef.current = false;
+    },
+    onTouchEnd: (event: React.TouchEvent<HTMLAnchorElement>) => {
+      const touch = event.changedTouches[0];
+      if (touch) updateSwipe(touch.clientX);
+      endSwipe();
+    },
+    onTouchMove: (event: React.TouchEvent<HTMLAnchorElement>) => {
+      const touch = event.touches[0];
+      if (touch) updateSwipe(touch.clientX);
+    },
+    onTouchStart: (event: React.TouchEvent<HTMLAnchorElement>) => {
+      const touch = event.touches[0];
+      if (touch) beginSwipe(touch.clientX);
+    },
+  };
+}
+
 const shellStyle: CSSProperties = {
   minHeight: "100vh",
   background: colors.shell,
@@ -208,9 +282,6 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
 
 function EventHero({ desktop = false }: { desktop?: boolean }) {
   const [activeBanner, setActiveBanner] = useState(0);
-  const touchStartXRef = useRef<number | null>(null);
-  const touchDeltaXRef = useRef(0);
-  const suppressClickRef = useRef(false);
   const fallbackBanner = {
     title: "Sự kiện đêm nay",
     desc: "Đặt bàn VIP từ 2.500.000đ",
@@ -219,6 +290,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
   };
   const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+  const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
     if (banners.length < 2) return;
@@ -230,72 +302,11 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
     return () => window.clearInterval(timer);
   }, [banners.length]);
 
-  const moveBanner = (direction: 1 | -1) => {
-    if (banners.length < 2) return;
-    setActiveBanner((current) => (current + direction + banners.length) % banners.length);
-  };
-
-  const beginSwipe = (clientX: number) => {
-    touchStartXRef.current = clientX;
-    touchDeltaXRef.current = 0;
-    suppressClickRef.current = false;
-  };
-
-  const updateSwipe = (clientX: number) => {
-    if (touchStartXRef.current === null) return;
-    touchDeltaXRef.current = clientX - touchStartXRef.current;
-    if (Math.abs(touchDeltaXRef.current) > 8) {
-      suppressClickRef.current = true;
-    }
-  };
-
-  const endSwipe = () => {
-    const deltaX = touchDeltaXRef.current;
-    const shouldSuppressClick = Math.abs(deltaX) > 8;
-    touchStartXRef.current = null;
-    touchDeltaXRef.current = 0;
-
-    if (Math.abs(deltaX) >= 46) {
-      moveBanner(deltaX < 0 ? 1 : -1);
-    }
-
-    if (shouldSuppressClick) {
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 220);
-    } else {
-      suppressClickRef.current = false;
-    }
-  };
-
   return (
     <Link
       href="/stores/neon-club"
       data-testid="home-ad-banner"
-      onClick={(event) => {
-        if (suppressClickRef.current) {
-          event.preventDefault();
-          suppressClickRef.current = false;
-        }
-      }}
-      onTouchCancel={() => {
-        touchStartXRef.current = null;
-        touchDeltaXRef.current = 0;
-        suppressClickRef.current = false;
-      }}
-      onTouchEnd={(event) => {
-        const touch = event.changedTouches[0];
-        if (touch) updateSwipe(touch.clientX);
-        endSwipe();
-      }}
-      onTouchMove={(event) => {
-        const touch = event.touches[0];
-        if (touch) updateSwipe(touch.clientX);
-      }}
-      onTouchStart={(event) => {
-        const touch = event.touches[0];
-        if (touch) beginSwipe(touch.clientX);
-      }}
+      {...swipeHandlers}
       style={{
         minHeight: desktop ? "310px" : "208px",
         borderRadius: desktop ? "26px" : "18px",
@@ -406,6 +417,165 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
               borderRadius: 99,
               padding: 0,
               background: activeBanner === index ? colors.gold : "rgba(255,255,255,.26)",
+              cursor: "pointer",
+              transition: "width 220ms ease, background 220ms ease",
+            }}
+          />
+        ))}
+      </div>
+    </Link>
+  );
+}
+
+function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
+  const [activeBanner, setActiveBanner] = useState(0);
+  const fallbackBanner = {
+    title: "Ưu đãi đêm nay",
+    desc: "Lướt để xem thêm ưu đãi và sự kiện nổi bật.",
+    btnText: "Xem ngay",
+    img: "linear-gradient(135deg,#15151a,#2a2112)",
+  };
+  const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+  const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
+
+  useEffect(() => {
+    if (banners.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveBanner((current) => (current + 1) % banners.length);
+    }, 5200);
+
+    return () => window.clearInterval(timer);
+  }, [banners.length]);
+
+  return (
+    <Link
+      href="/uu-dai"
+      data-testid="home-mid-banner"
+      {...swipeHandlers}
+      style={{
+        minHeight: desktop ? "210px" : "132px",
+        borderRadius: desktop ? "22px" : "18px",
+        overflow: "hidden",
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        padding: desktop ? "26px 28px 42px" : "14px 14px 32px",
+        color: "#fff",
+        border: `1px solid ${colors.line}`,
+        boxShadow: "0 18px 36px rgba(0,0,0,.28)",
+        touchAction: "pan-y",
+      }}
+    >
+      <PlaceholderMedia
+        src={event.img}
+        alt={event.title}
+        label="Ảnh ưu đãi"
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "inherit",
+          transform: "scale(1.03)",
+          transition: "opacity 420ms ease, transform 520ms ease",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.5) 54%,rgba(8,8,11,.18)), linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.7))",
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px" }}>
+        <div
+          style={{
+            color: colors.goldSoft,
+            fontSize: desktop ? "11px" : "9px",
+            fontWeight: 900,
+            letterSpacing: ".18em",
+            textTransform: "uppercase",
+          }}
+        >
+          Banner nổi bật
+        </div>
+        <h3
+          style={{
+            marginTop: desktop ? "10px" : "6px",
+            fontSize: desktop ? "30px" : "18px",
+            lineHeight: 1.08,
+            fontWeight: 900,
+          }}
+        >
+          {event.title}
+        </h3>
+        <div
+          style={{
+            marginTop: desktop ? "12px" : "8px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            color: colors.text,
+            fontSize: desktop ? "13px" : "11px",
+            lineHeight: 1.35,
+          }}
+        >
+          <span style={{ minWidth: 0 }}>{event.desc}</span>
+          <span
+            style={{
+              flex: "none",
+              borderRadius: "999px",
+              background: `linear-gradient(135deg,${colors.goldSoft},${colors.gold})`,
+              color: "#241a0a",
+              padding: desktop ? "9px 15px" : "7px 11px",
+              fontSize: desktop ? "12px" : "10px",
+              fontWeight: 900,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {event.btnText}
+          </span>
+        </div>
+      </div>
+      <div
+        aria-label="Chọn banner nổi bật"
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: desktop ? "17px" : "14px",
+          zIndex: 2,
+          display: "flex",
+          gap: "6px",
+          transform: "translateX(-50%)",
+        }}
+      >
+        {banners.map((banner, index) => (
+          <span
+            key={banner.title}
+            role="button"
+            tabIndex={0}
+            aria-label={`Banner nổi bật ${index + 1}`}
+            onClick={(event) => {
+              event.preventDefault();
+              setActiveBanner(index);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setActiveBanner(index);
+              }
+            }}
+            style={{
+              display: "block",
+              flex: "0 0 auto",
+              width: activeBanner === index ? 22 : 5,
+              height: 5,
+              border: 0,
+              borderRadius: 99,
+              padding: 0,
+              background: activeBanner === index ? colors.gold : "rgba(255,255,255,.3)",
               cursor: "pointer",
               transition: "width 220ms ease, background 220ms ease",
             }}
@@ -775,6 +945,10 @@ export default function Page() {
               </div>
             </section>
 
+            <div style={{ marginTop: "20px" }}>
+              <MidPageBanner />
+            </div>
+
             <section style={{ marginTop: "22px" }}>
               <div style={sectionTitleStyle}>
                 <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Dịch vụ nổi bật</h2>
@@ -849,6 +1023,10 @@ export default function Page() {
                 </div>
               </div>
             </section>
+
+            <div style={{ marginTop: "34px" }}>
+              <MidPageBanner desktop />
+            </div>
 
             <section style={{ marginTop: "34px" }}>
               <div style={sectionTitleStyle}>
