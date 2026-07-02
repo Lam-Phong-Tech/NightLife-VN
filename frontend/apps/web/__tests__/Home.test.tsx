@@ -36,4 +36,11 @@ describe('Home Page', () => {
       expect(searchPanel.compareDocumentPosition(adBanners[index]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
   });
+
+  it('hides venue rating and price on home recommendation cards', () => {
+    render(<Page />);
+
+    expect(screen.queryByText('★ 4.9')).not.toBeInTheDocument();
+    expect(screen.queryByText('1.2tr')).not.toBeInTheDocument();
+  });
 });

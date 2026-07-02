@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Venue } from '@/types';
 import { PlaceholderMedia } from './MediaPlaceholder';
+import { formatPriceTier } from '@/lib/price-tier';
 
 interface VenueCardProps {
   venue: Venue;
@@ -32,7 +33,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({ venue, onClick, onFavClick
         <div style={{ fontSize: '11.5px', color: '#b6b1a6', marginTop: '3px' }}>{venue.area} - {venue.catLabel}</div>
         <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#d4b26a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span>* {venue.rating} {venue.reviews ? <span style={{ color: '#8c8679' }}>({venue.reviews})</span> : null}</span>
-          <span style={{ color: '#f3f0ea', fontWeight: '700' }}>{venue.price}</span>
+          <span style={{ color: '#f3f0ea', fontWeight: '700' }}>{formatPriceTier(venue.price)}</span>
         </div>
       </div>
     </div>

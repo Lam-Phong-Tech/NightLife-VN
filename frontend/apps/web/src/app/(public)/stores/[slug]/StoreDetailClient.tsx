@@ -27,11 +27,11 @@ import { useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { castImageForSlug, storeGalleryForSlug, storeImageForSlug } from "@/lib/demo-media";
+import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
   categoryLabels,
   formatDateOption,
   formatDiscount,
-  formatVnd,
   mapEmbedUrl,
   mediaBackground,
   openingText,
@@ -184,13 +184,7 @@ const priceRangeText = (store: PublicStoreDetail) => {
     .map((item) => item.amountVnd)
     .filter((value): value is number => typeof value === "number" && value > 0);
 
-  if (!values.length) return `Từ ${formatVnd(store.priceReference.startingFromVnd)}`;
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-
-  if (min === max) return formatVnd(min);
-  return `${formatVnd(min)} - ${formatVnd(max)}`;
+  return formatPriceTierRange(values, store.priceReference.startingFromVnd);
 };
 
 const todayKey = () =>
@@ -367,7 +361,7 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
                 </small>
               </span>
               <b>
-                {formatVnd(item.amountVnd)}
+                {formatPriceTier(item.amountVnd)}
                 {item.unit === "hour" ? "/giờ" : ""}
               </b>
             </div>
@@ -510,7 +504,7 @@ function BookingCard({
           <strong>Đặt bàn</strong>
           <small>Gửi yêu cầu · Admin xác nhận</small>
         </span>
-        <b>{formatVnd(store.priceReference.startingFromVnd)}</b>
+        <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
       </div>
 
       <div className="member-nudge">
@@ -1166,7 +1160,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       <div className="mobile-cta">
         <div>
           <span>Đặt bàn từ</span>
-          <strong>{formatVnd(store.priceReference.startingFromVnd)}</strong>
+          <strong>{formatPriceTier(store.priceReference.startingFromVnd)}</strong>
         </div>
         <Link
           data-testid="store-booking-cta-mobile"

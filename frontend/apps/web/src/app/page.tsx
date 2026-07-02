@@ -624,10 +624,6 @@ function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number];
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
           {item.area} · {item.catLabel}
         </div>
-        <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", color: colors.gold, fontSize: "12px", fontWeight: 800 }}>
-          <span>★ {item.rating}</span>
-          <span style={{ color: colors.text }}>{item.price}</span>
-        </div>
       </div>
     </Link>
   );
@@ -766,7 +762,6 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
-        <div style={{ marginTop: "9px", color: colors.goldSoft, fontSize: "13px", fontWeight: 800 }}>{item.price}</div>
       </div>
     </Link>
   );

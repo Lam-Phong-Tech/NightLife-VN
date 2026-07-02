@@ -15,6 +15,7 @@ import {
 
 import { discoveryApi, type DiscoverySort, type PublicStore } from "@/lib/api/discovery";
 import { storeImageForSlug } from "@/lib/demo-media";
+import { formatPriceTier } from "@/lib/price-tier";
 
 type Coordinates = {
   lat: number;
@@ -127,7 +128,7 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
     areaLabel,
     cityLabel,
     distanceLabel: formatDistance(store.distanceKm, index),
-    priceLabel: categoryPrices[store.category] ?? "từ 900.000đ",
+    priceLabel: formatPriceTier(categoryPrices[store.category] ?? "từ 900.000đ"),
     rating: roundRating(index),
     tags: categoryTags[store.category] ?? ["Đặt bàn nhanh", "Không gian đẹp", "Ưu đãi"],
     statusLabel,
