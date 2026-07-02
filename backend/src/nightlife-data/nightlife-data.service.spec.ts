@@ -1135,6 +1135,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('creates a guest booking request for an active store', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
       name: 'Neon Club',
@@ -1144,12 +1145,22 @@ describe('NightlifeDataService', () => {
     prisma.booking.create.mockResolvedValue({
       id: 'booking-1',
       status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 4,
+      storeId: 'store-1',
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest Name',
+        phone: null,
+        email: 'guest@example.com',
+      },
     });
 
     await service.createGuestBooking({
       storeSlug: 'neon-club',
       displayName: 'Guest Name',
-      phone: '+84901234567',
+      email: 'GUEST@example.com',
       scheduledAt: '2026-06-30T14:00:00.000Z',
       partySize: 4,
       note: 'VIP room',
@@ -1170,7 +1181,8 @@ describe('NightlifeDataService', () => {
     expect(prisma.guest.create).toHaveBeenCalledWith({
       data: {
         displayName: 'Guest Name',
-        phone: '+84901234567',
+        phone: undefined,
+        email: 'guest@example.com',
       },
       select: { id: true },
     });
@@ -1186,6 +1198,23 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        guestId: 'guest-1',
+        storeId: 'store-1',
+        bookingId: 'booking-1',
+        channel: 'EMAIL',
+        status: 'QUEUED',
+        recipient: 'guest@example.com',
+        templateKey: 'customer.booking.qr_email.v1',
+        payload: expect.objectContaining({
+          bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
+          qrPayload: expect.stringContaining('NLBOOKING|booking-1|BK-BOOKING-'),
+          qrImageUrl: expect.stringContaining('api.qrserver.com'),
+        }),
+      }),
+    });
     expect(adminNotificationService.notifyBookingCreated).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'booking-1',
@@ -1194,7 +1223,37 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it.each([
+    ['a past booking date', '2026-06-19T14:00:00.000Z', 'scheduledAt cannot be in the past'],
+    [
+      'a booking date after the 2 week window',
+      '2026-07-05T14:00:00.000Z',
+      'scheduledAt can only be within 14 days',
+    ],
+  ])('rejects %s before creating a guest contact', async (_, scheduledAt, message) => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    });
+
+    await expect(
+      service.createGuestBooking({
+        storeSlug: 'neon-club',
+        displayName: 'Guest Name',
+        email: 'guest@example.com',
+        scheduledAt,
+        partySize: 4,
+      }),
+    ).rejects.toThrow(message);
+
+    expect(prisma.guest.create).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
   it('creates a guest booking with an optional coupon campaign link', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
       name: 'Neon Club',
@@ -1240,6 +1299,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('creates a member booking request for a cast with a contact snapshot', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.cast.findFirst.mockResolvedValue({
       id: 'cast-1',
       slug: 'yuna-neon',
@@ -1629,7 +1689,14 @@ describe('NightlifeDataService', () => {
       select: expect.objectContaining({
         id: true,
         status: true,
-        guest: { select: { id: true, displayName: true, phone: true } },
+        guest: {
+          select: expect.objectContaining({
+            id: true,
+            displayName: true,
+            phone: true,
+            email: true,
+          }),
+        },
       }),
     });
   });

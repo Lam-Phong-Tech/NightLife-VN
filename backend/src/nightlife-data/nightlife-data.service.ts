@@ -82,6 +82,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
 const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
+const BOOKING_DATE_WINDOW_DAYS = 14;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const BOOKING_CREATE_RATE_LIMIT = 5;
 const BOOKING_CANCEL_RATE_LIMIT = 5;
@@ -131,11 +132,14 @@ type BookingNotificationRecord = {
   id: string;
   storeId?: string | null;
   status: string;
+  scheduledAt?: Date | string | null;
+  partySize?: number | null;
   user?: { id: string; displayName: string | null; tier: string | null } | null;
   guest?: {
     id: string;
     displayName: string | null;
     phone: string | null;
+    email: string | null;
   } | null;
   store?: {
     id: string;
@@ -2279,15 +2283,17 @@ export class NightlifeDataService {
   async createGuestBooking(dto: CreateBookingDto) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
+    this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
-      `booking:create:guest:${contact.phone}`,
+      `booking:create:guest:${contact.email ?? contact.phone}`,
       BOOKING_CREATE_RATE_LIMIT,
       'Too many booking requests. Please try again shortly.',
     );
     const guest = await this.prisma.guest.create({
       data: {
         displayName: contact.displayName,
-        phone: contact.phone,
+        phone: contact.phone || undefined,
+        email: contact.email || undefined,
       },
       select: {
         id: true,
@@ -2303,6 +2309,7 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
+    await this.notifyGuestBookingQrEmail(booking);
 
     return booking;
   }
@@ -2310,6 +2317,7 @@ export class NightlifeDataService {
   async createMemberBooking(user: AuthenticatedUser, dto: CreateBookingDto) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
+    this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
       `booking:create:member:${user.id}`,
       BOOKING_CREATE_RATE_LIMIT,
@@ -2319,7 +2327,8 @@ export class NightlifeDataService {
       data: {
         convertedUserId: user.id,
         displayName: contact.displayName,
-        phone: contact.phone,
+        phone: contact.phone || undefined,
+        email: contact.email || undefined,
       },
       select: {
         id: true,
@@ -4336,14 +4345,16 @@ export class NightlifeDataService {
   private sanitizeBookingContact(dto: CreateBookingDto) {
     const displayName = this.cleanText(dto.displayName);
     const phone = this.cleanText(dto.phone);
+    const email = this.cleanEmail(dto.email);
 
-    if (!displayName || !phone) {
-      throw new BadRequestException('displayName and phone are required');
+    if (!displayName || (!email && !phone)) {
+      throw new BadRequestException('displayName and email are required');
     }
 
     return {
       displayName,
       phone,
+      email,
       note: this.cleanText(dto.note),
     };
   }
@@ -4352,7 +4363,7 @@ export class NightlifeDataService {
     dto: CreateBookingDto;
     target: BookingTarget;
     userId?: string;
-    phone: string;
+    phone?: string;
   }) {
     const couponId = this.cleanText(input.dto.couponId);
     const couponIssueId = this.cleanText(input.dto.couponIssueId);
@@ -4420,7 +4431,10 @@ export class NightlifeDataService {
         );
       }
 
-      if (issue.guest?.phone && issue.guest.phone !== input.phone) {
+      if (
+        issue.guest?.phone &&
+        (!input.phone || issue.guest.phone !== input.phone)
+      ) {
         throw new UnprocessableEntityException(
           'Coupon issue phone does not match booking phone',
         );
@@ -4739,13 +4753,10 @@ export class NightlifeDataService {
     target: BookingTarget;
     userId?: string;
     guestId: string;
-    phone: string;
+    phone?: string;
     note?: string;
   }) {
-    const scheduledAt = new Date(input.dto.scheduledAt);
-    if (Number.isNaN(scheduledAt.getTime())) {
-      throw new BadRequestException('scheduledAt must be a valid ISO date');
-    }
+    const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
 
     const couponLink = await this.resolveBookingCouponLink({
       dto: input.dto,
@@ -4769,6 +4780,16 @@ export class NightlifeDataService {
       },
       select: this.bookingNotificationSelect(),
     });
+  }
+
+  private resolveBookingScheduledAt(value: string) {
+    const scheduledAt = new Date(value);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+    this.assertBookingDateWindow(scheduledAt);
+
+    return scheduledAt;
   }
 
   private bookingChangeTargetSelect() {
@@ -5041,11 +5062,17 @@ export class NightlifeDataService {
       return;
     }
 
+    const guestEmail = this.cleanEmail(booking.guest?.email);
     const recipient =
-      booking.user?.id ?? booking.guest?.phone ?? booking.guest?.id;
+      booking.user?.id ??
+      guestEmail ??
+      booking.guest?.phone ??
+      booking.guest?.id;
     if (!recipient) {
       return;
     }
+
+    const channel = booking.user?.id ? 'IN_APP' : guestEmail ? 'EMAIL' : 'LINE';
 
     await this.prisma.notificationLog.create({
       data: {
@@ -5053,7 +5080,7 @@ export class NightlifeDataService {
         guestId: booking.guest?.id,
         storeId: booking.storeId ?? booking.store?.id ?? undefined,
         bookingId: booking.id,
-        channel: booking.user?.id ? 'IN_APP' : 'LINE',
+        channel,
         status: 'QUEUED',
         recipient,
         templateKey,
@@ -5064,6 +5091,76 @@ export class NightlifeDataService {
         },
       },
     });
+  }
+
+  private assertBookingDateWindow(scheduledAt: Date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + BOOKING_DATE_WINDOW_DAYS);
+    maxDate.setHours(23, 59, 59, 999);
+
+    if (scheduledAt < today) {
+      throw new BadRequestException('scheduledAt cannot be in the past');
+    }
+
+    if (scheduledAt > maxDate) {
+      throw new BadRequestException(
+        `scheduledAt can only be within ${BOOKING_DATE_WINDOW_DAYS} days`,
+      );
+    }
+  }
+
+  private async notifyGuestBookingQrEmail(booking: BookingNotificationRecord) {
+    const email = this.cleanEmail(booking.guest?.email);
+
+    if (!email) {
+      return;
+    }
+
+    const bookingCode = this.bookingPublicCode(booking.id);
+    const qrPayload = this.bookingQrPayload(booking);
+    const qrImageUrl =
+      `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
+
+    await this.prisma.notificationLog.create({
+      data: {
+        guestId: booking.guest?.id,
+        storeId: booking.storeId ?? booking.store?.id ?? undefined,
+        bookingId: booking.id,
+        channel: 'EMAIL',
+        status: 'QUEUED',
+        recipient: email,
+        templateKey: 'customer.booking.qr_email.v1',
+        payload: {
+          bookingId: booking.id,
+          bookingCode,
+          status: booking.status,
+          scheduledAt: this.toAuditIso(booking.scheduledAt),
+          partySize: booking.partySize ?? null,
+          storeName: booking.store?.name ?? null,
+          storeSlug: booking.store?.slug ?? null,
+          guestName: booking.guest?.displayName ?? null,
+          qrPayload,
+          qrImageUrl,
+        },
+      },
+    });
+  }
+
+  private bookingPublicCode(bookingId: string) {
+    return `BK-${bookingId.slice(0, 8).toUpperCase()}`;
+  }
+
+  private bookingQrPayload(booking: BookingNotificationRecord) {
+    return [
+      'NLBOOKING',
+      booking.id,
+      this.bookingPublicCode(booking.id),
+      booking.store?.slug ?? 'nightlife',
+      this.toAuditIso(booking.scheduledAt) ?? '',
+    ].join('|');
   }
 
   private async findMemberBookingChatTarget(
@@ -5322,7 +5419,7 @@ export class NightlifeDataService {
         },
       },
       user: { select: { id: true, displayName: true, tier: true } },
-      guest: { select: { id: true, displayName: true, phone: true } },
+      guest: { select: { id: true, displayName: true, phone: true, email: true } },
       coupon: { select: { id: true, code: true, name: true } },
       couponIssue: { select: { id: true, code: true, status: true } },
     } satisfies Prisma.BookingSelect;
@@ -7072,6 +7169,10 @@ export class NightlifeDataService {
 
   private cleanText(value?: string | null) {
     return value?.trim() ?? '';
+  }
+
+  private cleanEmail(value?: string | null) {
+    return this.cleanText(value).toLowerCase();
   }
 
   private cleanStringArray(values?: string[] | null, limit = 12) {

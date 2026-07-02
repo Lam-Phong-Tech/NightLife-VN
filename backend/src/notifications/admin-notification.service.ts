@@ -49,6 +49,7 @@ export type BookingAdminNotification = {
     id: string;
     displayName?: string | null;
     phone?: string | null;
+    email?: string | null;
   } | null;
   store?: { id: string; name: string; slug: string } | null;
   cast?: {
@@ -540,6 +541,7 @@ export class AdminNotificationService {
       id: string;
       displayName?: string | null;
       phone?: string | null;
+      email?: string | null;
     } | null;
   }) {
     return {
@@ -549,19 +551,24 @@ export class AdminNotificationService {
         input.user?.displayName ?? input.guest?.displayName ?? 'Khach moi',
       tier: input.user?.tier ?? null,
       phone: input.guest?.phone ?? null,
+      email: input.guest?.email ?? null,
     };
   }
 
   private customerLabel(input: {
     user?: { displayName?: string | null; tier?: string | null } | null;
-    guest?: { displayName?: string | null; phone?: string | null } | null;
+    guest?: {
+      displayName?: string | null;
+      phone?: string | null;
+      email?: string | null;
+    } | null;
   }) {
     const name =
       input.user?.displayName ?? input.guest?.displayName ?? 'Khach moi';
     const tier = input.user?.tier ? ` (${input.user.tier})` : '';
-    const phone = input.guest?.phone ? ` - ${input.guest.phone}` : '';
+    const contact = input.guest?.phone ?? input.guest?.email;
 
-    return `${name}${tier}${phone}`;
+    return `${name}${tier}${contact ? ` - ${contact}` : ''}`;
   }
 
   private castLabel(

@@ -44,7 +44,7 @@ const bookingTitle = (booking: BookingRecord | null) => {
 
 const guestLabel = (booking: BookingRecord) =>
   `${booking.guest?.displayName ?? booking.user?.displayName ?? "Khách"} · ${
-    booking.guest?.phone ?? "SĐT đã lưu"
+    booking.guest?.email ?? booking.guest?.phone ?? "Email đã lưu"
   }`;
 
 export default function Page() {

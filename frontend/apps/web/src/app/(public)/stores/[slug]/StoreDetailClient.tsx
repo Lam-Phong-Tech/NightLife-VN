@@ -72,6 +72,13 @@ const nationalityLabels: Record<string, string> = {
 };
 
 const bookingTimes = ["20:00", "21:00", "22:00", "23:00"];
+const bookingDateWindowDays = 14;
+const maxBookingGuests = 50;
+const minBookingNameLength = 2;
+const maxBookingNameLength = 80;
+const maxBookingEmailLength = 160;
+const maxBookingNoteLength = 300;
+const bookingEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const fallbackHero: StoreGalleryItem = {
   id: "fallback-hero",
@@ -201,6 +208,65 @@ const buildScheduledAt = (date: string, time: string) => {
   return new Date(
     `${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`,
   ).toISOString();
+};
+
+const toDateInputValue = (date: Date) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 10);
+};
+
+const getTodayDate = () => toDateInputValue(new Date());
+
+const getMaxBookingDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + bookingDateWindowDays);
+  return toDateInputValue(date);
+};
+
+const normalizeBookingEmail = (value: string) => value.trim().toLowerCase();
+
+const validateStoreBookingForm = ({
+  displayName,
+  email,
+  guestCount,
+  bookingDate,
+  note,
+}: {
+  displayName: string;
+  email: string;
+  guestCount: number;
+  bookingDate: string;
+  note: string;
+}) => {
+  if (displayName.length < minBookingNameLength) {
+    return `Vui lòng nhập họ tên từ ${minBookingNameLength} ký tự.`;
+  }
+
+  if (displayName.length > maxBookingNameLength) {
+    return `Họ tên tối đa ${maxBookingNameLength} ký tự.`;
+  }
+
+  if (!bookingEmailPattern.test(email)) {
+    return "Vui lòng nhập email hợp lệ.";
+  }
+
+  if (email.length > maxBookingEmailLength) {
+    return `Email tối đa ${maxBookingEmailLength} ký tự.`;
+  }
+
+  if (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > maxBookingGuests) {
+    return `Số người chỉ được từ 1 đến ${maxBookingGuests}.`;
+  }
+
+  if (bookingDate < getTodayDate() || bookingDate > getMaxBookingDate()) {
+    return `Ngày đặt bàn chỉ được chọn từ hôm nay đến ${bookingDateWindowDays} ngày tới.`;
+  }
+
+  if (note.length > maxBookingNoteLength) {
+    return `Ghi chú tối đa ${maxBookingNoteLength} ký tự.`;
+  }
+
+  return "";
 };
 
 function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
@@ -461,7 +527,7 @@ function BookingCard({
   couponHref,
   firstCoupon,
   guestName,
-  phone,
+  email,
   note,
   isSubmitting,
   errorMessage,
@@ -469,7 +535,7 @@ function BookingCard({
   onTimeSelect,
   onGuestCountChange,
   onGuestNameChange,
-  onPhoneChange,
+  onEmailChange,
   onNoteChange,
   onSubmit,
   onCouponClick,
@@ -482,7 +548,7 @@ function BookingCard({
   couponHref: string;
   firstCoupon?: PublicStoreDetail["activeCoupons"][number] | null;
   guestName: string;
-  phone: string;
+  email: string;
   note: string;
   isSubmitting: boolean;
   errorMessage: string;
@@ -490,7 +556,7 @@ function BookingCard({
   onTimeSelect: (time: string) => void;
   onGuestCountChange: (guestCount: number) => void;
   onGuestNameChange: (value: string) => void;
-  onPhoneChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
   onNoteChange: (value: string) => void;
   onSubmit: () => void;
   onCouponClick: (surface: string) => void;
@@ -523,18 +589,21 @@ function BookingCard({
           <input
             value={guestName}
             onChange={(event) => onGuestNameChange(event.target.value)}
-            placeholder="Nguyễn Minh"
+            placeholder="Vui lòng nhập họ tên"
             autoComplete="name"
+            maxLength={maxBookingNameLength}
           />
         </label>
         <label className="booking-field booking-input-field">
-          <span>Số điện thoại</span>
+          <span>Email</span>
           <input
-            type="tel"
-            value={phone}
-            onChange={(event) => onPhoneChange(event.target.value)}
-            placeholder="0901 234 567"
-            autoComplete="tel"
+            type="email"
+            value={email}
+            onChange={(event) => onEmailChange(event.target.value)}
+            placeholder="Vui lòng nhập email"
+            autoComplete="email"
+            inputMode="email"
+            maxLength={maxBookingEmailLength}
           />
         </label>
         <div className="booking-field">
@@ -544,6 +613,7 @@ function BookingCard({
               type="button"
               aria-label="Giảm số khách"
               onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
+              disabled={guestCount <= 1}
             >
               <Minus size={15} />
             </button>
@@ -551,7 +621,8 @@ function BookingCard({
             <button
               type="button"
               aria-label="Tăng số khách"
-              onClick={() => onGuestCountChange(Math.min(20, guestCount + 1))}
+              onClick={() => onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1))}
+              disabled={guestCount >= maxBookingGuests}
             >
               <Plus size={15} />
             </button>
@@ -592,7 +663,8 @@ function BookingCard({
         className="booking-note-box"
         value={note}
         onChange={(event) => onNoteChange(event.target.value)}
-        placeholder="Bàn gần sân khấu, có sinh nhật nhỏ - chuẩn bị giúp nến."
+        placeholder="Vui lòng nhập ghi chú nếu có"
+        maxLength={maxBookingNoteLength}
       />
 
       {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
@@ -673,7 +745,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTime, setSelectedTime] = useState("21:00");
   const [guestName, setGuestName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [bookingErrorMessage, setBookingErrorMessage] = useState("");
@@ -745,7 +817,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const dateOptions = useMemo(
     () =>
-      Array.from({ length: 4 }, (_, index) => {
+      Array.from({ length: bookingDateWindowDays + 1 }, (_, index) => {
         const date = new Date();
         date.setDate(date.getDate() + index);
 
@@ -809,10 +881,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const submitDesktopBooking = async () => {
     setBookingErrorMessage("");
     const displayName = guestName.trim();
-    const normalizedPhone = phone.trim();
+    const normalizedEmail = normalizeBookingEmail(email);
+    const trimmedNote = note.trim();
 
-    if (!displayName || !normalizedPhone) {
-      setBookingErrorMessage("Vui lòng nhập tên và số điện thoại.");
+    const validationError = validateStoreBookingForm({
+      displayName,
+      email: normalizedEmail,
+      guestCount,
+      bookingDate: selectedDate.iso,
+      note: trimmedNote,
+    });
+
+    if (validationError) {
+      setBookingErrorMessage(validationError);
       return;
     }
 
@@ -820,10 +901,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       storeSlug: store.slug,
       ...(firstCoupon?.id ? { couponId: firstCoupon.id } : {}),
       displayName,
-      phone: normalizedPhone,
+      email: normalizedEmail,
       scheduledAt: buildScheduledAt(selectedDate.iso, selectedTime),
       partySize: guestCount,
-      ...(note.trim() ? { note: note.trim() } : {}),
+      ...(trimmedNote ? { note: trimmedNote } : {}),
     };
 
     try {
@@ -1098,7 +1179,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               couponHref={couponHref}
               firstCoupon={firstCoupon}
               guestName={guestName}
-              phone={phone}
+              email={email}
               note={note}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
@@ -1106,7 +1187,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               onTimeSelect={setSelectedTime}
               onGuestCountChange={setGuestCount}
               onGuestNameChange={setGuestName}
-              onPhoneChange={setPhone}
+              onEmailChange={setEmail}
               onNoteChange={setNote}
               onSubmit={submitDesktopBooking}
               onCouponClick={trackCouponClick}
@@ -2143,6 +2224,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           justify-content: center;
           cursor: pointer;
+        }
+
+        .guest-stepper button:disabled {
+          cursor: not-allowed;
+          opacity: .45;
         }
 
         .guest-stepper strong {

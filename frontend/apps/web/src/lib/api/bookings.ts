@@ -39,6 +39,7 @@ export type BookingRecord = {
     id: string;
     displayName?: string | null;
     phone?: string | null;
+    email?: string | null;
   } | null;
   user?: {
     id: string;
@@ -65,7 +66,8 @@ export type CreateBookingPayload = {
   couponId?: string;
   couponIssueId?: string;
   displayName: string;
-  phone: string;
+  email: string;
+  phone?: string;
   scheduledAt: string;
   partySize: number;
   note?: string;
@@ -111,7 +113,7 @@ export type BookingChangeRequest = {
     publicAlias?: string | null;
   } | null;
   requestedBy?: { id: string; displayName?: string | null } | null;
-  guest?: { id: string; displayName?: string | null; phone?: string | null } | null;
+  guest?: { id: string; displayName?: string | null; phone?: string | null; email?: string | null } | null;
   reviewedBy?: { id: string; displayName?: string | null } | null;
 };
 
@@ -127,7 +129,7 @@ export type BookingChatMessage = {
   body: string;
   createdAt: string;
   senderUser?: { id: string; displayName?: string | null; role?: string } | null;
-  guest?: { id: string; displayName?: string | null; phone?: string | null } | null;
+  guest?: { id: string; displayName?: string | null; phone?: string | null; email?: string | null } | null;
 };
 
 export type BookingChatPayload = {

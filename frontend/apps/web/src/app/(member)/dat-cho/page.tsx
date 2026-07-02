@@ -6,8 +6,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronLeft,
+  Mail,
   Minus,
-  Phone,
   Plus,
   ShieldCheck,
   Star,
@@ -18,6 +18,13 @@ import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/li
 import styles from "../booking-flow.module.css";
 
 const bookingTimes = ["20:00", "21:00", "22:00", "23:00"] as const;
+const bookingDateWindowDays = 14;
+const maxGuests = 50;
+const minNameLength = 2;
+const maxNameLength = 80;
+const maxEmailLength = 160;
+const maxNoteLength = 300;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type BookingContext = {
   storeSlug?: string;
@@ -44,16 +51,74 @@ const toDateInputValue = (date: Date) => {
   return localDate.toISOString().slice(0, 10);
 };
 
-const getTomorrowDate = () => {
+const getTodayDate = () => toDateInputValue(new Date());
+
+const getMaxBookingDate = () => {
   const date = new Date();
-  date.setDate(date.getDate() + 1);
+  date.setDate(date.getDate() + bookingDateWindowDays);
   return toDateInputValue(date);
+};
+
+const clampBookingDate = (value?: string | null) => {
+  const today = getTodayDate();
+  const maxDate = getMaxBookingDate();
+
+  if (!value) return today;
+  if (value < today) return today;
+  if (value > maxDate) return maxDate;
+  return value;
 };
 
 const buildScheduledAt = (date: string, time: string) => {
   const [hours = "21", minutes = "00"] = time.split(":");
   const value = new Date(`${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`);
   return value.toISOString();
+};
+
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
+const validateBookingForm = ({
+  displayName,
+  email,
+  guests,
+  bookingDate,
+  note,
+}: {
+  displayName: string;
+  email: string;
+  guests: number;
+  bookingDate: string;
+  note: string;
+}) => {
+  if (displayName.length < minNameLength) {
+    return `Vui lòng nhập họ tên từ ${minNameLength} ký tự.`;
+  }
+
+  if (displayName.length > maxNameLength) {
+    return `Họ tên tối đa ${maxNameLength} ký tự.`;
+  }
+
+  if (!emailPattern.test(email)) {
+    return "Vui lòng nhập email hợp lệ.";
+  }
+
+  if (email.length > maxEmailLength) {
+    return `Email tối đa ${maxEmailLength} ký tự.`;
+  }
+
+  if (!Number.isInteger(guests) || guests < 1 || guests > maxGuests) {
+    return `Số người chỉ được từ 1 đến ${maxGuests}.`;
+  }
+
+  if (bookingDate < getTodayDate() || bookingDate > getMaxBookingDate()) {
+    return `Ngày đặt bàn chỉ được chọn từ hôm nay đến ${bookingDateWindowDays} ngày tới.`;
+  }
+
+  if (note.length > maxNoteLength) {
+    return `Ghi chú tối đa ${maxNoteLength} ký tự.`;
+  }
+
+  return "";
 };
 
 const parseRequestedMode = (value: string | null) => {
@@ -81,7 +146,7 @@ const parseContext = () => {
       fromHref: castSlug ? `/casts/${castSlug}` : `/stores/${storeSlug ?? defaultContext.storeSlug}`,
     },
     mode: parseRequestedMode(params.get("mode")),
-    date: params.get("date") || getTomorrowDate(),
+    date: clampBookingDate(params.get("date")),
     time: params.get("time") || "21:00",
     guests: Number(params.get("guests") || 4),
   } as const;
@@ -92,8 +157,8 @@ export default function Page() {
   const [mode, setMode] = useState<"guest" | "member">("guest");
   const [context, setContext] = useState<BookingContext>(defaultContext);
   const [guestName, setGuestName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [bookingDate, setBookingDate] = useState(getTomorrowDate);
+  const [email, setEmail] = useState("");
+  const [bookingDate, setBookingDate] = useState(getTodayDate);
   const [bookingTime, setBookingTime] = useState<(typeof bookingTimes)[number]>("21:00");
   const [guests, setGuests] = useState(4);
   const [note, setNote] = useState("");
@@ -110,11 +175,11 @@ export default function Page() {
       setContext(parsed.context);
       setBookingDate(parsed.date);
       setBookingTime(bookingTimes.includes(parsed.time as (typeof bookingTimes)[number]) ? (parsed.time as (typeof bookingTimes)[number]) : "21:00");
-      setGuests(Number.isFinite(parsed.guests) ? Math.max(1, parsed.guests) : 4);
+      setGuests(Number.isFinite(parsed.guests) ? Math.min(maxGuests, Math.max(1, parsed.guests)) : 4);
 
       if (authUser) {
         setGuestName(authUser.displayName ?? authUser.email ?? "");
-        setPhone(authUser.phone ?? "");
+        setEmail(authUser.email ?? "");
       }
 
       if (memberAccount) {
@@ -156,10 +221,19 @@ export default function Page() {
   const submit = async () => {
     setErrorMessage("");
     const displayName = guestName.trim();
-    const normalizedPhone = phone.trim();
+    const normalizedEmail = normalizeEmail(email);
+    const trimmedNote = note.trim();
 
-    if (!displayName || !normalizedPhone) {
-      setErrorMessage("Vui lòng nhập tên và số điện thoại.");
+    const validationError = validateBookingForm({
+      displayName,
+      email: normalizedEmail,
+      guests,
+      bookingDate,
+      note: trimmedNote,
+    });
+
+    if (validationError) {
+      setErrorMessage(validationError);
       return;
     }
 
@@ -179,10 +253,10 @@ export default function Page() {
       ...(context.couponId ? { couponId: context.couponId } : {}),
       ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       displayName,
-      phone: normalizedPhone,
+      email: normalizedEmail,
       scheduledAt: buildScheduledAt(bookingDate, bookingTime),
       partySize: guests,
-      ...(note.trim() ? { note: note.trim() } : {}),
+      ...(trimmedNote ? { note: trimmedNote } : {}),
     };
 
     try {
@@ -270,11 +344,12 @@ export default function Page() {
                 label="Họ tên"
                 value={guestName}
                 onChange={setGuestName}
-                placeholder="Nguyễn Minh"
+                placeholder="Vui lòng nhập họ tên"
+                maxLength={maxNameLength}
                 icon={<UserRound size={16} />}
               />
 
-              <PhoneField value={phone} onChange={setPhone} />
+              <EmailField value={email} onChange={setEmail} />
 
               <div className={styles.twoColumn}>
                 <div className={styles.field}>
@@ -285,6 +360,7 @@ export default function Page() {
                       className={styles.stepButton}
                       onClick={() => setGuests((value) => Math.max(1, value - 1))}
                       aria-label="Giảm số người"
+                      disabled={guests <= 1}
                     >
                       <Minus size={15} />
                     </button>
@@ -292,15 +368,16 @@ export default function Page() {
                     <button
                       type="button"
                       className={`${styles.stepButton} ${styles.stepButtonActive}`}
-                      onClick={() => setGuests((value) => Math.min(50, value + 1))}
+                      onClick={() => setGuests((value) => Math.min(maxGuests, value + 1))}
                       aria-label="Tăng số người"
+                      disabled={guests >= maxGuests}
                     >
                       <Plus size={15} />
                     </button>
                   </div>
                 </div>
 
-                <DateField value={bookingDate} onChange={setBookingDate} />
+                <DateField value={bookingDate} onChange={(value) => setBookingDate(clampBookingDate(value))} />
               </div>
 
               <div className={styles.field}>
@@ -310,6 +387,7 @@ export default function Page() {
                     <button
                       key={time}
                       type="button"
+                      role="option"
                       onClick={() => setBookingTime(time)}
                       className={`${styles.timeChip} ${bookingTime === time ? styles.selectedChip : ""}`}
                       aria-selected={bookingTime === time}
@@ -325,7 +403,8 @@ export default function Page() {
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="Bàn gần sân khấu, có sinh nhật nhỏ - chuẩn bị giúp nến."
+                  placeholder="Vui lòng nhập ghi chú nếu có"
+                  maxLength={maxNoteLength}
                   className={styles.noteArea}
                 />
               </label>
@@ -350,7 +429,7 @@ export default function Page() {
               style={{ opacity: isSubmitting ? 0.72 : 1, cursor: isSubmitting ? "wait" : "pointer" }}
             >
               <strong>{isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}</strong>
-              <small>Miễn phí · phản hồi nhanh qua LINE / điện thoại</small>
+              <small>Miễn phí · mã QR gửi qua email sau khi đặt</small>
             </button>
           </div>
         </div>
@@ -382,12 +461,14 @@ function TextField({
   onChange,
   placeholder,
   icon,
+  maxLength,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   icon?: React.ReactNode;
+  maxLength?: number;
 }) {
   return (
     <label className={styles.field}>
@@ -399,6 +480,7 @@ function TextField({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
+          maxLength={maxLength}
           className={styles.input}
         />
       </span>
@@ -406,19 +488,20 @@ function TextField({
   );
 }
 
-function PhoneField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function EmailField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <label className={styles.field}>
-      <span className={styles.fieldLabel}>Số điện thoại</span>
+      <span className={styles.fieldLabel}>Email</span>
       <span className={styles.phoneInput}>
-        <Phone size={15} />
-        <span className={styles.phonePrefix}>+84</span>
-        <span className={styles.phoneDivider} />
+        <Mail size={15} />
         <input
-          type="tel"
+          type="email"
           value={value}
-          placeholder="0901 234 567"
+          placeholder="Vui lòng nhập email"
           onChange={(event) => onChange(event.target.value)}
+          maxLength={maxEmailLength}
+          autoComplete="email"
+          inputMode="email"
           className={styles.input}
         />
       </span>
@@ -432,7 +515,13 @@ function DateField({ value, onChange }: { value: string; onChange: (value: strin
       <span className={styles.fieldLabel}>Ngày</span>
       <span className={styles.dateInput}>
         <CalendarDays size={15} />
-        <input type="date" value={value} onChange={(event) => onChange(event.target.value)} />
+        <input
+          type="date"
+          value={value}
+          min={getTodayDate()}
+          max={getMaxBookingDate()}
+          onChange={(event) => onChange(event.target.value)}
+        />
       </span>
     </label>
   );

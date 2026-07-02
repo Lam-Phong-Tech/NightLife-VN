@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsEmail,
   IsInt,
   IsISO8601,
   IsNotEmpty,
@@ -10,6 +11,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 export class CreateBookingDto {
@@ -68,14 +70,29 @@ export class CreateBookingDto {
   @ApiProperty({ example: 'Nguyen Van A' })
   @IsNotEmpty()
   @IsString()
-  @MaxLength(120)
+  @MinLength(2)
+  @MaxLength(80)
   displayName: string;
 
-  @ApiProperty({ example: '+84901234567' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({
+    example: 'guest@example.com',
+    description:
+      'Email used for guest booking confirmation and QR delivery. Required for new guest booking forms.',
+  })
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(160)
+  email?: string;
+
+  @ApiPropertyOptional({
+    example: '+84901234567',
+    description:
+      'Legacy phone contact. Kept optional for existing guest coupon and self-service flows.',
+  })
+  @IsOptional()
   @IsString()
   @MaxLength(32)
-  phone: string;
+  phone?: string;
 
   @ApiProperty({ example: '2026-06-30T14:00:00.000Z' })
   @IsNotEmpty()
@@ -94,6 +111,6 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(300)
   note?: string;
 }
