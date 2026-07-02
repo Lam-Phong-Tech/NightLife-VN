@@ -1551,7 +1551,7 @@ export function PartnerScanCouponPayloadContract() {
     ApiOperation({
       summary: 'Partner action: scan a signed coupon QR payload',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR). Validates an opaque signed QR/deep-link payload generated server-side, enforces store access after resolving the coupon issue, supports offline queued scan replay, records audit/analytics events, and returns only masked customer summary data.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR). ActionPolicyGuard is intentionally not used here because the request contains only an opaque signed token; the service resolves the coupon issue and enforces store access with ensureStoreAccess before returning scan evidence. Supports offline queued scan replay, records audit/analytics events, and returns only masked customer summary data.',
     }),
     ApiBody({ type: ScanCouponIssueDto }),
     ApiOkResponse({

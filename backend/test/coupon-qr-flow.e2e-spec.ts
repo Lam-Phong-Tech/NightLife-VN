@@ -31,6 +31,7 @@ type TestCouponIssue = {
   metadata: Record<string, unknown>;
   booking: null;
   coupon: typeof couponRecord;
+  guestPhone?: string | null;
 };
 
 class TestJwtGuard implements CanActivate {
@@ -76,8 +77,18 @@ const couponRecord = {
   store: storeRecord,
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 function firstHeaderValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function expectExpiresWithin(value: string, maxMs: number, startMs: number) {
+  const expiresAt = new Date(value).getTime();
+
+  expect(Number.isFinite(expiresAt)).toBe(true);
+  expect(expiresAt).toBeGreaterThanOrEqual(startMs);
+  expect(expiresAt).toBeLessThanOrEqual(startMs + maxMs + 5000);
 }
 
 function issueSnapshot(issue: TestCouponIssue) {
@@ -105,8 +116,12 @@ describe('Coupon QR full flow (e2e)', () => {
   let previousNodeEnv: string | undefined;
   let previousCouponQrSecret: string | undefined;
   let previousCouponQrPartnerUrl: string | undefined;
+  let lastGuestPhone: string | null;
 
   const prisma = {
+    guest: {
+      create: jest.fn(),
+    },
     coupon: {
       findFirst: jest.fn(),
       update: jest.fn(),
@@ -151,6 +166,7 @@ describe('Coupon QR full flow (e2e)', () => {
     process.env.COUPON_QR_PARTNER_URL = 'https://nightlife.test/partner';
     couponRecord.usedCount = 0;
     issue = null;
+    lastGuestPhone = null;
 
     accessService.canClaimMemberCoupon.mockResolvedValue(true);
     accessService.canViewMemberCoupon.mockResolvedValue(true);
@@ -159,6 +175,12 @@ describe('Coupon QR full flow (e2e)', () => {
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     prisma.notificationLog.create.mockResolvedValue({ id: 'notification-1' });
     prisma.notificationLog.findMany.mockResolvedValue([]);
+    prisma.guest.create.mockImplementation(
+      async (args: { data: { phone?: string } }) => {
+        lastGuestPhone = args.data.phone ?? null;
+        return { id: 'guest-1' };
+      },
+    );
     prisma.coupon.findFirst.mockResolvedValue(couponRecord);
     prisma.coupon.update.mockImplementation(
       async (args: { data: { usedCount?: { increment: number } } }) => {
@@ -167,12 +189,27 @@ describe('Coupon QR full flow (e2e)', () => {
       },
     );
     prisma.couponIssue.findFirst.mockImplementation(
-      async (args: { where?: { couponId?: string; userId?: string } }) => {
+      async (args: {
+        where?: {
+          couponId?: string;
+          userId?: string;
+          guest?: { is?: { phone?: string } };
+        };
+      }) => {
+        const where = args.where ?? {};
+        const guestPhone = where.guest?.is?.phone;
+
         if (
-          issue &&
-          issue.couponId === args.where?.couponId &&
-          issue.userId === args.where?.userId &&
-          issue.status === 'ISSUED'
+          !issue ||
+          issue.couponId !== where.couponId ||
+          issue.status !== 'ISSUED'
+        ) {
+          return null;
+        }
+
+        if (
+          (where.userId && issue.userId === where.userId) ||
+          (guestPhone && issue.guestPhone === guestPhone)
         ) {
           return { id: issue.id };
         }
@@ -182,12 +219,16 @@ describe('Coupon QR full flow (e2e)', () => {
     );
     prisma.couponIssue.create.mockImplementation(
       async (args: { data: Record<string, unknown> }) => {
+        const guestId =
+          typeof args.data.guestId === 'string' ? args.data.guestId : null;
+        const userId =
+          typeof args.data.userId === 'string' ? args.data.userId : null;
         issue = {
           id: String(args.data.id),
           couponId: String(args.data.couponId),
           code: String(args.data.code),
-          guestId: null,
-          userId: String(args.data.userId),
+          guestId,
+          userId,
           status: 'ISSUED',
           expiresAt: args.data.expiresAt as Date,
           usedAt: null,
@@ -196,6 +237,7 @@ describe('Coupon QR full flow (e2e)', () => {
           metadata: args.data.metadata as Record<string, unknown>,
           booking: null,
           coupon: couponRecord,
+          guestPhone: guestId ? lastGuestPhone : null,
         };
 
         return issueSnapshot(issue);
@@ -304,7 +346,65 @@ describe('Coupon QR full flow (e2e)', () => {
     await app.close();
   });
 
+  it('claims a guest coupon with 5 percent snapshot and 24 hour expiry', async () => {
+    const claimStartedAt = Date.now();
+
+    const response = await request(app.getHttpServer())
+      .post('/coupons/coupon-1/guest-claims')
+      .send({ displayName: 'Guest QA', phone: '+84900000001' })
+      .expect(201);
+
+    expect(response.body.issue).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        status: 'ISSUED',
+        userType: 'GUEST',
+        discountPercent: 5,
+        qrPayload: expect.stringContaining('scanToken='),
+        qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
+      }),
+    );
+    expect(response.body.issue.discountRuleSnapshot).toEqual(
+      expect.objectContaining({
+        discountPercent: 5,
+        userType: 'GUEST',
+      }),
+    );
+    expectExpiresWithin(response.body.issue.expiresAt, DAY_MS, claimStartedAt);
+  });
+
+  it('claims a VIP member coupon with 10 percent snapshot and 7 day expiry', async () => {
+    const claimStartedAt = Date.now();
+
+    const response = await request(app.getHttpServer())
+      .post('/coupons/coupon-1/member-claims')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'vip-1')
+      .set('x-test-tier', 'VIP')
+      .expect(201);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        status: 'ISSUED',
+        userType: 'VIP',
+        discountPercent: 10,
+        qrPayload: expect.stringContaining('scanToken='),
+        qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
+      }),
+    );
+    expect(response.body.discountRuleSnapshot).toEqual(
+      expect.objectContaining({
+        discountPercent: 10,
+        userType: 'VIP',
+      }),
+    );
+    expectExpiresWithin(response.body.expiresAt, 7 * DAY_MS, claimStartedAt);
+  });
+
   it('claims to wallet, scans signed QR, confirms once, and blocks reuse', async () => {
+    const claimStartedAt = Date.now();
+
     const claimResponse = await request(app.getHttpServer())
       .post('/coupons/coupon-1/member-claims')
       .set('x-test-role', 'USER')
@@ -320,6 +420,17 @@ describe('Coupon QR full flow (e2e)', () => {
         qrPayload: expect.stringContaining('scanToken='),
         qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
       }),
+    );
+    expect(claimResponse.body.discountRuleSnapshot).toEqual(
+      expect.objectContaining({
+        discountPercent: 8,
+        userType: 'MEMBER',
+      }),
+    );
+    expectExpiresWithin(
+      claimResponse.body.expiresAt,
+      7 * DAY_MS,
+      claimStartedAt,
     );
 
     const walletResponse = await request(app.getHttpServer())
@@ -388,5 +499,39 @@ describe('Coupon QR full flow (e2e)', () => {
       'Coupon issue has already been used',
     );
     expect(couponRecord.usedCount).toBe(1);
+  });
+
+  it('expires stale issued coupon issues and hides the wallet QR for EXPIRED', async () => {
+    const claimResponse = await request(app.getHttpServer())
+      .post('/coupons/coupon-1/member-claims')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'member-expire-1')
+      .expect(201);
+
+    expect(claimResponse.body.status).toBe('ISSUED');
+
+    issue = issue
+      ? { ...issue, expiresAt: new Date(Date.now() - 60_000) }
+      : issue;
+
+    const service = app.get(NightlifeDataService);
+    await expect(service.expireCouponIssuesEveryFiveMinutes()).resolves.toEqual(
+      { count: 1 },
+    );
+    expect(issue?.status).toBe('EXPIRED');
+
+    const walletResponse = await request(app.getHttpServer())
+      .get('/member/coupon-issues')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'member-expire-1')
+      .expect(200);
+
+    expect(walletResponse.body).toEqual([
+      expect.objectContaining({
+        id: claimResponse.body.id,
+        status: 'EXPIRED',
+        qrImageDataUrl: null,
+      }),
+    ]);
   });
 });

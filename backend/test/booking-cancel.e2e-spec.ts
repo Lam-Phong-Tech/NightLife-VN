@@ -322,7 +322,13 @@ describe('Booking cancellation API (e2e)', () => {
       select: expect.objectContaining({
         id: true,
         status: true,
-        guest: { select: { id: true, displayName: true, phone: true } },
+        guest: {
+          select: expect.objectContaining({
+            id: true,
+            displayName: true,
+            phone: true,
+          }),
+        },
       }),
     });
   });

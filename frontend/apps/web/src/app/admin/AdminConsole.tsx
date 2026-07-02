@@ -1996,7 +1996,7 @@ export default function AdminConsole({ section }: { section?: string }) {
             >
               <option value="all">Tất cả</option>
               <option value="ISSUED">Đã cấp</option>
-              <option value="REDEEMED">Đã dùng</option>
+              <option value="USED">Đã dùng</option>
               <option value="EXPIRED">Hết hạn</option>
               <option value="CANCELLED">Đã hủy</option>
             </select>
@@ -2512,7 +2512,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(160px,1fr))", gap: 14 }}>
         <MetricCard icon={TicketPercent} label="Coupon issue" value={String(couponIssues.length)} note="đã cấp / đã dùng" hot />
         <MetricCard icon={Store} label="Quán áp dụng" value={String(stores.length)} note="store scope" />
-        <MetricCard icon={Check} label="Đã dùng" value={String(couponIssues.filter((item) => item.status === "REDEEMED").length)} note="redeemed" />
+        <MetricCard icon={Check} label="Đã dùng" value={String(couponIssues.filter((item) => item.status === "USED").length)} note="used" />
         <MetricCard icon={Clock3} label="Đang giữ" value={String(couponIssues.filter((item) => item.status === "ISSUED").length)} note="issued" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,.9fr) minmax(0,1.1fr)", gap: 16 }}>
