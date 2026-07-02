@@ -82,7 +82,26 @@ const couponIssues = [
     code: "MEMBER-issued",
     status: "ISSUED",
     statusLabel: "Dang giu cho",
+    qrPayloadHash: "hash-issued-1",
     discountPercent: 8,
+    discountRuleSnapshot: { discountPercent: 8, userType: "MEMBER" },
+    campaignSnapshot: {
+      id: "coupon-1",
+      code: "MEMBER8",
+      name: "Member 8",
+      storeId: "store-1",
+    },
+    auditLogs: [
+      {
+        id: "audit-1",
+        action: "COUPON_ISSUE_SCANNED",
+        actorId: "partner-1",
+        targetId: "issue-issued",
+        metadata: { source: "signed_qr" },
+        createdAt: "2026-07-02T10:05:00.000Z",
+        actor: { id: "partner-1", displayName: "Partner Staff", role: "PARTNER" },
+      },
+    ],
     expiresAt: "2026-07-03T10:00:00.000Z",
     userType: "MEMBER",
     user: { id: "user-1", displayName: "Member QA", tier: "FREE" },
@@ -172,6 +191,12 @@ describe("AdminConsole coupon issue panel", () => {
     await within(panel).findByText("MEMBER-issued");
 
     const statusFilter = within(panel).getByRole("combobox");
+
+    await userEvent.click(within(panel).getByLabelText("Chi tiết coupon issue MEMBER-issued"));
+    const detail = within(panel).getByTestId("admin-coupon-issue-detail-issue-issued");
+    expect(detail).toHaveTextContent("hash-issued-1");
+    expect(detail).toHaveTextContent("MEMBER8");
+    expect(detail).toHaveTextContent("COUPON_ISSUE_SCANNED");
 
     await userEvent.selectOptions(statusFilter, "USED");
     expect(statusFilter).toHaveValue("USED");

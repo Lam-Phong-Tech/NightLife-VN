@@ -181,7 +181,11 @@ type AdminCouponIssue = {
   code: string;
   status: string;
   statusLabel?: string;
+  qrPayloadHash?: string | null;
   discountPercent?: number | null;
+  discountRuleSnapshot?: Record<string, unknown> | null;
+  campaignSnapshot?: Record<string, unknown> | null;
+  auditLogs?: AdminCouponIssueAuditLog[];
   expiresAt?: string | null;
   usedAt?: string | null;
   createdAt?: string | null;
@@ -197,6 +201,18 @@ type AdminCouponIssue = {
     name: string;
     store?: { id: string; name: string; slug: string } | null;
   };
+};
+
+type AdminCouponIssueAuditLog = {
+  id: string;
+  action: string;
+  actorId?: string | null;
+  targetId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  beforeJson?: Record<string, unknown> | null;
+  afterJson?: Record<string, unknown> | null;
+  createdAt?: string | null;
+  actor?: { id: string; displayName?: string | null; role?: string | null } | null;
 };
 
 type AdminCounts = {
@@ -504,6 +520,20 @@ const shortCode = (value?: string | null) => (value ? value.slice(0, 8).toUpperC
 
 const bookingRelationLabel = (booking?: { id: string; status?: string | null } | null) =>
   booking ? `BK-${shortCode(booking.id)}${booking.status ? ` · ${booking.status}` : ""}` : "-";
+
+const compactJson = (value: unknown) => {
+  if (!value) return "-";
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
+const snapshotValue = (snapshot: Record<string, unknown> | null | undefined, key: string) =>
+  typeof snapshot?.[key] === "string" || typeof snapshot?.[key] === "number"
+    ? String(snapshot[key])
+    : "-";
 
 const couponRelationLabel = (
   coupon?: { code?: string | null; name?: string | null } | null,
@@ -1109,6 +1139,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [reviewingPartnerRequestId, setReviewingPartnerRequestId] = useState<string | null>(null);
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
   const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
+  const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [cancelBookingTarget, setCancelBookingTarget] = useState<AdminBooking | null>(null);
@@ -1982,6 +2013,87 @@ export default function AdminConsole({ section }: { section?: string }) {
     </Panel>
   );
 
+  const couponIssueDetail = (issue: AdminCouponIssue) => {
+    const campaignSnapshot = issue.campaignSnapshot ?? null;
+    const auditLogs = issue.auditLogs ?? [];
+
+    return (
+      <div
+        data-testid={`admin-coupon-issue-detail-${issue.id}`}
+        style={{
+          borderBottom: `1px solid ${colors.borderSoft}`,
+          background: "rgba(212,178,106,.035)",
+          padding: "14px 18px 18px",
+          display: "grid",
+          gridTemplateColumns: "minmax(220px,.7fr) minmax(280px,1fr) minmax(280px,1fr)",
+          gap: 14,
+          color: colors.text2,
+          fontSize: 12,
+        }}
+      >
+        <div style={{ display: "grid", gap: 9 }}>
+          <span style={{ color: colors.goldBright, fontWeight: 900 }}>QR payload hash</span>
+          <code
+            style={{
+              display: "block",
+              overflowWrap: "anywhere",
+              border: `1px solid ${colors.borderGold22}`,
+              borderRadius: 10,
+              padding: 10,
+              color: colors.text,
+              background: "rgba(8,8,11,.62)",
+              lineHeight: 1.55,
+            }}
+          >
+            {issue.qrPayloadHash ?? "-"}
+          </code>
+          <span style={{ color: colors.muted }}>
+            {issue.discountRuleSnapshot ? `Discount: ${compactJson(issue.discountRuleSnapshot)}` : "Discount snapshot: -"}
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gap: 9 }}>
+          <span style={{ color: colors.goldBright, fontWeight: 900 }}>Campaign snapshot</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+            {[
+              ["Code", snapshotValue(campaignSnapshot, "code")],
+              ["Name", snapshotValue(campaignSnapshot, "name")],
+              ["Coupon ID", snapshotValue(campaignSnapshot, "id")],
+              ["Store ID", snapshotValue(campaignSnapshot, "storeId")],
+            ].map(([label, value]) => (
+              <span key={label} style={{ borderBottom: `1px solid ${colors.borderHair}`, paddingBottom: 7 }}>
+                <span style={{ display: "block", color: colors.muted, fontSize: 10, fontWeight: 900 }}>{label}</span>
+                <span style={{ display: "block", marginTop: 3, color: colors.text, overflowWrap: "anywhere" }}>{value}</span>
+              </span>
+            ))}
+          </div>
+          <code style={{ color: colors.muted, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {compactJson(campaignSnapshot)}
+          </code>
+        </div>
+
+        <div style={{ display: "grid", gap: 9, alignContent: "start" }}>
+          <span style={{ color: colors.goldBright, fontWeight: 900 }}>Audit logs</span>
+          {auditLogs.length ? (
+            auditLogs.map((log) => (
+              <div key={log.id} style={{ borderBottom: `1px solid ${colors.borderHair}`, paddingBottom: 8 }}>
+                <span style={{ display: "flex", justifyContent: "space-between", gap: 8, color: colors.text, fontWeight: 800 }}>
+                  <span>{log.action}</span>
+                  <span>{log.createdAt ? new Date(log.createdAt).toLocaleString("vi-VN") : "-"}</span>
+                </span>
+                <span style={{ display: "block", marginTop: 4, color: colors.muted }}>
+                  {log.actor?.displayName ?? log.actorId ?? "system"} · {compactJson(log.metadata)}
+                </span>
+              </div>
+            ))
+          ) : (
+            <span style={{ color: colors.muted }}>Chưa có audit log liên quan.</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const couponIssuePanel = () => (
     <Panel testId="admin-coupon-issues-panel">
       <div style={{ padding: 18, borderBottom: `1px solid ${colors.borderSoft}` }}>
@@ -2007,7 +2119,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr 1fr .7fr .8fr .8fr 1fr",
+            gridTemplateColumns: "1.1fr 1fr .7fr .8fr .8fr 1fr auto",
             padding: "12px 18px",
             color: colors.muted,
             fontSize: 11,
@@ -2023,33 +2135,46 @@ export default function AdminConsole({ section }: { section?: string }) {
           <span>Holder</span>
           <span>Expiry</span>
           <span>Link</span>
+          <span>Action</span>
         </div>
         {visibleCouponIssues.slice(0, activeView === "campaign" ? 12 : 8).map((issue) => (
-          <div
-            key={issue.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.1fr 1fr .7fr .8fr .8fr 1fr",
-              padding: "13px 18px",
-              alignItems: "center",
-              borderBottom: `1px solid ${colors.borderSoft}`,
-              color: colors.text2,
-              fontSize: 13,
-              gap: 8,
-            }}
-          >
-            <span>
-              <span style={{ display: "block", color: colors.text, fontWeight: 800 }}>{issue.code}</span>
-              <span style={{ display: "block", marginTop: 3, color: colors.goldBright, fontSize: 11 }}>
-                {issue.coupon.name} {typeof issue.discountPercent === "number" ? `-${issue.discountPercent}%` : ""}
+          <React.Fragment key={issue.id}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1.1fr 1fr .7fr .8fr .8fr 1fr auto",
+                padding: "13px 18px",
+                alignItems: "center",
+                borderBottom: expandedCouponIssueId === issue.id ? "0" : `1px solid ${colors.borderSoft}`,
+                color: colors.text2,
+                fontSize: 13,
+                gap: 8,
+              }}
+            >
+              <span>
+                <span style={{ display: "block", color: colors.text, fontWeight: 800 }}>{issue.code}</span>
+                <span style={{ display: "block", marginTop: 3, color: colors.goldBright, fontSize: 11 }}>
+                  {issue.coupon.name} {typeof issue.discountPercent === "number" ? `-${issue.discountPercent}%` : ""}
+                </span>
               </span>
-            </span>
-            <span>{issue.coupon.store?.name ?? "-"}</span>
-            <Badge tone={issue.status}>{issue.statusLabel ?? issue.status}</Badge>
-            <span>{issue.user?.displayName ?? issue.guest?.displayName ?? issue.userType ?? "-"}</span>
-            <span>{issue.expiresAt ? new Date(issue.expiresAt).toLocaleDateString("vi-VN") : "-"}</span>
-            <span>{issue.bill ? `Bill ${issue.bill.billNumber ?? shortCode(issue.bill.id)}` : bookingRelationLabel(issue.booking)}</span>
-          </div>
+              <span>{issue.coupon.store?.name ?? "-"}</span>
+              <Badge tone={issue.status}>{issue.statusLabel ?? issue.status}</Badge>
+              <span>{issue.user?.displayName ?? issue.guest?.displayName ?? issue.userType ?? "-"}</span>
+              <span>{issue.expiresAt ? new Date(issue.expiresAt).toLocaleDateString("vi-VN") : "-"}</span>
+              <span>{issue.bill ? `Bill ${issue.bill.billNumber ?? shortCode(issue.bill.id)}` : bookingRelationLabel(issue.booking)}</span>
+              <button
+                type="button"
+                aria-expanded={expandedCouponIssueId === issue.id}
+                aria-label={`Chi tiết coupon issue ${issue.code}`}
+                onClick={() => setExpandedCouponIssueId((current) => (current === issue.id ? null : issue.id))}
+                style={buttonStyle(expandedCouponIssueId === issue.id ? "primary" : "secondary")}
+              >
+                <FileText size={14} />
+                Chi tiết
+              </button>
+            </div>
+            {expandedCouponIssueId === issue.id ? couponIssueDetail(issue) : null}
+          </React.Fragment>
         ))}
         {!visibleCouponIssues.length ? <EmptyState>Chưa có coupon issue phù hợp bộ lọc.</EmptyState> : null}
       </div>

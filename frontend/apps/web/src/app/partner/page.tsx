@@ -329,11 +329,11 @@ const contentTabs: { key: ListingTabKey; label: string }[] = [
 ];
 
 const navItems: { key: PanelKey; label: string; sub: string; icon: LucideIcon }[] = [
-  { key: 'overview', label: 'Tổng quan', sub: 'Dashboard', icon: Home },
-  { key: 'scan', label: 'Quét mã QR', sub: 'Redeem coupon', icon: QrCode },
-  { key: 'settlement', label: 'Đối soát', sub: 'Usage log', icon: FileClock },
-  { key: 'listing', label: 'Đăng thông tin', sub: 'Store CMS', icon: Camera },
-  { key: 'settings', label: 'Cài đặt', sub: 'Quyền truy cập', icon: Settings },
+  { key: 'scan', label: 'MVP P0 Scan', sub: 'Check-in coupon', icon: QrCode },
+  { key: 'overview', label: 'Tổng quan', sub: 'P1 Dashboard', icon: Home },
+  { key: 'settlement', label: 'Đối soát', sub: 'P1 Usage log', icon: FileClock },
+  { key: 'listing', label: 'Đăng thông tin', sub: 'P1 Store CMS', icon: Camera },
+  { key: 'settings', label: 'Cài đặt', sub: 'P1 Access', icon: Settings },
 ];
 
 const periodItems: { key: PeriodKey; label: string }[] = [
@@ -343,11 +343,11 @@ const periodItems: { key: PeriodKey; label: string }[] = [
 ];
 
 const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
-  overview: { eyebrow: 'PARTNER DASHBOARD', title: 'Tổng quan đối tác' },
-  scan: { eyebrow: 'STORE-SCOPED REDEEM', title: 'Quét mã giảm giá' },
-  settlement: { eyebrow: 'COUPON USAGE LOG', title: 'Đối soát coupon' },
-  listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
-  settings: { eyebrow: 'ACCESS CONTROL', title: 'Cài đặt đối tác' },
+  overview: { eyebrow: 'P1 PARTNER DASHBOARD', title: 'Tổng quan đối tác' },
+  scan: { eyebrow: 'MVP P0 SCAN/CHECK-IN', title: 'Quét mã giảm giá' },
+  settlement: { eyebrow: 'P1 COUPON USAGE LOG', title: 'Đối soát coupon' },
+  listing: { eyebrow: 'P1 STORE CONTENT', title: 'Đăng thông tin quán' },
+  settings: { eyebrow: 'P1 ACCESS CONTROL', title: 'Cài đặt đối tác' },
 };
 
 const cardStyle: React.CSSProperties = {
@@ -535,7 +535,7 @@ export default function PartnerPage() {
   const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);
   const [bookings, setBookings] = useState<PartnerBooking[]>([]);
   const [bills, setBills] = useState<PartnerBill[]>([]);
-  const [activePanel, setActivePanel] = useState<PanelKey>('overview');
+  const [activePanel, setActivePanel] = useState<PanelKey>('scan');
   const [listingTab, setListingTab] = useState<ListingTabKey>('store');
   const [period, setPeriod] = useState<PeriodKey>('seven');
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
@@ -1017,7 +1017,7 @@ export default function PartnerPage() {
     <div className="partner-scan-grid">
       <PanelCard>
         <SectionHeading
-          eyebrow="SCAN OR ENTER CODE"
+          eyebrow="MVP P0 SCAN ONLY"
           title="Quét / nhập mã QR"
           action={<StatusPill tone={offlineScanQueue.length ? 'gold' : 'neutral'}>{offlineScanQueue.length} offline</StatusPill>}
         />
@@ -1095,7 +1095,7 @@ export default function PartnerPage() {
         </div>
 
         <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-          Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
+          Flow demo P0 chỉ gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in. Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
         </div>
 
         {cameraMessage ? (
@@ -1778,7 +1778,7 @@ export default function PartnerPage() {
                   <div style={{ color: colors.gold, fontSize: '10px', fontWeight: 800, letterSpacing: '1.6px' }}>LIVE STORE SCOPE</div>
                   <div style={{ marginTop: '6px', color: colors.text, fontSize: '18px', fontWeight: 800 }}>{storeName}</div>
                   <div style={{ marginTop: '5px', color: colors.text2, fontSize: '12px' }}>
-                    Dashboard, quét QR, đối soát và đăng tin theo cấu trúc wireframe partner.
+                    MVP demo mở thẳng tab Scan/check-in P0; dashboard, đối soát và đăng tin là nhóm P1.
                   </div>
                 </div>
                 <GhostButton onClick={() => setActivePanel('scan')}>

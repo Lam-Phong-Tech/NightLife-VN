@@ -78,6 +78,7 @@ describe('NightlifeDataService', () => {
     },
     auditLog: {
       create: jest.fn(),
+      findMany: jest.fn(),
     },
     notificationLog: {
       create: jest.fn(),
@@ -135,6 +136,7 @@ describe('NightlifeDataService', () => {
       createdAt: new Date('2026-06-30T10:00:00.000Z'),
     } as never);
     prisma.notificationLog.findMany.mockResolvedValue([] as never);
+    prisma.auditLog.findMany.mockResolvedValue([] as never);
     service = new NightlifeDataService(
       prisma,
       accessService,
@@ -2469,6 +2471,7 @@ describe('NightlifeDataService', () => {
         id: 'issue-1',
         code: 'MEMBER-code',
         status: 'ISSUED',
+        qrPayloadHash: 'hash-issued-1',
         expiresAt: null,
         usedAt: null,
         createdAt: new Date('2026-06-30T10:00:00.000Z'),
@@ -2476,6 +2479,12 @@ describe('NightlifeDataService', () => {
           qrPayload:
             'https://nightlife.vn/partner?scanToken=opaque-token.signature',
           discountPercent: 8,
+          campaignSnapshot: {
+            id: 'coupon-1',
+            code: 'MEMBER8',
+            name: 'Member',
+            storeId: 'store-1',
+          },
         },
         user: { id: 'user-1', displayName: 'Member', tier: 'FREE' },
         guest: null,
@@ -2493,6 +2502,19 @@ describe('NightlifeDataService', () => {
         },
       },
     ] as never);
+    prisma.auditLog.findMany.mockResolvedValue([
+      {
+        id: 'audit-1',
+        action: 'COUPON_ISSUE_SCANNED',
+        actorId: 'partner-1',
+        targetId: 'issue-1',
+        metadata: { source: 'signed_qr' },
+        beforeJson: null,
+        afterJson: { status: 'ISSUED' },
+        createdAt: new Date('2026-06-30T10:05:00.000Z'),
+        actor: { id: 'partner-1', displayName: 'Partner Staff', role: 'PARTNER' },
+      },
+    ] as never);
 
     await expect(
       service.listAdminCouponIssues({
@@ -2505,8 +2527,20 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         id: 'issue-1',
         status: 'ISSUED',
+        qrPayloadHash: 'hash-issued-1',
         qrImageDataUrl: expect.stringContaining('data:image/png;base64,'),
         discountPercent: 8,
+        campaignSnapshot: expect.objectContaining({
+          code: 'MEMBER8',
+          storeId: 'store-1',
+        }),
+        auditLogs: [
+          expect.objectContaining({
+            id: 'audit-1',
+            action: 'COUPON_ISSUE_SCANNED',
+            targetId: 'issue-1',
+          }),
+        ],
       }),
     ]);
 
@@ -2521,8 +2555,24 @@ describe('NightlifeDataService', () => {
           },
         },
         take: 25,
+        select: expect.objectContaining({
+          qrPayloadHash: true,
+        }),
       }),
     );
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        targetType: 'CouponIssue',
+        targetId: { in: ['issue-1'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: expect.objectContaining({
+        id: true,
+        action: true,
+        targetId: true,
+      }),
+    });
   });
 
   it('submits a member bill and sends the admin alert', async () => {

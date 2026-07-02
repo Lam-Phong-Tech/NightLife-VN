@@ -3531,6 +3531,7 @@ export class NightlifeDataService {
         code: true,
         guestId: true,
         userId: true,
+        qrPayloadHash: true,
         status: true,
         expiresAt: true,
         usedAt: true,
@@ -3563,7 +3564,20 @@ export class NightlifeDataService {
       },
     });
 
-    return Promise.all(issues.map((issue) => this.decorateCouponIssue(issue)));
+    const auditLogsByIssueId = await this.listCouponIssueAuditLogs(
+      issues.map((issue) => issue.id),
+    );
+
+    return Promise.all(
+      issues.map(async (issue) => {
+        const metadata = this.asRecord(issue.metadata);
+        return {
+          ...(await this.decorateCouponIssue(issue)),
+          campaignSnapshot: this.asRecord(metadata?.campaignSnapshot) ?? null,
+          auditLogs: auditLogsByIssueId.get(issue.id) ?? [],
+        };
+      }),
+    );
   }
 
   async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
@@ -8315,6 +8329,45 @@ export class NightlifeDataService {
         },
       },
     });
+  }
+
+  private async listCouponIssueAuditLogs(issueIds: string[]) {
+    const uniqueIssueIds = [...new Set(issueIds)].filter(Boolean);
+    const logsByIssueId = new Map<string, unknown[]>();
+
+    if (!uniqueIssueIds.length) {
+      return logsByIssueId;
+    }
+
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        targetType: 'CouponIssue',
+        targetId: { in: uniqueIssueIds },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(uniqueIssueIds.length * 5, 100),
+      select: {
+        id: true,
+        action: true,
+        actorId: true,
+        targetId: true,
+        metadata: true,
+        beforeJson: true,
+        afterJson: true,
+        createdAt: true,
+        actor: { select: { id: true, displayName: true, role: true } },
+      },
+    });
+
+    for (const log of logs) {
+      const currentLogs = logsByIssueId.get(log.targetId) ?? [];
+      if (currentLogs.length < 5) {
+        currentLogs.push(log);
+        logsByIssueId.set(log.targetId, currentLogs);
+      }
+    }
+
+    return logsByIssueId;
   }
 
   private buildCouponIssueUsageAuditSnapshot(issue: {

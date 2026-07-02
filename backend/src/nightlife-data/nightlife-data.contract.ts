@@ -593,6 +593,24 @@ const memberCouponIssueExample = {
 
 const adminCouponIssueExample = {
   ...memberCouponIssueExample,
+  qrPayloadHash: '5f70bf18a086007016b3f5200f5ec3c9c1ed4f0d...',
+  campaignSnapshot: {
+    id: 'coupon_01',
+    code: 'WELCOME20',
+    name: 'Welcome 20%',
+    storeId: 'store_01',
+    store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  },
+  auditLogs: [
+    {
+      id: 'audit_01',
+      action: 'COUPON_ISSUE_SCANNED',
+      actorId: 'partner_01',
+      targetId: 'issue_01',
+      metadata: { source: 'signed_qr' },
+      createdAt: '2026-06-26T10:12:00.000Z',
+    },
+  ],
   user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'VIP' },
   guest: null,
   scannedBy: { id: 'partner_01', displayName: 'Partner Staff' },
@@ -1716,7 +1734,7 @@ export function AdminCouponIssuesContract() {
     ApiOperation({
       summary: 'Admin action: list coupon issues by store, coupon, and status',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). CMS view for issued coupon wallet/history across stores and campaigns; stale ISSUED codes are marked EXPIRED before returning.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). CMS view for issued coupon wallet/history across stores and campaigns; stale ISSUED codes are marked EXPIRED before returning. Includes admin detail fields for QR payload hash, campaign snapshot, and related CouponIssue audit logs.',
     }),
     ApiQuery({ name: 'storeId', required: false }),
     ApiQuery({ name: 'couponId', required: false }),
