@@ -63,7 +63,7 @@ const navLinks = [
 
 const bottomNav = [
   { href: "/", label: "Trang chủ", icon: Home },
-  { href: "/danh-sach-quan", label: "Tìm quán", icon: Search },
+  { href: "/danh-sach-cast", label: "Tìm Cast", icon: Search },
   { href: "/uu-dai", label: "Ưu đãi", icon: Ticket },
   { href: "/lich-su-dat-cho", label: "Đơn đặt", icon: CalendarDays },
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
