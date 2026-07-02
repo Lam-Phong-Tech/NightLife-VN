@@ -144,6 +144,7 @@ function SearchPanel() {
   return (
     <Link
       href="/danh-sach-quan"
+      data-testid="home-search-panel"
       style={{
         display: "flex",
         alignItems: "center",
@@ -229,6 +230,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
   return (
     <Link
       href="/stores/neon-club"
+      data-testid="home-ad-banner"
       style={{
         minHeight: desktop ? "310px" : "208px",
         borderRadius: desktop ? "26px" : "18px",
@@ -665,10 +667,10 @@ export default function Page() {
           <HeaderBar />
           <main style={{ padding: "8px 18px 0" }}>
             <div style={{ marginTop: "22px" }}>
-              <EventHero />
+              <SearchPanel />
             </div>
             <div style={{ marginTop: "18px" }}>
-              <SearchPanel />
+              <EventHero />
             </div>
             <div style={{ marginTop: "22px" }}>
               <CategoryGrid />
@@ -740,9 +742,11 @@ export default function Page() {
           <HeaderBar desktop />
           <main style={{ padding: "10px 50px 44px" }}>
             <div>
-              <EventHero desktop />
-              <div style={{ marginTop: "18px" }}>
+              <div>
                 <SearchPanel />
+              </div>
+              <div style={{ marginTop: "18px" }}>
+                <EventHero desktop />
               </div>
             </div>
 

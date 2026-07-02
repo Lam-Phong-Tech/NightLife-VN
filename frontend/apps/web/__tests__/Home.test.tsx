@@ -7,14 +7,15 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
-    return <img {...props} />;
+    const imageProps = props as React.ImgHTMLAttributes<HTMLImageElement>;
+    return React.createElement('img', { alt: '', ...imageProps });
   },
 }));
 
 vi.mock('next/link', () => ({
   __esModule: true,
-  default: ({ children, href }: { children: React.ReactNode, href: string }) => {
-    return <a href={href}>{children}</a>;
+  default: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => {
+    return <a href={href} {...props}>{children}</a>;
   },
 }));
 
@@ -22,5 +23,17 @@ describe('Home Page', () => {
   it('renders featured event content', () => {
     render(<Page />);
     expect(screen.getAllByText(/Đêm Nhạc DJ SODA/i).length).toBeGreaterThan(0);
+  });
+
+  it('places the search panel before the advertising banner', () => {
+    render(<Page />);
+
+    const searchPanels = screen.getAllByTestId('home-search-panel');
+    const adBanners = screen.getAllByTestId('home-ad-banner');
+
+    expect(searchPanels).toHaveLength(adBanners.length);
+    searchPanels.forEach((searchPanel, index) => {
+      expect(searchPanel.compareDocumentPosition(adBanners[index]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
   });
 });
