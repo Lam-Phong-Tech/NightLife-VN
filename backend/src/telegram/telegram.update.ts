@@ -4,6 +4,7 @@ import { Context } from 'telegraf';
 import { LineService } from '../notifications/line.service';
 import { SocketGateway } from '../notifications/socket.gateway';
 import { PrismaService } from '../prisma/prisma.service';
+import { appendTelegramConfirmation } from '../notifications/admin-telegram-message.formatter';
 
 @Update()
 export class TelegramUpdate {
@@ -37,7 +38,10 @@ export class TelegramUpdate {
           message_id: number;
           text?: string;
         };
-        const newText = `${message.text ?? ''}\n\nDa xac nhan boi ${adminName}`;
+        const newText = appendTelegramConfirmation(
+          message.text ?? '',
+          adminName,
+        );
 
         await ctx.telegram.editMessageText(
           message.chat.id,
@@ -47,7 +51,7 @@ export class TelegramUpdate {
         );
       }
 
-      await ctx.answerCbQuery('Da xac nhan dat ban!');
+      await ctx.answerCbQuery('Đã xác nhận đặt bàn!');
 
       if (booking.userId) {
         this.socketGateway.notifyBookingStatusUpdate(booking.userId, booking);
@@ -62,7 +66,7 @@ export class TelegramUpdate {
         `Error handling accept_booking: ${(error as Error).message}`,
         (error as Error).stack,
       );
-      await ctx.answerCbQuery('Error accepting booking.');
+      await ctx.answerCbQuery('Không xác nhận được booking.');
     }
   }
 }
