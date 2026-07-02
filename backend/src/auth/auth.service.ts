@@ -190,6 +190,16 @@ export class AuthService {
     };
   }
 
+  lineLoginConfig() {
+    return {
+      configured: Boolean(
+        this.configService.get<string>('LINE_CHANNEL_ID')?.trim() &&
+        this.configService.get<string>('LINE_CHANNEL_SECRET')?.trim() &&
+        this.configService.get<string>('LINE_CALLBACK_URL')?.trim(),
+      ),
+    };
+  }
+
   redirectToLineLogin(redirect: string | undefined, response: Response) {
     const channelId = this.configService.get<string>('LINE_CHANNEL_ID');
     const callbackUrl = this.configService.get<string>('LINE_CALLBACK_URL');

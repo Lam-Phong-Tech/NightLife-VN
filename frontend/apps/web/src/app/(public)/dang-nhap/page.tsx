@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, Phone, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, Sparkles } from "lucide-react";
 import {
   getGoogleLoginConfig,
+  getLineLoginConfig,
   loginGoogleMember,
   loginMember,
   registerMember,
@@ -29,7 +30,6 @@ const colors = {
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
 
-const demoPhoneEmailMap = new Map([["0912345678", "member@nightlife.vn"]]);
 const googleLogoSrc = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 const buildTimeGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 const lineLogoSrc =
@@ -61,24 +61,89 @@ declare global {
   }
 }
 
-function normalizePhone(value: string) {
-  return value.replace(/[^\d+]/g, "");
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const passwordRules = [
+  { test: (value: string) => value.length >= 8, message: "Mật khẩu cần tối thiểu 8 ký tự." },
+  { test: (value: string) => /[a-z]/.test(value), message: "Mật khẩu cần có chữ thường." },
+  { test: (value: string) => /[A-Z]/.test(value), message: "Mật khẩu cần có chữ hoa." },
+  { test: (value: string) => /\d/.test(value), message: "Mật khẩu cần có chữ số." },
+];
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
 }
 
-function getPhoneDigits(value: string) {
-  return value.replace(/\D/g, "");
-}
+function validateAuthForm({
+  isReg,
+  displayName,
+  email,
+  password,
+  confirmPassword,
+}: {
+  isReg: boolean;
+  displayName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}) {
+  const normalizedEmail = normalizeEmail(email);
+  const trimmedName = displayName.trim();
 
-function phoneToAuthEmail(phone: string) {
-  const digits = getPhoneDigits(phone);
-  return demoPhoneEmailMap.get(digits) ?? `${digits}@phone.vietyoru.local`;
+  if (isReg && trimmedName.length < 2) {
+    return "Vui lòng nhập họ tên tối thiểu 2 ký tự.";
+  }
+
+  if (isReg && trimmedName.length > 80) {
+    return "Họ tên không được vượt quá 80 ký tự.";
+  }
+
+  if (!normalizedEmail) {
+    return "Vui lòng nhập email.";
+  }
+
+  if (!emailPattern.test(normalizedEmail)) {
+    return "Email chưa đúng định dạng.";
+  }
+
+  if (normalizedEmail.length > 254) {
+    return "Email không được vượt quá 254 ký tự.";
+  }
+
+  if (!password) {
+    return "Vui lòng nhập mật khẩu.";
+  }
+
+  if (password.length > 72) {
+    return "Mật khẩu không được vượt quá 72 ký tự.";
+  }
+
+  if (isReg) {
+    const failedRule = passwordRules.find((rule) => !rule.test(password));
+
+    if (failedRule) {
+      return failedRule.message;
+    }
+
+    if (!confirmPassword) {
+      return "Vui lòng nhập lại mật khẩu.";
+    }
+
+    if (password !== confirmPassword) {
+      return "Mật khẩu nhập lại chưa khớp.";
+    }
+  } else if (password.length < 8) {
+    return "Mật khẩu cần tối thiểu 8 ký tự.";
+  }
+
+  return "";
 }
 
 export default function Page() {
   const [isReg, setIsReg] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -91,6 +156,8 @@ export default function Page() {
   const [googleClientId, setGoogleClientId] = useState(buildTimeGoogleClientId);
   const [isGoogleConfigLoading, setIsGoogleConfigLoading] = useState(!buildTimeGoogleClientId);
   const [googleReadyClientId, setGoogleReadyClientId] = useState("");
+  const [isLineConfigLoading, setIsLineConfigLoading] = useState(true);
+  const [isLineConfigured, setIsLineConfigured] = useState(false);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
   const redirectTo = useMemo(() => {
@@ -112,32 +179,26 @@ export default function Page() {
 
   const switchMode = (nextIsReg: boolean) => {
     setIsReg(nextIsReg);
+    setConfirmPassword("");
     setMessage("");
   };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedPhone = normalizePhone(phone);
-    const phoneDigits = getPhoneDigits(phone);
-    const authEmail = phoneToAuthEmail(phone);
+    const normalizedEmail = normalizeEmail(email);
     const trimmedDisplayName = displayName.trim();
+    const validationMessage = validateAuthForm({
+      isReg,
+      displayName,
+      email,
+      password,
+      confirmPassword,
+    });
 
-    if (!normalizedPhone || !password) {
+    if (validationMessage) {
       setMessageTone("error");
-      setMessage("Vui lòng nhập số điện thoại và mật khẩu.");
-      return;
-    }
-
-    if (phoneDigits.length < 9) {
-      setMessageTone("error");
-      setMessage("Số điện thoại cần tối thiểu 9 chữ số.");
-      return;
-    }
-
-    if (isReg && password.length < 8) {
-      setMessageTone("error");
-      setMessage("Mật khẩu đăng ký cần tối thiểu 8 ký tự.");
+      setMessage(validationMessage);
       return;
     }
 
@@ -146,20 +207,17 @@ export default function Page() {
 
     try {
       if (isReg) {
-        await registerMember({
-          email: authEmail,
+        const session = await registerMember({
+          email: normalizedEmail,
           password,
-          displayName: trimmedDisplayName || undefined,
+          displayName: trimmedDisplayName,
         });
-        setIsReg(false);
-        setPassword("");
-        setShowPassword(false);
-        setMessageTone("success");
-        setMessage("Đăng ký thành công. Vui lòng đăng nhập để vào hệ thống.");
+        setAuthSession(session);
+        window.location.href = redirectTo;
         return;
       }
 
-      const session = await loginMember({ email: authEmail, password });
+      const session = await loginMember({ email: normalizedEmail, password });
       setAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
@@ -230,6 +288,35 @@ export default function Page() {
       .finally(() => {
         if (mounted) {
           setIsGoogleConfigLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    getLineLoginConfig()
+      .then((config) => {
+        if (!mounted) {
+          return;
+        }
+
+        setIsLineConfigured(config.configured);
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
+
+        setIsLineConfigured(false);
+      })
+      .finally(() => {
+        if (mounted) {
+          setIsLineConfigLoading(false);
         }
       });
 
@@ -336,6 +423,20 @@ export default function Page() {
   };
 
   const startLineConsent = () => {
+    if (isLineConfigLoading) {
+      setMessageTone("error");
+      setMessage("Đang tải cấu hình đăng nhập LINE. Vui lòng thử lại sau vài giây.");
+      return;
+    }
+
+    if (!isLineConfigured) {
+      setMessageTone("error");
+      setMessage(
+        "Thiếu cấu hình LINE_CHANNEL_ID, LINE_CHANNEL_SECRET hoặc LINE_CALLBACK_URL trên backend.",
+      );
+      return;
+    }
+
     const params = new URLSearchParams({ redirect: redirectTo });
     window.location.href = `/line-email-consent?${params.toString()}`;
   };
@@ -492,17 +593,23 @@ export default function Page() {
                     placeholder="Nguyễn Văn A"
                     autoComplete="name"
                     name="name"
+                    required
+                    minLength={2}
+                    maxLength={80}
                   />
                 ) : null}
                 <Field
-                  icon={<Phone size={16} />}
-                  label="Số điện thoại"
-                  value={phone}
-                  onChange={setPhone}
-                  placeholder="0912 345 678"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  name="phone"
+                  icon={<Mail size={16} />}
+                  label="Email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="member@nightlife.vn"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  name="email"
+                  required
+                  maxLength={254}
                 />
                 <Field
                   icon={<LockKeyhole size={16} />}
@@ -513,6 +620,9 @@ export default function Page() {
                   type={showPassword ? "text" : "password"}
                   autoComplete={isReg ? "new-password" : "current-password"}
                   name="password"
+                  required
+                  minLength={8}
+                  maxLength={72}
                   action={
                     <button
                       type="button"
@@ -535,6 +645,21 @@ export default function Page() {
                     </button>
                   }
                 />
+                {isReg ? (
+                  <Field
+                    icon={<LockKeyhole size={16} />}
+                    label="Nhập lại mật khẩu"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    placeholder="••••••••"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    name="confirmPassword"
+                    required
+                    minLength={8}
+                    maxLength={72}
+                  />
+                ) : null}
 
                 {message ? (
                   <div
@@ -600,6 +725,7 @@ export default function Page() {
                     logoAlt="LINE"
                     label="LINE"
                     onClick={startLineConsent}
+                    disabled={isLineConfigLoading}
                   />
                 </div>
               </form>
@@ -680,6 +806,9 @@ function Field({
   autoComplete,
   inputMode,
   name,
+  required,
+  minLength,
+  maxLength,
   action,
 }: {
   icon?: React.ReactNode;
@@ -691,6 +820,9 @@ function Field({
   autoComplete?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   name?: string;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
   action?: React.ReactNode;
 }) {
   return (
@@ -718,6 +850,9 @@ function Field({
           placeholder={placeholder}
           autoComplete={autoComplete}
           inputMode={inputMode}
+          required={required}
+          minLength={minLength}
+          maxLength={maxLength}
           style={{
             flex: 1,
             minWidth: 0,
