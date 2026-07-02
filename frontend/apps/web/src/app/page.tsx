@@ -62,6 +62,12 @@ const serviceTabs = [
   { id: "spa", label: "Spa" },
 ];
 
+const serviceRegionTabs = [
+  { id: "hanoi", label: "Hà Nội" },
+  { id: "hcm", label: "Hồ Chí Minh" },
+  { id: "all", label: "Tổng hợp" },
+] as const;
+
 const rankTabs = [
   { id: "cast", label: "Cast" },
   { id: "quan", label: "Quán" },
@@ -97,6 +103,28 @@ type RankedItem = {
   area?: string;
   href?: string;
 };
+
+type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
+type ServiceItem = (typeof svcData)[number];
+
+function normalizeArea(value = "") {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getServiceRegion(item: ServiceItem): Exclude<ServiceRegion, "all"> {
+  const area = normalizeArea(item.area);
+  return area.includes("quan 1") || area.includes("hcm") || area.includes("ho chi minh")
+    ? "hcm"
+    : "hanoi";
+}
+
+function filterServicesByRegion(items: ServiceItem[], region: ServiceRegion) {
+  if (region === "all") return items;
+  return items.filter((item) => getServiceRegion(item) === region);
+}
 
 function useBannerSwipe(
   bannerCount: number,
@@ -869,6 +897,69 @@ function TabSwitch({
   );
 }
 
+function ServiceRegionSwitch({
+  active,
+  onChange,
+}: {
+  active: ServiceRegion;
+  onChange: (value: ServiceRegion) => void;
+}) {
+  return (
+    <div
+      className="hscroll"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "9px",
+        overflowX: "auto",
+        paddingBottom: "2px",
+        margin: "10px 0 13px",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "none",
+          width: 30,
+          height: 30,
+          borderRadius: "999px",
+          display: "grid",
+          placeItems: "center",
+          color: colors.goldSoft,
+        }}
+      >
+        <MapPin size={17} />
+      </span>
+      {serviceRegionTabs.map((item) => {
+        const selected = active === item.id;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onChange(item.id)}
+            style={{
+              flex: "none",
+              minHeight: 36,
+              border: `1px solid ${selected ? "rgba(212,178,106,.5)" : colors.line}`,
+              borderRadius: "999px",
+              background: selected ? colors.gold : "rgba(255,255,255,.045)",
+              color: selected ? "#241a0a" : colors.muted,
+              padding: "0 17px",
+              fontSize: "12px",
+              fontWeight: 850,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+              boxShadow: selected ? "0 8px 18px rgba(212,178,106,.16)" : "none",
+            }}
+          >
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function BottomNav() {
   return null;
 }
@@ -876,9 +967,10 @@ function BottomNav() {
 export default function Page() {
   const [activeRankTab, setActiveRankTab] = useState("cast");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
+  const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
   const rankList = (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[];
   const rankingPeriod = formatRankingPeriod();
-  const svc = activeSvcTab === "nhahang" ? svcData : spaData;
+  const svc = filterServicesByRegion(activeSvcTab === "nhahang" ? svcData : spaData, activeServiceRegion);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -949,6 +1041,7 @@ export default function Page() {
                 <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Dịch vụ nổi bật</h2>
                 <TabSwitch items={serviceTabs} active={activeSvcTab} onChange={setActiveSvcTab} />
               </div>
+              <ServiceRegionSwitch active={activeServiceRegion} onChange={setActiveServiceRegion} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
                 {svc.slice(0, 2).map((item) => <ServiceCard key={item.name} item={item} compact />)}
               </div>
@@ -1031,6 +1124,7 @@ export default function Page() {
                 </h2>
                 <TabSwitch items={serviceTabs} active={activeSvcTab} onChange={setActiveSvcTab} />
               </div>
+              <ServiceRegionSwitch active={activeServiceRegion} onChange={setActiveServiceRegion} />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {svc.map((item) => <ServiceCard key={item.name} item={item} />)}
               </div>
