@@ -57,6 +57,7 @@ import {
   PublicRankingsContract,
   PublicStoreDetailContract,
   PublicStoresContract,
+  ReviewPartnerRequestContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
 import {
@@ -84,7 +85,10 @@ import {
 } from './dto/content.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
+import {
+  CreatePartnerRequestDto,
+  ReviewPartnerRequestDto,
+} from './dto/create-partner-request.dto';
 import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
@@ -726,6 +730,22 @@ export class NightlifeDataController {
   @Get('admin/partner-requests')
   listAdminPartnerRequests() {
     return this.nightlifeDataService.listAdminPartnerRequests();
+  }
+
+  @ReviewPartnerRequestContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/partner-requests/:requestId/review')
+  reviewPartnerRequest(
+    @Req() request: RequestWithUser,
+    @Param('requestId') requestId: string,
+    @Body() dto: ReviewPartnerRequestDto,
+  ) {
+    return this.nightlifeDataService.reviewPartnerRequest(
+      request.user.id,
+      requestId,
+      dto,
+    );
   }
 
   @AdminCouponIssuesContract()

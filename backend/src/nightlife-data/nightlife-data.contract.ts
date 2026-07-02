@@ -21,7 +21,10 @@ import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { ScanCouponIssueDto } from './dto/coupon-issue.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
+import {
+  CreatePartnerRequestDto,
+  ReviewPartnerRequestDto,
+} from './dto/create-partner-request.dto';
 import {
   MemberFavoriteCastDto,
   PublicCastFavoriteStateDto,
@@ -642,6 +645,14 @@ const partnerRequestExample = {
   id: 'PARTNER-7F3A91BC',
   status: 'PENDING_REVIEW',
   submittedAt: '2026-06-26T10:20:00.000Z',
+  draft: {
+    storeId: 'store_draft_01',
+    storeName: 'Neon Club Tay Ho',
+    storeSlug: 'neon-club-tay-ho-partner-7f3a91bc',
+    castCount: 2,
+    mediaCount: 4,
+    contentCount: 1,
+  },
   message: 'Partner request submitted for admin review',
 };
 
@@ -651,6 +662,15 @@ const adminPartnerRequestExample = {
   notificationStatus: 'SENT',
   submittedAt: '2026-06-26T10:20:00.000Z',
   status: 'PENDING_REVIEW',
+  reviewReason: null,
+  reviewedAt: null,
+  publicState: 'HIDDEN',
+  draftStoreId: 'store_draft_01',
+  draftStoreName: 'Neon Club Tay Ho',
+  draftStoreSlug: 'neon-club-tay-ho-partner-7f3a91bc',
+  draftCastCount: 2,
+  draftMediaCount: 4,
+  draftContentCount: 1,
   businessName: 'Neon Club',
   businessType: 'Club / Lounge',
   area: 'Ha Noi - Tay Ho',
@@ -658,6 +678,8 @@ const adminPartnerRequestExample = {
   contactPhone: '+84901234567',
   contactEmail: 'owner@example.com',
   note: 'We want to join the booking and coupon program.',
+  storeDescription: 'Premium lounge with live DJ and private tables.',
+  menuSummary: 'Bottle service and cocktail menu submitted by partner.',
 };
 
 const contentExample = {
@@ -743,8 +765,62 @@ export function AdminContentsContract() {
 export function AdminPartnerRequestsContract() {
   return guardedListContract(
     'Admin partner: list partner requests from Telegram notification logs',
-    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists partner request payloads persisted in NotificationLog so Telegram CMS links with requestId can open a reviewable record.',
+    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists partner request payloads persisted in NotificationLog. Submitted store/cast/media/menu drafts remain hidden until the admin review endpoint approves them.',
     adminPartnerRequestExample,
+  );
+}
+
+export function ReviewPartnerRequestContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin partner: approve or reject a partner request',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Approves a partner request by publishing the submitted draft store/cast/media/menu, or rejects it while keeping those records non-public. A reason is required for the CMS audit trail.',
+    }),
+    ApiParam({ name: 'requestId', example: 'PARTNER-7F3A91BC' }),
+    ApiBody({ type: ReviewPartnerRequestDto }),
+    ApiOkResponse({
+      description: 'Partner request reviewed.',
+      schema: {
+        example: {
+          ...adminPartnerRequestExample,
+          status: 'APPROVED',
+          reviewReason: 'Thong tin hop le, duyet public.',
+          reviewedAt: '2026-06-26T10:40:00.000Z',
+          reviewedById: 'admin_01',
+          publicState: 'PUBLIC',
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid review body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid admin token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Partner request not found.',
+      schema: {
+        example: { ...notFoundExample, message: 'Partner request not found' },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Partner request has already been reviewed.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Partner request has already been reviewed',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
   );
 }
 

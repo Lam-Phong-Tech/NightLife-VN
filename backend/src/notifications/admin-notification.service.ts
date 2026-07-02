@@ -92,6 +92,12 @@ export type BillAdminNotification = {
 
 export type PartnerRequestAdminNotification = {
   id: string;
+  draftStoreId?: string | null;
+  draftStoreName?: string | null;
+  draftStoreSlug?: string | null;
+  draftCastIds?: string[];
+  draftMediaIds?: string[];
+  draftContentIds?: string[];
   businessName: string;
   businessType?: string | null;
   area?: string | null;
@@ -99,6 +105,21 @@ export type PartnerRequestAdminNotification = {
   contactPhone: string;
   contactEmail?: string | null;
   note?: string | null;
+  storeDescription?: string | null;
+  storeAddress?: string | null;
+  storeCity?: string | null;
+  storeDistrict?: string | null;
+  openingHours?: string | null;
+  menuSummary?: string | null;
+  mediaUrls?: string[];
+  castProfiles?: Array<{
+    stageName: string;
+    bio?: string | null;
+    tags?: string[];
+    languages?: string[];
+    hourlyRateVnd?: number | null;
+    mediaUrls?: string[];
+  }>;
   submittedAt: Date | string;
 };
 
@@ -232,20 +253,34 @@ export class AdminNotificationService {
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
       title: 'Partner request moi',
+      storeId: request.draftStoreId ?? undefined,
       cmsPath: `/admin?tab=partners&requestId=${encodeURIComponent(request.id)}`,
       webPath: '/dang-ky-doi-tac',
       lines: [
         ['Request', request.id],
-        ['Quan / co so', request.businessName],
+        ['Quan / co so', request.draftStoreName ?? request.businessName],
         ['Loai hinh', request.businessType],
         ['Khu vuc', request.area],
         ['Lien he', `${request.contactName} - ${request.contactPhone}`],
         ['Email', request.contactEmail],
+        ['Draft store', request.draftStoreId],
+        ['Cast draft', request.draftCastIds?.length],
+        ['Media draft', request.draftMediaIds?.length],
         ['Gui luc', this.formatDateTime(request.submittedAt)],
         ['Ghi chu', request.note],
       ],
       payload: {
         requestId: request.id,
+        status: 'PENDING_REVIEW',
+        reviewReason: null,
+        reviewedAt: null,
+        reviewedById: null,
+        draftStoreId: request.draftStoreId ?? null,
+        draftStoreName: request.draftStoreName ?? request.businessName,
+        draftStoreSlug: request.draftStoreSlug ?? null,
+        draftCastIds: request.draftCastIds ?? [],
+        draftMediaIds: request.draftMediaIds ?? [],
+        draftContentIds: request.draftContentIds ?? [],
         businessName: request.businessName,
         businessType: request.businessType ?? null,
         area: request.area ?? null,
@@ -253,6 +288,14 @@ export class AdminNotificationService {
         contactPhone: request.contactPhone,
         contactEmail: request.contactEmail ?? null,
         note: request.note ?? null,
+        storeDescription: request.storeDescription ?? null,
+        storeAddress: request.storeAddress ?? null,
+        storeCity: request.storeCity ?? null,
+        storeDistrict: request.storeDistrict ?? null,
+        openingHours: request.openingHours ?? null,
+        menuSummary: request.menuSummary ?? null,
+        mediaUrls: request.mediaUrls ?? [],
+        castProfiles: request.castProfiles ?? [],
         submittedAt: this.toIso(request.submittedAt),
       },
     });

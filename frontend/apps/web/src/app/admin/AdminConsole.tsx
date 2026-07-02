@@ -154,6 +154,16 @@ type AdminPartnerRequest = {
   notifiedAt: string | null;
   submittedAt: string;
   status: string;
+  reviewReason: string | null;
+  reviewedAt: string | null;
+  reviewedById: string | null;
+  publicState: string | null;
+  draftStoreId: string | null;
+  draftStoreName: string | null;
+  draftStoreSlug: string | null;
+  draftCastCount: number;
+  draftMediaCount: number;
+  draftContentCount: number;
   businessName: string;
   businessType: string | null;
   area: string | null;
@@ -161,6 +171,9 @@ type AdminPartnerRequest = {
   contactPhone: string;
   contactEmail: string | null;
   note: string | null;
+  storeDescription: string | null;
+  menuSummary: string | null;
+  mediaUrls: string[];
 };
 
 type AdminCouponIssue = {
@@ -1092,6 +1105,8 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
+  const [partnerReviewReasons, setPartnerReviewReasons] = useState<Record<string, string>>({});
+  const [reviewingPartnerRequestId, setReviewingPartnerRequestId] = useState<string | null>(null);
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
   const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
@@ -1363,6 +1378,35 @@ export default function AdminConsole({ section }: { section?: string }) {
       await loadAdminData();
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  const reviewPartnerRequest = async (requestId: string, approve: boolean) => {
+    const reason =
+      partnerReviewReasons[requestId]?.trim() ||
+      (approve
+        ? "Ho so hop le, duyet public noi dung partner."
+        : "");
+
+    if (!reason) {
+      setStatusMessage("Nhap ly do truoc khi tu choi partner request.");
+      return;
+    }
+
+    setReviewingPartnerRequestId(requestId);
+
+    try {
+      await apiClient(`/admin/partner-requests/${requestId}/review`, {
+        method: "PATCH",
+        data: { approve, reason },
+      });
+      setStatusMessage(approve ? "Da duyet partner request va public draft." : "Da tu choi partner request va giu noi dung an.");
+      setPartnerReviewReasons((current) => ({ ...current, [requestId]: "" }));
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong review duoc partner request.");
+    } finally {
+      setReviewingPartnerRequestId(null);
     }
   };
 
@@ -1830,7 +1874,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr .8fr 1fr 1.1fr .8fr",
+            gridTemplateColumns: "1.1fr .75fr 1fr 1fr .75fr 1.35fr",
             padding: "12px 18px",
             color: colors.muted,
             fontSize: 11,
@@ -1844,14 +1888,15 @@ export default function AdminConsole({ section }: { section?: string }) {
           <span>Khu vực</span>
           <span>Liên hệ</span>
           <span>Ghi chú</span>
-          <span>Notify</span>
+          <span>Status</span>
+          <span>Duyá»‡t</span>
         </div>
         {orderedPartnerRequests.slice(0, activeView === "partners" ? 12 : 6).map((request) => (
           <div
             key={request.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "1.1fr .8fr 1fr 1.1fr .8fr",
+              gridTemplateColumns: "1.1fr .75fr 1fr 1fr .75fr 1.35fr",
               padding: "13px 18px",
               alignItems: "center",
               borderBottom: `1px solid ${request.id === focusedRequestId ? colors.borderGold32 : colors.borderSoft}`,
@@ -1878,8 +1923,58 @@ export default function AdminConsole({ section }: { section?: string }) {
                 {request.contactPhone}
               </span>
             </span>
-            <span>{request.note ?? request.contactEmail ?? "-"}</span>
-            <Badge tone={request.notificationStatus}>{request.notificationStatus}</Badge>
+            <span>
+              <span style={{ display: "block", color: colors.text, fontWeight: 700 }}>
+                {request.draftStoreName ?? request.businessName}
+              </span>
+              <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: 11 }}>
+                {request.draftCastCount} cast / {request.draftMediaCount} media / {request.draftContentCount} menu
+              </span>
+              <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: 11 }}>
+                {request.note ?? request.menuSummary ?? request.contactEmail ?? "-"}
+              </span>
+            </span>
+            <span style={{ display: "grid", gap: 6, justifyItems: "start" }}>
+              <Badge tone={request.status}>{request.status}</Badge>
+              <Badge tone={request.notificationStatus}>{request.notificationStatus}</Badge>
+            </span>
+            <span style={{ display: "grid", gap: 8 }}>
+              <input
+                value={partnerReviewReasons[request.id] ?? ""}
+                onChange={(event) =>
+                  setPartnerReviewReasons((current) => ({
+                    ...current,
+                    [request.id]: event.target.value,
+                  }))
+                }
+                placeholder="Ly do review"
+                disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
+                style={inputStyle({ minHeight: 36 })}
+              />
+              {request.reviewReason ? (
+                <span style={{ color: colors.muted, fontSize: 11 }}>
+                  Ly do: {request.reviewReason}
+                </span>
+              ) : null}
+              <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
+                  onClick={() => void reviewPartnerRequest(request.id, true)}
+                  style={buttonStyle("primary")}
+                >
+                  Duyá»‡t
+                </button>
+                <button
+                  type="button"
+                  disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
+                  onClick={() => void reviewPartnerRequest(request.id, false)}
+                  style={buttonStyle("danger")}
+                >
+                  Tá»« chá»‘i
+                </button>
+              </span>
+            </span>
           </div>
         ))}
         {!partnerRequests.length ? <EmptyState>Chưa có partner request từ Telegram log.</EmptyState> : null}

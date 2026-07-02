@@ -67,7 +67,11 @@ import {
 } from './dto/content.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
+import {
+  CreatePartnerRequestDto,
+  PartnerRequestCastDto,
+  ReviewPartnerRequestDto,
+} from './dto/create-partner-request.dto';
 import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
@@ -219,6 +223,11 @@ type PartnerRequestNotificationLog = {
   sentAt: Date | null;
   createdAt: Date;
 };
+
+type PartnerRequestReviewStatus =
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED';
 
 const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
 const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
@@ -3769,15 +3778,137 @@ export class NightlifeDataService {
 
   async createPartnerRequest(dto: CreatePartnerRequestDto) {
     const submittedAt = new Date();
+    const requestId = `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const businessName = this.cleanRequiredText(dto.businessName, 'businessName');
+    const area = this.cleanNullableText(dto.area);
+    const storeName = this.cleanNullableText(dto.storeName) ?? businessName;
+    const storeDescription =
+      this.cleanNullableText(dto.storeDescription) ??
+      this.cleanNullableText(dto.note);
+    const openingHours = this.cleanNullableText(dto.openingHours);
+    const menuSummary = this.cleanNullableText(dto.menuSummary);
+    const mediaUrls = this.cleanStringArray(dto.mediaUrls, 12);
+    const castProfiles = this.normalizePartnerRequestCasts(dto.castProfiles);
+    const category = this.normalizePartnerRequestCategory(
+      dto.storeCategory ?? dto.businessType,
+    );
+
+    const store = await this.prisma.store.create({
+      data: {
+        name: storeName,
+        slug: this.buildPartnerRequestSlug(storeName, requestId),
+        category,
+        description: storeDescription,
+        address: this.cleanNullableText(dto.storeAddress),
+        city:
+          this.cleanNullableText(dto.storeCity) ??
+          this.partnerCityFromArea(area) ??
+          'Ho Chi Minh City',
+        district:
+          this.cleanNullableText(dto.storeDistrict) ??
+          this.partnerDistrictFromArea(area),
+        phone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
+        openingHours: openingHours
+          ? this.toPrismaJson({ summary: openingHours })
+          : undefined,
+        status: 'PENDING_REVIEW',
+      },
+      select: { id: true, name: true, slug: true, status: true },
+    });
+
+    const draftCastIds: string[] = [];
+    const draftMediaIds: string[] = [];
+    const draftContentIds: string[] = [];
+
+    for (const [index, castProfile] of castProfiles.entries()) {
+      const cast = await this.prisma.cast.create({
+        data: {
+          storeId: store.id,
+          stageName: castProfile.stageName,
+          slug: this.buildPartnerRequestSlug(
+            castProfile.stageName,
+            requestId,
+            `cast-${index + 1}`,
+          ),
+          bio: castProfile.bio,
+          publicBio: castProfile.bio,
+          tags: castProfile.tags,
+          languages: castProfile.languages,
+          hourlyRateVnd: castProfile.hourlyRateVnd,
+          isPublic: false,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      });
+      draftCastIds.push(cast.id);
+
+      for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+        const media = await this.createPartnerRequestMedia({
+          requestId,
+          url,
+          index: mediaIndex,
+          castId: cast.id,
+          purpose: 'PARTNER_REQUEST_CAST',
+        });
+        draftMediaIds.push(media.id);
+      }
+    }
+
+    for (const [index, url] of mediaUrls.entries()) {
+      const media = await this.createPartnerRequestMedia({
+        requestId,
+        url,
+        index,
+        storeId: store.id,
+        purpose: 'PARTNER_REQUEST_STORE',
+      });
+      draftMediaIds.push(media.id);
+    }
+
+    if (menuSummary) {
+      const content = await this.prisma.content.create({
+        data: {
+          storeId: store.id,
+          title: `${storeName} menu draft`,
+          slug: this.buildPartnerRequestSlug(
+            `${storeName} menu`,
+            requestId,
+            'menu',
+          ),
+          type: 'STORE_POST',
+          status: 'DRAFT',
+          excerpt: `Draft menu from ${requestId}`,
+          body: menuSummary,
+          metadata: this.toPrismaJson({ partnerRequestId: requestId }),
+        },
+        select: { id: true },
+      });
+      draftContentIds.push(content.id);
+    }
+
     const request = {
-      id: `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`,
-      businessName: this.cleanText(dto.businessName),
+      id: requestId,
+      draftStoreId: store.id,
+      draftStoreName: store.name,
+      draftStoreSlug: store.slug,
+      draftCastIds,
+      draftMediaIds,
+      draftContentIds,
+      businessName,
       businessType: this.cleanText(dto.businessType) || null,
-      area: this.cleanText(dto.area) || null,
-      contactName: this.cleanText(dto.contactName),
-      contactPhone: this.cleanText(dto.contactPhone),
+      area,
+      contactName: this.cleanRequiredText(dto.contactName, 'contactName'),
+      contactPhone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
       contactEmail: this.cleanText(dto.contactEmail) || null,
       note: this.cleanText(dto.note) || null,
+      storeDescription,
+      storeAddress: this.cleanNullableText(dto.storeAddress),
+      storeCity: this.cleanNullableText(dto.storeCity),
+      storeDistrict: this.cleanNullableText(dto.storeDistrict),
+      openingHours,
+      menuSummary,
+      mediaUrls,
+      castProfiles,
       submittedAt,
     };
 
@@ -3787,6 +3918,14 @@ export class NightlifeDataService {
       id: request.id,
       status: 'PENDING_REVIEW',
       submittedAt,
+      draft: {
+        storeId: store.id,
+        storeName: store.name,
+        storeSlug: store.slug,
+        castCount: draftCastIds.length,
+        mediaCount: draftMediaIds.length,
+        contentCount: draftContentIds.length,
+      },
       message: 'Partner request submitted for admin review',
     };
   }
@@ -3811,6 +3950,142 @@ export class NightlifeDataService {
 
     return logs.map((log) =>
       this.mapPartnerRequestNotification(log as PartnerRequestNotificationLog),
+    );
+  }
+
+  async reviewPartnerRequest(
+    adminId: string,
+    requestId: string,
+    dto: ReviewPartnerRequestDto,
+  ) {
+    const reason = this.cleanRequiredText(dto.reason, 'reason');
+    const log = await this.findPartnerRequestNotificationLog(requestId);
+
+    if (!log) {
+      throw new NotFoundException('Partner request not found');
+    }
+
+    const payload = this.partnerRequestPayload(log);
+    const currentStatus =
+      (this.payloadString(payload.status) as PartnerRequestReviewStatus | null) ??
+      'PENDING_REVIEW';
+
+    if (currentStatus !== 'PENDING_REVIEW') {
+      throw new UnprocessableEntityException(
+        'Partner request has already been reviewed',
+      );
+    }
+
+    const now = new Date();
+    const draftStoreId = this.payloadString(payload.draftStoreId);
+    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
+    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
+    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
+
+    if (dto.approve) {
+      if (draftStoreId) {
+        await this.prisma.store.update({
+          where: { id: draftStoreId },
+          data: { status: 'ACTIVE' },
+          select: { id: true },
+        });
+      }
+      if (draftCastIds.length) {
+        await this.prisma.cast.updateMany({
+          where: { id: { in: draftCastIds } },
+          data: { status: 'ACTIVE', isPublic: true },
+        });
+      }
+      if (draftMediaIds.length) {
+        await this.prisma.media.updateMany({
+          where: { id: { in: draftMediaIds } },
+          data: { status: 'READY', access: 'PUBLIC' },
+        });
+      }
+      if (draftContentIds.length) {
+        await this.prisma.content.updateMany({
+          where: { id: { in: draftContentIds } },
+          data: { status: 'PUBLISHED', publishedAt: now },
+        });
+      }
+    } else {
+      if (draftStoreId) {
+        await this.prisma.store.update({
+          where: { id: draftStoreId },
+          data: { status: 'DRAFT' },
+          select: { id: true },
+        });
+      }
+      if (draftCastIds.length) {
+        await this.prisma.cast.updateMany({
+          where: { id: { in: draftCastIds } },
+          data: { status: 'DRAFT', isPublic: false },
+        });
+      }
+      if (draftMediaIds.length) {
+        await this.prisma.media.updateMany({
+          where: { id: { in: draftMediaIds } },
+          data: { status: 'HIDDEN', access: 'PROTECTED' },
+        });
+      }
+      if (draftContentIds.length) {
+        await this.prisma.content.updateMany({
+          where: { id: { in: draftContentIds } },
+          data: { status: 'DRAFT', publishedAt: null },
+        });
+      }
+    }
+
+    const nextStatus: PartnerRequestReviewStatus = dto.approve
+      ? 'APPROVED'
+      : 'REJECTED';
+    const nextPayload = {
+      ...payload,
+      status: nextStatus,
+      reviewReason: reason,
+      reviewedAt: now.toISOString(),
+      reviewedById: adminId,
+      publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+    } as Prisma.InputJsonObject;
+
+    const updatedLog = await this.prisma.notificationLog.update({
+      where: { id: log.id },
+      data: {
+        payload: nextPayload,
+      },
+      select: {
+        id: true,
+        status: true,
+        payload: true,
+        error: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: dto.approve
+          ? 'PARTNER_REQUEST_APPROVED'
+          : 'PARTNER_REQUEST_REJECTED',
+        targetType: 'PARTNER_REQUEST',
+        targetId: this.payloadString(payload.requestId) ?? requestId,
+        metadata: this.toPrismaJson({
+          reason,
+          approve: dto.approve,
+          draftStoreId,
+          draftCastIds,
+          draftMediaIds,
+          draftContentIds,
+        }),
+        beforeJson: payload as Prisma.InputJsonObject,
+        afterJson: nextPayload,
+      },
+    });
+
+    return this.mapPartnerRequestNotification(
+      updatedLog as PartnerRequestNotificationLog,
     );
   }
 
@@ -6761,8 +7036,220 @@ export class NightlifeDataService {
     });
   }
 
+  private async createPartnerRequestMedia(input: {
+    requestId: string;
+    url: string;
+    index: number;
+    storeId?: string;
+    castId?: string;
+    purpose: string;
+  }) {
+    return this.prisma.media.create({
+      data: {
+        storeId: input.storeId,
+        castId: input.castId,
+        storageKey: this.partnerRequestMediaStorageKey(
+          input.requestId,
+          input.url,
+          input.index,
+        ),
+        originalName: this.partnerRequestMediaName(input.url),
+        mimeType: this.partnerRequestMimeType(input.url),
+        sizeBytes: 0,
+        url: input.url,
+        purpose: input.purpose,
+        type: this.partnerRequestMediaType(input.url),
+        access: 'PROTECTED',
+        status: 'HIDDEN',
+        metadata: this.toPrismaJson({
+          partnerRequestId: input.requestId,
+          source: 'PARTNER_REQUEST',
+        }),
+      },
+      select: { id: true },
+    });
+  }
+
   private cleanText(value?: string | null) {
     return value?.trim() ?? '';
+  }
+
+  private cleanStringArray(values?: string[] | null, limit = 12) {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+
+    return values
+      .map((value) => this.cleanText(value))
+      .filter((value): value is string => Boolean(value))
+      .slice(0, limit);
+  }
+
+  private normalizePartnerRequestCasts(
+    castProfiles?: PartnerRequestCastDto[] | null,
+  ) {
+    if (!Array.isArray(castProfiles)) {
+      return [];
+    }
+
+    return castProfiles
+      .map((profile) => {
+        const stageName = this.cleanText(profile.stageName);
+        const hourlyRateVnd =
+          typeof profile.hourlyRateVnd === 'number' &&
+          Number.isFinite(profile.hourlyRateVnd) &&
+          profile.hourlyRateVnd >= 0
+            ? Math.trunc(profile.hourlyRateVnd)
+            : undefined;
+
+        return {
+          stageName,
+          bio: this.cleanNullableText(profile.bio),
+          tags: this.cleanStringArray(profile.tags, 12),
+          languages: this.cleanStringArray(profile.languages, 8),
+          hourlyRateVnd,
+          mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
+        };
+      })
+      .filter((profile) => profile.stageName);
+  }
+
+  private normalizePartnerRequestCategory(value?: string | null): StoreCategory {
+    const category = this.normalizeCategory(value);
+    if (category) {
+      return category;
+    }
+
+    const token = this.normalizeToken(value);
+    if (token.includes('karaoke') || token.includes('ktv')) {
+      return 'KARAOKE';
+    }
+    if (token.includes('club')) {
+      return 'CLUB';
+    }
+    if (token.includes('bar')) {
+      return 'BAR';
+    }
+    if (token.includes('spa') || token.includes('massage')) {
+      return 'MASSAGE_SPA';
+    }
+    if (token.includes('restaurant') || token.includes('nha-hang')) {
+      return 'RESTAURANT';
+    }
+    if (token.includes('casino')) {
+      return 'CASINO';
+    }
+
+    return 'LOUNGE';
+  }
+
+  private partnerCityFromArea(area?: string | null) {
+    const text = this.cleanText(area);
+    const token = this.normalizeToken(text);
+    if (!text) {
+      return null;
+    }
+
+    if (token.includes('ha-noi') || token.includes('hanoi')) {
+      return 'Ha Noi';
+    }
+
+    if (
+      token.includes('hcm') ||
+      token.includes('sai-gon') ||
+      token.includes('saigon') ||
+      token.includes('ho-chi-minh')
+    ) {
+      return 'Ho Chi Minh City';
+    }
+
+    return text.split(/[-,]/)[0]?.trim() || null;
+  }
+
+  private partnerDistrictFromArea(area?: string | null) {
+    const text = this.cleanText(area);
+    const [, district] = text.split(/[-,]/).map((part) => part.trim());
+    return district || null;
+  }
+
+  private buildPartnerRequestSlug(
+    value: string,
+    requestId: string,
+    suffix?: string,
+  ) {
+    const base = this.normalizeToken(value) || 'partner';
+    const requestToken = this.normalizeToken(requestId) || randomUUID();
+    return [base, requestToken, suffix]
+      .filter(Boolean)
+      .join('-')
+      .slice(0, 190);
+  }
+
+  private partnerRequestMediaStorageKey(
+    requestId: string,
+    url: string,
+    index: number,
+  ) {
+    const hash = createHash('sha1').update(url).digest('hex').slice(0, 12);
+    const extension = this.partnerRequestMediaExtension(url);
+    return `partner-requests/${this.normalizeToken(requestId)}/${index + 1}-${hash}.${extension}`;
+  }
+
+  private partnerRequestMediaName(url: string) {
+    try {
+      const pathname = new URL(url).pathname;
+      const fileName = pathname.split('/').filter(Boolean).pop();
+      return fileName || 'partner-media';
+    } catch {
+      return 'partner-media';
+    }
+  }
+
+  private partnerRequestMediaExtension(url: string) {
+    const name = this.partnerRequestMediaName(url).toLowerCase();
+    const extension = name.includes('.') ? name.split('.').pop() : null;
+    return extension && /^[a-z0-9]{2,5}$/.test(extension) ? extension : 'bin';
+  }
+
+  private partnerRequestMimeType(url: string) {
+    const extension = this.partnerRequestMediaExtension(url);
+    const mimeByExtension: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      gif: 'image/gif',
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      webm: 'video/webm',
+      pdf: 'application/pdf',
+    };
+
+    return mimeByExtension[extension] ?? 'application/octet-stream';
+  }
+
+  private partnerRequestMediaType(url: string) {
+    const mimeType = this.partnerRequestMimeType(url);
+    const token = url.toLowerCase();
+
+    if (
+      mimeType.startsWith('video/') ||
+      token.includes('youtube.com') ||
+      token.includes('youtu.be') ||
+      token.includes('vimeo.com')
+    ) {
+      return 'VIDEO';
+    }
+
+    if (mimeType.startsWith('image/')) {
+      return 'IMAGE';
+    }
+
+    if (mimeType === 'application/pdf') {
+      return 'DOCUMENT';
+    }
+
+    return 'OTHER';
   }
 
   private normalizeBookingLookupCode(value?: string | null) {
@@ -6784,13 +7271,52 @@ export class NightlifeDataService {
     return compactBookingId.startsWith(compactLookup);
   }
 
-  private mapPartnerRequestNotification(log: PartnerRequestNotificationLog) {
-    const payload =
-      log.payload &&
+  private async findPartnerRequestNotificationLog(requestId: string) {
+    const lookup = this.cleanRequiredText(requestId, 'requestId');
+    const logs = await this.prisma.notificationLog.findMany({
+      where: {
+        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
+        channel: 'TELEGRAM',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        status: true,
+        payload: true,
+        error: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    return (
+      (logs.find((log) => {
+        const payload = this.partnerRequestPayload(
+          log as PartnerRequestNotificationLog,
+        );
+        return (
+          log.id === lookup ||
+          this.payloadString(payload.requestId) === lookup ||
+          this.payloadString(payload.draftStoreId) === lookup
+        );
+      }) as PartnerRequestNotificationLog | undefined) ?? null
+    );
+  }
+
+  private partnerRequestPayload(log: PartnerRequestNotificationLog) {
+    return log.payload &&
       typeof log.payload === 'object' &&
       !Array.isArray(log.payload)
-        ? (log.payload as Record<string, unknown>)
-        : {};
+      ? (log.payload as Record<string, unknown>)
+      : {};
+  }
+
+  private mapPartnerRequestNotification(log: PartnerRequestNotificationLog) {
+    const payload = this.partnerRequestPayload(log);
+    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
+    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
+    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
 
     return {
       id: this.payloadString(payload.requestId) ?? log.id,
@@ -6800,7 +7326,20 @@ export class NightlifeDataService {
       notifiedAt: log.sentAt?.toISOString() ?? null,
       submittedAt:
         this.payloadString(payload.submittedAt) ?? log.createdAt.toISOString(),
-      status: 'PENDING_REVIEW',
+      status: this.payloadString(payload.status) ?? 'PENDING_REVIEW',
+      reviewReason: this.payloadString(payload.reviewReason),
+      reviewedAt: this.payloadString(payload.reviewedAt),
+      reviewedById: this.payloadString(payload.reviewedById),
+      publicState: this.payloadString(payload.publicState) ?? 'HIDDEN',
+      draftStoreId: this.payloadString(payload.draftStoreId),
+      draftStoreName: this.payloadString(payload.draftStoreName),
+      draftStoreSlug: this.payloadString(payload.draftStoreSlug),
+      draftCastIds,
+      draftMediaIds,
+      draftContentIds,
+      draftCastCount: draftCastIds.length,
+      draftMediaCount: draftMediaIds.length,
+      draftContentCount: draftContentIds.length,
       businessName: this.payloadString(payload.businessName) ?? 'Unknown',
       businessType: this.payloadString(payload.businessType),
       area: this.payloadString(payload.area),
@@ -6808,11 +7347,28 @@ export class NightlifeDataService {
       contactPhone: this.payloadString(payload.contactPhone) ?? '',
       contactEmail: this.payloadString(payload.contactEmail),
       note: this.payloadString(payload.note),
+      storeDescription: this.payloadString(payload.storeDescription),
+      storeAddress: this.payloadString(payload.storeAddress),
+      storeCity: this.payloadString(payload.storeCity),
+      storeDistrict: this.payloadString(payload.storeDistrict),
+      openingHours: this.payloadString(payload.openingHours),
+      menuSummary: this.payloadString(payload.menuSummary),
+      mediaUrls: this.payloadStringArray(payload.mediaUrls),
     };
   }
 
   private payloadString(value: unknown) {
     return typeof value === 'string' && value.trim() ? value : null;
+  }
+
+  private payloadStringArray(value: unknown) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item): item is string => Boolean(item));
   }
 
   private bookingActorTypeFor(user: AuthenticatedUser): BookingStatusActorType {
