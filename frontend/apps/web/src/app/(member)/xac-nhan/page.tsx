@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Check, Clock3, Headphones } from "lucide-react";
+import { AlertCircle, Check, Clock3, Download, Headphones } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -57,30 +57,65 @@ export default function Page() {
     });
   }, []);
 
-  const hasQr = booking ? confirmedStatuses.has(booking.status) : false;
+  const isConfirmed = booking ? confirmedStatuses.has(booking.status) : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
+  const canShowQr = booking ? !isCancelled : false;
+  const qrImageUrl = booking ? bookingQrImageUrl(booking) : "";
   const title = bookingTitle(booking);
   const heroTitle = !booking
     ? "Chưa tìm thấy booking"
     : isCancelled
       ? "Đặt chỗ đã hủy"
-      : hasQr
+      : isConfirmed
         ? "Đặt chỗ đã xác nhận"
         : "Đã gửi yêu cầu đặt bàn";
   const heroText = !booking
     ? "Booking vừa tạo không còn trong phiên này. Bạn có thể quay lại lịch sử hoặc đặt lại yêu cầu mới."
     : isCancelled
       ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
-      : hasQr
+      : isConfirmed
         ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
-        : "Khi quán xác nhận, bạn nhận thông báo và mã QR giảm giá qua LINE OA hoặc trong app nếu đã đăng nhập.";
+        : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.";
   const statusText = !booking
     ? "Không có dữ liệu"
     : isCancelled
       ? "Đã hủy"
-      : hasQr
+      : isConfirmed
         ? "Đã xác nhận · QR đã cấp"
-        : "Mới · chờ xác nhận";
+        : "Mới · QR đã cấp";
+
+  const saveQrImage = async () => {
+    if (!booking || !qrImageUrl) {
+      return;
+    }
+
+    const fileName = `${bookingCode(booking).replace("#", "").toLowerCase()}-qr.png`;
+
+    try {
+      const response = await fetch(qrImageUrl);
+      if (!response.ok) {
+        throw new Error("Cannot fetch QR image");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 250);
+    } catch {
+      const link = document.createElement("a");
+      link.href = qrImageUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+  };
 
   return (
     <main className={styles.bookingPage}>
@@ -100,7 +135,10 @@ export default function Page() {
 
           {booking ? (
             <section className={styles.summaryCard} aria-label="Tóm tắt đặt chỗ">
-              <SummaryRow label="Mã đặt chỗ" value={<span className={styles.bookingCode}>{bookingCode(booking)}</span>} />
+              <SummaryRow
+                label="Mã đặt chỗ"
+                value={<span className={styles.bookingCode}>{bookingCode(booking)}</span>}
+              />
               <SummaryRow label="Quán" value={title} />
               <SummaryRow label="Thời gian" value={formatDateTime(booking.scheduledAt)} />
               <SummaryRow label="Số người" value={`${booking.partySize} người`} />
@@ -110,34 +148,39 @@ export default function Page() {
             <div className={styles.emptyCard}>Chưa tìm thấy booking vừa tạo trong phiên này.</div>
           )}
 
-          <Timeline hasQr={hasQr} isCancelled={isCancelled} />
-
-          <div className={`${styles.infoNote} ${styles.confirmNote}`}>
-            <Clock3 size={15} />
-            <span>
-              {hasQr
-                ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
-                : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ."}
-            </span>
-          </div>
-
-          {booking && hasQr ? (
+          {booking && canShowQr ? (
             <section className={styles.qrPanel} aria-label="Mã QR đặt chỗ">
               <div className={styles.qrBox}>
                 <Image
-                  src={bookingQrImageUrl(booking)}
+                  src={qrImageUrl}
                   alt={`QR đặt chỗ ${bookingCode(booking)}`}
-                  width={112}
-                  height={112}
+                  width={156}
+                  height={156}
                   unoptimized
                 />
               </div>
               <div className={styles.qrCopy}>
-                <strong>QR giảm giá đã sẵn sàng</strong>
-                <p>Đưa mã này cho nhân viên quán quét khi tới nơi. Coupon được gắn với booking và đối soát sau check-in.</p>
+                <strong>QR giảm giá của bạn</strong>
+                <p>
+                  Đưa mã này cho nhân viên quán quét khi tới nơi. QR được gắn với booking và chỉ
+                  dùng một lần.
+                </p>
+                <button type="button" className={styles.qrDownloadButton} onClick={saveQrImage}>
+                  <Download size={15} />
+                  Lưu ảnh QR
+                </button>
               </div>
             </section>
           ) : null}
+
+          <div className={`${styles.infoNote} ${styles.confirmNote}`}>
+            <Clock3 size={15} />
+            <span>
+              {canShowQr
+                ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
+                : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ."}
+            </span>
+          </div>
 
           <div className={styles.bottomActions}>
             <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
@@ -151,42 +194,6 @@ export default function Page() {
         </div>
       </section>
     </main>
-  );
-}
-
-function Timeline({ hasQr, isCancelled }: { hasQr: boolean; isCancelled: boolean }) {
-  const adminDone = hasQr && !isCancelled;
-  const qrDone = hasQr && !isCancelled;
-
-  return (
-    <div className={styles.timeline} aria-label="Tiến trình đặt chỗ">
-      <TimelineStep done label="Đã gửi" icon={<Check size={13} />} />
-      <span className={`${styles.timelineLine} ${adminDone ? styles.timelineLineDone : ""}`} />
-      <TimelineStep done={adminDone} label="Admin xác nhận" fallback="2" />
-      <span className={`${styles.timelineLine} ${qrDone ? styles.timelineLineDone : ""}`} />
-      <TimelineStep done={qrDone} label="Nhận mã QR giảm giá" fallback="3" />
-    </div>
-  );
-}
-
-function TimelineStep({
-  done,
-  label,
-  icon,
-  fallback,
-}: {
-  done: boolean;
-  label: string;
-  icon?: React.ReactNode;
-  fallback?: string;
-}) {
-  return (
-    <div className={`${styles.timelineStep} ${done ? styles.timelineStepDone : ""}`}>
-      <span className={`${styles.timelineIcon} ${done ? styles.timelineIconDone : ""}`}>
-        {done ? (icon ?? <Check size={13} />) : fallback}
-      </span>
-      <div className={styles.timelineLabel}>{label}</div>
-    </div>
   );
 }
 
