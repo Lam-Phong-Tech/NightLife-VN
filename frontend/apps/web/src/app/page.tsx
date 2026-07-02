@@ -107,6 +107,7 @@ type RankedItem = {
 
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
 type ServiceItem = (typeof svcData)[number];
+type VideoItem = (typeof hotVideos)[number];
 
 function normalizeArea(value = "") {
   return value
@@ -134,6 +135,11 @@ function filterServicesByRegion(items: ServiceItem[], region: ServiceRegion) {
 function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
   const filteredItems = region === "all" ? items : items.filter((item) => getAreaRegion(item.area) === region);
   return filteredItems.map((item, index) => ({ ...item, rank: index + 1 }));
+}
+
+function filterVideosByRegion(items: VideoItem[], region: ServiceRegion) {
+  if (region === "all") return items;
+  return items.filter((item) => getAreaRegion(item.name) === region);
 }
 
 function useBannerSwipe(
@@ -1137,11 +1143,13 @@ export default function Page() {
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
+  const [activeVideoRegion, setActiveVideoRegion] = useState<ServiceRegion>("hanoi");
   const rankList = filterRankingsByRegion(
     (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[],
     activeRankRegion,
   );
   const svc = filterServicesByRegion(activeSvcTab === "nhahang" ? svcData : spaData, activeServiceRegion);
+  const videoList = filterVideosByRegion(hotVideos, activeVideoRegion);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -1220,8 +1228,9 @@ export default function Page() {
 
             <section style={{ marginTop: "22px", paddingBottom: "22px" }}>
               <SectionHeading title="Video Hot" />
+              <ServiceRegionSwitch active={activeVideoRegion} onChange={setActiveVideoRegion} />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
-                {hotVideos.slice(0, 3).map((item) => <VideoCard key={item.name} item={item} compact />)}
+                {videoList.slice(0, 3).map((item) => <VideoCard key={item.name} item={item} compact />)}
               </div>
             </section>
           </main>
@@ -1300,8 +1309,9 @@ export default function Page() {
 
             <section style={{ marginTop: "34px" }}>
               <SectionHeading title="Video Hot" />
+              <ServiceRegionSwitch active={activeVideoRegion} onChange={setActiveVideoRegion} />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {hotVideos.map((item) => <VideoCard key={item.name} item={item} />)}
+                {videoList.map((item) => <VideoCard key={item.name} item={item} />)}
               </div>
             </section>
 
