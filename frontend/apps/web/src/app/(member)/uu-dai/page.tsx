@@ -352,20 +352,24 @@ export default function Page() {
         }
 
         .coupon-action {
-          min-height: 34px;
-          border: 1px solid rgba(240, 221, 168, .38);
-          border-radius: 999px;
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-          color: #241a0a;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0 12px;
-          box-shadow: 0 10px 22px -16px rgba(244, 227, 180, .9);
-          font-size: 11.5px;
+          color: #ff7a9a;
+          font-size: 12px;
           font-weight: 900;
-          letter-spacing: .08em;
+          letter-spacing: .1em;
+          line-height: 1;
+          text-shadow: 0 0 14px rgba(255, 122, 154, .28);
           white-space: nowrap;
+        }
+
+        .coupon-action::after {
+          content: "›";
+          color: #f0dda8;
+          font-size: 14px;
+          margin-left: 5px;
+          transform: translateY(-1px);
         }
 
         .result {
@@ -476,9 +480,7 @@ export default function Page() {
           }
 
           .coupon-action {
-            min-height: 32px;
-            padding: 0 10px;
-            font-size: 10.5px;
+            font-size: 11px;
           }
         }
 
@@ -506,7 +508,6 @@ export default function Page() {
           }
 
           .coupon-action {
-            padding: 0 8px;
             font-size: 10px;
           }
         }
