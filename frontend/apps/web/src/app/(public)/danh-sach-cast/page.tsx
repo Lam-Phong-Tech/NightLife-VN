@@ -102,9 +102,6 @@ const favoriteCounts = ["1.2k", "1.0k", "947", "880", "812", "760", "690", "642"
 const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
 const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
 
-const formatVnd = (value?: number | null) =>
-  value ? `từ ${new Intl.NumberFormat("vi-VN").format(value)}₫` : "Theo booking";
-
 const pickByIndex = <T,>(items: readonly T[], index: number, fallback: T) =>
   items[index % items.length] ?? fallback;
 
@@ -308,18 +305,13 @@ export default function Page() {
           </Link>
           <div>
             <h1>Tìm cast</h1>
-            <p>FIND CAST</p>
           </div>
         </header>
 
         <section className="cast-hero" aria-label="Tìm và lọc cast">
           <div className="cast-hero-copy">
-            <div className="cast-eyebrow">Find Cast</div>
             <h1>Tìm cast đêm {cityLabel}</h1>
-            <p>
-              Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ, quán làm việc và giá tham
-              khảo mỗi 60 phút.
-            </p>
+            <p>Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ và quán làm việc.</p>
           </div>
 
           <div className="cast-search-controls">
@@ -696,10 +688,6 @@ function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number })
         </div>
 
         <div className="cast-card-foot">
-          <span>
-            <b>{formatVnd(cast.hourlyRateVnd)}</b>
-            <small> /60p</small>
-          </span>
           <span className="cast-rating">
             <Star size={13} fill="currentColor" />
             {rating}
@@ -2136,8 +2124,7 @@ const castSearchCss = `
   }
 
   .cast-card-foot {
-    align-items: flex-end;
-    margin-top: 9px;
+    display: none;
   }
 
   .cast-card-foot b {

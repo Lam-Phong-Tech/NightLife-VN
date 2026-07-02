@@ -14,9 +14,7 @@ import {
   Play,
   Plus,
   ShieldCheck,
-  Sparkles,
   Star,
-  Ticket,
   Users,
   WalletCards,
   X,
@@ -30,7 +28,6 @@ import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
   categoryLabels,
   formatDateOption,
-  formatDiscount,
   mapEmbedUrl,
   mediaBackground,
   openingText,
@@ -358,44 +355,6 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
   );
 }
 
-function CouponBlock({
-  store,
-  couponHref,
-  onCouponClick,
-}: {
-  store: PublicStoreDetail;
-  couponHref: string;
-  onCouponClick: (surface: string, couponId?: string | null) => void;
-}) {
-  const coupon = store.activeCoupons[0] ?? null;
-
-  if (!coupon) {
-    return (
-      <EmptyState
-        icon={<Ticket size={20} />}
-        title="Chưa có ưu đãi đang mở"
-        body="Bạn vẫn có thể gửi yêu cầu đặt bàn để Admin tư vấn khung giờ phù hợp."
-      />
-    );
-  }
-
-  return (
-    <Link
-      className="coupon-strip"
-      href={couponHref}
-      onClick={() => onCouponClick("coupon-strip", coupon.id)}
-    >
-      <span className="coupon-photo" aria-hidden="true" />
-      <span className="coupon-copy">
-        <b>{formatDiscount(coupon)}</b>
-        <strong>{coupon.name}</strong>
-        <small>{coupon.description || "Xuất trình ưu đãi khi đến quán."}</small>
-      </span>
-      <span className="coupon-ticket">Lấy mã</span>
-    </Link>
-  );
-}
-
 function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const items = store.priceReference.items;
 
@@ -516,8 +475,6 @@ function BookingCard({
   selectedDateIndex,
   selectedTime,
   guestCount,
-  couponHref,
-  firstCoupon,
   guestName,
   email,
   note,
@@ -530,15 +487,12 @@ function BookingCard({
   onEmailChange,
   onNoteChange,
   onSubmit,
-  onCouponClick,
 }: {
   store: PublicStoreDetail;
   dateOptions: Array<{ label: string; iso: string }>;
   selectedDateIndex: number;
   selectedTime: string;
   guestCount: number;
-  couponHref: string;
-  firstCoupon?: PublicStoreDetail["activeCoupons"][number] | null;
   guestName: string;
   email: string;
   note: string;
@@ -551,7 +505,6 @@ function BookingCard({
   onEmailChange: (value: string) => void;
   onNoteChange: (value: string) => void;
   onSubmit: () => void;
-  onCouponClick: (surface: string) => void;
 }) {
   return (
     <aside className="booking-card" aria-label="Đặt bàn">
@@ -568,11 +521,6 @@ function BookingCard({
             <small>Gửi yêu cầu · Admin xác nhận</small>
           </span>
           <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
-        </div>
-
-        <div className="member-nudge">
-          <Sparkles size={15} fill="currentColor" />
-          <span>Khách vãng lai nhận ưu đãi cơ bản. Đăng nhập để nâng mức giảm khi có coupon.</span>
         </div>
 
         <div className="booking-form-grid">
@@ -671,16 +619,6 @@ function BookingCard({
           {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}
         </button>
 
-        <Link
-          data-testid="store-coupon-cta-sidebar"
-          className="secondary-action full"
-          href={couponHref}
-          onClick={() => onCouponClick("desktop-booking-card")}
-        >
-          <Ticket size={18} />
-          {firstCoupon ? `Coupon ${formatDiscount(firstCoupon)}` : "Ưu đãi của quán"}
-        </Link>
-
         <div className="booking-safe">
           <ShieldCheck size={15} />
           <span>
@@ -763,7 +701,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const tourMedia = gallery.filter((item) => item.type === "VIDEO").length
     ? gallery.filter((item) => item.type === "VIDEO")
     : gallery.slice(0, 3);
-  const firstCoupon = store.activeCoupons[0] ?? null;
   const location = [store.area?.name, store.district, store.city].filter(Boolean).join(" · ");
   const addressText = storeAddressText(store);
   const mapsUrl = plainMapsUrl(store);
@@ -833,21 +770,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     time: selectedTime,
   });
 
-  if (firstCoupon) {
-    bookingQuery.set("couponId", firstCoupon.id);
-  }
-
-  const couponQuery = new URLSearchParams({
-    storeId: store.id,
-    storeSlug: store.slug,
-  });
-
-  if (firstCoupon) {
-    couponQuery.set("couponId", firstCoupon.id);
-  }
-
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
-  const couponHref = `/uu-dai?${couponQuery.toString()}`;
   const phoneHref = store.phone ? `tel:${store.phone.replace(/[^\d+]/g, "")}` : "";
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
@@ -865,11 +788,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       guests: guestCount,
       date: selectedDate.iso,
       time: selectedTime,
-      couponId: firstCoupon?.id ?? null,
     });
-  const trackCouponClick = (surface: string, couponId = firstCoupon?.id ?? null) =>
-    trackStoreDetailClick(store, "coupon", { surface, couponId });
-
   const submitDesktopBooking = async () => {
     setBookingErrorMessage("");
     const displayName = guestName.trim();
@@ -891,7 +810,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
     const payload: CreateBookingPayload = {
       storeSlug: store.slug,
-      ...(firstCoupon?.id ? { couponId: firstCoupon.id } : {}),
       displayName,
       email: normalizedEmail,
       scheduledAt: buildScheduledAt(selectedDate.iso, selectedTime),
@@ -1159,8 +1077,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               selectedDateIndex={selectedDateIndex}
               selectedTime={selectedTime}
               guestCount={guestCount}
-              couponHref={couponHref}
-              firstCoupon={firstCoupon}
               guestName={guestName}
               email={email}
               note={note}
@@ -1173,7 +1089,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               onEmailChange={setEmail}
               onNoteChange={setNote}
               onSubmit={submitDesktopBooking}
-              onCouponClick={trackCouponClick}
             />
 
             <section className="desktop-about-inline">
@@ -1246,11 +1161,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <section>
               <SectionTitle title="Cast đang làm" meta={`${store.casts.length} cast`} />
               <CastRail store={store} />
-            </section>
-
-            <section className="mobile-only">
-              <SectionTitle title="Ưu đãi" />
-              <CouponBlock store={store} couponHref={couponHref} onCouponClick={trackCouponClick} />
             </section>
 
             <section id="menu" className="mobile-only">
