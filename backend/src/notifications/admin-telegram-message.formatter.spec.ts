@@ -1,7 +1,4 @@
-import {
-  appendTelegramConfirmation,
-  formatBookingRequestTelegramMessage,
-} from './admin-telegram-message.formatter';
+import { formatBookingRequestTelegramMessage } from './admin-telegram-message.formatter';
 
 describe('admin telegram message formatter', () => {
   it('formats booking requests like the Telegram admin sample', () => {
@@ -24,14 +21,8 @@ describe('admin telegram message formatter', () => {
         '⏰ Thời gian: 21:00:00 30/6/2026',
         '👥 Số khách: 4 pax',
         '',
-        'Vui lòng xác nhận yêu cầu đặt bàn này.',
+        'Vui lòng kiểm tra yêu cầu này trong Admin.',
       ].join('\n'),
     );
-  });
-
-  it('appends the Telegram accept confirmation line', () => {
-    expect(
-      appendTelegramConfirmation('🔔 Yêu cầu đặt bàn mới', 'Saitama'),
-    ).toBe('🔔 Yêu cầu đặt bàn mới\n\n✅ Đã xác nhận bởi Saitama');
   });
 });

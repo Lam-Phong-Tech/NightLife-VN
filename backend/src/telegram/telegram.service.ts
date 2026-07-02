@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
-import { Telegraf, Markup } from 'telegraf';
+import { Telegraf } from 'telegraf';
 import { formatBookingRequestTelegramMessage } from '../notifications/admin-telegram-message.formatter';
 
 @Injectable()
@@ -39,11 +39,7 @@ export class TelegramService {
           'Asia/Bangkok',
       });
 
-      await this.bot.telegram.sendMessage(this.chatId, message, {
-        ...Markup.inlineKeyboard([
-          Markup.button.callback('✅ Xác nhận', `accept_booking_${booking.id}`),
-        ]),
-      });
+      await this.bot.telegram.sendMessage(this.chatId, message);
       this.logger.log(`Booking ${booking.id} notification sent to Telegram.`);
     } catch (error) {
       this.logger.error(

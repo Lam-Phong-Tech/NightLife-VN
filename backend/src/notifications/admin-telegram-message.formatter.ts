@@ -54,7 +54,7 @@ export function formatBookingRequestTelegramMessage(
     input.castName ? `💃 Cast: ${input.castName}` : null,
     input.note ? `📝 Ghi chú: ${input.note}` : null,
     '',
-    'Vui lòng xác nhận yêu cầu đặt bàn này.',
+    'Vui lòng kiểm tra yêu cầu này trong Admin.',
   ]);
 }
 
@@ -110,13 +110,6 @@ export function formatPartnerRequestTelegramMessage(
     '',
     'Vui lòng kiểm tra và duyệt yêu cầu trong Admin.',
   ]);
-}
-
-export function appendTelegramConfirmation(message: string, adminName: string) {
-  const cleanMessage = message.trimEnd();
-  const cleanAdminName = adminName.trim() || 'Admin';
-
-  return `${cleanMessage}\n\n✅ Đã xác nhận bởi ${cleanAdminName}`;
 }
 
 export function formatTelegramDateTime(
