@@ -56,10 +56,12 @@ const navLinks = [
   { href: "/danh-sach-quan", label: "Tìm quán" },
   { href: "/danh-sach-cast", label: "Cast" },
   { href: "/xep-hang", label: "Bảng xếp hạng" },
-  { href: "/tour", label: "Tour" },
+  { href: "/tour", label: "Tour", hideOnDesktop: true },
   { href: "/uu-dai", label: "Ưu đãi" },
   { href: "/blog", label: "Blog" },
 ];
+
+const desktopNavLinks = navLinks.filter((link) => !link.hideOnDesktop);
 
 const bottomNav = [
   { href: "/", label: "Trang chủ", icon: Home },
@@ -1161,7 +1163,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 fontWeight: 500,
               }}
             >
-              {navLinks.map((link) => (
+              {desktopNavLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
