@@ -879,15 +879,28 @@
 }
 
 .historyActions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
 
 .historyActions > * {
-  flex: 1 1 98px;
   min-width: 0;
+}
+
+.historyActions .secondaryCta,
+.historyActions .ghostCta,
+.historyActions .dangerCta {
+  min-height: 36px;
+  border-radius: 11px;
+  padding: 8px 10px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.historyActions .dangerCta {
+  grid-column: 1 / -1;
 }
 
 .historyFooter {
@@ -1241,7 +1254,7 @@
   }
 
   .historyActions {
-    flex-direction: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .loginNudge,

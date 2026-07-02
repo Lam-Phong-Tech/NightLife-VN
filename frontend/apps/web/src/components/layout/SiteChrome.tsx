@@ -99,6 +99,13 @@ const footerGroups = [
   },
 ];
 
+const mobileFooterLinks = [
+  { href: "/danh-sach-quan", label: "Tìm quán" },
+  { href: "/uu-dai", label: "Ưu đãi" },
+  { href: "/blog", label: "Blog" },
+  { href: "/legal/chinh-sach-bao-mat", label: "Chính sách" },
+];
+
 type NoticeTone = "gold" | "green" | "amber" | "vip";
 
 type Notice = {
@@ -692,6 +699,79 @@ function NotificationOverlay({ isMobile, onClose }: { isMobile: boolean; onClose
 }
 
 function SiteFooter({ isMobile }: { isMobile: boolean }) {
+  if (isMobile) {
+    return (
+      <footer
+        className="nl-site-footer"
+        style={{
+          borderTop: `1px solid ${colors.borderGold12}`,
+          background: colors.bg,
+          color: colors.muted,
+          padding: "18px 20px calc(92px + env(safe-area-inset-bottom))",
+          fontSize: "11.5px",
+        }}
+      >
+        <div style={{ display: "grid", gap: "12px" }}>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              width: "fit-content",
+              color: colors.goldPale,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>Vietyoru</span>
+            <span style={{ marginTop: "5px", color: colors.goldPale, opacity: 0.64, fontSize: "9px", letterSpacing: "2px" }}>
+              VIETNAM NIGHTLIFE GUIDE
+            </span>
+          </Link>
+
+          <p style={{ margin: 0, color: colors.text2, fontSize: "12px", lineHeight: 1.55 }}>
+            Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.
+          </p>
+
+          <nav
+            aria-label="Footer mobile"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px 14px",
+            }}
+          >
+            {mobileFooterLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                style={{
+                  color: colors.goldPale,
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  textDecoration: "none",
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div
+            style={{
+              borderTop: `1px solid ${colors.borderGold12}`,
+              paddingTop: "10px",
+              color: "#8c8679",
+              fontSize: "10.5px",
+              lineHeight: 1.55,
+            }}
+          >
+            © 2026 Vietyoru. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer
       className="nl-site-footer"
