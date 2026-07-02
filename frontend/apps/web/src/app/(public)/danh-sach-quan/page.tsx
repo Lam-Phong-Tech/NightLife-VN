@@ -9,17 +9,24 @@ import {
   Heart,
   LocateFixed,
   MapPin,
+  RotateCcw,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 
-import { discoveryApi, type DiscoverySort, type PublicStore } from "@/lib/api/discovery";
+import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
 import { storeImageForSlug } from "@/lib/demo-media";
 import { formatPriceTier } from "@/lib/price-tier";
 
 type Coordinates = {
   lat: number;
   lng: number;
+};
+
+type FilterOption = {
+  value: string;
+  label: string;
 };
 
 type VenueView = {
@@ -70,6 +77,31 @@ const sortLabels: Record<DiscoverySort, string> = {
   nearest: "Gần nhất",
   newest: "Mới nhất",
 };
+
+const areaLabels: Record<string, string> = {
+  "Hoan Kiem": "Hoàn Kiếm",
+  "Tay Ho": "Tây Hồ",
+  "Quan 1": "Quận 1",
+  "Quan 3": "Quận 3",
+  "Quan 7": "Quận 7",
+};
+
+const fallbackAreaOptionsByCity: Record<string, FilterOption[]> = {
+  hn: [
+    { value: "hn-hoan-kiem", label: "Hoàn Kiếm" },
+    { value: "hn-tay-ho", label: "Tây Hồ" },
+  ],
+  hcm: [
+    { value: "hcm-q1", label: "Quận 1" },
+    { value: "hcm-q3", label: "Quận 3" },
+    { value: "hcm-q7", label: "Quận 7" },
+  ],
+};
+
+const getFallbackAreaOptions = (cityCode: string) =>
+  cityCode
+    ? fallbackAreaOptionsByCity[cityCode] ?? []
+    : Object.values(fallbackAreaOptionsByCity).flat();
 
 const categoryTags: Record<string, string[]> = {
   BAR: ["Live music", "Rooftop", "Whisky bar"],
@@ -140,18 +172,38 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
 export default function Page() {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("hn");
+  const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState<DiscoverySort>("priority");
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [ratingOnly, setRatingOnly] = useState(false);
   const [openNow, setOpenNow] = useState(true);
+  const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [isSortMenuOpen, setSortMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
+  const [areas, setAreas] = useState<PublicArea[]>([]);
   const [stores, setStores] = useState<PublicStore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    discoveryApi
+      .listAreas({ city })
+      .then((items) => {
+        if (!cancelled) setAreas(items);
+      })
+      .catch(() => {
+        if (!cancelled) setAreas([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [city]);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,6 +215,7 @@ export default function Page() {
         .listStores({
           q: query,
           city,
+          area,
           category,
           lat: coords?.lat,
           lng: coords?.lng,
@@ -188,7 +241,24 @@ export default function Page() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [category, city, coords, hasActiveCoupon, query, sort]);
+  }, [area, category, city, coords, hasActiveCoupon, query, sort]);
+
+  useEffect(() => {
+    if (!isFilterSheetOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFilterSheetOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isFilterSheetOpen]);
 
   const venues = useMemo(
     () =>
@@ -204,6 +274,15 @@ export default function Page() {
 
   const cityLabel = cityLabels[city] ?? "Việt Nam";
   const selectedCityLabel = cityOptions.find((option) => option.value === city)?.label ?? cityLabel;
+
+  const areaOptions = useMemo<FilterOption[]>(() => {
+    const dynamicOptions = areas.map((item) => ({
+      value: item.code || item.name,
+      label: areaLabels[item.name] ?? item.name,
+    }));
+
+    return [{ value: "", label: "Tất cả" }, ...(dynamicOptions.length ? dynamicOptions : getFallbackAreaOptions(city))];
+  }, [areas, city]);
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
@@ -231,6 +310,7 @@ export default function Page() {
 
   const handleCityChange = (nextCity: string) => {
     setCity(nextCity);
+    setArea("");
     setCityMenuOpen(false);
     setSort((current) => (current === "nearest" && !coords ? "priority" : current));
   };
@@ -253,6 +333,28 @@ export default function Page() {
     { label: "Karaoke", value: "KARAOKE" },
     { label: "Spa", value: "MASSAGE_SPA" },
   ];
+  const categoryOptions = [{ label: "Tất cả", value: "" }, ...categoryChips];
+  const activeFilterCount = [
+    city !== "hn",
+    area,
+    category,
+    sort !== "priority",
+    hasActiveCoupon,
+    ratingOnly,
+    !openNow,
+  ].filter(Boolean).length;
+
+  const resetFilters = () => {
+    setCity("hn");
+    setArea("");
+    setCategory("");
+    setSort("priority");
+    setHasActiveCoupon(false);
+    setRatingOnly(false);
+    setOpenNow(true);
+    setSortMenuOpen(false);
+    setCityMenuOpen(false);
+  };
 
   return (
     <main className="venue-search-page">
@@ -284,7 +386,13 @@ export default function Page() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Tìm quán, khu vực hoặc loại hình..."
             />
-            <button type="button" aria-label="Bộ lọc" className="venue-filter-icon">
+            <button
+              type="button"
+              aria-label="Bộ lọc"
+              className="venue-filter-icon"
+              data-testid="venue-filter-button"
+              onClick={() => setFilterSheetOpen(true)}
+            >
               <SlidersHorizontal size={16} />
             </button>
           </label>
@@ -433,7 +541,201 @@ export default function Page() {
           )}
         </section>
       </div>
+
+      {isFilterSheetOpen ? (
+        <MobileVenueFilterSheet
+          activeCount={activeFilterCount}
+          area={area}
+          areaOptions={areaOptions}
+          category={category}
+          categoryOptions={categoryOptions}
+          city={city}
+          hasActiveCoupon={hasActiveCoupon}
+          openNow={openNow}
+          ratingOnly={ratingOnly}
+          sort={sort}
+          total={venues.length}
+          onArea={setArea}
+          onCategory={setCategory}
+          onCity={handleCityChange}
+          onClose={() => setFilterSheetOpen(false)}
+          onReset={resetFilters}
+          onSort={handleSortChange}
+          onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
+          onToggleOpenNow={() => setOpenNow((current) => !current)}
+          onToggleRating={() => setRatingOnly((current) => !current)}
+        />
+      ) : null}
     </main>
+  );
+}
+
+function MobileVenueFilterSheet({
+  activeCount,
+  area,
+  areaOptions,
+  category,
+  categoryOptions,
+  city,
+  hasActiveCoupon,
+  openNow,
+  ratingOnly,
+  sort,
+  total,
+  onArea,
+  onCategory,
+  onCity,
+  onClose,
+  onReset,
+  onSort,
+  onToggleCoupon,
+  onToggleOpenNow,
+  onToggleRating,
+}: {
+  activeCount: number;
+  area: string;
+  areaOptions: FilterOption[];
+  category: string;
+  categoryOptions: FilterOption[];
+  city: string;
+  hasActiveCoupon: boolean;
+  openNow: boolean;
+  ratingOnly: boolean;
+  sort: DiscoverySort;
+  total: number;
+  onArea: (value: string) => void;
+  onCategory: (value: string) => void;
+  onCity: (value: string) => void;
+  onClose: () => void;
+  onReset: () => void;
+  onSort: (value: DiscoverySort) => void;
+  onToggleCoupon: () => void;
+  onToggleOpenNow: () => void;
+  onToggleRating: () => void;
+}) {
+  return (
+    <div className="venue-filter-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="venue-filter-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="venue-filter-title"
+        data-testid="venue-filter-sheet"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="venue-filter-handle" />
+        <header className="venue-filter-head">
+          <div>
+            <h2 id="venue-filter-title">Bộ lọc</h2>
+            <p>{activeCount ? `${activeCount} bộ lọc đang bật` : "Lọc quán theo nhu cầu"}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Đóng bộ lọc">
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="venue-filter-scroll">
+          <VenueFilterChipGroup
+            label="Thành phố"
+            options={cityOptions}
+            value={city}
+            onChange={onCity}
+          />
+          <VenueFilterChipGroup
+            label="Khu vực"
+            options={areaOptions}
+            value={area}
+            onChange={onArea}
+          />
+          <VenueFilterChipGroup
+            label="Loại hình"
+            options={categoryOptions}
+            value={category}
+            onChange={onCategory}
+          />
+
+          <section className="venue-filter-group" aria-label="Nhu cầu">
+            <h3>Nhu cầu</h3>
+            <div>
+              <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
+                Đang mở
+              </button>
+              <button
+                type="button"
+                className={hasActiveCoupon ? "is-active" : ""}
+                onClick={onToggleCoupon}
+              >
+                Có ưu đãi
+              </button>
+              <button
+                type="button"
+                className={ratingOnly ? "is-active" : ""}
+                onClick={onToggleRating}
+              >
+                4.5★ trở lên
+              </button>
+            </div>
+          </section>
+
+          <VenueFilterChipGroup
+            label="Sắp xếp"
+            options={sortOptions}
+            value={sort}
+            onChange={(value) => onSort(value as DiscoverySort)}
+          />
+        </div>
+
+        <footer className="venue-filter-actions">
+          <button
+            type="button"
+            className="venue-filter-reset"
+            data-testid="venue-filter-reset"
+            onClick={onReset}
+          >
+            <RotateCcw size={15} />
+            Đặt lại
+          </button>
+          <button
+            type="button"
+            className="venue-filter-apply"
+            data-testid="venue-filter-submit"
+            onClick={onClose}
+          >
+            Xem {total} quán
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function VenueFilterChipGroup({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: FilterOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <section className="venue-filter-group" aria-label={label}>
+      <h3>{label}</h3>
+      <div>
+        {options.map((option) => (
+          <button
+            key={`${label}-${option.value || "all"}`}
+            type="button"
+            className={value === option.value ? "is-active" : ""}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1063,6 +1365,153 @@ const venueSearchCss = `
   @keyframes venue-skeleton {
     0% { background-position: 120% 0; }
     100% { background-position: -120% 0; }
+  }
+
+  .venue-filter-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(6, 6, 8, .68);
+    color: #f3f0ea;
+  }
+
+  .venue-filter-sheet {
+    width: min(420px, 100%);
+    max-height: calc(100vh - 58px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(212, 178, 106, .2);
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    background: #121116;
+    box-shadow: 0 -20px 50px -20px rgba(0, 0, 0, .7);
+  }
+
+  .venue-filter-handle {
+    width: 38px;
+    height: 4px;
+    border-radius: 3px;
+    margin: 10px auto 4px;
+    background: rgba(255, 255, 255, .18);
+  }
+
+  .venue-filter-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 18px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+  }
+
+  .venue-filter-head h2 {
+    margin: 0;
+    color: #f3f0ea;
+    font-size: 18px;
+    line-height: 1.15;
+    font-weight: 850;
+  }
+
+  .venue-filter-head p {
+    margin: 4px 0 0;
+    color: #9b958a;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .venue-filter-head button {
+    width: 36px;
+    height: 36px;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .035);
+    color: #f3f0ea;
+    cursor: pointer;
+  }
+
+  .venue-filter-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px 4px;
+  }
+
+  .venue-filter-group {
+    margin-bottom: 18px;
+  }
+
+  .venue-filter-group h3 {
+    margin: 0 0 9px;
+    color: #f3f0ea;
+    font-size: 13.5px;
+    line-height: 1.2;
+    font-weight: 800;
+  }
+
+  .venue-filter-group div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .venue-filter-group button {
+    min-height: 36px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .05);
+    color: #c5c0b6;
+    padding: 8px 14px;
+    font-family: var(--nl-font-sans);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .venue-filter-group button.is-active {
+    border-color: transparent;
+    background: linear-gradient(135deg, #f0dda8, #d4b26a);
+    color: #241a0a;
+    font-weight: 850;
+  }
+
+  .venue-filter-actions {
+    display: grid;
+    grid-template-columns: minmax(0, .78fr) minmax(0, 1.82fr);
+    gap: 10px;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(255, 255, 255, .06);
+    background: rgba(18, 17, 22, .96);
+  }
+
+  .venue-filter-actions button {
+    min-height: 44px;
+    border-radius: 12px;
+    font-family: var(--nl-font-sans);
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .venue-filter-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    background: rgba(255, 255, 255, .035);
+    color: #c5c0b6;
+  }
+
+  .venue-filter-apply {
+    border: 0;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: #241a0a;
   }
 
   @media (max-width: 767px) {
