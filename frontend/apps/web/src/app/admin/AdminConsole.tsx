@@ -11,6 +11,7 @@ import {
   Check,
   ChevronRight,
   Clock3,
+  Download,
   FileText,
   Handshake,
   Home,
@@ -138,6 +139,7 @@ type SensitiveBill = {
   commissionAmountVnd: number | null;
   pointsEarned: number | null;
   submittedAt: string | null;
+  usedAt?: string | null;
   store: { id?: string; name: string; slug?: string };
   booking?: { id: string; status: string; scheduledAt?: string | null } | null;
   coupon?: { id: string; code: string; name: string } | null;
@@ -261,6 +263,30 @@ type ContentFormState = {
   tags: string;
   image: string;
   imageAlt: string;
+};
+
+type BillFilterState = {
+  bookingId: string;
+  couponId: string;
+  couponIssueId: string;
+};
+
+type ReconciliationExportRow = {
+  couponIssueId: string;
+  couponIssueCode: string;
+  couponIssueStatus: string;
+  couponId: string;
+  couponCode: string;
+  couponName: string;
+  bookingId: string;
+  bookingStatus: string;
+  bookingScheduledAt: string;
+  billId: string;
+  billNumber: string;
+  billStatus: string;
+  billTotalVnd: string;
+  storeName: string;
+  warning: string;
 };
 
 const sectionToView: Record<string, AdminView> = {
@@ -517,6 +543,34 @@ const bookingGuestLabel = (booking: AdminBooking) =>
   booking.user?.displayName ?? booking.guest?.displayName ?? booking.guest?.phone ?? "Guest";
 
 const shortCode = (value?: string | null) => (value ? value.slice(0, 8).toUpperCase() : "-");
+
+const buildBillFilterParams = (filters: BillFilterState) =>
+  Object.fromEntries(
+    Object.entries(filters)
+      .map(([key, value]) => [key, value.trim()] as const)
+      .filter(([, value]) => value.length > 0),
+  );
+
+const csvCell = (value: string | number | null | undefined) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+const snapshotNumber = (snapshot: Record<string, unknown> | null | undefined, key: string) => {
+  const value = snapshot?.[key];
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
+const absoluteDateDiffMs = (left?: string | null, right?: string | null) => {
+  if (!left || !right) return null;
+  const leftDate = new Date(left);
+  const rightDate = new Date(right);
+  if (!Number.isFinite(leftDate.getTime()) || !Number.isFinite(rightDate.getTime())) return null;
+  return Math.abs(leftDate.getTime() - rightDate.getTime());
+};
 
 const bookingRelationLabel = (booking?: { id: string; status?: string | null } | null) =>
   booking ? `BK-${shortCode(booking.id)}${booking.status ? ` · ${booking.status}` : ""}` : "-";
@@ -1128,12 +1182,20 @@ export default function AdminConsole({ section }: { section?: string }) {
   const focusedBillId = searchParams.get("billId");
   const focusedRequestId = searchParams.get("requestId");
   const focusedTab = searchParams.get("tab");
+  const initialBillFilters: BillFilterState = {
+    bookingId: focusedBookingId ?? "",
+    couponId: searchParams.get("couponId") ?? "",
+    couponIssueId: searchParams.get("couponIssueId") ?? "",
+  };
   const pathSection = pathname?.split("/").filter(Boolean)[1];
   const activeView = resolveAdminView(section ?? focusedTab ?? pathSection);
 
   const [stores, setStores] = useState<AdminStore[]>([]);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
+  const [reportBills, setReportBills] = useState<SensitiveBill[]>([]);
+  const [billFilters, setBillFilters] = useState<BillFilterState>(initialBillFilters);
+  const [billFilterDraft, setBillFilterDraft] = useState<BillFilterState>(initialBillFilters);
   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
   const [partnerReviewReasons, setPartnerReviewReasons] = useState<Record<string, string>>({});
   const [reviewingPartnerRequestId, setReviewingPartnerRequestId] = useState<string | null>(null);
@@ -1168,12 +1230,16 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [adminChatLoading, setAdminChatLoading] = useState(false);
   const [adminChatSending, setAdminChatSending] = useState(false);
 
+  const billFilterParams = useMemo(() => buildBillFilterParams(billFilters), [billFilters]);
+  const hasBillFilters = Object.keys(billFilterParams).length > 0;
+
   const loadAdminData = useCallback(async () => {
     try {
       const [
         storeData,
         bookingData,
         billData,
+        reportBillData,
         partnerRequestData,
         couponIssueData,
         rankingData,
@@ -1183,7 +1249,11 @@ export default function AdminConsole({ section }: { section?: string }) {
       ] = await Promise.all([
         apiClient<AdminStore[]>("/partner/stores"),
         apiClient<AdminBooking[]>("/partner/bookings"),
-        apiClient<SensitiveBill[]>("/admin/sensitive-bills"),
+        apiClient<SensitiveBill[]>(
+          "/admin/sensitive-bills",
+          hasBillFilters ? { params: billFilterParams } : undefined,
+        ),
+        apiClient<SensitiveBill[]>("/partner/bills").catch(() => []),
         apiClient<AdminPartnerRequest[]>("/admin/partner-requests"),
         apiClient<AdminCouponIssue[]>("/admin/coupon-issues"),
         adminRankingsApi.list(),
@@ -1195,6 +1265,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setStores(storeData);
       setBookings(bookingData);
       setSensitiveBills(billData);
+      setReportBills(reportBillData);
       setPartnerRequests(partnerRequestData);
       setCouponIssues(couponIssueData);
       setRankings(rankingData);
@@ -1216,7 +1287,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setRankingStatusMessage("Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
       setContentStatusMessage("Chưa tải được content CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
     }
-  }, []);
+  }, [billFilterParams, hasBillFilters]);
 
   const loadRankingOptions = useCallback(async () => {
     try {
@@ -1285,6 +1356,132 @@ export default function AdminConsole({ section }: { section?: string }) {
       ),
     [couponIssueStatusFilter, couponIssues],
   );
+  const reconciliationBills = useMemo(
+    () => (reportBills.length ? reportBills : sensitiveBills),
+    [reportBills, sensitiveBills],
+  );
+  const issueById = useMemo(() => new Map(couponIssues.map((issue) => [issue.id, issue])), [couponIssues]);
+  const couponLinkedBills = useMemo(
+    () => reconciliationBills.filter((bill) => bill.coupon || bill.couponIssue),
+    [reconciliationBills],
+  );
+  const reconciliationFunnel = useMemo(
+    () => [
+      { label: "Coupon claim", value: couponIssues.length, note: "claim/issue" },
+      { label: "Booking", value: couponIssues.filter((issue) => issue.booking).length, note: "có booking" },
+      { label: "QR used", value: couponIssues.filter((issue) => issue.status === "USED").length, note: "đã quét" },
+      { label: "Bill submitted", value: couponLinkedBills.length, note: "có coupon" },
+      {
+        label: "Bill approved",
+        value: couponLinkedBills.filter((bill) => ["VERIFIED", "PAID"].includes(bill.status)).length,
+        note: "đã duyệt",
+      },
+    ],
+    [couponIssues, couponLinkedBills],
+  );
+  const reconciliationWarnings = useMemo(() => {
+    const warnings: Array<{ id: string; title: string; detail: string }> = [];
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    couponLinkedBills.forEach((bill) => {
+      const issue = bill.couponIssue ? issueById.get(bill.couponIssue.id) : undefined;
+      const billLabel = bill.billNumber ?? shortCode(bill.id);
+
+      if (!bill.booking && bill.couponIssue) {
+        warnings.push({
+          id: `missing-booking-${bill.id}`,
+          title: `${billLabel}: Không có booking`,
+          detail: `${bill.couponIssue.code} đã gắn bill nhưng bookingId đang trống.`,
+        });
+      }
+
+      if (issue?.status !== "USED") return;
+
+      if (issue.coupon.store?.id && bill.store.id && issue.coupon.store.id !== bill.store.id) {
+        warnings.push({
+          id: `store-mismatch-${bill.id}`,
+          title: `${billLabel}: Lệch quán`,
+          detail: `${issue.coupon.store.name} khác ${bill.store.name}.`,
+        });
+      }
+
+      const usedDiff = absoluteDateDiffMs(issue.usedAt, bill.usedAt);
+      if (usedDiff !== null && usedDiff > oneDayMs) {
+        warnings.push({
+          id: `date-mismatch-${bill.id}`,
+          title: `${billLabel}: Lệch ngày sử dụng`,
+          detail: `QR usedAt và bill usedAt lệch hơn 24 giờ.`,
+        });
+      }
+
+      const minSpend =
+        snapshotNumber(issue.discountRuleSnapshot, "minSpendVnd") ??
+        snapshotNumber(issue.campaignSnapshot, "minSpendVnd");
+      if (minSpend && (bill.totalVnd ?? 0) < minSpend) {
+        warnings.push({
+          id: `amount-mismatch-${bill.id}`,
+          title: `${billLabel}: Tổng tiền thấp hơn điều kiện`,
+          detail: `${formatMoney(bill.totalVnd)} < ${formatMoney(minSpend)}.`,
+        });
+      }
+    });
+
+    return warnings.slice(0, 8);
+  }, [couponLinkedBills, issueById]);
+  const reconciliationExportRows = useMemo<ReconciliationExportRow[]>(() => {
+    const billsByIssueId = new Map(
+      reconciliationBills
+        .filter((bill) => bill.couponIssue?.id)
+        .map((bill) => [bill.couponIssue?.id as string, bill]),
+    );
+    const includedBillIds = new Set<string>();
+    const rows = couponIssues.map((issue) => {
+      const bill = billsByIssueId.get(issue.id);
+      if (bill) includedBillIds.add(bill.id);
+      const warning = !bill?.booking && bill?.couponIssue ? "Không có booking" : "";
+
+      return {
+        couponIssueId: issue.id,
+        couponIssueCode: issue.code,
+        couponIssueStatus: issue.status,
+        couponId: issue.coupon.id,
+        couponCode: issue.coupon.code,
+        couponName: issue.coupon.name,
+        bookingId: issue.booking?.id ?? "",
+        bookingStatus: issue.booking?.status ?? "",
+        bookingScheduledAt: issue.booking?.scheduledAt ?? "",
+        billId: bill?.id ?? "",
+        billNumber: bill?.billNumber ?? "",
+        billStatus: bill?.status ?? "",
+        billTotalVnd: String(bill?.totalVnd ?? ""),
+        storeName: bill?.store.name ?? issue.coupon.store?.name ?? "",
+        warning,
+      };
+    });
+
+    reconciliationBills.forEach((bill) => {
+      if (includedBillIds.has(bill.id)) return;
+      rows.push({
+        couponIssueId: bill.couponIssue?.id ?? "",
+        couponIssueCode: bill.couponIssue?.code ?? "",
+        couponIssueStatus: bill.couponIssue?.status ?? "",
+        couponId: bill.coupon?.id ?? "",
+        couponCode: bill.coupon?.code ?? "",
+        couponName: bill.coupon?.name ?? "",
+        bookingId: bill.booking?.id ?? "",
+        bookingStatus: bill.booking?.status ?? "",
+        bookingScheduledAt: bill.booking?.scheduledAt ?? "",
+        billId: bill.id,
+        billNumber: bill.billNumber ?? "",
+        billStatus: bill.status,
+        billTotalVnd: String(bill.totalVnd ?? ""),
+        storeName: bill.store.name,
+        warning: !bill.booking && bill.couponIssue ? "Không có booking" : "",
+      });
+    });
+
+    return rows;
+  }, [couponIssues, reconciliationBills]);
   const totalBillValue = useMemo(
     () => sensitiveBills.reduce((sum, item) => sum + (item.totalVnd ?? 0), 0),
     [sensitiveBills],
@@ -1394,6 +1591,57 @@ export default function AdminConsole({ section }: { section?: string }) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [bookings]);
+
+  const updateBillFilterDraft = (key: keyof BillFilterState, value: string) => {
+    setBillFilterDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const applyBillFilters = () => {
+    setBillFilters({
+      bookingId: billFilterDraft.bookingId.trim(),
+      couponId: billFilterDraft.couponId.trim(),
+      couponIssueId: billFilterDraft.couponIssueId.trim(),
+    });
+  };
+
+  const clearBillFilters = () => {
+    const emptyFilters = { bookingId: "", couponId: "", couponIssueId: "" };
+    setBillFilterDraft(emptyFilters);
+    setBillFilters(emptyFilters);
+  };
+
+  const exportReconciliationReport = () => {
+    const headers: Array<keyof ReconciliationExportRow> = [
+      "couponIssueId",
+      "couponIssueCode",
+      "couponIssueStatus",
+      "couponId",
+      "couponCode",
+      "couponName",
+      "bookingId",
+      "bookingStatus",
+      "bookingScheduledAt",
+      "billId",
+      "billNumber",
+      "billStatus",
+      "billTotalVnd",
+      "storeName",
+      "warning",
+    ];
+    const lines = [
+      headers.map(csvCell).join(","),
+      ...reconciliationExportRows.map((row) => headers.map((key) => csvCell(row[key])).join(",")),
+    ];
+    const blob = new Blob([`\ufeff${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `booking-coupon-bill-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const reviewBill = async (billId: string, approve: boolean) => {
     setReviewingId(billId);
@@ -1806,6 +2054,68 @@ export default function AdminConsole({ section }: { section?: string }) {
             </span>
           </div>
         ))}
+      </div>
+    </Panel>
+  );
+
+  const billFilterPanel = () => (
+    <Panel>
+      <div style={{ padding: 18, display: "grid", gap: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <SectionTitle title="Lọc đối soát" eyebrow="RELATION FILTERS" />
+          {hasBillFilters ? <Badge tone="PENDING">Đang lọc</Badge> : null}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(180px,1fr)) auto", gap: 10, alignItems: "end" }}>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Booking ID
+            <input
+              aria-label="Booking ID filter"
+              value={billFilterDraft.bookingId}
+              onChange={(event) => updateBillFilterDraft("bookingId", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+              placeholder="bookingId"
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Coupon ID
+            <input
+              aria-label="Coupon ID filter"
+              value={billFilterDraft.couponId}
+              onChange={(event) => updateBillFilterDraft("couponId", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+              placeholder="couponId"
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Coupon issue ID
+            <input
+              aria-label="Coupon issue ID filter"
+              value={billFilterDraft.couponIssueId}
+              onChange={(event) => updateBillFilterDraft("couponIssueId", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+              placeholder="couponIssueId"
+            />
+          </label>
+          <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              aria-label="Apply bill relation filters"
+              onClick={applyBillFilters}
+              style={buttonStyle("primary")}
+            >
+              <Search size={14} />
+              Áp dụng
+            </button>
+            <button
+              type="button"
+              aria-label="Clear bill relation filters"
+              onClick={clearBillFilters}
+              style={buttonStyle("secondary")}
+            >
+              Xóa
+            </button>
+          </span>
+        </div>
       </div>
     </Panel>
   );
@@ -2461,6 +2771,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         <MetricCard icon={ShieldCheck} label="Chờ duyệt" value={String(sensitiveBills.length)} note="admin review" hot />
       </div>
       <SectionTitle title="Bảng hóa đơn" eyebrow="SENSITIVE BILL REVIEW" />
+      {billFilterPanel()}
       {billTable()}
     </div>
   );
@@ -3135,6 +3446,53 @@ export default function AdminConsole({ section }: { section?: string }) {
         <MetricCard icon={TicketPercent} label="Coupon issues" value={String(couponIssues.length)} note="ưu đãi đã phát sinh" />
         <MetricCard icon={XCircle} label="Cancel rate" value={`${cancelAnalytics?.meta.cancelRate ?? 0}%`} note="30 ngày" />
       </div>
+      <Panel style={{ padding: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <SectionTitle title="Funnel đối soát" eyebrow="BOOKING / COUPON / BILL" />
+          <button type="button" onClick={exportReconciliationReport} style={buttonStyle("primary")}>
+            <Download size={14} />
+            Export CSV
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(130px,1fr))", gap: 10, marginTop: 14 }}>
+          {reconciliationFunnel.map((step, index) => (
+            <div
+              key={step.label}
+              style={{
+                minHeight: 92,
+                borderLeft: `3px solid ${index === reconciliationFunnel.length - 1 ? colors.green : colors.gold}`,
+                background: "rgba(255,255,255,.035)",
+                padding: "12px 12px 10px",
+                display: "grid",
+                gap: 4,
+              }}
+            >
+              <span style={{ color: colors.muted, fontSize: 11, fontWeight: 900, textTransform: "uppercase" }}>{step.label}</span>
+              <strong style={{ color: colors.text, fontSize: 24 }}>{step.value}</strong>
+              <span style={{ color: colors.text2, fontSize: 12 }}>{step.note}</span>
+            </div>
+          ))}
+        </div>
+        {reconciliationWarnings.length ? (
+          <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+            {reconciliationWarnings.map((warning) => (
+              <div
+                key={warning.id}
+                style={{
+                  border: `1px solid rgba(224,114,158,.26)`,
+                  background: "rgba(224,114,158,.08)",
+                  padding: "10px 12px",
+                  color: colors.text2,
+                  fontSize: 12,
+                }}
+              >
+                <strong style={{ color: colors.neonPink, display: "block", marginBottom: 3 }}>{warning.title}</strong>
+                {warning.detail}
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </Panel>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(360px,.8fr)", gap: 16 }}>
         <Panel style={{ padding: 20 }}>
           <SectionTitle title="Doanh thu theo ngày" eyebrow="JUNE 2026" />

@@ -83,7 +83,10 @@ import {
   PublicContentQueryDto,
   UpdateAdminContentDto,
 } from './dto/content.dto';
-import { CreateBillDto } from './dto/create-bill.dto';
+import {
+  AdminSensitiveBillQueryDto,
+  CreateBillDto,
+} from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
   CreatePartnerRequestDto,
@@ -720,8 +723,14 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/sensitive-bills')
-  listSensitiveBillsForAdmin(@Req() request: RequestWithUser) {
-    return this.nightlifeDataService.listSensitiveBillsForAdmin(request.user);
+  listSensitiveBillsForAdmin(
+    @Req() request: RequestWithUser,
+    @Query() query: AdminSensitiveBillQueryDto,
+  ) {
+    return this.nightlifeDataService.listSensitiveBillsForAdmin(
+      request.user,
+      query,
+    );
   }
 
   @AdminPartnerRequestsContract()

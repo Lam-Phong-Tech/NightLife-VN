@@ -150,12 +150,33 @@ const couponIssues = [
   },
 ];
 
+const sensitiveBills = [
+  {
+    id: "bill-1",
+    billNumber: "BILL-20260701-ABC12345",
+    status: "SUBMITTED",
+    totalVnd: 1800000,
+    paidVnd: 1800000,
+    commissionAmountVnd: 180000,
+    pointsEarned: 180,
+    submittedAt: "2026-07-01T10:00:00.000Z",
+    usedAt: "2026-06-30T14:00:00.000Z",
+    store: { id: "store-1", name: "Neon Club", slug: "neon-club" },
+    booking: null,
+    coupon: { id: "coupon-1", code: "MEMBER8", name: "Member 8" },
+    couponIssue: { id: "issue-used", code: "MEMBER-used", status: "USED" },
+    user: { email: "member@example.com", displayName: "Member QA", phone: "+84901234567" },
+    guest: null,
+  },
+];
+
 describe("AdminConsole coupon issue panel", () => {
   beforeEach(() => {
     mocks.apiClient.mockImplementation(async (path: string) => {
       if (path === "/partner/stores") return [];
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return [];
+      if (path === "/partner/bills") return [];
       if (path === "/admin/partner-requests") return [];
       if (path === "/admin/coupon-issues") return couponIssues;
       return [];
@@ -182,6 +203,41 @@ describe("AdminConsole coupon issue panel", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it("sends booking, coupon, and coupon issue filters to the sensitive bill endpoint", async () => {
+    mocks.apiClient.mockImplementation(async (path: string) => {
+      if (path === "/partner/stores") return [];
+      if (path === "/partner/bookings") return [];
+      if (path === "/admin/sensitive-bills") return sensitiveBills;
+      if (path === "/partner/bills") return sensitiveBills;
+      if (path === "/admin/partner-requests") return [];
+      if (path === "/admin/coupon-issues") return couponIssues;
+      return [];
+    });
+
+    render(<AdminConsole section="bill" />);
+
+    const panel = await screen.findByTestId("admin-sensitive-bills-panel");
+    await within(panel).findByText("BILL-20260701-ABC12345");
+
+    await userEvent.type(screen.getByLabelText("Booking ID filter"), "booking-1");
+    await userEvent.type(screen.getByLabelText("Coupon ID filter"), "coupon-1");
+    await userEvent.type(screen.getByLabelText("Coupon issue ID filter"), "issue-used");
+    await userEvent.click(screen.getByLabelText("Apply bill relation filters"));
+
+    await waitFor(() => {
+      expect(mocks.apiClient).toHaveBeenCalledWith(
+        "/admin/sensitive-bills",
+        expect.objectContaining({
+          params: {
+            bookingId: "booking-1",
+            couponId: "coupon-1",
+            couponIssueId: "issue-used",
+          },
+        }),
+      );
+    });
   });
 
   it("filters coupon issues by ISSUED, USED, and EXPIRED statuses", async () => {

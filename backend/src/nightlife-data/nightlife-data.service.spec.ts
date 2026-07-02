@@ -2730,6 +2730,93 @@ describe('NightlifeDataService', () => {
         status: 'SUBMITTED',
       }),
     );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorId: 'member-1',
+          action: 'bill.coupon.link',
+          targetType: 'Bill',
+          targetId: 'bill-1',
+          metadata: expect.objectContaining({
+            source: 'direct',
+            actorRole: 'USER',
+            storeId: 'store-1',
+            bookingId: null,
+            couponId: 'coupon-1',
+            couponIssueId: 'issue-1',
+            couponIssueStatus: 'USED',
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('requires an active coupon campaign for direct bill couponId links', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME20',
+      name: 'Welcome 20%',
+    } as never);
+    prisma.bill.create.mockResolvedValue({
+      id: 'bill-direct-coupon',
+      billNumber: 'BILL-20260701-DIRECT01',
+      status: 'SUBMITTED',
+      totalVnd: 1800000,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: null,
+      coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+      couponIssue: null,
+    } as never);
+
+    await service.submitMemberBill(
+      { id: 'member-1', role: 'USER' },
+      {
+        storeSlug: 'neon-club',
+        couponId: 'coupon-1',
+        totalVnd: 1800000,
+        usedAt: '2026-06-30T14:00:00.000Z',
+      },
+    );
+
+    expect(prisma.coupon.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'coupon-1',
+          storeId: 'store-1',
+          deletedAt: null,
+          status: 'ACTIVE',
+          OR: [{ endsAt: null }, { endsAt: { gt: expect.any(Date) } }],
+        }),
+      }),
+    );
+    expect(prisma.bill.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bookingId: null,
+          couponId: 'coupon-1',
+          couponIssueId: undefined,
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'bill.coupon.link',
+          targetId: 'bill-direct-coupon',
+          metadata: expect.objectContaining({
+            source: 'direct',
+            couponId: 'coupon-1',
+            couponIssueId: null,
+          }),
+        }),
+      }),
+    );
   });
 
   it('rejects member bill submissions after the 10 day deadline', async () => {
@@ -2870,6 +2957,25 @@ describe('NightlifeDataService', () => {
           couponId: 'coupon-guest-1',
           couponIssueId: 'issue-guest-1',
           status: 'SUBMITTED',
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorId: 'partner-1',
+          action: 'bill.coupon.link',
+          targetType: 'Bill',
+          targetId: 'bill-guest-1',
+          metadata: expect.objectContaining({
+            source: 'direct',
+            actorRole: 'PARTNER',
+            storeId: 'store-1',
+            bookingId: null,
+            couponId: 'coupon-guest-1',
+            couponIssueId: 'issue-guest-1',
+            couponIssueStatus: 'USED',
+          }),
         }),
       }),
     );
@@ -3362,10 +3468,17 @@ describe('NightlifeDataService', () => {
     ] as never);
 
     await expect(
-      service.listSensitiveBillsForAdmin({
-        id: 'admin-1',
-        role: 'ADMIN',
-      }),
+      service.listSensitiveBillsForAdmin(
+        {
+          id: 'admin-1',
+          role: 'ADMIN',
+        },
+        {
+          bookingId: 'booking-1',
+          couponId: 'coupon-1',
+          couponIssueId: 'issue-1',
+        },
+      ),
     ).resolves.toEqual([
       expect.objectContaining({
         booking: {
@@ -3388,6 +3501,11 @@ describe('NightlifeDataService', () => {
 
     expect(prisma.bill.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.objectContaining({
+          bookingId: 'booking-1',
+          couponId: 'coupon-1',
+          couponIssueId: 'issue-1',
+        }),
         select: expect.objectContaining({
           booking: { select: { id: true, status: true, scheduledAt: true } },
           coupon: { select: { id: true, code: true, name: true } },

@@ -65,7 +65,10 @@ import {
   PublicContentQueryDto,
   UpdateAdminContentDto,
 } from './dto/content.dto';
-import { CreateBillDto } from './dto/create-bill.dto';
+import {
+  AdminSensitiveBillQueryDto,
+  CreateBillDto,
+} from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
   CreatePartnerRequestDto,
@@ -3669,6 +3672,17 @@ export class NightlifeDataService {
       select: this.billNotificationSelect(),
     });
 
+    await this.recordBillCouponLinkAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      billId: bill.id,
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      couponId: couponLink.couponId ?? null,
+      couponIssueId: couponLink.couponIssueId ?? null,
+      couponIssueStatus: couponLink.couponIssueStatus ?? null,
+      source: booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
+    });
     await this.adminNotificationService?.notifyBillSubmitted(bill);
     if (couponLink.couponIssueId) {
       await this.recordCouponLifecycleEvent(
@@ -3795,6 +3809,17 @@ export class NightlifeDataService {
       select: this.billNotificationSelect(),
     });
 
+    await this.recordBillCouponLinkAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      billId: bill.id,
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      couponId: couponLink.couponId ?? null,
+      couponIssueId: couponLink.couponIssueId ?? null,
+      couponIssueStatus: couponLink.couponIssueStatus ?? null,
+      source: booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
+    });
     await this.adminNotificationService?.notifyBillSubmitted(bill);
     return bill;
   }
@@ -4112,12 +4137,32 @@ export class NightlifeDataService {
     );
   }
 
-  async listSensitiveBillsForAdmin(user: AuthenticatedUser) {
+  async listSensitiveBillsForAdmin(
+    user: AuthenticatedUser,
+    query: AdminSensitiveBillQueryDto = {},
+  ) {
+    const where: Prisma.BillWhereInput = {
+      deletedAt: null,
+      status: { in: ['SUBMITTED', 'REJECTED'] },
+    };
+    const bookingId = this.cleanText(query.bookingId);
+    const couponId = this.cleanText(query.couponId);
+    const couponIssueId = this.cleanText(query.couponIssueId);
+
+    if (bookingId) {
+      where.bookingId = bookingId;
+    }
+
+    if (couponId) {
+      where.couponId = couponId;
+    }
+
+    if (couponIssueId) {
+      where.couponIssueId = couponIssueId;
+    }
+
     const bills = await this.prisma.bill.findMany({
-      where: {
-        deletedAt: null,
-        status: { in: ['SUBMITTED', 'REJECTED'] },
-      },
+      where,
       orderBy: { submittedAt: 'desc' },
       select: {
         id: true,
@@ -4511,6 +4556,43 @@ export class NightlifeDataService {
     }
   }
 
+  private async recordBillCouponLinkAudit(input: {
+    actorId?: string | null;
+    actorRole?: string | null;
+    billId: string;
+    storeId: string;
+    bookingId?: string | null;
+    couponId?: string | null;
+    couponIssueId?: string | null;
+    couponIssueStatus?: string | null;
+    source: 'booking' | 'direct';
+  }) {
+    if (!input.couponId && !input.couponIssueId) {
+      return;
+    }
+
+    const snapshot = {
+      source: input.source,
+      actorRole: input.actorRole ?? null,
+      storeId: input.storeId,
+      bookingId: input.bookingId ?? null,
+      couponId: input.couponId ?? null,
+      couponIssueId: input.couponIssueId ?? null,
+      couponIssueStatus: input.couponIssueStatus ?? null,
+    };
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: 'bill.coupon.link',
+        targetType: 'Bill',
+        targetId: input.billId,
+        metadata: this.toPrismaJson(snapshot),
+        afterJson: this.toPrismaJson(snapshot),
+      },
+    });
+  }
+
   private async resolveBillCouponLink(input: {
     dto: CreateBillDto;
     booking?: {
@@ -4653,25 +4735,41 @@ export class NightlifeDataService {
         );
       }
 
-      const requestedCoupon = await this.prisma.coupon.findFirst({
-        where: {
-          id: requestedCouponId,
-          storeId: input.store.id,
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          code: true,
-          name: true,
-        },
-      });
+      if (!couponId || !coupon) {
+        const requiresActiveCampaign =
+          !requestedCouponIssueId &&
+          !input.booking?.couponId &&
+          !input.booking?.couponIssueId;
+        const requestedCoupon = await this.prisma.coupon.findFirst({
+          where: {
+            id: requestedCouponId,
+            storeId: input.store.id,
+            deletedAt: null,
+            ...(requiresActiveCampaign
+              ? {
+                  status: 'ACTIVE',
+                  OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }],
+                }
+              : {}),
+          },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        });
 
-      if (!requestedCoupon) {
-        throw new NotFoundException('Coupon not found');
+        if (!requestedCoupon) {
+          throw new NotFoundException(
+            requiresActiveCampaign
+              ? 'Active coupon not found'
+              : 'Coupon not found',
+          );
+        }
+
+        couponId = requestedCoupon.id;
+        coupon = requestedCoupon;
       }
-
-      couponId = requestedCoupon.id;
-      coupon = requestedCoupon;
     }
 
     return {

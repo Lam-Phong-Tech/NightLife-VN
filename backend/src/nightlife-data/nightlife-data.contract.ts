@@ -1803,10 +1803,27 @@ export function CreateMemberBillContract() {
 }
 
 export function AdminSensitiveBillsContract() {
-  return guardedListContract(
-    'Admin action: list sensitive bill reviews',
-    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewSensitiveBill).',
-    sensitiveBillExample,
+  return applyDecorators(
+    guardedListContract(
+      'Admin action: list sensitive bill reviews',
+      'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewSensitiveBill). Supports bookingId, couponId, and couponIssueId filters for reconciliation.',
+      sensitiveBillExample,
+    ),
+    ApiQuery({
+      name: 'bookingId',
+      required: false,
+      description: 'Filter by linked booking id.',
+    }),
+    ApiQuery({
+      name: 'couponId',
+      required: false,
+      description: 'Filter by linked coupon campaign id.',
+    }),
+    ApiQuery({
+      name: 'couponIssueId',
+      required: false,
+      description: 'Filter by linked coupon issue id.',
+    }),
   );
 }
 

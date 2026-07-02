@@ -42,7 +42,7 @@ export class CreateBillDto {
   @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440020',
     description:
-      'Optional coupon campaign id to connect this bill when there is no booking or the booking has no coupon.',
+      'Optional direct coupon campaign id to connect this bill. Direct campaign links must still be ACTIVE at submit time; use couponIssueId for historical reconciliation.',
   })
   @IsOptional()
   @IsUUID()
@@ -76,4 +76,30 @@ export class CreateBillDto {
   })
   @IsDateString()
   usedAt: string;
+}
+
+export class AdminSensitiveBillQueryDto {
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440010',
+    description: 'Filter sensitive bills by linked booking id.',
+  })
+  @IsOptional()
+  @IsUUID()
+  bookingId?: string;
+
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440020',
+    description: 'Filter sensitive bills by linked coupon campaign id.',
+  })
+  @IsOptional()
+  @IsUUID()
+  couponId?: string;
+
+  @ApiPropertyOptional({
+    example: '550e8400-e29b-41d4-a716-446655440021',
+    description: 'Filter sensitive bills by linked coupon issue id.',
+  })
+  @IsOptional()
+  @IsUUID()
+  couponIssueId?: string;
 }
