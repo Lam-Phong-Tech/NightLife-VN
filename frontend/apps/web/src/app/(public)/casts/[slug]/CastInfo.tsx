@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { ChevronRight, Clock3, Heart, Star, UsersRound } from "lucide-react";
+import { ChevronRight, Clock3, Star, UsersRound } from "lucide-react";
 import type { RelatedCast } from "@/lib/api/cast-detail";
 import { castImageForSlug, storeImageForSlug } from "@/lib/demo-media";
 import {
   formatMonth,
   formatOptional,
-  formatShortVnd,
   labelLanguage,
   labelTag,
   mediaBg,
@@ -46,21 +45,6 @@ export function CastInfo({
   if (variant === "mobile") {
     return (
       <>
-        <section className="cast-mobile-stats" aria-label="Chỉ số cast">
-          <div>
-            <span className="cast-stat-icon heart">
-              <Heart size={15} fill="currentColor" />
-            </span>
-            <strong>{profile.rating}</strong>
-            <small>Đánh giá</small>
-          </div>
-          <span className="cast-stat-divider" />
-          <div>
-            <strong>{formatShortVnd(profile.hourlyRateVnd)}</strong>
-            <small>Phí cast</small>
-          </div>
-        </section>
-
         <section className="cast-section" data-testid="cast-info-mobile">
           <SectionHeading title="Giới thiệu" />
           <p className="cast-mobile-bio">{profile.bio}</p>
@@ -107,16 +91,6 @@ export function CastInfo({
       </div>
 
       <div className="cast-desktop-stat-row">
-        <span>
-          <Star size={14} fill="currentColor" />
-          <b>{profile.rating}</b>
-          Đánh giá
-        </span>
-        <span>
-          <Heart size={14} fill="currentColor" />
-          <b>{formatShortVnd(profile.hourlyRateVnd)}</b>
-          Phí cast
-        </span>
         <span>
           <UsersRound size={14} />
           <b>{month}</b>
@@ -259,9 +233,7 @@ function VenueCard({
           {profile.store.category || "Lounge"} · {area || "Khu vực đang cập nhật"}
         </small>
         <span className="cast-venue-meta">
-          <Star size={12} fill="currentColor" />
-          <b>{profile.rating}</b>
-          <span>· 18 cast</span>
+          <span>18 cast</span>
         </span>
       </span>
       <span className="cast-venue-action">

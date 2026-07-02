@@ -10,7 +10,7 @@ export function CastProfileStyles() {
 
       .cast-mobile {
         min-height: 100vh;
-        padding-bottom: calc(168px + env(safe-area-inset-bottom));
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
         background: #0c0c0f;
       }
 
@@ -181,53 +181,6 @@ export function CastProfileStyles() {
         font-weight: 700;
       }
 
-      .cast-hero-price {
-        width: fit-content;
-        margin-top: 10px;
-        color: #f0dda8;
-        font-size: 11px;
-        font-weight: 700;
-        background: rgba(12,12,15,.45);
-        border: 1px solid rgba(212,178,106,.22);
-        border-radius: 999px;
-        padding: 6px 10px;
-      }
-
-      .cast-mobile-stats {
-        display: flex;
-        align-items: stretch;
-        padding: 16px 20px 2px;
-      }
-
-      .cast-mobile-stats > div {
-        flex: 1;
-        display: grid;
-        justify-items: center;
-        gap: 4px;
-        color: #f3f0ea;
-      }
-
-      .cast-mobile-stats strong {
-        font-size: 17px;
-        line-height: 1.1;
-      }
-
-      .cast-mobile-stats small {
-        color: #8c8679;
-        font-size: 10px;
-      }
-
-      .cast-stat-icon.heart {
-        color: #e0729e;
-        height: 15px;
-      }
-
-      .cast-stat-divider {
-        width: 1px;
-        background: rgba(255,255,255,.08);
-        margin: 3px 0;
-      }
-
       .cast-section,
       .cast-related-section.mobile,
       .cast-gallery-grid-section {
@@ -238,6 +191,10 @@ export function CastProfileStyles() {
       .cast-section-heading {
         gap: 11px;
         margin-bottom: 10px;
+      }
+
+      .cast-gallery-grid-section {
+        margin-top: 14px;
       }
 
       .cast-section-heading.compact {
@@ -471,8 +428,8 @@ export function CastProfileStyles() {
       }
 
       .cast-venue-meta {
-        gap: 5px;
-        color: #e3c27e;
+        gap: 0;
+        color: #8c8679;
         font-size: 12px;
       }
 
@@ -499,32 +456,28 @@ export function CastProfileStyles() {
       }
 
       .cast-mobile-gallery-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 7px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+      }
+
+      .cast-mobile-gallery-grid::-webkit-scrollbar {
+        display: none;
       }
 
       .cast-gallery-tile {
         position: relative;
-        height: 108px;
+        flex: 0 0 94px;
+        height: 70px;
         border: 0;
-        border-radius: 12px;
+        border-radius: 11px;
         overflow: hidden;
         background-size: cover !important;
         background-position: center !important;
         padding: 0;
         cursor: pointer;
-      }
-
-      .cast-gallery-more {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        color: #f3f0ea;
-        background: rgba(12,12,15,.62);
-        font-size: 16px;
-        font-weight: 800;
       }
 
       .cast-video-overlay {
@@ -662,7 +615,6 @@ export function CastProfileStyles() {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1px;
         background: linear-gradient(135deg,#f0dda8,#d4b26a 55%,#b6924a);
         color: #241a0a;
         text-decoration: none;
@@ -1406,8 +1358,9 @@ export function CastProfileStyles() {
           font-size: 29px;
         }
 
-        .cast-mobile-gallery-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+        .cast-gallery-tile {
+          flex-basis: 86px;
+          height: 64px;
         }
       }
     `}</style>

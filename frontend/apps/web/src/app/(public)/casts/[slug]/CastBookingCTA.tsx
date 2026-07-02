@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Check, Heart } from "lucide-react";
-import { formatVnd } from "./cast-profile.helpers";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
 
 type CastBookingCTAProps = {
@@ -15,7 +14,6 @@ type CastBookingCTAProps = {
 };
 
 export function CastBookingCTA({
-  profile,
   area,
   bookingHref,
   storeHref,
@@ -24,8 +22,6 @@ export function CastBookingCTA({
   onToggleFavorite,
   onTrack,
 }: CastBookingCTAProps) {
-  const priceLabel = formatVnd(profile.hourlyRateVnd);
-
   if (variant === "mobile") {
     return (
       <section className="cast-booking-cta mobile" data-testid="cast-booking-cta-mobile">
@@ -40,7 +36,6 @@ export function CastBookingCTA({
         </button>
         <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "mobile-sticky" })}>
           <strong>Đặt cast này</strong>
-          <span>từ {priceLabel} / 60 phút</span>
         </Link>
       </section>
     );
@@ -51,7 +46,6 @@ export function CastBookingCTA({
       <div className="cast-desktop-booking-actions">
         <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "desktop-panel" })}>
           <strong>Đặt cast này</strong>
-          <span>từ {priceLabel} / 60 phút</span>
         </Link>
         <Link
           href={storeHref}

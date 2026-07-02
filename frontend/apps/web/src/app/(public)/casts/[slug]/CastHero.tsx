@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, Heart, MapPin, Play, Star } from "lucide-react";
-import { formatVnd, mediaBg } from "./cast-profile.helpers";
+import { mediaBg } from "./cast-profile.helpers";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 type CastHeroProps = {
@@ -84,7 +84,6 @@ export function CastHero({
           {area ? <span>· {area}</span> : null}
         </Link>
 
-        <div className="cast-hero-price">Từ {formatVnd(profile.hourlyRateVnd)} / 60 phút</div>
       </div>
     </section>
   );

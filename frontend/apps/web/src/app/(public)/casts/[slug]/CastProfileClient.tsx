@@ -160,14 +160,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             onToggleFavorite={toggleFavorite}
             onOpenGallery={() => openLightbox(activeMediaIndex)}
           />
-          <CastInfo
-            profile={profile}
-            area={area}
-            languageText={languageText}
-            storeHref={storeHref}
-            variant="mobile"
-            onTrack={track}
-          />
           <CastGallery
             gallery={gallery}
             activeIndex={activeMediaIndex}
@@ -176,6 +168,14 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             onSelect={selectMedia}
             onOpenLightbox={openLightbox}
             onCloseLightbox={() => setIsLightboxOpen(false)}
+          />
+          <CastInfo
+            profile={profile}
+            area={area}
+            languageText={languageText}
+            storeHref={storeHref}
+            variant="mobile"
+            onTrack={track}
           />
           <CastRelatedCasts relatedCasts={relatedCasts} variant="mobile" onTrack={track} />
           <CastBookingCTA
