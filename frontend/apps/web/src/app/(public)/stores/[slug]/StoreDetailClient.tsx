@@ -11,6 +11,7 @@ import {
   MapPin,
   Minus,
   Navigation,
+  PhoneCall,
   Play,
   Plus,
   Share2,
@@ -778,6 +779,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const couponHref = `/uu-dai?${couponQuery.toString()}`;
+  const phoneHref = store.phone ? `tel:${store.phone.replace(/[^\d+]/g, "")}` : "";
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
   const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
   const showPreviousMedia = () =>
@@ -883,12 +885,35 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 className="hero-play"
                 type="button"
                 aria-label="Mở video tour"
-                onClick={() => openGallery(0)}
+                onClick={() => openGallery(selectedGalleryIndex)}
               >
                 <Play size={25} fill="currentColor" />
               </button>
 
-              <button className="video-badge" type="button" onClick={() => openGallery(0)}>
+              {gallery.length > 1 ? (
+                <>
+                  <button
+                    className="hero-media-nav previous"
+                    type="button"
+                    aria-label="Media trước"
+                    data-testid="store-hero-media-previous"
+                    onClick={showPreviousMedia}
+                  >
+                    <ChevronLeft size={30} />
+                  </button>
+                  <button
+                    className="hero-media-nav next"
+                    type="button"
+                    aria-label="Media sau"
+                    data-testid="store-hero-media-next"
+                    onClick={showNextMedia}
+                  >
+                    <ChevronRight size={30} />
+                  </button>
+                </>
+              ) : null}
+
+              <button className="video-badge" type="button" onClick={() => openGallery(selectedGalleryIndex)}>
                 <Play size={13} fill="currentColor" />
                 Video tour
               </button>
@@ -904,6 +929,29 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </div>
               </div>
             </section>
+
+            <div className="mobile-gallery-strip" aria-label="Thư viện ảnh của quán">
+              <div className="mobile-gallery-head">
+                <span>Thư viện ảnh</span>
+                <small>
+                  {selectedGalleryIndex + 1}/{gallery.length}
+                </small>
+              </div>
+              <div className="mobile-gallery-rail hscroll">
+                {galleryTiles.map((item, index) => (
+                  <button
+                    key={`mobile-${item.id}-${index}`}
+                    className={index === selectedGalleryIndex ? "active" : undefined}
+                    type="button"
+                    style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
+                    aria-label={`Mở media ${index + 1}`}
+                    onClick={() => openGallery(index)}
+                  >
+                    {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="quick-stats">
               <div>
@@ -932,6 +980,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 >
                   <Navigation size={16} />
                   Chỉ đường
+                </a>
+              ) : null}
+              {phoneHref ? (
+                <a
+                  href={phoneHref}
+                  onClick={() => trackStoreDetailClick(store, "call", { surface: "hero-action" })}
+                >
+                  <PhoneCall size={16} />
+                  Gọi điện
                 </a>
               ) : null}
               <a href="#menu">
@@ -1158,10 +1215,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       </section>
 
       <div className="mobile-cta">
-        <div>
-          <span>Đặt bàn từ</span>
-          <strong>{formatPriceTier(store.priceReference.startingFromVnd)}</strong>
-        </div>
         <Link
           data-testid="store-booking-cta-mobile"
           className="primary-action"
@@ -1308,6 +1361,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-top,
         .hero-name,
         .hero-play,
+        .hero-media-nav,
         .video-badge {
           position: absolute;
           z-index: 2;
@@ -1369,6 +1423,30 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           backdrop-filter: blur(8px);
           cursor: pointer;
           box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .8);
+        }
+
+        .hero-media-nav {
+          top: 50%;
+          width: 46px;
+          height: 64px;
+          border: 1px solid rgba(244, 221, 155, .22);
+          border-radius: 999px;
+          background: rgba(12, 12, 15, .2);
+          color: #f4dd9b;
+          display: grid;
+          place-items: center;
+          transform: translateY(-50%);
+          cursor: pointer;
+          backdrop-filter: blur(6px);
+          text-shadow: 0 2px 16px rgba(0, 0, 0, .72);
+        }
+
+        .hero-media-nav.previous {
+          left: 14px;
+        }
+
+        .hero-media-nav.next {
+          right: 14px;
         }
 
         .video-badge {
@@ -1561,6 +1639,57 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .thumb-grid button.active {
           border-color: #d4b26a;
           box-shadow: inset 0 0 0 1px rgba(212, 178, 106, .6);
+        }
+
+        .mobile-gallery-strip {
+          display: none;
+        }
+
+        .mobile-gallery-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 9px;
+        }
+
+        .mobile-gallery-head span {
+          color: #f3f0ea;
+          font-size: 13px;
+          font-weight: 900;
+        }
+
+        .mobile-gallery-head small {
+          color: #8c8679;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .mobile-gallery-rail {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding-bottom: 2px;
+        }
+
+        .mobile-gallery-rail button {
+          position: relative;
+          flex: 0 0 78px;
+          height: 56px;
+          border: 1px solid rgba(255, 255, 255, .08);
+          border-radius: 8px;
+          background-size: cover;
+          background-position: center;
+          color: #f4dd9b;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+          cursor: pointer;
+        }
+
+        .mobile-gallery-rail button.active {
+          border-color: #d4b26a;
+          box-shadow: inset 0 0 0 1px rgba(212, 178, 106, .72);
         }
 
         .desktop-only {
@@ -2616,6 +2745,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             height: 64px;
           }
 
+          .hero-media-nav {
+            width: 42px;
+            height: 60px;
+            border-color: transparent;
+            background: rgba(12, 12, 15, .12);
+          }
+
+          .hero-media-nav.previous {
+            left: 10px;
+          }
+
+          .hero-media-nav.next {
+            right: 10px;
+          }
+
           .video-badge {
             display: none;
           }
@@ -2646,7 +2790,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .secondary-actions {
             display: flex;
+            gap: 8px;
             padding: 12px 18px 4px;
+          }
+
+          .secondary-actions a {
+            min-width: 0;
+            min-height: 44px;
+            font-size: 12px;
+            padding: 0 8px;
+          }
+
+          .mobile-gallery-strip {
+            display: block;
+            margin: 0 18px;
+            padding: 12px 0 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
           }
 
           .thumb-grid,
@@ -2730,10 +2889,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             bottom: calc(74px + env(safe-area-inset-bottom));
             z-index: 70;
             display: grid;
-            grid-template-columns: minmax(96px, .42fr) minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr);
             align-items: center;
-            gap: 12px;
-            min-height: 80px;
+            min-height: 76px;
             padding: 10px 14px;
             background: rgba(8, 8, 11, .94);
             border-top: 1px solid rgba(212, 178, 106, .2);
@@ -2762,6 +2920,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .mobile-cta .primary-action {
             min-height: 52px;
             padding: 0 12px;
+            width: 100%;
           }
 
           .mobile-cta .primary-action span {
