@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useState } from "react";
+import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -208,6 +208,9 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
 
 function EventHero({ desktop = false }: { desktop?: boolean }) {
   const [activeBanner, setActiveBanner] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef(0);
+  const suppressClickRef = useRef(false);
   const fallbackBanner = {
     title: "Sự kiện đêm nay",
     desc: "Đặt bàn VIP từ 2.500.000đ",
@@ -227,10 +230,72 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
     return () => window.clearInterval(timer);
   }, [banners.length]);
 
+  const moveBanner = (direction: 1 | -1) => {
+    if (banners.length < 2) return;
+    setActiveBanner((current) => (current + direction + banners.length) % banners.length);
+  };
+
+  const beginSwipe = (clientX: number) => {
+    touchStartXRef.current = clientX;
+    touchDeltaXRef.current = 0;
+    suppressClickRef.current = false;
+  };
+
+  const updateSwipe = (clientX: number) => {
+    if (touchStartXRef.current === null) return;
+    touchDeltaXRef.current = clientX - touchStartXRef.current;
+    if (Math.abs(touchDeltaXRef.current) > 8) {
+      suppressClickRef.current = true;
+    }
+  };
+
+  const endSwipe = () => {
+    const deltaX = touchDeltaXRef.current;
+    const shouldSuppressClick = Math.abs(deltaX) > 8;
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
+
+    if (Math.abs(deltaX) >= 46) {
+      moveBanner(deltaX < 0 ? 1 : -1);
+    }
+
+    if (shouldSuppressClick) {
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 220);
+    } else {
+      suppressClickRef.current = false;
+    }
+  };
+
   return (
     <Link
       href="/stores/neon-club"
       data-testid="home-ad-banner"
+      onClick={(event) => {
+        if (suppressClickRef.current) {
+          event.preventDefault();
+          suppressClickRef.current = false;
+        }
+      }}
+      onTouchCancel={() => {
+        touchStartXRef.current = null;
+        touchDeltaXRef.current = 0;
+        suppressClickRef.current = false;
+      }}
+      onTouchEnd={(event) => {
+        const touch = event.changedTouches[0];
+        if (touch) updateSwipe(touch.clientX);
+        endSwipe();
+      }}
+      onTouchMove={(event) => {
+        const touch = event.touches[0];
+        if (touch) updateSwipe(touch.clientX);
+      }}
+      onTouchStart={(event) => {
+        const touch = event.touches[0];
+        if (touch) beginSwipe(touch.clientX);
+      }}
       style={{
         minHeight: desktop ? "310px" : "208px",
         borderRadius: desktop ? "26px" : "18px",
@@ -242,6 +307,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         padding: desktop ? "34px" : "18px 18px 42px",
         color: "#fff",
         boxShadow: "0 22px 42px rgba(0,0,0,.36)",
+        touchAction: "pan-y",
       }}
     >
       <PlaceholderMedia
