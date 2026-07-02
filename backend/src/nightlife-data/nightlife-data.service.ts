@@ -34,6 +34,7 @@ import {
   ADMIN_TELEGRAM_TEMPLATES,
   AdminNotificationService,
 } from '../notifications/admin-notification.service';
+import { EmailNotificationService } from '../notifications/email-notification.service';
 import { SocketGateway } from '../notifications/socket.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -134,6 +135,10 @@ type BookingNotificationRecord = {
   status: string;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
+  subtotalVnd?: number | null;
+  discountVnd?: number | null;
+  totalVnd?: number | null;
+  note?: string | null;
   user?: { id: string; displayName: string | null; tier: string | null } | null;
   guest?: {
     id: string;
@@ -147,6 +152,14 @@ type BookingNotificationRecord = {
     slug?: string | null;
     bookingCancelCutoffMinutes?: number | null;
   } | null;
+  cast?: {
+    id: string;
+    slug: string;
+    stageName: string;
+    publicAlias?: string | null;
+  } | null;
+  coupon?: { id: string; code: string; name: string } | null;
+  couponIssue?: { id: string; code: string; status: string } | null;
 };
 
 type BookingChangeRequestRecord = {
@@ -228,10 +241,7 @@ type PartnerRequestNotificationLog = {
   createdAt: Date;
 };
 
-type PartnerRequestReviewStatus =
-  | 'PENDING_REVIEW'
-  | 'APPROVED'
-  | 'REJECTED';
+type PartnerRequestReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
 
 const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
 const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
@@ -573,6 +583,8 @@ export class NightlifeDataService {
     private readonly adminNotificationService?: AdminNotificationService,
     @Optional()
     private readonly socketGateway?: SocketGateway,
+    @Optional()
+    private readonly emailNotificationService?: EmailNotificationService,
   ) {}
 
   async listPublicContents(query: PublicContentQueryDto = {}) {
@@ -3802,7 +3814,10 @@ export class NightlifeDataService {
   async createPartnerRequest(dto: CreatePartnerRequestDto) {
     const submittedAt = new Date();
     const requestId = `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const businessName = this.cleanRequiredText(dto.businessName, 'businessName');
+    const businessName = this.cleanRequiredText(
+      dto.businessName,
+      'businessName',
+    );
     const area = this.cleanNullableText(dto.area);
     const storeName = this.cleanNullableText(dto.storeName) ?? businessName;
     const storeDescription =
@@ -3990,8 +4005,9 @@ export class NightlifeDataService {
 
     const payload = this.partnerRequestPayload(log);
     const currentStatus =
-      (this.payloadString(payload.status) as PartnerRequestReviewStatus | null) ??
-      'PENDING_REVIEW';
+      (this.payloadString(
+        payload.status,
+      ) as PartnerRequestReviewStatus | null) ?? 'PENDING_REVIEW';
 
     if (currentStatus !== 'PENDING_REVIEW') {
       throw new UnprocessableEntityException(
@@ -5135,32 +5151,98 @@ export class NightlifeDataService {
 
     const bookingCode = this.bookingPublicCode(booking.id);
     const qrPayload = this.bookingQrPayload(booking);
-    const qrImageUrl =
-      `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
+    const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
+    const amountLabel = this.bookingAmountLabel(booking);
+    const payload = {
+      bookingId: booking.id,
+      bookingCode,
+      status: booking.status,
+      scheduledAt: this.toAuditIso(booking.scheduledAt),
+      partySize: booking.partySize ?? null,
+      storeName: booking.store?.name ?? null,
+      storeSlug: booking.store?.slug ?? null,
+      castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+      guestName: booking.guest?.displayName ?? null,
+      amountLabel,
+      couponCode: booking.coupon?.code ?? null,
+      couponIssueCode: booking.couponIssue?.code ?? null,
+      qrPayload,
+      qrImageUrl,
+    } satisfies Prisma.InputJsonObject;
 
-    await this.prisma.notificationLog.create({
-      data: {
-        guestId: booking.guest?.id,
-        storeId: booking.storeId ?? booking.store?.id ?? undefined,
-        bookingId: booking.id,
-        channel: 'EMAIL',
-        status: 'QUEUED',
-        recipient: email,
-        templateKey: 'customer.booking.qr_email.v1',
-        payload: {
+    let log: { id: string };
+    try {
+      log = await this.prisma.notificationLog.create({
+        data: {
+          guestId: booking.guest?.id,
+          storeId: booking.storeId ?? booking.store?.id ?? undefined,
           bookingId: booking.id,
-          bookingCode,
-          status: booking.status,
-          scheduledAt: this.toAuditIso(booking.scheduledAt),
-          partySize: booking.partySize ?? null,
-          storeName: booking.store?.name ?? null,
-          storeSlug: booking.store?.slug ?? null,
-          guestName: booking.guest?.displayName ?? null,
-          qrPayload,
-          qrImageUrl,
+          channel: 'EMAIL',
+          status: 'QUEUED',
+          recipient: email,
+          templateKey: 'customer.booking.qr_email.v1',
+          payload,
         },
-      },
-    });
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to queue booking QR email notification: ${this.errorMessage(error)}`,
+      );
+      return;
+    }
+
+    try {
+      if (!this.emailNotificationService) {
+        throw new Error('EmailNotificationService is not available');
+      }
+
+      const result = await this.emailNotificationService.sendBookingQrEmail({
+        to: email,
+        guestName: booking.guest?.displayName,
+        bookingId: booking.id,
+        bookingCode,
+        status: booking.status,
+        storeName: booking.store?.name,
+        storeSlug: booking.store?.slug,
+        castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+        scheduledAt: booking.scheduledAt,
+        partySize: booking.partySize,
+        amountLabel,
+        note: booking.note,
+        qrPayload,
+        qrImageUrl,
+        qrImageDataUrl,
+      });
+
+      await this.prisma.notificationLog.update({
+        where: { id: log.id },
+        data: {
+          status: 'SENT',
+          sentAt: new Date(),
+          error: null,
+          payload: {
+            ...payload,
+            providerMessageId: result.messageId ?? null,
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Booking QR email failed: ${this.errorMessage(error)}`);
+      await this.prisma.notificationLog
+        .update({
+          where: { id: log.id },
+          data: {
+            status: 'FAILED',
+            error: this.errorMessage(error),
+          },
+        })
+        .catch((logError) => {
+          this.logger.warn(
+            `Failed to update booking QR email notification log: ${this.errorMessage(logError)}`,
+          );
+        });
+    }
   }
 
   private bookingPublicCode(bookingId: string) {
@@ -5175,6 +5257,30 @@ export class NightlifeDataService {
       booking.store?.slug ?? 'nightlife',
       this.toAuditIso(booking.scheduledAt) ?? '',
     ].join('|');
+  }
+
+  private async buildBookingQrImageDataUrl(payload: string) {
+    return QRCode.toDataURL(payload, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 220,
+    });
+  }
+
+  private bookingAmountLabel(booking: BookingNotificationRecord) {
+    if (typeof booking.totalVnd === 'number' && booking.totalVnd > 0) {
+      return this.formatVnd(booking.totalVnd);
+    }
+
+    return 'Miễn phí - không thu cọc';
+  }
+
+  private formatVnd(value: number) {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0,
+    }).format(value);
   }
 
   private async findMemberBookingChatTarget(
@@ -5433,7 +5539,9 @@ export class NightlifeDataService {
         },
       },
       user: { select: { id: true, displayName: true, tier: true } },
-      guest: { select: { id: true, displayName: true, phone: true, email: true } },
+      guest: {
+        select: { id: true, displayName: true, phone: true, email: true },
+      },
       coupon: { select: { id: true, code: true, name: true } },
       couponIssue: { select: { id: true, code: true, status: true } },
     } satisfies Prisma.BookingSelect;
@@ -7189,6 +7297,10 @@ export class NightlifeDataService {
     return this.cleanText(value).toLowerCase();
   }
 
+  private errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
   private cleanStringArray(values?: string[] | null, limit = 12) {
     if (!Array.isArray(values)) {
       return [];
@@ -7229,7 +7341,9 @@ export class NightlifeDataService {
       .filter((profile) => profile.stageName);
   }
 
-  private normalizePartnerRequestCategory(value?: string | null): StoreCategory {
+  private normalizePartnerRequestCategory(
+    value?: string | null,
+  ): StoreCategory {
     const category = this.normalizeCategory(value);
     if (category) {
       return category;
@@ -7294,10 +7408,7 @@ export class NightlifeDataService {
   ) {
     const base = this.normalizeToken(value) || 'partner';
     const requestToken = this.normalizeToken(requestId) || randomUUID();
-    return [base, requestToken, suffix]
-      .filter(Boolean)
-      .join('-')
-      .slice(0, 190);
+    return [base, requestToken, suffix].filter(Boolean).join('-').slice(0, 190);
   }
 
   private partnerRequestMediaStorageKey(
