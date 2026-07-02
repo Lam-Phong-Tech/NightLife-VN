@@ -906,6 +906,10 @@ const castSearchCss = `
   padding: 28px 28px 58px;
 }
 
+.nl-page-content:has(.cast-search-page) {
+  padding-bottom: 0 !important;
+}
+
 .cast-search-shell {
   width: min(1180px, 100%);
   margin: 0 auto;
