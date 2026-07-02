@@ -1871,6 +1871,11 @@ export default function AdminConsole({ section }: { section?: string }) {
               <span style={{ display: "block", marginTop: 3, fontSize: 11 }}>
                 {couponRelationLabel(bill.coupon, bill.couponIssue)}
               </span>
+              {!bill.booking && bill.couponIssue ? (
+                <span style={{ display: "inline-flex", marginTop: 6 }}>
+                  <Badge tone="PENDING">Không có booking</Badge>
+                </span>
+              ) : null}
             </span>
             <span style={{ color: colors.text, fontWeight: 800 }}>{formatMoney(bill.totalVnd)}</span>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
