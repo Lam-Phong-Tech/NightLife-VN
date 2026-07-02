@@ -974,9 +974,11 @@ function ServiceRegionSwitch({
 function RankingRegionDropdown({
   active,
   onChange,
+  ariaLabel = "Chọn khu vực xếp hạng",
 }: {
   active: ServiceRegion;
   onChange: (value: ServiceRegion) => void;
+  ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = serviceRegionTabs.find((item) => item.id === active) ?? serviceRegionTabs[0];
@@ -1028,7 +1030,7 @@ function RankingRegionDropdown({
       {open ? (
         <div
           role="listbox"
-          aria-label="Chọn khu vực xếp hạng"
+          aria-label={ariaLabel}
           style={{
             position: "absolute",
             top: "calc(100% + 8px)",
@@ -1091,6 +1093,33 @@ function RankingRegionDropdown({
           })}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function ServiceFilterControls({
+  activeTab,
+  onTabChange,
+  activeRegion,
+  onRegionChange,
+}: {
+  activeTab: string;
+  onTabChange: (value: string) => void;
+  activeRegion: ServiceRegion;
+  onRegionChange: (value: ServiceRegion) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        margin: "10px 0 13px",
+      }}
+    >
+      <TabSwitch items={serviceTabs} active={activeTab} onChange={onTabChange} />
+      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} ariaLabel="Chọn khu vực dịch vụ" />
     </div>
   );
 }
@@ -1209,11 +1238,15 @@ export default function Page() {
             </div>
 
             <section style={{ marginTop: "22px" }}>
-              <div style={sectionTitleStyle}>
+              <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Dịch vụ nổi bật</h2>
-                <TabSwitch items={serviceTabs} active={activeSvcTab} onChange={setActiveSvcTab} />
               </div>
-              <ServiceRegionSwitch active={activeServiceRegion} onChange={setActiveServiceRegion} />
+              <ServiceFilterControls
+                activeTab={activeSvcTab}
+                onTabChange={setActiveSvcTab}
+                activeRegion={activeServiceRegion}
+                onRegionChange={setActiveServiceRegion}
+              />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
                 {svc.slice(0, 2).map((item) => <ServiceCard key={item.name} item={item} compact />)}
               </div>
@@ -1287,14 +1320,18 @@ export default function Page() {
             </div>
 
             <section style={{ marginTop: "34px" }}>
-              <div style={sectionTitleStyle}>
+              <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>
                   <Trophy size={24} color={colors.gold} />
                   Dịch vụ nổi bật
                 </h2>
-                <TabSwitch items={serviceTabs} active={activeSvcTab} onChange={setActiveSvcTab} />
               </div>
-              <ServiceRegionSwitch active={activeServiceRegion} onChange={setActiveServiceRegion} />
+              <ServiceFilterControls
+                activeTab={activeSvcTab}
+                onTabChange={setActiveSvcTab}
+                activeRegion={activeServiceRegion}
+                onRegionChange={setActiveServiceRegion}
+              />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {svc.map((item) => <ServiceCard key={item.name} item={item} />)}
               </div>
