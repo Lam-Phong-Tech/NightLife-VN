@@ -20,6 +20,9 @@ const formatDateTime = (value?: string) => {
 
 const bookingCode = (booking: BookingRecord) => `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
+const bookingQrFileName = (booking: BookingRecord) =>
+  `nightlife-booking-${booking.id.slice(0, 8).toLowerCase()}-qr.png`;
+
 const bookingQrPayload = (booking: BookingRecord) =>
   [
     "NLBOOKING",
@@ -89,7 +92,7 @@ export default function Page() {
       return;
     }
 
-    const fileName = `${bookingCode(booking).replace("#", "").toLowerCase()}-qr.png`;
+    const fileName = bookingQrFileName(booking);
 
     try {
       const response = await fetch(qrImageUrl);

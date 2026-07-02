@@ -33,7 +33,7 @@ describe('Home Page', () => {
 
     expect(searchPanels).toHaveLength(adBanners.length);
     searchPanels.forEach((searchPanel, index) => {
-      expect(searchPanel.compareDocumentPosition(adBanners[index]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(searchPanel.compareDocumentPosition(adBanners[index]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
   });
 

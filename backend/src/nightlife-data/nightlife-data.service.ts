@@ -3661,9 +3661,9 @@ export class NightlifeDataService {
 
     const bill = await this.prisma.bill.create({
       data: {
-        bookingId: booking?.id,
+        bookingId: booking?.id ?? null,
         userId: user.id,
-        guestId: booking?.guestId,
+        guestId: booking?.guestId ?? null,
         storeId: store.id,
         couponId: couponLink.couponId,
         couponIssueId: couponLink.couponIssueId,
@@ -3787,9 +3787,9 @@ export class NightlifeDataService {
 
     const bill = await this.prisma.bill.create({
       data: {
-        bookingId: booking?.id,
-        userId: booking?.userId,
-        guestId: booking?.guestId,
+        bookingId: booking?.id ?? null,
+        userId: booking?.userId ?? couponLink.userId ?? null,
+        guestId: booking?.guestId ?? couponLink.guestId ?? null,
         storeId: store.id,
         couponId: couponLink.couponId,
         couponIssueId: couponLink.couponIssueId,
@@ -4547,6 +4547,8 @@ export class NightlifeDataService {
     let couponIssueCode = input.booking?.couponIssue?.code;
     let couponIssueStatus = input.booking?.couponIssue?.status;
     let coupon = input.booking?.coupon ?? null;
+    let userId: string | null | undefined;
+    let guestId: string | null | undefined;
 
     if (
       requestedCouponIssueId &&
@@ -4651,6 +4653,8 @@ export class NightlifeDataService {
       couponIssueId = issue.id;
       couponIssueCode = issue.code;
       couponIssueStatus = issue.status;
+      userId = issue.userId;
+      guestId = issue.guestId;
       coupon = {
         id: issue.coupon.id,
         code: issue.coupon.code,
@@ -4692,6 +4696,8 @@ export class NightlifeDataService {
       couponIssueCode,
       couponIssueStatus,
       coupon,
+      userId,
+      guestId,
     };
   }
 

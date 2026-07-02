@@ -2529,7 +2529,17 @@ describe('NightlifeDataService', () => {
         user: { id: 'user-1', displayName: 'Member', tier: 'FREE' },
         guest: null,
         scannedBy: null,
-        booking: null,
+        booking: {
+          id: 'booking-1',
+          status: 'CONFIRMED',
+          scheduledAt: new Date('2026-07-01T14:00:00.000Z'),
+        },
+        bill: {
+          id: 'bill-1',
+          billNumber: 'BILL-20260701-ABC12345',
+          status: 'SUBMITTED',
+          totalVnd: 1800000,
+        },
         coupon: {
           id: 'coupon-1',
           code: 'MEMBER8',
@@ -2572,6 +2582,16 @@ describe('NightlifeDataService', () => {
         id: 'issue-1',
         status: 'ISSUED',
         qrPayloadHash: 'hash-issued-1',
+        booking: expect.objectContaining({
+          id: 'booking-1',
+          status: 'CONFIRMED',
+          scheduledAt: new Date('2026-07-01T14:00:00.000Z'),
+        }),
+        bill: expect.objectContaining({
+          id: 'bill-1',
+          billNumber: 'BILL-20260701-ABC12345',
+          status: 'SUBMITTED',
+        }),
         qrImageDataUrl: expect.stringContaining('data:image/png;base64,'),
         discountPercent: 8,
         campaignSnapshot: expect.objectContaining({
@@ -2601,6 +2621,15 @@ describe('NightlifeDataService', () => {
         take: 25,
         select: expect.objectContaining({
           qrPayloadHash: true,
+          booking: { select: { id: true, status: true, scheduledAt: true } },
+          bill: {
+            select: {
+              id: true,
+              billNumber: true,
+              status: true,
+              totalVnd: true,
+            },
+          },
         }),
       }),
     );
@@ -2685,32 +2714,26 @@ describe('NightlifeDataService', () => {
 
   it('submits a member bill with a coupon issue without requiring a booking', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
-    prisma.couponIssue.findFirst
-      .mockResolvedValueOnce({
-        coupon: {
-          store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
-        },
-      } as never)
-      .mockResolvedValueOnce({
-        id: 'issue-1',
-        code: 'MEMBER-code',
-        couponId: 'coupon-1',
-        userId: 'member-1',
-        guestId: null,
-        status: 'USED',
-        expiresAt: null,
-        bill: null,
-        coupon: {
-          id: 'coupon-1',
-          code: 'WELCOME20',
-          name: 'Welcome 20%',
-          storeId: 'store-1',
-        },
-      } as never);
-    prisma.coupon.findFirst.mockResolvedValue({
-      id: 'coupon-1',
-      code: 'WELCOME20',
-      name: 'Welcome 20%',
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.couponIssue.findFirst.mockResolvedValue({
+      id: 'issue-1',
+      code: 'MEMBER-code',
+      couponId: 'coupon-1',
+      userId: 'member-1',
+      guestId: null,
+      status: 'USED',
+      expiresAt: null,
+      bill: null,
+      coupon: {
+        id: 'coupon-1',
+        code: 'WELCOME20',
+        name: 'Welcome 20%',
+        storeId: 'store-1',
+      },
     } as never);
     prisma.bill.create.mockResolvedValue({
       id: 'bill-1',
@@ -2726,7 +2749,7 @@ describe('NightlifeDataService', () => {
     await service.submitMemberBill(
       { id: 'member-1', role: 'USER' },
       {
-        couponId: 'coupon-1',
+        storeSlug: 'neon-club',
         couponIssueId: 'issue-1',
         totalVnd: 1800000,
         usedAt: '2026-06-30T14:00:00.000Z',
@@ -2736,7 +2759,7 @@ describe('NightlifeDataService', () => {
     expect(prisma.bill.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          bookingId: undefined,
+          bookingId: null,
           userId: 'member-1',
           storeId: 'store-1',
           couponId: 'coupon-1',
@@ -2826,6 +2849,72 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         id: 'bill-1',
         status: 'SUBMITTED',
+      }),
+    );
+  });
+
+  it('submits a partner bill with a guest coupon issue without requiring a booking', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.couponIssue.findFirst.mockResolvedValue({
+      id: 'issue-guest-1',
+      code: 'GUEST-code',
+      couponId: 'coupon-guest-1',
+      userId: null,
+      guestId: 'guest-1',
+      status: 'USED',
+      expiresAt: null,
+      bill: null,
+      coupon: {
+        id: 'coupon-guest-1',
+        code: 'GUEST20',
+        name: 'Guest 20%',
+        storeId: 'store-1',
+      },
+    } as never);
+    prisma.bill.create.mockResolvedValue({
+      id: 'bill-guest-1',
+      billNumber: 'BILL-20260701-GUEST001',
+      status: 'SUBMITTED',
+      totalVnd: 2200000,
+      usedAt: new Date('2026-06-30T14:00:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: null,
+      guest: { id: 'guest-1', displayName: 'Guest', phone: '+84901234567' },
+      coupon: { id: 'coupon-guest-1', code: 'GUEST20', name: 'Guest 20%' },
+      couponIssue: { id: 'issue-guest-1', code: 'GUEST-code', status: 'USED' },
+    } as never);
+
+    await service.submitPartnerBill(
+      { id: 'partner-1', role: 'PARTNER' },
+      {
+        storeSlug: 'neon-club',
+        couponIssueId: 'issue-guest-1',
+        totalVnd: 2200000,
+        usedAt: '2026-06-30T14:00:00.000Z',
+      },
+    );
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+      'bill.partner.view',
+    );
+    expect(prisma.bill.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bookingId: null,
+          userId: null,
+          guestId: 'guest-1',
+          storeId: 'store-1',
+          couponId: 'coupon-guest-1',
+          couponIssueId: 'issue-guest-1',
+          status: 'SUBMITTED',
+        }),
       }),
     );
   });
@@ -3286,6 +3375,70 @@ describe('NightlifeDataService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.bill.update).not.toHaveBeenCalled();
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('returns booking, coupon, and coupon issue relations for admin sensitive bills', async () => {
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-1',
+        billNumber: 'BILL-20260701-ABC12345',
+        status: 'SUBMITTED',
+        totalVnd: 1800000,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        booking: {
+          id: 'booking-1',
+          status: 'CONFIRMED',
+          scheduledAt: new Date('2026-07-01T14:00:00.000Z'),
+        },
+        coupon: {
+          id: 'coupon-1',
+          code: 'WELCOME20',
+          name: 'Welcome 20%',
+        },
+        couponIssue: {
+          id: 'issue-1',
+          code: 'MEMBER-code',
+          status: 'USED',
+        },
+        user: null,
+        guest: null,
+      },
+    ] as never);
+
+    await expect(
+      service.listSensitiveBillsForAdmin({
+        id: 'admin-1',
+        role: 'ADMIN',
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        booking: {
+          id: 'booking-1',
+          status: 'CONFIRMED',
+          scheduledAt: new Date('2026-07-01T14:00:00.000Z'),
+        },
+        coupon: {
+          id: 'coupon-1',
+          code: 'WELCOME20',
+          name: 'Welcome 20%',
+        },
+        couponIssue: {
+          id: 'issue-1',
+          code: 'MEMBER-code',
+          status: 'USED',
+        },
+      }),
+    ]);
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          booking: { select: { id: true, status: true, scheduledAt: true } },
+          coupon: { select: { id: true, code: true, name: true } },
+          couponIssue: { select: { id: true, code: true, status: true } },
+        }),
+      }),
+    );
   });
 
   it('masks sensitive bill customer fields for operator review queue', async () => {
