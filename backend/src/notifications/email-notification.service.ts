@@ -52,7 +52,7 @@ export class EmailNotificationService {
     const message = await transporter.sendMail({
       from,
       to: input.to,
-      subject: `NightLife - ${input.bookingCode} đã được ghi nhận`,
+      subject: `NightLife - ${input.bookingCode} đơn đặt bàn thành công`,
       text: this.bookingEmailText(input),
       html: this.bookingEmailHtml(input, Boolean(qrAttachment)),
       attachments: qrAttachment ? [qrAttachment] : undefined,
