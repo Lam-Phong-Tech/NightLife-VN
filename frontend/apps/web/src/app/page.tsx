@@ -908,69 +908,6 @@ function TabSwitch({
   );
 }
 
-function ServiceRegionSwitch({
-  active,
-  onChange,
-}: {
-  active: ServiceRegion;
-  onChange: (value: ServiceRegion) => void;
-}) {
-  return (
-    <div
-      className="hscroll"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "9px",
-        overflowX: "auto",
-        paddingBottom: "2px",
-        margin: "10px 0 13px",
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          flex: "none",
-          width: 30,
-          height: 30,
-          borderRadius: "999px",
-          display: "grid",
-          placeItems: "center",
-          color: colors.goldSoft,
-        }}
-      >
-        <MapPin size={17} />
-      </span>
-      {serviceRegionTabs.map((item) => {
-        const selected = active === item.id;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onChange(item.id)}
-            style={{
-              flex: "none",
-              minHeight: 36,
-              border: `1px solid ${selected ? "rgba(212,178,106,.5)" : colors.line}`,
-              borderRadius: "999px",
-              background: selected ? colors.gold : "rgba(255,255,255,.045)",
-              color: selected ? "#241a0a" : colors.muted,
-              padding: "0 17px",
-              fontSize: "12px",
-              fontWeight: 850,
-              whiteSpace: "nowrap",
-              cursor: "pointer",
-              boxShadow: selected ? "0 8px 18px rgba(212,178,106,.16)" : "none",
-            }}
-          >
-            {item.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function RankingRegionDropdown({
   active,
   onChange,
@@ -1260,8 +1197,14 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "22px", paddingBottom: "22px" }}>
-              <SectionHeading title="Video Hot" />
-              <ServiceRegionSwitch active={activeVideoRegion} onChange={setActiveVideoRegion} />
+              <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
+                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Video Hot</h2>
+                <RankingRegionDropdown
+                  active={activeVideoRegion}
+                  onChange={setActiveVideoRegion}
+                  ariaLabel="Chọn khu vực video"
+                />
+              </div>
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
                 {videoList.slice(0, 3).map((item) => <VideoCard key={item.name} item={item} compact />)}
               </div>
@@ -1345,8 +1288,14 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "34px" }}>
-              <SectionHeading title="Video Hot" />
-              <ServiceRegionSwitch active={activeVideoRegion} onChange={setActiveVideoRegion} />
+              <div style={{ ...sectionTitleStyle, marginBottom: "14px" }}>
+                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Video Hot</h2>
+                <RankingRegionDropdown
+                  active={activeVideoRegion}
+                  onChange={setActiveVideoRegion}
+                  ariaLabel="Chọn khu vực video"
+                />
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {videoList.map((item) => <VideoCard key={item.name} item={item} />)}
               </div>
