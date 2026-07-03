@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsEnum, IsArray, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
+import { StoreCategory, StoreStatus } from '@prisma/client';
 
 export class AdminStoreQueryDto {
   @IsOptional()
@@ -21,4 +22,79 @@ export class AdminStoreQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+}
+
+export class CreateAdminStoreDto {
+  @IsString()
+  name: string;
+
+  @IsEnum(StoreCategory)
+  category: StoreCategory;
+
+  @IsString()
+  city: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  mapUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  openingHours?: any;
+
+  @IsOptional()
+  @IsObject()
+  pricingInfo?: any;
+
+  @IsOptional()
+  @IsEnum(StoreStatus)
+  status?: StoreStatus;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  mediaIds?: string[];
+}
+
+export class UpdateAdminStoreDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsEnum(StoreCategory)
+  category?: StoreCategory;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  mapUrl?: string;
+
+  @IsOptional()
+  @IsObject()
+  openingHours?: any;
+
+  @IsOptional()
+  @IsObject()
+  pricingInfo?: any;
+
+  @IsOptional()
+  @IsEnum(StoreStatus)
+  status?: StoreStatus;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  mediaIds?: string[];
 }

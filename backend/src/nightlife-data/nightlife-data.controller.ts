@@ -972,6 +972,33 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listAdminStores(query);
   }
 
+  @ApiOperation({ summary: 'Admin action: Check if a store slug is available' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/stores/check-slug')
+  checkAdminStoreSlug(@Query('slug') slug: string) {
+    return this.nightlifeDataService.checkAdminStoreSlug(slug);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Create a new store' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/stores')
+  createAdminStore(@Body() dto: import('./dto/admin-store.dto').CreateAdminStoreDto) {
+    return this.nightlifeDataService.createAdminStore(dto);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Update an existing store' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/stores/:id')
+  updateAdminStore(
+    @Param('id') id: string,
+    @Body() dto: import('./dto/admin-store.dto').UpdateAdminStoreDto
+  ) {
+    return this.nightlifeDataService.updateAdminStore(id, dto);
+  }
+
   @ApiOperation({ summary: 'Admin action: Approve or reject a bill' })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)

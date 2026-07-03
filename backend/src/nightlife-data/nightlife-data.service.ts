@@ -10223,6 +10223,104 @@ export class NightlifeDataService {
     };
   }
 
+  async checkAdminStoreSlug(slug: string) {
+    const existing = await this.prisma.store.findUnique({ where: { slug } });
+    return { available: !existing };
+  }
+
+  private generateSlug(name: string): string {
+    return name.toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+
+  private async inferAreaFromAddress(address: string, city: string): Promise<string | undefined> {
+    // A simple inference: look for matching district names in the address
+    const areas = await this.prisma.area.findMany({
+      where: { city, status: 'ACTIVE' }
+    });
+    
+    // Find an area where its district name is mentioned in the address
+    // e.g. "Tây Hồ", "Hoàn Kiếm", "Quận 1"
+    const lowerAddr = address.toLowerCase();
+    for (const area of areas) {
+      if (area.district && lowerAddr.includes(area.district.toLowerCase())) {
+        return area.id;
+      }
+    }
+    
+    // Fallback: just return the first active area in that city
+    if (areas.length > 0) return areas[0].id;
+    return undefined;
+  }
+
+  async createAdminStore(dto: import('./dto/admin-store.dto').CreateAdminStoreDto) {
+    let slug = this.generateSlug(dto.name);
+    let counter = 1;
+    while (!(await this.checkAdminStoreSlug(slug)).available) {
+      slug = `${this.generateSlug(dto.name)}-${counter++}`;
+    }
+
+    let areaId: string | undefined;
+    if (dto.address) {
+      areaId = await this.inferAreaFromAddress(dto.address, dto.city);
+    }
+
+    const newStore = await this.prisma.store.create({
+      data: {
+        name: dto.name,
+        slug,
+        category: dto.category,
+        city: dto.city,
+        address: dto.address,
+        mapUrl: dto.mapUrl,
+        // openingHours: dto.openingHours as any,
+        // pricingInfo: dto.pricingInfo as any,
+        status: dto.status || 'ACTIVE',
+        areaId,
+        ...(dto.mediaIds && dto.mediaIds.length > 0 ? {
+          media: {
+            connect: dto.mediaIds.map(id => ({ id }))
+          }
+        } : {})
+      }
+    });
+
+    return newStore;
+  }
+
+  async updateAdminStore(id: string, dto: import('./dto/admin-store.dto').UpdateAdminStoreDto) {
+    let areaId: string | undefined;
+    if (dto.address && dto.city) {
+      areaId = await this.inferAreaFromAddress(dto.address, dto.city);
+    }
+
+    const updated = await this.prisma.store.update({
+      where: { id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.category && { category: dto.category }),
+        ...(dto.city && { city: dto.city }),
+        ...(dto.address && { address: dto.address }),
+        ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
+        // ...(dto.openingHours !== undefined && { openingHours: dto.openingHours as any }),
+        // ...(dto.pricingInfo !== undefined && { pricingInfo: dto.pricingInfo as any }),
+        ...(dto.status && { status: dto.status }),
+        ...(areaId && { areaId }),
+        ...(dto.mediaIds ? {
+          media: {
+            set: dto.mediaIds.map(mid => ({ id: mid }))
+          }
+        } : {})
+      }
+    });
+
+    return updated;
+  }
+
   async listAdminCoupons(query: import('./dto/admin-coupon.dto').AdminCouponQueryDto) {
     const { page = 1, limit = 10, status, search } = query;
     const skip = (page - 1) * limit;
