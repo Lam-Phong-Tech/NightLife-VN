@@ -170,15 +170,38 @@ const sensitiveBills = [
   },
 ];
 
+const adminStores = [{ id: "store-1", name: "Neon Club", slug: "neon-club" }];
+
 const revenueReport = {
   filters: {
-    from: "2026-07-01T00:00:00.000Z",
-    to: "2026-07-02T23:59:59.999Z",
+    from: "2026-06-30T17:00:00.000Z",
+    to: "2026-07-02T16:59:59.999Z",
+    fromDate: "2026-07-01",
+    toDate: "2026-07-02",
+    timezone: "Asia/Ho_Chi_Minh",
     dateField: "usedAt",
     statusIn: ["VERIFIED", "PAID"],
+    billStatusIncluded: ["VERIFIED", "PAID"],
     storeId: null,
     couponId: null,
-    exportEnabled: false,
+    partnerAccountId: null,
+    areaId: null,
+    castId: null,
+    exportEnabled: true,
+    exportFormats: ["excel", "pdf"],
+  },
+  meta: {
+    billStatusIncluded: ["VERIFIED", "PAID"],
+    timezone: "Asia/Ho_Chi_Minh",
+    generatedAt: "2026-07-03T10:00:00.000Z",
+    exportEnabled: true,
+    exportFormats: ["excel", "pdf"],
+    formula: {
+      grossVnd: "subtotalVnd",
+      discountVnd: "discountVnd",
+      netVnd: "paidVnd || subtotalVnd - discountVnd",
+      commissionVnd: "commissionAmountVnd",
+    },
   },
   totals: {
     billCount: 2,
@@ -211,18 +234,106 @@ const revenueReport = {
               discountVnd: 200000,
               netVnd: 2800000,
               commissionVnd: 280000,
+              bills: [
+                {
+                  id: "bill-verified-1",
+                  billNumber: "BILL-20260701-VERIFIED",
+                  status: "VERIFIED",
+                  usedAt: "2026-07-01T10:00:00.000Z",
+                  billCount: 1,
+                  grossVnd: 2000000,
+                  discountVnd: 200000,
+                  netVnd: 1800000,
+                  commissionVnd: 180000,
+                },
+              ],
             },
           ],
         },
       ],
     },
   ],
+  breakdowns: {
+    partners: [
+      {
+        id: "partner-1",
+        code: "ACTIVE",
+        name: "Neon Partner",
+        secondary: "ACTIVE",
+        billCount: 2,
+        grossVnd: 3000000,
+        discountVnd: 200000,
+        netVnd: 2800000,
+        commissionVnd: 280000,
+      },
+    ],
+    campaigns: [
+      {
+        id: "coupon-1",
+        code: "WELCOME20",
+        name: "Welcome 20%",
+        secondary: null,
+        billCount: 2,
+        grossVnd: 3000000,
+        discountVnd: 200000,
+        netVnd: 2800000,
+        commissionVnd: 280000,
+      },
+    ],
+    areas: [
+      {
+        id: "area-1",
+        code: "D1",
+        name: "District 1",
+        secondary: "Ho Chi Minh City",
+        billCount: 2,
+        grossVnd: 3000000,
+        discountVnd: 200000,
+        netVnd: 2800000,
+        commissionVnd: 280000,
+      },
+    ],
+    casts: [
+      {
+        id: "cast-1",
+        code: "mika",
+        name: "Mika",
+        secondary: null,
+        billCount: 1,
+        grossVnd: 2000000,
+        discountVnd: 200000,
+        netVnd: 1800000,
+        commissionVnd: 180000,
+      },
+    ],
+  },
+  funnel: [
+    { key: "booking_qr", label: "Booking QR", count: 3, rateFromPrevious: null },
+    { key: "qr_used", label: "QR used", count: 2, rateFromPrevious: 66.67 },
+    { key: "bill_approved", label: "Bill approved", count: 2, rateFromPrevious: 100 },
+    { key: "commission", label: "Commission", count: 280000, commissionVnd: 280000, rateFromPrevious: null },
+  ],
+  comparison: {
+    previousPeriod: {
+      from: "2026-06-28T17:00:00.000Z",
+      to: "2026-06-30T16:59:59.999Z",
+      fromDate: "2026-06-29",
+      toDate: "2026-06-30",
+    },
+    totals: {
+      billCount: { current: 2, previous: 1, delta: 1, deltaPercent: 100 },
+      grossVnd: { current: 3000000, previous: 1000000, delta: 2000000, deltaPercent: 200 },
+      discountVnd: { current: 200000, previous: 0, delta: 200000, deltaPercent: null },
+      netVnd: { current: 2800000, previous: 1000000, delta: 1800000, deltaPercent: 180 },
+      commissionVnd: { current: 280000, previous: 100000, delta: 180000, deltaPercent: 180 },
+    },
+  },
 };
 
 describe("AdminConsole coupon issue panel", () => {
   beforeEach(() => {
     mocks.apiClient.mockImplementation(async (path: string) => {
-      if (path === "/partner/stores") return [];
+      if (path === "/partner/stores") return adminStores;
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return [];
       if (path === "/partner/bills") return [];
@@ -257,7 +368,7 @@ describe("AdminConsole coupon issue panel", () => {
 
   it("sends booking, coupon, and coupon issue filters to the sensitive bill endpoint", async () => {
     mocks.apiClient.mockImplementation(async (path: string) => {
-      if (path === "/partner/stores") return [];
+      if (path === "/partner/stores") return adminStores;
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return sensitiveBills;
       if (path === "/partner/bills") return sensitiveBills;
@@ -273,9 +384,13 @@ describe("AdminConsole coupon issue panel", () => {
     await within(panel).findByText("BILL-20260701-ABC12345");
     expect(within(panel).getByText(/booking/i)).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Booking ID filter"), { target: { value: "booking-1" } });
+    fireEvent.change(screen.getByLabelText("Booking ID filter"), {
+      target: { value: "booking-1" },
+    });
     fireEvent.change(screen.getByLabelText("Coupon ID filter"), { target: { value: "coupon-1" } });
-    fireEvent.change(screen.getByLabelText("Coupon issue ID filter"), { target: { value: "issue-used" } });
+    fireEvent.change(screen.getByLabelText("Coupon issue ID filter"), {
+      target: { value: "issue-used" },
+    });
     fireEvent.click(screen.getByLabelText("Apply bill relation filters"));
 
     await waitFor(() => {
@@ -299,7 +414,9 @@ describe("AdminConsole coupon issue panel", () => {
     await within(panel).findByText("MEMBER-issued");
 
     const statusFilter = within(panel).getByRole("combobox");
-    const statusValues = Array.from(statusFilter.querySelectorAll("option")).map((option) => option.value);
+    const statusValues = Array.from(statusFilter.querySelectorAll("option")).map(
+      (option) => option.value,
+    );
     expect(statusValues).toContain("REVOKED");
     expect(statusValues).not.toContain("CANCELLED");
 
@@ -340,13 +457,32 @@ describe("AdminConsole coupon issue panel", () => {
     const panel = await screen.findByTestId("admin-revenue-report-panel");
     expect(within(panel).getByText("Report P0: ngày -> quán -> mã giảm giá")).toBeInTheDocument();
     expect(within(panel).getByText("2026-07-01")).toBeInTheDocument();
-    expect(within(panel).getByText("Neon Club")).toBeInTheDocument();
+    expect(within(panel).getAllByText("Neon Club").length).toBeGreaterThan(0);
     expect(within(panel).getByText("WELCOME20")).toBeInTheDocument();
     expect(within(panel).getByText("Welcome 20%")).toBeInTheDocument();
+    expect(within(panel).getByText(/grossVnd = subtotalVnd \/ bill g.c/)).toBeInTheDocument();
     expect(screen.queryByText("Export CSV")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Export revenue report Excel")).toBeInTheDocument();
+    expect(screen.getByLabelText("Export revenue report PDF")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-revenue-p2-dashboard")).toBeInTheDocument();
+    expect(within(panel).getByText("Booking QR")).toBeInTheDocument();
+    expect(within(panel).getByText("Bill approved")).toBeInTheDocument();
+    expect(within(panel).getByText(/Neon Partner/)).toBeInTheDocument();
+    expect(within(panel).getByText(/District 1/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Mika/)).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Revenue report from date"), { target: { value: "2026-07-01" } });
-    fireEvent.change(screen.getByLabelText("Revenue report to date"), { target: { value: "2026-07-02" } });
+    fireEvent.change(screen.getByLabelText("Revenue report from date"), {
+      target: { value: "2026-07-01" },
+    });
+    fireEvent.change(screen.getByLabelText("Revenue report to date"), {
+      target: { value: "2026-07-02" },
+    });
+    fireEvent.change(screen.getByLabelText("Revenue report store filter"), {
+      target: { value: "store-1" },
+    });
+    fireEvent.change(screen.getByLabelText("Revenue report coupon filter"), {
+      target: { value: "coupon-1" },
+    });
     fireEvent.click(screen.getByLabelText("Apply revenue report date filters"));
 
     await waitFor(() => {
@@ -354,9 +490,29 @@ describe("AdminConsole coupon issue panel", () => {
         "/admin/reports/revenue",
         expect.objectContaining({
           params: {
-            from: "2026-07-01T00:00:00.000Z",
-            to: "2026-07-02T23:59:59.999Z",
+            fromDate: "2026-07-01",
+            toDate: "2026-07-02",
+            timezone: "Asia/Ho_Chi_Minh",
+            storeId: "store-1",
+            couponId: "coupon-1",
           },
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByLabelText("Revenue coupon drilldown WELCOME20"));
+    expect(within(panel).getByText("BILL-20260701-VERIFIED")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Revenue quick range seven"));
+    await waitFor(() => {
+      expect(mocks.apiClient).toHaveBeenCalledWith(
+        "/admin/reports/revenue",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            timezone: "Asia/Ho_Chi_Minh",
+            storeId: "store-1",
+            couponId: "coupon-1",
+          }),
         }),
       );
     });
