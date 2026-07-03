@@ -12,9 +12,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type * as express from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { MediaResponseDto } from './dto/storage-response.dto';
 import { StorageService } from './storage.service';
 
 const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
@@ -47,6 +48,8 @@ type LocalUploadedFile = {
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
+  @ApiOperation({ summary: 'Tải file lên server' })
+  @ApiCreatedResponse({ type: MediaResponseDto })
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -136,6 +139,8 @@ export class StorageController {
     });
   }
 
+  @ApiOperation({ summary: 'Lưu đường dẫn file từ bên ngoài (External URL)' })
+  @ApiCreatedResponse({ type: MediaResponseDto })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('external')
@@ -165,6 +170,9 @@ export class StorageController {
     });
   }
 
+  @ApiOperation({ summary: 'Truy xuất file public' })
+  @ApiOkResponse({ description: 'File binary stream' })
+  @ApiProduces('application/octet-stream', 'image/jpeg', 'image/png', 'video/mp4')
   @Get('public/:storageKey')
   async getPublicFile(
     @Param('storageKey') storageKey: string,
@@ -177,6 +185,9 @@ export class StorageController {
     return response.sendFile(path);
   }
 
+  @ApiOperation({ summary: 'Truy xuất file có bảo vệ (cần token)' })
+  @ApiOkResponse({ description: 'File binary stream' })
+  @ApiProduces('application/octet-stream', 'image/jpeg', 'image/png', 'video/mp4')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('files/:storageKey')

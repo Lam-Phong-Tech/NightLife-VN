@@ -36,8 +36,14 @@ describe('AccessService', () => {
         role: 'PARTNER',
       }),
     ).resolves.toBe(true);
+    await expect(
+      service.canViewRevenueReport({
+        id: 'admin-1',
+        role: 'ADMIN',
+      }),
+    ).resolves.toBe(true);
 
-    expect(prisma.rolePermission.findFirst).toHaveBeenCalledWith({
+    expect(prisma.rolePermission.findFirst).toHaveBeenNthCalledWith(1, {
       where: {
         role: {
           key: 'partner',
@@ -46,6 +52,19 @@ describe('AccessService', () => {
         },
         permission: {
           key: 'booking.partner.view',
+        },
+      },
+      select: { id: true },
+    });
+    expect(prisma.rolePermission.findFirst).toHaveBeenNthCalledWith(2, {
+      where: {
+        role: {
+          key: 'admin',
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        permission: {
+          key: 'report.revenue.view',
         },
       },
       select: { id: true },

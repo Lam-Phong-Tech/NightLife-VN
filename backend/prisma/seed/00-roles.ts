@@ -82,6 +82,12 @@ const PERMISSIONS = [
     roleKeys: ['admin', 'operator'],
   },
   {
+    key: 'report.revenue.view',
+    name: 'View revenue report',
+    description: 'View revenue, discount, and commission reports',
+    roleKeys: ['admin'],
+  },
+  {
     key: 'booking.member.view',
     name: 'View own member bookings',
     description: 'View bookings owned by the authenticated member',

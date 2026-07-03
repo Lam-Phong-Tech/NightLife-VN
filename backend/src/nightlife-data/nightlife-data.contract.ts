@@ -755,12 +755,34 @@ const reviewedBillExample = {
 
 const adminRevenueReportExample = {
   filters: {
-    from: '2026-07-01T00:00:00.000Z',
-    to: '2026-07-31T23:59:59.999Z',
+    from: '2026-06-30T17:00:00.000Z',
+    to: '2026-07-31T16:59:59.999Z',
+    fromDate: '2026-07-01',
+    toDate: '2026-07-31',
+    timezone: 'Asia/Ho_Chi_Minh',
     dateField: 'usedAt',
     statusIn: ['VERIFIED', 'PAID'],
     flag: null,
-    exportEnabled: false,
+    billStatusIncluded: ['VERIFIED', 'PAID'],
+    partnerAccountId: null,
+    areaId: null,
+    castId: null,
+    exportEnabled: true,
+    exportFormats: ['excel', 'pdf'],
+  },
+  meta: {
+    billStatusIncluded: ['VERIFIED', 'PAID'],
+    timezone: 'Asia/Ho_Chi_Minh',
+    generatedAt: '2026-07-03T10:00:00.000Z',
+    exportEnabled: true,
+    exportFormats: ['excel', 'pdf'],
+    formula: {
+      grossVnd: 'subtotalVnd',
+      discountVnd: 'discountVnd',
+      netVnd: 'subtotalVnd - discountVnd',
+      payableVnd: 'netVnd + serviceChargeVnd + taxVnd',
+      commissionVnd: 'commissionAmountVnd',
+    },
   },
   totals: {
     billCount: 3,
@@ -801,12 +823,142 @@ const adminRevenueReportExample = {
               netVnd: 3900000,
               payableVnd: 4160000,
               commissionVnd: 420000,
+              bills: [
+                {
+                  id: 'bill_01',
+                  billNumber: 'BILL-20260702-ABC12345',
+                  status: 'VERIFIED',
+                  usedAt: '2026-07-02T14:00:00.000Z',
+                  billCount: 1,
+                  grossVnd: 2000000,
+                  discountVnd: 160000,
+                  netVnd: 1840000,
+                  commissionVnd: 240000,
+                },
+              ],
             },
           ],
         },
       ],
     },
   ],
+  breakdowns: {
+    partners: [
+      {
+        id: 'partner_01',
+        code: 'ACTIVE',
+        name: 'Neon Partner Group',
+        secondary: 'ACTIVE',
+        billCount: 3,
+        grossVnd: 6200000,
+        discountVnd: 500000,
+        netVnd: 5700000,
+        commissionVnd: 620000,
+      },
+    ],
+    campaigns: [
+      {
+        id: 'coupon_01',
+        code: 'MEMBER8',
+        name: 'Member 8',
+        secondary: null,
+        billCount: 2,
+        grossVnd: 4200000,
+        discountVnd: 300000,
+        netVnd: 3900000,
+        commissionVnd: 420000,
+      },
+      {
+        id: null,
+        code: 'NO_COUPON',
+        name: 'No coupon',
+        secondary: null,
+        billCount: 1,
+        grossVnd: 2000000,
+        discountVnd: 200000,
+        netVnd: 1800000,
+        commissionVnd: 200000,
+      },
+    ],
+    areas: [
+      {
+        id: 'area_01',
+        code: 'D1',
+        name: 'District 1',
+        secondary: 'Ho Chi Minh City',
+        billCount: 3,
+        grossVnd: 6200000,
+        discountVnd: 500000,
+        netVnd: 5700000,
+        commissionVnd: 620000,
+      },
+    ],
+    casts: [
+      {
+        id: 'cast_01',
+        code: 'mika',
+        name: 'Mika',
+        secondary: null,
+        billCount: 1,
+        grossVnd: 2000000,
+        discountVnd: 160000,
+        netVnd: 1840000,
+        commissionVnd: 240000,
+      },
+    ],
+  },
+  funnel: [
+    { key: 'booking_qr', label: 'Booking QR', count: 9, rateFromPrevious: null },
+    { key: 'qr_used', label: 'QR used', count: 6, rateFromPrevious: 66.67 },
+    {
+      key: 'bill_approved',
+      label: 'Bill approved',
+      count: 3,
+      rateFromPrevious: 50,
+    },
+    {
+      key: 'commission',
+      label: 'Commission',
+      count: 620000,
+      commissionVnd: 620000,
+      rateFromPrevious: null,
+    },
+  ],
+  comparison: {
+    previousPeriod: {
+      from: '2026-05-31T17:00:00.000Z',
+      to: '2026-06-30T16:59:59.999Z',
+      fromDate: '2026-06-01',
+      toDate: '2026-06-30',
+    },
+    totals: {
+      billCount: { current: 3, previous: 2, delta: 1, deltaPercent: 50 },
+      grossVnd: {
+        current: 6200000,
+        previous: 4100000,
+        delta: 2100000,
+        deltaPercent: 51.22,
+      },
+      discountVnd: {
+        current: 500000,
+        previous: 250000,
+        delta: 250000,
+        deltaPercent: 100,
+      },
+      netVnd: {
+        current: 5700000,
+        previous: 3850000,
+        delta: 1850000,
+        deltaPercent: 48.05,
+      },
+      commissionVnd: {
+        current: 620000,
+        previous: 410000,
+        delta: 210000,
+        deltaPercent: 51.22,
+      },
+    },
+  },
 };
 
 const partnerRequestExample = {
@@ -2091,9 +2243,9 @@ export function AdminRevenueReportContract() {
   return applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
-      summary: 'Admin action: P0 revenue report by date, store, and coupon',
+      summary: 'Admin action: revenue report with P2 BI breakdowns',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewSensitiveBill). Filters by Bill.usedAt service usage date and returns aggregate-only P0 report grouped by date -> store -> discount code. MVP does not export Excel or PDF.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewRevenueReport). Filters by Bill.usedAt service usage date in the selected timezone and returns revenue report grouped by date -> store -> discount code, plus P2 partner/campaign/area/cast breakdowns, funnel metrics, period comparison, and export metadata.',
     }),
     ApiQuery({
       name: 'from',
@@ -2106,6 +2258,26 @@ export function AdminRevenueReportContract() {
       required: false,
       description: 'Inclusive service usage date end (Bill.usedAt).',
       example: '2026-07-31T23:59:59.999Z',
+    }),
+    ApiQuery({
+      name: 'fromDate',
+      required: false,
+      description:
+        'Local service usage start date. Asia/Ho_Chi_Minh converts 2026-07-01 to 2026-06-30T17:00:00.000Z.',
+      example: '2026-07-01',
+    }),
+    ApiQuery({
+      name: 'toDate',
+      required: false,
+      description:
+        'Local service usage end date. Asia/Ho_Chi_Minh converts 2026-07-01 to 2026-07-01T16:59:59.999Z.',
+      example: '2026-07-31',
+    }),
+    ApiQuery({
+      name: 'timezone',
+      required: false,
+      description: 'Timezone used for local date filters and date grouping.',
+      example: 'Asia/Ho_Chi_Minh',
     }),
     ApiQuery({
       name: 'storeId',
@@ -2123,9 +2295,24 @@ export function AdminRevenueReportContract() {
       description:
         'Optional commission flag filter: NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED or MISSING_ACTIVE_COMMISSION_CONFIG.',
     }),
+    ApiQuery({
+      name: 'partnerAccountId',
+      required: false,
+      description: 'Optional partner account filter.',
+    }),
+    ApiQuery({
+      name: 'areaId',
+      required: false,
+      description: 'Optional area filter.',
+    }),
+    ApiQuery({
+      name: 'castId',
+      required: false,
+      description: 'Optional requested cast filter.',
+    }),
     ApiOkResponse({
       description:
-        'Revenue report grouped by service usage date, store, and discount code.',
+        'Revenue report grouped by service usage date, store, and discount code with P2 BI breakdowns.',
       schema: { example: adminRevenueReportExample },
     }),
     ApiUnauthorizedResponse({
@@ -2211,7 +2398,7 @@ const adminDashboardStatsExample = {
     { date: '2026-07-02', revenue: 20000000 },
   ],
   recentBookings: [],
-  telegramLogs: []
+  telegramLogs: [],
 };
 
 export function AdminDashboardStatsContract() {
@@ -2219,7 +2406,8 @@ export function AdminDashboardStatsContract() {
     ApiBearerAuth(),
     ApiOperation({
       summary: 'Admin action: Get dashboard statistics',
-      description: 'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Returns aggregated statistics for the admin dashboard.',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Returns aggregated statistics for the admin dashboard.',
     }),
     ApiOkResponse({
       description: 'Dashboard statistics successfully retrieved.',
@@ -2236,7 +2424,9 @@ export function AdminDashboardStatsContract() {
   );
 }
 
-export function CatalogParamsContract(options: { includeCastFilters?: boolean } = {}) {
+export function CatalogParamsContract(
+  options: { includeCastFilters?: boolean } = {},
+) {
   return publicDiscoveryQueries(options);
 }
 

@@ -95,6 +95,12 @@ const BILL_REVENUE_RULE_VERSION = 'ba-v3.2';
 const BILL_LOYALTY_RULE_VERSION = 'v2.2';
 const BILL_LOYALTY_VND_PER_POINT = 100_000;
 const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
+const DEFAULT_REVENUE_REPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
+const REVENUE_REPORT_TIMEZONE_OFFSETS_MINUTES: Record<string, number> = {
+  'Asia/Ho_Chi_Minh': 7 * 60,
+  UTC: 0,
+};
+const REVENUE_REPORT_BILL_STATUSES = ['VERIFIED', 'PAID'] as const;
 const MEMBER_POINT_TIER_THRESHOLDS = [
   { name: 'Premium+', points: 250 },
   { name: 'Elite', points: 500 },
@@ -270,6 +276,51 @@ type RevenueReportMoneyTotals = {
   commissionVnd: number;
 };
 
+type RevenueReportBillDetail = RevenueReportMoneyTotals & {
+  id: string;
+  billNumber: string | null;
+  status: string;
+  usedAt: string;
+};
+
+type RevenueReportWindow = {
+  from: Date;
+  to: Date;
+  fromDate: string;
+  toDate: string;
+  timezone: string;
+  timezoneOffsetMinutes: number;
+};
+
+type RevenueReportDimensionNode = RevenueReportMoneyTotals & {
+  id: string | null;
+  code: string;
+  name: string;
+  secondary: string | null;
+};
+
+type RevenueReportBreakdowns = {
+  partners: RevenueReportDimensionNode[];
+  campaigns: RevenueReportDimensionNode[];
+  areas: RevenueReportDimensionNode[];
+  casts: RevenueReportDimensionNode[];
+};
+
+type RevenueReportFunnelStep = {
+  key: string;
+  label: string;
+  count: number;
+  rateFromPrevious: number | null;
+  commissionVnd?: number;
+};
+
+type RevenueReportComparisonMetric = {
+  current: number;
+  previous: number;
+  delta: number;
+  deltaPercent: number | null;
+};
+
 type BillRevenueApprovalSnapshot = {
   grossVnd: number;
   discountVnd: number;
@@ -282,6 +333,7 @@ type BillRevenueApprovalSnapshot = {
 
 type MutableRevenueReportCouponNode = RevenueReportMoneyTotals & {
   coupon: { id: string | null; code: string; name: string };
+  bills: RevenueReportBillDetail[];
 };
 
 type MutableRevenueReportStoreNode = RevenueReportMoneyTotals & {
@@ -4478,15 +4530,19 @@ export class NightlifeDataService {
     query: AdminRevenueReportQueryDto = {},
   ) {
     void user;
-    const { from, to } = this.resolveAdminRevenueReportWindow(query);
+    const reportWindow = this.resolveAdminRevenueReportWindow(query);
+    const { from, to } = reportWindow;
     const where: Prisma.BillWhereInput = {
       deletedAt: null,
-      status: { in: ['VERIFIED', 'PAID'] },
+      status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
       usedAt: { gte: from, lte: to },
     };
     const storeId = this.cleanText(query.storeId);
     const couponId = this.cleanText(query.couponId);
     const flag = this.cleanText(query.flag);
+    const partnerAccountId = this.cleanText(query.partnerAccountId);
+    const areaId = this.cleanText(query.areaId);
+    const castId = this.cleanText(query.castId);
 
     if (storeId) {
       where.storeId = storeId;
@@ -4503,11 +4559,24 @@ export class NightlifeDataService {
       };
     }
 
+    if (partnerAccountId || areaId) {
+      where.store = {
+        ...(partnerAccountId ? { partnerAccountId } : {}),
+        ...(areaId ? { areaId } : {}),
+      };
+    }
+
+    if (castId) {
+      where.booking = { castId };
+    }
+
     const bills = await this.prisma.bill.findMany({
       where,
       orderBy: [{ usedAt: 'asc' }, { storeId: 'asc' }, { couponId: 'asc' }],
       select: {
         id: true,
+        billNumber: true,
+        status: true,
         usedAt: true,
         subtotalVnd: true,
         discountVnd: true,
@@ -4516,14 +4585,42 @@ export class NightlifeDataService {
         totalVnd: true,
         paidVnd: true,
         commissionAmountVnd: true,
-        store: { select: { id: true, name: true, slug: true } },
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            city: true,
+            district: true,
+            partnerAccount: {
+              select: { id: true, businessName: true, status: true },
+            },
+            area: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                city: true,
+                district: true,
+              },
+            },
+          },
+        },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
+        booking: {
+          select: {
+            id: true,
+            bookingCode: true,
+            cast: { select: { id: true, stageName: true, slug: true } },
+          },
+        },
       },
     });
 
     const totals = this.emptyRevenueReportTotals();
     const days = new Map<string, MutableRevenueReportDayNode>();
+    const breakdownMaps = this.emptyRevenueReportBreakdownMaps();
 
     for (const bill of bills) {
       if (!bill.usedAt) {
@@ -4532,10 +4629,33 @@ export class NightlifeDataService {
 
       const money = this.billRevenueReportMoney(bill);
       this.addRevenueReportTotals(totals, money);
+      this.addRevenueReportBreakdown(
+        breakdownMaps.partners,
+        this.revenueReportPartnerDimension(bill.store),
+        money,
+      );
+      this.addRevenueReportBreakdown(
+        breakdownMaps.campaigns,
+        this.revenueReportCampaignDimension(bill),
+        money,
+      );
+      this.addRevenueReportBreakdown(
+        breakdownMaps.areas,
+        this.revenueReportAreaDimension(bill.store),
+        money,
+      );
+      this.addRevenueReportBreakdown(
+        breakdownMaps.casts,
+        this.revenueReportCastDimension(bill),
+        money,
+      );
 
       const day = this.getRevenueReportDay(
         days,
-        this.toRevenueReportDateKey(bill.usedAt),
+        this.toRevenueReportDateKey(
+          bill.usedAt,
+          reportWindow.timezoneOffsetMinutes,
+        ),
       );
       this.addRevenueReportTotals(day, money);
 
@@ -4544,18 +4664,47 @@ export class NightlifeDataService {
 
       const coupon = this.getRevenueReportCoupon(store, bill);
       this.addRevenueReportTotals(coupon, money);
+      coupon.bills.push({
+        id: bill.id,
+        billNumber: bill.billNumber ?? null,
+        status: bill.status,
+        usedAt: bill.usedAt.toISOString(),
+        ...money,
+      });
     }
 
     return {
       filters: {
         from: from.toISOString(),
         to: to.toISOString(),
+        fromDate: reportWindow.fromDate,
+        toDate: reportWindow.toDate,
+        timezone: reportWindow.timezone,
         dateField: 'usedAt',
-        statusIn: ['VERIFIED', 'PAID'],
+        statusIn: [...REVENUE_REPORT_BILL_STATUSES],
+        billStatusIncluded: [...REVENUE_REPORT_BILL_STATUSES],
         storeId: storeId || null,
         couponId: couponId || null,
         flag: flag || null,
-        exportEnabled: false,
+        partnerAccountId: partnerAccountId || null,
+        areaId: areaId || null,
+        castId: castId || null,
+        exportEnabled: true,
+        exportFormats: ['excel', 'pdf'],
+      },
+      meta: {
+        billStatusIncluded: [...REVENUE_REPORT_BILL_STATUSES],
+        timezone: reportWindow.timezone,
+        generatedAt: new Date().toISOString(),
+        exportEnabled: true,
+        exportFormats: ['excel', 'pdf'],
+        formula: {
+          grossVnd: 'subtotalVnd',
+          discountVnd: 'discountVnd',
+          netVnd: 'subtotalVnd - discountVnd',
+          payableVnd: 'netVnd + serviceChargeVnd + taxVnd',
+          commissionVnd: 'commissionAmountVnd',
+        },
       },
       totals,
       days: Array.from(days.values()).map((day) => ({
@@ -4582,9 +4731,18 @@ export class NightlifeDataService {
             netVnd: coupon.netVnd,
             payableVnd: coupon.payableVnd,
             commissionVnd: coupon.commissionVnd,
+            bills: coupon.bills,
           })),
         })),
       })),
+      breakdowns: this.finalizeRevenueReportBreakdowns(breakdownMaps),
+      funnel: await this.buildRevenueReportFunnel(query, reportWindow, totals),
+      comparison: await this.buildRevenueReportComparison(
+        query,
+        reportWindow,
+        where,
+        totals,
+      ),
     };
   }
 
@@ -4761,7 +4919,41 @@ export class NightlifeDataService {
     return resultWithRevenueAliases;
   }
 
-  private resolveAdminRevenueReportWindow(query: AdminRevenueReportQueryDto) {
+  private resolveAdminRevenueReportWindow(
+    query: AdminRevenueReportQueryDto,
+  ): RevenueReportWindow {
+    const { timezone, timezoneOffsetMinutes } =
+      this.resolveRevenueReportTimezone(query.timezone);
+    const fromDateQuery = this.cleanText(query.fromDate);
+    const toDateQuery = this.cleanText(query.toDate);
+
+    if (fromDateQuery || toDateQuery || (!query.from && !query.to)) {
+      const toDate =
+        toDateQuery ??
+        this.toRevenueReportDateKey(new Date(), timezoneOffsetMinutes);
+      const fromDate =
+        fromDateQuery ?? this.shiftRevenueReportDateKey(toDate, -29);
+
+      this.assertRevenueReportDateKey(fromDate, 'fromDate');
+      this.assertRevenueReportDateKey(toDate, 'toDate');
+
+      if (fromDate > toDate) {
+        throw new BadRequestException('fromDate must be before toDate');
+      }
+
+      return {
+        from: this.revenueReportLocalDateStartUtc(
+          fromDate,
+          timezoneOffsetMinutes,
+        ),
+        to: this.revenueReportLocalDateEndUtc(toDate, timezoneOffsetMinutes),
+        fromDate,
+        toDate,
+        timezone,
+        timezoneOffsetMinutes,
+      };
+    }
+
     const to = query.to ? new Date(query.to) : new Date();
     if (Number.isNaN(to.getTime())) {
       throw new BadRequestException('to must be a valid ISO date');
@@ -4780,7 +4972,67 @@ export class NightlifeDataService {
       throw new BadRequestException('from must be before to');
     }
 
-    return { from, to };
+    return {
+      from,
+      to,
+      fromDate: this.toRevenueReportDateKey(from, timezoneOffsetMinutes),
+      toDate: this.toRevenueReportDateKey(to, timezoneOffsetMinutes),
+      timezone,
+      timezoneOffsetMinutes,
+    };
+  }
+
+  private resolveRevenueReportTimezone(value?: string) {
+    const timezone = this.cleanText(value) || DEFAULT_REVENUE_REPORT_TIMEZONE;
+    const timezoneOffsetMinutes =
+      REVENUE_REPORT_TIMEZONE_OFFSETS_MINUTES[timezone];
+
+    if (timezoneOffsetMinutes === undefined) {
+      throw new BadRequestException(
+        `timezone must be one of: ${Object.keys(
+          REVENUE_REPORT_TIMEZONE_OFFSETS_MINUTES,
+        ).join(', ')}`,
+      );
+    }
+
+    return { timezone, timezoneOffsetMinutes };
+  }
+
+  private assertRevenueReportDateKey(value: string, field: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new BadRequestException(`${field} must be YYYY-MM-DD`);
+    }
+
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      !Number.isFinite(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== value
+    ) {
+      throw new BadRequestException(`${field} must be a real calendar date`);
+    }
+  }
+
+  private revenueReportLocalDateStartUtc(
+    dateKey: string,
+    timezoneOffsetMinutes: number,
+  ) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(
+      Date.UTC(year, month - 1, day) - timezoneOffsetMinutes * 60 * 1000,
+    );
+  }
+
+  private revenueReportLocalDateEndUtc(
+    dateKey: string,
+    timezoneOffsetMinutes: number,
+  ) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(
+      Date.UTC(year, month - 1, day + 1) -
+        timezoneOffsetMinutes * 60 * 1000 -
+        1,
+    );
   }
 
   private emptyRevenueReportTotals(): RevenueReportMoneyTotals {
@@ -4804,6 +5056,359 @@ export class NightlifeDataService {
     target.netVnd += source.netVnd;
     target.payableVnd += source.payableVnd;
     target.commissionVnd += source.commissionVnd;
+  }
+
+  private emptyRevenueReportBreakdownMaps() {
+    return {
+      partners: new Map<string, RevenueReportDimensionNode>(),
+      campaigns: new Map<string, RevenueReportDimensionNode>(),
+      areas: new Map<string, RevenueReportDimensionNode>(),
+      casts: new Map<string, RevenueReportDimensionNode>(),
+    };
+  }
+
+  private addRevenueReportBreakdown(
+    breakdown: Map<string, RevenueReportDimensionNode>,
+    dimension: Pick<
+      RevenueReportDimensionNode,
+      'id' | 'code' | 'name' | 'secondary'
+    >,
+    money: RevenueReportMoneyTotals,
+  ) {
+    const key = dimension.id ?? dimension.code;
+    let node = breakdown.get(key);
+    if (!node) {
+      node = {
+        ...dimension,
+        ...this.emptyRevenueReportTotals(),
+      };
+      breakdown.set(key, node);
+    }
+
+    this.addRevenueReportTotals(node, money);
+  }
+
+  private finalizeRevenueReportBreakdowns(breakdowns: {
+    partners: Map<string, RevenueReportDimensionNode>;
+    campaigns: Map<string, RevenueReportDimensionNode>;
+    areas: Map<string, RevenueReportDimensionNode>;
+    casts: Map<string, RevenueReportDimensionNode>;
+  }): RevenueReportBreakdowns {
+    const sortByCommission = (
+      left: RevenueReportDimensionNode,
+      right: RevenueReportDimensionNode,
+    ) =>
+      right.commissionVnd - left.commissionVnd ||
+      right.netVnd - left.netVnd ||
+      left.name.localeCompare(right.name);
+
+    return {
+      partners: Array.from(breakdowns.partners.values()).sort(sortByCommission),
+      campaigns: Array.from(breakdowns.campaigns.values()).sort(
+        sortByCommission,
+      ),
+      areas: Array.from(breakdowns.areas.values()).sort(sortByCommission),
+      casts: Array.from(breakdowns.casts.values()).sort(sortByCommission),
+    };
+  }
+
+  private revenueReportPartnerDimension(store: {
+    partnerAccount?: {
+      id: string;
+      businessName: string;
+      status: string;
+    } | null;
+  }): Pick<RevenueReportDimensionNode, 'id' | 'code' | 'name' | 'secondary'> {
+    if (!store.partnerAccount) {
+      return {
+        id: null,
+        code: 'NO_PARTNER',
+        name: 'No partner assigned',
+        secondary: null,
+      };
+    }
+
+    return {
+      id: store.partnerAccount.id,
+      code: store.partnerAccount.status,
+      name: store.partnerAccount.businessName,
+      secondary: store.partnerAccount.status,
+    };
+  }
+
+  private revenueReportCampaignDimension(bill: {
+    coupon?: { id: string; code: string; name: string } | null;
+  }): Pick<RevenueReportDimensionNode, 'id' | 'code' | 'name' | 'secondary'> {
+    if (!bill.coupon) {
+      return {
+        id: null,
+        code: 'NO_COUPON',
+        name: 'No coupon',
+        secondary: null,
+      };
+    }
+
+    return {
+      id: bill.coupon.id,
+      code: bill.coupon.code,
+      name: bill.coupon.name,
+      secondary: null,
+    };
+  }
+
+  private revenueReportAreaDimension(store: {
+    city?: string | null;
+    district?: string | null;
+    area?: {
+      id: string;
+      code: string;
+      name: string;
+      city: string;
+      district: string | null;
+    } | null;
+  }): Pick<RevenueReportDimensionNode, 'id' | 'code' | 'name' | 'secondary'> {
+    if (!store.area) {
+      return {
+        id: null,
+        code: 'NO_AREA',
+        name: store.district ?? store.city ?? 'No area',
+        secondary: store.city ?? null,
+      };
+    }
+
+    return {
+      id: store.area.id,
+      code: store.area.code,
+      name: store.area.name,
+      secondary: [store.area.city, store.area.district]
+        .filter(Boolean)
+        .join(' / '),
+    };
+  }
+
+  private revenueReportCastDimension(bill: {
+    booking?: {
+      cast?: { id: string; stageName: string; slug: string } | null;
+    } | null;
+  }): Pick<RevenueReportDimensionNode, 'id' | 'code' | 'name' | 'secondary'> {
+    const cast = bill.booking?.cast;
+    if (!cast) {
+      return {
+        id: null,
+        code: 'NO_CAST',
+        name: 'No requested cast',
+        secondary: null,
+      };
+    }
+
+    return {
+      id: cast.id,
+      code: cast.slug,
+      name: cast.stageName,
+      secondary: null,
+    };
+  }
+
+  private async buildRevenueReportFunnel(
+    query: AdminRevenueReportQueryDto,
+    reportWindow: RevenueReportWindow,
+    totals: RevenueReportMoneyTotals,
+  ): Promise<RevenueReportFunnelStep[]> {
+    const storeId = this.cleanText(query.storeId);
+    const couponId = this.cleanText(query.couponId);
+    const partnerAccountId = this.cleanText(query.partnerAccountId);
+    const areaId = this.cleanText(query.areaId);
+    const castId = this.cleanText(query.castId);
+    const storeRelationFilter =
+      partnerAccountId || areaId
+        ? {
+            ...(partnerAccountId ? { partnerAccountId } : {}),
+            ...(areaId ? { areaId } : {}),
+          }
+        : undefined;
+    const bookingRelationFilter =
+      couponId || castId
+        ? {
+            ...(couponId ? { couponId } : {}),
+            ...(castId ? { castId } : {}),
+          }
+        : undefined;
+
+    const bookingQrBaseWhere: Prisma.BookingQrWhereInput = {
+      ...(storeId ? { storeId } : {}),
+      ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
+      ...(bookingRelationFilter ? { booking: bookingRelationFilter } : {}),
+    };
+    const [qrIssuedCount, qrUsedCount, billApprovedCount] = await Promise.all([
+      this.prisma.bookingQr.count({
+        where: {
+          ...bookingQrBaseWhere,
+          createdAt: { gte: reportWindow.from, lte: reportWindow.to },
+        },
+      }),
+      this.prisma.bookingQr.count({
+        where: {
+          ...bookingQrBaseWhere,
+          status: 'USED',
+          usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+        },
+      }),
+      this.prisma.bill.count({
+        where: {
+          deletedAt: null,
+          status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
+          usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+          ...(storeId ? { storeId } : {}),
+          ...(couponId ? { couponId } : {}),
+          ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
+          ...(castId ? { booking: { castId } } : {}),
+        },
+      }),
+    ]);
+
+    const steps = [
+      { key: 'booking_qr', label: 'Booking QR', count: qrIssuedCount },
+      { key: 'qr_used', label: 'QR used', count: qrUsedCount },
+      { key: 'bill_approved', label: 'Bill approved', count: billApprovedCount },
+      {
+        key: 'commission',
+        label: 'Commission',
+        count: totals.commissionVnd,
+        commissionVnd: totals.commissionVnd,
+      },
+    ];
+
+    return steps.map((step, index) => {
+      const previous = index > 0 ? steps[index - 1] : null;
+      const rateFromPrevious =
+        previous && previous.count > 0
+          ? Math.round((step.count / previous.count) * 10000) / 100
+          : null;
+
+      return {
+        ...step,
+        rateFromPrevious,
+      };
+    });
+  }
+
+  private async buildRevenueReportComparison(
+    query: AdminRevenueReportQueryDto,
+    reportWindow: RevenueReportWindow,
+    currentWhere: Prisma.BillWhereInput,
+    currentTotals: RevenueReportMoneyTotals,
+  ) {
+    void query;
+    const previousWindow = this.previousRevenueReportWindow(reportWindow);
+    const previousBills = await this.prisma.bill.findMany({
+      where: {
+        ...currentWhere,
+        usedAt: { gte: previousWindow.from, lte: previousWindow.to },
+      },
+      select: {
+        subtotalVnd: true,
+        discountVnd: true,
+        serviceChargeVnd: true,
+        taxVnd: true,
+        totalVnd: true,
+        paidVnd: true,
+        commissionAmountVnd: true,
+      },
+    });
+    const previousTotals = previousBills.reduce(
+      (sum, bill) => {
+        this.addRevenueReportTotals(sum, this.billRevenueReportMoney(bill));
+        return sum;
+      },
+      this.emptyRevenueReportTotals(),
+    );
+
+    return {
+      previousPeriod: {
+        from: previousWindow.from.toISOString(),
+        to: previousWindow.to.toISOString(),
+        fromDate: previousWindow.fromDate,
+        toDate: previousWindow.toDate,
+      },
+      totals: {
+        billCount: this.revenueReportComparisonMetric(
+          currentTotals.billCount,
+          previousTotals.billCount,
+        ),
+        grossVnd: this.revenueReportComparisonMetric(
+          currentTotals.grossVnd,
+          previousTotals.grossVnd,
+        ),
+        discountVnd: this.revenueReportComparisonMetric(
+          currentTotals.discountVnd,
+          previousTotals.discountVnd,
+        ),
+        netVnd: this.revenueReportComparisonMetric(
+          currentTotals.netVnd,
+          previousTotals.netVnd,
+        ),
+        commissionVnd: this.revenueReportComparisonMetric(
+          currentTotals.commissionVnd,
+          previousTotals.commissionVnd,
+        ),
+      },
+    };
+  }
+
+  private previousRevenueReportWindow(
+    reportWindow: RevenueReportWindow,
+  ): RevenueReportWindow {
+    const dayCount =
+      this.revenueReportDateKeyDistance(
+        reportWindow.fromDate,
+        reportWindow.toDate,
+      ) + 1;
+    const toDate = this.shiftRevenueReportDateKey(
+      reportWindow.fromDate,
+      -1,
+    );
+    const fromDate = this.shiftRevenueReportDateKey(toDate, -(dayCount - 1));
+
+    return {
+      from: this.revenueReportLocalDateStartUtc(
+        fromDate,
+        reportWindow.timezoneOffsetMinutes,
+      ),
+      to: this.revenueReportLocalDateEndUtc(
+        toDate,
+        reportWindow.timezoneOffsetMinutes,
+      ),
+      fromDate,
+      toDate,
+      timezone: reportWindow.timezone,
+      timezoneOffsetMinutes: reportWindow.timezoneOffsetMinutes,
+    };
+  }
+
+  private revenueReportComparisonMetric(current: number, previous: number) {
+    const delta = current - previous;
+    const deltaPercent =
+      previous > 0 ? Math.round((delta / previous) * 10000) / 100 : null;
+
+    return {
+      current,
+      previous,
+      delta,
+      deltaPercent,
+    } satisfies RevenueReportComparisonMetric;
+  }
+
+  private revenueReportDateKeyDistance(fromDate: string, toDate: string) {
+    const [fromYear, fromMonth, fromDay] = fromDate.split('-').map(Number);
+    const [toYear, toMonth, toDay] = toDate.split('-').map(Number);
+    return Math.max(
+      0,
+      Math.round(
+        (Date.UTC(toYear, toMonth - 1, toDay) -
+          Date.UTC(fromYear, fromMonth - 1, fromDay)) /
+          (24 * 60 * 60 * 1000),
+      ),
+    );
   }
 
   private billRevenueReportMoney(bill: {
@@ -5291,8 +5896,21 @@ export class NightlifeDataService {
     return Math.round((amountVnd / grossVnd) * 1000000) / 10000;
   }
 
-  private toRevenueReportDateKey(value: Date | string) {
-    return new Date(value).toISOString().slice(0, 10);
+  private toRevenueReportDateKey(
+    value: Date | string,
+    timezoneOffsetMinutes: number,
+  ) {
+    const date = value instanceof Date ? value : new Date(value);
+    return new Date(date.getTime() + timezoneOffsetMinutes * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  private shiftRevenueReportDateKey(dateKey: string, days: number) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
   }
 
   private getRevenueReportDay(
@@ -5346,6 +5964,7 @@ export class NightlifeDataService {
             (bill.couponIssue ? 'Coupon issue' : 'Khong dung ma'),
         },
         ...this.emptyRevenueReportTotals(),
+        bills: [],
       };
       store.coupons.set(key, node);
     }
