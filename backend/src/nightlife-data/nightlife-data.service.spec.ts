@@ -34,6 +34,9 @@ describe('NightlifeDataService', () => {
       update: jest.fn(),
       findUniqueOrThrow: jest.fn(),
     },
+    pointLedger: {
+      upsert: jest.fn(),
+    },
     coupon: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -210,6 +213,9 @@ describe('NightlifeDataService', () => {
     prisma.partnerRequest.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.partnerRequest.update.mockResolvedValue({
       id: 'PARTNER-ABC12345',
+    } as never);
+    prisma.pointLedger.upsert.mockResolvedValue({
+      id: 'point-ledger-1',
     } as never);
     passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
@@ -4142,6 +4148,203 @@ describe('NightlifeDataService', () => {
         status: 'VERIFIED',
       }),
       { approve: true, reviewedById: 'admin-1' },
+    );
+  });
+
+  it('adds a posted loyalty point ledger for member bills after approval', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-member-1',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      totalVnd: 2080000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      user: { id: 'member-1', displayName: 'Minh', role: 'USER', tier: 'VIP' },
+      guest: null,
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-member-1',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      totalVnd: 2080000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 18,
+    } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-member-1', {
+      approve: true,
+    });
+
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'VERIFIED',
+          pointsEarned: 18,
+          pointRuleSnapshot: expect.objectContaining({
+            version: 'v2.2',
+            basis: 'bill_subtotal_vnd',
+            amountVnd: 1800000,
+            vndPerPoint: 100000,
+            pointsPerMillionVnd: 10,
+            expiresAfterDays: 365,
+          }),
+        }),
+      }),
+    );
+    expect(prisma.pointLedger.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          billId_type: {
+            billId: 'bill-member-1',
+            type: 'EARN',
+          },
+        },
+        create: expect.objectContaining({
+          userId: 'member-1',
+          bookingId: 'booking-1',
+          billId: 'bill-member-1',
+          type: 'EARN',
+          status: 'POSTED',
+          amountVnd: 1800000,
+          points: 18,
+          expiresAt: new Date('2027-07-03T10:00:00.000Z'),
+          postedAt: new Date('2026-07-03T10:00:00.000Z'),
+          ruleSnapshot: expect.objectContaining({
+            version: 'v2.2',
+            amountVnd: 1800000,
+            vndPerPoint: 100000,
+          }),
+        }),
+        update: expect.objectContaining({
+          userId: 'member-1',
+          amountVnd: 1800000,
+          points: 18,
+          status: 'POSTED',
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        metadata: expect.objectContaining({
+          loyaltyPoints: 18,
+          loyaltyAmountVnd: 1800000,
+          loyaltyExpiresAt: '2027-07-03T10:00:00.000Z',
+        }),
+      }),
+    });
+  });
+
+  it('does not add loyalty points for guest bills', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-guest-1',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+      booking: null,
+      user: null,
+      guest: { id: 'guest-1', displayName: 'Walk-in', phone: '+84901234567' },
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-guest-1',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+    } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-guest-1', {
+      approve: true,
+    });
+
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'VERIFIED',
+          pointsEarned: 0,
+        }),
+      }),
+    );
+    expect(prisma.pointLedger.upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not add loyalty points when rejecting a bill', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-reject-1',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+      user: { id: 'member-1', displayName: 'Minh', role: 'USER', tier: 'VIP' },
+      guest: null,
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-reject-1',
+      status: 'REJECTED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: null,
+      rejectedAt: new Date('2026-07-03T10:00:00.000Z'),
+      reviewedById: 'admin-1',
+      verifiedById: null,
+      rejectedById: 'admin-1',
+      rejectReason: 'Invalid receipt',
+      totalVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 0,
+    } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-reject-1', {
+      approve: false,
+      rejectReason: 'Invalid receipt',
+    });
+
+    expect(prisma.pointLedger.upsert).not.toHaveBeenCalled();
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'REJECTED',
+          rejectReason: 'Invalid receipt',
+        }),
+      }),
     );
   });
 

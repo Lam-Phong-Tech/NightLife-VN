@@ -88,6 +88,9 @@ import { ReviewBillDto } from './dto/review-bill.dto';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
 const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
+const BILL_LOYALTY_RULE_VERSION = 'v2.2';
+const BILL_LOYALTY_VND_PER_POINT = 100_000;
+const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const BOOKING_DATE_WINDOW_DAYS = 14;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -4137,6 +4140,7 @@ export class NightlifeDataService {
         verifiedById: true,
         rejectedById: true,
         rejectReason: true,
+        subtotalVnd: true,
         totalVnd: true,
         commissionAmountVnd: true,
         pointsEarned: true,
@@ -4144,7 +4148,7 @@ export class NightlifeDataService {
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
-        user: { select: { id: true, displayName: true, tier: true } },
+        user: { select: { id: true, displayName: true, role: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
       },
     });
@@ -4158,49 +4162,67 @@ export class NightlifeDataService {
     }
 
     const now = new Date();
+    const loyaltyAward = dto.approve
+      ? this.buildBillLoyaltyAward(bill, now)
+      : null;
 
-    const result = await this.prisma.bill.update({
-      where: { id: billId },
-      data: dto.approve
-        ? {
-            status: 'VERIFIED',
-            verifiedAt: now,
-            reviewedById: adminId,
-            verifiedById: adminId,
-            reviewedAt: now,
-            rejectedAt: null,
-            rejectedById: null,
-            rejectReason: null,
-          }
-        : {
-            status: 'REJECTED',
-            rejectedAt: now,
-            reviewedById: adminId,
-            rejectedById: adminId,
-            reviewedAt: now,
-            verifiedById: null,
-            verifiedAt: null,
-            rejectReason: dto.rejectReason ?? 'Rejected by admin review',
+    const result = await this.prisma.$transaction(async (tx) => {
+      const reviewedBill = await tx.bill.update({
+        where: { id: billId },
+        data: dto.approve
+          ? {
+              status: 'VERIFIED',
+              verifiedAt: now,
+              reviewedById: adminId,
+              verifiedById: adminId,
+              reviewedAt: now,
+              rejectedAt: null,
+              rejectedById: null,
+              rejectReason: null,
+              pointsEarned: loyaltyAward?.points ?? 0,
+              pointRuleSnapshot: loyaltyAward
+                ? this.toPrismaJson(loyaltyAward.ruleSnapshot)
+                : Prisma.JsonNull,
+            }
+          : {
+              status: 'REJECTED',
+              rejectedAt: now,
+              reviewedById: adminId,
+              rejectedById: adminId,
+              reviewedAt: now,
+              verifiedById: null,
+              verifiedAt: null,
+              rejectReason: dto.rejectReason ?? 'Rejected by admin review',
+            },
+        select: this.billNotificationSelect(),
+      });
+
+      if (loyaltyAward) {
+        await this.recordBillLoyaltyLedger(tx, loyaltyAward);
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: dto.approve ? 'bill.review.approve' : 'bill.review.reject',
+          targetType: 'Bill',
+          targetId: billId,
+          beforeJson: this.buildBillReviewAuditSnapshot(bill),
+          afterJson: this.buildBillReviewAuditSnapshot(reviewedBill),
+          metadata: {
+            approve: dto.approve,
+            rejectReason: dto.rejectReason ?? null,
+            previousStatus: bill.status,
+            nextStatus: reviewedBill.status,
+            reviewedAt: now.toISOString(),
+            loyaltyPoints: loyaltyAward?.points ?? 0,
+            loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
+            loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
           },
-      select: this.billNotificationSelect(),
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: adminId,
-        action: dto.approve ? 'bill.review.approve' : 'bill.review.reject',
-        targetType: 'Bill',
-        targetId: billId,
-        beforeJson: this.buildBillReviewAuditSnapshot(bill),
-        afterJson: this.buildBillReviewAuditSnapshot(result),
-        metadata: {
-          approve: dto.approve,
-          rejectReason: dto.rejectReason ?? null,
-          previousStatus: bill.status,
-          nextStatus: result.status,
-          reviewedAt: now.toISOString(),
         },
-      },
+      });
+
+      return reviewedBill;
     });
 
     await this.adminNotificationService?.notifyBillReviewed(result, {
@@ -5887,6 +5909,103 @@ export class NightlifeDataService {
 
     const date = value instanceof Date ? value : new Date(value);
     return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+
+  private buildBillLoyaltyAward(
+    bill: {
+      id: string;
+      subtotalVnd?: number | null;
+      totalVnd?: number | null;
+      booking?: { id: string } | null;
+      user?: { id: string; role?: string | null } | null;
+    },
+    postedAt: Date,
+  ) {
+    if (!bill.user?.id || bill.user.role !== 'USER') {
+      return null;
+    }
+
+    const amountVnd = Math.max(
+      0,
+      Math.trunc(
+        typeof bill.subtotalVnd === 'number' && bill.subtotalVnd > 0
+          ? bill.subtotalVnd
+          : (bill.totalVnd ?? 0),
+      ),
+    );
+    const points = Math.floor(amountVnd / BILL_LOYALTY_VND_PER_POINT);
+
+    if (points <= 0) {
+      return null;
+    }
+
+    const expiresAt = new Date(postedAt);
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    return {
+      billId: bill.id,
+      bookingId: bill.booking?.id ?? null,
+      userId: bill.user.id,
+      amountVnd,
+      points,
+      postedAt,
+      expiresAt,
+      ruleSnapshot: {
+        version: BILL_LOYALTY_RULE_VERSION,
+        basis: 'bill_subtotal_vnd',
+        amountVnd,
+        vndPerPoint: BILL_LOYALTY_VND_PER_POINT,
+        pointsPerMillionVnd: BILL_LOYALTY_POINTS_PER_1M_VND,
+        expiresAfterDays: 365,
+      },
+    };
+  }
+
+  private async recordBillLoyaltyLedger(
+    client: NightlifePrismaClient,
+    award: {
+      billId: string;
+      bookingId: string | null;
+      userId: string;
+      amountVnd: number;
+      points: number;
+      postedAt: Date;
+      expiresAt: Date;
+      ruleSnapshot: Record<string, unknown>;
+    },
+  ) {
+    await client.pointLedger.upsert({
+      where: {
+        billId_type: {
+          billId: award.billId,
+          type: 'EARN',
+        },
+      },
+      update: {
+        userId: award.userId,
+        bookingId: award.bookingId,
+        amountVnd: award.amountVnd,
+        points: award.points,
+        status: 'POSTED',
+        description: `Loyalty points from approved bill ${award.billId}`,
+        ruleSnapshot: this.toPrismaJson(award.ruleSnapshot),
+        expiresAt: award.expiresAt,
+        postedAt: award.postedAt,
+      },
+      create: {
+        userId: award.userId,
+        bookingId: award.bookingId,
+        billId: award.billId,
+        type: 'EARN',
+        status: 'POSTED',
+        amountVnd: award.amountVnd,
+        points: award.points,
+        description: `Loyalty points from approved bill ${award.billId}`,
+        ruleSnapshot: this.toPrismaJson(award.ruleSnapshot),
+        expiresAt: award.expiresAt,
+        postedAt: award.postedAt,
+      },
+    });
   }
 
   private buildBillReviewAuditSnapshot(bill: {

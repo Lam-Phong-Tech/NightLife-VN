@@ -803,6 +803,7 @@ model PointLedger {
   reversals        PointLedger[]     @relation("PointLedgerReversal")
   type             PointLedgerType
   status           PointLedgerStatus @default(PENDING)
+  amountVnd        Int               @default(0) @map("amount_vnd")
   points           Int
   balanceAfter     Int?              @map("balance_after")
   description      String?
@@ -812,6 +813,7 @@ model PointLedger {
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
+  @@unique([billId, type])
   @@index([userId])
   @@index([bookingId])
   @@index([billId])
