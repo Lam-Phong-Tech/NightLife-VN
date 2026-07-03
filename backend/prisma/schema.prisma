@@ -15,7 +15,9 @@ enum UserRole {
 }
 
 enum UserTier {
+  FREE
   MEMBER
+  PREMIUM
   VIP
 }
 
