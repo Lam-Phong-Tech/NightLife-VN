@@ -380,7 +380,7 @@ export default function AdminStoresPage() {
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Album ảnh</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
                 {albums.map((al: any) => (
-                  <div key={al.id} style={{ position: 'relative', aspectRatio: 1, borderRadius: '11px', background: al.url || g1 }}>
+                  <div key={al.id} style={{ position: 'relative', aspectRatio: 1, borderRadius: '11px', background: al.url ? (al.url.startsWith('linear-gradient') ? al.url : `url(${al.url}) center/cover no-repeat`) : g1 }}>
                     <span onClick={() => removeAlbum(al.id)} style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 6, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }} title="Xóa ảnh">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </span>
@@ -397,7 +397,7 @@ export default function AdminStoresPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                 {videos.map((vd: any) => (
                   <div key={vd.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb || g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb ? (vd.thumb.startsWith('linear-gradient') ? vd.thumb : `url(${vd.thumb}) center/cover no-repeat`) : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg>
                       </span>
@@ -432,7 +432,7 @@ export default function AdminStoresPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                 {menuItems.map(mi => (
                   <div key={mi.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb || g1 }}></div>
+                    <div style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb ? (mi.thumb.startsWith('linear-gradient') ? mi.thumb : `url(${mi.thumb}) center/cover no-repeat`) : g1 }}></div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                         <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mi.name}</span>
