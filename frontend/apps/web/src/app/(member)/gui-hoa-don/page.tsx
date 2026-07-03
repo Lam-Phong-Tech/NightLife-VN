@@ -27,8 +27,6 @@ const colors = {
 
 const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
 
-type SubmitMode = "member" | "partner";
-
 type FormNotice =
   | { tone: "success"; message: string; bill?: BillRecord }
   | { tone: "warning" | "danger"; message: string };
@@ -81,7 +79,6 @@ const cleanApiMessage = (error: unknown) => {
 };
 
 export default function Page() {
-  const [mode, setMode] = useState<SubmitMode>("member");
   const [stores, setStores] = useState<BillStoreOption[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [couponIssues, setCouponIssues] = useState<CouponIssue[]>([]);
@@ -151,35 +148,18 @@ export default function Page() {
     }
   };
 
-  const handleModeChange = (nextMode: SubmitMode) => {
-    if (nextMode === mode) return;
-    setMode(nextMode);
-    setBookingId("");
-    setCouponIssueId("");
-    setStoreSlug("");
-    setNotice(null);
-  };
-
   useEffect(() => {
     let active = true;
 
     const loadOptions = async () => {
       setIsLoadingOptions(true);
       try {
-        const [storeItems, bookingItems, couponIssueItems, billItems] =
-          mode === "partner"
-            ? await Promise.all([
-                billApi.listPartnerStores(),
-                Promise.resolve([] as BookingRecord[]),
-                Promise.resolve([] as CouponIssue[]),
-                billApi.listPartnerBills().catch(() => [] as BillRecord[]),
-              ])
-            : await Promise.all([
-                discoveryApi.listStores({ city: "all", limit: 80 }),
-                bookingApi.listMemberBookings().catch(() => [] as BookingRecord[]),
-                couponApi.listMemberCouponIssues().catch(() => [] as CouponIssue[]),
-                billApi.listMemberBills().catch(() => [] as BillRecord[]),
-              ]);
+        const [storeItems, bookingItems, couponIssueItems, billItems] = await Promise.all([
+          discoveryApi.listStores({ city: "all", limit: 80 }),
+          bookingApi.listMemberBookings().catch(() => [] as BookingRecord[]),
+          couponApi.listMemberCouponIssues().catch(() => [] as CouponIssue[]),
+          billApi.listMemberBills().catch(() => [] as BillRecord[]),
+        ]);
 
         if (!active) return;
         setStores(storeItems);
@@ -211,7 +191,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, [mode]);
+  }, []);
 
   useEffect(() => {
     const refreshWindow = () => {
@@ -320,10 +300,7 @@ export default function Page() {
         totalVnd: amount,
         usedAt: usedAtDate.toISOString(),
       };
-      const bill =
-        mode === "partner"
-          ? await billApi.submitPartnerBill(payload)
-          : await billApi.submitMemberBill(payload);
+      const bill = await billApi.submitMemberBill(payload);
 
       let uploadWarning = "";
       if (evidenceFile) {
@@ -382,25 +359,6 @@ export default function Page() {
 
         <div className="nl-bill-layout">
           <form className="nl-bill-form" noValidate onSubmit={handleSubmit}>
-            <div className="nl-segmented" aria-label="Vai trò gửi bill">
-              <button
-                type="button"
-                aria-label="Gui bill vai tro member"
-                className={mode === "member" ? "active" : ""}
-                onClick={() => handleModeChange("member")}
-              >
-                Khách
-              </button>
-              <button
-                type="button"
-                aria-label="Gui bill vai tro partner"
-                className={mode === "partner" ? "active" : ""}
-                onClick={() => handleModeChange("partner")}
-              >
-                Chủ quán
-              </button>
-            </div>
-
             <div className="nl-field">
               <label htmlFor="bill-store">Quán / cơ sở *</label>
               <select
@@ -418,7 +376,7 @@ export default function Page() {
               </select>
             </div>
 
-            {mode === "member" && bookings.length ? (
+            {bookings.length ? (
               <div className="nl-field">
                 <label htmlFor="bill-booking">Liên kết booking</label>
                 <select
@@ -436,7 +394,7 @@ export default function Page() {
               </div>
             ) : null}
 
-            {mode === "member" && !selectedBooking && couponIssues.length ? (
+            {!selectedBooking && couponIssues.length ? (
               <div className="nl-field">
                 <label htmlFor="bill-coupon-issue">Coupon link</label>
                 <select
@@ -602,7 +560,7 @@ export default function Page() {
                     <em>
                       {moneyVnd(bill.totalVnd)} - {formatDateTime(bill.usedAt)}
                     </em>
-                    <small>{bill.submitterType === "PARTNER" ? "Chủ quán" : "Member"}</small>
+                    <small>Member</small>
                   </article>
                 ))
               ) : (
@@ -669,14 +627,6 @@ export default function Page() {
           padding: 16px;
         }
 
-        .nl-segmented {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          margin-bottom: 16px;
-        }
-
-        .nl-segmented button,
         .nl-submit,
         .nl-upload-button,
         .nl-file-pill button {
@@ -699,7 +649,6 @@ export default function Page() {
           overflow: hidden;
         }
 
-        .nl-segmented button.active,
         .nl-submit {
           background: ${colors.gold};
           color: ${colors.onGold};
@@ -967,8 +916,7 @@ export default function Page() {
         }
 
         @media (max-width: 620px) {
-          .nl-form-grid,
-          .nl-segmented {
+          .nl-form-grid {
             grid-template-columns: 1fr;
           }
 
