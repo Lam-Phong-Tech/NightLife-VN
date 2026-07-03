@@ -180,7 +180,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       textDecoration: 'none'
                     }}
                   >
-                    {React.cloneElement(item.icon as React.ReactElement, { color: isActive ? '#d4b26a' : 'currentColor' })}
+                    {React.cloneElement(item.icon as React.ReactElement<{ color?: string }>, {
+                      color: isActive ? '#d4b26a' : 'currentColor',
+                    })}
                     <span style={{ flex: 1 }}>{item.label}</span>
                     {item.count ? (
                       <span style={{ fontSize: '10px', fontWeight: 700, color: item.countColor, background: item.countBg, borderRadius: '9px', minWidth: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>

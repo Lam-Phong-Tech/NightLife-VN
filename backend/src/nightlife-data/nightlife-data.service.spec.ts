@@ -36,7 +36,9 @@ describe('NightlifeDataService', () => {
     },
     pointLedger: {
       upsert: jest.fn(),
+      findFirst: jest.fn(),
       findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     coupon: {
       findMany: jest.fn(),
@@ -202,6 +204,8 @@ describe('NightlifeDataService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    accessService.getAccessibleStoreIds.mockResolvedValue(undefined as never);
+    accessService.ensureStoreAccess.mockResolvedValue(undefined as never);
     prisma.user.findUnique.mockResolvedValue(null as never);
     prisma.user.create.mockResolvedValue({
       id: 'partner-user-1',
@@ -228,7 +232,9 @@ describe('NightlifeDataService', () => {
     prisma.pointLedger.upsert.mockResolvedValue({
       id: 'point-ledger-1',
     } as never);
+    prisma.pointLedger.findFirst.mockResolvedValue(null as never);
     prisma.pointLedger.findMany.mockResolvedValue([] as never);
+    prisma.pointLedger.updateMany.mockResolvedValue({ count: 0 } as never);
     prisma.commissionConfig.findFirst.mockResolvedValue(null as never);
     passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
@@ -275,6 +281,7 @@ describe('NightlifeDataService', () => {
     prisma.booking.count.mockResolvedValue(0 as never);
     prisma.bookingQr.count.mockResolvedValue(0 as never);
     prisma.bill.count.mockResolvedValue(0 as never);
+    prisma.bill.findFirst.mockResolvedValue(null as never);
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
       messageId: 'smtp-message-1',
     });
@@ -2140,6 +2147,64 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('lists member bill history with protected evidence media', async () => {
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-member-1',
+        storeId: 'store-1',
+        billNumber: 'BILL-20260701-MEMBER01',
+        status: 'SUBMITTED',
+        submitterType: 'MEMBER',
+        totalVnd: 1800000,
+        usedAt: new Date('2026-07-01T10:00:00.000Z'),
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        booking: null,
+        coupon: null,
+        couponIssue: null,
+        media: [
+          {
+            id: 'media-bill-1',
+            storageKey: 'bill-proof.png',
+            originalName: 'bill-proof.png',
+            mimeType: 'image/png',
+            access: 'PROTECTED',
+            url: 'http://localhost:3001/storage/files/bill-proof.png',
+          },
+        ],
+      },
+    ] as never);
+
+    await expect(
+      service.listMemberBills({ id: 'member-1', role: 'USER' }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: 'bill-member-1',
+        submitterType: 'MEMBER',
+        media: [
+          expect.objectContaining({
+            id: 'media-bill-1',
+            access: 'PROTECTED',
+          }),
+        ],
+      }),
+    ]);
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          OR: [{ userId: 'member-1' }, { submittedByUserId: 'member-1' }],
+        },
+        select: expect.objectContaining({
+          submitterType: true,
+          media: expect.objectContaining({
+            select: expect.objectContaining({ access: true, url: true }),
+          }),
+        }),
+      }),
+    );
+  });
+
   it('rejects independent guest coupon claim after the Booking QR scope change', async () => {
     await expect(
       service.claimGuestCoupon('coupon-1', {
@@ -3370,6 +3435,27 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('previews bill OCR suggestions from extracted text', () => {
+    expect(
+      service.previewBillOcr(
+        { id: 'member-1', role: 'USER' },
+        {
+          fileName: 'bill-total-1800000-used-2026-07-03-21-30.txt',
+          text: 'Tong cong: 1.800.000 VND\nNgay: 03/07/2026 21:30',
+        },
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        source: 'HEURISTIC_OCR_AI_MVP',
+        suggestions: {
+          totalVnd: 1800000,
+          usedAt: '2026-07-03T14:30:00.000Z',
+        },
+        requiresManualReview: false,
+      }),
+    );
+  });
+
   it('submits a member bill and sends the admin alert', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({
@@ -3414,6 +3500,8 @@ describe('NightlifeDataService', () => {
           storeId: 'store-1',
           couponId: 'coupon-1',
           couponIssueId: 'issue-1',
+          submitterType: 'MEMBER',
+          submittedByUserId: 'member-1',
           status: 'SUBMITTED',
           subtotalVnd: 1800000,
           discountVnd: 0,
@@ -3430,6 +3518,24 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         id: 'bill-1',
         status: 'SUBMITTED',
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorId: 'member-1',
+          action: 'bill.submit',
+          targetType: 'Bill',
+          targetId: 'bill-1',
+          metadata: expect.objectContaining({
+            submitterType: 'MEMBER',
+            storeId: 'store-1',
+            bookingId: 'booking-1',
+            submittedByUserId: 'member-1',
+            submittedByPartnerAccountId: null,
+            totalVnd: 1800000,
+          }),
+        }),
       }),
     );
   });
@@ -3607,8 +3713,78 @@ describe('NightlifeDataService', () => {
     expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
+  it('blocks likely duplicate member bill submissions by user, store, total, and usedAt', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-duplicate',
+      billNumber: 'BILL-20260701-DUP',
+    } as never);
+
+    await expect(
+      service.submitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        {
+          storeSlug: 'neon-club',
+          totalVnd: 1800000,
+          usedAt: '2026-06-30T14:00:00.000Z',
+        },
+      ),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    expect(prisma.bill.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          storeId: 'store-1',
+          totalVnd: 1800000,
+          OR: [{ userId: 'member-1' }, { submittedByUserId: 'member-1' }],
+        }),
+      }),
+    );
+    expect(prisma.bill.create).not.toHaveBeenCalled();
+  });
+
+  it('rate limits repeated member bill submissions in the same store window', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    } as never);
+    prisma.bill.count.mockResolvedValue(5 as never);
+
+    await expect(
+      service.submitMemberBill(
+        { id: 'member-1', role: 'USER' },
+        {
+          storeSlug: 'neon-club',
+          totalVnd: 1800000,
+          usedAt: '2026-06-30T14:00:00.000Z',
+        },
+      ),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    expect(prisma.bill.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          storeId: 'store-1',
+          submitterType: 'MEMBER',
+          OR: [{ userId: 'member-1' }, { submittedByUserId: 'member-1' }],
+        }),
+      }),
+    );
+    expect(prisma.bill.create).not.toHaveBeenCalled();
+  });
+
   it('submits a partner bill within the accessible store scope', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.partnerAccount.findFirst.mockResolvedValue({
+      id: 'partner-account-1',
+    } as never);
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
       name: 'Neon Club',
@@ -3643,6 +3819,9 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           storeId: 'store-1',
+          submitterType: 'PARTNER',
+          submittedByUserId: null,
+          submittedByPartnerAccountId: 'partner-account-1',
           status: 'SUBMITTED',
           subtotalVnd: 1800000,
           discountVnd: 0,
@@ -3660,6 +3839,53 @@ describe('NightlifeDataService', () => {
         status: 'SUBMITTED',
       }),
     );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorId: 'partner-1',
+          action: 'bill.submit',
+          targetType: 'Bill',
+          targetId: 'bill-1',
+          metadata: expect.objectContaining({
+            submitterType: 'PARTNER',
+            storeId: 'store-1',
+            submittedByUserId: null,
+            submittedByPartnerAccountId: 'partner-account-1',
+            totalVnd: 1800000,
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('rejects partner bill submissions outside the partner store scope with 403', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-other',
+      name: 'Other Club',
+      slug: 'other-club',
+    } as never);
+    accessService.ensureStoreAccess.mockRejectedValue(
+      new ForbiddenException('Forbidden resource'),
+    );
+
+    await expect(
+      service.submitPartnerBill(
+        { id: 'partner-1', role: 'PARTNER' },
+        {
+          storeSlug: 'other-club',
+          totalVnd: 1800000,
+          usedAt: '2026-06-30T14:00:00.000Z',
+        },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-other',
+      'bill.partner.view',
+    );
+    expect(prisma.bill.create).not.toHaveBeenCalled();
   });
 
   it('submits a partner bill with a guest coupon issue without requiring a booking', async () => {
@@ -4335,6 +4561,108 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('automatically reverses an approved bill and posts a negative loyalty ledger', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-reverse-1',
+      billNumber: 'BILL-20260701-VERIFIED',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-01T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-01T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1800000,
+      discountVnd: 0,
+      totalVnd: 1800000,
+      paidVnd: 1800000,
+      commissionAmountVnd: 180000,
+      pointsEarned: 18,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+    } as never);
+    prisma.pointLedger.findFirst.mockResolvedValue({
+      id: 'ledger-earn-1',
+      userId: 'member-1',
+      bookingId: null,
+      amountVnd: 1800000,
+      points: 18,
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-reverse-1',
+      billNumber: 'BILL-20260701-VERIFIED',
+      status: 'VOIDED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: null,
+      rejectedAt: new Date('2026-07-03T10:00:00.000Z'),
+      reviewedById: 'admin-2',
+      verifiedById: null,
+      rejectedById: 'admin-2',
+      rejectReason: 'Duplicate/fake bill confirmed',
+      subtotalVnd: 1800000,
+      discountVnd: 0,
+      totalVnd: 1800000,
+      paidVnd: 1800000,
+      commissionAmountVnd: 0,
+      pointsEarned: 0,
+    } as never);
+
+    await service.reverseSensitiveBill('admin-2', 'bill-reverse-1', {
+      reason: 'Duplicate/fake bill confirmed',
+    });
+
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bill-reverse-1' },
+        data: expect.objectContaining({
+          status: 'VOIDED',
+          commissionAmountVnd: 0,
+          pointsEarned: 0,
+          rejectedById: 'admin-2',
+          rejectReason: 'Duplicate/fake bill confirmed',
+        }),
+      }),
+    );
+    expect(prisma.pointLedger.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ledger-earn-1', status: 'POSTED' },
+      data: { status: 'REVERSED' },
+    });
+    expect(prisma.pointLedger.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          billId_type: {
+            billId: 'bill-reverse-1',
+            type: 'REVERSE',
+          },
+        },
+        create: expect.objectContaining({
+          userId: 'member-1',
+          billId: 'bill-reverse-1',
+          reversedLedgerId: 'ledger-earn-1',
+          type: 'REVERSE',
+          status: 'POSTED',
+          amountVnd: -1800000,
+          points: -18,
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-2',
+        action: 'bill.reversal',
+        targetType: 'Bill',
+        targetId: 'bill-reverse-1',
+        metadata: expect.objectContaining({
+          previousStatus: 'VERIFIED',
+          nextStatus: 'VOIDED',
+          pointsReversed: 18,
+        }),
+      }),
+    });
+  });
+
   it('calculates revenue, discount, and admin commission from the original bill when approving', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
     prisma.bill.findFirst.mockResolvedValue({
@@ -4922,6 +5250,7 @@ describe('NightlifeDataService', () => {
         id: 'bill-1',
         billNumber: 'BILL-20260701-ABC12345',
         status: 'SUBMITTED',
+        submitterType: 'MEMBER',
         totalVnd: 1800000,
         store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
         booking: {
@@ -4941,6 +5270,16 @@ describe('NightlifeDataService', () => {
         },
         user: null,
         guest: null,
+        media: [
+          {
+            id: 'media-bill-1',
+            storageKey: 'bill-proof.png',
+            originalName: 'bill-proof.png',
+            mimeType: 'image/png',
+            access: 'PROTECTED',
+            url: 'http://localhost:3001/storage/files/bill-proof.png',
+          },
+        ],
       },
     ] as never);
 
@@ -4973,6 +5312,13 @@ describe('NightlifeDataService', () => {
           code: 'MEMBER-code',
           status: 'USED',
         },
+        submitterType: 'MEMBER',
+        media: [
+          expect.objectContaining({
+            id: 'media-bill-1',
+            access: 'PROTECTED',
+          }),
+        ],
       }),
     ]);
 
@@ -4984,11 +5330,72 @@ describe('NightlifeDataService', () => {
           couponIssueId: 'issue-1',
         }),
         select: expect.objectContaining({
+          submitterType: true,
           booking: { select: { id: true, status: true, scheduledAt: true } },
-          coupon: { select: { id: true, code: true, name: true } },
+          coupon: {
+            select: expect.objectContaining({
+              id: true,
+              code: true,
+              name: true,
+              minSpendVnd: true,
+            }),
+          },
           couponIssue: { select: { id: true, code: true, status: true } },
+          media: expect.objectContaining({
+            select: expect.objectContaining({ access: true, url: true }),
+          }),
         }),
       }),
+    );
+  });
+
+  it('adds fraud warnings for duplicate or fake bill evidence', async () => {
+    prisma.bill.findMany
+      .mockResolvedValueOnce([
+        {
+          id: 'bill-fraud-1',
+          billNumber: 'BILL-FRAUD-1',
+          storeId: 'store-1',
+          status: 'SUBMITTED',
+          submitterType: 'MEMBER',
+          totalVnd: 500000,
+          usedAt: new Date('2026-07-01T10:00:00.000Z'),
+          store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+          booking: null,
+          coupon: {
+            id: 'coupon-1',
+            code: 'WELCOME20',
+            name: 'Welcome 20%',
+            minSpendVnd: 1000000,
+          },
+          couponIssue: null,
+          user: null,
+          guest: null,
+          media: [],
+        },
+      ] as never)
+      .mockResolvedValueOnce([
+        {
+          id: 'bill-duplicate-1',
+          billNumber: 'BILL-DUPLICATE-1',
+          status: 'SUBMITTED',
+        },
+      ] as never);
+
+    const result = await service.listSensitiveBillsForAdmin({
+      id: 'admin-1',
+      role: 'ADMIN',
+    });
+    const firstBill = result[0] as {
+      fraudWarnings: Array<{ code: string }>;
+    };
+
+    expect(firstBill.fraudWarnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'NO_EVIDENCE_MEDIA' }),
+        expect.objectContaining({ code: 'TOTAL_BELOW_MIN_SPEND' }),
+        expect.objectContaining({ code: 'POSSIBLE_DUPLICATE_BILL' }),
+      ]),
     );
   });
 
@@ -5293,8 +5700,9 @@ describe('NightlifeDataService', () => {
         ],
       },
       funnel: [
-        expect.objectContaining({ key: 'booking_qr', count: 0 }),
-        expect.objectContaining({ key: 'qr_used', count: 0 }),
+        expect.objectContaining({ key: 'coupon_qr', count: 0 }),
+        expect.objectContaining({ key: 'qr_scan', count: 0 }),
+        expect.objectContaining({ key: 'bill_submitted', count: 0 }),
         expect.objectContaining({ key: 'bill_approved', count: 0 }),
         expect.objectContaining({
           key: 'commission',

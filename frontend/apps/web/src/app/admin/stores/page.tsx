@@ -21,7 +21,7 @@ const getChipStyle = (kind: string) => {
     pink: ['rgba(224,114,158,.1)', 'rgba(224,114,158,.28)', '#e79ab8'],
     muted: ['rgba(255,255,255,.05)', 'rgba(255,255,255,.12)', '#9b958a']
   };
-  const c = m[kind] || m.muted;
+  const c = m[kind] ?? m.muted ?? ['rgba(255,255,255,.05)', 'rgba(255,255,255,.12)', '#9b958a'];
   return { background: c[0], border: `1px solid ${c[1]}`, color: c[2] };
 };
 
@@ -156,10 +156,10 @@ export default function AdminStoresPage() {
           showToast('Tên quán bị trùng lặp, vui lòng chọn tên khác!');
           return;
         }
-        await apiClient.post('/admin/stores', payload);
+        await apiClient('/admin/stores', { method: 'POST', data: payload });
         showToast('Đã tạo quán mới!');
       } else {
-        await apiClient.patch(`/admin/stores/${venueSel}`, payload);
+        await apiClient(`/admin/stores/${venueSel}`, { method: 'PATCH', data: payload });
         showToast('Đã lưu thay đổi!');
       }
       closeDrawer();
@@ -257,6 +257,7 @@ export default function AdminStoresPage() {
       const uploaded: any[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        if (!file) continue;
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'STORE_GALLERY');

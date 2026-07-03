@@ -73,6 +73,7 @@ import {
   AdminSensitiveBillQueryDto,
   CreateBillDto,
 } from './dto/create-bill.dto';
+import { BillOcrPreviewDto, ReverseBillDto } from './dto/bill-p2.dto';
 import { AdminRevenueReportQueryDto } from './dto/admin-revenue-report.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
@@ -91,6 +92,10 @@ import { ReviewBillDto } from './dto/review-bill.dto';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
 const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
+const BILL_SUBMISSION_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const BILL_SUBMISSION_RATE_LIMIT = 5;
+const BILL_DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
+const BILL_FRAUD_DUPLICATE_WINDOW_MS = 10 * 60 * 1000;
 const BILL_REVENUE_RULE_VERSION = 'ba-v3.2';
 const BILL_LOYALTY_RULE_VERSION = 'v2.2';
 const BILL_LOYALTY_VND_PER_POINT = 100_000;
@@ -3392,6 +3397,7 @@ export class NightlifeDataService {
         storeId: true,
         billNumber: true,
         status: true,
+        submitterType: true,
         subtotalVnd: true,
         discountVnd: true,
         totalVnd: true,
@@ -3424,6 +3430,49 @@ export class NightlifeDataService {
 
   async listOperatorBills(user: AuthenticatedUser) {
     return this.listPartnerBills(user);
+  }
+
+  async listMemberBills(user: AuthenticatedUser) {
+    return this.prisma.bill.findMany({
+      where: {
+        deletedAt: null,
+        OR: [{ userId: user.id }, { submittedByUserId: user.id }],
+      },
+      orderBy: { submittedAt: 'desc' },
+      select: {
+        id: true,
+        storeId: true,
+        billNumber: true,
+        status: true,
+        submitterType: true,
+        subtotalVnd: true,
+        discountVnd: true,
+        totalVnd: true,
+        submittedAt: true,
+        reviewedAt: true,
+        verifiedAt: true,
+        rejectedAt: true,
+        reviewedById: true,
+        verifiedById: true,
+        rejectedById: true,
+        rejectReason: true,
+        usedAt: true,
+        store: { select: { id: true, name: true, slug: true } },
+        booking: { select: { id: true, status: true, scheduledAt: true } },
+        coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
+        media: {
+          select: {
+            id: true,
+            storageKey: true,
+            originalName: true,
+            mimeType: true,
+            access: true,
+            url: true,
+          },
+        },
+      },
+    });
   }
 
   listMemberBookings(userId: string) {
@@ -3819,6 +3868,45 @@ export class NightlifeDataService {
     );
   }
 
+  previewBillOcr(user: AuthenticatedUser, dto: BillOcrPreviewDto) {
+    const text = [dto.text, dto.fileName].filter(Boolean).join('\n');
+    const amount = this.extractBillOcrAmount(text);
+    const usedAt = this.extractBillOcrUsedAt(text);
+    const warnings: string[] = [];
+
+    if (!amount) {
+      warnings.push('Không đọc được tổng tiền, cần nhập tay totalVnd.');
+    }
+
+    if (!usedAt) {
+      warnings.push('Không đọc được ngày/giờ sử dụng, cần nhập tay usedAt.');
+    }
+
+    if (!dto.text?.trim()) {
+      warnings.push(
+        'Chưa có text OCR từ file ảnh/PDF; hệ thống đang dùng tên file làm fallback.',
+      );
+    }
+
+    const confidence =
+      0.15 +
+      (amount ? 0.45 : 0) +
+      (usedAt ? 0.3 : 0) +
+      (dto.text?.trim() ? 0.1 : 0);
+
+    return {
+      source: 'HEURISTIC_OCR_AI_MVP',
+      actorId: user.id,
+      suggestions: {
+        totalVnd: amount,
+        usedAt: usedAt?.toISOString() ?? null,
+      },
+      confidence: Math.min(0.95, Math.round(confidence * 100) / 100),
+      warnings,
+      requiresManualReview: warnings.length > 0,
+    };
+  }
+
   async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
     const booking = dto.bookingId
       ? await this.prisma.booking.findFirst({
@@ -3885,6 +3973,15 @@ export class NightlifeDataService {
     const now = new Date();
     const usedAt = this.resolveBillUsedAt(dto);
     this.assertBillSubmissionWindow(usedAt, now);
+    await this.assertBillSubmissionRateLimitAndDuplicate({
+      submitterType: 'MEMBER',
+      userId: user.id,
+      submittedByUserId: user.id,
+      storeId: store.id,
+      totalVnd: dto.totalVnd,
+      usedAt,
+      now,
+    });
 
     const bill = await this.prisma.bill.create({
       data: {
@@ -3895,6 +3992,7 @@ export class NightlifeDataService {
         couponId: couponLink.couponId,
         couponIssueId: couponLink.couponIssueId,
         submitterType: 'MEMBER',
+        submittedByUserId: user.id,
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
         subtotalVnd: dto.totalVnd,
@@ -3909,6 +4007,21 @@ export class NightlifeDataService {
       select: this.billNotificationSelect(),
     });
 
+    await this.recordBillSubmissionAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      billId: bill.id,
+      submitterType: 'MEMBER',
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      couponId: couponLink.couponId ?? null,
+      couponIssueId: couponLink.couponIssueId ?? null,
+      submittedByUserId: user.id,
+      submittedByPartnerAccountId: null,
+      totalVnd: dto.totalVnd,
+      usedAt,
+      submittedAt: now,
+    });
     await this.recordBillCouponLinkAudit({
       actorId: user.id,
       actorRole: user.role,
@@ -4024,6 +4137,16 @@ export class NightlifeDataService {
     const now = new Date();
     const usedAt = this.resolveBillUsedAt(dto);
     this.assertBillSubmissionWindow(usedAt, now);
+    const submitter = await this.resolvePartnerBillSubmitter(user);
+    await this.assertBillSubmissionRateLimitAndDuplicate({
+      submitterType: 'PARTNER',
+      submittedByUserId: submitter.submittedByUserId,
+      submittedByPartnerAccountId: submitter.submittedByPartnerAccountId,
+      storeId: store.id,
+      totalVnd: dto.totalVnd,
+      usedAt,
+      now,
+    });
 
     const bill = await this.prisma.bill.create({
       data: {
@@ -4034,6 +4157,8 @@ export class NightlifeDataService {
         couponId: couponLink.couponId,
         couponIssueId: couponLink.couponIssueId,
         submitterType: 'PARTNER',
+        submittedByUserId: submitter.submittedByUserId,
+        submittedByPartnerAccountId: submitter.submittedByPartnerAccountId,
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
         subtotalVnd: dto.totalVnd,
@@ -4048,6 +4173,21 @@ export class NightlifeDataService {
       select: this.billNotificationSelect(),
     });
 
+    await this.recordBillSubmissionAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      billId: bill.id,
+      submitterType: 'PARTNER',
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      couponId: couponLink.couponId ?? null,
+      couponIssueId: couponLink.couponIssueId ?? null,
+      submittedByUserId: submitter.submittedByUserId,
+      submittedByPartnerAccountId: submitter.submittedByPartnerAccountId,
+      totalVnd: dto.totalVnd,
+      usedAt,
+      submittedAt: now,
+    });
     await this.recordBillCouponLinkAudit({
       actorId: user.id,
       actorRole: user.role,
@@ -4463,7 +4603,9 @@ export class NightlifeDataService {
       select: {
         id: true,
         billNumber: true,
+        storeId: true,
         status: true,
+        submitterType: true,
         subtotalVnd: true,
         discountVnd: true,
         serviceChargeVnd: true,
@@ -4486,7 +4628,9 @@ export class NightlifeDataService {
         usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
-        coupon: { select: { id: true, code: true, name: true } },
+        coupon: {
+          select: { id: true, code: true, name: true, minSpendVnd: true },
+        },
         couponIssue: { select: { id: true, code: true, status: true } },
         user: {
           select: {
@@ -4518,7 +4662,127 @@ export class NightlifeDataService {
       },
     });
 
-    return bills.map((bill) => this.maskSensitiveBillForRole(bill, user));
+    const billsWithFraudWarnings = await Promise.all(
+      bills.map(async (bill) => ({
+        ...bill,
+        fraudWarnings: await this.buildBillFraudWarnings(bill),
+      })),
+    );
+
+    return billsWithFraudWarnings.map((bill) =>
+      this.maskSensitiveBillForRole(bill, user),
+    );
+  }
+
+  private async buildBillFraudWarnings(bill: {
+    id: string;
+    billNumber?: string | null;
+    storeId?: string | null;
+    totalVnd?: number | null;
+    usedAt?: Date | null;
+    booking?: { id: string; scheduledAt?: Date | null } | null;
+    coupon?: { id: string; code: string; minSpendVnd?: number | null } | null;
+    couponIssue?: { id: string; code: string; status: string } | null;
+    media?: Array<{ id: string; access?: string | null }> | null;
+  }) {
+    const warnings: Array<{
+      code: string;
+      severity: 'LOW' | 'MEDIUM' | 'HIGH';
+      message: string;
+      evidence?: Record<string, unknown>;
+    }> = [];
+
+    if (!bill.media?.length) {
+      warnings.push({
+        code: 'NO_EVIDENCE_MEDIA',
+        severity: bill.booking || bill.couponIssue ? 'MEDIUM' : 'HIGH',
+        message: 'Bill chưa có ảnh/PDF chứng từ đính kèm.',
+      });
+    }
+
+    if (bill.media?.some((media) => media.access !== 'PROTECTED')) {
+      warnings.push({
+        code: 'EVIDENCE_NOT_PROTECTED',
+        severity: 'MEDIUM',
+        message: 'Chứng từ bill không ở chế độ PROTECTED.',
+      });
+    }
+
+    if (
+      typeof bill.totalVnd === 'number' &&
+      typeof bill.coupon?.minSpendVnd === 'number' &&
+      bill.coupon.minSpendVnd > 0 &&
+      bill.totalVnd < bill.coupon.minSpendVnd
+    ) {
+      warnings.push({
+        code: 'TOTAL_BELOW_MIN_SPEND',
+        severity: 'HIGH',
+        message: 'Tổng bill thấp hơn min spend của mã giảm giá.',
+        evidence: {
+          totalVnd: bill.totalVnd,
+          minSpendVnd: bill.coupon.minSpendVnd,
+          couponCode: bill.coupon.code,
+        },
+      });
+    }
+
+    if (bill.booking?.scheduledAt && bill.usedAt) {
+      const driftHours =
+        Math.abs(bill.usedAt.getTime() - bill.booking.scheduledAt.getTime()) /
+        3_600_000;
+      if (driftHours > 12) {
+        warnings.push({
+          code: 'USED_AT_BOOKING_DRIFT',
+          severity: 'MEDIUM',
+          message: 'Thời gian sử dụng lệch xa lịch booking.',
+          evidence: { driftHours: Math.round(driftHours * 10) / 10 },
+        });
+      }
+    }
+
+    if (
+      bill.storeId &&
+      bill.usedAt &&
+      typeof bill.totalVnd === 'number' &&
+      bill.totalVnd > 0
+    ) {
+      const duplicates = await this.prisma.bill.findMany({
+        where: {
+          id: { not: bill.id },
+          deletedAt: null,
+          storeId: bill.storeId,
+          totalVnd: bill.totalVnd,
+          status: { not: 'VOIDED' },
+          usedAt: {
+            gte: new Date(
+              bill.usedAt.getTime() - BILL_FRAUD_DUPLICATE_WINDOW_MS,
+            ),
+            lte: new Date(
+              bill.usedAt.getTime() + BILL_FRAUD_DUPLICATE_WINDOW_MS,
+            ),
+          },
+        },
+        select: { id: true, billNumber: true, status: true },
+        take: 3,
+      });
+
+      if (duplicates.length) {
+        warnings.push({
+          code: 'POSSIBLE_DUPLICATE_BILL',
+          severity: 'HIGH',
+          message: 'Có bill khác cùng quán, cùng tổng tiền, gần cùng thời gian.',
+          evidence: {
+            duplicateBills: duplicates.map((item) => ({
+              id: item.id,
+              billNumber: item.billNumber,
+              status: item.status,
+            })),
+          },
+        });
+      }
+    }
+
+    return warnings;
   }
 
   async getAdminRevenueReport(
@@ -4898,6 +5162,160 @@ export class NightlifeDataService {
     return result;
   }
 
+  async reverseSensitiveBill(
+    adminId: string,
+    billId: string,
+    dto: ReverseBillDto = {},
+  ) {
+    const bill = await this.prisma.bill.findFirst({
+      where: { id: billId, deletedAt: null },
+      select: {
+        id: true,
+        billNumber: true,
+        status: true,
+        reviewedAt: true,
+        verifiedAt: true,
+        rejectedAt: true,
+        reviewedById: true,
+        verifiedById: true,
+        rejectedById: true,
+        rejectReason: true,
+        subtotalVnd: true,
+        discountVnd: true,
+        totalVnd: true,
+        paidVnd: true,
+        commissionAmountVnd: true,
+        pointsEarned: true,
+        discountRuleSnapshot: true,
+        commissionRuleSnapshot: true,
+      },
+    });
+
+    if (!bill) {
+      throw new NotFoundException('Bill not found');
+    }
+
+    if (!['VERIFIED', 'PAID'].includes(bill.status)) {
+      throw new UnprocessableEntityException(
+        'Only VERIFIED or PAID bills can be reversed',
+      );
+    }
+
+    const now = new Date();
+    const reason =
+      this.cleanText(dto.reason) ?? 'Bill reversed by admin reconciliation';
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const earnLedger = await tx.pointLedger.findFirst({
+        where: {
+          billId,
+          type: 'EARN',
+          status: 'POSTED',
+        },
+        select: {
+          id: true,
+          userId: true,
+          bookingId: true,
+          amountVnd: true,
+          points: true,
+        },
+      });
+
+      const reversedBill = await tx.bill.update({
+        where: { id: billId },
+        data: {
+          status: 'VOIDED',
+          reviewedAt: now,
+          reviewedById: adminId,
+          verifiedAt: null,
+          verifiedById: null,
+          rejectedAt: now,
+          rejectedById: adminId,
+          rejectReason: reason,
+          commissionAmountVnd: 0,
+          pointsEarned: 0,
+        },
+        select: this.billNotificationSelect(),
+      });
+
+      if (earnLedger) {
+        await tx.pointLedger.updateMany({
+          where: { id: earnLedger.id, status: 'POSTED' },
+          data: { status: 'REVERSED' },
+        });
+
+        await tx.pointLedger.upsert({
+          where: {
+            billId_type: {
+              billId,
+              type: 'REVERSE',
+            },
+          },
+          update: {
+            userId: earnLedger.userId,
+            bookingId: earnLedger.bookingId,
+            reversedLedgerId: earnLedger.id,
+            status: 'POSTED',
+            amountVnd: -Math.abs(earnLedger.amountVnd),
+            points: -Math.abs(earnLedger.points),
+            description: `Auto reversal for bill ${billId}`,
+            ruleSnapshot: this.toPrismaJson({
+              version: BILL_LOYALTY_RULE_VERSION,
+              source: 'bill_reversal',
+              reason,
+            }),
+            postedAt: now,
+          },
+          create: {
+            userId: earnLedger.userId,
+            bookingId: earnLedger.bookingId,
+            billId,
+            reversedLedgerId: earnLedger.id,
+            type: 'REVERSE',
+            status: 'POSTED',
+            amountVnd: -Math.abs(earnLedger.amountVnd),
+            points: -Math.abs(earnLedger.points),
+            description: `Auto reversal for bill ${billId}`,
+            ruleSnapshot: this.toPrismaJson({
+              version: BILL_LOYALTY_RULE_VERSION,
+              source: 'bill_reversal',
+              reason,
+            }),
+            postedAt: now,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: 'bill.reversal',
+          targetType: 'Bill',
+          targetId: billId,
+          beforeJson: this.buildBillReviewAuditSnapshot(bill),
+          afterJson: this.buildBillReviewAuditSnapshot(reversedBill),
+          metadata: this.toPrismaJson({
+            reason,
+            previousStatus: bill.status,
+            nextStatus: reversedBill.status,
+            reversedAt: now.toISOString(),
+            reversedLedgerId: earnLedger?.id ?? null,
+            pointsReversed: earnLedger?.points ?? 0,
+          }),
+        },
+      });
+
+      return reversedBill;
+    });
+
+    await this.adminNotificationService?.notifyBillReviewed(result, {
+      approve: false,
+      reviewedById: adminId,
+    });
+
+    return result;
+  }
+
   private resolveAdminRevenueReportWindow(
     query: AdminRevenueReportQueryDto,
   ): RevenueReportWindow {
@@ -5216,10 +5634,41 @@ export class NightlifeDataService {
       ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
       ...(bookingRelationFilter ? { booking: bookingRelationFilter } : {}),
     };
-    const [qrIssuedCount, qrUsedCount, billApprovedCount] = await Promise.all([
+    const couponIssueBaseWhere: Prisma.CouponIssueWhereInput = {
+      ...(couponId ? { couponId } : {}),
+      coupon: {
+        deletedAt: null,
+        ...(storeId ? { storeId } : {}),
+        ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
+      },
+    };
+
+    const billSubmittedBaseWhere: Prisma.BillWhereInput = {
+      deletedAt: null,
+      usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+      ...(storeId ? { storeId } : {}),
+      ...(couponId ? { couponId } : {}),
+      ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
+      ...(castId ? { booking: { castId } } : {}),
+    };
+
+    const [
+      qrIssuedCount,
+      couponIssueCount,
+      qrUsedCount,
+      couponIssueUsedCount,
+      billSubmittedCount,
+      billApprovedCount,
+    ] = await Promise.all([
       this.prisma.bookingQr.count({
         where: {
           ...bookingQrBaseWhere,
+          createdAt: { gte: reportWindow.from, lte: reportWindow.to },
+        },
+      }),
+      this.prisma.couponIssue.count({
+        where: {
+          ...couponIssueBaseWhere,
           createdAt: { gte: reportWindow.from, lte: reportWindow.to },
         },
       }),
@@ -5230,22 +5679,43 @@ export class NightlifeDataService {
           usedAt: { gte: reportWindow.from, lte: reportWindow.to },
         },
       }),
+      this.prisma.couponIssue.count({
+        where: {
+          ...couponIssueBaseWhere,
+          status: 'USED',
+          usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+        },
+      }),
       this.prisma.bill.count({
         where: {
-          deletedAt: null,
+          ...billSubmittedBaseWhere,
+          status: { in: ['SUBMITTED', 'REJECTED', 'VERIFIED', 'PAID'] },
+        },
+      }),
+      this.prisma.bill.count({
+        where: {
+          ...billSubmittedBaseWhere,
           status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
-          usedAt: { gte: reportWindow.from, lte: reportWindow.to },
-          ...(storeId ? { storeId } : {}),
-          ...(couponId ? { couponId } : {}),
-          ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
-          ...(castId ? { booking: { castId } } : {}),
         },
       }),
     ]);
 
     const steps = [
-      { key: 'booking_qr', label: 'Booking QR', count: qrIssuedCount },
-      { key: 'qr_used', label: 'QR used', count: qrUsedCount },
+      {
+        key: 'coupon_qr',
+        label: 'Coupon/QR',
+        count: qrIssuedCount + couponIssueCount,
+      },
+      {
+        key: 'qr_scan',
+        label: 'QR scan',
+        count: qrUsedCount + couponIssueUsedCount,
+      },
+      {
+        key: 'bill_submitted',
+        label: 'Bill submitted',
+        count: billSubmittedCount,
+      },
       { key: 'bill_approved', label: 'Bill approved', count: billApprovedCount },
       {
         key: 'commission',
@@ -6127,6 +6597,99 @@ export class NightlifeDataService {
     return usedAt;
   }
 
+  private extractBillOcrAmount(text: string) {
+    const candidates: number[] = [];
+    const normalized = text.replace(/\s+/g, ' ');
+    const labeledAmountPattern =
+      /(tong|tổng|total|amount|thanh\s*toan|thanh\s*toán|paid|cong|cộng)[^\d]{0,30}([\d][\d.,\s]{3,})/gi;
+    let labeledMatch: RegExpExecArray | null;
+
+    while ((labeledMatch = labeledAmountPattern.exec(normalized))) {
+      const amount = this.parseBillOcrMoney(labeledMatch[2] ?? '');
+      if (amount) {
+        candidates.push(amount);
+      }
+    }
+
+    const anyAmountPattern = /(?:vnd|đ|d)?\s*([\d][\d.,\s]{4,})(?:\s*(?:vnd|đ|d))?/gi;
+    let anyMatch: RegExpExecArray | null;
+    while ((anyMatch = anyAmountPattern.exec(normalized))) {
+      const amount = this.parseBillOcrMoney(anyMatch[1] ?? '');
+      if (amount) {
+        candidates.push(amount);
+      }
+    }
+
+    return candidates.length ? Math.max(...candidates) : null;
+  }
+
+  private parseBillOcrMoney(value: string) {
+    const digits = value.replace(/[^\d]/g, '');
+    if (digits.length < 5) {
+      return null;
+    }
+
+    const amount = Number(digits);
+    return Number.isSafeInteger(amount) && amount >= 10_000 ? amount : null;
+  }
+
+  private extractBillOcrUsedAt(text: string) {
+    const isoMatch = text.match(
+      /\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})(?:[ T_-](\d{1,2})[:h-](\d{1,2}))?\b/,
+    );
+    if (isoMatch) {
+      return this.buildBillOcrDate(
+        Number(isoMatch[1]),
+        Number(isoMatch[2]),
+        Number(isoMatch[3]),
+        Number(isoMatch[4] ?? 12),
+        Number(isoMatch[5] ?? 0),
+      );
+    }
+
+    const vnMatch = text.match(
+      /\b(\d{1,2})[-/](\d{1,2})[-/](20\d{2})(?:[ T_-](\d{1,2})[:h-](\d{1,2}))?\b/,
+    );
+    if (vnMatch) {
+      return this.buildBillOcrDate(
+        Number(vnMatch[3]),
+        Number(vnMatch[2]),
+        Number(vnMatch[1]),
+        Number(vnMatch[4] ?? 12),
+        Number(vnMatch[5] ?? 0),
+      );
+    }
+
+    return null;
+  }
+
+  private buildBillOcrDate(
+    year: number,
+    month: number,
+    day: number,
+    hour: number,
+    minute: number,
+  ) {
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day) ||
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31 ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return null;
+    }
+
+    const date = new Date(Date.UTC(year, month - 1, day, hour - 7, minute));
+    return Number.isFinite(date.getTime()) ? date : null;
+  }
+
   private assertBillSubmissionWindow(usedAt: Date, now: Date) {
     const usageAgeMs = now.getTime() - usedAt.getTime();
     if (usageAgeMs < 0) {
@@ -6138,6 +6701,148 @@ export class NightlifeDataService {
         `Bill can only be submitted within ${BILL_SUBMISSION_DEADLINE_DAYS} days of usage time`,
       );
     }
+  }
+
+  private async resolvePartnerBillSubmitter(user: AuthenticatedUser) {
+    if (user.role !== 'PARTNER') {
+      return {
+        submittedByUserId: user.id,
+        submittedByPartnerAccountId: null,
+      };
+    }
+
+    const partnerAccount = await this.prisma.partnerAccount.findFirst({
+      where: { userId: user.id, deletedAt: null },
+      select: { id: true },
+    });
+
+    return {
+      submittedByUserId: partnerAccount ? null : user.id,
+      submittedByPartnerAccountId: partnerAccount?.id ?? null,
+    };
+  }
+
+  private billSubmitterActorClauses(input: {
+    userId?: string | null;
+    submittedByUserId?: string | null;
+    submittedByPartnerAccountId?: string | null;
+  }): Prisma.BillWhereInput[] {
+    const clauses: Prisma.BillWhereInput[] = [];
+
+    if (input.userId) {
+      clauses.push({ userId: input.userId });
+    }
+
+    if (input.submittedByUserId) {
+      clauses.push({ submittedByUserId: input.submittedByUserId });
+    }
+
+    if (input.submittedByPartnerAccountId) {
+      clauses.push({
+        submittedByPartnerAccountId: input.submittedByPartnerAccountId,
+      });
+    }
+
+    return clauses;
+  }
+
+  private async assertBillSubmissionRateLimitAndDuplicate(input: {
+    submitterType: 'MEMBER' | 'PARTNER';
+    userId?: string | null;
+    submittedByUserId?: string | null;
+    submittedByPartnerAccountId?: string | null;
+    storeId: string;
+    totalVnd: number;
+    usedAt: Date;
+    now: Date;
+  }) {
+    const actorClauses = this.billSubmitterActorClauses(input);
+    if (!actorClauses.length) {
+      return;
+    }
+
+    const recentCount = await this.prisma.bill.count({
+      where: {
+        deletedAt: null,
+        storeId: input.storeId,
+        submitterType: input.submitterType,
+        submittedAt: {
+          gte: new Date(
+            input.now.getTime() - BILL_SUBMISSION_RATE_LIMIT_WINDOW_MS,
+          ),
+          lte: input.now,
+        },
+        OR: actorClauses,
+      },
+    });
+
+    if (recentCount >= BILL_SUBMISSION_RATE_LIMIT) {
+      throw new UnprocessableEntityException(
+        'Too many bill submissions. Please try again later',
+      );
+    }
+
+    const duplicateBill = await this.prisma.bill.findFirst({
+      where: {
+        deletedAt: null,
+        storeId: input.storeId,
+        totalVnd: input.totalVnd,
+        status: { not: 'VOIDED' },
+        usedAt: {
+          gte: new Date(input.usedAt.getTime() - BILL_DUPLICATE_WINDOW_MS),
+          lte: new Date(input.usedAt.getTime() + BILL_DUPLICATE_WINDOW_MS),
+        },
+        OR: actorClauses,
+      },
+      select: { id: true, billNumber: true },
+    });
+
+    if (duplicateBill) {
+      throw new UnprocessableEntityException(
+        'Possible duplicate bill submission',
+      );
+    }
+  }
+
+  private async recordBillSubmissionAudit(input: {
+    actorId?: string | null;
+    actorRole?: string | null;
+    billId: string;
+    submitterType: 'MEMBER' | 'PARTNER';
+    storeId: string;
+    bookingId?: string | null;
+    couponId?: string | null;
+    couponIssueId?: string | null;
+    submittedByUserId?: string | null;
+    submittedByPartnerAccountId?: string | null;
+    totalVnd: number;
+    usedAt: Date;
+    submittedAt: Date;
+  }) {
+    const snapshot = {
+      submitterType: input.submitterType,
+      actorRole: input.actorRole ?? null,
+      storeId: input.storeId,
+      bookingId: input.bookingId ?? null,
+      couponId: input.couponId ?? null,
+      couponIssueId: input.couponIssueId ?? null,
+      submittedByUserId: input.submittedByUserId ?? null,
+      submittedByPartnerAccountId: input.submittedByPartnerAccountId ?? null,
+      totalVnd: input.totalVnd,
+      usedAt: input.usedAt.toISOString(),
+      submittedAt: input.submittedAt.toISOString(),
+    };
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: 'bill.submit',
+        targetType: 'Bill',
+        targetId: input.billId,
+        metadata: this.toPrismaJson(snapshot),
+        afterJson: this.toPrismaJson(snapshot),
+      },
+    });
   }
 
   private async recordBillCouponLinkAudit(input: {
@@ -7396,6 +8101,7 @@ export class NightlifeDataService {
       id: true,
       billNumber: true,
       status: true,
+      submitterType: true,
       subtotalVnd: true,
       discountVnd: true,
       serviceChargeVnd: true,

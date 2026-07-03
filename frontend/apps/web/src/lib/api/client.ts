@@ -94,6 +94,7 @@ const exactMessageTranslations: Record<string, string> = {
   "partner request not found": "Không tìm thấy hồ sơ đối tác.",
   "payload is required": "Thiếu dữ liệu gửi lên.",
   "phone is required": "Vui lòng nhập số điện thoại.",
+  "possible duplicate bill submission": "Bill này có dấu hiệu bị gửi trùng. Vui lòng kiểm tra lại.",
   "ranking config not found": "Không tìm thấy cấu hình xếp hạng.",
   "ranking target not found": "Không tìm thấy mục xếp hạng.",
   "scheduledat must be a valid iso date": "Thời gian đặt chỗ không hợp lệ.",
@@ -107,6 +108,8 @@ const exactMessageTranslations: Record<string, string> = {
     "Tài khoản Google này không phải tài khoản hội viên.",
   "token has been revoked": "Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.",
   "token session is not active": "Phiên đăng nhập không còn hiệu lực. Vui lòng đăng nhập lại.",
+  "too many bill submissions. please try again later":
+    "Bạn gửi bill quá nhanh. Vui lòng chờ một chút rồi thử lại.",
   "type must be blog or policy": "Loại nội dung phải là blog hoặc chính sách.",
   unauthorized: "Bạn cần đăng nhập để tiếp tục.",
   "forbidden resource": "Bạn không có quyền thực hiện thao tác này.",

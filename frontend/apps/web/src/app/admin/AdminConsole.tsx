@@ -133,6 +133,7 @@ type SensitiveBill = {
   id: string;
   billNumber: string | null;
   status: string;
+  submitterType?: "MEMBER" | "PARTNER" | string | null;
   totalVnd: number | null;
   paidVnd: number | null;
   commissionAmountVnd: number | null;
@@ -145,6 +146,20 @@ type SensitiveBill = {
   couponIssue?: { id: string; code: string; status: string } | null;
   user?: { email: string; displayName: string | null; phone: string | null } | null;
   guest?: { email: string | null; displayName: string | null; phone: string | null } | null;
+  media?: Array<{
+    id: string;
+    originalName: string;
+    storageKey: string;
+    mimeType: string;
+    access: "PUBLIC" | "PROTECTED" | string;
+    url: string;
+  }>;
+  fraudWarnings?: Array<{
+    code: string;
+    severity: "LOW" | "MEDIUM" | "HIGH" | string;
+    message: string;
+    evidence?: Record<string, unknown>;
+  }>;
 };
 
 type RevenueReportTotals = {
@@ -1596,6 +1611,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [expandedRevenueCouponKey, setExpandedRevenueCouponKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [reversingBillId, setReversingBillId] = useState<string | null>(null);
   const [cancelBookingTarget, setCancelBookingTarget] = useState<AdminBooking | null>(null);
   const [cancelBookingReason, setCancelBookingReason] = useState("");
   const [cancelingBookingId, setCancelingBookingId] = useState<string | null>(null);
@@ -1774,6 +1790,10 @@ export default function AdminConsole({ section }: { section?: string }) {
     () => reconciliationBills.filter((bill) => bill.coupon || bill.couponIssue),
     [reconciliationBills],
   );
+  const reversibleBills = useMemo(
+    () => reconciliationBills.filter((bill) => ["VERIFIED", "PAID"].includes(bill.status)),
+    [reconciliationBills],
+  );
   const reconciliationFunnel = useMemo(
     () => [
       { label: "Coupon claim", value: couponIssues.length, note: "claim/issue" },
@@ -1857,7 +1877,13 @@ export default function AdminConsole({ section }: { section?: string }) {
     revenueReport.days.forEach((day) =>
       day.stores.forEach((store) =>
         store.coupons.forEach((coupon) => {
-          if (coupon.coupon.id) options.set(coupon.coupon.id, coupon.coupon);
+          if (coupon.coupon.id) {
+            options.set(coupon.coupon.id, {
+              id: coupon.coupon.id,
+              code: coupon.coupon.code,
+              name: coupon.coupon.name,
+            });
+          }
         }),
       ),
     );
@@ -2088,6 +2114,31 @@ export default function AdminConsole({ section }: { section?: string }) {
       await loadAdminData();
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  const reverseBill = async (bill: SensitiveBill) => {
+    if (!["VERIFIED", "PAID"].includes(bill.status)) {
+      setStatusMessage("Chi dao bill VERIFIED/PAID moi duoc reverse.");
+      return;
+    }
+
+    setReversingBillId(bill.id);
+    try {
+      await apiClient(`/admin/sensitive-bills/${bill.id}/reverse`, {
+        method: "PATCH",
+        data: {
+          reason:
+            bill.fraudWarnings?.[0]?.message ??
+            "Admin reversal from bill fraud/reconciliation dashboard.",
+        },
+      });
+      setStatusMessage(`Da reverse bill ${bill.billNumber ?? shortCode(bill.id)}.`);
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong reverse duoc bill.");
+    } finally {
+      setReversingBillId(null);
     }
   };
 
@@ -2597,6 +2648,11 @@ export default function AdminConsole({ section }: { section?: string }) {
               <span style={{ display: "block", marginTop: 3 }}>
                 <Badge tone={billStatusLabel(bill.status)}>{billStatusLabel(bill.status)}</Badge>
               </span>
+              {bill.submitterType ? (
+                <span style={{ display: "inline-flex", marginTop: 6 }}>
+                  <Badge tone="INFO">{bill.submitterType === "PARTNER" ? "Chủ quán" : "Member"}</Badge>
+                </span>
+              ) : null}
             </span>
             <span>{bill.store.name}</span>
             <span>
@@ -2616,6 +2672,16 @@ export default function AdminConsole({ section }: { section?: string }) {
               {!bill.booking && bill.couponIssue ? (
                 <span style={{ display: "inline-flex", marginTop: 6 }}>
                   <Badge tone="PENDING">Không có booking</Badge>
+                </span>
+              ) : null}
+              {bill.media?.length ? (
+                <span style={{ display: "inline-flex", marginTop: 6 }}>
+                  <Badge tone="INFO">Chứng từ {bill.media.length}</Badge>
+                </span>
+              ) : null}
+              {bill.fraudWarnings?.length ? (
+                <span style={{ display: "inline-flex", marginTop: 6 }}>
+                  <Badge tone="REJECTED">Fraud {bill.fraudWarnings.length}</Badge>
                 </span>
               ) : null}
             </span>
@@ -2638,6 +2704,17 @@ export default function AdminConsole({ section }: { section?: string }) {
               >
                 Từ chối
               </button>
+              {["VERIFIED", "PAID"].includes(bill.status) ? (
+                <button
+                  type="button"
+                  disabled={reversingBillId === bill.id}
+                  onClick={() => void reverseBill(bill)}
+                  style={buttonStyle("danger")}
+                >
+                  <RefreshCcw size={14} />
+                  Reverse
+                </button>
+              ) : null}
             </span>
           </div>
         ))}
@@ -4166,6 +4243,49 @@ export default function AdminConsole({ section }: { section?: string }) {
                       {item.money ? formatMoney(item.metric.delta) : item.metric.delta.toLocaleString("vi-VN")}
                       {item.metric.deltaPercent === null ? "" : ` (${item.metric.deltaPercent}%)`}
                     </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {reversibleBills.length ? (
+              <div
+                data-testid="admin-bill-reversal-panel"
+                style={{
+                  border: `1px solid ${colors.borderGold22}`,
+                  background: "rgba(224,114,158,.06)",
+                  padding: 12,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <strong style={{ color: colors.goldPale, fontSize: 13 }}>
+                  Bill reversal tự động
+                </strong>
+                {reversibleBills.slice(0, 5).map((bill) => (
+                  <div
+                    key={`reverse-${bill.id}`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0,1fr) auto",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ color: colors.text2, fontSize: 12 }}>
+                      <b style={{ color: colors.text }}>{bill.billNumber ?? shortCode(bill.id)}</b>{" "}
+                      {bill.store.name} · {formatMoney(bill.totalVnd)}
+                      {bill.fraudWarnings?.length ? ` · Fraud ${bill.fraudWarnings.length}` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`Reverse bill ${bill.billNumber ?? bill.id}`}
+                      disabled={reversingBillId === bill.id}
+                      onClick={() => void reverseBill(bill)}
+                      style={buttonStyle("danger")}
+                    >
+                      <RefreshCcw size={14} />
+                      Reverse
+                    </button>
                   </div>
                 ))}
               </div>

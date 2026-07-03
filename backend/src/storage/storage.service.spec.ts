@@ -78,6 +78,27 @@ describe('StorageService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('stores bill evidence uploads as protected media linked to the bill', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-bill-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'member-1',
+      billId: 'bill-1',
+      purpose: 'bill-evidence',
+      access: 'PROTECTED',
+    });
+
+    expect(prisma.media.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ownerId: 'member-1',
+        billId: 'bill-1',
+        purpose: 'bill-evidence',
+        access: MediaAccess.PROTECTED,
+        url: 'http://localhost:3001/storage/files/stored-image',
+      }),
+    });
+  });
+
   it('blocks protected media for another user', async () => {
     prisma.media.findUnique.mockResolvedValue({
       access: MediaAccess.PROTECTED,

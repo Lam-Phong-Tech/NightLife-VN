@@ -37,6 +37,7 @@ import {
   CreatePartnerBillContract,
   CreatePartnerRequestContract,
   GuestBookingLookupContract,
+  MemberBillsContract,
   MemberBookingsContract,
   MemberCastFavoriteStateContract,
   MemberClaimCouponContract,
@@ -78,6 +79,7 @@ import {
   ReviewBookingChangeRequestDto,
   UpdateStoreBookingPolicyDto,
 } from './dto/booking-p2.dto';
+import { BillOcrPreviewDto, ReverseBillDto } from './dto/bill-p2.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import {
   AdminCouponIssueQueryDto,
@@ -476,6 +478,19 @@ export class NightlifeDataController {
     return this.nightlifeDataService.submitPartnerBill(request.user, dto);
   }
 
+  @ApiOperation({
+    summary: 'Bill P2: OCR/AI preview helper for uploaded bill evidence',
+  })
+  @Roles('USER', 'PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('bills/ocr-preview')
+  previewBillOcr(
+    @Req() request: RequestWithUser,
+    @Body() dto: BillOcrPreviewDto,
+  ) {
+    return this.nightlifeDataService.previewBillOcr(request.user, dto);
+  }
+
   @PartnerBookingsContract()
   @ActionPolicy('canViewPartnerBooking')
   @Roles('OPERATOR', 'ADMIN')
@@ -756,6 +771,14 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listMemberCouponIssues(request.user.id);
   }
 
+  @MemberBillsContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/bills')
+  listMemberBills(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.listMemberBills(request.user);
+  }
+
   @CreateMemberBillContract()
   @Roles('USER')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -937,6 +960,25 @@ export class NightlifeDataController {
     @Body() dto: ReviewBillDto,
   ) {
     return this.nightlifeDataService.reviewSensitiveBill(
+      request.user.id,
+      billId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Bill P2: reverse an approved bill and related loyalty impact',
+  })
+  @ActionPolicy('canReviewBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Patch('admin/sensitive-bills/:billId/reverse')
+  reverseSensitiveBill(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: ReverseBillDto,
+  ) {
+    return this.nightlifeDataService.reverseSensitiveBill(
       request.user.id,
       billId,
       dto,

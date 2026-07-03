@@ -3,10 +3,10 @@
 import Link from "next/link";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
-import { billApi, type BillRecord } from "@/lib/api/bills";
+import { billApi, type BillOcrPreview, type BillRecord, type BillStoreOption } from "@/lib/api/bills";
 import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
-import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
+import { discoveryApi } from "@/lib/api/discovery";
 
 const colors = {
   bg: "#0c0c0f",
@@ -67,7 +67,7 @@ const couponIssueOptionLabel = (issue: CouponIssue) => {
 const cleanApiMessage = (error: unknown) => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
-      return "Bạn cần đăng nhập bằng tài khoản khách hoặc chủ quán trước khi gửi bill.";
+      return "Guest chưa đăng nhập không gửi bill trong MVP; vui lòng đăng nhập/đăng ký Member.";
     }
 
     return translateApiMessage(error.message, error.status);
@@ -82,7 +82,7 @@ const cleanApiMessage = (error: unknown) => {
 
 export default function Page() {
   const [mode, setMode] = useState<SubmitMode>("member");
-  const [stores, setStores] = useState<PublicStore[]>([]);
+  const [stores, setStores] = useState<BillStoreOption[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [couponIssues, setCouponIssues] = useState<CouponIssue[]>([]);
   const [storeSlug, setStoreSlug] = useState("");
@@ -91,9 +91,11 @@ export default function Page() {
   const [amountInput, setAmountInput] = useState("");
   const [usedAt, setUsedAt] = useState(() => toDatetimeLocalValue(new Date()));
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [ocrPreview, setOcrPreview] = useState<BillOcrPreview | null>(null);
   const [notice, setNotice] = useState<FormNotice | null>(null);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReadingEvidence, setIsReadingEvidence] = useState(false);
   const [submittedBills, setSubmittedBills] = useState<BillRecord[]>([]);
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
@@ -101,6 +103,61 @@ export default function Page() {
 
   const handleEvidenceFileChange = (input: HTMLInputElement) => {
     setEvidenceFile(input.files?.[0] ?? null);
+    setOcrPreview(null);
+  };
+
+  const readEvidenceText = async (file: File) => {
+    if (
+      file.type.startsWith("text/") ||
+      file.type === "application/pdf" ||
+      /\.(txt|csv|pdf)$/i.test(file.name)
+    ) {
+      try {
+        return (await file.text()).slice(0, 8000);
+      } catch {
+        return "";
+      }
+    }
+
+    return "";
+  };
+
+  const handleReadEvidence = async () => {
+    if (!evidenceFile) return;
+    setIsReadingEvidence(true);
+    setNotice(null);
+    try {
+      const preview = await billApi.previewBillOcr({
+        fileName: evidenceFile.name,
+        text: await readEvidenceText(evidenceFile),
+      });
+      setOcrPreview(preview);
+      if (preview.suggestions.totalVnd) {
+        setAmountInput(preview.suggestions.totalVnd.toLocaleString("vi-VN"));
+      }
+      if (preview.suggestions.usedAt) {
+        setUsedAt(toDatetimeLocalValue(new Date(preview.suggestions.usedAt)));
+      }
+      setNotice({
+        tone: preview.requiresManualReview ? "warning" : "success",
+        message: preview.requiresManualReview
+          ? "AI đọc bill đã gợi ý dữ liệu, vui lòng kiểm tra lại trước khi gửi."
+          : "AI đọc bill đã điền tổng tiền và thời gian sử dụng.",
+      });
+    } catch (error) {
+      setNotice({ tone: "danger", message: cleanApiMessage(error) });
+    } finally {
+      setIsReadingEvidence(false);
+    }
+  };
+
+  const handleModeChange = (nextMode: SubmitMode) => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    setBookingId("");
+    setCouponIssueId("");
+    setStoreSlug("");
+    setNotice(null);
   };
 
   useEffect(() => {
@@ -109,17 +166,39 @@ export default function Page() {
     const loadOptions = async () => {
       setIsLoadingOptions(true);
       try {
-        const [storeItems, bookingItems, couponIssueItems] = await Promise.all([
-          discoveryApi.listStores({ city: "all", limit: 80 }),
-          bookingApi.listMemberBookings().catch(() => [] as BookingRecord[]),
-          couponApi.listMemberCouponIssues().catch(() => [] as CouponIssue[]),
-        ]);
+        const [storeItems, bookingItems, couponIssueItems, billItems] =
+          mode === "partner"
+            ? await Promise.all([
+                billApi.listPartnerStores(),
+                Promise.resolve([] as BookingRecord[]),
+                Promise.resolve([] as CouponIssue[]),
+                billApi.listPartnerBills().catch(() => [] as BillRecord[]),
+              ])
+            : await Promise.all([
+                discoveryApi.listStores({ city: "all", limit: 80 }),
+                bookingApi.listMemberBookings().catch(() => [] as BookingRecord[]),
+                couponApi.listMemberCouponIssues().catch(() => [] as CouponIssue[]),
+                billApi.listMemberBills().catch(() => [] as BillRecord[]),
+              ]);
 
         if (!active) return;
         setStores(storeItems);
         setBookings(bookingItems);
         setCouponIssues(couponIssueItems.filter(canAttachCouponIssueToBill));
-        setStoreSlug((current) => current || storeItems[0]?.slug || "");
+        setSubmittedBills(billItems.slice(0, 5));
+        setStoreSlug((current) =>
+          current && storeItems.some((storeItem) => storeItem.slug === current)
+            ? current
+            : storeItems[0]?.slug || "",
+        );
+      } catch (error) {
+        if (!active) return;
+        setStores([]);
+        setBookings([]);
+        setCouponIssues([]);
+        setSubmittedBills([]);
+        setStoreSlug("");
+        setNotice({ tone: "danger", message: cleanApiMessage(error) });
       } finally {
         if (active) {
           setIsLoadingOptions(false);
@@ -132,7 +211,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     const refreshWindow = () => {
@@ -265,6 +344,7 @@ export default function Page() {
       setBookingId("");
       setCouponIssueId("");
       setEvidenceFile(null);
+      setOcrPreview(null);
       setUsedAt(toDatetimeLocalValue(new Date()));
     } catch (error) {
       setNotice({ tone: "danger", message: cleanApiMessage(error) });
@@ -305,15 +385,17 @@ export default function Page() {
             <div className="nl-segmented" aria-label="Vai trò gửi bill">
               <button
                 type="button"
+                aria-label="Gui bill vai tro member"
                 className={mode === "member" ? "active" : ""}
-                onClick={() => setMode("member")}
+                onClick={() => handleModeChange("member")}
               >
                 Khách
               </button>
               <button
                 type="button"
+                aria-label="Gui bill vai tro partner"
                 className={mode === "partner" ? "active" : ""}
-                onClick={() => setMode("partner")}
+                onClick={() => handleModeChange("partner")}
               >
                 Chủ quán
               </button>
@@ -415,7 +497,10 @@ export default function Page() {
                     <button
                       type="button"
                       aria-label="Bỏ file"
-                      onClick={() => setEvidenceFile(null)}
+                      onClick={() => {
+                        setEvidenceFile(null);
+                        setOcrPreview(null);
+                      }}
                     >
                       Bá»
                     </button>
@@ -423,7 +508,37 @@ export default function Page() {
                 ) : (
                   <span className="nl-hint">Khuyến khích gửi kèm để duyệt nhanh hơn.</span>
                 )}
+                {evidenceFile ? (
+                  <button
+                    type="button"
+                    className="nl-ocr-button"
+                    disabled={isReadingEvidence}
+                    onClick={handleReadEvidence}
+                  >
+                    {isReadingEvidence ? "Đang đọc..." : "AI đọc bill"}
+                  </button>
+                ) : null}
               </div>
+              {ocrPreview ? (
+                <div className="nl-ocr-preview">
+                  <strong>Độ tin cậy {Math.round(ocrPreview.confidence * 100)}%</strong>
+                  <span>
+                    Tổng tiền:{" "}
+                    {ocrPreview.suggestions.totalVnd
+                      ? moneyVnd(ocrPreview.suggestions.totalVnd)
+                      : "cần nhập tay"}
+                  </span>
+                  <span>
+                    Thời gian:{" "}
+                    {ocrPreview.suggestions.usedAt
+                      ? formatDateTime(ocrPreview.suggestions.usedAt)
+                      : "cần nhập tay"}
+                  </span>
+                  {ocrPreview.warnings.length ? (
+                    <em>{ocrPreview.warnings.slice(0, 2).join(" ")}</em>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div className={isPastDeadline || isFutureUsage ? "nl-rule danger" : "nl-rule"}>
@@ -478,7 +593,7 @@ export default function Page() {
             </div>
 
             <div className="nl-recent">
-              <h2>Bill vừa gửi</h2>
+              <h2>Lịch sử bill</h2>
               {submittedBills.length ? (
                 submittedBills.map((bill) => (
                   <article key={bill.id}>
@@ -487,10 +602,11 @@ export default function Page() {
                     <em>
                       {moneyVnd(bill.totalVnd)} - {formatDateTime(bill.usedAt)}
                     </em>
+                    <small>{bill.submitterType === "PARTNER" ? "Chủ quán" : "Member"}</small>
                   </article>
                 ))
               ) : (
-                <p>Chưa có bill mới trong phiên này.</p>
+                <p>Chưa có bill trong phạm vi này.</p>
               )}
             </div>
           </aside>
@@ -648,6 +764,46 @@ export default function Page() {
           cursor: pointer;
         }
 
+        .nl-ocr-button {
+          min-height: 38px;
+          border: 1px solid ${colors.border};
+          border-radius: 8px;
+          background: rgba(212, 178, 106, 0.12);
+          color: ${colors.goldPale};
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+
+        .nl-ocr-button:disabled {
+          cursor: wait;
+          opacity: 0.7;
+        }
+
+        .nl-ocr-preview {
+          display: grid;
+          gap: 5px;
+          margin-top: 10px;
+          border: 1px solid rgba(129, 216, 157, 0.26);
+          border-radius: 8px;
+          background: rgba(129, 216, 157, 0.08);
+          color: ${colors.text};
+          padding: 10px;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
+        .nl-ocr-preview strong {
+          color: ${colors.success};
+          font-size: 12.5px;
+        }
+
+        .nl-ocr-preview em {
+          color: ${colors.warning};
+          font-style: normal;
+        }
+
         .nl-file-pill {
           min-width: 0;
           display: inline-flex;
@@ -778,6 +934,16 @@ export default function Page() {
           color: ${colors.goldPale};
           font-size: 12px;
           font-style: normal;
+        }
+
+        .nl-recent article small {
+          width: fit-content;
+          color: ${colors.success};
+          border: 1px solid rgba(129, 216, 157, 0.28);
+          border-radius: 999px;
+          padding: 3px 8px;
+          font-size: 11px;
+          font-weight: 900;
         }
 
         @keyframes spin {

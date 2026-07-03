@@ -165,6 +165,31 @@ const sensitiveBills = [
     booking: null,
     coupon: { id: "coupon-1", code: "MEMBER8", name: "Member 8" },
     couponIssue: { id: "issue-used", code: "MEMBER-used", status: "USED" },
+    media: [{ id: "media-1", storageKey: "bill.png", originalName: "bill.png", mimeType: "image/png", access: "PROTECTED", url: "/storage/files/bill.png" }],
+    fraudWarnings: [{ code: "POSSIBLE_DUPLICATE_BILL", severity: "HIGH", message: "Có bill nghi trùng." }],
+    user: { email: "member@example.com", displayName: "Member QA", phone: "+84901234567" },
+    guest: null,
+  },
+];
+
+const partnerBills = [
+  ...sensitiveBills,
+  {
+    id: "bill-verified-1",
+    billNumber: "BILL-20260701-VERIFIED",
+    status: "VERIFIED",
+    totalVnd: 1800000,
+    paidVnd: 1800000,
+    commissionAmountVnd: 180000,
+    pointsEarned: 18,
+    submittedAt: "2026-07-01T10:00:00.000Z",
+    usedAt: "2026-07-01T10:00:00.000Z",
+    store: { id: "store-1", name: "Neon Club", slug: "neon-club" },
+    booking: null,
+    coupon: { id: "coupon-1", code: "WELCOME20", name: "Welcome 20%" },
+    couponIssue: { id: "issue-used", code: "MEMBER-used", status: "USED" },
+    media: [{ id: "media-2", storageKey: "verified.png", originalName: "verified.png", mimeType: "image/png", access: "PROTECTED", url: "/storage/files/verified.png" }],
+    fraudWarnings: [{ code: "POSSIBLE_DUPLICATE_BILL", severity: "HIGH", message: "Có bill nghi trùng." }],
     user: { email: "member@example.com", displayName: "Member QA", phone: "+84901234567" },
     guest: null,
   },
@@ -308,8 +333,9 @@ const revenueReport = {
     ],
   },
   funnel: [
-    { key: "booking_qr", label: "Booking QR", count: 3, rateFromPrevious: null },
-    { key: "qr_used", label: "QR used", count: 2, rateFromPrevious: 66.67 },
+    { key: "coupon_qr", label: "Coupon/QR", count: 3, rateFromPrevious: null },
+    { key: "qr_scan", label: "QR scan", count: 2, rateFromPrevious: 66.67 },
+    { key: "bill_submitted", label: "Bill submitted", count: 2, rateFromPrevious: 100 },
     { key: "bill_approved", label: "Bill approved", count: 2, rateFromPrevious: 100 },
     { key: "commission", label: "Commission", count: 280000, commissionVnd: 280000, rateFromPrevious: null },
   ],
@@ -336,7 +362,7 @@ describe("AdminConsole coupon issue panel", () => {
       if (path === "/partner/stores") return adminStores;
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return [];
-      if (path === "/partner/bills") return [];
+      if (path === "/partner/bills") return partnerBills;
       if (path === "/admin/reports/revenue") return revenueReport;
       if (path === "/admin/partner-requests") return [];
       if (path === "/admin/coupon-issues") return couponIssues;
@@ -371,7 +397,7 @@ describe("AdminConsole coupon issue panel", () => {
       if (path === "/partner/stores") return adminStores;
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return sensitiveBills;
-      if (path === "/partner/bills") return sensitiveBills;
+      if (path === "/partner/bills") return partnerBills;
       if (path === "/admin/reports/revenue") return revenueReport;
       if (path === "/admin/partner-requests") return [];
       if (path === "/admin/coupon-issues") return couponIssues;
@@ -465,8 +491,12 @@ describe("AdminConsole coupon issue panel", () => {
     expect(screen.getByLabelText("Export revenue report Excel")).toBeInTheDocument();
     expect(screen.getByLabelText("Export revenue report PDF")).toBeInTheDocument();
     expect(screen.getByTestId("admin-revenue-p2-dashboard")).toBeInTheDocument();
-    expect(within(panel).getByText("Booking QR")).toBeInTheDocument();
+    expect(within(panel).getByText("Coupon/QR")).toBeInTheDocument();
+    expect(within(panel).getByText("QR scan")).toBeInTheDocument();
+    expect(within(panel).getByText("Bill submitted")).toBeInTheDocument();
     expect(within(panel).getByText("Bill approved")).toBeInTheDocument();
+    expect(within(panel).getByTestId("admin-bill-reversal-panel")).toBeInTheDocument();
+    expect(within(panel).getByLabelText("Reverse bill BILL-20260701-VERIFIED")).toBeInTheDocument();
     expect(within(panel).getByText(/Neon Partner/)).toBeInTheDocument();
     expect(within(panel).getByText(/District 1/)).toBeInTheDocument();
     expect(within(panel).getByText(/Mika/)).toBeInTheDocument();
@@ -501,7 +531,7 @@ describe("AdminConsole coupon issue panel", () => {
     });
 
     fireEvent.click(screen.getByLabelText("Revenue coupon drilldown WELCOME20"));
-    expect(within(panel).getByText("BILL-20260701-VERIFIED")).toBeInTheDocument();
+    expect(within(panel).getAllByText("BILL-20260701-VERIFIED").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText("Revenue quick range seven"));
     await waitFor(() => {

@@ -582,6 +582,7 @@ const billExample = {
   storeId: 'store_01',
   billNumber: 'BILL-2026-0001',
   status: 'SUBMITTED',
+  submitterType: 'MEMBER',
   subtotalVnd: 1800000,
   discountVnd: 0,
   totalVnd: 1800000,
@@ -874,13 +875,19 @@ const adminRevenueReportExample = {
     ],
   },
   funnel: [
-    { key: 'booking_qr', label: 'Booking QR', count: 9, rateFromPrevious: null },
-    { key: 'qr_used', label: 'QR used', count: 6, rateFromPrevious: 66.67 },
+    { key: 'coupon_qr', label: 'Coupon/QR', count: 9, rateFromPrevious: null },
+    { key: 'qr_scan', label: 'QR scan', count: 6, rateFromPrevious: 66.67 },
+    {
+      key: 'bill_submitted',
+      label: 'Bill submitted',
+      count: 3,
+      rateFromPrevious: 50,
+    },
     {
       key: 'bill_approved',
       label: 'Bill approved',
       count: 3,
-      rateFromPrevious: 50,
+      rateFromPrevious: 100,
     },
     {
       key: 'commission',
@@ -2026,7 +2033,7 @@ export function CreatePartnerBillContract() {
     ApiOperation({
       summary: 'Bill action: partner submits a bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Creates a SUBMITTED bill within the actor store scope. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Creates a SUBMITTED bill within the actor store scope and returns 403 when the partner submits for a store outside their scope. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected. Basic duplicate/rate-limit checks run by actor, store, totalVnd, and usedAt.',
     }),
     ApiBody({ type: CreateBillDto }),
     ApiCreatedResponse({
@@ -2080,6 +2087,14 @@ export function MemberCouponIssuesContract() {
     'Coupon action: member lists own coupon issues',
     'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberCoupon). Own-resource route; stale ISSUED codes are marked EXPIRED before returning.',
     memberCouponIssueExample,
+  );
+}
+
+export function MemberBillsContract() {
+  return guardedListContract(
+    'Bill action: member lists own bills',
+    'Auth guard: JwtAuthGuard + RolesGuard(USER). Own-resource route returning member bill history, submitterType, linked booking/coupon/couponIssue, and protected bill evidence media when present.',
+    billExample,
   );
 }
 
@@ -2143,7 +2158,7 @@ export function CreateMemberBillContract() {
     ApiOperation({
       summary: 'Bill action: member submits a bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected. Basic duplicate/rate-limit checks run by actor, store, totalVnd, and usedAt.',
     }),
     ApiBody({ type: CreateBillDto }),
     ApiCreatedResponse({
