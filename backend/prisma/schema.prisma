@@ -15,8 +15,7 @@ enum UserRole {
 }
 
 enum UserTier {
-  FREE
-  PREMIUM
+  MEMBER
   VIP
 }
 
@@ -100,6 +99,13 @@ enum BookingStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+enum BookingQrStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
 }
 
 enum BookingChangeRequestType {
@@ -262,7 +268,7 @@ model User {
   displayName                   String?                @map("display_name")
   phone                         String?
   role                          UserRole               @default(USER)
-  tier                          UserTier               @default(FREE)
+  tier                          UserTier               @default(MEMBER)
   status                        UserStatus             @default(ACTIVE)
   profile                       Profile?
   roleAssignments               UserRoleAssignment[]
@@ -275,6 +281,7 @@ model User {
   reviewedBills                 Bill[]                 @relation("BillReviewer")
   verifiedBills                 Bill[]                 @relation("BillVerifier")
   rejectedBills                 Bill[]                 @relation("BillRejecter")
+  submittedBills                Bill[]                 @relation("BillSubmitter")
   pointLedgers                  PointLedger[]
   couponIssues                  CouponIssue[]          @relation("CouponIssueUser")
   issuedCoupons                 CouponIssue[]          @relation("CouponIssueIssuer")
@@ -308,7 +315,7 @@ model Guest {
   convertedUser         User?                  @relation("GuestConvertedUser", fields: [convertedUserId], references: [id], onDelete: SetNull)
   displayName           String?                @map("display_name")
   phone                 String?
-  email                 String?
+  email                 String
   note                  String?
   status                GuestStatus            @default(ACTIVE)
   bookings              Booking[]
@@ -416,6 +423,8 @@ model PartnerAccount {
   status          PartnerAccountStatus @default(PENDING_REVIEW)
   stores          Store[]
   partnerRequests PartnerRequest[]
+  bookingQrs      BookingQr[]
+  submittedBills  Bill[]               @relation("BillSubmitterPartner")
   createdAt       DateTime             @default(now()) @map("created_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
   deletedAt       DateTime?            @map("deleted_at")
@@ -464,12 +473,18 @@ model Store {
   longitude                  Decimal?               @db.Decimal(10, 7)
   openingHours               Json?                  @map("opening_hours")
   holidaySchedule            Json?                  @map("holiday_schedule")
+  pricingInfo                Json?                  @map("pricing_info")
+  staffProfileInfo           Json?                  @map("staff_profile_info")
+  supportedLanguages         String[]               @default([]) @map("supported_languages")
+  seoTitle                   String?                @map("seo_title")
+  seoDescription             String?                @map("seo_description")
   bookingCancelCutoffMinutes Int                    @default(60) @map("booking_cancel_cutoff_minutes")
   mapUrl                     String?                @map("map_url")
   googlePlaceId              String?                @map("google_place_id")
   status                     StoreStatus            @default(DRAFT)
   casts                      Cast[]
   bookings                   Booking[]
+  bookingQrs                 BookingQr[]
   coupons                    Coupon[]
   bills                      Bill[]
   commissionConfigs          CommissionConfig[]
@@ -507,6 +522,12 @@ model Cast {
   publicBio             String?                @map("public_bio")
   tags                  String[]               @default([])
   languages             String[]               @default([])
+  birthMonth            Int?                   @map("birth_month")
+  zodiacSign            String?                @map("zodiac_sign")
+  heightCm              Int?                   @map("height_cm")
+  measurements          String?
+  hobbies               String[]               @default([])
+  styleTags             String[]               @default([]) @map("style_tags")
   isPublic              Boolean                @default(true) @map("is_public")
   hourlyRateVnd         Int?                   @map("hourly_rate_vnd")
   status                CastStatus             @default(DRAFT)
@@ -558,6 +579,7 @@ model Booking {
   changeRequests         BookingChangeRequest[]
   chatMessages           BookingChatMessage[]
   media                  Media[]
+  qr                     BookingQr?
   status                 BookingStatus          @default(REQUESTED)
   scheduledAt            DateTime               @map("scheduled_at")
   partySize              Int                    @default(1) @map("party_size")
@@ -565,9 +587,17 @@ model Booking {
   subtotalVnd            Int                    @default(0) @map("subtotal_vnd")
   discountVnd            Int                    @default(0) @map("discount_vnd")
   totalVnd               Int                    @default(0) @map("total_vnd")
-  discountRuleSnapshot   Json?                  @map("discount_rule_snapshot")
+  discountSnapshot       Json                   @map("discount_snapshot")
   commissionRuleSnapshot Json?                  @map("commission_rule_snapshot")
   pointRuleSnapshot      Json?                  @map("point_rule_snapshot")
+  bookingCode            String?                @unique @map("booking_code")
+  customerType           String                 @map("customer_type")
+  customerNameSnapshot   String                 @map("customer_name_snapshot")
+  customerEmailSnapshot  String                 @map("customer_email_snapshot")
+  cancelReason           String?                @map("cancel_reason")
+  source                 String?                @map("source")
+  expiresAt              DateTime?              @map("expires_at")
+  completedAt            DateTime?              @map("completed_at")
   createdAt              DateTime               @default(now()) @map("created_at")
   updatedAt              DateTime               @updatedAt @map("updated_at")
   cancelledAt            DateTime?              @map("cancelled_at")
@@ -581,6 +611,32 @@ model Booking {
   @@index([status])
   @@index([scheduledAt])
   @@map("bookings")
+}
+
+model BookingQr {
+  id                        String          @id @default(uuid()) @db.Uuid
+  bookingId                 String          @unique @map("booking_id") @db.Uuid
+  storeId                   String          @map("store_id") @db.Uuid
+  code                      String          @unique
+  qrPayloadHash             String          @unique @map("qr_payload_hash")
+  discountSnapshot          Json            @map("discount_snapshot")
+  validFrom                 DateTime        @map("valid_from")
+  expiresAt                 DateTime        @map("expires_at")
+  status                    BookingQrStatus @default(ACTIVE)
+  usedAt                    DateTime?       @map("used_at")
+  scannedByPartnerAccountId String?         @map("scanned_by_partner_account_id") @db.Uuid
+  revokedAt                 DateTime?       @map("revoked_at")
+  createdAt                 DateTime        @default(now()) @map("created_at")
+  updatedAt                 DateTime        @updatedAt @map("updated_at")
+
+  booking                 Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  store                   Store           @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  scannedByPartnerAccount PartnerAccount? @relation(fields: [scannedByPartnerAccountId], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([scannedByPartnerAccountId])
+  @@index([status])
+  @@map("booking_qrs")
 }
 
 model BookingChangeRequest {
@@ -710,51 +766,56 @@ model CouponIssue {
 }
 
 model Bill {
-  id                     String            @id @default(uuid()) @db.Uuid
-  bookingId              String?           @unique @map("booking_id") @db.Uuid
-  userId                 String?           @map("user_id") @db.Uuid
-  guestId                String?           @map("guest_id") @db.Uuid
-  storeId                String            @map("store_id") @db.Uuid
-  couponId               String?           @map("coupon_id") @db.Uuid
-  couponIssueId          String?           @unique @map("coupon_issue_id") @db.Uuid
-  reviewedById           String?           @map("reviewed_by_id") @db.Uuid
-  verifiedById           String?           @map("verified_by_id") @db.Uuid
-  rejectedById           String?           @map("rejected_by_id") @db.Uuid
-  booking                Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  user                   User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  guest                  Guest?            @relation(fields: [guestId], references: [id], onDelete: SetNull)
-  store                  Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
-  coupon                 Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
-  couponIssue            CouponIssue?      @relation("BillCouponIssue", fields: [couponIssueId], references: [id], onDelete: SetNull)
-  reviewedBy             User?             @relation("BillReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
-  verifiedBy             User?             @relation("BillVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
-  rejectedBy             User?             @relation("BillRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
-  pointLedgers           PointLedger[]
-  media                  Media[]
-  notifications          NotificationLog[]
-  status                 BillStatus        @default(DRAFT)
-  billNumber             String?           @unique @map("bill_number")
-  subtotalVnd            Int               @default(0) @map("subtotal_vnd")
-  discountVnd            Int               @default(0) @map("discount_vnd")
-  serviceChargeVnd       Int               @default(0) @map("service_charge_vnd")
-  taxVnd                 Int               @default(0) @map("tax_vnd")
-  totalVnd               Int               @default(0) @map("total_vnd")
-  paidVnd                Int               @default(0) @map("paid_vnd")
-  commissionAmountVnd    Int               @default(0) @map("commission_amount_vnd")
-  pointsEarned           Int               @default(0) @map("points_earned")
-  discountRuleSnapshot   Json?             @map("discount_rule_snapshot")
-  commissionRuleSnapshot Json?             @map("commission_rule_snapshot")
-  pointRuleSnapshot      Json?             @map("point_rule_snapshot")
-  submittedAt            DateTime?         @map("submitted_at")
-  reviewedAt             DateTime?         @map("reviewed_at")
-  verifiedAt             DateTime?         @map("verified_at")
-  rejectedAt             DateTime?         @map("rejected_at")
-  rejectReason           String?           @map("reject_reason")
-  usedAt                 DateTime?         @map("used_at")
-  paidAt                 DateTime?         @map("paid_at")
-  createdAt              DateTime          @default(now()) @map("created_at")
-  updatedAt              DateTime          @updatedAt @map("updated_at")
-  deletedAt              DateTime?         @map("deleted_at")
+  id                          String            @id @default(uuid()) @db.Uuid
+  bookingId                   String?           @unique @map("booking_id") @db.Uuid
+  userId                      String?           @map("user_id") @db.Uuid
+  guestId                     String?           @map("guest_id") @db.Uuid
+  storeId                     String            @map("store_id") @db.Uuid
+  couponId                    String?           @map("coupon_id") @db.Uuid
+  couponIssueId               String?           @unique @map("coupon_issue_id") @db.Uuid
+  reviewedById                String?           @map("reviewed_by_id") @db.Uuid
+  verifiedById                String?           @map("verified_by_id") @db.Uuid
+  rejectedById                String?           @map("rejected_by_id") @db.Uuid
+  booking                     Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  user                        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guest                       Guest?            @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  store                       Store             @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  coupon                      Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponIssue                 CouponIssue?      @relation("BillCouponIssue", fields: [couponIssueId], references: [id], onDelete: SetNull)
+  reviewedBy                  User?             @relation("BillReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  verifiedBy                  User?             @relation("BillVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  rejectedBy                  User?             @relation("BillRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
+  submittedByUser             User?             @relation("BillSubmitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  submittedByPartnerAccount   PartnerAccount?   @relation("BillSubmitterPartner", fields: [submittedByPartnerAccountId], references: [id], onDelete: SetNull)
+  pointLedgers                PointLedger[]
+  media                       Media[]
+  notifications               NotificationLog[]
+  status                      BillStatus        @default(DRAFT)
+  submitterType               String            @map("submitter_type") // MEMBER, VIP, PARTNER
+  submittedByUserId           String?           @map("submitted_by_user_id") @db.Uuid
+  submittedByPartnerAccountId String?           @map("submitted_by_partner_account_id") @db.Uuid
+  billNumber                  String?           @unique @map("bill_number")
+  subtotalVnd                 Int               @default(0) @map("subtotal_vnd")
+  discountVnd                 Int               @default(0) @map("discount_vnd")
+  serviceChargeVnd            Int               @default(0) @map("service_charge_vnd")
+  taxVnd                      Int               @default(0) @map("tax_vnd")
+  totalVnd                    Int               @default(0) @map("total_vnd")
+  paidVnd                     Int               @default(0) @map("paid_vnd")
+  commissionAmountVnd         Int               @default(0) @map("commission_amount_vnd")
+  pointsEarned                Int               @default(0) @map("points_earned")
+  discountRuleSnapshot        Json?             @map("discount_rule_snapshot")
+  commissionRuleSnapshot      Json?             @map("commission_rule_snapshot")
+  pointRuleSnapshot           Json?             @map("point_rule_snapshot")
+  submittedAt                 DateTime?         @map("submitted_at")
+  reviewedAt                  DateTime?         @map("reviewed_at")
+  verifiedAt                  DateTime?         @map("verified_at")
+  rejectedAt                  DateTime?         @map("rejected_at")
+  rejectReason                String?           @map("reject_reason")
+  usedAt                      DateTime?         @map("used_at")
+  paidAt                      DateTime?         @map("paid_at")
+  createdAt                   DateTime          @default(now()) @map("created_at")
+  updatedAt                   DateTime          @updatedAt @map("updated_at")
+  deletedAt                   DateTime?         @map("deleted_at")
 
   @@index([userId])
   @@index([guestId])
