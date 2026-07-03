@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="bills" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Duyệt hóa đơn" page-en="Bill Approval" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Bills" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ blPending }}" style="{{ blTabPending }}">Chờ duyệt <b>{{ blCountP }}</b></span>
+            <span onClick="{{ blApproved }}" style="{{ blTabApproved }}">Đã duyệt <b>{{ blCountA }}</b></span>
+            <span onClick="{{ blRejected }}" style="{{ blTabRejected }}">Từ chối <b>{{ blCountR }}</b></span>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.22);border-radius:10px;padding:8px 14px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span style="font-size:12px;color:#c5c0b6;">Chờ duyệt: <b style="color:#e3c27e;">≈ 48.200.000₫</b></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:9px;margin-bottom:16px;padding:12px 15px;background:rgba(111,159,216,.05);border:1px solid rgba(111,159,216,.18);border-radius:12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
+          <span style="font-size:11.5px;color:#a9c4e6;line-height:1.5;">Duyệt thủ công bằng mắt. Hoa hồng = <b style="color:#cfe0f4;">Bill gốc × (% hoa hồng − % giảm giá)</b> · Điểm = <b style="color:#cfe0f4;">1.000.000₫ = 10 điểm</b> trên bill gốc. Bill mờ/sai → từ chối kèm lý do.</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:110px 1.4fr 1fr 108px 96px 74px 116px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Mã bill</span><span>Quán</span><span>Số tiền (gộp)</span><span>Ngày DV</span><span>Người gửi</span><span>Ảnh</span><span style="text-align:right;">Trạng thái</span>
+          </div>
+          <sc-for list="{{ blRows }}" as="b" hint-placeholder-count="6">
+            <div onClick="{{ b.open }}" style="display:grid;grid-template-columns:110px 1.4fr 1fr 108px 96px 74px 116px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <span style="font-size:12px;font-weight:600;color:#d4b26a;">{{ b.id }}</span>
+              <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.venue }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;">{{ b.area }}</div></div>
+              <div style="color:#f3f0ea;font-weight:600;">{{ b.grossFmt }}</div>
+              <span style="color:#8c8679;font-size:12px;">{{ b.date }}</span>
+              <span style="font-size:11.5px;color:#9b958a;">{{ b.sender }}</span>
+              <span><span style="{{ b.imgStyle }}">{{ b.imgLabel }}</span></span>
+              <span style="text-align:right;"><span style="{{ b.stStyle }}">{{ b.stLabel }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ blOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:60;">
+    <div onClick="{{ blClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:452px;max-width:94vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Hóa đơn · {{ bl.id }}</div>
+          <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:5px;">{{ bl.venue }}</div>
+          <span style="{{ bl.stStyle }}margin-top:9px;">{{ bl.stLabel }}</span>
+        </div>
+        <span onClick="{{ blClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:20px 24px;">
+        <div style="height:150px;border-radius:13px;background:linear-gradient(150deg,#1c1a22,#141319);border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#57534b;">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l4.5-4.5 3 3L16 10l4 5"/></svg>
+          <span style="font-size:11.5px;">{{ bl.imgNote }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-top:8px;">
+          <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Ngày dùng dịch vụ</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bl.date }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Người gửi</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bl.sender }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:11px 0;"><span style="font-size:12.5px;color:#8c8679;">Hạng khách</span><span style="{{ bl.tierStyle }}">{{ bl.tier }}</span></div>
+        </div>
+
+        <div style="margin-top:14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:16px 16px 6px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:6px;">Đối soát &amp; ghi nhận</div>
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">Bill gốc</span><span style="font-size:13px;color:#f3f0ea;font-weight:600;">{{ bl.grossFmt }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">Giảm giá ({{ bl.disc }}%)</span><span style="font-size:13px;color:#e88b99;font-weight:500;">− {{ bl.discFmt }}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">% hoa hồng thỏa thuận</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bl.comrate }}%</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 9px;"><span style="font-size:12.5px;color:#e3c27e;font-weight:600;">Hoa hồng Admin</span><span style="font-size:17px;color:#e3c27e;font-weight:800;">{{ bl.comFmt }}</span></div>
+          <div style="font-size:10.5px;color:#8c8679;line-height:1.5;padding-bottom:10px;">= {{ bl.grossFmt }} × ({{ bl.comrate }}% − {{ bl.disc }}%)</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">Điểm tích lũy</span><span style="font-size:14px;color:#f0dda8;font-weight:700;">+{{ bl.points }} điểm</span></div>
+        </div>
+
+        <sc-if value="{{ bl.isRejected }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;padding:13px 15px;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.28);border-radius:12px;">
+            <div style="font-size:11px;font-weight:700;color:#e88b99;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Lý do từ chối</div>
+            <div style="font-size:12.5px;color:#e6bcc3;line-height:1.5;">{{ bl.reason }}</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ bl.isApproved }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;padding:13px 15px;background:rgba(95,191,134,.08);border:1px solid rgba(95,191,134,.28);border-radius:12px;display:flex;gap:9px;align-items:center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span style="font-size:12px;color:#a7ddc0;line-height:1.5;">Đã ghi nhận doanh thu, hoa hồng &amp; điểm · đã gửi Telegram.</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ bl.isPending }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 24px 26px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+        <span onClick="{{ blApprove }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:14px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Duyệt &amp; ghi nhận</span>
+        <span onClick="{{ blOpenReject }}" style="flex:none;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.32);padding:14px 20px;border-radius:11px;cursor:pointer;">Từ chối</span>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ rejectOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:24px;">
+    <div onClick="{{ blCloseReject }}" style="position:absolute;inset:0;background:rgba(6,6,9,.68);backdrop-filter:blur(3px);"></div>
+    <div style="position:relative;width:440px;max-width:94vw;background:#15141a;border:1px solid rgba(224,105,122,.28);border-radius:18px;padding:24px;box-shadow:0 40px 80px -30px rgba(0,0,0,.85);">
+      <div style="font-size:17px;font-weight:700;color:#f3f0ea;">Từ chối hóa đơn {{ rejectId }}</div>
+      <div style="font-size:12.5px;color:#8c8679;margin-top:5px;line-height:1.5;">Chọn hoặc nhập lý do — hệ thống lưu lý do &amp; yêu cầu người gửi gửi lại (qua Telegram).</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+        <span onClick="{{ blReason1 }}" style="{{ rr1 }}">Ảnh mờ / không đọc được</span>
+        <span onClick="{{ blReason2 }}" style="{{ rr2 }}">Sai quán</span>
+        <span onClick="{{ blReason3 }}" style="{{ rr3 }}">Gửi nhầm hóa đơn</span>
+        <span onClick="{{ blReason4 }}" style="{{ rr4 }}">Số tiền không khớp</span>
+      </div>
+      <div style="margin-top:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:13px 14px;min-height:64px;font-size:12.5px;color:#c5c0b6;line-height:1.55;">{{ rejectReasonText }}</div>
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <span onClick="{{ blCloseReject }}" style="flex:none;font-size:13px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:12px 22px;border-radius:11px;cursor:pointer;">Hủy</span>
+        <span onClick="{{ blConfirmReject }}" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#d76e7e,#c04c5e);padding:12px;border-radius:11px;cursor:pointer;">Xác nhận từ chối</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { toast:null };
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  money(n){ return (n||0).toLocaleString('vi-VN')+'\u20ab'; }
+  chip(kind){ const m={success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],warn:['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],error:['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
+  pill(kind){ return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; }
+
+  renderVals(){
+    const S=this.state, o={ toast:S.toast };
+    const BILLS=[
+      {id:'BILL-8842',venue:'Sakura Lounge',area:'Hoàn Kiếm',gross:12500000,comrate:15,disc:8,tier:'Member',date:'30/06/2026',sender:'Khách',img:true,status:'pending'},
+      {id:'BILL-8841',venue:'Club Lumière',area:'Tây Hồ',gross:8200000,comrate:18,disc:10,tier:'VIP',date:'30/06/2026',sender:'Chủ quán',img:true,status:'pending'},
+      {id:'BILL-8840',venue:'KTV Hoàng Gia',area:'Kim Mã',gross:15800000,comrate:12,disc:5,tier:'Guest',date:'29/06/2026',sender:'Khách',img:false,status:'pending'},
+      {id:'BILL-8839',venue:'Bar Tokyo Night',area:'Ba Đình',gross:6400000,comrate:15,disc:8,tier:'Member',date:'29/06/2026',sender:'Khách',img:true,status:'pending'},
+      {id:'BILL-8838',venue:'Akari Lounge',area:'Tây Hồ',gross:5300000,comrate:15,disc:8,tier:'Member',date:'28/06/2026',sender:'Chủ quán',img:true,status:'pending'},
+      {id:'BILL-8835',venue:'Club Lumière',area:'Tây Hồ',gross:22000000,comrate:18,disc:10,tier:'VIP',date:'27/06/2026',sender:'Khách',img:true,status:'approved'},
+      {id:'BILL-8830',venue:'Sakura Lounge',area:'Hoàn Kiếm',gross:4100000,comrate:15,disc:8,tier:'Member',date:'26/06/2026',sender:'Khách',img:false,status:'rejected',reason:'Ảnh hóa đơn mờ, không đọc được tổng số tiền. Vui lòng chụp lại rõ nét và gửi lại trong 10 ngày.'},
+    ];
+    const blStat=(b)=>S['bl_'+b.id]||b.status;
+    const blReason=(b)=>S['blr_'+b.id]||b.reason;
+    const tierStyle=(t)=>this.chip(t==='VIP'?'gold':t==='Member'?'info':'muted')+'font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;';
+    const bmeta2={pending:['Chờ duyệt','warn'],approved:['Đã duyệt','success'],rejected:['Từ chối','error']};
+    const blAll=BILLS.map(b=>({...b,_s:blStat(b)}));
+    o.blCountP=blAll.filter(b=>b._s==='pending').length; o.blCountA=blAll.filter(b=>b._s==='approved').length; o.blCountR=blAll.filter(b=>b._s==='rejected').length;
+    const blf=S.billFilter||'pending';
+    const btab2=(a)=>'font-size:12.5px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.blTabPending=btab2(blf==='pending'); o.blTabApproved=btab2(blf==='approved'); o.blTabRejected=btab2(blf==='rejected');
+    o.blPending=()=>this.setState({billFilter:'pending'}); o.blApproved=()=>this.setState({billFilter:'approved'}); o.blRejected=()=>this.setState({billFilter:'rejected'});
+    const com=(b)=>Math.round(b.gross*(b.comrate-b.disc)/100);
+    const pts=(b)=>Math.floor(b.gross/1000000)*10;
+    o.blRows=blAll.filter(b=>b._s===blf).map(b=>{const m=bmeta2[b._s];return {...b,grossFmt:this.money(b.gross),stStyle:this.pill(m[1]),stLabel:m[0],imgStyle:this.chip(b.img?'success':'muted')+'font-size:10px;font-weight:600;padding:3px 8px;border-radius:7px;',imgLabel:b.img?'Có':'—',open:()=>this.setState({billSel:b.id})};});
+    const selL=blAll.find(b=>b.id===S.billSel);
+    o.blOpen=!!selL;
+    o.bl = selL ? {...selL, grossFmt:this.money(selL.gross), discFmt:this.money(Math.round(selL.gross*selL.disc/100)), comFmt:this.money(com(selL)), points:pts(selL), tierStyle:tierStyle(selL.tier), stStyle:this.chip(bmeta2[selL._s][1])+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;', stLabel:bmeta2[selL._s][0], imgNote:selL.img?'Ảnh hóa đơn đính kèm':'Không có ảnh — vẫn có thể duyệt', isPending:selL._s==='pending', isApproved:selL._s==='approved', isRejected:selL._s==='rejected', reason:blReason(selL)} : {};
+    o.blClose=()=>this.setState({billSel:null});
+    o.blApprove=()=>{ if(selL){this.setState({['bl_'+selL.id]:'approved',billSel:null}); this.showToast('Đã duyệt '+selL.id+' · +'+pts(selL)+' điểm · hoa hồng '+this.money(com(selL)));} };
+    o.blOpenReject=()=>{ if(selL) this.setState({rejectFor:selL.id, rejectReason:''}); };
+    const rj=blAll.find(b=>b.id===S.rejectFor);
+    o.rejectOpen=!!rj; o.rejectId=rj?rj.id:'';
+    const rtext=S.rejectReason||'';
+    o.rejectReasonText = rtext || 'Chưa chọn lý do…';
+    const rchip=(active)=>'font-size:11.5px;padding:7px 12px;border-radius:9px;cursor:pointer;border:1px solid '+(active?'rgba(224,105,122,.5)':'rgba(255,255,255,.1)')+';color:'+(active?'#e88b99':'#c5c0b6')+';background:'+(active?'rgba(224,105,122,.12)':'rgba(255,255,255,.04)')+';';
+    const R1='Ảnh hóa đơn mờ, không đọc được. Vui lòng chụp lại và gửi lại.', R2='Sai quán — hóa đơn không thuộc quán đã chọn.', R3='Gửi nhầm hóa đơn / trùng lặp.', R4='Số tiền trên bill không khớp đối soát với quán.';
+    o.rr1=rchip(rtext===R1); o.rr2=rchip(rtext===R2); o.rr3=rchip(rtext===R3); o.rr4=rchip(rtext===R4);
+    o.blReason1=()=>this.setState({rejectReason:R1}); o.blReason2=()=>this.setState({rejectReason:R2}); o.blReason3=()=>this.setState({rejectReason:R3}); o.blReason4=()=>this.setState({rejectReason:R4});
+    o.blCloseReject=()=>this.setState({rejectFor:null});
+    o.blConfirmReject=()=>{ if(rj){ this.setState({['bl_'+rj.id]:'rejected', ['blr_'+rj.id]:(S.rejectReason||'Không đạt yêu cầu đối soát.'), rejectFor:null, billSel:null}); this.showToast('Đã từ chối '+rj.id+' · đã lưu lý do'); } };
+    return o;
+  }
+}
+</script>
+</body>
+</html>

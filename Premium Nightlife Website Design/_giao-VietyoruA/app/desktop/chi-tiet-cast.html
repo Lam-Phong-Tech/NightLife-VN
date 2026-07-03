@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .btn{transition:filter .14s ease, transform .12s ease;cursor:pointer;}
+  .btn:hover{filter:brightness(1.06);transform:translateY(-1px);}
+  .thumb{cursor:pointer;transition:opacity .14s;}
+  .thumb:hover{opacity:.85;}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="danh-sach-cast.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Danh sách Cast</a>
+    <div style="font-size:13px;color:#8c8679;"><b style="color:#f3f0ea;">Chi tiết Cast</b> — Album + Video · “Đặt theo cast”</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;"><a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a><div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" class="lk">Tìm quán</a><a href="danh-sach-cast.html" style="color:#d4b26a;font-weight:600;">Cast</a><a href="xep-hang.html" class="lk">Bảng xếp hạng</a><span class="lk">Tour</span><span class="lk">Blog</span></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><a href="dang-nhap.html" class="lk" style="font-size:13px;color:#c5c0b6;">Đăng nhập</a><div style="font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:22px;padding:9px 18px;">Đăng ký đối tác</div></div>
+    </div>
+    <div style="padding:18px 34px 0;font-size:12.5px;color:#8c8679;"><a href="trang-chu.html" class="lk">Trang chủ</a> › <a href="danh-sach-cast.html" class="lk">Cast</a> › <span style="color:#f3f0ea;">{{ cName }}</span></div>
+
+    <div style="display:flex;gap:24px;padding:18px 34px 30px;">
+      <!-- album -->
+      <div style="width:440px;flex:none;">
+        <div style="height:440px;border-radius:16px;background:{{ mainBg }};position:relative;overflow:hidden;">
+          <sc-if value="{{ isVideo }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60px;height:60px;border-radius:50%;background:rgba(12,12,15,.55);display:flex;align-items:center;justify-content:center;"><img src="https://img.icons8.com/ios/100/D4B26A/play.png" style="width:24px;height:24px;margin-left:3px;" alt=""></span></sc-if>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <sc-for list="{{ album }}" as="a" hint-placeholder-count="5"><div class="thumb" onClick="{{ a.pick }}" style="flex:1;height:74px;border-radius:10px;background:{{ a.bg }};position:relative;"><sc-if value="{{ a.video }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style="width:16px;height:16px;" alt=""></span></sc-if></div></sc-for>
+        </div>
+      </div>
+
+      <!-- info -->
+      <div style="flex:1;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <div>
+            <h2 style="font-size:28px;font-weight:800;">{{ cName }} <span style="font-size:18px;color:#8c8679;font-weight:600;">· {{ cAge }} tuổi</span></h2>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:8px;font-size:13px;color:#c5c0b6;"><span style="color:#e3c27e;font-weight:600;">★ {{ cRating }}</span> · <span>{{ cArea }}, Hà Nội</span></div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+              <sc-if value="{{ cJp }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;background:rgba(224,114,158,.14);color:#e0729e;border-radius:14px;padding:5px 11px;font-weight:600;">🇯🇵 Nói tiếng Nhật</span></sc-if>
+              <span style="font-size:12px;background:rgba(212,178,106,.13);color:#d4b26a;border-radius:14px;padding:5px 11px;font-weight:600;">{{ cLang }}</span>
+              <span style="font-size:12px;background:#1b1922;color:#c5c0b6;border-radius:14px;padding:5px 11px;">{{ cDesc }}</span>
+            </div>
+          </div>
+          <span class="btn" onClick="{{ toggleFav }}" style="width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#15131a;display:flex;align-items:center;justify-content:center;"><img src="{{ favIcon }}" style="width:20px;height:20px;" alt=""></span>
+        </div>
+
+        <div style="display:flex;gap:26px;border-bottom:1px solid rgba(255,255,255,.08);margin-top:22px;font-size:14px;">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3"><span onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</span></sc-for>
+        </div>
+
+        <sc-if value="{{ isIntro }}" hint-placeholder-val="{{ true }}">
+          <p style="font-size:13.5px;line-height:1.7;color:#c5c0b6;margin-top:16px;">{{ cName }} là cast được yêu thích tại khu {{ cArea }} — {{ cDesc }}. Phong cách thân thiện, biết lắng nghe, phù hợp tiếp khách công việc lẫn bạn bè.</p>
+          <div style="margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+            <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;"><div style="font-size:12px;color:#8c8679;">Năm sinh (tuổi tự tính)</div><div style="font-size:16px;font-weight:800;margin-top:3px;">{{ cBorn }} <span style="font-size:12px;color:#d4b26a;">· {{ cAge }} tuổi</span></div></div>
+            <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;"><div style="font-size:12px;color:#8c8679;">Ngôn ngữ</div><div style="font-size:14px;font-weight:600;margin-top:5px;">{{ cLang }}</div></div>
+            <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;"><div style="font-size:12px;color:#8c8679;">Đang làm tại</div><div style="font-size:14px;font-weight:600;margin-top:5px;">Club Lumière</div></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:15px;"><div style="display:flex;align-items:center;gap:10px;"><span style="width:32px;height:32px;border-radius:50%;background:url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=70') center/cover;"></span><div><div style="font-size:13px;font-weight:600;">Khách H.</div><div style="font-size:11px;color:#e3c27e;">★★★★★</div></div></div><p style="font-size:13px;color:#c5c0b6;margin-top:9px;line-height:1.6;">Bạn ấy vui vẻ, trò chuyện thoải mái. Rất recommend!</p></div>
+          </div>
+        </sc-if>
+
+        <div style="margin-top:20px;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 20px rgba(0,0,0,.06);">
+          <div style="flex:1;"><div style="font-size:13px;color:#8c8679;">Đặt theo cast tại</div><div style="font-size:16px;font-weight:700;">Club Lumière · Tây Hồ</div><div style="font-size:12px;color:#8c8679;margin-top:3px;">Phí cast từ 500.000đ / giờ · Admin xác nhận lịch</div></div>
+          <div onClick="{{ book }}" class="btn" style="background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;border-radius:11px;padding:14px 26px;font-weight:700;font-size:14px;">Đặt theo cast</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var name = 'Michi'; try{ name = localStorage.getItem('nl_cast') || 'Michi'; }catch(e){}
+    var c = NL.cast(name);
+    var tab = st.tab || 'gioithieu';
+    var pool = [c.imgId, '1517841905240-472988babdf9', '1438761681033-6461ffad8d80', '1524504388940-b1c1722653e1', '1534528741775-53994a69daeb'];
+    var mainImg = st.mainImg != null ? st.mainImg : c.imgId;
+    var mainIsVideo = st.mainVideo || false;
+    var faved = NL.fav.has(c.name);
+    var album = pool.map(function(id,i){ return { bg:NL.bg(id, c.gradA, c.gradB, 360), video:false, pick:function(){ self.setState({mainImg:id, mainVideo:false}); } }; });
+    // last thumb = video
+    album.push({ bg:NL.bg(c.imgId, c.gradA, c.gradB, 360), video:true, pick:function(){ self.setState({mainImg:c.imgId, mainVideo:true}); } });
+    var tabs = [['gioithieu','Giới thiệu'],['danhgia','Đánh giá']].map(function(t){ return { label:t[1], style:NL.tab(tab===t[0]), pick:function(){ self.setState({tab:t[0]}); } }; });
+    return {
+      cName:c.name, cAge:c.age, cBorn:c.bornYear, cRating:c.rating, cArea:c.area, cLang:c.lang, cJp:c.jp, cDesc:c.desc,
+      mainBg:NL.bg(mainImg, c.gradA, c.gradB), isVideo:mainIsVideo,
+      album:album, tabs:tabs, isIntro:tab==='gioithieu', isReview:tab==='danhgia',
+      favIcon: faved ? 'https://img.icons8.com/ios/100/D4B26A/like.png' : 'https://img.icons8.com/ios/100/D4B26A/like.png',
+      toggleFav:function(){ NL.fav.toggle(c.name); self.forceUpdate(); },
+      book:function(){ var b=NL.booking.get(); NL.booking.patch({castName:c.name+' · '+c.age, venueSlug:b.venueSlug||'club-lumiere'}); location.href='dat-cho.html'; }
+    };
+  }
+}
+</script>
+</body>
+</html>

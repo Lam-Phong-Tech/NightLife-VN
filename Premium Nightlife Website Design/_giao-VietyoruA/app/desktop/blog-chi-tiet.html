@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .card{transition:transform .16s ease, box-shadow .16s ease;cursor:pointer;}
+  .card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.12);}
+  .btn{transition:filter .14s ease;cursor:pointer;}
+  .btn:hover{filter:brightness(1.05);}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+  .related:hover .rt{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="blog.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Blog</a>
+    <div style="font-size:13px;color:#8c8679;"><b style="color:#f3f0ea;">Chi tiết bài viết</b> — nội dung cẩm nang</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;">
+        <a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a>
+        <div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" class="lk">Tìm quán</a><a href="danh-sach-cast.html" class="lk">Cast</a><a href="xep-hang.html" class="lk">Bảng xếp hạng</a><span class="lk">Tour</span><a href="blog.html" style="color:#d4b26a;font-weight:600;">Blog</a></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;"><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><a href="../../index.html" class="lk" style="font-size:13px;color:#c5c0b6;">Đăng nhập</a><a href="dang-ky-doi-tac.html" style="font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:22px;padding:9px 18px;">Đăng ký đối tác</a></div>
+    </div>
+
+    <div style="padding:18px 34px 0;font-size:12.5px;color:#8c8679;"><a href="trang-chu.html" class="lk">Trang chủ</a> › <a href="blog.html" class="lk">Blog</a> › <span style="color:#f3f0ea;">Cẩm nang khu vực</span></div>
+
+    <div style="display:flex;gap:28px;padding:18px 34px 32px;">
+
+      <!-- ARTICLE -->
+      <div style="flex:1;">
+        <span style="font-size:11px;color:#6cc0d6;background:rgba(90,166,224,.14);border-radius:9px;padding:4px 10px;font-weight:700;">Cẩm nang khu vực</span>
+        <h2 style="font-size:30px;font-weight:800;margin-top:12px;line-height:1.18;">Hướng dẫn trọn vẹn một đêm ở Tây Hồ cho khách Nhật</h2>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:12.5px;color:#8c8679;"><span style="width:30px;height:30px;border-radius:50%;background:url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=200&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8);"></span>Đội ngũ NightLife · 21/06/2026 · 6 phút đọc</div>
+
+        <div style="height:320px;border-radius:16px;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#7b2d6b,#3a1f6e);margin-top:18px;"></div>
+
+        <p style="font-size:14.5px;line-height:1.85;color:#c5c0b6;margin-top:22px;">Tây Hồ về đêm là một trong những khu sôi động và sang trọng bậc nhất Hà Nội, đặc biệt được khách Nhật ưa chuộng nhờ nhiều lounge và bar có nhân viên nói tiếng Nhật. Bài viết này gợi ý một lộ trình hoàn chỉnh, từ bữa tối nhẹ đến ly cuối ngày, kèm những lưu ý đặt chỗ giúp buổi tối của bạn diễn ra suôn sẻ.</p>
+
+        <h3 style="font-size:19px;font-weight:700;margin-top:24px;">1. Bắt đầu với một lounge cao cấp</h3>
+        <p style="font-size:14.5px;line-height:1.85;color:#c5c0b6;margin-top:10px;">Khởi đầu buổi tối tại Club Lumière hoặc Sakura Lounge — không gian tinh tế, phù hợp tiếp khách đối tác. Nên đặt chỗ trước qua NightLife để nhận ưu đãi và được sắp xếp phòng VIP. Đội ngũ phục vụ tại đây phần lớn thông thạo tiếng Nhật, giúp khách cảm thấy thoải mái như ở quê nhà.</p>
+
+        <h3 style="font-size:19px;font-weight:700;margin-top:24px;">2. Lưu ý về giá &amp; đặt chỗ</h3>
+        <p style="font-size:14.5px;line-height:1.85;color:#c5c0b6;margin-top:10px;">Bảng giá trên trang chỉ mang tính tham khảo. Mọi đặt chỗ được Admin điều phối trực tiếp với quán, và bạn có thể dùng mã giảm giá theo hạng thành viên. Với khách đi nhóm, hãy đặt sớm vào cuối tuần vì phòng VIP thường kín chỗ trước 20:00.</p>
+
+        <h3 style="font-size:19px;font-weight:700;margin-top:24px;">3. Khép lại đêm muộn</h3>
+        <p style="font-size:14.5px;line-height:1.85;color:#c5c0b6;margin-top:10px;">Sau lounge, một quán ăn khuya hoặc spa thư giãn là lựa chọn lý tưởng để kết thúc buổi tối. Nhiều cơ sở quanh Tây Hồ mở đến 02:00, và bạn có thể tích điểm cho mỗi hóa đơn để đổi ưu đãi cho lần ghé tiếp theo.</p>
+
+        <div style="margin-top:24px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.18);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:13px;"><img src="https://img.icons8.com/ios/100/D4B26A/idea.png" style="width:28px;height:28px;flex:none;" alt=""><div style="font-size:13px;color:#c5c0b6;line-height:1.6;">Mẹo: đăng nhập hội viên để nhận giảm tới 10% và tích điểm cho mỗi hóa đơn — xem ngay <a href="uu-dai.html" style="color:#d4b26a;font-weight:600;">trang Ưu đãi</a>.</div></div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div style="width:300px;flex:none;display:flex;flex-direction:column;gap:16px;">
+        <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;position:sticky;top:20px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:12px;">Bài liên quan</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <a href="blog-chi-tiet.html" class="related" style="display:flex;gap:11px;align-items:center;"><span style="width:54px;height:54px;border-radius:10px;flex:none;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=200&q=70') center/cover,linear-gradient(140deg,#d6336c,#7b2d6b);"></span><div class="rt" style="font-size:13px;font-weight:600;line-height:1.35;transition:color .14s;">Văn hoá karaoke Nhật tại Hà Nội</div></a>
+            <a href="blog-chi-tiet.html" class="related" style="display:flex;gap:11px;align-items:center;"><span style="width:54px;height:54px;border-radius:10px;flex:none;background:url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=200&q=70') center/cover,linear-gradient(140deg,#8a6ad0,#5d3da8);"></span><div class="rt" style="font-size:13px;font-weight:600;line-height:1.35;transition:color .14s;">Bản đồ Quận 1 về đêm cho khách Nhật</div></a>
+            <a href="blog-chi-tiet.html" class="related" style="display:flex;gap:11px;align-items:center;"><span style="width:54px;height:54px;border-radius:10px;flex:none;background:url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=200&q=70') center/cover,linear-gradient(140deg,#e0a23a,#c0782d);"></span><div class="rt" style="font-size:13px;font-weight:600;line-height:1.35;transition:color .14s;">5 mẹo đặt bàn nhanh cuối tuần</div></a>
+          </div>
+        </div>
+
+        <a href="chi-tiet-quan.html" class="card" style="border-radius:16px;overflow:hidden;background:url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#d4b26a,#3a1f6e);padding:22px;color:#fff;display:block;"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#d9c9f7;font-weight:700;">Quảng cáo</div><div style="font-size:18px;font-weight:800;margin-top:8px;line-height:1.25;">Club Lumière — ưu đãi −30% cuối tuần</div><div class="btn" style="margin-top:14px;background:#15131a;color:#d4b26a;text-align:center;border-radius:10px;padding:11px;font-weight:700;font-size:13px;">Xem ngay</div></a>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

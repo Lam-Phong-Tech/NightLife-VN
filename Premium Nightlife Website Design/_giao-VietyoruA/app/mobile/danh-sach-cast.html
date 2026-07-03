@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+    <div style="background:#15131a;padding:8px 18px 6px;"><h2 style="font-size:19px;font-weight:800;">Tìm Cast</h2><p style="font-size:11.5px;color:#8c8679;margin-top:2px;"><b style="color:#f3f0ea;">{{ count }}</b> cast đang hoạt động</p></div>
+    <div class="hscroll" style="padding:10px 18px 12px;display:flex;gap:7px;overflow-x:auto;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><div onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</div></sc-for>
+    </div>
+
+    <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+      <sc-for list="{{ cards }}" as="c" hint-placeholder-count="8">
+        <div onClick="{{ c.open }}" style="border-radius:14px;overflow:hidden;position:relative;height:200px;background:{{ c.img }};box-shadow:0 3px 12px rgba(0,0,0,.06);cursor:pointer;">
+          <span onClick="{{ c.fav }}" style="position:absolute;top:8px;right:8px;width:27px;height:27px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;"><img src="{{ c.favIcon }}" style="width:14px;height:14px;" alt=""></span>
+          <sc-if value="{{ c.jp }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;top:8px;left:8px;background:rgba(12,12,15,.55);color:#f3f0ea;font-size:9px;font-weight:700;border-radius:9px;padding:2px 7px;">🇯🇵 Nhật</span></sc-if>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:11px;background:linear-gradient(0deg,rgba(20,8,16,.85),transparent);color:#fff;"><div style="font-weight:600;font-size:13.5px;">{{ c.name }} · {{ c.age }}</div><div style="font-size:10px;color:#f0dde8;margin-top:2px;">{{ c.desc }} · ★ {{ c.rating }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/home.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Trang chủ</span></a>
+      <a href="danh-sach-cast.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/D4B26A/geisha.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#d4b26a;font-weight:600;">Cast</span></a>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/gift.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Ưu đãi</span></a>
+      <a href="lich-su-dat-cho.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/calendar.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var f = st.filter || 'Tất cả';
+    var list = NL.CAST.filter(function(c){
+      if(f==='Nói tiếng Nhật') return c.jp;
+      if(f==='20-23 tuổi') return c.age>=20 && c.age<=23;
+      if(f==='Tây Hồ') return c.area==='Tây Hồ';
+      if(f==='Đánh giá cao') return c.rating>=4.8;
+      return true;
+    });
+    var cards = list.map(function(c){
+      var faved = NL.fav.has(c.name);
+      return {
+        name:c.name, age:c.age, desc:c.desc, rating:c.rating, jp:c.jp,
+        img:NL.bg(c.imgId, c.gradA, c.gradB), favIcon:NL.heart(faved),
+        open:function(){ try{localStorage.setItem('nl_cast', c.name);}catch(e){} location.href='chi-tiet-cast.html'; },
+        fav:function(e){ if(e&&e.preventDefault){e.preventDefault();e.stopPropagation();} NL.fav.toggle(c.name); self.forceUpdate(); }
+      };
+    });
+    var filters = NL.CAST_FILTERS.map(function(x){ return { label:x, style:NL.chip(f===x), pick:function(){ self.setState({filter:x}); } }; });
+    return { cards:cards, count:list.length, filters:filters };
+  }
+}
+</script>
+</body>
+</html>

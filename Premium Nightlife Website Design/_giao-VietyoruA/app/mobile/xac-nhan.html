@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .btn{cursor:pointer;transition:filter .14s;}
+  .btn:active{filter:brightness(.95);}
+</style>
+</helmet>
+
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+    <div style="background:#15131a;padding:8px 18px 12px;"><h2 style="font-size:19px;font-weight:800;">Đặt chỗ của tôi</h2></div>
+
+    <div style="padding:0 18px;"><div style="background:rgba(60,160,110,.15);border:1px solid rgba(60,160,110,.3);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;"><span style="width:30px;height:30px;border-radius:50%;background:#1f8a52;display:flex;align-items:center;justify-content:center;flex:none;"><img src="https://img.icons8.com/ios-filled/100/FFFFFF/checkmark.png" style="width:15px;height:15px;" alt=""></span><div style="font-size:11.5px;color:#7fd6a6;font-weight:600;">Đã gửi yêu cầu! Admin sẽ liên hệ sớm.</div></div></div>
+
+    <div style="padding:14px 18px 8px;">
+      <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px;">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <span style="width:46px;height:46px;border-radius:11px;flex:none;background:{{ vImg }};"></span>
+          <div style="flex:1;"><div style="font-weight:700;font-size:14px;">{{ vName }}</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">{{ vArea }} · {{ vCat }}</div></div>
+          <span style="font-size:9.5px;font-weight:700;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:8px;padding:4px 8px;">Mới</span>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.06);margin-top:11px;padding-top:11px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:12px;">
+          <div><span style="color:#8c8679;">Mã: </span><b style="font-family:monospace;">NL-BK-7K2A91</b></div>
+          <div><span style="color:#8c8679;">Cast: </span><b>{{ castName }}</b></div>
+          <div><span style="color:#8c8679;">Lúc: </span><b>{{ date }} · {{ time }}</b></div>
+          <div><span style="color:#8c8679;">Khách: </span><b>{{ guests }} người</b></div>
+          <div style="grid-column:span 2;"><span style="color:#8c8679;">Người đặt: </span><b>{{ name }} · {{ phone }}</b></div>
+        </div>
+      </div>
+
+      <!-- QR -->
+      <div style="margin-top:11px;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;">
+        <div style="background:{{ vImg }};padding:14px 16px;color:#fff;position:relative;"><div style="position:absolute;inset:0;background:linear-gradient(140deg,rgba(22,15,20,.82),rgba(10,9,13,.82));"></div><div style="position:relative;"><div style="font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#ffd0e4;font-weight:700;">Mã ưu đãi</div><div style="font-size:17px;font-weight:800;margin-top:3px;">{{ coupon }}</div></div></div>
+        <div style="padding:14px;text-align:center;">
+          <div style="width:140px;height:140px;margin:0 auto;border:1px solid rgba(255,255,255,.08);border-radius:12px;display:flex;align-items:center;justify-content:center;"><img src="https://img.icons8.com/ios/300/000000/qr-code.png" style="width:116px;height:116px;" alt="QR"></div>
+          <div style="font-family:monospace;font-size:12.5px;letter-spacing:.14em;font-weight:700;margin-top:10px;">NL-HH30-7K2A</div>
+          <div style="display:inline-flex;align-items:center;gap:6px;margin-top:9px;background:rgba(212,178,106,.13);color:#d4b26a;border-radius:16px;padding:6px 12px;font-size:11px;font-weight:600;"><img src="https://img.icons8.com/ios/100/D4B26A/clock.png" style="width:13px;height:13px;" alt="">Còn {{ countdown }}</div>
+        </div>
+      </div>
+
+      <div class="btn" onClick="{{ toggleSave }}" style="margin-top:11px;border-radius:12px;padding:13px;text-align:center;font-weight:700;font-size:14px;{{ saveStyle }}">{{ saveLabel }}</div>
+      <a href="trang-chu.html" class="btn" style="display:block;margin-top:9px;border:1px solid rgba(255,255,255,.14);color:#d4b26a;text-align:center;border-radius:12px;padding:12px;font-weight:600;font-size:13.5px;background:#15131a;">Về trang chủ</a>
+    </div>
+
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;margin-top:10px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/home.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Trang chủ</span></a>
+      <a href="danh-sach-cast.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/geisha.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Cast</span></a>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/gift.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Ưu đãi</span></a>
+      <a href="xac-nhan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/D4B26A/calendar.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#d4b26a;font-weight:600;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { secs: 22*3600 + 14*60 + 8 };
+  componentDidMount(){
+    var self = this;
+    this._t = setInterval(function(){ var s = self.state.secs || 0; self.setState({ secs: s > 0 ? s - 1 : 0 }); }, 1000);
+  }
+  componentWillUnmount(){ if (this._t) clearInterval(this._t); }
+  fmt(s){ function p(n){ return (n<10?'0':'')+n; } return p(Math.floor(s/3600))+':'+p(Math.floor((s%3600)/60))+':'+p(s%60); }
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var b = NL.booking.get();
+    var v = NL.venue(b.venueSlug || 'club-lumiere');
+    var secs = st.secs != null ? st.secs : (22*3600 + 14*60 + 8);
+    var saved = !!st.saved;
+    return {
+      vName:v.name, vArea:v.area, vCat:v.catLabel, vImg:NL.photo(v.imgId,360),
+      date:b.date||'T6 · 21/06', time:b.time||'21:00', guests:b.guests||4,
+      name:b.name||'Khách lẻ', phone:b.phone||'—',
+      coupon:b.coupon||'Happy Hour −30%', castName:b.castName||'Michi · 23',
+      countdown:this.fmt(secs),
+      saveLabel: saved ? 'Đã lưu vào ví ✓' : 'Lưu vào ví ưu đãi',
+      saveStyle: saved ? 'background:rgba(60,160,110,.15);color:#7fd6a6;' : 'background:#d4b26a;color:#241a0a;',
+      toggleSave:function(){ self.setState({ saved: !saved }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

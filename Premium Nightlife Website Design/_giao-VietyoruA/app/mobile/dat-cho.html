@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  input,textarea{font-family:inherit;outline:none;}
+  input:focus,textarea:focus{border-color:#d4b26a!important;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+  .btn{cursor:pointer;transition:filter .14s;}
+  .btn:active{filter:brightness(.95);}
+</style>
+</helmet>
+
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+    <div style="background:#15131a;padding:8px 18px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);"><a href="chi-tiet-quan.html" style="font-size:22px;color:#c5c0b6;line-height:1;">‹</a><span style="font-weight:800;font-size:16px;">Đặt chỗ</span></div>
+
+    <div style="padding:14px 18px;">
+      <div style="border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:11px;display:flex;align-items:center;gap:10px;"><span style="width:38px;height:38px;border-radius:9px;background:{{ vImg }};flex:none;"></span><div><div style="font-size:13.5px;font-weight:600;">{{ vName }}</div><div style="font-size:11px;color:#8c8679;">{{ vArea }} · Cast: {{ castName }}</div></div></div>
+
+      <div style="display:flex;gap:6px;background:#1b1922;border-radius:12px;padding:4px;margin-top:12px;">
+        <div onClick="{{ pickGuest }}" style="{{ sGuest }}">Guest</div>
+        <div onClick="{{ pickMember }}" style="{{ sMember }}">Hội viên</div>
+      </div>
+      <div style="margin-top:10px;font-size:11.5px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:9px;padding:8px 11px;">{{ discountNote }}</div>
+
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:14px;">
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Họ tên</label><input id="bk-name" placeholder="Nguyễn Văn A" style="background:rgba(255,255,255,.04);color:#f3f0ea;margin-top:5px;width:100%;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#f3f0ea;"></div>
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Số điện thoại</label><input id="bk-phone" placeholder="0912 345 678" style="background:rgba(255,255,255,.04);color:#f3f0ea;margin-top:5px;width:100%;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#f3f0ea;"></div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;"><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Ngày</label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:12px;color:#c5c0b6;">{{ date }}</div></div>
+          <div style="flex:1;"><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Giờ</label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:12px;color:#c5c0b6;">{{ time }}</div></div>
+          <div style="flex:1;"><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Số người</label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 8px;font-size:12px;color:#c5c0b6;display:flex;align-items:center;justify-content:space-between;"><span class="btn" onClick="{{ dec }}" style="width:24px;height:24px;border-radius:7px;background:#1b1922;display:flex;align-items:center;justify-content:center;font-weight:800;">−</span><span style="font-weight:700;">{{ guests }}</span><span class="btn" onClick="{{ inc }}" style="width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;display:flex;align-items:center;justify-content:center;font-weight:800;">+</span></div></div>
+        </div>
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Mã giảm giá</label><div class="hscroll" style="margin-top:5px;display:flex;gap:7px;overflow-x:auto;"><sc-for list="{{ couponItems }}" as="c" hint-placeholder-count="4"><span class="btn" onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</span></sc-for></div></div>
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Ghi chú</label><textarea id="bk-note" placeholder="Yêu cầu phòng VIP, nhân viên nói tiếng Nhật…" style="background:rgba(255,255,255,.04);color:#f3f0ea;margin-top:5px;width:100%;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#f3f0ea;min-height:54px;resize:vertical;"></textarea></div>
+      </div>
+    </div>
+
+    <div style="background:#15131a;border-top:1px solid rgba(255,255,255,.08);padding:13px 18px 20px;display:flex;align-items:center;gap:12px;">
+      <div><div style="font-size:11px;color:#8c8679;">Ưu đãi</div><div style="font-size:16px;font-weight:800;color:#d4b26a;">{{ discountPct }}</div></div>
+      <div class="btn" onClick="{{ submit }}" style="flex:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;text-align:center;border-radius:12px;padding:14px;font-weight:700;font-size:14px;">Gửi yêu cầu</div>
+    </div>
+
+    <sc-if value="{{ showLoginModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#15131a;border-radius:16px;width:100%;max-width:320px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,0.2);">
+          <div style="text-align:center;font-size:16px;font-weight:700;color:#f3f0ea;margin-bottom:12px;">Yêu cầu đăng nhập</div>
+          <div style="text-align:center;font-size:13.5px;color:#c5c0b6;margin-bottom:24px;line-height:1.5;">Bạn cần đăng nhập tài khoản để sử dụng quyền lợi Hội viên và tích điểm.</div>
+          <div style="display:flex;gap:10px;">
+            <div class="btn" onClick="{{ closeLoginModal }}" style="flex:1;text-align:center;padding:12px;border-radius:10px;background:#1b1922;color:#c5c0b6;font-weight:600;font-size:14px;">Hủy</div>
+            <a href="dang-nhap.html" class="btn" style="flex:1;text-align:center;padding:12px;border-radius:10px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;font-weight:600;font-size:14px;">Đăng nhập</a>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var b = NL.booking.get();
+    var v = NL.venue(b.venueSlug || 'club-lumiere');
+    var tier = st.tier || 'guest';
+    var member = tier === 'member';
+    var guests = st.guests != null ? st.guests : (b.guests || 4);
+    var date = b.date || 'T6 · 21/06';
+    var time = b.time || '21:00';
+    var COUPONS = ['Happy Hour −30%','Combo VIP 2+1','Welcome −8%','Không dùng mã'];
+    var coupon = st.coupon || COUPONS[0];
+    var discountPct = member ? '8%' : '5%';
+    var couponItems = COUPONS.map(function(c){ return { label:c, style:NL.pillSm(coupon===c), pick:function(){ self.setState({coupon:c}); } }; });
+    return {
+      vName:v.name, vArea:v.area, vImg:NL.photo(v.imgId,360), castName:b.castName||'Michi · 23',
+      date:date, time:time, guests:guests,
+      sGuest:NL.seg(!member), sMember:NL.seg(member),
+      pickGuest:function(){ self.setState({tier:'guest'}); }, pickMember:function(){ self.setState({showLoginModal:true}); },
+      showLoginModal: st.showLoginModal || false, closeLoginModal: function(){ self.setState({showLoginModal:false}); },
+      discountNote: member ? 'Hội viên: giảm 8% · hạn mã 7 ngày · được tích điểm' : 'Guest: giảm 5% · hạn mã 24 giờ. Đăng nhập để nhận tới 10%.',
+      discountPct: discountPct, couponItems: couponItems,
+      dec:function(){ self.setState({guests:Math.max(1,guests-1)}); },
+      inc:function(){ self.setState({guests:Math.min(20,guests+1)}); },
+      submit:function(){
+        var g = function(id,d){ var e=document.getElementById(id); return e && e.value.trim() ? e.value.trim() : d; };
+        NL.booking.patch({
+          venueSlug:v.slug, venueName:v.name, venueArea:v.area, venueImg:v.imgId, venueGradA:v.gradA, venueGradB:v.gradB,
+          castName:b.castName||'Michi · 23',
+          name:g('bk-name','Khách lẻ'), phone:g('bk-phone','—'), note:g('bk-note',''),
+          tier:tier, coupon:coupon, discountPct:discountPct, guests:guests, date:date, time:time
+        });
+        location.href='xac-nhan.html';
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

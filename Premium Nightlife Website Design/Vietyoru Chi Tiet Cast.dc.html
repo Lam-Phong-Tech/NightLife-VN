@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .hs{scrollbar-width:none;-ms-overflow-style:none;}
+  .hs::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+<!-- ============ TITLE / BRIEF BAND ============ -->
+<div style="position:absolute;left:80px;top:40px;width:1500px;font-family:'Inter',sans-serif;">
+  <div style="font:600 11px/1 'Inter',sans-serif;letter-spacing:3px;color:#7d7a86;text-transform:uppercase;">Vietyoru · Premium Elegant · Dark Mode</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:36px;color:#16151a;margin-top:8px;letter-spacing:.2px;">Trang chi tiết Cast <span style="color:#9a8758;">—</span> Cast Profile</div>
+  <div style="font-size:14px;color:#56535e;margin-top:5px;max-width:1060px;line-height:1.6;">Theo spec 6.3. Bản <b style="color:#16151a;">Mobile</b> (full-bleed chân dung) và <b style="color:#16151a;">Desktop</b>, kèm state <b style="color:#16151a;">xem ảnh phóng to</b>. Lịch trống hiển thị <b style="color:#16151a;">giờ làm việc theo ngày</b>. Chuẩn than đen + <span style="color:#9a8758;">Gold</span>.</div>
+  <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
+    <span style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e7e3da;border-radius:20px;padding:8px 15px;font-size:12px;font-weight:600;color:#16151a;box-shadow:0 1px 3px rgba(0,0,0,.05);"><span style="width:8px;height:8px;border-radius:50%;background:#d4b26a;"></span>Mobile · Full-bleed</span>
+    <span style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e7e3da;border-radius:20px;padding:8px 15px;font-size:12px;font-weight:600;color:#16151a;box-shadow:0 1px 3px rgba(0,0,0,.05);"><span style="width:8px;height:8px;border-radius:50%;background:#16151a;"></span>Desktop</span>
+    <span style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e7e3da;border-radius:20px;padding:8px 15px;font-size:12px;font-weight:600;color:#16151a;box-shadow:0 1px 3px rgba(0,0,0,.05);"><span style="width:8px;height:8px;border-radius:50%;background:#e0729e;"></span>Lightbox</span>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ============ MOBILE A — FULL-BLEED ================== -->
+<!-- ===================================================== -->
+<div data-screen-label="Cast A · Full-bleed" style="position:absolute;left:80px;top:262px;width:412px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-30px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Mobile</span><span style="font-size:11px;color:#7d7a86;margin-left:8px;">Full-bleed chân dung</span></div>
+
+  <div style="background:#000;border-radius:46px;padding:9px;box-shadow:0 40px 80px -30px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05);">
+   <div style="width:394px;border-radius:38px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;">
+
+    <!-- HERO full-bleed -->
+    <div style="position:relative;height:452px;background:linear-gradient(180deg,rgba(12,12,15,.18) 0%,rgba(12,12,15,0) 26%,rgba(12,12,15,.55) 62%,rgba(12,12,15,.97) 100%),url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80') center 18%/cover;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 22px 4px;font-size:13px;font-weight:500;color:#fff;">
+        <span style="letter-spacing:.5px;">23:08</span>
+        <span style="display:flex;align-items:center;gap:7px;">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="currentColor" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="currentColor"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="currentColor"/></svg>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px;">
+        <span style="width:38px;height:38px;border-radius:50%;background:rgba(12,12,15,.42);border:1px solid rgba(212,178,106,.32);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#f3f0ea;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+        <div style="display:flex;gap:10px;">
+          
+          <span style="width:38px;height:38px;border-radius:50%;background:rgba(12,12,15,.42);border:1px solid rgba(212,178,106,.32);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#f3f0ea;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:0 20px 18px;">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;font-size:10px;font-weight:700;letter-spacing:.3px;padding:6px 11px 6px 9px;border-radius:20px;box-shadow:0 6px 16px -7px rgba(168,124,60,.8);"><svg width="12" height="12" viewBox="0 0 24 24" fill="#241a0a"><path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6L12 19l-5.4 2.9 1.3-6-4.6-4.1 6.1-.6z"/></svg>#1 Ranking tháng 6</span>
+          <span style="display:inline-flex;align-items:center;gap:7px;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);border-radius:20px;padding:5px 11px;"><span style="width:6px;height:6px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;"></span><span style="font-size:9.5px;letter-spacing:1.4px;color:#f0e6d2;text-transform:uppercase;">Đang nhận đặt tối nay</span></span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:11px;">
+          <span style="font-family:'Inter',sans-serif;font-weight:700;font-size:32px;line-height:.95;color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.55);">Rin</span>
+          <span style="font-size:13px;color:#e7e1d4;padding-bottom:4px;">24 tuổi · 168 cm</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:9px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
+          <span style="font-size:12.5px;color:#e3c27e;font-weight:600;">Sakura Lounge</span>
+          <span style="font-size:11.5px;color:#a7a294;">· Hoàn Kiếm</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div style="display:flex;align-items:stretch;padding:16px 20px 2px;">
+      <div style="flex:1;text-align:center;"><div style="display:flex;align-items:center;justify-content:center;gap:5px;color:#f3f0ea;"><svg width="15" height="15" viewBox="0 0 24 24" fill="#e0729e"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg><span style="font-size:17px;font-weight:700;">1.2k</span></div><div style="font-size:10px;color:#8c8679;margin-top:4px;">Yêu thích</div></div>
+      <div style="width:1px;background:rgba(255,255,255,.08);margin:3px 0;"></div>
+      <div style="flex:1;text-align:center;"><div style="font-size:17px;font-weight:700;color:#f3f0ea;line-height:1.32;">328</div><div style="font-size:10px;color:#8c8679;margin-top:4px;">Lượt đặt</div></div>
+    </div>
+
+    <!-- ABOUT -->
+    <div style="display:flex;align-items:center;gap:11px;padding:18px 20px 10px;">
+      <div style="flex:none;"><div style="font-size:21px;font-weight:600;color:#f3f0ea;line-height:1.04;">Giới thiệu</div></div>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+    </div>
+    <div style="padding:0 20px;">
+      <div style="font-size:13px;line-height:1.78;color:#c5c0b6;">Rin được khách quen yêu mến bởi sự dịu dàng, tinh tế và khả năng trò chuyện bằng tiếng Nhật tự nhiên. Gắn bó với Sakura Lounge hơn hai năm, cô am hiểu rượu vang và luôn mang lại cảm giác thoải mái cho từng vị khách.</div>
+      <div style="margin-top:15px;display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;gap:12px;"><span style="font-size:11px;color:#8c8679;width:76px;flex:none;padding-top:1px;">Ngôn ngữ</span><span style="font-size:12.5px;color:#e7e1d4;font-weight:500;">日本語 N2 · English · Tiếng Việt</span></div>
+        <div style="display:flex;gap:12px;"><span style="font-size:11px;color:#8c8679;width:76px;flex:none;padding-top:1px;">Sở thích</span><span style="font-size:12.5px;color:#e7e1d4;font-weight:500;">Jazz · Rượu vang · Tennis</span></div>
+        <div style="display:flex;gap:12px;"><span style="font-size:11px;color:#8c8679;width:76px;flex:none;padding-top:1px;">Phong cách</span><span style="font-size:12.5px;color:#e7e1d4;font-weight:500;">Thanh lịch · Ấm áp</span></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE — working hours per day -->
+    <div style="display:flex;align-items:center;gap:11px;padding:20px 20px 12px;">
+      <div style="flex:none;"><div style="font-size:21px;font-weight:600;color:#f3f0ea;line-height:1.04;">Lịch trống</div></div>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+      <span style="font-size:10.5px;color:#9b958a;">Giờ Hà Nội</span>
+    </div>
+    <div style="padding:0 18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.03));border:1px solid rgba(212,178,106,.4);border-radius:13px;">
+        <div style="display:flex;align-items:center;gap:9px;"><span style="width:7px;height:7px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;flex:none;"></span><span style="font-size:13.5px;font-weight:600;color:#f3f0ea;">Hôm nay</span><span style="font-size:11.5px;color:#9b958a;">Thứ 2 · 29/06</span></div>
+        <span style="font-size:13.5px;font-weight:700;color:#e3c27e;">20:00 – 02:00</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06);"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 3</span><span style="font-size:11.5px;color:#8c8679;">30/06</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">20:00 – 02:00</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06);"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#8c8679;">Thứ 4</span><span style="font-size:11.5px;color:#6f6b62;">01/07</span></div><span style="font-size:12.5px;font-weight:500;color:#6f6b62;">Nghỉ</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06);"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 5</span><span style="font-size:11.5px;color:#8c8679;">02/07</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">21:00 – 02:00</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.06);"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 6</span><span style="font-size:11.5px;color:#8c8679;">03/07</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">20:00 – 03:00</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 7</span><span style="font-size:11.5px;color:#8c8679;">04/07</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">20:00 – 03:00</span></div>
+    </div>
+
+    <!-- VENUE -->
+    <div style="display:flex;align-items:center;gap:11px;padding:20px 20px 10px;">
+      <div style="flex:none;"><div style="font-size:21px;font-weight:600;color:#f3f0ea;line-height:1.04;">Quán đang thuộc về</div></div>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+    </div>
+    <div style="padding:0 18px;">
+      <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:11px 13px;">
+        <span style="width:54px;height:54px;border-radius:11px;flex:none;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=200&q=70') center/cover;"></span>
+        <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Sakura Lounge</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Lounge · Hoàn Kiếm</div><div style="display:flex;align-items:center;gap:4px;margin-top:5px;color:#e3c27e;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 21l1.4-6.8L2.2 9.5 9 8.8z"/></svg><span style="font-size:11.5px;font-weight:600;">4.8</span><span style="font-size:10.5px;color:#8c8679;">· 18 cast</span></div></div>
+        <span style="display:flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:#d4b26a;flex:none;">Xem quán<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+
+    <!-- GALLERY -->
+    <div style="display:flex;align-items:center;gap:11px;padding:20px 20px 10px;">
+      <div style="flex:none;"><div style="font-size:21px;font-weight:600;color:#f3f0ea;line-height:1.04;">Thư viện ảnh</div></div>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+      <span style="font-size:11px;color:#9b958a;">12 ảnh</span>
+    </div>
+    <div style="padding:0 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;">
+      <span style="height:108px;border-radius:12px;background:url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=75') center/cover;"></span>
+      <span style="height:108px;border-radius:12px;background:url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=75') center/cover;"></span>
+      <span style="height:108px;border-radius:12px;background:url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=300&q=75') center/cover;"></span>
+      <span style="height:108px;border-radius:12px;background:url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=300&q=75') center/cover;"></span>
+      <span style="height:108px;border-radius:12px;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=300&q=75') center/cover;"></span>
+      <span style="position:relative;height:108px;border-radius:12px;overflow:hidden;background:url('https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=300&q=75') center/cover;"><span style="position:absolute;inset:0;background:rgba(12,12,15,.62);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#f3f0ea;">+7</span></span>
+    </div>
+
+    <!-- SIMILAR -->
+    <div style="display:flex;align-items:center;gap:11px;padding:20px 20px 10px;">
+      <div style="flex:none;"><div style="font-size:21px;font-weight:600;color:#f3f0ea;line-height:1.04;">Cast tương tự</div></div>
+      <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+    </div>
+    <div class="hs" style="padding:0 18px 4px;display:flex;gap:12px;overflow-x:auto;">
+      <div style="flex:none;width:132px;"><div style="position:relative;height:158px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.6)),url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=400&q=75') center/cover;"><div style="position:absolute;left:0;right:0;bottom:0;padding:9px 10px;"><div style="font-size:14px;font-weight:600;color:#fff;">Yuki</div><div style="font-size:10px;color:#cfc9bd;margin-top:1px;">Sakura Lounge</div></div></div></div>
+      <div style="flex:none;width:132px;"><div style="position:relative;height:158px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.6)),url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=75') center/cover;"><div style="position:absolute;left:0;right:0;bottom:0;padding:9px 10px;"><div style="font-size:14px;font-weight:600;color:#fff;">Mei</div><div style="font-size:10px;color:#cfc9bd;margin-top:1px;">Club Lumière</div></div></div></div>
+      <div style="flex:none;width:132px;"><div style="position:relative;height:158px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.6)),url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=75') center/cover;"><div style="position:absolute;left:0;right:0;bottom:0;padding:9px 10px;"><div style="font-size:14px;font-weight:600;color:#fff;">Hana</div><div style="font-size:10px;color:#cfc9bd;margin-top:1px;">Akari Lounge</div></div></div></div>
+      <div style="flex:none;width:132px;"><div style="position:relative;height:158px;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.6)),url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=400&q=75') center/cover;"><div style="position:absolute;left:0;right:0;bottom:0;padding:9px 10px;"><div style="font-size:14px;font-weight:600;color:#fff;">Aoi</div><div style="font-size:10px;color:#cfc9bd;margin-top:1px;">Bar Tokyo Night</div></div></div></div>
+    </div>
+
+    <!-- STICKY CTA -->
+    <div style="margin-top:18px;position:sticky;bottom:0;background:rgba(8,8,11,.92);backdrop-filter:blur(12px);border-top:1px solid rgba(212,178,106,.18);padding:12px 16px 16px;display:flex;align-items:center;gap:11px;">
+      <span style="width:46px;height:46px;border-radius:13px;flex:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#e0729e;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+      
+      <span style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#f0dda8,#d4b26a 55%,#b6924a);color:#241a0a;border-radius:13px;padding:9px 0;">
+        <span style="font-size:14.5px;font-weight:700;letter-spacing:.2px;">Đặt cast này</span>
+        <span style="font-size:10px;opacity:.82;">từ 500.000₫ / 60 phút</span>
+      </span>
+    </div>
+
+   </div>
+  </div>
+
+  <div style="margin-top:18px;background:#fff;border-radius:13px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.07);">
+    <div style="font:700 13px/1 'Inter',sans-serif;color:#16151a;">Mobile · Full-bleed</div>
+    <div style="font-size:12px;color:#56535e;line-height:1.7;margin-top:7px;">Chân dung lớn phủ toàn màn, tên + badge #1 đè trên ảnh — ấn tượng mạnh, cảm giác editorial cao cấp. Ưu tiên khi ảnh cast đẹp & là điểm bán chính.</div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ============ MOBILE — LIGHTBOX STATE ================ -->
+<!-- ===================================================== -->
+<div data-screen-label="Lightbox · xem ảnh" style="position:absolute;left:585px;top:262px;width:412px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-30px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">State · Xem ảnh phóng to</span><span style="font-size:11px;color:#7d7a86;margin-left:8px;">Lightbox</span></div>
+
+  <div style="background:#000;border-radius:46px;padding:9px;box-shadow:0 40px 80px -30px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.05);">
+   <div style="width:394px;height:812px;border-radius:38px;overflow:hidden;background:#000;color:#f3f0ea;position:relative;">
+    <!-- status bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 22px 4px;font-size:13px;font-weight:500;color:#fff;position:relative;z-index:3;">
+      <span style="letter-spacing:.5px;">23:08</span>
+      <span style="display:flex;align-items:center;gap:7px;">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="currentColor" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="currentColor"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="currentColor"/></svg>
+      </span>
+    </div>
+    <!-- top bar: counter + close -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;position:relative;z-index:3;">
+      <span style="font-size:13px;font-weight:600;color:#f3f0ea;letter-spacing:.5px;">02 <span style="color:#6f6b62;">/ 12</span></span>
+      <div style="display:flex;gap:10px;">
+        
+        <span style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#f3f0ea;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+    </div>
+    <!-- big image -->
+    <div style="position:absolute;left:0;right:0;top:118px;bottom:172px;display:flex;align-items:center;justify-content:center;">
+      <div style="width:100%;height:100%;background:url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85') center/contain no-repeat;"></div>
+      <!-- prev / next -->
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#f3f0ea;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+      <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#f3f0ea;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+    </div>
+    <!-- caption + actions -->
+    <div style="position:absolute;left:0;right:0;bottom:96px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div><div style="font-size:14px;font-weight:600;color:#f3f0ea;">Rin</div><div style="font-size:11px;color:#9b958a;margin-top:2px;">Sakura Lounge · Tháng 6, 2026</div></div>
+      <div style="display:flex;gap:9px;">
+        <span style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#e0729e;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+        
+      </div>
+    </div>
+    <!-- thumbnail strip -->
+    <div class="hs" style="position:absolute;left:0;right:0;bottom:24px;padding:0 18px;display:flex;gap:8px;overflow-x:auto;">
+      <span style="width:54px;height:54px;flex:none;border-radius:10px;background:url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=160&q=70') center/cover;opacity:.55;"></span>
+      <span style="width:54px;height:54px;flex:none;border-radius:10px;background:url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=70') center/cover;border:2px solid #d4b26a;"></span>
+      <span style="width:54px;height:54px;flex:none;border-radius:10px;background:url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=160&q=70') center/cover;opacity:.55;"></span>
+      <span style="width:54px;height:54px;flex:none;border-radius:10px;background:url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=160&q=70') center/cover;opacity:.55;"></span>
+      <span style="width:54px;height:54px;flex:none;border-radius:10px;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=160&q=70') center/cover;opacity:.55;"></span>
+      <span style="width:54px;height:54px;flex:none;border-radius:10px;background:url('https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=160&q=70') center/cover;opacity:.55;"></span>
+    </div>
+   </div>
+  </div>
+
+  <div style="margin-top:18px;background:#fff;border-radius:13px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.07);">
+    <div style="font:700 13px/1 'Inter',sans-serif;color:#16151a;">State · Lightbox</div>
+    <div style="font-size:12px;color:#56535e;line-height:1.7;margin-top:7px;">Chạm ảnh trong Thư viện → mở xem phóng to: nền tối, vuốt trái/phải, dải thumbnail (ảnh đang xem viền vàng), bộ đếm 02/12, lưu &amp; chia sẻ.</div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ============ DESKTOP ================================ -->
+<!-- ===================================================== -->
+<div data-screen-label="Cast · Desktop" style="position:absolute;left:80px;top:2320px;width:1240px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-30px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · 1240px</span><span style="font-size:11px;color:#7d7a86;margin-left:8px;">Bố cục 2 cột</span></div>
+
+  <div style="border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 30px 70px -34px rgba(0,0,0,.7);color:#f3f0ea;">
+    <!-- top nav -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 30px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:26px;">
+        <span style="font-weight:800;font-size:21px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span>
+        <div style="display:flex;gap:20px;font-size:13px;color:#c5c0b6;font-weight:500;"><span>Trang chủ</span><span>Tìm quán</span><span style="color:#d4b26a;font-weight:600;">Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:18px;padding:6px 12px;font-weight:600;">VI · 日本語</span>
+        <span style="font-size:13px;color:#c5c0b6;">Đăng nhập</span>
+        <span style="font-size:12px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:20px;padding:9px 15px;">Đăng ký đối tác</span>
+      </div>
+    </div>
+
+    <div style="padding:22px 30px 30px;">
+      <!-- breadcrumb -->
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8c8679;margin-bottom:20px;"><span>Trang chủ</span><span style="opacity:.5;">/</span><span>Cast</span><span style="opacity:.5;">/</span><span style="color:#c5c0b6;">Rin</span></div>
+
+      <div style="display:grid;grid-template-columns:464px 1fr;gap:34px;">
+        <!-- LEFT: portrait + gallery -->
+        <div>
+          <div style="position:relative;height:540px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.5)),url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=85') center 16%/cover;box-shadow:0 20px 44px -22px rgba(0,0,0,.7);">
+            <span style="position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;font-size:11px;font-weight:700;padding:7px 13px 7px 10px;border-radius:20px;box-shadow:0 6px 16px -7px rgba(168,124,60,.8);"><svg width="13" height="13" viewBox="0 0 24 24" fill="#241a0a"><path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6L12 19l-5.4 2.9 1.3-6-4.6-4.1 6.1-.6z"/></svg>#1 Ranking tháng 6</span>
+            <div style="position:absolute;top:12px;right:12px;display:flex;gap:9px;">
+              
+              <span style="width:38px;height:38px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+            </div>
+            <span style="position:absolute;bottom:14px;left:14px;display:inline-flex;align-items:center;gap:7px;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);border-radius:20px;padding:6px 12px;"><span style="width:6px;height:6px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;"></span><span style="font-size:9.5px;letter-spacing:1.4px;color:#f0e6d2;text-transform:uppercase;">Đang nhận đặt tối nay</span></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;">
+            <span style="height:74px;border-radius:10px;background:url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=72') center/cover;border:2px solid #d4b26a;"></span>
+            <span style="height:74px;border-radius:10px;background:url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=72') center/cover;"></span>
+            <span style="height:74px;border-radius:10px;background:url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=200&q=72') center/cover;"></span>
+            <span style="height:74px;border-radius:10px;background:url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=200&q=72') center/cover;"></span>
+            <span style="position:relative;height:74px;border-radius:10px;overflow:hidden;background:url('https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=200&q=72') center/cover;"><span style="position:absolute;inset:0;background:rgba(12,12,15,.6);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#f3f0ea;">+7</span></span>
+          </div>
+        </div>
+
+        <!-- RIGHT: info -->
+        <div>
+          <div style="display:flex;align-items:flex-end;gap:14px;">
+            <span style="font-family:'Inter',sans-serif;font-weight:700;font-size:34px;line-height:1;color:#f3f0ea;">Rin</span>
+            <span style="font-size:14px;color:#c5c0b6;padding-bottom:4px;">24 tuổi · 168 cm</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:11px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
+            <span style="font-size:13.5px;color:#e3c27e;font-weight:600;">Sakura Lounge</span>
+            <span style="font-size:12.5px;color:#a7a294;">· Hoàn Kiếm</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+
+          <!-- stats inline -->
+          <div style="display:flex;align-items:center;gap:22px;margin-top:18px;padding:14px 0;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07);">
+            <span style="display:inline-flex;align-items:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="#e0729e"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg><b style="font-size:16px;color:#f3f0ea;">1.2k</b><span style="font-size:12px;color:#8c8679;">Yêu thích</span></span>
+            <span style="width:1px;height:24px;background:rgba(255,255,255,.1);"></span>
+            <span style="display:inline-flex;align-items:center;gap:7px;"><b style="font-size:16px;color:#f3f0ea;">328</b><span style="font-size:12px;color:#8c8679;">Lượt đặt</span></span>
+          </div>
+
+          <!-- interests chips -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;">
+            <span style="font-size:12px;color:#d9c08a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.26);border-radius:16px;padding:6px 13px;">日本語 N2</span>
+            <span style="font-size:12px;color:#d9c08a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.26);border-radius:16px;padding:6px 13px;">English</span>
+            <span style="font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px 13px;">Jazz</span>
+            <span style="font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px 13px;">Rượu vang</span>
+            <span style="font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px 13px;">Tennis</span>
+          </div>
+
+          <!-- bio -->
+          <div style="font-size:13.5px;line-height:1.8;color:#c5c0b6;margin-top:18px;">Rin được khách quen yêu mến bởi sự dịu dàng, tinh tế và khả năng trò chuyện bằng tiếng Nhật tự nhiên. Gắn bó với Sakura Lounge hơn hai năm, cô am hiểu rượu vang và luôn mang lại cảm giác thoải mái cho từng vị khách.</div>
+
+          <!-- venue card -->
+          <div style="display:flex;align-items:center;gap:11px;margin-top:24px;margin-bottom:13px;">
+            <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Quán đang thuộc về</span>
+            
+            <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+          </div>
+          <div style="display:flex;gap:15px;background:linear-gradient(135deg,rgba(212,178,106,.07),rgba(255,255,255,.02));border:1px solid rgba(212,178,106,.22);border-radius:16px;padding:14px;">
+            <span style="width:104px;height:104px;border-radius:13px;flex:none;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=300&q=75') center/cover;"></span>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div><div style="font-size:17px;font-weight:600;color:#f3f0ea;">Sakura Lounge</div><div style="font-size:12px;color:#8c8679;margin-top:3px;">Lounge cao cấp · Hoàn Kiếm</div></div>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:#7fd3a0;background:rgba(12,12,15,.4);border:1px solid rgba(95,191,134,.4);border-radius:9px;padding:4px 9px;flex:none;"><span style="width:5px;height:5px;border-radius:50%;background:#5fbf86;"></span>Đang mở</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;margin-top:11px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;color:#e3c27e;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 21l1.4-6.8L2.2 9.5 9 8.8z"/></svg><b style="font-size:13px;">4.8</b><span style="font-size:11.5px;color:#8c8679;">(188)</span></span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#c5c0b6;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>18 cast</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#c5c0b6;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>Mở đến 02:00</span>
+              </div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;">
+                <span style="font-size:11px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px 10px;">Hỗ trợ tiếng Nhật</span>
+                <span style="font-size:11px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px 10px;">Phòng riêng</span>
+                <span style="font-size:11px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px 10px;">Cocktail</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;flex:none;">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:11px 20px;">Xem quán<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+
+          <!-- schedule -->
+          <div style="display:flex;align-items:center;gap:11px;margin-top:24px;margin-bottom:14px;">
+            <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Lịch trống</span>
+            
+            <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+            <span style="font-size:11px;color:#9b958a;">Giờ Hà Nội</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.03));border:1px solid rgba(212,178,106,.4);border-radius:11px;"><div style="display:flex;align-items:center;gap:8px;"><span style="width:7px;height:7px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;"></span><span style="font-size:13px;font-weight:600;color:#f3f0ea;">Hôm nay</span><span style="font-size:11px;color:#9b958a;">29/06</span></div><span style="font-size:13px;font-weight:700;color:#e3c27e;">20:00 – 02:00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 3</span><span style="font-size:11px;color:#8c8679;">30/06</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">20:00 – 02:00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#8c8679;">Thứ 4</span><span style="font-size:11px;color:#6f6b62;">01/07</span></div><span style="font-size:12.5px;font-weight:500;color:#6f6b62;">Nghỉ</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 5</span><span style="font-size:11px;color:#8c8679;">02/07</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">21:00 – 02:00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 6</span><span style="font-size:11px;color:#8c8679;">03/07</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">20:00 – 03:00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;color:#e7e1d4;">Thứ 7</span><span style="font-size:11px;color:#8c8679;">04/07</span></div><span style="font-size:13px;font-weight:600;color:#e7e1d4;">20:00 – 03:00</span></div>
+          </div>
+
+          <!-- CTA row -->
+          <div style="display:flex;align-items:center;gap:12px;margin-top:24px;">
+            <span style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#f0dda8,#d4b26a 55%,#b6924a);color:#241a0a;border-radius:13px;padding:12px 40px;"><span style="font-size:15px;font-weight:700;">Đặt cast này</span><span style="font-size:10.5px;opacity:.82;">từ 500.000₫ / 60 phút</span></span>
+            
+            <span style="width:50px;height:50px;border-radius:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#e0729e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:13px;font-size:11.5px;color:#8c8679;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7fb98e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Xác nhận trong 5 phút · Miễn phí huỷ trước 2 giờ</div>
+        </div>
+      </div>
+
+      <!-- similar cast -->
+      <div style="display:flex;align-items:center;gap:12px;margin-top:34px;margin-bottom:16px;">
+        <span style="font-size:18px;font-weight:600;color:#f3f0ea;">Cast tương tự</span>
+        
+        <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+        <span style="font-size:12px;color:#9b958a;">Xem tất cả</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;"><div style="position:relative;height:200px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=500&q=78') center/cover;"></div><div style="padding:12px 13px 14px;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">Yuki</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Sakura Lounge · 23 tuổi</div></div></div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;"><div style="position:relative;height:200px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=78') center/cover;"></div><div style="padding:12px 13px 14px;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">Mei</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Club Lumière · 25 tuổi</div></div></div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;"><div style="position:relative;height:200px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=78') center/cover;"></div><div style="padding:12px 13px 14px;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">Hana</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Akari Lounge · 22 tuổi</div></div></div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;"><div style="position:relative;height:200px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=500&q=78') center/cover;"></div><div style="padding:12px 13px 14px;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">Aoi</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Bar Tokyo Night · 24 tuổi</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:18px;background:#fff;border-radius:13px;padding:15px 17px;box-shadow:0 2px 10px rgba(0,0,0,.07);max-width:760px;">
+    <div style="font:700 13px/1 'Inter',sans-serif;color:#16151a;">Desktop · Bố cục 2 cột</div>
+    <div style="font-size:12px;color:#56535e;line-height:1.7;margin-top:7px;">Cột trái: chân dung lớn + dải thư viện (mở lightbox). Cột phải: tên · chỉ số · ngôn ngữ/sở thích · giới thiệu · <b style="color:#16151a;">lịch trống theo ngày</b> · CTA đặt + nhắn tin. Dưới cùng: cast tương tự. Lịch chỉ hiện khung giờ làm việc mỗi ngày, không chia nhỏ.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

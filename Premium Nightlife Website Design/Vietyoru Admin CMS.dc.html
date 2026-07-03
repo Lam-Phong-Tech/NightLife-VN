@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="scw" style="width:250px;flex:none;position:sticky;top:0;height:100vh;overflow:auto;background:#100f14;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;">
+    <!-- brand -->
+    <div style="padding:20px 20px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-weight:800;font-size:22px;line-height:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</div>
+        <div style="font-size:7.5px;letter-spacing:3px;color:#8c8679;margin-top:3px;text-transform:uppercase;">Admin Console · CMS</div>
+      </div>
+      <span style="font-size:8.5px;font-weight:700;letter-spacing:1.5px;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:4px 8px;border-radius:6px;">ADMIN</span>
+    </div>
+
+    <nav style="flex:1;padding:6px 12px 12px;display:flex;flex-direction:column;gap:2px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#57534b;text-transform:uppercase;padding:12px 12px 6px;">Tổng quan</div>
+      <div onClick="{{ go_dashboard }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_dashboard }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span style="flex:1;">Bảng điều khiển</span>
+      </div>
+
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#57534b;text-transform:uppercase;padding:14px 12px 6px;">Vận hành</div>
+      <div onClick="{{ go_booking }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_booking }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4M9 14l2 2 4-4"/></svg>
+        <span style="flex:1;">Booking</span>
+      </div>
+      <div onClick="{{ go_bills }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_bills }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+        <span style="flex:1;">Duyệt hóa đơn</span>
+        <span style="font-size:10px;font-weight:700;color:#241a0a;background:#e0a44e;border-radius:9px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px;">5</span>
+      </div>
+      <div onClick="{{ go_coupons }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_coupons }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/><path d="M15 6v12" stroke-dasharray="2 2"/></svg>
+        <span style="flex:1;">Coupon &amp; QR</span>
+      </div>
+
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#57534b;text-transform:uppercase;padding:14px 12px 6px;">Danh mục</div>
+      <div onClick="{{ go_venues }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_venues }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/><path d="M9 20v-6h6v6"/></svg>
+        <span style="flex:1;">Quán</span>
+      </div>
+      <div onClick="{{ go_casts }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_casts }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6a3 3 0 0 1 0 6M18 20a5 5 0 0 0-3-4.6"/></svg>
+        <span style="flex:1;">Cast</span>
+        <span style="font-size:10px;font-weight:700;color:#241a0a;background:#e0a44e;border-radius:9px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px;">4</span>
+      </div>
+      <div onClick="{{ go_ranking }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_ranking }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1 0-4h2M18 9h2a2 2 0 0 0 0-4h-2M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M12 15v3M8.5 21h7M9.5 18h5"/></svg>
+        <span style="flex:1;">Ranking</span>
+      </div>
+
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#57534b;text-transform:uppercase;padding:14px 12px 6px;">Nội dung</div>
+      <div onClick="{{ go_content }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_content }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l15-6v14l-15-6z"/><path d="M3 11v4a2 2 0 0 0 2 2h1M8 17v3"/></svg>
+        <span style="flex:1;">Campaign &amp; Blog</span>
+      </div>
+      <div onClick="{{ go_media }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_media }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l4.5-4.5 3 3L16 10l4 5"/></svg>
+        <span style="flex:1;">Thư viện media</span>
+      </div>
+
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#57534b;text-transform:uppercase;padding:14px 12px 6px;">Đối tác &amp; hệ thống</div>
+      <div onClick="{{ go_partners }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_partners }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 10.5-2.3M17 8v6M20 11h-6"/></svg>
+        <span style="flex:1;">Duyệt đối tác</span>
+        <span style="font-size:10px;font-weight:700;color:#f3f0ea;background:#e0729e;border-radius:9px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px;">3</span>
+      </div>
+      <div onClick="{{ go_reports }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_reports }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M20 20H4"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>
+        <span style="flex:1;">Báo cáo doanh thu</span>
+      </div>
+      <div onClick="{{ go_roles }}" style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;color:#8c8679;font-size:13.5px;font-weight:500;{{ on_roles }}" style-hover="background:rgba(255,255,255,.04);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+        <span style="flex:1;">Phân quyền</span>
+      </div>
+    </nav>
+
+    <!-- account -->
+    <div style="margin:8px 12px 14px;padding:11px 12px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;">
+      <span style="width:34px;height:34px;flex:none;border-radius:10px;background:linear-gradient(135deg,#f4e3b4,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:14px;">A</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12.5px;font-weight:600;color:#f3f0ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Nguyễn Admin</div>
+        <div style="font-size:10px;color:#8c8679;">Super Admin</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+
+    <!-- topbar -->
+    <header style="position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;padding:14px 26px;background:rgba(12,12,15,.86);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);">
+      <div style="min-width:0;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8c8679;text-transform:uppercase;">{{ pageEn }}</div>
+        <div style="font-size:19px;font-weight:700;color:#f3f0ea;letter-spacing:.1px;margin-top:2px;">{{ pageTitle }}</div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:9px 14px;width:280px;max-width:26vw;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span style="font-size:13px;color:#6f6b62;">Tìm quán, cast, booking, bill…</span>
+      </div>
+      <span style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#c5c0b6;border:1px solid rgba(212,178,106,.28);border-radius:11px;padding:8px 13px;font-weight:500;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+        {{ region }}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+      <span style="position:relative;width:39px;height:39px;border-radius:50%;border:1px solid rgba(212,178,106,.28);display:flex;align-items:center;justify-content:center;color:#d4b26a;cursor:pointer;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span style="position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:#e0729e;border:1.5px solid #0c0c0f;"></span>
+      </span>
+    </header>
+
+    <!-- content -->
+    <div class="scw" style="flex:1;overflow:auto;">
+
+      <!-- ============ DASHBOARD ============ -->
+      <sc-if value="{{ v_dashboard }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="Admin · Dashboard" style="padding:24px 26px 40px;">
+
+        <!-- welcome + range -->
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:20px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:22px;font-weight:700;color:#f3f0ea;">Chào buổi tối, Admin 🌙</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:4px;">Thứ Ba · 01/07/2026 · Có <b style="color:#e3c27e;">5 hóa đơn</b> và <b style="color:#e3c27e;">3 đối tác</b> đang chờ bạn xử lý.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+              <span style="font-size:12px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:6px 14px;border-radius:8px;">Hôm nay</span>
+              <span style="font-size:12px;color:#9b958a;padding:6px 14px;border-radius:8px;cursor:pointer;">Tuần</span>
+              <span style="font-size:12px;color:#9b958a;padding:6px 14px;border-radius:8px;cursor:pointer;">Tháng</span>
+            </span>
+            <span onClick="{{ go_reports }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:9px 16px;border-radius:10px;cursor:pointer;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Xuất báo cáo
+            </span>
+          </div>
+        </div>
+
+        <!-- stat cards -->
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;">
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;"><span style="width:38px;height:38px;border-radius:11px;background:rgba(212,178,106,.12);border:1px solid rgba(212,178,106,.22);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span><span style="font-size:11px;color:#7fd3a2;font-weight:600;">+2</span></div>
+            <div style="font-size:26px;font-weight:800;color:#f3f0ea;margin-top:12px;letter-spacing:-.5px;">24</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Quán hoạt động</div>
+            <div style="font-size:10.5px;color:#57534b;margin-top:6px;">HN 15 · HCM 9</div>
+          </div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;"><span style="width:38px;height:38px;border-radius:11px;background:rgba(212,178,106,.12);border:1px solid rgba(212,178,106,.22);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6a3 3 0 0 1 0 6"/></svg></span><span style="font-size:11px;color:#e7b869;font-weight:600;">4 chờ</span></div>
+            <div style="font-size:26px;font-weight:800;color:#f3f0ea;margin-top:12px;letter-spacing:-.5px;">86</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Cast</div>
+            <div style="font-size:10.5px;color:#57534b;margin-top:6px;">4 chờ kiểm duyệt</div>
+          </div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;"><span style="width:38px;height:38px;border-radius:11px;background:rgba(111,159,216,.12);border:1px solid rgba(111,159,216,.25);display:flex;align-items:center;justify-content:center;color:#8fb6e4;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg></span><span style="font-size:11px;color:#7fd3a2;font-weight:600;">+3 mới</span></div>
+            <div style="font-size:26px;font-weight:800;color:#f3f0ea;margin-top:12px;letter-spacing:-.5px;">12</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Booking hôm nay</div>
+            <div style="font-size:10.5px;color:#57534b;margin-top:6px;">9 hoàn tất · 3 mới</div>
+          </div>
+          <div style="background:rgba(224,164,78,.07);border:1px solid rgba(224,164,78,.28);border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;"><span style="width:38px;height:38px;border-radius:11px;background:rgba(224,164,78,.14);border:1px solid rgba(224,164,78,.3);display:flex;align-items:center;justify-content:center;color:#e7b869;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h4"/></svg></span><span style="font-size:10px;font-weight:700;color:#241a0a;background:#e0a44e;border-radius:8px;padding:3px 7px;">CHỜ</span></div>
+            <div style="font-size:26px;font-weight:800;color:#e7b869;margin-top:12px;letter-spacing:-.5px;">5</div>
+            <div style="font-size:11.5px;color:#c5c0b6;margin-top:1px;">Hóa đơn chờ duyệt</div>
+            <div style="font-size:10.5px;color:#8c8679;margin-top:6px;">≈ 48.200.000₫</div>
+          </div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;"><span style="width:38px;height:38px;border-radius:11px;background:rgba(212,178,106,.12);border:1px solid rgba(212,178,106,.22);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span style="font-size:11px;color:#7fd3a2;font-weight:600;">+18%</span></div>
+            <div style="font-size:26px;font-weight:800;color:#e3c27e;margin-top:12px;letter-spacing:-.5px;">312<span style="font-size:15px;font-weight:700;">M₫</span></div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Doanh thu tháng 6</div>
+            <div style="font-size:10.5px;color:#57534b;margin-top:6px;">Hoa hồng 41.8M₫</div>
+          </div>
+          <div style="background:rgba(224,114,158,.06);border:1px solid rgba(224,114,158,.24);border-radius:16px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;"><span style="width:38px;height:38px;border-radius:11px;background:rgba(224,114,158,.12);border:1px solid rgba(224,114,158,.3);display:flex;align-items:center;justify-content:center;color:#e79ab8;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 10.5-2.3M17 8v6M20 11h-6"/></svg></span><span style="width:7px;height:7px;border-radius:50%;background:#e0729e;box-shadow:0 0 7px #e0729e;"></span></div>
+            <div style="font-size:26px;font-weight:800;color:#f3f0ea;margin-top:12px;letter-spacing:-.5px;">3</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Đối tác Join Us</div>
+            <div style="font-size:10.5px;color:#57534b;margin-top:6px;">Chờ duyệt hợp tác</div>
+          </div>
+        </div>
+
+        <!-- two columns -->
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin-top:20px;align-items:start;">
+
+          <!-- LEFT -->
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <!-- cần xử lý -->
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Cần xử lý ngay</span>
+                <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div onClick="{{ go_bills }}" style="background:rgba(224,164,78,.07);border:1px solid rgba(224,164,78,.24);border-radius:14px;padding:14px;cursor:pointer;" style-hover="background:rgba(224,164,78,.12);">
+                  <div style="font-size:24px;font-weight:800;color:#e7b869;">5</div>
+                  <div style="font-size:12px;color:#c5c0b6;font-weight:500;margin-top:2px;">Hóa đơn chờ duyệt</div>
+                  <div style="font-size:10.5px;color:#8c8679;margin-top:8px;display:flex;align-items:center;gap:5px;">Duyệt ngay <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div onClick="{{ go_casts }}" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px;cursor:pointer;" style-hover="background:rgba(255,255,255,.05);">
+                  <div style="font-size:24px;font-weight:800;color:#f3f0ea;">4</div>
+                  <div style="font-size:12px;color:#c5c0b6;font-weight:500;margin-top:2px;">Cast chờ kiểm duyệt</div>
+                  <div style="font-size:10.5px;color:#8c8679;margin-top:8px;display:flex;align-items:center;gap:5px;">Kiểm duyệt <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div onClick="{{ go_partners }}" style="background:rgba(224,114,158,.06);border:1px solid rgba(224,114,158,.22);border-radius:14px;padding:14px;cursor:pointer;" style-hover="background:rgba(224,114,158,.1);">
+                  <div style="font-size:24px;font-weight:800;color:#f3f0ea;">3</div>
+                  <div style="font-size:12px;color:#c5c0b6;font-weight:500;margin-top:2px;">Đối tác Join Us</div>
+                  <div style="font-size:10.5px;color:#8c8679;margin-top:8px;display:flex;align-items:center;gap:5px;">Xem yêu cầu <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- recent bookings -->
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Booking gần đây</span>
+                <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+                <span onClick="{{ go_booking }}" style="font-size:11.5px;color:#9b958a;cursor:pointer;">Xem tất cả</span>
+              </div>
+              <div style="display:flex;flex-direction:column;">
+                <div style="display:grid;grid-template-columns:1.4fr 1.4fr .7fr 1fr;gap:10px;font-size:10px;font-weight:700;letter-spacing:1px;color:#57534b;text-transform:uppercase;padding:0 4px 10px;border-bottom:1px solid rgba(255,255,255,.06);">
+                  <span>Khách</span><span>Quán · Cast</span><span>Giờ</span><span style="text-align:right;">Trạng thái</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1.4fr 1.4fr .7fr 1fr;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;">
+                  <div><div style="color:#f3f0ea;font-weight:500;">Tanaka Hiro</div><div style="font-size:10.5px;color:#57534b;">4 khách · Telegram</div></div>
+                  <div style="color:#c5c0b6;">Club Lumière<div style="font-size:10.5px;color:#8c8679;">Cast: Yuki</div></div>
+                  <div style="color:#8c8679;font-size:12px;">21:30</div>
+                  <div style="text-align:right;"><span style="font-size:11px;font-weight:600;color:#8fb6e4;background:rgba(111,159,216,.12);border:1px solid rgba(111,159,216,.28);padding:4px 10px;border-radius:20px;">Mới</span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1.4fr 1.4fr .7fr 1fr;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;">
+                  <div><div style="color:#f3f0ea;font-weight:500;">Suzuki Ken</div><div style="font-size:10.5px;color:#57534b;">2 khách · LINE</div></div>
+                  <div style="color:#c5c0b6;">Sakura Lounge<div style="font-size:10.5px;color:#8c8679;">Cast: Mai</div></div>
+                  <div style="color:#8c8679;font-size:12px;">20:00</div>
+                  <div style="text-align:right;"><span style="font-size:11px;font-weight:600;color:#7fd3a2;background:rgba(95,191,134,.1);border:1px solid rgba(95,191,134,.28);padding:4px 10px;border-radius:20px;">Hoàn tất</span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1.4fr 1.4fr .7fr 1fr;gap:10px;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;">
+                  <div><div style="color:#f3f0ea;font-weight:500;">Yamada Rei</div><div style="font-size:10.5px;color:#57534b;">6 khách · Telegram</div></div>
+                  <div style="color:#c5c0b6;">KTV Hoàng Gia<div style="font-size:10.5px;color:#8c8679;">Không cast</div></div>
+                  <div style="color:#8c8679;font-size:12px;">22:15</div>
+                  <div style="text-align:right;"><span style="font-size:11px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.1);border:1px solid rgba(224,105,122,.28);padding:4px 10px;border-radius:20px;">Đã hủy</span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1.4fr 1.4fr .7fr 1fr;gap:10px;align-items:center;padding:12px 4px;font-size:13px;">
+                  <div><div style="color:#f3f0ea;font-weight:500;">Kobayashi Aya</div><div style="font-size:10.5px;color:#57534b;">3 khách · Telegram</div></div>
+                  <div style="color:#c5c0b6;">Club Lumière<div style="font-size:10.5px;color:#8c8679;">Cast: Rin</div></div>
+                  <div style="color:#8c8679;font-size:12px;">23:00</div>
+                  <div style="text-align:right;"><span style="font-size:11px;font-weight:600;color:#8fb6e4;background:rgba(111,159,216,.12);border:1px solid rgba(111,159,216,.28);padding:4px 10px;border-radius:20px;">Mới</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT -->
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <!-- telegram feed -->
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;animation:vpulse 1.8s infinite;"></span>
+                <span style="font-size:14px;font-weight:600;color:#f3f0ea;">Cảnh báo &amp; Telegram</span>
+                <span style="flex:1;"></span>
+                <span style="font-size:10px;color:#57534b;">Trực tiếp</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                <div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:rgba(111,159,216,.12);display:flex;align-items:center;justify-content:center;color:#8fb6e4;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg></span>
+                  <div style="flex:1;"><div style="font-size:12.5px;color:#e6e2da;line-height:1.4;">Booking mới <b style="color:#fff;">#BK-2041</b> — Club Lumière · 4 khách</div><div style="font-size:10.5px;color:#57534b;margin-top:3px;">2 phút trước · gửi nhóm Telegram</div></div>
+                </div>
+                <div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:rgba(224,164,78,.12);display:flex;align-items:center;justify-content:center;color:#e7b869;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/></svg></span>
+                  <div style="flex:1;"><div style="font-size:12.5px;color:#e6e2da;line-height:1.4;">Hóa đơn mới <b style="color:#fff;">#BILL-8842</b> chờ duyệt — 12.500.000₫</div><div style="font-size:10.5px;color:#57534b;margin-top:3px;">14 phút trước · Sakura Lounge</div></div>
+                </div>
+                <div style="display:flex;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:rgba(224,114,158,.12);display:flex;align-items:center;justify-content:center;color:#e79ab8;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 10.5-2.3M17 8v6M20 11h-6"/></svg></span>
+                  <div style="flex:1;"><div style="font-size:12.5px;color:#e6e2da;line-height:1.4;">Yêu cầu hợp tác mới — <b style="color:#fff;">Lotus Club</b> (HCM)</div><div style="font-size:10.5px;color:#57534b;margin-top:3px;">31 phút trước · Join Us form</div></div>
+                </div>
+                <div style="display:flex;gap:11px;padding:10px 0;">
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:rgba(95,191,134,.12);display:flex;align-items:center;justify-content:center;color:#7fd3a2;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg></span>
+                  <div style="flex:1;"><div style="font-size:12.5px;color:#e6e2da;line-height:1.4;">Coupon <b style="color:#fff;">−30%</b> đã dùng tại Club Lumière</div><div style="font-size:10.5px;color:#57534b;margin-top:3px;">48 phút trước · nhân viên quét QR</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- revenue chart -->
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:18px 20px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:14px;font-weight:600;color:#f3f0ea;">Doanh thu 7 ngày</span>
+                <span style="font-size:11px;color:#8c8679;">Gộp · triệu ₫</span>
+              </div>
+              <div style="font-size:22px;font-weight:800;color:#e3c27e;margin:6px 0 16px;">312<span style="font-size:13px;font-weight:600;color:#8c8679;"> M₫ · tháng 6</span></div>
+              <div style="display:flex;align-items:flex-end;gap:10px;height:120px;">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:52%;background:linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12));border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#57534b;">T2</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:68%;background:linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12));border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#57534b;">T3</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:44%;background:linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12));border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#57534b;">T4</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:80%;background:linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12));border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#57534b;">T5</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:64%;background:linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12));border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#57534b;">T6</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:100%;background:linear-gradient(180deg,#f4e3b4,#d4b26a);border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#e3c27e;font-weight:600;">T7</span></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;"><span style="width:100%;height:88%;background:linear-gradient(180deg,#f4e3b4,#d4b26a);border-radius:6px 6px 0 0;"></span><span style="font-size:9.5px;color:#e3c27e;font-weight:600;">CN</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ BOOKING ============ -->
+      <sc-if value="{{ v_booking }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Booking" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ bkAll }}" style="{{ bkTabAll }}">Tất cả <b>{{ bkCountAll }}</b></span>
+            <span onClick="{{ bkNew }}" style="{{ bkTabNew }}">Mới <b>{{ bkCountNew }}</b></span>
+            <span onClick="{{ bkDone }}" style="{{ bkTabDone }}">Hoàn tất <b>{{ bkCountDone }}</b></span>
+            <span onClick="{{ bkCancel }}" style="{{ bkTabCancel }}">Đã hủy <b>{{ bkCountCancel }}</b></span>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;width:220px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <span style="font-size:12.5px;color:#6f6b62;">Tìm khách / mã booking…</span>
+          </div>
+          <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 13px;cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Bộ lọc
+          </span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:96px 1.5fr 1.6fr 78px 118px 92px 108px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Mã</span><span>Khách</span><span>Quán · Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style="text-align:right;">Trạng thái</span>
+          </div>
+          <sc-for list="{{ bkRows }}" as="b" hint-placeholder-count="7">
+            <div onClick="{{ b.open }}" style="display:grid;grid-template-columns:96px 1.5fr 1.6fr 78px 118px 92px 108px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <span style="font-family:'Inter';font-size:12px;font-weight:600;color:#d4b26a;">{{ b.id }}</span>
+              <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.name }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;">{{ b.phone }}</div></div>
+              <div style="min-width:0;"><div style="color:#c5c0b6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.venue }}</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">{{ b.castLabel }}</div></div>
+              <span style="color:#c5c0b6;">{{ b.ppl }} người</span>
+              <span style="color:#8c8679;font-size:12px;">{{ b.time }}</span>
+              <span style="font-size:11.5px;color:#9b958a;">{{ b.src }}</span>
+              <span style="text-align:right;"><span style="{{ b.stStyle }}">{{ b.stLabel }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- booking drawer -->
+      <sc-if value="{{ bkOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:60;">
+        <div onClick="{{ bkClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+        <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:428px;max-width:92vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+          <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Booking · {{ bk.id }}</div>
+              <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:5px;">{{ bk.name }}</div>
+              <span style="{{ bk.stStyle }}margin-top:9px;">{{ bk.stLabel }}</span>
+            </div>
+            <span onClick="{{ bkClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div style="padding:22px 24px;display:flex;flex-direction:column;gap:2px;">
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Số điện thoại</span><span style="font-size:13px;color:#e3c27e;font-weight:600;display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1"/></svg>{{ bk.phone }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Quán</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.venue }} · {{ bk.area }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Cast chỉ định</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.castLabel }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Số người</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.ppl }} khách</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Khung giờ</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.time }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Nguồn gửi</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.src }}</span></div>
+            <div style="padding:14px 0 4px;">
+              <div style="font-size:12.5px;color:#8c8679;margin-bottom:7px;">Ghi chú</div>
+              <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:12px 14px;min-height:44px;">{{ bk.noteText }}</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;padding:12px 14px;background:rgba(111,159,216,.06);border:1px solid rgba(111,159,216,.2);border-radius:11px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
+              <span style="font-size:11.5px;color:#a9c4e6;line-height:1.55;">Khách đổi giờ/số người → hủy &amp; đặt lại. Chỉ được hủy trước giờ hẹn tối thiểu 1 giờ (BOO-08).</span>
+            </div>
+          </div>
+          <div style="padding:16px 24px 26px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:10px;">
+            <sc-if value="{{ bk.isNew }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:10px;">
+                <span onClick="{{ bkMarkDone }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Đánh dấu hoàn tất</span>
+                <span onClick="{{ bkCancelBk }}" style="flex:none;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.32);padding:13px 18px;border-radius:11px;cursor:pointer;">Hủy</span>
+              </div>
+              <span onClick="{{ bkNotify }}" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);padding:12px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Gửi Telegram báo quán</span>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ BILLS ============ -->
+      <sc-if value="{{ v_bills }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Bills" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ blPending }}" style="{{ blTabPending }}">Chờ duyệt <b>{{ blCountP }}</b></span>
+            <span onClick="{{ blApproved }}" style="{{ blTabApproved }}">Đã duyệt <b>{{ blCountA }}</b></span>
+            <span onClick="{{ blRejected }}" style="{{ blTabRejected }}">Từ chối <b>{{ blCountR }}</b></span>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.22);border-radius:10px;padding:8px 14px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span style="font-size:12px;color:#c5c0b6;">Chờ duyệt: <b style="color:#e3c27e;">≈ 48.200.000₫</b></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:9px;margin-bottom:16px;padding:12px 15px;background:rgba(111,159,216,.05);border:1px solid rgba(111,159,216,.18);border-radius:12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
+          <span style="font-size:11.5px;color:#a9c4e6;line-height:1.5;">Duyệt thủ công bằng mắt. Hoa hồng = <b style="color:#cfe0f4;">Bill gốc × (% hoa hồng − % giảm giá)</b> · Điểm = <b style="color:#cfe0f4;">1.000.000₫ = 10 điểm</b> trên bill gốc. Bill mờ/sai → từ chối kèm lý do.</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:110px 1.4fr 1fr 108px 96px 74px 116px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Mã bill</span><span>Quán</span><span>Số tiền (gộp)</span><span>Ngày DV</span><span>Người gửi</span><span>Ảnh</span><span style="text-align:right;">Trạng thái</span>
+          </div>
+          <sc-for list="{{ blRows }}" as="b" hint-placeholder-count="6">
+            <div onClick="{{ b.open }}" style="display:grid;grid-template-columns:110px 1.4fr 1fr 108px 96px 74px 116px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <span style="font-size:12px;font-weight:600;color:#d4b26a;">{{ b.id }}</span>
+              <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.venue }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;">{{ b.area }}</div></div>
+              <div style="color:#f3f0ea;font-weight:600;">{{ b.grossFmt }}</div>
+              <span style="color:#8c8679;font-size:12px;">{{ b.date }}</span>
+              <span style="font-size:11.5px;color:#9b958a;">{{ b.sender }}</span>
+              <span><span style="{{ b.imgStyle }}">{{ b.imgLabel }}</span></span>
+              <span style="text-align:right;"><span style="{{ b.stStyle }}">{{ b.stLabel }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- bill drawer -->
+      <sc-if value="{{ blOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:60;">
+        <div onClick="{{ blClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+        <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:452px;max-width:94vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+          <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Hóa đơn · {{ bl.id }}</div>
+              <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:5px;">{{ bl.venue }}</div>
+              <span style="{{ bl.stStyle }}margin-top:9px;">{{ bl.stLabel }}</span>
+            </div>
+            <span onClick="{{ blClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div style="padding:20px 24px;">
+            <div style="height:150px;border-radius:13px;background:linear-gradient(150deg,#1c1a22,#141319);border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#57534b;">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l4.5-4.5 3 3L16 10l4 5"/></svg>
+              <span style="font-size:11.5px;">{{ bl.imgNote }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-top:8px;">
+              <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Ngày dùng dịch vụ</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bl.date }}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Người gửi</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bl.sender }}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:11px 0;"><span style="font-size:12.5px;color:#8c8679;">Hạng khách</span><span style="{{ bl.tierStyle }}">{{ bl.tier }}</span></div>
+            </div>
+
+            <div style="margin-top:14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:16px 16px 6px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:6px;">Đối soát &amp; ghi nhận</div>
+              <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">Bill gốc</span><span style="font-size:13px;color:#f3f0ea;font-weight:600;">{{ bl.grossFmt }}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">Giảm giá ({{ bl.disc }}%)</span><span style="font-size:13px;color:#e88b99;font-weight:500;">− {{ bl.discFmt }}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">% hoa hồng thỏa thuận</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bl.comrate }}%</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 9px;"><span style="font-size:12.5px;color:#e3c27e;font-weight:600;">Hoa hồng Admin</span><span style="font-size:17px;color:#e3c27e;font-weight:800;">{{ bl.comFmt }}</span></div>
+              <div style="font-size:10.5px;color:#8c8679;line-height:1.5;padding-bottom:10px;">= {{ bl.grossFmt }} × ({{ bl.comrate }}% − {{ bl.disc }}%)</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid rgba(212,178,106,.12);"><span style="font-size:12.5px;color:#c5c0b6;">Điểm tích lũy</span><span style="font-size:14px;color:#f0dda8;font-weight:700;">+{{ bl.points }} điểm</span></div>
+            </div>
+
+            <sc-if value="{{ bl.isRejected }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px;padding:13px 15px;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.28);border-radius:12px;">
+                <div style="font-size:11px;font-weight:700;color:#e88b99;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Lý do từ chối</div>
+                <div style="font-size:12.5px;color:#e6bcc3;line-height:1.5;">{{ bl.reason }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ bl.isApproved }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px;padding:13px 15px;background:rgba(95,191,134,.08);border:1px solid rgba(95,191,134,.28);border-radius:12px;display:flex;gap:9px;align-items:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <span style="font-size:12px;color:#a7ddc0;line-height:1.5;">Đã ghi nhận doanh thu, hoa hồng &amp; điểm · đã gửi Telegram.</span>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ bl.isPending }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px 24px 26px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+            <span onClick="{{ blApprove }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:14px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Duyệt &amp; ghi nhận</span>
+            <span onClick="{{ blOpenReject }}" style="flex:none;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.32);padding:14px 20px;border-radius:11px;cursor:pointer;">Từ chối</span>
+          </div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- reject reason modal -->
+      <sc-if value="{{ rejectOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:24px;">
+        <div onClick="{{ blCloseReject }}" style="position:absolute;inset:0;background:rgba(6,6,9,.68);backdrop-filter:blur(3px);"></div>
+        <div style="position:relative;width:440px;max-width:94vw;background:#15141a;border:1px solid rgba(224,105,122,.28);border-radius:18px;padding:24px;box-shadow:0 40px 80px -30px rgba(0,0,0,.85);">
+          <div style="font-size:17px;font-weight:700;color:#f3f0ea;">Từ chối hóa đơn {{ rejectId }}</div>
+          <div style="font-size:12.5px;color:#8c8679;margin-top:5px;line-height:1.5;">Chọn hoặc nhập lý do — hệ thống lưu lý do &amp; yêu cầu người gửi gửi lại (qua Telegram).</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
+            <span onClick="{{ blReason1 }}" style="{{ rr1 }}">Ảnh mờ / không đọc được</span>
+            <span onClick="{{ blReason2 }}" style="{{ rr2 }}">Sai quán</span>
+            <span onClick="{{ blReason3 }}" style="{{ rr3 }}">Gửi nhầm hóa đơn</span>
+            <span onClick="{{ blReason4 }}" style="{{ rr4 }}">Số tiền không khớp</span>
+          </div>
+          <div style="margin-top:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:13px 14px;min-height:64px;font-size:12.5px;color:#c5c0b6;line-height:1.55;">{{ rejectReasonText }}</div>
+          <div style="display:flex;gap:10px;margin-top:18px;">
+            <span onClick="{{ blCloseReject }}" style="flex:none;font-size:13px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:12px 22px;border-radius:11px;cursor:pointer;">Hủy</span>
+            <span onClick="{{ blConfirmReject }}" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#d76e7e,#c04c5e);padding:12px;border-radius:11px;cursor:pointer;">Xác nhận từ chối</span>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ VENUES ============ -->
+      <sc-if value="{{ v_venues }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Venues" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;width:250px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <span style="font-size:12.5px;color:#6f6b62;">Tìm theo tên quán…</span>
+          </div>
+          <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 13px;cursor:pointer;">Tất cả loại hình<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <div style="flex:1;"></div>
+          <span onClick="{{ vAddNew }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 17px;border-radius:10px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm quán</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1.8fr 1fr 1fr 88px 130px 40px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Quán</span><span>Loại hình</span><span>Khu vực</span><span>Cast</span><span>Trạng thái</span><span></span>
+          </div>
+          <sc-for list="{{ vnRows }}" as="v" hint-placeholder-count="7">
+            <div onClick="{{ v.open }}" style="display:grid;grid-template-columns:1.8fr 1fr 1fr 88px 130px 40px;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+                <span style="width:38px;height:38px;flex:none;border-radius:10px;background:{{ v.logoBg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#241a0a;">{{ v.logo }}</span>
+                <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.name }}</div><div style="font-size:11px;color:#57534b;margin-top:1px;">{{ v.area }}</div></div>
+              </div>
+              <span style="color:#c5c0b6;">{{ v.type }}</span>
+              <span><span style="{{ v.cityStyle }}">{{ v.city }}</span></span>
+              <span style="color:#c5c0b6;">{{ v.casts }}</span>
+              <span><span style="{{ v.stStyle }}">{{ v.stLabel }}</span></span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- venue edit drawer -->
+      <sc-if value="{{ vnOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:60;">
+        <div onClick="{{ vnClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+        <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:576px;max-width:96vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+          <div style="position:sticky;top:0;z-index:2;padding:19px 26px;background:#131218;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">{{ vf.mode }}</div>
+              <div style="font-size:19px;font-weight:700;color:#f3f0ea;margin-top:3px;">{{ vf.title }}</div>
+            </div>
+            <span onClick="{{ vnClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div style="padding:22px 26px 30px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:12px;">Thông tin cơ bản</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div><div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Tên quán</div><div style="{{ vf.box }}">{{ vf.name }}</div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div><div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Loại hình</div><div style="{{ vf.box }}display:flex;align-items:center;justify-content:space-between;">{{ vf.type }}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+                <div><div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Khu vực</div><div style="{{ vf.box }}display:flex;align-items:center;justify-content:space-between;">{{ vf.city }}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+              </div>
+              <div><div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Địa chỉ</div><div style="{{ vf.box }}">{{ vf.addr }}</div></div>
+              <div><div style="font-size:11.5px;color:#8c8679;margin-bottom:6px;">Link Google Maps chỉ đường</div><div style="{{ vf.box }}color:#8fb6e4;display:flex;align-items:center;gap:8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>{{ vf.maps }}</div></div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Giờ mở cửa theo ngày</div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <sc-for list="{{ vf.hoursRows }}" as="hd" hint-placeholder-count="7">
+                <div style="display:flex;align-items:center;gap:10px;background:{{ hd.bg }};border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 13px;">
+                  <span style="width:64px;flex:none;font-size:12px;font-weight:600;color:{{ hd.dayColor }};">{{ hd.day }}</span>
+                  <input value="{{ hd.val }}" onInput="{{ hd.set }}" placeholder="VD: 19:00 – 02:00" style="{{ hd.inputStyle }}">
+                  <span onClick="{{ hd.toggle }}" style="{{ hd.offBtn }}">{{ hd.offLabel }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:10.5px;color:#8c8679;line-height:1.5;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+              <span>Giờ hiển thị theo từng ngày trên trang người dùng — sửa trực tiếp từng dòng, bấm nút để chuyển <b style="color:#7fd3a2;">Mở</b> / <b style="color:#e08a7e;">Nghỉ</b>.</span>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Album ảnh</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+              <div style="aspect-ratio:1;border-radius:11px;background:{{ vf.img1 }};"></div>
+              <div style="aspect-ratio:1;border-radius:11px;background:{{ vf.img2 }};"></div>
+              <div style="aspect-ratio:1;border-radius:11px;background:{{ vf.img3 }};"></div>
+              <div style="aspect-ratio:1;border-radius:11px;border:1.5px dashed rgba(212,178,106,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#8c8679;cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span style="font-size:9.5px;">Tải lên</span></div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Video quán</div>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ vf.videos }}" as="vd" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:9px 12px 9px 9px;">
+                  <div style="width:74px;height:44px;flex:none;border-radius:8px;background:{{ vd.thumb }};display:flex;align-items:center;justify-content:center;">
+                    <span style="width:24px;height:24px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg></span>
+                  </div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:12.5px;font-weight:600;color:#e8e4db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ vd.title }}</div>
+                    <div style="font-size:10.5px;color:#8c8679;margin-top:2px;">{{ vd.meta }}</div>
+                  </div>
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" title="Xóa video"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></span>
+                </div>
+              </sc-for>
+              <div style="display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px dashed rgba(212,178,106,.35);border-radius:12px;padding:12px;color:#8c8679;cursor:pointer;font-size:11.5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm video · link YouTube hoặc tải lên</div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Thực đơn & mức giá</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:11px;">
+              <sc-for list="{{ vf.menuTabs }}" as="mt" hint-placeholder-count="4">
+                <span onClick="{{ mt.go }}" style="{{ mt.style }}display:flex;align-items:center;gap:7px;">{{ mt.label }}<span onClick="{{ mt.del }}" title="Xóa nhóm" style="{{ mt.delStyle }}"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></span>
+              </sc-for>
+              <span onClick="{{ vf.addCat }}" style="font-size:11.5px;font-weight:600;color:#8c8679;border:1.5px dashed rgba(212,178,106,.35);padding:6px 12px;border-radius:9px;cursor:pointer;" style-hover="color:#caa765;">+ Nhóm</span>
+              <span style="flex:1;"></span>
+              <span onClick="{{ vf.manageToggle }}" style="{{ vf.manageBtn }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>{{ vf.manageLabel }}</span>
+            </div>
+            <sc-if value="{{ vf.menuManage }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px;background:rgba(12,12,15,.4);border:1px solid rgba(212,178,106,.24);border-radius:11px;padding:9px 13px;">
+                <span style="font-size:11px;color:#8c8679;white-space:nowrap;">Đổi tên nhóm đang chọn:</span>
+                <input value="{{ vf.curCatLabel }}" onInput="{{ vf.renameCat }}" style="flex:1;background:none;border:none;outline:none;color:#f0dda8;font-size:13px;font-weight:600;font-family:inherit;">
+                <span style="font-size:10px;color:#57534b;white-space:nowrap;">Tự lưu khi gõ · bấm ✕ trên tab để xóa nhóm</span>
+              </div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ vf.menuItems }}" as="mi" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:9px 12px 9px 9px;">
+                  <div style="width:46px;height:46px;flex:none;border-radius:9px;background:{{ mi.thumb }};"></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:7px;">
+                      <span style="font-size:12.5px;font-weight:600;color:#e8e4db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ mi.name }}</span>
+                      <sc-if value="{{ mi.hot }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:2.5px 7px;border-radius:5px;">BÁN CHẠY</span></sc-if>
+                    </div>
+                    <div style="font-size:10.5px;color:#8c8679;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ mi.desc }}</div>
+                  </div>
+                  <div style="display:flex;flex:none;gap:3px;background:rgba(12,12,15,.4);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:3px;">
+                    <span onClick="{{ mi.t2 }}" style="{{ mi.t2s }}">$$</span>
+                    <span onClick="{{ mi.t3 }}" style="{{ mi.t3s }}">$$$</span>
+                    <span onClick="{{ mi.t4 }}" style="{{ mi.t4s }}">$$$$</span>
+                  </div>
+                  <span style="width:30px;height:30px;flex:none;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" title="Xóa món"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></span>
+                </div>
+              </sc-for>
+              <div style="display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px dashed rgba(212,178,106,.35);border-radius:12px;padding:12px;color:#8c8679;cursor:pointer;font-size:11.5px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:10.5px;color:#8c8679;line-height:1.5;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+              <span>Không hiển thị giá tiền trực tiếp — chỉ hiển thị mức chi phí: <b style="color:#caa765;">$$</b> rẻ · <b style="color:#caa765;">$$$</b> vừa · <b style="color:#caa765;">$$$$</b> cao.</span>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Trạng thái hiển thị</div>
+            <div style="display:flex;gap:8px;">
+              <span style="{{ vf.segActive }}">Đang hoạt động</span>
+              <span style="{{ vf.segHidden }}">Đang ẩn</span>
+              <span style="{{ vf.segDraft }}">Nháp</span>
+            </div>
+          </div>
+          <div style="position:sticky;bottom:0;padding:15px 26px;background:#131218;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+            <span onClick="{{ vnClose }}" style="flex:none;font-size:13px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:13px 22px;border-radius:11px;cursor:pointer;">Hủy</span>
+            <span onClick="{{ vnSave }}" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;">Lưu quán</span>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ CASTS ============ -->
+      <sc-if value="{{ v_casts }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Casts" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ csAll }}" style="{{ csTabAll }}">Tất cả <b>{{ csCountAll }}</b></span>
+            <span onClick="{{ csPending }}" style="{{ csTabPending }}">Chờ duyệt <b>{{ csCountP }}</b></span>
+            <span onClick="{{ csPublic }}" style="{{ csTabPublic }}">Hiển thị <b>{{ csCountPub }}</b></span>
+            <span onClick="{{ csHidden }}" style="{{ csTabHidden }}">Ẩn <b>{{ csCountH }}</b></span>
+          </div>
+          <div style="flex:1;"></div>
+          <span onClick="{{ csAddNew }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 17px;border-radius:10px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm cast</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1.5fr 1.4fr 1fr 1.3fr 128px 40px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Cast</span><span>Quán trực thuộc</span><span>Ngôn ngữ</span><span>Tags</span><span>Trạng thái</span><span></span>
+          </div>
+          <sc-for list="{{ csRows }}" as="c" hint-placeholder-count="6">
+            <div onClick="{{ c.open }}" style="display:grid;grid-template-columns:1.5fr 1.4fr 1fr 1.3fr 128px 40px;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+                <span style="width:40px;height:40px;flex:none;border-radius:50%;background:{{ c.avaBg }};border:1.5px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:14px;">{{ c.ini }}</span>
+                <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;">{{ c.nick }}</div><div style="font-size:11px;color:#57534b;margin-top:1px;">{{ c.zodiacShort }}</div></div>
+              </div>
+              <span style="color:#c5c0b6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.venue }}</span>
+              <span style="color:#9b958a;font-size:12px;">{{ c.langs }}</span>
+              <span style="color:#9b958a;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.tags }}</span>
+              <span><span style="{{ c.stStyle }}">{{ c.stLabel }}</span></span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- cast drawer -->
+      <sc-if value="{{ csOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:60;">
+        <div onClick="{{ csClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+        <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:512px;max-width:96vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+          <div style="position:sticky;top:0;z-index:2;padding:19px 26px;background:#131218;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Hồ sơ Cast</div>
+            <span onClick="{{ csClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div style="padding:22px 26px 30px;">
+            <sc-if value="{{ cd.isPending }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:9px;align-items:center;padding:12px 14px;background:rgba(224,164,78,.08);border:1px solid rgba(224,164,78,.3);border-radius:12px;margin-bottom:18px;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e7b869" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 3.5l9 16.5H3z"/><path d="M12 10v4.2M12 17.4v.01"/></svg>
+                <span style="font-size:11.5px;color:#e7c58f;line-height:1.5;">Nội dung chờ <b style="color:#f0dda8;">kiểm duyệt</b> trước khi public. Kiểm tra ảnh, thông tin &amp; lời chào.</span>
+              </div>
+            </sc-if>
+            <div style="display:flex;gap:16px;align-items:center;">
+              <span style="width:84px;height:84px;flex:none;border-radius:18px;background:{{ cd.avaBg }};border:2px solid rgba(212,178,106,.35);"></span>
+              <div>
+                <div style="font-size:22px;font-weight:700;color:#f3f0ea;">{{ cd.nick }}</div>
+                <div style="font-size:12.5px;color:#8c8679;margin-top:3px;">Trực thuộc <span style="color:#c5c0b6;">{{ cd.venue }}</span></div>
+                <div style="margin-top:8px;"><span style="{{ cd.stStyle }}">{{ cd.stLabel }}</span></div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;">
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Tháng sinh · cung HĐ</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.zodiac }}</div></div>
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Chiều cao</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.height }}</div></div>
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Số đo</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.measure }}</div></div>
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Ngôn ngữ</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.langs }}</div></div>
+            </div>
+
+            <div style="margin-top:14px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Sở thích</div><div style="font-size:13px;color:#c5c0b6;">{{ cd.hobby }}</div></div>
+            <div style="margin-top:16px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Tags / từ khóa</div><div style="display:flex;flex-wrap:wrap;gap:7px;">
+              <sc-for list="{{ cd.tagList }}" as="t" hint-placeholder-count="3"><span style="font-size:11.5px;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.25);border-radius:16px;padding:5px 12px;">{{ t }}</span></sc-for>
+            </div></div>
+
+            <div style="margin-top:18px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Lời chào (greeting)</div>
+              <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:13px 14px;">{{ cd.greeting }}</div>
+            </div>
+
+            <div style="margin-top:18px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Album ảnh &amp; video</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;">
+                <div style="aspect-ratio:3/4;border-radius:11px;background:{{ cd.a1 }};position:relative;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:rgba(12,12,15,.55);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+                <div style="aspect-ratio:3/4;border-radius:11px;background:{{ cd.a2 }};"></div>
+                <div style="aspect-ratio:3/4;border-radius:11px;background:{{ cd.a3 }};"></div>
+                <div style="aspect-ratio:3/4;border-radius:11px;border:1.5px dashed rgba(212,178,106,.35);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <div style="position:sticky;bottom:0;padding:15px 26px;background:#131218;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+            <sc-if value="{{ cd.isPending }}" hint-placeholder-val="{{ false }}">
+              <span onClick="{{ csApprove }}" style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Duyệt &amp; hiển thị</span>
+            </sc-if>
+            <sc-if value="{{ cd.notPending }}" hint-placeholder-val="{{ true }}">
+              <span onClick="{{ csSave }}" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;">Lưu hồ sơ</span>
+            </sc-if>
+            <span onClick="{{ csHide }}" style="flex:none;font-size:13px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:13px 20px;border-radius:11px;cursor:pointer;">Ẩn</span>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ COUPONS ============ -->
+      <sc-if value="{{ v_coupons }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Coupons" style="padding:22px 26px 44px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;">
+          <div style="background:rgba(111,159,216,.07);border:1px solid rgba(111,159,216,.22);border-radius:14px;padding:15px 16px;"><div style="font-size:24px;font-weight:800;color:#8fb6e4;">{{ cpCountH }}</div><div style="font-size:11.5px;color:#c5c0b6;margin-top:2px;">Đang giữ chỗ</div></div>
+          <div style="background:rgba(95,191,134,.07);border:1px solid rgba(95,191,134,.22);border-radius:14px;padding:15px 16px;"><div style="font-size:24px;font-weight:800;color:#7fd3a2;">{{ cpCountU }}</div><div style="font-size:11.5px;color:#c5c0b6;margin-top:2px;">Đã sử dụng</div></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:15px 16px;"><div style="font-size:24px;font-weight:800;color:#9b958a;">{{ cpCountE }}</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Hết hạn</div></div>
+          <div style="background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:15px 16px;"><div style="font-size:24px;font-weight:800;color:#e3c27e;">68%</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Tỷ lệ sử dụng</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ cpAll }}" style="{{ cpTabAll }}">Tất cả</span>
+            <span onClick="{{ cpHolding }}" style="{{ cpTabHolding }}">Đang giữ chỗ</span>
+            <span onClick="{{ cpUsed }}" style="{{ cpTabUsed }}">Đã sử dụng</span>
+            <span onClick="{{ cpExpired }}" style="{{ cpTabExpired }}">Hết hạn</span>
+          </div>
+          <div style="flex:1;"></div>
+          <span style="display:flex;align-items:center;gap:7px;font-size:11px;color:#8c8679;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:8px 12px;"><span style="width:6px;height:6px;border-radius:50%;background:#5fbf86;box-shadow:0 0 6px #5fbf86;animation:vpulse 2s infinite;"></span>Cron tự hủy mã hết hạn · 5 phút/lần</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:132px 1fr 1.3fr 96px 1.2fr 120px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Mã coupon</span><span>Ưu đãi</span><span>Quán áp dụng</span><span>Hạng</span><span>Hạn dùng</span><span style="text-align:right;">Trạng thái</span>
+          </div>
+          <sc-for list="{{ cpRows }}" as="c" hint-placeholder-count="7">
+            <div onClick="{{ c.open }}" style="display:grid;grid-template-columns:132px 1fr 1.3fr 96px 1.2fr 120px;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;opacity:{{ c.op }};" style-hover="background:rgba(212,178,106,.05);">
+              <span style="font-family:'Inter';font-size:12px;font-weight:600;color:#d4b26a;letter-spacing:.3px;">{{ c.code }}</span>
+              <div style="display:flex;align-items:center;gap:9px;min-width:0;"><span style="font-size:15px;font-weight:800;color:#e3c27e;">{{ c.deal }}</span><span style="font-size:11.5px;color:#c5c0b6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.dealType }}</span></div>
+              <span style="color:#c5c0b6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.venue }}</span>
+              <span><span style="{{ c.tierStyle }}">{{ c.tier }}</span></span>
+              <span style="color:#8c8679;font-size:11.5px;">{{ c.hsd }}</span>
+              <span style="text-align:right;"><span style="{{ c.stStyle }}">{{ c.stLabel }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- coupon QR drawer -->
+      <sc-if value="{{ cpOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:60;">
+        <div onClick="{{ cpClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+        <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:412px;max-width:92vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+          <div style="padding:19px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Coupon / QR</div>
+            <span onClick="{{ cpClose }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div style="padding:24px;">
+            <div style="text-align:center;">
+              <div style="font-size:34px;font-weight:800;color:#e3c27e;">{{ cq.deal }}</div>
+              <div style="font-size:13.5px;color:#f3f0ea;font-weight:600;margin-top:2px;">{{ cq.dealType }}</div>
+              <div style="font-size:12px;color:#8c8679;margin-top:3px;">{{ cq.venue }}</div>
+              <div style="margin-top:12px;"><span style="{{ cq.stStyle }}">{{ cq.stLabel }}</span></div>
+            </div>
+            <div style="margin:20px auto 0;width:184px;height:184px;border-radius:16px;background:#fff;padding:14px;box-shadow:0 14px 30px -14px rgba(0,0,0,.6);position:relative;">
+              <img src="assets/qr-sample.svg" alt="QR" style="width:100%;height:100%;object-fit:contain;{{ cq.qrDim }}">
+              <sc-if value="{{ cq.isExpired }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;background:rgba(20,19,25,.72);border-radius:16px;display:flex;align-items:center;justify-content:center;color:#e88b99;font-size:13px;font-weight:700;">MÃ ĐÃ HẾT HẠN</span></sc-if>
+              <sc-if value="{{ cq.isUsed }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;background:rgba(20,19,25,.72);border-radius:16px;display:flex;align-items:center;justify-content:center;color:#7fd3a2;font-size:13px;font-weight:700;">ĐÃ SỬ DỤNG</span></sc-if>
+            </div>
+            <div style="margin-top:16px;border:1.5px dashed rgba(212,178,106,.4);border-radius:11px;padding:12px;text-align:center;"><div style="font-size:9.5px;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Mã coupon</div><div style="font-size:18px;font-weight:700;color:#f0dda8;letter-spacing:2px;margin-top:3px;">{{ cq.code }}</div></div>
+
+            <div style="margin-top:18px;display:flex;flex-direction:column;gap:2px;">
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Hạng khách</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ cq.tier }} · giảm {{ cq.pct }}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Hạn dùng</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ cq.hsd }}</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="font-size:12.5px;color:#8c8679;">Số lần dùng</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">1 lần / coupon</span></div>
+            </div>
+            <div style="margin-top:14px;display:flex;gap:9px;padding:12px 14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>
+              <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Nhân viên quán quét QR qua tài khoản đối tác để xác nhận. Sau khi quét → chuyển "Đã sử dụng".</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ RANKING ============ -->
+      <sc-if value="{{ v_ranking }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Ranking" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ rkHN }}" style="{{ rkTabHN }}">Hà Nội</span>
+            <span onClick="{{ rkHCM }}" style="{{ rkTabHCM }}">TP. Hồ Chí Minh</span>
+            <span onClick="{{ rkAll }}" style="{{ rkTabAll }}">Tổng hợp</span>
+          </div>
+          <div style="flex:1;"></div>
+          <span style="font-size:11.5px;color:#8c8679;">Kéo · dùng mũi tên để đổi thứ hạng</span>
+        </div>
+        <div style="display:flex;gap:9px;padding:12px 15px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:12px;margin-bottom:20px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+          <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Ranking 100% thủ công — Admin tự cấu hình. Quán/cast <b style="color:#f0dda8;">trả tài trợ</b> có thể lên Top, không phụ thuộc thuật toán. Thứ tự ưu tiên: <b style="color:#f0dda8;">Cast trước → Quán</b>.</span>
+        </div>
+
+        <!-- CAST ranking -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="width:26px;height:26px;border-radius:8px;background:rgba(224,114,158,.14);border:1px solid rgba(224,114,158,.3);display:flex;align-items:center;justify-content:center;color:#e79ab8;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/></svg></span>
+          <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Xếp hạng Cast</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:3px 9px;border-radius:7px;">ƯU TIÊN</span>
+          <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+          <span onClick="{{ rkCastAddToggle }}" style="{{ rkCastAddBtn }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm cast</span>
+        </div>
+        <sc-if value="{{ rkAddOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.26);border-radius:14px;padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:9px;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:10px 14px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input value="{{ rkCastQ }}" onInput="{{ rkCastQSet }}" placeholder="Tìm cast theo nghệ danh hoặc tên quán…" style="flex:1;background:none;border:none;outline:none;color:#f3f0ea;font-size:13px;font-family:inherit;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;max-height:240px;overflow-y:auto;">
+            <sc-for list="{{ rkCastResults }}" as="cr" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 10px;">
+                <span style="width:34px;height:34px;flex:none;border-radius:50%;background:{{ cr.avaBg }};border:1.5px solid rgba(212,178,106,.3);"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;color:#f3f0ea;">{{ cr.nick }}</div>
+                  <div style="font-size:11px;color:#8c8679;margin-top:1px;">{{ cr.venue }}</div>
+                </div>
+                <span style="flex:none;font-size:10px;font-weight:600;color:#8fb6e4;background:rgba(143,182,228,.1);border:1px solid rgba(143,182,228,.25);padding:3px 8px;border-radius:7px;">{{ cr.region }}</span>
+                <span onClick="{{ cr.add }}" style="flex:none;font-size:11.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:7px 14px;border-radius:9px;cursor:pointer;">+ Thêm vào Top</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ rkNoResults }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align:center;font-size:12px;color:#8c8679;padding:14px;">Không còn cast phù hợp — tất cả đã có trong bảng xếp hạng hoặc không khớp từ khóa.</div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:30px;">
+          <sc-for list="{{ rkCast }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:14px;background:{{ r.rowBg }};border:1px solid {{ r.rowBd }};border-radius:14px;padding:11px 14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;cursor:grab;"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+              <span style="width:32px;height:32px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;{{ r.numStyle }}">{{ r.rank }}</span>
+              <span style="width:40px;height:40px;flex:none;border-radius:50%;background:{{ r.avaBg }};border:1.5px solid rgba(212,178,106,.3);"></span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:600;font-size:14.5px;color:#f3f0ea;">{{ r.nick }}</span><span style="{{ r.spBadge }}">Tài trợ</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">{{ r.venue }}</div></div>
+              <span onClick="{{ r.toggleSp }}" style="{{ r.spBtn }}">{{ r.spLabel }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span onClick="{{ r.up }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span onClick="{{ r.down }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </div>
+              <span onClick="{{ r.rm }}" title="Gỡ khỏi bảng xếp hạng" style="width:26px;height:26px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#e08a7e;border-color:rgba(224,122,110,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- VENUE ranking -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="width:26px;height:26px;border-radius:8px;background:rgba(212,178,106,.14);border:1px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;color:#d4b26a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span>
+          <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Xếp hạng Quán</span>
+          <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <sc-for list="{{ rkVenue }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:14px;background:{{ r.rowBg }};border:1px solid {{ r.rowBd }};border-radius:14px;padding:11px 14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;cursor:grab;"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+              <span style="width:32px;height:32px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;{{ r.numStyle }}">{{ r.rank }}</span>
+              <span style="width:40px;height:40px;flex:none;border-radius:10px;background:{{ r.avaBg }};display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:14px;">{{ r.logo }}</span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:600;font-size:14.5px;color:#f3f0ea;">{{ r.nick }}</span><span style="{{ r.spBadge }}">Tài trợ</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">{{ r.venue }}</div></div>
+              <span onClick="{{ r.toggleSp }}" style="{{ r.spBtn }}">{{ r.spLabel }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span onClick="{{ r.up }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span onClick="{{ r.down }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ PARTNERS ============ -->
+      <sc-if value="{{ v_partners }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Partners" style="padding:22px 26px 44px;">
+        <div style="display:grid;grid-template-columns:352px 1fr;gap:18px;align-items:start;">
+          <!-- queue -->
+          <div>
+            <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;margin-bottom:12px;">
+              <span onClick="{{ prPending }}" style="{{ prTabP }}">Chờ duyệt <b>{{ prCountP }}</b></span>
+              <span onClick="{{ prApproved }}" style="{{ prTabA }}">Đã duyệt</span>
+              <span onClick="{{ prRejected }}" style="{{ prTabR }}">Từ chối</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ prList }}" as="p" hint-placeholder-count="3">
+                <div onClick="{{ p.open }}" style="background:{{ p.bg }};border:1px solid {{ p.bd }};border-radius:14px;padding:14px;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.35);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <span style="font-size:14.5px;font-weight:600;color:#f3f0ea;">{{ p.name }}</span>
+                    <span style="{{ p.stStyle }}">{{ p.stLabel }}</span>
+                  </div>
+                  <div style="font-size:11.5px;color:#8c8679;margin-top:5px;">{{ p.type }} · {{ p.cityLabel }}</div>
+                  <div style="font-size:11px;color:#57534b;margin-top:8px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ p.date }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- detail -->
+          <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:18px;overflow:hidden;">
+            <div style="padding:22px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
+              <div>
+                <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Yêu cầu hợp tác · {{ pd.id }}</div>
+                <div style="font-size:22px;font-weight:700;color:#f3f0ea;margin-top:5px;">{{ pd.name }}</div>
+                <div style="font-size:12.5px;color:#8c8679;margin-top:4px;">{{ pd.type }} · {{ pd.cityLabel }}</div>
+              </div>
+              <span style="{{ pd.stStyleLg }}">{{ pd.stLabel }}</span>
+            </div>
+            <div style="padding:22px 24px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div><div style="font-size:11px;color:#8c8679;margin-bottom:5px;">Người liên hệ</div><div style="font-size:13.5px;color:#f3f0ea;font-weight:500;">{{ pd.contact }}</div></div>
+                <div><div style="font-size:11px;color:#8c8679;margin-bottom:5px;">Số điện thoại</div><div style="font-size:13.5px;color:#e3c27e;font-weight:600;">{{ pd.phone }}</div></div>
+                <div><div style="font-size:11px;color:#8c8679;margin-bottom:5px;">Email</div><div style="font-size:13.5px;color:#f3f0ea;font-weight:500;">{{ pd.email }}</div></div>
+                <div><div style="font-size:11px;color:#8c8679;margin-bottom:5px;">Địa chỉ</div><div style="font-size:13.5px;color:#f3f0ea;font-weight:500;">{{ pd.addr }}</div></div>
+              </div>
+              <div style="margin-top:18px;"><div style="font-size:11px;color:#8c8679;margin-bottom:7px;">Giới thiệu quán</div><div style="font-size:12.5px;color:#c5c0b6;line-height:1.65;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 15px;">{{ pd.desc }}</div></div>
+              <div style="margin-top:16px;"><div style="font-size:11px;color:#8c8679;margin-bottom:8px;">Ảnh gửi kèm</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#2a2620,#1a1814);"></div>
+                <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#241f2a,#181420);"></div>
+                <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#20262a,#141a1e);"></div>
+                <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#2a2224,#1a1416);"></div>
+              </div></div>
+              <div style="margin-top:16px;display:flex;gap:9px;padding:11px 14px;background:rgba(111,159,216,.05);border:1px solid rgba(111,159,216,.18);border-radius:11px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
+                <span style="font-size:11px;color:#a9c4e6;line-height:1.5;">MVP không yêu cầu giấy phép KD. Duyệt → Admin nhập thông tin quán (tạo hồ sơ nháp) rồi bổ sung giá/giờ/ảnh.</span>
+              </div>
+            </div>
+            <sc-if value="{{ pd.isPending }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:16px 24px 22px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+              <span onClick="{{ prApprove }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:14px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Duyệt &amp; nhập thông tin quán</span>
+              <span onClick="{{ prReject }}" style="flex:none;font-size:13px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.32);padding:14px 22px;border-radius:11px;cursor:pointer;">Từ chối</span>
+            </div>
+            </sc-if>
+            <sc-if value="{{ pd.isApproved }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:16px 24px 22px;border-top:1px solid rgba(255,255,255,.06);"><div style="display:flex;gap:9px;align-items:center;padding:13px 15px;background:rgba(95,191,134,.08);border:1px solid rgba(95,191,134,.28);border-radius:12px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12px;color:#a7ddc0;">Đã duyệt · hồ sơ quán nháp đã được tạo trong mục Quán.</span></div></div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ REPORTS ============ -->
+      <sc-if value="{{ v_reports }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Reports" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+          <span style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+            <span style="font-size:12px;color:#9b958a;padding:6px 14px;border-radius:8px;cursor:pointer;">Tuần</span>
+            <span style="font-size:12px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:6px 14px;border-radius:8px;">Tháng 6</span>
+            <span style="font-size:12px;color:#9b958a;padding:6px 14px;border-radius:8px;cursor:pointer;">Năm</span>
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;">Tất cả khu vực<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <div style="flex:1;"></div>
+          <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:5px 8px;border-radius:6px;">P2</span>
+          <span onClick="{{ rpExport }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:9px 16px;border-radius:10px;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Xuất Excel / PDF</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+          <div style="background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;">Doanh thu gộp</div><div style="font-size:23px;font-weight:800;color:#e3c27e;margin-top:9px;">312.000.000₫</div><div style="font-size:11px;color:#7fd3a2;margin-top:4px;">▲ 18% so tháng 5</div></div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Doanh thu thuần</div><div style="font-size:23px;font-weight:800;color:#f3f0ea;margin-top:9px;">288.000.000₫</div><div style="font-size:11px;color:#8c8679;margin-top:4px;">Sau giảm giá khách</div></div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Hoa hồng Admin</div><div style="font-size:23px;font-weight:800;color:#f0dda8;margin-top:9px;">41.800.000₫</div><div style="font-size:11px;color:#8c8679;margin-top:4px;">Sàn thực nhận</div></div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Tiền giảm giá</div><div style="font-size:23px;font-weight:800;color:#e88b99;margin-top:9px;">24.000.000₫</div><div style="font-size:11px;color:#8c8679;margin-top:4px;">Ưu đãi cho khách</div></div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:20px 22px;margin-top:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <span style="font-size:15px;font-weight:600;color:#f3f0ea;">Doanh thu theo ngày · tháng 6</span>
+            <div style="display:flex;gap:16px;font-size:11px;color:#8c8679;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:linear-gradient(180deg,#f4e3b4,#d4b26a);"></span>Gộp</span><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:rgba(212,178,106,.3);"></span>Hoa hồng</span></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:150px;">
+            <sc-for list="{{ rpBars }}" as="b" hint-placeholder-count="15">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%;">
+                <div style="width:100%;position:relative;display:flex;align-items:flex-end;justify-content:center;height:{{ b.h }}%;">
+                  <span style="width:100%;background:linear-gradient(180deg,{{ b.c1 }},{{ b.c2 }});border-radius:4px 4px 0 0;height:100%;"></span>
+                </div>
+                <span style="font-size:8px;color:#57534b;">{{ b.day }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;overflow:hidden;margin-top:18px;">
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 20px 0;flex-wrap:wrap;">
+            <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+              <span onClick="{{ rpByDay }}" style="{{ rpTabDay }}">Theo ngày</span>
+              <span onClick="{{ rpByVenue }}" style="{{ rpTabVenue }}">Theo quán</span>
+              <span onClick="{{ rpByCoupon }}" style="{{ rpTabCoupon }}">Theo mã giảm</span>
+            </div>
+            <div style="flex:1;"></div>
+            <span style="font-size:10.5px;color:#57534b;">Ưu tiên xem: ngày → quán → mã giảm → khác</span>
+          </div>
+          <div style="padding:16px 20px 8px;">
+            <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 70px;gap:12px;padding:0 6px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);">
+              <span>{{ rpDim }}</span><span style="text-align:right;">Gộp</span><span style="text-align:right;">Thuần</span><span style="text-align:right;">Hoa hồng</span><span style="text-align:right;">Giảm giá</span><span style="text-align:right;">Bill</span>
+            </div>
+            <sc-for list="{{ rpRows }}" as="r" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 70px;gap:12px;align-items:center;padding:12px 6px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12.5px;">
+                <span style="color:#f3f0ea;font-weight:500;">{{ r.label }}</span>
+                <span style="text-align:right;color:#c5c0b6;">{{ r.gross }}</span>
+                <span style="text-align:right;color:#c5c0b6;">{{ r.net }}</span>
+                <span style="text-align:right;color:#e3c27e;font-weight:600;">{{ r.comm }}</span>
+                <span style="text-align:right;color:#e88b99;">{{ r.disc }}</span>
+                <span style="text-align:right;color:#8c8679;">{{ r.bills }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ CONTENT ============ -->
+      <sc-if value="{{ v_content }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Content" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ cnCampaign }}" style="{{ cnTabCamp }}">Campaign &amp; Discount</span>
+            <span onClick="{{ cnBanner }}" style="{{ cnTabBan }}">Banner</span>
+            <span onClick="{{ cnBlog }}" style="{{ cnTabBlog }}">Blog</span>
+          </div>
+          <div style="flex:1;"></div>
+          <span onClick="{{ cnAdd }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 17px;border-radius:10px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>{{ cnAddLabel }}</span>
+        </div>
+
+        <!-- Campaign -->
+        <sc-if value="{{ cnIsCamp }}" hint-placeholder-val="{{ true }}">
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1.6fr 1.4fr 1.2fr 130px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style="text-align:right;">Trạng thái</span>
+          </div>
+          <sc-for list="{{ cnCamps }}" as="c" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:1.6fr 1.4fr 1.2fr 130px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;" style-hover="background:rgba(212,178,106,.04);">
+              <div style="display:flex;align-items:center;gap:11px;"><span style="font-size:15px;font-weight:800;color:#e3c27e;min-width:52px;">{{ c.deal }}</span><span style="color:#f3f0ea;font-weight:500;">{{ c.name }}</span></div>
+              <span style="color:#c5c0b6;">{{ c.scope }}</span>
+              <span style="color:#8c8679;font-size:12px;">{{ c.period }}</span>
+              <span style="text-align:right;"><span style="{{ c.stStyle }}">{{ c.stLabel }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <!-- Banner -->
+        <sc-if value="{{ cnIsBan }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+          <sc-for list="{{ cnBanners }}" as="b" hint-placeholder-count="4">
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+              <div style="height:150px;background:{{ b.img }};position:relative;">
+                <span style="position:absolute;top:12px;left:12px;font-size:9px;font-weight:700;letter-spacing:1px;color:#e3c27e;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(3px);padding:5px 10px;border-radius:8px;text-transform:uppercase;">{{ b.slot }}</span>
+                <div style="position:absolute;left:16px;bottom:14px;right:16px;"><div style="font-size:16px;font-weight:700;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);">{{ b.title }}</div></div>
+              </div>
+              <div style="padding:13px 15px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:11.5px;color:#8c8679;">Vị trí: {{ b.pos }}</span>
+                <span style="{{ b.tgl }}">{{ b.tglLabel }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <!-- Blog -->
+        <sc-if value="{{ cnIsBlog }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ cnBlogs }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;" style-hover="border-color:rgba(212,178,106,.25);">
+              <span style="width:96px;height:62px;flex:none;border-radius:10px;background:{{ p.img }};"></span>
+              <div style="flex:1;min-width:0;"><div style="font-size:14.5px;font-weight:600;color:#f3f0ea;">{{ p.title }}</div><div style="font-size:11.5px;color:#8c8679;margin-top:4px;">{{ p.cat }} · {{ p.date }}</div></div>
+              <span style="font-size:11.5px;color:#8c8679;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>{{ p.views }}</span>
+              <span style="{{ p.stStyle }}">{{ p.stLabel }}</span>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ============ MEDIA ============ -->
+      <sc-if value="{{ v_media }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Media" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ mdAll }}" style="{{ mdTabAll }}">Tất cả</span>
+            <span onClick="{{ mdImg }}" style="{{ mdTabImg }}">Ảnh</span>
+            <span onClick="{{ mdVid }}" style="{{ mdTabVid }}">Video</span>
+          </div>
+          <span style="font-size:11.5px;color:#8c8679;">1.284 file · 3.2 GB</span>
+          <div style="flex:1;"></div>
+          <span onClick="{{ mdUpload }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 17px;border-radius:10px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Tải lên</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;">
+          <div style="aspect-ratio:1;border-radius:13px;border:1.5px dashed rgba(212,178,106,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:#8c8679;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.6);background:rgba(212,178,106,.04);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg><span style="font-size:10px;">Tải lên</span></div>
+          <sc-for list="{{ mdItems }}" as="m" hint-placeholder-count="17">
+            <div style="aspect-ratio:1;border-radius:13px;background:{{ m.img }};position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.06);" style-hover="border-color:rgba(212,178,106,.35);">
+              <sc-if value="{{ m.isVid }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></sc-if>
+              <span style="position:absolute;left:8px;bottom:8px;font-size:8.5px;font-weight:600;color:#f3f0ea;background:rgba(12,12,15,.6);padding:2px 7px;border-radius:6px;">{{ m.tag }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+      <!-- ============ ROLES ============ -->
+      <sc-if value="{{ v_roles }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Admin · Roles" style="padding:22px 26px 44px;">
+        <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start;">
+          <!-- accounts -->
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Tài khoản</span>
+              <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+              <span onClick="{{ rlAdd }}" style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:7px 13px;border-radius:9px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm</span>
+            </div>
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+              <sc-for list="{{ rlAccounts }}" as="a" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
+                  <span style="width:40px;height:40px;flex:none;border-radius:11px;background:{{ a.avaBg }};display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:15px;">{{ a.ini }}</span>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#f3f0ea;">{{ a.name }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.email }}</div></div>
+                  <div style="text-align:right;"><span style="{{ a.roleStyle }}">{{ a.role }}</span><div style="font-size:10.5px;color:#8c8679;margin-top:5px;">{{ a.last }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- matrix -->
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Ma trận phân quyền</span>
+              <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+            </div>
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:1.6fr 56px 66px 66px;gap:6px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);align-items:center;">
+                <span style="font-size:10px;font-weight:700;letter-spacing:.8px;color:#57534b;text-transform:uppercase;">Chức năng</span>
+                <span style="text-align:center;font-size:10.5px;font-weight:700;color:#e3c27e;">Admin</span>
+                <span style="text-align:center;"><div style="font-size:10.5px;font-weight:700;color:#c5c0b6;">Operator</div><div style="font-size:7.5px;font-weight:700;color:#8c8679;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 4px;display:inline-block;margin-top:2px;">P1</div></span>
+                <span style="text-align:center;font-size:10.5px;font-weight:700;color:#c5c0b6;">Partner</span>
+              </div>
+              <sc-for list="{{ rlCaps }}" as="c" hint-placeholder-count="10">
+                <div style="display:grid;grid-template-columns:1.6fr 56px 66px 66px;gap:6px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">
+                  <span style="font-size:12px;color:#c5c0b6;">{{ c.name }}</span>
+                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.aCol }};">{{ c.aTxt }}</span>
+                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.oCol }};">{{ c.oTxt }}</span>
+                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.pCol }};">{{ c.pTxt }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:14px;padding:12px 14px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:12px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+              <span style="font-size:11px;color:#cbb884;line-height:1.5;">MVP (P0): <b style="color:#f0dda8;">Admin</b> toàn quyền · <b style="color:#f0dda8;">Partner</b> chỉ đăng nhập + quét QR + xác nhận check-in. Vai trò <b style="color:#f0dda8;">Operator</b> mở rộng ở P1.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <!--VIEWS-->
+
+    </div>
+  </div>
+
+  <!-- toast -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = { view:'dashboard', toast:null, region:'HN' };
+
+  go(v){ this.setState({ view:v, toast:null }); }
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  money(n){ return (n||0).toLocaleString('vi-VN')+'\u20ab'; }
+  chip(kind){ const m={success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],warn:['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],error:['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],pink:['rgba(224,114,158,.1)','rgba(224,114,158,.28)','#e79ab8'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
+  pill(kind){ return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; }
+
+  renderVals(){
+    const S=this.state, v=S.view, o={ toast:S.toast, region:S.region };
+    const ids=['dashboard','booking','bills','venues','casts','coupons','ranking','partners','reports','content','media','roles'];
+    ids.forEach(id=>{
+      o['v_'+id]=(v===id);
+      o['go_'+id]=()=>this.go(id);
+      o['on_'+id]=(v===id)?'background:rgba(212,178,106,.13);color:#f0dda8;box-shadow:inset 3px 0 0 #d4b26a;':'';
+    });
+    const meta={dashboard:['B\u1ea3ng \u0111i\u1ec1u khi\u1ec3n','OVERVIEW'],booking:['Qu\u1ea3n l\u00fd Booking','BOOKINGS'],bills:['Duy\u1ec7t h\u00f3a \u0111\u01a1n','BILL APPROVAL'],venues:['Qu\u1ea3n l\u00fd Qu\u00e1n','VENUES'],casts:['Qu\u1ea3n l\u00fd Cast','CAST PROFILES'],coupons:['Coupon & QR','COUPONS'],ranking:['\u0110i\u1ec1u khi\u1ec3n Ranking','RANKING'],partners:['Duy\u1ec7t \u0111\u1ed1i t\u00e1c','PARTNERS'],reports:['B\u00e1o c\u00e1o doanh thu','REVENUE'],content:['Campaign & Blog','CONTENT'],media:['Th\u01b0 vi\u1ec7n media','MEDIA'],roles:['Ph\u00e2n quy\u1ec1n','ACCESS CONTROL']};
+    o.pageTitle=meta[v][0]; o.pageEn=meta[v][1];
+    // ===== BOOKING =====
+    const BK=[
+      {id:'BK-2041',name:'Tanaka Hiro',phone:'090 •• 221',ppl:4,time:'21:30 · 01/07',venue:'Club Lumière',area:'Tây Hồ',cast:'Yuki',status:'new',src:'Form web',note:'Bàn gần sàn DJ. Khách VIP quen, chuẩn bị Dom Pérignon.'},
+      {id:'BK-2038',name:'Kobayashi Aya',phone:'090 •• 118',ppl:3,time:'23:00 · 01/07',venue:'Club Lumière',area:'Tây Hồ',cast:'Rin',status:'new',src:'Form web',note:'Yêu cầu bàn riêng tư.'},
+      {id:'BK-2042',name:'Fujimoto Ken',phone:'097 •• 640',ppl:2,time:'22:00 · 01/07',venue:'Bar Tokyo Night',area:'Ba Đình',cast:'—',status:'new',src:'Form web',note:''},
+      {id:'BK-2040',name:'Suzuki Ken',phone:'091 •• 776',ppl:2,time:'20:00 · 01/07',venue:'Sakura Lounge',area:'Hoàn Kiếm',cast:'Mai',status:'done',src:'Form web',note:'Đã tới quán, dùng coupon −8%.'},
+      {id:'BK-2037',name:'Sato Daiki',phone:'097 •• 552',ppl:5,time:'19:30 · 30/06',venue:'Bar Tokyo Night',area:'Ba Đình',cast:'—',status:'done',src:'Form web',note:''},
+      {id:'BK-2036',name:'Watanabe Yui',phone:'096 •• 990',ppl:2,time:'21:00 · 30/06',venue:'Akari Lounge',area:'Tây Hồ',cast:'Hana',status:'done',src:'Form web',note:''},
+      {id:'BK-2039',name:'Yamada Rei',phone:'098 •• 004',ppl:6,time:'22:15 · 01/07',venue:'KTV Hoàng Gia',area:'Kim Mã',cast:'—',status:'cancelled',src:'Form web',note:'Khách đổi lịch, hủy trước 3 giờ.'},
+      {id:'BK-2035',name:'Inoue Sho',phone:'090 •• 333',ppl:8,time:'22:45 · 30/06',venue:'Sakura Lounge',area:'Hoàn Kiếm',cast:'Mai',status:'cancelled',src:'Form web',note:'Hủy sát giờ — đã ghi nhận.'},
+    ];
+    const bmeta={new:['Mới','info'],done:['Hoàn tất','success'],cancelled:['Đã hủy','error']};
+    const bstat=(b)=>S['bk_'+b.id]||b.status;
+    const bAll=BK.map(b=>({...b,_s:bstat(b)}));
+    o.bkCountAll=bAll.length; o.bkCountNew=bAll.filter(b=>b._s==='new').length; o.bkCountDone=bAll.filter(b=>b._s==='done').length; o.bkCountCancel=bAll.filter(b=>b._s==='cancelled').length;
+    const bf=S.bookingFilter||'all';
+    const btab=(a)=>'font-size:12.5px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.bkTabAll=btab(bf==='all'); o.bkTabNew=btab(bf==='new'); o.bkTabDone=btab(bf==='done'); o.bkTabCancel=btab(bf==='cancelled');
+    o.bkAll=()=>this.setState({bookingFilter:'all'}); o.bkNew=()=>this.setState({bookingFilter:'new'}); o.bkDone=()=>this.setState({bookingFilter:'done'}); o.bkCancel=()=>this.setState({bookingFilter:'cancelled'});
+    o.bkRows=(bf==='all'?bAll:bAll.filter(b=>b._s===bf)).map(b=>{const m=bmeta[b._s];return {...b,castLabel:b.cast==='—'?'Không cast':('Cast: '+b.cast),stStyle:this.pill(m[1]),stLabel:m[0],open:()=>this.setState({bookingSel:b.id})};});
+    const selB=bAll.find(b=>b.id===S.bookingSel);
+    o.bkOpen=!!selB;
+    o.bk = selB ? {...selB, castLabel:selB.cast==='—'?'Không có':('Cast: '+selB.cast), noteText:selB.note||'Không có ghi chú.', stStyle:this.chip(bmeta[selB._s][1])+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;', stLabel:bmeta[selB._s][0], isNew:selB._s==='new'} : {};
+    o.bkClose=()=>this.setState({bookingSel:null});
+    o.bkMarkDone=()=>{ if(selB){this.setState({['bk_'+selB.id]:'done',bookingSel:null}); this.showToast('Đã đánh dấu hoàn tất '+selB.id);} };
+    o.bkCancelBk=()=>{ if(selB){this.setState({['bk_'+selB.id]:'cancelled',bookingSel:null}); this.showToast('Đã hủy booking '+selB.id);} };
+    o.bkNotify=()=>{ if(selB) this.showToast('Đã gửi Telegram báo quán '+selB.venue); };
+
+    // ===== BILLS =====
+    const BILLS=[
+      {id:'BILL-8842',venue:'Sakura Lounge',area:'Hoàn Kiếm',gross:12500000,comrate:15,disc:8,tier:'Member',date:'30/06/2026',sender:'Khách',img:true,status:'pending'},
+      {id:'BILL-8841',venue:'Club Lumière',area:'Tây Hồ',gross:8200000,comrate:18,disc:10,tier:'VIP',date:'30/06/2026',sender:'Chủ quán',img:true,status:'pending'},
+      {id:'BILL-8840',venue:'KTV Hoàng Gia',area:'Kim Mã',gross:15800000,comrate:12,disc:5,tier:'Guest',date:'29/06/2026',sender:'Khách',img:false,status:'pending'},
+      {id:'BILL-8839',venue:'Bar Tokyo Night',area:'Ba Đình',gross:6400000,comrate:15,disc:8,tier:'Member',date:'29/06/2026',sender:'Khách',img:true,status:'pending'},
+      {id:'BILL-8838',venue:'Akari Lounge',area:'Tây Hồ',gross:5300000,comrate:15,disc:8,tier:'Member',date:'28/06/2026',sender:'Chủ quán',img:true,status:'pending'},
+      {id:'BILL-8835',venue:'Club Lumière',area:'Tây Hồ',gross:22000000,comrate:18,disc:10,tier:'VIP',date:'27/06/2026',sender:'Khách',img:true,status:'approved'},
+      {id:'BILL-8830',venue:'Sakura Lounge',area:'Hoàn Kiếm',gross:4100000,comrate:15,disc:8,tier:'Member',date:'26/06/2026',sender:'Khách',img:false,status:'rejected',reason:'Ảnh hóa đơn mờ, không đọc được tổng số tiền. Vui lòng chụp lại rõ nét và gửi lại trong 10 ngày.'},
+    ];
+    const blStat=(b)=>S['bl_'+b.id]||b.status;
+    const blReason=(b)=>S['blr_'+b.id]||b.reason;
+    const tierStyle=(t)=>this.chip(t==='VIP'?'gold':t==='Member'?'info':'muted')+'font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;';
+    const bmeta2={pending:['Chờ duyệt','warn'],approved:['Đã duyệt','success'],rejected:['Từ chối','error']};
+    const blAll=BILLS.map(b=>({...b,_s:blStat(b)}));
+    o.blCountP=blAll.filter(b=>b._s==='pending').length; o.blCountA=blAll.filter(b=>b._s==='approved').length; o.blCountR=blAll.filter(b=>b._s==='rejected').length;
+    const blf=S.billFilter||'pending';
+    const btab2=(a)=>'font-size:12.5px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.blTabPending=btab2(blf==='pending'); o.blTabApproved=btab2(blf==='approved'); o.blTabRejected=btab2(blf==='rejected');
+    o.blPending=()=>this.setState({billFilter:'pending'}); o.blApproved=()=>this.setState({billFilter:'approved'}); o.blRejected=()=>this.setState({billFilter:'rejected'});
+    const com=(b)=>Math.round(b.gross*(b.comrate-b.disc)/100);
+    const pts=(b)=>Math.floor(b.gross/1000000)*10;
+    o.blRows=blAll.filter(b=>b._s===blf).map(b=>{const m=bmeta2[b._s];return {...b,grossFmt:this.money(b.gross),stStyle:this.pill(m[1]),stLabel:m[0],imgStyle:this.chip(b.img?'success':'muted')+'font-size:10px;font-weight:600;padding:3px 8px;border-radius:7px;',imgLabel:b.img?'Có':'—',open:()=>this.setState({billSel:b.id})};});
+    const selL=blAll.find(b=>b.id===S.billSel);
+    o.blOpen=!!selL;
+    o.bl = selL ? {...selL, grossFmt:this.money(selL.gross), discFmt:this.money(Math.round(selL.gross*selL.disc/100)), comFmt:this.money(com(selL)), points:pts(selL), tierStyle:tierStyle(selL.tier), stStyle:this.chip(bmeta2[selL._s][1])+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;', stLabel:bmeta2[selL._s][0], imgNote:selL.img?'Ảnh hóa đơn đính kèm':'Không có ảnh — vẫn có thể duyệt', isPending:selL._s==='pending', isApproved:selL._s==='approved', isRejected:selL._s==='rejected', reason:blReason(selL)} : {};
+    o.blClose=()=>this.setState({billSel:null});
+    o.blApprove=()=>{ if(selL){this.setState({['bl_'+selL.id]:'approved',billSel:null}); this.showToast('Đã duyệt '+selL.id+' · +'+pts(selL)+' điểm · hoa hồng '+this.money(com(selL)));} };
+    o.blOpenReject=()=>{ if(selL) this.setState({rejectFor:selL.id, rejectReason:''}); };
+    // reject modal
+    const rj=blAll.find(b=>b.id===S.rejectFor);
+    o.rejectOpen=!!rj; o.rejectId=rj?rj.id:''; 
+    const rtext=S.rejectReason||'';
+    o.rejectReasonText = rtext || 'Chưa chọn lý do…';
+    const rchip=(active)=>'font-size:11.5px;padding:7px 12px;border-radius:9px;cursor:pointer;border:1px solid '+(active?'rgba(224,105,122,.5)':'rgba(255,255,255,.1)')+';color:'+(active?'#e88b99':'#c5c0b6')+';background:'+(active?'rgba(224,105,122,.12)':'rgba(255,255,255,.04)')+';';
+    const R1='Ảnh hóa đơn mờ, không đọc được. Vui lòng chụp lại và gửi lại.', R2='Sai quán — hóa đơn không thuộc quán đã chọn.', R3='Gửi nhầm hóa đơn / trùng lặp.', R4='Số tiền trên bill không khớp đối soát với quán.';
+    o.rr1=rchip(rtext===R1); o.rr2=rchip(rtext===R2); o.rr3=rchip(rtext===R3); o.rr4=rchip(rtext===R4);
+    o.blReason1=()=>this.setState({rejectReason:R1}); o.blReason2=()=>this.setState({rejectReason:R2}); o.blReason3=()=>this.setState({rejectReason:R3}); o.blReason4=()=>this.setState({rejectReason:R4});
+    o.blCloseReject=()=>this.setState({rejectFor:null});
+    o.blConfirmReject=()=>{ if(rj){ this.setState({['bl_'+rj.id]:'rejected', ['blr_'+rj.id]:(S.rejectReason||'Không đạt yêu cầu đối soát.'), rejectFor:null, billSel:null}); this.showToast('Đã từ chối '+rj.id+' · đã lưu lý do'); } };
+
+    // ===== VENUES =====
+    const VN=[
+      {id:'v1',name:'Club Lumière',logo:'CL',logoBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',type:'Club',city:'HN',area:'Tây Hồ, Hà Nội',com:18,casts:12,status:'active',addr:'52 Tô Ngọc Vân, Tây Hồ',maps:'maps.app.goo.gl/lumiere',hours:'20:00 – 03:00',off:'Không',priceSys:'200.000₫',priceRoom:'2.500.000₫',priceDrink:'1.500.000₫',priceTax:'5% + VAT'},
+      {id:'v2',name:'Sakura Lounge',logo:'SL',logoBg:'linear-gradient(135deg,#e79ab8,#b0607f)',type:'Lounge',city:'HN',area:'Hoàn Kiếm, Hà Nội',com:15,casts:9,status:'active',addr:'18 Lý Thường Kiệt, Hoàn Kiếm',maps:'maps.app.goo.gl/sakura',hours:'18:00 – 02:00',off:'Thứ 2',priceSys:'150.000₫',priceRoom:'1.800.000₫',priceDrink:'1.200.000₫',priceTax:'5% + VAT'},
+      {id:'v3',name:'KTV Hoàng Gia',logo:'KH',logoBg:'linear-gradient(135deg,#c9a86a,#8f6b32)',type:'Karaoke',city:'HN',area:'Kim Mã, Ba Đình',com:12,casts:16,status:'active',addr:'88 Kim Mã, Ba Đình',maps:'maps.app.goo.gl/hoanggia',hours:'12:00 – 01:00',off:'Không',priceSys:'100.000₫',priceRoom:'800.000₫/giờ',priceDrink:'900.000₫',priceTax:'VAT'},
+      {id:'v4',name:'Bar Tokyo Night',logo:'TN',logoBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)',type:'Bar',city:'HN',area:'Ba Đình, Hà Nội',com:15,casts:6,status:'active',addr:'12 Đào Tấn, Ba Đình',maps:'maps.app.goo.gl/tokyonight',hours:'19:00 – 02:00',off:'Không',priceSys:'120.000₫',priceRoom:'—',priceDrink:'800.000₫',priceTax:'5%'},
+      {id:'v5',name:'Akari Lounge',logo:'AK',logoBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',type:'Girls bar',city:'HN',area:'Tây Hồ, Hà Nội',com:20,casts:14,status:'active',addr:'25 Quảng An, Tây Hồ',maps:'maps.app.goo.gl/akari',hours:'20:00 – 03:00',off:'Không',priceSys:'250.000₫',priceRoom:'2.000.000₫',priceDrink:'1.600.000₫',priceTax:'5% + VAT'},
+      {id:'v6',name:'Lotus Club Saigon',logo:'LC',logoBg:'linear-gradient(135deg,#e79ab8,#b0607f)',type:'Club',city:'HCM',area:'Quận 1, TP.HCM',com:18,casts:11,status:'draft',addr:'6 Lê Lợi, Quận 1',maps:'maps.app.goo.gl/lotus',hours:'21:00 – 04:00',off:'Không',priceSys:'200.000₫',priceRoom:'3.000.000₫',priceDrink:'1.800.000₫',priceTax:'5% + VAT'},
+      {id:'v7',name:'Zen Spa & Onsen',logo:'ZS',logoBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',type:'Massage',city:'HN',area:'Tây Hồ, Hà Nội',com:10,casts:0,status:'hidden',addr:'40 Từ Hoa, Tây Hồ',maps:'maps.app.goo.gl/zenspa',hours:'10:00 – 23:00',off:'Không',priceSys:'—',priceRoom:'—',priceDrink:'—',priceTax:'VAT'},
+    ];
+    const vmeta={active:['Đang hoạt động','success'],hidden:['Đang ẩn','muted'],draft:['Nháp','warn']};
+    o.vnRows=VN.map(v=>({...v,cityStyle:this.chip(v.city==='HN'?'info':'pink')+'font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:7px;',stStyle:this.pill(vmeta[v.status][1]),stLabel:vmeta[v.status][0],open:()=>this.setState({venueSel:v.id})}));
+    o.vAddNew=()=>this.setState({venueSel:'new'});
+    const vsel=S.venueSel;
+    o.vnOpen=!!vsel;
+    o.vnClose=()=>this.setState({venueSel:null});
+    o.vnSave=()=>{ this.setState({venueSel:null}); this.showToast(vsel==='new'?'Đã tạo quán mới (chờ hiển thị)':'Đã lưu thay đổi quán'); };
+    const boxS='background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:12px 13px;font-size:13px;color:#f3f0ea;';
+    const vph='background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 13px;font-size:13px;color:#57534b;';
+    const seg=(a)=>'font-size:12px;padding:9px 15px;border-radius:9px;cursor:pointer;font-weight:600;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);');
+    const g1='linear-gradient(135deg,#2a2620,#1a1814)',g2='linear-gradient(135deg,#241f2a,#181420)',g3='linear-gradient(135deg,#20262a,#141a1e)';
+    if(vsel==='new'){
+      o.vf={mode:'Thêm quán mới',title:'Quán mới',box:vph,name:'Nhập tên quán…',type:'Chọn loại hình',city:'Chọn khu vực',addr:'Số nhà, đường, quận…',maps:'Dán link Google Maps…',hours:'VD: 20:00 – 03:00',off:'Không',priceSys:'0₫',priceRoom:'0₫',priceDrink:'0₫',priceTax:'0%',com:'15',img1:g1,img2:g1,img3:g1,videos:[],segActive:seg(true),segHidden:seg(false),segDraft:seg(false)};
+    } else if(vsel){
+      const v=VN.find(x=>x.id===vsel)||VN[0];
+      o.vf={mode:'Chỉnh sửa quán',title:v.name,box:boxS,name:v.name,type:v.type,city:v.city==='HN'?'Hà Nội':'TP. Hồ Chí Minh',addr:v.addr,maps:v.maps,hours:v.hours,off:v.off,priceSys:v.priceSys,priceRoom:v.priceRoom,priceDrink:v.priceDrink,priceTax:v.priceTax,com:String(v.com),img1:g1,img2:g2,img3:g3,videos:[{id:'vd1',title:'Tour không gian quán',meta:'01:24 · YouTube',thumb:g2},{id:'vd2',title:'Video sự kiện cuối tuần',meta:'00:48 · Tải lên',thumb:g3}],segActive:seg(v.status==='active'),segHidden:seg(v.status==='hidden'),segDraft:seg(v.status==='draft')};
+    } else { o.vf={box:boxS}; }
+
+    // Thực đơn & mức giá (tier $$ / $$$ / $$$$, không hiện giá tiền)
+    const MENU={
+      set:[
+        {id:'m1',name:'Cast hourly rate',desc:'Giá cast theo giờ thấp nhất đang áp dụng tại quán',tier:2,hot:false,thumb:g2},
+        {id:'m2',name:'Table or room package',desc:'Admin xác nhận sau khi có yêu cầu booking',tier:4,hot:true,thumb:g3},
+      ],
+      cocktail:[
+        {id:'m3',name:'Signature cocktail',desc:'Pha chế riêng theo phong cách quán',tier:2,hot:true,thumb:g1},
+        {id:'m4',name:'Cocktail tower',desc:'Set tháp cocktail cho nhóm 4–6 khách',tier:3,hot:false,thumb:g2},
+      ],
+      champagne:[
+        {id:'m5',name:'Moët & Chandon',desc:'Chai tiêu chuẩn phục vụ tại bàn',tier:4,hot:true,thumb:g3},
+        {id:'m6',name:'Gói champagne VIP',desc:'Kèm trái cây & phục vụ riêng',tier:4,hot:false,thumb:g1},
+      ],
+      food:[
+        {id:'m7',name:'Set đồ ăn nhẹ',desc:'Snack, khô gà, hạt tổng hợp',tier:2,hot:false,thumb:g2},
+        {id:'m8',name:'Trái cây tổng hợp',desc:'Đĩa trái cây theo mùa',tier:3,hot:false,thumb:g3},
+      ],
+    };
+    // Giờ hoạt động theo từng ngày (khớp UI người dùng)
+    const DAYS=['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','CN'];
+    const editV=(vsel&&vsel!=='new')?(VN.find(x=>x.id===vsel)||VN[0]):null;
+    o.vf.hoursRows=DAYS.map((d,i)=>{
+      const kh='vh_'+(vsel||'x')+'_'+i, kd='vd_'+(vsel||'x')+'_'+i;
+      const val=S[kh]!==undefined?S[kh]:(editV?editV.hours:'');
+      const closed=!!S[kd];
+      return {day:d,val,
+        set:(e)=>this.setState({[kh]:e.target.value}),
+        toggle:()=>this.setState({[kd]:!closed}),
+        bg:closed?'rgba(255,255,255,.015)':'rgba(255,255,255,.03)',
+        dayColor:closed?'#57534b':'#c5c0b6',
+        inputStyle:'flex:1;background:none;border:none;outline:none;font-size:13px;font-weight:600;font-family:inherit;letter-spacing:.3px;'+(closed?'color:#57534b;text-decoration:line-through;':'color:#f0dda8;'),
+        offBtn:'flex:none;font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:8px;cursor:pointer;'+(closed?'color:#e08a7e;background:rgba(224,122,110,.12);border:1px solid rgba(224,122,110,.3);':'color:#7fd3a2;background:rgba(95,191,134,.1);border:1px solid rgba(95,191,134,.25);'),
+        offLabel:closed?'Nghỉ':'Mở'};
+    });
+
+    // Nhóm thực đơn có thể thêm / xóa / đổi tên
+    const defCats=[{k:'set',label:'Set bàn'},{k:'cocktail',label:'Cocktail'},{k:'champagne',label:'Champagne'},{k:'food',label:'Đồ ăn'}];
+    const cats=S.vMenuCats||defCats;
+    let mtab=S.vMenuTab||'set';
+    if(!cats.some(c=>c.k===mtab)) mtab=cats.length?cats[0].k:null;
+    const manage=!!S.vMenuManage;
+    const mtabStyle=(a)=>'font-size:11.5px;font-weight:600;padding:6px 13px;border-radius:9px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);');
+    o.vf.menuTabs=cats.map(c=>({label:c.label,style:mtabStyle(mtab===c.k),
+      go:()=>this.setState({vMenuTab:c.k}),
+      del:(e)=>{if(e&&e.stopPropagation)e.stopPropagation(); const left=cats.filter(x=>x.k!==c.k); this.setState({vMenuCats:left,vMenuTab:mtab===c.k?(left.length?left[0].k:null):mtab});},
+      delStyle:manage?'width:16px;height:16px;border-radius:50%;background:rgba(12,12,15,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;':'display:none;'}));
+    o.vf.addCat=()=>{const k='cat'+Date.now(); this.setState({vMenuCats:cats.concat([{k,label:'Nhóm mới'}]),vMenuTab:k,vMenuManage:true});};
+    o.vf.menuManage=manage;
+    o.vf.manageToggle=()=>this.setState({vMenuManage:!manage});
+    o.vf.manageLabel=manage?'Xong':'Sửa nhóm';
+    o.vf.manageBtn='display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:6px 12px;border-radius:9px;cursor:pointer;'+(manage?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);');
+    const curCat=cats.find(c=>c.k===mtab);
+    o.vf.curCatLabel=curCat?curCat.label:'';
+    o.vf.renameCat=(e)=>{const val=e.target.value; this.setState({vMenuCats:cats.map(x=>x.k===mtab?{...x,label:val}:x)});};
+    o.vf.menuItems=(vsel&&vsel!=='new'&&mtab?(MENU[mtab]||[]):[]).map(it=>{
+      const tier=S['vTier_'+it.id]||it.tier;
+      const ts=(n)=>'font-size:10px;font-weight:800;letter-spacing:.5px;padding:5px 8px;border-radius:7px;cursor:pointer;'+(tier===n?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#8c8679;');
+      return {...it,t2s:ts(2),t3s:ts(3),t4s:ts(4),
+        t2:()=>this.setState({['vTier_'+it.id]:2}),
+        t3:()=>this.setState({['vTier_'+it.id]:3}),
+        t4:()=>this.setState({['vTier_'+it.id]:4})};
+    });
+
+    // ===== CASTS =====
+    const CS=[
+      {id:'c1',nick:'Yuki',ini:'Y',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',venue:'Club Lumière',langs:'JP · EN · VN',tags:'Sang chảnh, Vui vẻ, Rượu vang',status:'pending',zodiac:'Tháng 5 · Kim Ngưu',height:'165 cm',measure:'86 – 60 – 88',hobby:'Rượu vang, nhạc Jazz, du lịch',greeting:'こんばんは！Rất vui được gặp bạn tại Lumière ✨'},
+      {id:'c2',nick:'Rin',ini:'R',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)',venue:'Club Lumière',langs:'JP · EN',tags:'Dễ thương, Năng động',status:'pending',zodiac:'Tháng 9 · Xử Nữ',height:'160 cm',measure:'84 – 58 – 86',hobby:'Karaoke, cà phê',greeting:'Hân hạnh được phục vụ quý khách 🌸'},
+      {id:'c3',nick:'Mai',ini:'M',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)',venue:'Sakura Lounge',langs:'JP · VN',tags:'Thanh lịch, Trò chuyện tốt',status:'pending',zodiac:'Tháng 3 · Song Ngư',height:'168 cm',measure:'88 – 62 – 90',hobby:'Đọc sách, trà đạo',greeting:'Chào mừng đến Sakura ~'},
+      {id:'c4',nick:'Hana',ini:'H',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)',venue:'Akari Lounge',langs:'JP · EN',tags:'Sôi nổi, Nhảy đẹp',status:'pending',zodiac:'Tháng 7 · Cự Giải',height:'162 cm',measure:'85 – 59 – 87',hobby:'Nhảy, thời trang',greeting:'Cùng quẩy nào! 💃'},
+      {id:'c5',nick:'Sora',ini:'S',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',venue:'Bar Tokyo Night',langs:'EN · VN',tags:'Cool, Bartender',status:'public',zodiac:'Tháng 11 · Bọ Cạp',height:'170 cm',measure:'—',hobby:'Pha chế, guitar',greeting:'Welcome to Tokyo Night 🍸'},
+      {id:'c6',nick:'Aoi',ini:'A',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',venue:'Sakura Lounge',langs:'JP · EN · VN',tags:'Dịu dàng, Hát hay',status:'public',zodiac:'Tháng 1 · Ma Kết',height:'166 cm',measure:'87 – 61 – 89',hobby:'Hát, piano',greeting:'Rất mong được gặp bạn 🎹'},
+      {id:'c7',nick:'Emi',ini:'E',avaBg:'linear-gradient(135deg,#b0a0c0,#6f5f8f)',venue:'Akari Lounge',langs:'JP',tags:'Trầm tĩnh',status:'hidden',zodiac:'Tháng 8 · Sư Tử',height:'164 cm',measure:'—',hobby:'Vẽ',greeting:'—'},
+    ];
+    const cmeta={pending:['Chờ duyệt','warn'],public:['Đang hiển thị','success'],hidden:['Đã ẩn','muted']};
+    const cstat=(c)=>S['cs_'+c.id]||c.status;
+    const csAll=CS.map(c=>({...c,_s:cstat(c)}));
+    o.csCountAll=csAll.length; o.csCountP=csAll.filter(c=>c._s==='pending').length; o.csCountPub=csAll.filter(c=>c._s==='public').length; o.csCountH=csAll.filter(c=>c._s==='hidden').length;
+    const cf=S.castFilter||'pending';
+    const ctab=(a)=>'font-size:12.5px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.csTabAll=ctab(cf==='all'); o.csTabPending=ctab(cf==='pending'); o.csTabPublic=ctab(cf==='public'); o.csTabHidden=ctab(cf==='hidden');
+    o.csAll=()=>this.setState({castFilter:'all'}); o.csPending=()=>this.setState({castFilter:'pending'}); o.csPublic=()=>this.setState({castFilter:'public'}); o.csHidden=()=>this.setState({castFilter:'hidden'});
+    o.csAddNew=()=>this.showToast('Mở form thêm cast mới');
+    o.csRows=(cf==='all'?csAll:csAll.filter(c=>c._s===cf)).map(c=>({...c,zodiacShort:c.zodiac.split(' · ')[1]||c.zodiac,stStyle:this.pill(cmeta[c._s][1]),stLabel:cmeta[c._s][0],open:()=>this.setState({castSel:c.id})}));
+    const csel=csAll.find(c=>c.id===S.castSel);
+    o.csOpen=!!csel;
+    o.cd = csel ? {...csel, tagList:csel.tags.split(', '), a1:csel.avaBg, a2:'linear-gradient(135deg,#241f2a,#181420)', a3:'linear-gradient(135deg,#20262a,#141a1e)', stStyle:this.chip(cmeta[csel._s][1])+'font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:20px;display:inline-flex;', stLabel:cmeta[csel._s][0], isPending:csel._s==='pending', notPending:csel._s!=='pending'} : {tagList:[]};
+    o.csClose=()=>this.setState({castSel:null});
+    o.csApprove=()=>{ if(csel){this.setState({['cs_'+csel.id]:'public',castSel:null}); this.showToast('Đã duyệt & hiển thị cast '+csel.nick);} };
+    o.csHide=()=>{ if(csel){this.setState({['cs_'+csel.id]:'hidden',castSel:null}); this.showToast('Đã ẩn cast '+csel.nick);} };
+    o.csSave=()=>{ this.setState({castSel:null}); this.showToast('Đã lưu hồ sơ cast'); };
+
+    // ===== COUPONS =====
+    const CP=[
+      {code:'LUM-3F9A2',deal:'−30%',dealType:'Happy Hour',venue:'Club Lumière · Tây Hồ',tier:'Member',pct:'8%',hsd:'HSD 07/07 · còn 6 ngày',status:'holding'},
+      {code:'AKR-7B1C4',deal:'−10%',dealType:'VIP độc quyền',venue:'Akari Lounge · Tây Hồ',tier:'VIP',pct:'10%',hsd:'HSD 08/07 · còn 7 ngày',status:'holding'},
+      {code:'SAK-1D8E5',deal:'−8%',dealType:'Ưu đãi thành viên',venue:'Sakura Lounge · Hoàn Kiếm',tier:'Member',pct:'8%',hsd:'HSD 04/07 · còn 3 ngày',status:'holding'},
+      {code:'TN-9A4F7',deal:'−5%',dealType:'Khách mới',venue:'Bar Tokyo Night · Ba Đình',tier:'Guest',pct:'5%',hsd:'HSD 02/07 · còn 24 giờ',status:'holding'},
+      {code:'KTV-2C8E1',deal:'2+1',dealType:'Combo phòng VIP',venue:'KTV Hoàng Gia · Kim Mã',tier:'VIP',pct:'10%',hsd:'Đã dùng 30/06/2026',status:'used'},
+      {code:'LUM-8H2K9',deal:'−30%',dealType:'Happy Hour',venue:'Club Lumière · Tây Hồ',tier:'Member',pct:'8%',hsd:'Đã dùng 29/06/2026',status:'used'},
+      {code:'SAK-4M1P3',deal:'−5%',dealType:'Khách mới',venue:'Sakura Lounge · Hoàn Kiếm',tier:'Guest',pct:'5%',hsd:'Hết hạn 28/06/2026',status:'expired'},
+      {code:'TN-6Q9R2',deal:'−8%',dealType:'Ưu đãi thành viên',venue:'Bar Tokyo Night · Ba Đình',tier:'Member',pct:'8%',hsd:'Hết hạn 26/06/2026',status:'expired'},
+    ];
+    const cpmeta={holding:['Đang giữ chỗ','info'],used:['Đã sử dụng','success'],expired:['Hết hạn','muted']};
+    o.cpCountH=CP.filter(c=>c.status==='holding').length; o.cpCountU=CP.filter(c=>c.status==='used').length; o.cpCountE=CP.filter(c=>c.status==='expired').length;
+    const cpf=S.couponFilter||'all';
+    const cptab=(a)=>'font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.cpTabAll=cptab(cpf==='all'); o.cpTabHolding=cptab(cpf==='holding'); o.cpTabUsed=cptab(cpf==='used'); o.cpTabExpired=cptab(cpf==='expired');
+    o.cpAll=()=>this.setState({couponFilter:'all'}); o.cpHolding=()=>this.setState({couponFilter:'holding'}); o.cpUsed=()=>this.setState({couponFilter:'used'}); o.cpExpired=()=>this.setState({couponFilter:'expired'});
+    const ctier=(t)=>this.chip(t==='VIP'?'gold':t==='Member'?'info':'muted')+'font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:7px;';
+    o.cpRows=(cpf==='all'?CP:CP.filter(c=>c.status===cpf)).map(c=>({...c,op:c.status==='expired'?'.58':'1',tierStyle:ctier(c.tier),stStyle:this.pill(cpmeta[c.status][1]),stLabel:cpmeta[c.status][0],open:()=>this.setState({couponSel:c.code})}));
+    const cqs=CP.find(c=>c.code===S.couponSel);
+    o.cpOpen=!!cqs;
+    o.cq = cqs ? {...cqs, stStyle:this.chip(cpmeta[cqs.status][1])+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;', stLabel:cpmeta[cqs.status][0], isExpired:cqs.status==='expired', isUsed:cqs.status==='used', qrDim:cqs.status!=='holding'?'filter:grayscale(1);opacity:.5;':''} : {};
+    o.cpClose=()=>this.setState({couponSel:null});
+
+    // ===== RANKING =====
+    const RCAST=[
+      {id:'rc1',nick:'Yuki',venue:'Club Lumière · Tây Hồ',region:'HN',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rc2',nick:'Mai',venue:'Sakura Lounge · Hoàn Kiếm',region:'HN',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {id:'rc3',nick:'Hana',venue:'Akari Lounge · Tây Hồ',region:'HN',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {id:'rc4',nick:'Rin',venue:'Club Lumière · Tây Hồ',region:'HN',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rc5',nick:'Aoi',venue:'Sakura Lounge · Hoàn Kiếm',region:'HN',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rc6',nick:'Nana',venue:'Lotus Club · Quận 1',region:'HCM',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rc7',nick:'Saki',venue:'Neon Saigon · Quận 1',region:'HCM',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
+      {id:'rc8',nick:'Mika',venue:'KTV Hoàng Gia · Kim Mã',region:'HN',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)',cand:true},
+      {id:'rc9',nick:'Kana',venue:'Bar Tokyo Night · Ba Đình',region:'HN',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)',cand:true},
+      {id:'rc10',nick:'Linh',venue:'Lotus Club · Quận 1',region:'HCM',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',cand:true},
+    ];
+    const RVEN=[
+      {id:'rv1',nick:'Club Lumière',venue:'Club · Tây Hồ',region:'HN',logo:'CL',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rv2',nick:'Akari Lounge',venue:'Girls bar · Tây Hồ',region:'HN',logo:'AK',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rv3',nick:'Sakura Lounge',venue:'Lounge · Hoàn Kiếm',region:'HN',logo:'SL',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rv4',nick:'KTV Hoàng Gia',venue:'Karaoke · Kim Mã',region:'HN',logo:'KH',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {id:'rv5',nick:'Bar Tokyo Night',venue:'Bar · Ba Đình',region:'HN',logo:'TN',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {id:'rv6',nick:'Lotus Club Saigon',venue:'Club · Quận 1',region:'HCM',logo:'LC',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+    ];
+    const rReg=S.rankRegion||'HN';
+    const rtab=(a)=>'font-size:12.5px;padding:7px 14px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.rkTabHN=rtab(rReg==='HN'); o.rkTabHCM=rtab(rReg==='HCM'); o.rkTabAll=rtab(rReg==='ALL');
+    o.rkHN=()=>this.setState({rankRegion:'HN'}); o.rkHCM=()=>this.setState({rankRegion:'HCM'}); o.rkAll=()=>this.setState({rankRegion:'ALL'});
+    const numStyle=(rank)=> rank===1 ? 'color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);' : rank<=3 ? 'color:#d4b26a;background:rgba(212,178,106,.12);border:1px solid rgba(212,178,106,.3);' : 'color:#9b958a;background:rgba(255,255,255,.05);';
+    const reorder=(key,ids,i,dir)=>{ const j=i+dir; if(j<0||j>=ids.length) return; const a=ids.slice(); const t=a[i]; a[i]=a[j]; a[j]=t; this.setState({[key]:a}); };
+    const buildRank=(type,base)=>{
+      const pool=base.filter(x=>rReg==='ALL'||x.region===rReg);
+      const key='ord_'+type+'_'+rReg;
+      let ids=S[key]||pool.filter(x=>!x.cand).map(x=>x.id);
+      ids=ids.filter(id=>pool.some(p=>p.id===id));
+      const ordered=ids.map(id=>pool.find(p=>p.id===id)).filter(Boolean);
+      return ordered.map((x,i)=>{
+        const sp=!!S['sp_'+x.id];
+        return {...x, rank:i+1, numStyle:numStyle(i+1),
+          rowBg: i===0?'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))':'rgba(255,255,255,.025)',
+          rowBd: i===0?'rgba(212,178,106,.34)':'rgba(255,255,255,.06)',
+          spBadge: sp?'font-size:9px;font-weight:700;letter-spacing:.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:2px 7px;border-radius:6px;':'display:none;',
+          spBtn: sp?'font-size:11px;font-weight:600;color:#e3c27e;background:rgba(212,178,106,.14);border:1px solid rgba(212,178,106,.35);padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;':'font-size:11px;font-weight:600;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;',
+          spLabel: sp?'★ Đang tài trợ':'Tài trợ',
+          toggleSp:()=>this.setState({['sp_'+x.id]:!sp}),
+          rm:()=>{ this.setState({[key]:ids.filter(q=>q!==x.id)}); this.showToast('Đã gỡ '+x.nick+' khỏi bảng xếp hạng'); },
+          up:()=>reorder(key,ids,i,-1), down:()=>reorder(key,ids,i,1)};
+      });
+    };
+    o.rkCast=buildRank('cast',RCAST);
+    o.rkVenue=buildRank('venue',RVEN);
+
+    // Tìm & thêm cast vào bảng xếp hạng
+    const cpool=RCAST.filter(x=>rReg==='ALL'||x.region===rReg);
+    const ckey='ord_cast_'+rReg;
+    let cids=S[ckey]||cpool.filter(x=>!x.cand).map(x=>x.id);
+    cids=cids.filter(id=>cpool.some(p=>p.id===id));
+    o.rkAddOpen=!!S.rkAddOpen;
+    o.rkCastAddToggle=()=>this.setState({rkAddOpen:!S.rkAddOpen});
+    o.rkCastAddBtn='display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;white-space:nowrap;'+(S.rkAddOpen?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#e3c27e;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.35);');
+    o.rkCastQ=S.rkAddQ||'';
+    o.rkCastQSet=(e)=>this.setState({rkAddQ:e.target.value});
+    const rq=(S.rkAddQ||'').toLowerCase();
+    o.rkCastResults=cpool.filter(x=>!cids.includes(x.id)).filter(x=>!rq||x.nick.toLowerCase().includes(rq)||x.venue.toLowerCase().includes(rq)).map(x=>({...x,add:()=>{ this.setState({[ckey]:cids.concat([x.id])}); this.showToast('Đã thêm '+x.nick+' vào bảng xếp hạng '+(rReg==='ALL'?'Tổng hợp':rReg)); }}));
+    o.rkNoResults=o.rkCastResults.length===0;
+
+    // ===== PARTNERS =====
+    const PR=[
+      {id:'PR-51',name:'Lotus Club Saigon',type:'Club',city:'HCM',contact:'Trần Văn Long',phone:'091 •• 882',email:'long.tran@lotusclub.vn',addr:'6 Lê Lợi, Quận 1',date:'29/06 · 2 giờ trước',desc:'Club cao cấp tại trung tâm Quận 1, sức chứa 300 khách, hệ thống âm thanh Funktion-One, sảnh VIP riêng. Mong muốn tiếp cận khách Nhật & quốc tế.',status:'pending'},
+      {id:'PR-50',name:'Neon Saigon',type:'Lounge',city:'HCM',contact:'Nguyễn Thị Hoa',phone:'090 •• 337',email:'hoa@neonsaigon.com',addr:'22 Nguyễn Huệ, Quận 1',date:'29/06 · 5 giờ trước',desc:'Lounge phong cách Nhật – Việt, cocktail signature, cast nói tiếng Nhật. Đã hoạt động 2 năm.',status:'pending'},
+      {id:'PR-49',name:'Moonlight KTV',type:'Karaoke',city:'HN',contact:'Lê Minh Đức',phone:'098 •• 121',email:'duc.le@moonlightktv.vn',addr:'75 Trần Duy Hưng, Cầu Giấy',date:'28/06 · hôm qua',desc:'Karaoke 20 phòng VIP, phòng tổng thống, dịch vụ cast chuyên nghiệp, khu Cầu Giấy.',status:'pending'},
+      {id:'PR-48',name:'Ruby Bar',type:'Bar',city:'HN',contact:'Phạm Quốc Anh',phone:'097 •• 556',email:'ruby@rubybar.vn',addr:'10 Mã Mây, Hoàn Kiếm',date:'26/06',desc:'Cocktail bar phố cổ, không gian ấm cúng, phù hợp khách nước ngoài.',status:'approved'},
+      {id:'PR-46',name:'Sunset Spa',type:'Massage',city:'HN',contact:'Đỗ Thu Hà',phone:'091 •• 908',email:'ha@sunsetspa.vn',addr:'30 Xuân Diệu, Tây Hồ',date:'24/06',desc:'Spa & massage trị liệu, không thuộc nhóm nightlife core.',status:'rejected'},
+    ];
+    const pmeta={pending:['Chờ duyệt','warn'],approved:['Đã duyệt','success'],rejected:['Từ chối','error']};
+    const pstat=(p)=>S['pr_'+p.id]||p.status;
+    const pAll=PR.map(p=>({...p,_s:pstat(p)}));
+    o.prCountP=pAll.filter(p=>p._s==='pending').length;
+    const prf=S.partnerFilter||'pending';
+    const ptab=(a)=>'font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:5px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.prTabP=ptab(prf==='pending'); o.prTabA=ptab(prf==='approved'); o.prTabR=ptab(prf==='rejected');
+    o.prPending=()=>this.setState({partnerFilter:'pending',partnerSel:null}); o.prApproved=()=>this.setState({partnerFilter:'approved',partnerSel:null}); o.prRejected=()=>this.setState({partnerFilter:'rejected',partnerSel:null});
+    const plist=pAll.filter(p=>p._s===prf);
+    const curId=S.partnerSel||(plist[0]&&plist[0].id);
+    o.prList=plist.map(p=>({...p,cityLabel:p.city==='HN'?'Hà Nội':'TP.HCM',stStyle:this.chip(pmeta[p._s][1])+'font-size:10px;font-weight:600;padding:3px 8px;border-radius:7px;',stLabel:pmeta[p._s][0],bg:p.id===curId?'linear-gradient(135deg,rgba(212,178,106,.12),rgba(255,255,255,.02))':'rgba(255,255,255,.025)',bd:p.id===curId?'rgba(212,178,106,.4)':'rgba(255,255,255,.06)',open:()=>this.setState({partnerSel:p.id})}));
+    const pdet=pAll.find(p=>p.id===curId);
+    o.pd = pdet ? {...pdet, cityLabel:pdet.city==='HN'?'Hà Nội':'TP. Hồ Chí Minh', stStyleLg:this.chip(pmeta[pdet._s][1])+'font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;display:inline-flex;', stLabel:pmeta[pdet._s][0], isPending:pdet._s==='pending', isApproved:pdet._s==='approved'} : {};
+    o.prApprove=()=>{ if(pdet){this.setState({['pr_'+pdet.id]:'approved'}); this.showToast('Đã duyệt '+pdet.name+' · tạo hồ sơ quán nháp');} };
+    o.prReject=()=>{ if(pdet){this.setState({['pr_'+pdet.id]:'rejected'}); this.showToast('Đã từ chối yêu cầu '+pdet.name);} };
+
+    // ===== REPORTS =====
+    o.rpExport=()=>this.showToast('Xuất báo cáo Excel / PDF (tính năng P2)');
+    const bars=[42,55,38,61,48,72,58,44,67,52,78,60,49,70,63,55,82,68,58,90,74,62,85,71,66,95,80,70,88,76];
+    o.rpBars=bars.map((h,i)=>({h:h, day:(i%3===0)?String(i+1):'', c1: h>80?'#f4e3b4':'rgba(212,178,106,.6)', c2: h>80?'#d4b26a':'rgba(212,178,106,.15)'}));
+    const rt=S.reportTab||'day';
+    const rptab=(a)=>'font-size:12px;padding:7px 13px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.rpTabDay=rptab(rt==='day'); o.rpTabVenue=rptab(rt==='venue'); o.rpTabCoupon=rptab(rt==='coupon');
+    o.rpByDay=()=>this.setState({reportTab:'day'}); o.rpByVenue=()=>this.setState({reportTab:'venue'}); o.rpByCoupon=()=>this.setState({reportTab:'coupon'});
+    const M=(n)=>this.money(n);
+    const byDay=[['30/06',22.0,20.2,3.1,1.8,7],['29/06',18.4,17.0,2.6,1.4,5],['28/06',14.2,13.1,2.0,1.1,4],['27/06',26.5,24.4,3.7,2.1,8],['26/06',19.8,18.2,2.8,1.6,6],['25/06',12.4,11.4,1.7,1.0,3],['24/06',9.6,8.9,1.3,0.7,3]];
+    const byVenue=[['Club Lumière',88.5,81.4,15.9,7.1,26],['Akari Lounge',62.0,56.9,12.4,5.1,19],['Sakura Lounge',54.3,50.1,8.1,4.2,17],['KTV Hoàng Gia',48.7,45.6,5.8,3.1,15],['Bar Tokyo Night',36.2,33.5,5.4,2.7,12],['Lotus Club Saigon',22.3,20.5,3.2,1.8,7]];
+    const byCoupon=[['−30% Happy Hour',68.4,47.9,9.2,20.5,22],['−10% VIP độc quyền',42.1,37.9,6.8,4.2,11],['−8% Thành viên',55.6,51.2,8.3,4.4,18],['−5% Khách mới',31.2,29.6,4.4,1.6,14],['2+1 Combo VIP',24.8,22.3,3.7,2.5,6]];
+    const src = rt==='venue'?byVenue : rt==='coupon'?byCoupon : byDay;
+    o.rpDim = rt==='venue'?'Quán' : rt==='coupon'?'Mã giảm giá' : 'Ngày';
+    o.rpRows = src.map(r=>({label:r[0], gross:M(r[1]*1000000), net:M(r[2]*1000000), comm:M(r[3]*1000000), disc:M(r[4]*1000000), bills:r[5]}));
+
+    // ===== CONTENT =====
+    const ct=S.contentTab||'campaign';
+    const cntab=(a)=>'font-size:12px;padding:7px 13px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.cnTabCamp=cntab(ct==='campaign'); o.cnTabBan=cntab(ct==='banner'); o.cnTabBlog=cntab(ct==='blog');
+    o.cnCampaign=()=>this.setState({contentTab:'campaign'}); o.cnBanner=()=>this.setState({contentTab:'banner'}); o.cnBlog=()=>this.setState({contentTab:'blog'});
+    o.cnIsCamp=ct==='campaign'; o.cnIsBan=ct==='banner'; o.cnIsBlog=ct==='blog';
+    o.cnAddLabel = ct==='banner'?'Thêm banner' : ct==='blog'?'Viết bài' : 'Thêm campaign';
+    o.cnAdd=()=>this.showToast('Mở form: '+o.cnAddLabel);
+    const cmeta2={active:['Đang chạy','success'],scheduled:['Đã lên lịch','info'],ended:['Đã kết thúc','muted']};
+    const CAMP=[
+      {deal:'−30%',name:'Happy Hour',scope:'Club Lumière',period:'01/06 – 07/07',status:'active'},
+      {deal:'−10%',name:'VIP độc quyền',scope:'Akari Lounge',period:'15/06 – 15/07',status:'active'},
+      {deal:'−5%',name:'Ưu đãi khách mới',scope:'Toàn hệ thống',period:'Luôn áp dụng',status:'active'},
+      {deal:'2+1',name:'Combo phòng VIP',scope:'KTV Hoàng Gia',period:'01/07 – 31/07',status:'scheduled'},
+      {deal:'−20%',name:'Tết Trung Thu',scope:'Toàn hệ thống',period:'01/09 – 17/09',status:'ended'},
+    ];
+    o.cnCamps=CAMP.map(c=>({...c,stStyle:this.pill(cmeta2[c.status][1]),stLabel:cmeta2[c.status][0]}));
+    const tgl=(on)=>on?'font-size:10.5px;font-weight:600;color:#7fd3a2;background:rgba(95,191,134,.12);border:1px solid rgba(95,191,134,.3);padding:4px 11px;border-radius:16px;cursor:pointer;':'font-size:10.5px;font-weight:600;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:4px 11px;border-radius:16px;cursor:pointer;';
+    o.cnBanners=[
+      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#3a2f22,#1a1510)',slot:'Hero chính',title:'Đêm nhạc DJ SODA · Club Lumière',pos:'Trang chủ #1',on:true},
+      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2a2233,#161020)',slot:'Hero phụ',title:'Sakura Lounge · Ưu đãi thành viên',pos:'Trang chủ #2',on:true},
+      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#22282e,#12181e)',slot:'Ưu đãi',title:'Happy Hour −30% cuối tuần',pos:'Trang Ưu đãi',on:false},
+      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2e2226,#180f14)',slot:'Sự kiện',title:'Countdown Party 2027',pos:'Nháp',on:false},
+    ].map(b=>({...b,tgl:tgl(b.on),tglLabel:b.on?'● Đang hiển thị':'○ Ẩn'}));
+    const bmeta3={published:['Đã đăng','success'],draft:['Nháp','warn']};
+    o.cnBlogs=[
+      {title:'Top 5 club sôi động nhất Hà Nội 2026',cat:'Cẩm nang',date:'28/06/2026',views:'2.4k',status:'published',img:'linear-gradient(135deg,#3a2f22,#1a1510)'},
+      {title:'Hướng dẫn khách Nhật đặt bàn nightlife an toàn',cat:'Hướng dẫn',date:'25/06/2026',views:'1.8k',status:'published',img:'linear-gradient(135deg,#2a2233,#161020)'},
+      {title:'Văn hóa Karaoke & KTV tại Việt Nam',cat:'Blog',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#22282e,#12181e)'},
+      {title:'Cách chọn Cast phù hợp cho buổi tối của bạn',cat:'Cẩm nang',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#2e2226,#180f14)'},
+    ].map(p=>({...p,stStyle:this.pill(bmeta3[p.status][1]),stLabel:bmeta3[p.status][0]}));
+
+    // ===== MEDIA =====
+    const mf=S.mediaFilter||'all';
+    const mdtab=(a)=>'font-size:12px;padding:7px 13px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.mdTabAll=mdtab(mf==='all'); o.mdTabImg=mdtab(mf==='img'); o.mdTabVid=mdtab(mf==='vid');
+    o.mdAll=()=>this.setState({mediaFilter:'all'}); o.mdImg=()=>this.setState({mediaFilter:'img'}); o.mdVid=()=>this.setState({mediaFilter:'vid'});
+    o.mdUpload=()=>this.showToast('Mở hộp thoại tải media lên');
+    const grads=['#3a2f22,#1a1510','#2a2233,#161020','#22282e,#12181e','#2e2226,#180f14','#26302a,#141a16','#332a20,#181209'];
+    const MEDIA=[]; for(let i=0;i<17;i++){ const vid=i%4===2; MEDIA.push({img:'linear-gradient(135deg,'+grads[i%grads.length]+')',isVid:vid,tag:vid?'Video':'Ảnh',type:vid?'vid':'img'}); }
+    o.mdItems = MEDIA.filter(m=> mf==='all' || m.type===mf);
+
+    // ===== ROLES =====
+    o.rlAdd=()=>this.showToast('Mở form thêm tài khoản');
+    const rst=(kind)=>this.chip(kind==='admin'?'gold':kind==='operator'?'info':'muted')+'font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:7px;display:inline-flex;';
+    o.rlAccounts=[
+      {ini:'A',name:'Nguyễn Admin',email:'admin@vietyoru.vn',role:'Super Admin',kind:'admin',last:'● Đang online',avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
+      {ini:'O',name:'Trần Vận Hành',email:'operator@vietyoru.vn',role:'Operator',kind:'operator',last:'2 giờ trước',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {ini:'CL',name:'Club Lumière',email:'partner.lumiere@vietyoru.vn',role:'Đối tác',kind:'partner',last:'15 phút trước',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {ini:'SL',name:'Sakura Lounge',email:'partner.sakura@vietyoru.vn',role:'Đối tác',kind:'partner',last:'1 ngày trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {ini:'KH',name:'KTV Hoàng Gia',email:'partner.hoanggia@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+    ].map(a=>({...a,roleStyle:rst(a.kind)}));
+    const yes='#e3c27e', no='#413d36', mark=(v)=>v?'✓':'—';
+    const CAPS=[
+      ['Đăng nhập hệ thống',1,1,1],
+      ['CRUD quán & cast',1,1,0],
+      ['Duyệt / quản lý booking',1,1,0],
+      ['Duyệt hóa đơn & đối soát',1,0,0],
+      ['Điều khiển ranking',1,1,0],
+      ['Campaign / banner / blog',1,1,0],
+      ['Báo cáo doanh thu',1,0,0],
+      ['Quét mã QR của khách',1,0,1],
+      ['Xác nhận khách check-in',1,0,1],
+      ['Phân quyền tài khoản',1,0,0],
+    ];
+    o.rlCaps=CAPS.map(c=>({name:c[0], aTxt:mark(c[1]), aCol:c[1]?yes:no, oTxt:mark(c[2]), oCol:c[2]?yes:no, pTxt:mark(c[3]), pCol:c[3]?yes:no}));
+
+    /*VALS*/
+    return o;
+  }
+}
+</script>
+</body>
+</html>

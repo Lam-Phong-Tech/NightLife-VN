@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .btn{transition:filter .14s ease, transform .12s ease;cursor:pointer;}
+  .btn:hover{filter:brightness(1.06);transform:translateY(-1px);}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="../../index.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Mục lục</a>
+    <div style="font-size:13px;color:#8c8679;"><b style="color:#f3f0ea;">Chi tiết mã ưu đãi</b> — đưa nhân viên quán quét khi tới nơi</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;">
+        <a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a>
+        <div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" class="lk">Tìm quán</a><a href="danh-sach-cast.html" class="lk">Cast</a><a href="xep-hang.html" class="lk">Bảng xếp hạng</a><span class="lk">Tour</span><a href="blog.html" class="lk">Blog</a></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;"><a href="vi-uu-dai.html" class="lk" style="font-size:13px;color:#d4b26a;font-weight:600;">Ví của tôi ›</a><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><a href="../../index.html" class="lk" style="font-size:13px;color:#c5c0b6;">Đăng nhập</a><a href="dang-ky-doi-tac.html" style="font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:22px;padding:9px 18px;">Đăng ký đối tác</a></div>
+    </div>
+
+    <div style="padding:18px 34px 0;font-size:12.5px;color:#8c8679;"><a href="trang-chu.html" class="lk">Trang chủ</a> › <a href="uu-dai.html" class="lk">Ưu đãi</a> › <span style="color:#f3f0ea;">Happy Hour −30%</span></div>
+
+    <!-- COUPON CARD -->
+    <div style="padding:26px 34px 40px;display:flex;justify-content:center;">
+      <div style="width:460px;background:#15131a;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.12);">
+
+        <!-- card head -->
+        <div style="background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=720&q=70') center/cover,linear-gradient(140deg,#7b2d6b,#3a1f6e);padding:26px 28px;color:#fff;position:relative;">
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#ffd0e4;font-weight:700;">Mã ưu đãi</div>
+          <div style="font-size:26px;font-weight:800;margin-top:6px;">Happy Hour −30%</div>
+          <div style="font-size:13px;color:#f0e6f4;margin-top:4px;">Áp dụng tại Club Lumière · Tây Hồ, Hà Nội</div>
+          <span style="position:absolute;top:24px;right:24px;background:#e3c27e;color:#3a2600;font-size:22px;font-weight:800;border-radius:12px;padding:8px 14px;">−30%</span>
+        </div>
+
+        <!-- QR -->
+        <div style="padding:26px 28px 8px;text-align:center;">
+          <div style="width:208px;height:208px;margin:0 auto;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;background:#15131a;">
+            <div style="width:100%;height:100%;border-radius:8px;background:
+              linear-gradient(#1f1d29,#1f1d29) 0 0/40px 40px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 0 0/40px 8px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 0 32px/8px 8px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 32px 0/8px 40px no-repeat,
+              linear-gradient(#fff,#fff) 8px 8px/24px 24px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 14px 14px/12px 12px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 100% 0/40px 40px no-repeat,
+              linear-gradient(#fff,#fff) calc(100% - 8px) 8px/24px 24px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) calc(100% - 14px) 14px/12px 12px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 0 100%/40px 40px no-repeat,
+              linear-gradient(#fff,#fff) 8px calc(100% - 8px)/24px 24px no-repeat,
+              linear-gradient(#1f1d29,#1f1d29) 14px calc(100% - 14px)/12px 12px no-repeat,
+              repeating-linear-gradient(0deg,#1f1d29 0 6px,transparent 6px 12px) 60px 0/8px 100% no-repeat,
+              repeating-linear-gradient(0deg,#1f1d29 0 6px,transparent 6px 12px) 84px 0/8px 100% no-repeat,
+              repeating-linear-gradient(90deg,#1f1d29 0 6px,transparent 6px 12px) 0 60px/100% 8px no-repeat,
+              repeating-linear-gradient(90deg,#1f1d29 0 6px,transparent 6px 12px) 0 84px/100% 8px no-repeat,
+              repeating-linear-gradient(0deg,#1f1d29 0 6px,transparent 6px 12px) 108px 52px/8px 60px no-repeat,
+              repeating-linear-gradient(90deg,#1f1d29 0 6px,transparent 6px 12px) 52px 108px/60px 8px no-repeat,
+              #fff;"></div>
+          </div>
+          <div style="font-family:monospace;font-size:16px;letter-spacing:.18em;color:#f3f0ea;font-weight:700;margin-top:16px;">NL-HH30-7K2A</div>
+
+          <!-- countdown + status -->
+          <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;gap:7px;background:rgba(212,178,106,.13);color:#d4b26a;border-radius:20px;padding:8px 14px;font-size:12.5px;font-weight:600;"><img src="https://img.icons8.com/ios/100/D4B26A/clock.png" style="width:15px;height:15px;" alt="">Còn 6 ngày 22 giờ</span>
+            <span style="display:inline-flex;align-items:center;gap:7px;background:rgba(212,178,106,.13);color:#d4b26a;border-radius:20px;padding:8px 14px;font-size:12.5px;font-weight:600;"><span style="width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:inline-block;"></span>Đang giữ chỗ</span>
+          </div>
+        </div>
+
+        <!-- discount by tier -->
+        <div style="padding:18px 28px 0;">
+          <div style="font-size:11.5px;font-weight:700;color:#8c8679;letter-spacing:.05em;text-transform:uppercase;margin-bottom:9px;">Mức giảm theo hạng</div>
+          <div style="display:flex;gap:9px;">
+            <div style="flex:1;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11.5px;color:#8c8679;">Guest</div><div style="font-size:18px;font-weight:800;color:#f3f0ea;margin-top:3px;">5%</div></div>
+            <div style="flex:1;border:1.5px solid #d4b26a;border-radius:12px;padding:12px;text-align:center;background:rgba(212,178,106,.06);position:relative;"><span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:8px;padding:2px 8px;white-space:nowrap;">Hạng của bạn</span><div style="font-size:11.5px;color:#d4b26a;font-weight:600;">Member</div><div style="font-size:18px;font-weight:800;color:#d4b26a;margin-top:3px;">8%</div></div>
+            <div style="flex:1;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11.5px;color:#8c8679;">VIP</div><div style="font-size:18px;font-weight:800;color:#f3f0ea;margin-top:3px;">10%</div></div>
+          </div>
+          <div style="margin-top:10px;font-size:11.5px;color:#8c8679;display:flex;justify-content:space-between;"><span>Hạn dùng (Member)</span><span style="color:#f3f0ea;font-weight:600;">7 ngày kể từ khi lấy mã</span></div>
+        </div>
+
+        <!-- guide -->
+        <div style="margin:18px 28px 0;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.18);border-radius:12px;padding:14px;font-size:12.5px;color:#c5c0b6;line-height:1.6;">Đưa mã này cho <b style="color:#f3f0ea;">nhân viên quán quét</b> khi tới nơi để áp dụng ưu đãi. Mỗi mã dùng 1 lần; hết hạn tự hủy. Không cộng dồn với chương trình khác.</div>
+
+        <!-- actions -->
+        <div style="display:flex;gap:10px;padding:16px 28px 26px;">
+          <a href="vi-uu-dai.html" class="btn" style="flex:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;border-radius:11px;padding:13px;font-weight:700;font-size:14px;text-align:center;">Lưu vào ví</a>
+          <span class="btn" style="flex:none;border:1px solid rgba(212,178,106,.22);border-radius:11px;padding:13px 18px;font-weight:600;font-size:14px;color:#d4b26a;display:flex;align-items:center;gap:7px;"><img src="https://img.icons8.com/ios/100/D4B26A/share.png" style="width:16px;height:16px;" alt="">Chia sẻ</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

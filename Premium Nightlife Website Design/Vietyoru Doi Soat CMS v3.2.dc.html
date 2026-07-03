@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+</style>
+</helmet>
+
+<div data-screen-label="BA · Đối soát CMS v3.2" style="min-height:100vh;background:radial-gradient(1200px 600px at 50% -100px,rgba(212,178,106,.06),transparent 70%),#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding:44px 30px 90px;">
+<div style="max-width:1140px;margin:0 auto;">
+
+  <!-- ============ HEADER ============ -->
+  <div style="font-size:10px;font-weight:700;letter-spacing:2.6px;color:#8c8679;text-transform:uppercase;">BA · Đối soát nghiệp vụ</div>
+  <div style="font-size:34px;font-weight:800;letter-spacing:-.6px;line-height:1.15;margin-top:10px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 60%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;width:fit-content;">Admin CMS ⇄ Đặc tả nghiệp vụ v3.2</div>
+  <div style="font-size:14.5px;color:#c5c0b6;margin-top:12px;line-height:1.65;max-width:760px;">Đối chiếu bản dựng <b style="color:#f3f0ea;">Vietyoru Admin CMS</b> với <b style="color:#f3f0ea;">[BA] Tổng hợp đặc tả nghiệp vụ NightLife v3.2</b>. Tất cả điểm lệch bên dưới lấy v3.2 làm chuẩn để bạn lên hướng xử lý.</div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;">
+    <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;">Tài liệu chuẩn <b style="color:#e3c27e;">v3.2 · 02/07/2026</b></span>
+  <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;">Trạng thái <b style="color:#7fd3a2;">Ready for review · 0 blocker nghiệp vụ</b></span>
+    <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;">Điểm lệch <b style="color:#e88b99;">9</b> · <b style="color:#e7b869;">3 P0</b> · <b style="color:#e7b869;">3 vừa</b> · <b style="color:#9b958a;">3 nhẹ</b></span>
+  </div>
+
+  <!-- callout: chốt theo bản mới -->
+  <div style="display:flex;gap:13px;margin-top:22px;padding:16px 18px;background:linear-gradient(135deg,rgba(212,178,106,.1),rgba(212,178,106,.04));border:1px solid rgba(212,178,106,.28);border-radius:14px;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e3c27e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1-6.3-4.6L5.7 21 8 14 2 9.5h7.6z"/></svg>
+    <div style="font-size:13px;color:#e7d9b4;line-height:1.6;"><b style="color:#f0dda8;">Chốt theo tài liệu mới nhất (v3.2).</b> v3.2 gộp Flow A (Booking) + Flow B (Coupon/QR) thành <b style="color:#f3f0ea;">một luồng duy nhất — Booking kèm QR ưu đãi</b>, và bổ sung rule <b style="color:#f3f0ea;">quyền gửi bill</b>. Phần lớn điểm lệch của CMS bắt nguồn từ hai thay đổi này.</div>
+  </div>
+
+  <!-- ============ NGUỒN CHÂN LÝ ============ -->
+  <div style="display:flex;align-items:center;gap:14px;margin:40px 0 18px;">
+    <span style="font-size:20px;font-weight:700;color:#f3f0ea;">Nguồn chân lý · 10 điểm chốt v3.2</span>
+    <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">1</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">MVP chỉ còn <b style="color:#f3f0ea;">1 flow: Booking kèm QR ưu đãi</b> — bỏ hẳn lấy coupon/QR độc lập.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">2</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">QR sinh <b style="color:#f3f0ea;">sau khi booking thành công</b>, luôn gắn <b style="color:#f3f0ea;">booking_id</b>. Trạng thái: Còn hiệu lực / Đã sử dụng / Hết hạn / Vô hiệu.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">3</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Mức giảm <b style="color:#f3f0ea;">snapshot theo hạng</b>: Guest 5% · Member 8% · VIP 10%.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">4</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Guest nhập <b style="color:#f3f0ea;">email bắt buộc</b>, nhận QR qua email; Member/VIP autofill từ tài khoản.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">5</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Cast chỉ là <b style="color:#f3f0ea;">mong muốn/tham chiếu</b> — không giữ lịch, không cam kết khả dụng; Admin điều phối offline.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">6</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Số người mỗi booking: <b style="color:#f3f0ea;">tối thiểu 1, tối đa 20</b>.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">7</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Hạn QR tính từ <b style="color:#f3f0ea;">giờ đến quán</b>: Guest 24h · Member/VIP 7 ngày; nhắc email trước 6h.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">8</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;"><b style="color:#e88b99;">Guest KHÔNG gửi bill</b> trong MVP. Chỉ Member/VIP hoặc chủ quán/Partner; Member/VIP gửi bill là <b style="color:#f3f0ea;">tùy chọn</b>.</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">9</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Hoa hồng = <b style="color:#f3f0ea;">Bill gốc × (%HH − %giảm)</b>. Điểm = 1.000.000₫ gốc = 10đ (hạn 1 năm).</span></div>
+    <div style="display:flex;gap:11px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px 15px;"><span style="flex:none;font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;">10</span><span style="font-size:12.5px;color:#c5c0b6;line-height:1.55;">Ranking <b style="color:#f3f0ea;">100% thủ công</b>, thứ tự Cast trước → Quán; khu vực HN / HCM / Tổng hợp.</span></div>
+  </div>
+
+  <!-- ============ ĐIỂM LỆCH ============ -->
+  <div style="display:flex;gap:12px;align-items:center;margin-top:14px;padding:14px 18px;background:rgba(95,191,134,.07);border:1px solid rgba(95,191,134,.3);border-radius:14px;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6L9 17l-5-5"/></svg>
+    <span style="font-size:13px;color:#b9e2ca;line-height:1.6;"><b style="color:#d9f0e2;">Đã xử lý toàn bộ D1–D9</b> trong bản dựng mới <b style="color:#fff;">Vietyoru Admin CMS v3.2</b> — bản CMS cũ giữ nguyên để đối chiếu.</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;margin:44px 0 8px;">
+    <span style="font-size:20px;font-weight:700;color:#f3f0ea;">Điểm lệch cần xử lý <span style="font-size:12px;font-weight:700;color:#7fd3a2;background:rgba(95,191,134,.12);border:1px solid rgba(95,191,134,.3);padding:4px 11px;border-radius:20px;vertical-align:3px;margin-left:6px;">✓ 9/9 đã xử lý</span></span>
+    <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:22px;font-size:11px;color:#8c8679;">
+    <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#e0697a;"></span>Ưu tiên cao · P0 · chạm rule đã chốt</span>
+    <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#e0a44e;"></span>Ưu tiên vừa · thiếu / lệch</span>
+    <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#8c8679;"></span>Ưu tiên nhẹ · thuật ngữ / polish</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+  <!-- D1 -->
+  <div style="background:rgba(255,255,255,.025);border:1px solid rgba(224,105,122,.24);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D1</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#e88b99;background:rgba(224,105,122,.12);border:1px solid rgba(224,105,122,.3);padding:4px 10px;border-radius:20px;">● ƯU TIÊN CAO · P0</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">BIL-01 · FLOW C · Bill</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Bill của Guest đang lọt vào hàng chờ duyệt</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Guest KHÔNG được gửi bill trong MVP. Chỉ <b style="color:#e6e2da;">Member/VIP đã đăng nhập</b> hoặc <b style="color:#e6e2da;">chủ quán/Partner</b> mới gửi; không có endpoint <span style="color:#a9c4e6;">/guest/bills</span>. Member/VIP gửi bill là tùy chọn.</div>
+      </div>
+      <div style="background:rgba(224,105,122,.06);border:1px solid rgba(224,105,122,.22);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e88b99;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#d6bcc0;line-height:1.6;">Hàng <b style="color:#f3d3d8;">BILL-8840</b> có Hạng = <b style="color:#f3d3d8;">Guest</b>, người gửi "Khách", đang chờ duyệt. Màn Duyệt hóa đơn chưa có ràng buộc/ghi chú về quyền gửi bill.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-left:3px solid #d4b26a;border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Bỏ bill Guest khỏi dữ liệu & luồng. Đổi cột "Người gửi" thành <b style="color:#f0dda8;">Member / VIP / Đối tác</b> (bỏ "Khách" chung chung). Thêm banner rule quyền gửi bill ở đầu màn; chặn/cảnh báo nếu bill gắn khách chưa đăng nhập.</div>
+    </div>
+  </div>
+
+  <!-- D2 -->
+  <div style="background:rgba(255,255,255,.025);border:1px solid rgba(224,105,122,.24);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D2</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#e88b99;background:rgba(224,105,122,.12);border:1px solid rgba(224,105,122,.3);padding:4px 10px;border-radius:20px;">● ƯU TIÊN CAO · P0</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">MEM-03/04B · FLOW A+B · màn Coupon</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Màn "Coupon &amp; QR" vẫn mô hình coupon độc lập (flow đã bỏ)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">MVP chỉ 1 flow — đã <b style="color:#e6e2da;">bỏ lấy coupon/QR độc lập</b>. QR sinh sau booking, gắn <b style="color:#e6e2da;">booking_id</b>, mang mức giảm theo hạng. Trạng thái QR: Còn hiệu lực / Đã sử dụng / Hết hạn / Vô hiệu.</div>
+      </div>
+      <div style="background:rgba(224,105,122,.06);border:1px solid rgba(224,105,122,.22);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e88b99;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#d6bcc0;line-height:1.6;">Liệt kê coupon rời (mã LUM-3F9A2…), deal khuyến mãi (−30%, 2+1, Happy Hour), trạng thái <b style="color:#f3d3d8;">"Đang giữ chỗ"</b> — không có trong v3.2. Không gắn booking_id; thiếu trạng thái "Vô hiệu".</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-left:3px solid #d4b26a;border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Đổi thành màn <b style="color:#f0dda8;">"Booking QR"</b>: mỗi dòng = 1 QR gắn 1 booking → Mã QR · Mã booking · Quán · Hạng · Mức giảm snapshot · Hết hạn (theo giờ đến) · Trạng thái 4 mức. Bỏ "Đang giữ chỗ", thêm "Còn hiệu lực" + "Vô hiệu". Chuyển deal −30% / 2+1 / Happy Hour về đúng <b style="color:#f0dda8;">Campaign &amp; Discount</b> (màn Content).</div>
+    </div>
+  </div>
+
+  <!-- D3 -->
+  <div style="background:rgba(255,255,255,.025);border:1px solid rgba(224,105,122,.24);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D3</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#e88b99;background:rgba(224,105,122,.12);border:1px solid rgba(224,105,122,.3);padding:4px 10px;border-radius:20px;">● ƯU TIÊN CAO · P0</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">BOO-02/05 · NOT-01 · Booking</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Booking thiếu Email · Hạng khách · Mức giảm · QR liên kết</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Booking lõi gồm <b style="color:#e6e2da;">customer_type</b> (Guest/Member/VIP), <b style="color:#e6e2da;">discount_snapshot</b>, <b style="color:#e6e2da;">customer_email</b> (bắt buộc — Guest nhận QR qua email) và liên kết QR. Telegram booking mới phải có Loại khách + Mức giảm + trạng thái QR.</div>
+      </div>
+      <div style="background:rgba(224,105,122,.06);border:1px solid rgba(224,105,122,.22);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e88b99;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#d6bcc0;line-height:1.6;">List &amp; drawer booking hiển thị <b style="color:#f3d3d8;">Số điện thoại</b> (không có email), KHÔNG có hạng khách, KHÔNG mức giảm, KHÔNG khối QR gắn kèm.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-left:3px solid #d4b26a;border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Thêm <b style="color:#f0dda8;">Email</b> (trường chính, cạnh/thay SĐT), <b style="color:#f0dda8;">Hạng khách + Mức giảm %</b>, và khối <b style="color:#f0dda8;">"QR ưu đãi"</b> (mã · trạng thái · hạn dùng) ngay trong drawer — vì QR sinh &amp; gắn liền booking.</div>
+    </div>
+  </div>
+
+  <!-- D4 -->
+  <div style="background:rgba(255,255,255,.025);border:1px solid rgba(224,164,78,.22);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D4</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#e7b869;background:rgba(224,164,78,.12);border:1px solid rgba(224,164,78,.3);padding:4px 10px;border-radius:20px;">● ƯU TIÊN VỪA</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">BOO-03B/03C · Cast</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">"Cast chỉ định" phải là "Cast mong muốn"</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Cast chỉ là <b style="color:#e6e2da;">mong muốn/tham chiếu</b>; không giữ lịch, không khóa lịch, không cam kết khả dụng — Admin điều phối offline với quán.</div>
+      </div>
+      <div style="background:rgba(224,164,78,.06);border:1px solid rgba(224,164,78,.22);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e7b869;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#dcccb0;line-height:1.6;">Drawer booking ghi <b style="color:#f0dda8;">"Cast chỉ định"</b> — hàm ý đã gán/giữ chỗ cast, sai tinh thần v3.2.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-left:3px solid #d4b26a;border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Đổi nhãn <b style="color:#f0dda8;">"Cast mong muốn"</b>; thêm dòng nhắc "Chưa xác nhận giữ lịch — Admin điều phối với quán".</div>
+    </div>
+  </div>
+
+  <!-- D5 -->
+  <div style="background:rgba(255,255,255,.025);border:1px solid rgba(224,164,78,.22);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D5</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#e7b869;background:rgba(224,164,78,.12);border:1px solid rgba(224,164,78,.3);padding:4px 10px;border-radius:20px;">● ƯU TIÊN VỪA</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">ADM-01 · Dashboard</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Dashboard thiếu chỉ số Booking QR (đã cấp / đã dùng / hết hạn)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Dashboard nên có số <b style="color:#e6e2da;">Booking QR đã cấp / đã dùng / hết hạn</b>; gồm quán, cast, bài viết, booking, bill, alert.</div>
+      </div>
+      <div style="background:rgba(224,164,78,.06);border:1px solid rgba(224,164,78,.22);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e7b869;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#dcccb0;line-height:1.6;">6 thẻ: quán, cast, booking, bill, doanh thu, đối tác. <b style="color:#f0dda8;">Thiếu thẻ Booking QR</b> và bài viết. Feed Telegram còn ghi "Coupon −30% đã dùng".</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-left:3px solid #d4b26a;border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Thêm thẻ <b style="color:#f0dda8;">"Booking QR"</b> (đã cấp · đã dùng · hết hạn/vô hiệu); tùy chọn thêm bài viết. Đổi feed → "QR ưu đãi đã dùng".</div>
+    </div>
+  </div>
+
+  <!-- D6 -->
+  <div style="background:rgba(255,255,255,.025);border:1px solid rgba(224,164,78,.22);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D6</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#e7b869;background:rgba(224,164,78,.12);border:1px solid rgba(224,164,78,.3);padding:4px 10px;border-radius:20px;">● ƯU TIÊN VỪA</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">BIL-02 · BOO-09 · Bill</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Bill thiếu liên kết Booking / QR để đối soát</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Bill nên link trực tiếp <b style="color:#e6e2da;">Booking + Booking QR đã dùng</b> để đối soát mức giảm, hạng, quán, thời gian &amp; lịch sử check-in.</div>
+      </div>
+      <div style="background:rgba(224,164,78,.06);border:1px solid rgba(224,164,78,.22);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e7b869;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#dcccb0;line-height:1.6;">Khối đối soát có bill gốc, %HH, hoa hồng, điểm — nhưng <b style="color:#f0dda8;">không có trường liên kết Booking/QR</b>.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-left:3px solid #d4b26a;border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Thêm dòng <b style="color:#f0dda8;">"Booking liên kết (BK-…)"</b> + <b style="color:#f0dda8;">"QR đã dùng"</b> (mã · giờ scan · người xác nhận) trong khối đối soát bill.</div>
+    </div>
+  </div>
+
+  <!-- D7 -->
+  <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D7</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#9b958a;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;">● ƯU TIÊN NHẸ</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">FLOW A · Booking</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Cột "Nguồn" đang là kênh thông báo, không phải nguồn đặt</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Booking khởi tạo từ <b style="color:#e6e2da;">web (trang quán / trang cast)</b>. Telegram / LINE / email là kênh thông báo &amp; hỗ trợ.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#9b958a;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Cột "Nguồn" hiển thị <b style="color:#e6e2da;">Telegram / LINE</b>.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-left:3px solid rgba(212,178,106,.7);border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Đổi "Nguồn" = <b style="color:#f0dda8;">Trang quán / Trang cast</b> (điểm khởi tạo). Nếu cần, tách cột "Kênh thông báo" riêng.</div>
+    </div>
+  </div>
+
+  <!-- D8 -->
+  <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D8</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#9b958a;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;">● ƯU TIÊN NHẸ</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">Thuật ngữ toàn hệ thống</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Thuật ngữ "coupon" còn rải rác</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Thống nhất gọi là <b style="color:#e6e2da;">"QR ưu đãi"</b> gắn booking; "coupon" độc lập đã bỏ.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#9b958a;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">"Coupon −30% đã dùng" (feed), ghi chú booking "dùng coupon −8%", nav "Coupon &amp; QR".</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-left:3px solid rgba(212,178,106,.7);border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Chuẩn hóa → <b style="color:#f0dda8;">"QR ưu đãi (−x%)"</b>; đổi nhãn nav "Coupon &amp; QR" → <b style="color:#f0dda8;">"Booking QR"</b>.</div>
+    </div>
+  </div>
+
+  <!-- D9 -->
+  <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px 22px;">
+    <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:9px;">
+      <span style="font-size:12px;font-weight:800;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);min-width:36px;height:24px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:7px;">D9</span>
+      <span style="font-size:10px;font-weight:700;letter-spacing:.6px;color:#9b958a;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;">● ƯU TIÊN NHẸ</span>
+      <span style="font-size:11px;color:#8c8679;font-weight:500;">ADM-11 · NOT-02/03/04</span>
+    </div>
+    <div style="font-size:16.5px;font-weight:600;color:#f3f0ea;margin-bottom:14px;">Email nghiệp vụ (QR / nhắc / hủy) chưa hiện trong CMS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin-bottom:7px;">Theo v3.2</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">P0 cần <b style="color:#e6e2da;">email QR cho Guest</b>, email nhắc trước hết hạn 6h, email hủy khi quá hạn; có log notification.</div>
+      </div>
+      <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 15px;">
+        <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#9b958a;text-transform:uppercase;margin-bottom:7px;">Admin CMS hiện tại</div>
+        <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;">Chỉ có Telegram; chưa có view/log trạng thái email.</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-left:3px solid rgba(212,178,106,.7);border-radius:11px;padding:13px 16px;">
+      <div style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;text-transform:uppercase;margin-bottom:6px;">Hướng xử lý đề xuất</div>
+      <div style="font-size:12.5px;color:#d6ccb2;line-height:1.6;">Tùy phase — thêm log "Thông báo" hiển thị email QR / nhắc / hủy đã gửi; hoặc tối thiểu 1 dòng trạng thái email trong drawer booking.</div>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- ============ ĐÃ KHỚP ============ -->
+  <div style="display:flex;align-items:center;gap:14px;margin:44px 0 18px;">
+    <span style="font-size:20px;font-weight:700;color:#f3f0ea;">Đã khớp v3.2 — giữ nguyên</span>
+    <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(95,191,134,.4),transparent);"></span>
+  </div>
+  <div style="background:rgba(95,191,134,.04);border:1px solid rgba(95,191,134,.2);border-radius:16px;padding:8px 20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 26px;">
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Công thức hoa hồng = Bill gốc × (%HH − %giảm), tính trên bill gốc</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Điểm 1.000.000₫ gốc = 10đ</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">3 trạng thái booking: Mới / Hoàn tất / Đã hủy</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Rule hủy trước 1h + không sửa booking cũ (ghi chú trong drawer)</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Duyệt / từ chối bill có lý do</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Ranking thủ công · Cast trước → Quán · HN/HCM/Tổng hợp · toggle tài trợ</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Phân quyền: Partner = đăng nhập + quét QR + check-in; Operator P1</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">% hoa hồng cấu hình theo từng quán khi onboard</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Duyệt đối tác → tạo hồ sơ quán nháp; không yêu cầu giấy phép KD</span></div>
+      <div style="display:flex;gap:10px;padding:11px 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:12.5px;color:#c5c0b6;line-height:1.5;">Mức giảm 5 / 8 / 10% đúng theo hạng khách</span></div>
+    </div>
+  </div>
+
+  <!-- ============ THỨ TỰ XỬ LÝ ============ -->
+  <div style="display:flex;align-items:center;gap:14px;margin:44px 0 18px;">
+    <span style="font-size:20px;font-weight:700;color:#f3f0ea;">Thứ tự xử lý đề xuất</span>
+    <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;">
+    <div style="background:linear-gradient(160deg,rgba(224,105,122,.1),rgba(255,255,255,.02));border:1px solid rgba(224,105,122,.28);border-radius:15px;padding:17px 16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#e88b99;text-transform:uppercase;">Bước 1 · Rule chốt</div>
+      <div style="font-size:13px;color:#e6e2da;line-height:1.55;margin-top:9px;"><b style="color:#fff;">D1 · D3</b> — sửa dữ liệu &amp; trường hiển thị bill/booking cho đúng rule quyền gửi bill và các field lõi.</div>
+    </div>
+    <div style="background:linear-gradient(160deg,rgba(224,164,78,.1),rgba(255,255,255,.02));border:1px solid rgba(224,164,78,.28);border-radius:15px;padding:17px 16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#e7b869;text-transform:uppercase;">Bước 2 · Tái cấu trúc</div>
+      <div style="font-size:13px;color:#e6e2da;line-height:1.55;margin-top:9px;"><b style="color:#fff;">D2</b> — chuyển màn Coupon → Booking QR (ảnh hưởng data model &amp; điều hướng).</div>
+    </div>
+    <div style="background:linear-gradient(160deg,rgba(212,178,106,.1),rgba(255,255,255,.02));border:1px solid rgba(212,178,106,.28);border-radius:15px;padding:17px 16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#e3c27e;text-transform:uppercase;">Bước 3 · Bổ sung</div>
+      <div style="font-size:13px;color:#e6e2da;line-height:1.55;margin-top:9px;"><b style="color:#fff;">D5 · D6</b> — thêm chỉ số QR ở Dashboard &amp; liên kết Booking/QR trong bill.</div>
+    </div>
+    <div style="background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.12);border-radius:15px;padding:17px 16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#9b958a;text-transform:uppercase;">Bước 4 · Polish</div>
+      <div style="font-size:13px;color:#e6e2da;line-height:1.55;margin-top:9px;"><b style="color:#fff;">D4 · D7 · D8 · D9</b> — nhãn "Cast mong muốn", nguồn booking, thuật ngữ &amp; log email.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:#57534b;text-align:center;">Vietyoru · BA Đối soát Admin CMS ⇄ Đặc tả nghiệp vụ NightLife v3.2 · chốt theo bản mới nhất 02/07/2026</div>
+
+</div>
+</div>
+</x-dc>
+</body>
+</html>

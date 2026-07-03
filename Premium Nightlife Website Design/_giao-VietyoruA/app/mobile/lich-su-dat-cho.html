@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+    <div style="background:#15131a;padding:8px 18px 8px;"><h2 style="font-size:19px;font-weight:800;">Đặt chỗ của tôi</h2></div>
+    <div class="hscroll" style="padding:0 18px 12px;display:flex;gap:7px;overflow-x:auto;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4"><div onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</div></sc-for>
+    </div>
+    <div style="padding:12px 18px;display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{ list }}" as="b" hint-placeholder-count="5">
+        <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px 12px;display:flex;align-items:center;gap:11px;">
+          <span style="width:44px;height:44px;border-radius:11px;flex:none;background:{{ b.img }};"></span>
+          <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">{{ b.place }}</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">{{ b.meta }}</div></div>
+          <span style="font-size:9.5px;font-weight:700;border-radius:8px;padding:4px 8px;color:{{ b.color }};background:{{ b.bg }};">{{ b.label }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;color:#8c8679;font-size:13px;padding:28px 0;">Chưa có đặt chỗ ở trạng thái này.</div></sc-if>
+    </div>
+
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/home.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Trang chủ</span></a>
+      <a href="danh-sach-cast.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/geisha.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Cast</span></a>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/gift.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Ưu đãi</span></a>
+      <a href="lich-su-dat-cho.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/D4B26A/calendar.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#d4b26a;font-weight:600;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var status = st.status || 'all';
+    var rows = NL.BOOKINGS.filter(function(b){ return status==='all' || b[2]===status; });
+    var list = rows.map(function(b){ var bd=NL.bkBadge(b[2]); return { place:b[0], meta:b[1], img:NL.photo(b[3],360), label:bd.label, color:bd.color, bg:bd.bg }; });
+    var tabs = [['all','Tất cả'],['new','Mới'],['done','Hoàn tất'],['cancelled','Đã hủy']].map(function(t){ return { label:t[1], style:NL.pillSm(status===t[0]), pick:function(){ self.setState({status:t[0]}); } }; });
+    return { list:list, tabs:tabs, empty:list.length===0 };
+  }
+}
+</script>
+</body>
+</html>

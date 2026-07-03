@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0c0c0f;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+
+    <!-- header -->
+    <div style="background:#0c0c0f;padding:12px 18px 14px;border-bottom:1px solid rgba(255,255,255,.06);">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <a href="trang-chu.html">
+          <div style="font-weight:800;font-size:22px;line-height:1;letter-spacing:-.3px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">nightlife<span style="-webkit-text-fill-color:#c5c0b6;">.hn</span></div>
+          <div style="font-size:8px;letter-spacing:3px;color:#8c8679;margin-top:3px;text-transform:uppercase;">Vietnam Nightlife Guide</div>
+        </a>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="display:flex;align-items:center;gap:4px;height:36px;padding:0 11px;border-radius:18px;border:1px solid rgba(212,178,106,.32);color:#d4b26a;font-size:12px;font-weight:600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>VI</span>
+          <a href="chat.html" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(212,178,106,.32);display:flex;align-items:center;justify-content:center;"><img src="../../SVG/chat.svg" style="width:17px;height:17px;" alt=""></a>
+          <a href="thong-bao.html" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(212,178,106,.32);display:flex;align-items:center;justify-content:center;position:relative;"><img src="../../SVG/Notification.svg" style="width:17px;height:17px;" alt=""><span style="position:absolute;top:7px;right:8px;width:6px;height:6px;border-radius:50%;background:#e0729e;border:1.5px solid #0c0c0f;"></span></a>
+        </div>
+      </div>
+      <a href="danh-sach-quan.html" style="margin-top:14px;display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:13px 15px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span style="font-size:13.5px;color:#8c8679;flex:1;">Tìm quán hoặc cast gần bạn…</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></a>
+    </div>
+
+    <!-- categories -->
+    <div style="padding:16px 18px 4px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;">
+      <a href="danh-sach-quan.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/tim quan.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Tìm quán</div></a>
+      <a href="danh-sach-cast.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/tim cast.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Tìm Cast</div></a>
+      <a href="uu-dai.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/uu daI.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Ưu đãi</div></a>
+      <a href="danh-sach-quan.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/su kien.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Sự kiện</div></a>
+      <a href="danh-sach-quan.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/nha hang.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Nhà hàng</div></a>
+      <a href="danh-sach-quan.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/spa.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Spa</div></a>
+      <a href="huong-dan.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/huong dan.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#c5c0b6;margin-top:7px;">Hướng dẫn</div></a>
+      <a href="vi-uu-dai.html" style="text-align:center;"><span style="width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,rgba(244,227,180,.2),rgba(168,124,60,.12));border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;margin:0 auto;"><img src="../../SVG/coupon.svg" style="width:24px;height:24px;" alt=""></span><div style="font-size:11px;color:#e3c27e;margin-top:7px;">Ví ưu đãi</div></a>
+    </div>
+
+    <!-- banner quảng cáo trượt -->
+    <div style="padding:14px 18px 4px;">
+      <div style="position:relative;overflow:hidden;border-radius:16px;box-shadow:0 16px 34px -18px rgba(0,0,0,.7);">
+        <div id="ad-banner-container" class="hscroll" onScroll="{{ handleBannerScroll }}" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;border-radius:16px;">
+
+          <a href="chi-tiet-quan.html" style="flex:none;width:100%;height:128px;scroll-snap-align:start;position:relative;background:linear-gradient(rgba(12,12,15,0.1),rgba(12,12,15,0.82)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80') center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:12px 16px;color:#fff;">
+            <div style="position:absolute;top:11px;left:12px;display:flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px;"><span style="width:6px;height:6px;border-radius:50%;background:#e0729e;box-shadow:0 0 6px #e0729e;"></span><span style="font-size:9px;font-weight:700;letter-spacing:1px;color:#f3f0ea;text-transform:uppercase;">Đang diễn ra</span></div>
+            <div style="font-weight:700;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.6);">Đêm Nhạc DJ SODA tại Club Lumière</div>
+            <div style="font-size:11px;color:#e9e6df;margin-top:3px;text-shadow:0 1px 2px rgba(0,0,0,0.6);display:flex;justify-content:space-between;align-items:center;width:100%;">
+              <span>Đặt bàn VIP ngay tối nay</span>
+              <span style="background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;padding:5px 12px;border-radius:8px;font-weight:700;font-size:10px;flex-shrink:0;margin-left:8px;">Đặt ngay</span>
+            </div>
+          </a>
+
+          <a href="chi-tiet-quan.html" style="flex:none;width:100%;height:128px;scroll-snap-align:start;position:relative;background:linear-gradient(rgba(12,12,15,0.1),rgba(12,12,15,0.82)),url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80') center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:12px 16px;color:#fff;">
+            <div style="position:absolute;top:11px;left:12px;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);color:#e3c27e;font-size:9px;font-weight:700;text-transform:uppercase;padding:4px 10px;border-radius:20px;letter-spacing:1px;">Ưu đãi</div>
+            <div style="font-weight:700;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.6);">Sakura Lounge — Giảm 25% nhóm 4+</div>
+            <div style="font-size:11px;color:#e9e6df;margin-top:3px;text-shadow:0 1px 2px rgba(0,0,0,0.6);display:flex;justify-content:space-between;align-items:center;width:100%;">
+              <span>Không gian Nhật Bản cao cấp</span>
+              <span style="background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;padding:5px 12px;border-radius:8px;font-weight:700;font-size:10px;flex-shrink:0;margin-left:8px;">Nhận mã</span>
+            </div>
+          </a>
+
+          <a href="chi-tiet-quan.html" style="flex:none;width:100%;height:128px;scroll-snap-align:start;position:relative;background:linear-gradient(rgba(12,12,15,0.1),rgba(12,12,15,0.82)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=600&q=80') center/cover;display:flex;flex-direction:column;justify-content:flex-end;padding:12px 16px;color:#fff;">
+            <div style="position:absolute;top:11px;left:12px;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);color:#e3c27e;font-size:9px;font-weight:700;text-transform:uppercase;padding:4px 10px;border-radius:20px;letter-spacing:1px;">Ưu đãi</div>
+            <div style="font-weight:700;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,0.6);">Karaoke Hoàng Gia — Tặng đĩa trái cây</div>
+            <div style="font-size:11px;color:#e9e6df;margin-top:3px;text-shadow:0 1px 2px rgba(0,0,0,0.6);display:flex;justify-content:space-between;align-items:center;width:100%;">
+              <span>Áp dụng khi đặt phòng trước 18:00</span>
+              <span style="background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;padding:5px 12px;border-radius:8px;font-weight:700;font-size:10px;flex-shrink:0;margin-left:8px;">Chi tiết</span>
+            </div>
+          </a>
+
+        </div>
+        <div style="position:absolute;bottom:10px;right:16px;display:flex;gap:5px;z-index:10;align-items:center;">
+          <span style="{{ dot0 }}"></span>
+          <span style="{{ dot1 }}"></span>
+          <span style="{{ dot2 }}"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- thẻ VIP -->
+    <div style="padding:16px 18px 4px;">
+      <div style="position:relative;overflow:hidden;border-radius:18px;padding:17px 18px;background:linear-gradient(135deg,#f4e3b4 0%,#d4b26a 48%,#a87c3c 100%);box-shadow:0 16px 34px -16px rgba(168,124,60,.6);">
+        <div style="position:absolute;top:-34px;right:-24px;width:150px;height:150px;background:radial-gradient(circle,rgba(255,255,255,.45),transparent 70%);"></div>
+        <div style="position:relative;display:flex;align-items:center;gap:6px;color:#241a0a;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="#241a0a"><path d="M12 2l1.7 5.8L19.5 9l-5.8 1.5L12 16l-1.7-5.5L4.5 9l5.8-1.2z"/></svg>
+          <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">nightlife VIP</span>
+        </div>
+        <div style="position:relative;font-size:19px;font-weight:700;color:#241a0a;margin-top:9px;">Ưu đãi độc quyền cho hội viên</div>
+        <div style="position:relative;font-size:12px;color:rgba(36,26,10,.78);margin-top:4px;max-width:240px;line-height:1.55;">Giảm tới 10% mọi đặt chỗ · coupon riêng · ưu tiên giữ chỗ · hỗ trợ tiếng Nhật.</div>
+        <div style="position:relative;display:flex;align-items:center;gap:13px;margin-top:15px;">
+          <a href="tai-khoan.html" style="background:#241a0a;color:#f0dda8;font-size:12px;font-weight:600;padding:9px 16px;border-radius:11px;">Trở thành VIP</a>
+          <span style="font-size:11.5px;color:rgba(36,26,10,.7);">từ 199.000₫/tháng</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- đề xuất -->
+    <div style="padding:20px 18px 10px;display:flex;align-items:flex-end;gap:12px;">
+      <div style="flex:none;"><div style="font-size:18px;font-weight:600;letter-spacing:-.2px;">Đề xuất tối nay</div><div style="font-size:9px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Tonight's Picks</div></div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);margin-bottom:7px;"></div>
+      <a href="danh-sach-quan.html" style="font-size:11px;color:#9b958a;margin-bottom:4px;white-space:nowrap;">Xem tất cả ›</a>
+    </div>
+    <div class="hscroll" style="padding:0 18px 8px;display:flex;gap:13px;overflow-x:auto;">
+      <sc-for list="{{ recs }}" as="v" hint-placeholder-count="4">
+        <div onClick="{{ v.open }}" style="flex:none;width:166px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;cursor:pointer;">
+          <div style="height:108px;background:{{ v.img }};position:relative;"><span onClick="{{ v.fav }}" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(12,12,15,.4);display:flex;align-items:center;justify-content:center;"><img src="{{ v.favIcon }}" style="width:15px;height:15px;" alt=""></span></div>
+          <div style="padding:11px 12px;"><div style="font-weight:600;font-size:14px;">{{ v.name }}</div><div style="font-size:11px;color:#8c8679;margin-top:3px;">{{ v.area }} · {{ v.catLabel }}</div><div style="font-size:12px;color:#e3c27e;margin-top:7px;font-weight:600;">★ {{ v.rating }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- coupon -->
+    <div style="padding:18px 18px 10px;display:flex;align-items:flex-end;gap:12px;">
+      <div style="flex:none;"><div style="font-size:18px;font-weight:600;letter-spacing:-.2px;">Coupon Hot</div><div style="font-size:9px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Hot Deals</div></div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);margin-bottom:7px;"></div>
+      <a href="uu-dai.html" style="font-size:11px;color:#9b958a;margin-bottom:4px;white-space:nowrap;">Xem tất cả ›</a>
+    </div>
+    <div style="padding:0 18px 4px;display:flex;flex-direction:column;gap:11px;">
+      <a href="chi-tiet-ma.html" style="display:flex;align-items:stretch;background:rgba(255,255,255,.035);border:1px solid rgba(212,178,106,.22);border-radius:14px;overflow:hidden;"><span style="width:74px;flex:none;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=360&q=70') center/cover;"></span><div style="flex:1;padding:11px 13px;"><div style="font-size:18px;font-weight:700;color:#e3c27e;line-height:1;">−30%</div><div style="font-weight:600;font-size:13.5px;margin-top:5px;">Happy Hour cuối tuần</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Club Lumière · HSD còn 3 ngày</div></div><div style="width:58px;flex:none;border-left:1px dashed rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;"><span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:700;letter-spacing:2px;color:#d4b26a;">LẤY MÃ</span></div></a>
+      <a href="chi-tiet-ma.html" style="display:flex;align-items:stretch;background:rgba(255,255,255,.035);border:1px solid rgba(212,178,106,.22);border-radius:14px;overflow:hidden;"><span style="width:74px;flex:none;background:url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=360&q=70') center/cover;"></span><div style="flex:1;padding:11px 13px;"><div style="font-size:18px;font-weight:700;color:#e3c27e;line-height:1;">2+1</div><div style="font-weight:600;font-size:13.5px;margin-top:5px;">Combo phòng VIP 2+1</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">KTV Hoàng Gia · HSD còn 8 ngày</div></div><div style="width:58px;flex:none;border-left:1px dashed rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;"><span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:700;letter-spacing:2px;color:#d4b26a;">LẤY MÃ</span></div></a>
+    </div>
+
+    <!-- xếp hạng (tương tác) -->
+    <div style="padding:20px 18px 10px;display:flex;align-items:flex-end;gap:12px;">
+      <div style="flex:none;"><div style="font-size:18px;font-weight:600;letter-spacing:-.2px;">{{ rankTitle }}</div><div style="font-size:9px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Ranking</div></div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);margin-bottom:7px;"></div>
+    </div>
+    <div class="hscroll" style="padding:0 18px 10px;display:flex;gap:7px;overflow-x:auto;">
+      <sc-for list="{{ cityTabs }}" as="c" hint-placeholder-count="3"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
+      <div style="margin-left:auto;display:flex;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:3px;flex:none;">
+        <div onClick="{{ pickQuan }}" style="{{ segQuan }}">Quán</div>
+        <div onClick="{{ pickCast }}" style="{{ segCast }}">Cast</div>
+      </div>
+    </div>
+    <div style="padding:0 18px 8px;display:flex;flex-direction:column;gap:8px;">
+      <sc-for list="{{ rankList }}" as="r" hint-placeholder-count="5">
+        <div onClick="{{ r.open }}" style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:9px 11px;cursor:pointer;">
+          <span style="width:26px;height:26px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;color:{{ r.numColor }};background:{{ r.crown }};">{{ r.rank }}</span>
+          <span style="width:38px;height:38px;border-radius:50%;flex:none;background:{{ r.img }};"></span>
+          <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">{{ r.name }}</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">{{ r.area }}</div></div>
+          <span style="font-size:11px;color:#e3c27e;font-weight:700;">{{ r.metric }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- dịch vụ (tương tác) -->
+    <div style="padding:20px 18px 10px;display:flex;align-items:flex-end;gap:12px;">
+      <div style="flex:none;"><div style="font-size:18px;font-weight:600;letter-spacing:-.2px;">Dịch vụ nổi bật</div><div style="font-size:9px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Featured Services</div></div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);margin-bottom:7px;"></div>
+      <span style="display:flex;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:3px;flex:none;margin-bottom:1px;">
+        <span onClick="{{ pickNhahang }}" style="{{ segNhahang }}">Nhà hàng</span>
+        <span onClick="{{ pickSpa }}" style="{{ segSpa }}">Spa</span>
+      </span>
+    </div>
+    <div style="padding:0 18px 8px;display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+      <sc-for list="{{ svc }}" as="s" hint-placeholder-count="4">
+        <div onClick="location.href='chi-tiet-quan.html'" style="cursor:pointer;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;">
+          <div style="height:82px;background:{{ s.grad }};position:relative;"><span style="position:absolute;top:8px;left:8px;white-space:nowrap;background:rgba(12,12,15,.55);border:1px solid rgba(212,178,106,.3);color:#e3c27e;font-size:9.5px;font-weight:600;border-radius:10px;padding:2px 8px;">{{ s.tag }}</span></div>
+          <div style="padding:10px;"><div style="font-weight:600;font-size:12.5px;">{{ s.name }}</div><div style="font-size:10px;color:#8c8679;margin-top:2px;">{{ s.area }}</div><div style="font-size:11.5px;color:#e3c27e;font-weight:700;margin-top:6px;">{{ s.price }}</div></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- video -->
+    <div style="padding:20px 18px 10px;display:flex;align-items:flex-end;gap:12px;">
+      <div style="flex:none;"><div style="font-size:18px;font-weight:600;letter-spacing:-.2px;">Video Hot</div><div style="font-size:9px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Watch Now</div></div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);margin-bottom:7px;"></div>
+    </div>
+    <div class="hscroll" style="padding:0 18px 8px;display:flex;gap:11px;overflow-x:auto;">
+      <a href="chi-tiet-quan.html" style="flex:none;width:152px;"><div style="height:92px;border-radius:13px;background:linear-gradient(rgba(12,12,15,0),rgba(12,12,15,.45)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover;position:relative;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(212,178,106,.5);display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e3c27e"><path d="M8 5v14l11-7z"/></svg></span></div><div style="font-size:12px;font-weight:600;margin-top:8px;">Club Lumière</div></a>
+      <a href="chi-tiet-quan.html" style="flex:none;width:152px;"><div style="height:92px;border-radius:13px;background:linear-gradient(rgba(12,12,15,0),rgba(12,12,15,.45)),url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=480&q=70') center/cover;position:relative;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(212,178,106,.5);display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#e3c27e"><path d="M8 5v14l11-7z"/></svg></span></div><div style="font-size:12px;font-weight:600;margin-top:8px;">Sakura Lounge</div></a>
+    </div>
+
+    <!-- bottom nav -->
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:4px;"><img src="https://img.icons8.com/ios-filled/100/E3C27E/home.png" style="width:20px;height:20px;" alt=""><span style="font-size:9.5px;color:#e3c27e;font-weight:600;">Trang chủ</span></a>
+      <a href="danh-sach-cast.html" style="display:flex;flex-direction:column;align-items:center;gap:4px;"><img src="https://img.icons8.com/ios/100/6F6B62/geisha.png" style="width:20px;height:20px;" alt=""><span style="font-size:9.5px;color:#6f6b62;">Cast</span></a>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:4px;"><img src="https://img.icons8.com/ios/100/6F6B62/gift.png" style="width:20px;height:20px;" alt=""><span style="font-size:9.5px;color:#6f6b62;">Ưu đãi</span></a>
+      <a href="lich-su-dat-cho.html" style="display:flex;flex-direction:column;align-items:center;gap:4px;"><img src="https://img.icons8.com/ios/100/6F6B62/calendar.png" style="width:20px;height:20px;" alt=""><span style="font-size:9.5px;color:#6f6b62;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:4px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:20px;height:20px;" alt=""><span style="font-size:9.5px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { activeBanner: 0 };
+  componentDidMount() {
+    var self = this;
+    this.bannerInterval = setInterval(function() {
+      var next = ((self.state.activeBanner || 0) + 1) % 3;
+      self.setState({ activeBanner: next });
+      var container = document.getElementById('ad-banner-container');
+      if (container) {
+        var width = container.clientWidth;
+        container.scrollTo({ left: next * width, behavior: 'smooth' });
+      }
+    }, 4000);
+  }
+  componentWillUnmount() {
+    if (this.bannerInterval) {
+      clearInterval(this.bannerInterval);
+    }
+  }
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var city = st.city || 'all', type = st.type || 'quan', service = st.service || 'nhahang';
+    var rankList = NL.buildRank((NL.RANK[city] || NL.RANK.all)[type], type).map(function(r){
+      r.open = function(){ location.href='danh-sach-quan.html'; }; return r;
+    });
+    var cityTabs = [['all','Tất cả'],['hn','Hà Nội'],['hcm','TP.HCM']].map(function(c){
+      return { label:c[1], style:NL.pillSm(city===c[0]), pick:function(){ self.setState({city:c[0]}); } };
+    });
+    var svc = NL.buildSvc(service);
+    var recs = NL.VENUES.slice(0,5).map(function(v){
+      var faved = NL.fav.has(v.name);
+      return {
+        name:v.name, area:v.area, catLabel:v.catLabel, rating:v.rating,
+        img:NL.bg(v.imgId, v.gradA, v.gradB), favIcon:NL.heart(faved),
+        open:function(){ NL.booking.patch({venueSlug:v.slug, venueName:v.name, venueArea:v.area, venuePrice:v.price, venueCat:v.catLabel, venueImg:v.imgId, venueGradA:v.gradA, venueGradB:v.gradB}); location.href='chi-tiet-quan.html'; },
+        fav:function(e){ if(e&&e.preventDefault){e.preventDefault();e.stopPropagation();} NL.fav.toggle(v.name); self.forceUpdate(); }
+      };
+    });
+    var active = st.activeBanner || 0;
+    var dotStyle = function(isActive) {
+      return 'width: ' + (isActive ? '18px' : '6px') + '; height: 6px; border-radius: 3px; background: ' + (isActive ? '#d4b26a' : 'rgba(255,255,255,0.35)') + '; transition: all 0.25s ease;';
+    };
+    return {
+      rankTitle:'Xếp hạng — ' + (type==='cast'?'Cast':'Quán'),
+      cityTabs:cityTabs, rankList:rankList,
+      segQuan:NL.seg(type==='quan'), segCast:NL.seg(type==='cast'),
+      pickQuan:function(){ self.setState({type:'quan'}); }, pickCast:function(){ self.setState({type:'cast'}); },
+      svc:svc, segNhahang:NL.seg(service==='nhahang'), segSpa:NL.seg(service==='spa'),
+      pickNhahang:function(){ self.setState({service:'nhahang'}); }, pickSpa:function(){ self.setState({service:'spa'}); },
+      recs:recs,
+      dot0: dotStyle(active === 0),
+      dot1: dotStyle(active === 1),
+      dot2: dotStyle(active === 2),
+      handleBannerScroll: function(e) {
+        var scrollLeft = e.target.scrollLeft;
+        var width = e.target.clientWidth;
+        if (!width) return;
+        var index = Math.round(scrollLeft / width);
+        if (self.state.activeBanner !== index) {
+          self.setState({ activeBanner: index });
+        }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

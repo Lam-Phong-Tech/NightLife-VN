@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="ranking" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Điều khiển Ranking" page-en="Ranking" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Ranking" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ rkHN }}" style="{{ rkTabHN }}">Hà Nội</span>
+            <span onClick="{{ rkHCM }}" style="{{ rkTabHCM }}">TP. Hồ Chí Minh</span>
+            <span onClick="{{ rkAll }}" style="{{ rkTabAll }}">Tổng hợp</span>
+          </div>
+          <div style="flex:1;"></div>
+          <span style="font-size:11.5px;color:#8c8679;">Kéo · dùng mũi tên để đổi thứ hạng</span>
+        </div>
+        <div style="display:flex;gap:9px;padding:12px 15px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:12px;margin-bottom:20px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+          <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Ranking 100% thủ công — Admin tự cấu hình. Quán/cast <b style="color:#f0dda8;">trả tài trợ</b> có thể lên Top, không phụ thuộc thuật toán. Thứ tự ưu tiên: <b style="color:#f0dda8;">Cast trước → Quán</b>.</span>
+        </div>
+
+        <!-- CAST ranking -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="width:26px;height:26px;border-radius:8px;background:rgba(224,114,158,.14);border:1px solid rgba(224,114,158,.3);display:flex;align-items:center;justify-content:center;color:#e79ab8;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/></svg></span>
+          <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Xếp hạng Cast</span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:1px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:3px 9px;border-radius:7px;">ƯU TIÊN</span>
+          <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+          <span onClick="{{ rkCastAddToggle }}" style="{{ rkCastAddBtn }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm cast</span>
+        </div>
+        <sc-if value="{{ rkAddOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.26);border-radius:14px;padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:9px;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:10px 14px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input value="{{ rkCastQ }}" onInput="{{ rkCastQSet }}" placeholder="Tìm cast theo nghệ danh hoặc tên quán…" style="flex:1;background:none;border:none;outline:none;color:#f3f0ea;font-size:13px;font-family:inherit;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;max-height:240px;overflow-y:auto;">
+            <sc-for list="{{ rkCastResults }}" as="cr" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 10px;">
+                <span style="width:34px;height:34px;flex:none;border-radius:50%;background:{{ cr.avaBg }};border:1.5px solid rgba(212,178,106,.3);"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;color:#f3f0ea;">{{ cr.nick }}</div>
+                  <div style="font-size:11px;color:#8c8679;margin-top:1px;">{{ cr.venue }}</div>
+                </div>
+                <span style="flex:none;font-size:10px;font-weight:600;color:#8fb6e4;background:rgba(143,182,228,.1);border:1px solid rgba(143,182,228,.25);padding:3px 8px;border-radius:7px;">{{ cr.region }}</span>
+                <span onClick="{{ cr.add }}" style="flex:none;font-size:11.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:7px 14px;border-radius:9px;cursor:pointer;">+ Thêm vào Top</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ rkNoResults }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align:center;font-size:12px;color:#8c8679;padding:14px;">Không còn cast phù hợp — tất cả đã có trong bảng xếp hạng hoặc không khớp từ khóa.</div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:30px;">
+          <sc-for list="{{ rkCast }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:14px;background:{{ r.rowBg }};border:1px solid {{ r.rowBd }};border-radius:14px;padding:11px 14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;cursor:grab;"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+              <span style="width:32px;height:32px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;{{ r.numStyle }}">{{ r.rank }}</span>
+              <span style="width:40px;height:40px;flex:none;border-radius:50%;background:{{ r.avaBg }};border:1.5px solid rgba(212,178,106,.3);"></span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:600;font-size:14.5px;color:#f3f0ea;">{{ r.nick }}</span><span style="{{ r.spBadge }}">Tài trợ</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">{{ r.venue }}</div></div>
+              <span onClick="{{ r.toggleSp }}" style="{{ r.spBtn }}">{{ r.spLabel }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span onClick="{{ r.up }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span onClick="{{ r.down }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </div>
+              <span onClick="{{ r.rm }}" title="Gỡ khỏi bảng xếp hạng" style="width:26px;height:26px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#e08a7e;border-color:rgba(224,122,110,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- VENUE ranking -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="width:26px;height:26px;border-radius:8px;background:rgba(212,178,106,.14);border:1px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;color:#d4b26a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span>
+          <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Xếp hạng Quán</span>
+          <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+          <span onClick="{{ rkVenAddToggle }}" style="{{ rkVenAddBtn }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm quán</span>
+        </div>
+        <sc-if value="{{ rkVenAddOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.26);border-radius:14px;padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:9px;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:10px 14px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input value="{{ rkVenQ }}" onInput="{{ rkVenQSet }}" placeholder="Tìm quán theo tên hoặc loại hình…" style="flex:1;background:none;border:none;outline:none;color:#f3f0ea;font-size:13px;font-family:inherit;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px;max-height:240px;overflow-y:auto;">
+            <sc-for list="{{ rkVenResults }}" as="vr" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 10px;">
+                <span style="width:34px;height:34px;flex:none;border-radius:9px;background:{{ vr.avaBg }};display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:12px;">{{ vr.logo }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;color:#f3f0ea;">{{ vr.nick }}</div>
+                  <div style="font-size:11px;color:#8c8679;margin-top:1px;">{{ vr.venue }}</div>
+                </div>
+                <span style="flex:none;font-size:10px;font-weight:600;color:#8fb6e4;background:rgba(143,182,228,.1);border:1px solid rgba(143,182,228,.25);padding:3px 8px;border-radius:7px;">{{ vr.region }}</span>
+                <span onClick="{{ vr.add }}" style="flex:none;font-size:11.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:7px 14px;border-radius:9px;cursor:pointer;">+ Thêm vào Top</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ rkVenNoResults }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align:center;font-size:12px;color:#8c8679;padding:14px;">Không còn quán phù hợp — tất cả đã có trong bảng xếp hạng hoặc không khớp từ khóa.</div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <sc-for list="{{ rkVenue }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:14px;background:{{ r.rowBg }};border:1px solid {{ r.rowBd }};border-radius:14px;padding:11px 14px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;cursor:grab;"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+              <span style="width:32px;height:32px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;{{ r.numStyle }}">{{ r.rank }}</span>
+              <span style="width:40px;height:40px;flex:none;border-radius:10px;background:{{ r.avaBg }};display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:14px;">{{ r.logo }}</span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:600;font-size:14.5px;color:#f3f0ea;">{{ r.nick }}</span><span style="{{ r.spBadge }}">Tài trợ</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">{{ r.venue }}</div></div>
+              <span onClick="{{ r.toggleSp }}" style="{{ r.spBtn }}">{{ r.spLabel }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <span onClick="{{ r.up }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span onClick="{{ r.down }}" style="width:26px;height:22px;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </div>
+              <span onClick="{{ r.rm }}" title="Gỡ khỏi bảng xếp hạng" style="width:26px;height:26px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#e08a7e;border-color:rgba(224,122,110,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = { toast:null };
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+
+  renderVals(){
+    const S=this.state, o={ toast:S.toast };
+    const RCAST=[
+      {id:'rc1',nick:'Yuki',venue:'Club Lumière · Tây Hồ',region:'HN',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rc2',nick:'Mai',venue:'Sakura Lounge · Hoàn Kiếm',region:'HN',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {id:'rc3',nick:'Hana',venue:'Akari Lounge · Tây Hồ',region:'HN',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {id:'rc4',nick:'Rin',venue:'Club Lumière · Tây Hồ',region:'HN',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rc5',nick:'Aoi',venue:'Sakura Lounge · Hoàn Kiếm',region:'HN',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rc6',nick:'Nana',venue:'Lotus Club · Quận 1',region:'HCM',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rc7',nick:'Saki',venue:'Neon Saigon · Quận 1',region:'HCM',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
+      {id:'rc8',nick:'Mika',venue:'KTV Hoàng Gia · Kim Mã',region:'HN',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)',cand:true},
+      {id:'rc9',nick:'Kana',venue:'Bar Tokyo Night · Ba Đình',region:'HN',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)',cand:true},
+      {id:'rc10',nick:'Linh',venue:'Lotus Club · Quận 1',region:'HCM',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',cand:true},
+    ];
+    const RVEN=[
+      {id:'rv1',nick:'Club Lumière',venue:'Club · Tây Hồ',region:'HN',logo:'CL',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rv2',nick:'Akari Lounge',venue:'Girls bar · Tây Hồ',region:'HN',logo:'AK',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {id:'rv3',nick:'Sakura Lounge',venue:'Lounge · Hoàn Kiếm',region:'HN',logo:'SL',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rv4',nick:'KTV Hoàng Gia',venue:'Karaoke · Kim Mã',region:'HN',logo:'KH',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {id:'rv5',nick:'Bar Tokyo Night',venue:'Bar · Ba Đình',region:'HN',logo:'TN',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {id:'rv6',nick:'Lotus Club Saigon',venue:'Club · Quận 1',region:'HCM',logo:'LC',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {id:'rv7',nick:'Neon Saigon',venue:'Lounge · Quận 1',region:'HCM',logo:'NS',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',cand:true},
+      {id:'rv8',nick:'Ruby Bar',venue:'Bar · Hoàn Kiếm',region:'HN',logo:'RB',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)',cand:true},
+      {id:'rv9',nick:'Zen Spa & Onsen',venue:'Massage · Tây Hồ',region:'HN',logo:'ZS',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',cand:true},
+    ];
+    const rReg=S.rankRegion||'HN';
+    const rtab=(a)=>'font-size:12.5px;padding:7px 14px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.rkTabHN=rtab(rReg==='HN'); o.rkTabHCM=rtab(rReg==='HCM'); o.rkTabAll=rtab(rReg==='ALL');
+    o.rkHN=()=>this.setState({rankRegion:'HN'}); o.rkHCM=()=>this.setState({rankRegion:'HCM'}); o.rkAll=()=>this.setState({rankRegion:'ALL'});
+    const numStyle=(rank)=> rank===1 ? 'color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);' : rank<=3 ? 'color:#d4b26a;background:rgba(212,178,106,.12);border:1px solid rgba(212,178,106,.3);' : 'color:#9b958a;background:rgba(255,255,255,.05);';
+    const reorder=(key,ids,i,dir)=>{ const j=i+dir; if(j<0||j>=ids.length) return; const a=ids.slice(); const t=a[i]; a[i]=a[j]; a[j]=t; this.setState({[key]:a}); };
+    const buildRank=(type,base)=>{
+      const pool=base.filter(x=>rReg==='ALL'||x.region===rReg);
+      const key='ord_'+type+'_'+rReg;
+      let ids=S[key]||pool.filter(x=>!x.cand).map(x=>x.id);
+      ids=ids.filter(id=>pool.some(p=>p.id===id));
+      const ordered=ids.map(id=>pool.find(p=>p.id===id)).filter(Boolean);
+      return ordered.map((x,i)=>{
+        const sp=!!S['sp_'+x.id];
+        return {...x, rank:i+1, numStyle:numStyle(i+1),
+          rowBg: i===0?'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))':'rgba(255,255,255,.025)',
+          rowBd: i===0?'rgba(212,178,106,.34)':'rgba(255,255,255,.06)',
+          spBadge: sp?'font-size:9px;font-weight:700;letter-spacing:.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:2px 7px;border-radius:6px;':'display:none;',
+          spBtn: sp?'font-size:11px;font-weight:600;color:#e3c27e;background:rgba(212,178,106,.14);border:1px solid rgba(212,178,106,.35);padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;':'font-size:11px;font-weight:600;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;',
+          spLabel: sp?'★ Đang tài trợ':'Tài trợ',
+          toggleSp:()=>this.setState({['sp_'+x.id]:!sp}),
+          rm:()=>{ this.setState({[key]:ids.filter(q=>q!==x.id)}); this.showToast('Đã gỡ '+x.nick+' khỏi bảng xếp hạng'); },
+          up:()=>reorder(key,ids,i,-1), down:()=>reorder(key,ids,i,1)};
+      });
+    };
+    o.rkCast=buildRank('cast',RCAST);
+    o.rkVenue=buildRank('venue',RVEN);
+
+    const cpool=RCAST.filter(x=>rReg==='ALL'||x.region===rReg);
+    const ckey='ord_cast_'+rReg;
+    let cids=S[ckey]||cpool.filter(x=>!x.cand).map(x=>x.id);
+    cids=cids.filter(id=>cpool.some(p=>p.id===id));
+    o.rkAddOpen=!!S.rkAddOpen;
+    o.rkCastAddToggle=()=>this.setState({rkAddOpen:!S.rkAddOpen});
+    o.rkCastAddBtn='display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;white-space:nowrap;'+(S.rkAddOpen?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#e3c27e;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.35);');
+    o.rkCastQ=S.rkAddQ||'';
+    o.rkCastQSet=(e)=>this.setState({rkAddQ:e.target.value});
+    const rq=(S.rkAddQ||'').toLowerCase();
+    o.rkCastResults=cpool.filter(x=>!cids.includes(x.id)).filter(x=>!rq||x.nick.toLowerCase().includes(rq)||x.venue.toLowerCase().includes(rq)).map(x=>({...x,add:()=>{ this.setState({[ckey]:cids.concat([x.id])}); this.showToast('Đã thêm '+x.nick+' vào bảng xếp hạng '+(rReg==='ALL'?'Tổng hợp':rReg)); }}));
+    o.rkNoResults=o.rkCastResults.length===0;
+
+    // Tìm & thêm quán vào bảng xếp hạng
+    const vpool=RVEN.filter(x=>rReg==='ALL'||x.region===rReg);
+    const vkey='ord_venue_'+rReg;
+    let vids=S[vkey]||vpool.filter(x=>!x.cand).map(x=>x.id);
+    vids=vids.filter(id=>vpool.some(p=>p.id===id));
+    o.rkVenAddOpen=!!S.rkVenAddOpen;
+    o.rkVenAddToggle=()=>this.setState({rkVenAddOpen:!S.rkVenAddOpen});
+    o.rkVenAddBtn='display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;white-space:nowrap;'+(S.rkVenAddOpen?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#e3c27e;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.35);');
+    o.rkVenQ=S.rkVenAddQ||'';
+    o.rkVenQSet=(e)=>this.setState({rkVenAddQ:e.target.value});
+    const vq=(S.rkVenAddQ||'').toLowerCase();
+    o.rkVenResults=vpool.filter(x=>!vids.includes(x.id)).filter(x=>!vq||x.nick.toLowerCase().includes(vq)||x.venue.toLowerCase().includes(vq)).map(x=>({...x,add:()=>{ this.setState({[vkey]:vids.concat([x.id])}); this.showToast('Đã thêm '+x.nick+' vào bảng xếp hạng '+(rReg==='ALL'?'Tổng hợp':rReg)); }}));
+    o.rkVenNoResults=o.rkVenResults.length===0;
+    return o;
+  }
+}
+
+</script>
+</body>
+</html>

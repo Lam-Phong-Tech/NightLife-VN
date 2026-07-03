@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .hs::-webkit-scrollbar{display:none;}
+  .hs{scrollbar-width:none;-ms-overflow-style:none;}
+</style>
+</helmet>
+
+<!-- ============ TITLE / BRIEF BAND ============ -->
+<div style="position:absolute;left:80px;top:40px;width:1320px;font-family:'Inter',sans-serif;">
+  <div style="font:600 11px/1 'Inter',sans-serif;letter-spacing:3px;color:#7d7a86;text-transform:uppercase;">Vietyoru · Premium Elegant · Dark Mode</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:36px;color:#16151a;margin-top:8px;letter-spacing:.2px;">Bảng xếp hạng <span style="color:#9a8758;">—</span> Ranking</div>
+  <div style="font-size:14px;color:#56535e;margin-top:5px;max-width:1040px;line-height:1.6;">Theo mockup bạn gửi + spec 6.4 — huy hiệu TOP 1–5 (vàng/bạc/đồng/lục/lam), hạng 6+ trung tính; toggle Cast / Quán; bộ lọc khu vực + Tuần/Tháng. Kèm <b style="color:#16151a;">Mobile</b> + <b style="color:#16151a;">Desktop</b>. Chuẩn than đen + <span style="color:#9a8758;">Gold</span>.</div>
+</div>
+
+<!-- ============ MOBILE ============ -->
+<div data-screen-label="Ranking · Mobile" style="position:absolute;left:80px;top:212px;width:388px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Mobile · 372px</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:788px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;color:#f3f0ea;flex:none;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 8px;flex:none;">
+        <span style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:#f3f0ea;flex:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+        <div style="flex:1;"><div style="font-size:18px;font-weight:700;color:#f3f0ea;">Bảng xếp hạng</div><div style="font-size:11px;color:#d4b26a;font-weight:600;margin-top:1px;">Tháng 6 năm 2026</div></div>
+      </div>
+      <!-- Cast/Quan segmented -->
+      <div style="display:flex;gap:6px;margin:4px 16px 0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:4px;flex:none;">
+        <span style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);border-radius:10px;padding:8px 0;">Cast</span>
+        <span style="flex:1;text-align:center;font-size:13px;font-weight:500;color:#b6b1a6;padding:8px 0;">Quán</span>
+      </div>
+      <!-- filters -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px 10px;flex:none;">
+        <div style="display:flex;gap:6px;">
+          <span style="font-size:11.5px;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:6px 13px;">Tuần</span>
+          <span style="font-size:11.5px;font-weight:600;color:#e3c27e;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);border-radius:13px;padding:6px 13px;">Tháng</span>
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#c5c0b6;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Hà Nội<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+      </div>
+      <div class="hs" style="flex:1;overflow-y:auto;padding:0 16px 16px;display:flex;flex-direction:column;gap:9px;">
+
+        <!-- TOP1 -->
+        <div style="display:flex;align-items:center;gap:13px;background:linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.03));border:1px solid rgba(212,178,106,.34);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=160&q=75') center/cover;border:2px solid #d4b26a;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f4e3b4,#d4b26a);color:#5a4413;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:9.5px;font-weight:700;letter-spacing:1px;color:#e3c27e;">TOP 1</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Yuki</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Tây Hồ · HN</div>
+          </div>
+        </div>
+
+        <!-- TOP2 -->
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8e8ee,#b8b8c4);color:#4a4a52;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:9.5px;font-weight:700;letter-spacing:1px;color:#b9b4ab;">TOP 2</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Hana</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Quận 1 · HCM</div>
+          </div>
+        </div>
+
+        <!-- TOP3 -->
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&w=160&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0c08a,#cf8f55);color:#5a3a18;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:9.5px;font-weight:700;letter-spacing:1px;color:#d8a571;">TOP 3</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Rina</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Kim Mã · HN</div>
+          </div>
+        </div>
+
+        <!-- TOP4 -->
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#86e0a8,#4cae78);color:#16402a;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:9.5px;font-weight:700;letter-spacing:1px;color:#7fcf9e;">TOP 4</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Michi</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Club Lumière · HN</div>
+          </div>
+        </div>
+
+        <!-- TOP5 -->
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=160&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#9db4ff,#6b86e6);color:#1a2350;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:9.5px;font-weight:700;letter-spacing:1px;color:#9db0e8;">TOP 5</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Aiko</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Sora Lounge · HCM</div>
+          </div>
+        </div>
+
+        <!-- 6 neutral -->
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">6</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Mei</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Hoàn Kiếm · HN</div>
+          </div>
+        </div>
+
+        <!-- 7 neutral -->
+        <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:15px;padding:11px 13px;">
+          <span style="width:48px;height:48px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=160&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:7px;"><span style="width:24px;height:24px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">7</span></div>
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;margin-top:5px;">Saki</div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:1px;">Tây Hồ · HN</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DESKTOP ============ -->
+<div data-screen-label="Ranking · Desktop" style="position:absolute;left:500px;top:212px;width:1180px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · 1180px</span></div>
+  <div style="border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 30px 70px -34px rgba(0,0,0,.7);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 30px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:24px;">
+        <span style="font-weight:800;font-size:21px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span>
+        <div style="display:flex;gap:18px;font-size:13px;color:#c5c0b6;font-weight:500;"><span>Trang chủ</span><span>Tìm quán</span><span>Cast</span><span style="color:#d4b26a;font-weight:600;">Bảng xếp hạng</span><span>Ưu đãi</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:18px;padding:6px 12px;font-weight:600;">VI · 日本語</span>
+        <span style="width:30px;height:30px;border-radius:50%;background:url('https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=120&q=70') center/cover;border:1px solid rgba(255,255,255,.15);"></span>
+      </div>
+    </div>
+    <div style="padding:26px 30px 32px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <div style="font-size:27px;font-weight:700;color:#f3f0ea;letter-spacing:.2px;">Bảng xếp hạng</div>
+          <div style="font-size:13px;color:#d4b26a;font-weight:600;margin-top:4px;">Tháng 6 năm 2026</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="display:flex;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:4px;">
+            <span style="font-size:12.5px;color:#c5c0b6;border-radius:9px;padding:7px 14px;">Tuần</span>
+            <span style="font-size:12.5px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);border-radius:9px;padding:7px 14px;">Tháng</span>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#c5c0b6;border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:8px 14px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Hà Nội<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <div style="display:flex;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:4px;">
+            <span style="font-size:12.5px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);border-radius:9px;padding:7px 18px;">Cast</span>
+            <span style="font-size:12.5px;color:#b6b1a6;border-radius:9px;padding:7px 18px;">Quán</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:22px;">
+
+        <!-- TOP1 -->
+        <div style="display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.025));border:1px solid rgba(212,178,106,.34);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=200&q=75') center/cover;border:2px solid #d4b26a;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f4e3b4,#d4b26a);color:#5a4413;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#e3c27e;">TOP 1</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Yuki</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Tây Hồ · HN</div>
+          </div>
+        </div>
+
+        <!-- TOP2 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8e8ee,#b8b8c4);color:#4a4a52;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#b9b4ab;">TOP 2</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Hana</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Quận 1 · HCM</div>
+          </div>
+        </div>
+
+        <!-- TOP3 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0c08a,#cf8f55);color:#5a3a18;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#d8a571;">TOP 3</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Rina</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Kim Mã · HN</div>
+          </div>
+        </div>
+
+        <!-- TOP4 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#86e0a8,#4cae78);color:#16402a;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#7fcf9e;">TOP 4</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Michi</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Club Lumière · HN</div>
+          </div>
+        </div>
+
+        <!-- TOP5 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#9db4ff,#6b86e6);color:#1a2350;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#9db0e8;">TOP 5</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Aiko</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Sora Lounge · HCM</div>
+          </div>
+        </div>
+
+        <!-- 6 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">6</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Mei</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Hoàn Kiếm · HN</div>
+          </div>
+        </div>
+
+        <!-- 7 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">7</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Saki</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Tây Hồ · HN</div>
+          </div>
+        </div>
+
+        <!-- 8 -->
+        <div style="display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:15px 24px;">
+          <span style="width:58px;height:58px;border-radius:50%;flex:none;background:url('https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=75') center/cover;"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;"><span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">8</span></div>
+            <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:6px;">Rin</div>
+            <div style="font-size:13px;color:#8c8679;margin-top:2px;">Hoàn Kiếm · HN</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

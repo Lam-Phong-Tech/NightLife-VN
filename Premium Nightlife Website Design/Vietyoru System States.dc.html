@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .sk{position:relative;overflow:hidden;background:rgba(255,255,255,.06);}
+  .sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(212,178,106,.13),transparent);animation:vsh 1.5s infinite;}
+  @keyframes vsh{100%{transform:translateX(100%);}}
+  @keyframes vspin{to{transform:rotate(360deg);}}
+  .vspin{animation:vspin 0.9s linear infinite;}
+</style>
+</helmet>
+
+<!-- ============ TITLE ============ -->
+<div style="position:absolute;left:80px;top:40px;width:1400px;font-family:'Inter',sans-serif;">
+  <div style="font:600 11px/1 'Inter',sans-serif;letter-spacing:3px;color:#7d7a86;text-transform:uppercase;">Vietyoru · Phương án A · System UI Kit</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:36px;color:#16151a;margin-top:8px;letter-spacing:.2px;">Màn hệ thống <span style="color:#9a8758;">—</span> Popup, Toast, Loading, Empty &amp; Trang lỗi</div>
+  <div style="font-size:14px;color:#56535e;margin-top:5px;max-width:920px;line-height:1.6;">Bộ trạng thái dùng chung cho toàn app — than đen + Gold premium. Mỗi mẫu trình bày cả ngữ cảnh <b style="color:#16151a;">Desktop</b> và <b style="color:#16151a;">Mobile</b>, bám đúng token Phương án A.</div>
+</div>
+
+<!-- ============ LEGEND / SEMANTIC PALETTE ============ -->
+<div style="position:absolute;left:80px;top:150px;width:1400px;background:#131218;border-radius:16px;padding:20px 24px;font-family:'Inter',sans-serif;color:#e9e6df;box-shadow:0 18px 40px -22px rgba(0,0,0,.55);display:flex;gap:34px;align-items:center;">
+  <div style="flex:none;">
+    <div style="font:600 10px/1 'Inter',sans-serif;letter-spacing:2.5px;color:#caa765;text-transform:uppercase;margin-bottom:12px;">Bảng màu trạng thái</div>
+    <div style="display:flex;gap:18px;">
+      <div style="text-align:center;"><span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:rgba(95,191,134,.14);border:1px solid rgba(95,191,134,.35);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5fbf86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Thành công</div></div>
+      <div style="text-align:center;"><span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:rgba(111,159,216,.14);border:1px solid rgba(111,159,216,.35);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6f9fd8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Thông tin</div></div>
+      <div style="text-align:center;"><span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:rgba(224,164,78,.14);border:1px solid rgba(224,164,78,.35);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0a44e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9 16.5H3z"/><path d="M12 10v4.2M12 17.4v.01"/></svg></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Cảnh báo</div></div>
+      <div style="text-align:center;"><span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:rgba(224,105,122,.14);border:1px solid rgba(224,105,122,.35);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e0697a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Lỗi</div></div>
+    </div>
+  </div>
+  <div style="width:1px;align-self:stretch;background:rgba(255,255,255,.09);"></div>
+  <div style="flex:none;">
+    <div style="font:600 10px/1 'Inter',sans-serif;letter-spacing:2.5px;color:#caa765;text-transform:uppercase;margin-bottom:12px;">Nhấn thương hiệu</div>
+    <div style="display:flex;gap:18px;">
+      <div style="text-align:center;"><span style="display:block;width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);"></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Gold grad</div></div>
+      <div style="text-align:center;"><span style="display:block;width:44px;height:44px;border-radius:12px;background:#0c0c0f;border:1px solid rgba(255,255,255,.1);"></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Nền #0c0c0f</div></div>
+      <div style="text-align:center;"><span style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:#0c0c0f;border:1px solid rgba(255,255,255,.1);"><span style="width:11px;height:11px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;"></span></span><div style="font-size:10px;color:#9b97a4;margin-top:7px;">Neon (chấm)</div></div>
+    </div>
+  </div>
+  <div style="flex:1;font-size:12px;color:#8e8a97;line-height:1.6;border-left:1px solid rgba(255,255,255,.09);padding-left:30px;">Màu trạng thái <b style="color:#cdc9d6;">desaturated</b>, dịu trên nền tối — không cạnh tranh với Gold. Nút chính luôn <b style="color:#e3c27e;">gold-gradient</b>; nút phá huỷ dùng tông hồng đỏ tiết chế.</div>
+</div>
+
+<!-- ============ SECTION 1 · MODAL (DESKTOP) ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:308px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">A · Modal thông báo</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Notification Modals · Desktop</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Modal giữa màn có overlay mờ — thành công · xác nhận · cảnh báo · lỗi.</div>
+</div>
+
+<!-- modal: success -->
+<div style="position:absolute;left:80px;top:372px;width:380px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Thành công</span></div>
+  <div style="position:relative;height:336px;border-radius:18px;overflow:hidden;background:#0c0c0f;border:1px solid rgba(255,255,255,.06);box-shadow:0 30px 60px -30px rgba(0,0,0,.7);">
+    <div style="position:absolute;inset:0;padding:18px;opacity:.4;filter:blur(2px);">
+      <div style="height:96px;border-radius:14px;background:linear-gradient(135deg,rgba(212,178,106,.4),rgba(168,124,60,.18));"></div>
+      <div style="height:13px;width:55%;background:rgba(255,255,255,.12);border-radius:6px;margin-top:16px;"></div>
+      <div style="height:11px;width:78%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:11px;"></div>
+      <div style="height:11px;width:64%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:9px;"></div>
+    </div>
+    <div style="position:absolute;inset:0;background:rgba(8,8,11,.74);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px;">
+      <div style="width:100%;background:#16141b;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 24px 60px -20px rgba(0,0,0,.85);">
+        <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 16px;background:rgba(95,191,134,.14);border:1px solid rgba(95,191,134,.32);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5fbf86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div style="font-size:18px;font-weight:700;color:#f3f0ea;">Đặt chỗ thành công!</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:8px;line-height:1.6;">Bàn của bạn tại <b style="color:#e3c27e;">Club Lumière</b> đã được giữ. Mã đặt chỗ đã gửi vào tài khoản.</div>
+        <div style="margin-top:20px;font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px;">Xem chi tiết đặt chỗ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- modal: confirm (destructive) -->
+<div style="position:absolute;left:490px;top:372px;width:380px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Xác nhận (phá huỷ)</span></div>
+  <div style="position:relative;height:336px;border-radius:18px;overflow:hidden;background:#0c0c0f;border:1px solid rgba(255,255,255,.06);box-shadow:0 30px 60px -30px rgba(0,0,0,.7);">
+    <div style="position:absolute;inset:0;padding:18px;opacity:.4;filter:blur(2px);">
+      <div style="height:96px;border-radius:14px;background:rgba(255,255,255,.05);"></div>
+      <div style="height:13px;width:50%;background:rgba(255,255,255,.12);border-radius:6px;margin-top:16px;"></div>
+      <div style="height:11px;width:72%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:11px;"></div>
+    </div>
+    <div style="position:absolute;inset:0;background:rgba(8,8,11,.74);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px;">
+      <div style="width:100%;background:#16141b;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 24px 60px -20px rgba(0,0,0,.85);">
+        <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 16px;background:rgba(224,105,122,.13);border:1px solid rgba(224,105,122,.32);display:flex;align-items:center;justify-content:center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e0697a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div>
+        <div style="font-size:18px;font-weight:700;color:#f3f0ea;">Hủy đặt chỗ?</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:8px;line-height:1.6;">Bạn có chắc muốn hủy lượt đặt tại Club Lumière? Thao tác này không thể hoàn tác.</div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <div style="flex:1;font-size:14px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:12px;">Để sau</div>
+          <div style="flex:1;font-size:14px;font-weight:700;color:#ec98a3;background:rgba(224,105,122,.16);border:1px solid rgba(224,105,122,.45);border-radius:11px;padding:12px;">Đồng ý hủy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- modal: warning -->
+<div style="position:absolute;left:900px;top:372px;width:380px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Cảnh báo</span></div>
+  <div style="position:relative;height:336px;border-radius:18px;overflow:hidden;background:#0c0c0f;border:1px solid rgba(255,255,255,.06);box-shadow:0 30px 60px -30px rgba(0,0,0,.7);">
+    <div style="position:absolute;inset:0;padding:18px;opacity:.4;filter:blur(2px);">
+      <div style="height:96px;border-radius:14px;background:rgba(255,255,255,.05);"></div>
+      <div style="height:13px;width:50%;background:rgba(255,255,255,.12);border-radius:6px;margin-top:16px;"></div>
+      <div style="height:11px;width:72%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:11px;"></div>
+    </div>
+    <div style="position:absolute;inset:0;background:rgba(8,8,11,.74);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px;">
+      <div style="width:100%;background:#16141b;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 24px 60px -20px rgba(0,0,0,.85);">
+        <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 16px;background:rgba(224,164,78,.14);border:1px solid rgba(224,164,78,.32);display:flex;align-items:center;justify-content:center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e0a44e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9 16.5H3z"/><path d="M12 10v4.2M12 17.4v.01"/></svg></div>
+        <div style="font-size:18px;font-weight:700;color:#f3f0ea;">Phiên sắp hết hạn</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:8px;line-height:1.6;">Vui lòng hoàn tất đặt chỗ trong <b style="color:#e0a44e;">5 phút</b>, nếu không phiên sẽ tự đóng.</div>
+        <div style="margin-top:20px;font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px;">Tiếp tục đặt chỗ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- modal: error -->
+<div style="position:absolute;left:1310px;top:372px;width:380px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Lỗi</span></div>
+  <div style="position:relative;height:336px;border-radius:18px;overflow:hidden;background:#0c0c0f;border:1px solid rgba(255,255,255,.06);box-shadow:0 30px 60px -30px rgba(0,0,0,.7);">
+    <div style="position:absolute;inset:0;padding:18px;opacity:.4;filter:blur(2px);">
+      <div style="height:96px;border-radius:14px;background:rgba(255,255,255,.05);"></div>
+      <div style="height:13px;width:50%;background:rgba(255,255,255,.12);border-radius:6px;margin-top:16px;"></div>
+      <div style="height:11px;width:72%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:11px;"></div>
+    </div>
+    <div style="position:absolute;inset:0;background:rgba(8,8,11,.74);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px;">
+      <div style="width:100%;background:#16141b;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 24px 60px -20px rgba(0,0,0,.85);">
+        <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 16px;background:rgba(224,105,122,.13);border:1px solid rgba(224,105,122,.32);display:flex;align-items:center;justify-content:center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e0697a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+        <div style="font-size:18px;font-weight:700;color:#f3f0ea;">Đặt chỗ thất bại</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:8px;line-height:1.6;">Không thể kết nối tới máy chủ. Vui lòng kiểm tra mạng và thử lại.</div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <div style="flex:1;font-size:14px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:12px;">Đóng</div>
+          <div style="flex:1.3;font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:12px;">Thử lại</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 2 · TOAST (DESKTOP) ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:760px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">B · Toast</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Toast Notifications · Desktop</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Toast nổi góc trên–phải, tự ẩn sau ~4s — 4 loại tiêu chuẩn và các biến thể có hành động / đang xử lý.</div>
+</div>
+
+<!-- toast: standard stack -->
+<div style="position:absolute;left:80px;top:806px;width:384px;font-family:'Inter',sans-serif;display:flex;flex-direction:column;gap:12px;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Toast tiêu chuẩn</span></div>
+  <div style="display:flex;align-items:flex-start;gap:12px;background:#16141b;border:1px solid rgba(255,255,255,.09);border-left:3px solid #5fbf86;border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <span style="flex:none;width:30px;height:30px;border-radius:9px;background:rgba(95,191,134,.14);border:1px solid rgba(95,191,134,.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5fbf86" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#82d3a3;">Đã lấy mã thành công</div><div style="font-size:12px;color:#9b958a;margin-top:3px;line-height:1.5;">Mã “Happy Hour −30%” đã lưu vào ví ưu đãi.</div></div>
+    <span style="flex:none;color:#6f6b62;font-size:17px;line-height:1;">×</span>
+  </div>
+  <div style="display:flex;align-items:flex-start;gap:12px;background:#16141b;border:1px solid rgba(255,255,255,.09);border-left:3px solid #6f9fd8;border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <span style="flex:none;width:30px;height:30px;border-radius:9px;background:rgba(111,159,216,.14);border:1px solid rgba(111,159,216,.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6f9fd8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg></span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#8fb4e3;">Đã cập nhật hồ sơ</div><div style="font-size:12px;color:#9b958a;margin-top:3px;line-height:1.5;">Thông tin tài khoản của bạn đã được lưu.</div></div>
+    <span style="flex:none;color:#6f6b62;font-size:17px;line-height:1;">×</span>
+  </div>
+  <div style="display:flex;align-items:flex-start;gap:12px;background:#16141b;border:1px solid rgba(255,255,255,.09);border-left:3px solid #e0a44e;border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <span style="flex:none;width:30px;height:30px;border-radius:9px;background:rgba(224,164,78,.14);border:1px solid rgba(224,164,78,.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e0a44e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9 16.5H3z"/><path d="M12 10v4.2M12 17.4v.01"/></svg></span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#e6b873;">Mã sắp hết hạn</div><div style="font-size:12px;color:#9b958a;margin-top:3px;line-height:1.5;">Mã ưu đãi của bạn còn hiệu lực trong 2 giờ.</div></div>
+    <span style="flex:none;color:#6f6b62;font-size:17px;line-height:1;">×</span>
+  </div>
+  <div style="display:flex;align-items:flex-start;gap:12px;background:#16141b;border:1px solid rgba(255,255,255,.09);border-left:3px solid #e0697a;border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <span style="flex:none;width:30px;height:30px;border-radius:9px;background:rgba(224,105,122,.14);border:1px solid rgba(224,105,122,.3);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e0697a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#e88f9b;">Mất kết nối</div><div style="font-size:12px;color:#9b958a;margin-top:3px;line-height:1.5;">Không thể tải dữ liệu. Vui lòng thử lại sau.</div></div>
+    <span style="flex:none;color:#6f6b62;font-size:17px;line-height:1;">×</span>
+  </div>
+</div>
+
+<!-- toast: variants -->
+<div style="position:absolute;left:520px;top:806px;width:384px;font-family:'Inter',sans-serif;display:flex;flex-direction:column;gap:12px;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Biến thể</span></div>
+  <!-- with action / undo -->
+  <div style="display:flex;align-items:center;gap:12px;background:#16141b;border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <span style="flex:none;width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c5c0b6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#f3f0ea;">Đã xoá khỏi mục đã lưu</div></div>
+    <span style="flex:none;font-size:13px;font-weight:700;color:#e3c27e;padding:6px 12px;border-radius:9px;border:1px solid rgba(212,178,106,.35);">Hoàn tác</span>
+  </div>
+  <!-- loading / processing -->
+  <div style="background:#16141b;border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;"><svg class="vspin" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(212,178,106,.2)" stroke-width="2.5"/><path d="M21 12a9 9 0 0 0-9-9" stroke="#d4b26a" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+      <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#f3f0ea;">Đang gửi yêu cầu đặt chỗ…</div><div style="font-size:12px;color:#9b958a;margin-top:3px;line-height:1.5;">Vui lòng đợi trong giây lát.</div></div>
+    </div>
+    <div style="height:3px;border-radius:3px;background:rgba(255,255,255,.06);margin-top:11px;overflow:hidden;"><div style="height:100%;width:62%;border-radius:3px;background:linear-gradient(90deg,#d4b26a,#f4e3b4);"></div></div>
+  </div>
+  <!-- telegram / booking sent (brand) -->
+  <div style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(212,178,106,.16),rgba(168,124,60,.06));border:1px solid rgba(212,178,106,.32);border-radius:13px;padding:13px 14px;box-shadow:0 16px 32px -18px rgba(0,0,0,.75);">
+    <span style="flex:none;width:30px;height:30px;border-radius:9px;background:rgba(212,178,106,.16);border:1px solid rgba(212,178,106,.36);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e3c27e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3L2 10.5l6.5 2.2M22 3l-3 16-7.5-6.3M22 3L8.5 12.7l0 4.8 3-3.6"/></svg></span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:700;color:#f0dda8;">Đã gửi tới Admin qua Telegram</div><div style="font-size:12px;color:#c5b78f;margin-top:3px;line-height:1.5;">Admin sẽ điều phối với quán và liên hệ lại.</div></div>
+  </div>
+</div>
+
+<!-- ============ SECTION 3 · POPUP & TOAST (MOBILE) ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:1150px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">C · Popup &amp; Toast</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Mobile context · 390px</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Bottom-sheet xác nhận, toast trên + modal thành công, và toast xếp chồng góc dưới.</div>
+</div>
+
+<!-- mobile frame 1: bottom-sheet confirm -->
+<div style="position:absolute;left:80px;top:1196px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Bottom-sheet · Xác nhận</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:560px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:14px 18px;filter:blur(2px);opacity:.5;">
+        <div style="height:150px;border-radius:16px;background:linear-gradient(160deg,rgba(212,178,106,.5),rgba(168,124,60,.2));"></div>
+        <div style="height:15px;width:58%;background:rgba(255,255,255,.14);border-radius:6px;margin-top:16px;"></div>
+        <div style="height:12px;width:82%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:11px;"></div>
+        <div style="height:12px;width:66%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:9px;"></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:34px;bottom:0;background:rgba(8,8,11,.6);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#16141b;border-top:1px solid rgba(255,255,255,.08);border-radius:24px 24px 0 0;padding:14px 20px 24px;box-shadow:0 -16px 40px rgba(0,0,0,.5);">
+        <div style="width:40px;height:4px;border-radius:3px;background:rgba(255,255,255,.18);margin:0 auto 16px;"></div>
+        <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 13px;background:rgba(224,105,122,.13);border:1px solid rgba(224,105,122,.32);display:flex;align-items:center;justify-content:center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e0697a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div>
+        <div style="text-align:center;font-size:18px;font-weight:700;color:#f3f0ea;">Hủy đặt chỗ?</div>
+        <div style="text-align:center;font-size:13px;color:#c5c0b6;margin-top:7px;line-height:1.6;">Bạn có chắc muốn hủy lượt đặt tại Club Lumière?</div>
+        <div style="display:flex;gap:10px;margin-top:18px;">
+          <div style="flex:1;text-align:center;font-size:14px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;">Để sau</div>
+          <div style="flex:1;text-align:center;font-size:14px;font-weight:700;color:#ec98a3;background:rgba(224,105,122,.16);border:1px solid rgba(224,105,122,.45);border-radius:12px;padding:14px;">Đồng ý hủy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- mobile frame 2: toast top + success modal -->
+<div style="position:absolute;left:540px;top:1196px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Toast trên + Modal thành công</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:560px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:14px 18px;filter:blur(2px);opacity:.45;">
+        <div style="height:150px;border-radius:16px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));"></div>
+        <div style="height:15px;width:54%;background:rgba(255,255,255,.14);border-radius:6px;margin-top:16px;"></div>
+        <div style="height:12px;width:80%;background:rgba(255,255,255,.08);border-radius:6px;margin-top:11px;"></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:34px;bottom:0;background:rgba(8,8,11,.66);display:flex;align-items:center;justify-content:center;padding:22px;">
+        <div style="width:100%;background:#16141b;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:26px 20px;text-align:center;box-shadow:0 24px 60px -18px rgba(0,0,0,.85);">
+          <div style="width:58px;height:58px;border-radius:50%;margin:0 auto 14px;background:rgba(95,191,134,.14);border:1px solid rgba(95,191,134,.32);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5fbf86" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div style="font-size:17px;font-weight:700;color:#f3f0ea;">Đặt chỗ thành công!</div>
+          <div style="font-size:12.5px;color:#c5c0b6;margin-top:7px;line-height:1.6;">Mã đặt chỗ đã gửi vào tài khoản của bạn.</div>
+          <div style="margin-top:18px;font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px;">Xem chi tiết</div>
+        </div>
+      </div>
+      <div style="position:absolute;top:44px;left:14px;right:14px;display:flex;align-items:flex-start;gap:10px;background:#16141b;border:1px solid rgba(255,255,255,.1);border-left:3px solid #5fbf86;border-radius:13px;padding:12px 13px;box-shadow:0 14px 30px rgba(0,0,0,.6);">
+        <span style="flex:none;width:26px;height:26px;border-radius:8px;background:rgba(95,191,134,.14);border:1px solid rgba(95,191,134,.3);display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5fbf86" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#82d3a3;">Đã lấy mã thành công</div><div style="font-size:11.5px;color:#9b958a;margin-top:2px;">Lưu vào ví ưu đãi.</div></div>
+        <span style="color:#6f6b62;font-size:15px;line-height:1;">×</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- mobile frame 3: stacked bottom toasts -->
+<div style="position:absolute;left:1000px;top:1196px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Toast xếp chồng góc dưới</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:560px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:14px 18px;">
+        <div style="font-size:19px;font-weight:700;color:#f3f0ea;">Ví ưu đãi</div>
+        <div style="height:120px;border-radius:16px;margin-top:14px;background:linear-gradient(135deg,rgba(212,178,106,.18),rgba(168,124,60,.06));border:1px solid rgba(212,178,106,.22);"></div>
+        <div style="height:64px;border-radius:14px;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);"></div>
+        <div style="height:64px;border-radius:14px;margin-top:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);"></div>
+      </div>
+      <div style="position:absolute;left:14px;right:14px;bottom:66px;display:flex;align-items:flex-start;gap:10px;background:#16141b;border:1px solid rgba(255,255,255,.1);border-left:3px solid #e0697a;border-radius:13px;padding:12px 13px;box-shadow:0 14px 30px rgba(0,0,0,.6);">
+        <span style="flex:none;width:26px;height:26px;border-radius:8px;background:rgba(224,105,122,.14);border:1px solid rgba(224,105,122,.3);display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e0697a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#e88f9b;">Không thể kết nối</div><div style="font-size:11.5px;color:#9b958a;margin-top:2px;">Vui lòng thử lại sau.</div></div>
+        <span style="color:#6f6b62;font-size:15px;line-height:1;">×</span>
+      </div>
+      <div style="position:absolute;left:14px;right:14px;bottom:14px;display:flex;align-items:flex-start;gap:10px;background:#16141b;border:1px solid rgba(255,255,255,.1);border-left:3px solid #6f9fd8;border-radius:13px;padding:12px 13px;box-shadow:0 14px 30px rgba(0,0,0,.6);">
+        <span style="flex:none;width:26px;height:26px;border-radius:8px;background:rgba(111,159,216,.14);border:1px solid rgba(111,159,216,.3);display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6f9fd8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg></span>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:#8fb4e3;">Đã lưu hồ sơ</div><div style="font-size:11.5px;color:#9b958a;margin-top:2px;">Thông tin của bạn đã cập nhật.</div></div>
+        <span style="color:#6f6b62;font-size:15px;line-height:1;">×</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 4 · SKELETON LOADING (DESKTOP) ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:1840px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">D · Skeleton loading</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Shimmer · Desktop</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Khung xương khi đang tải dữ liệu — hiệu ứng shimmer ánh vàng nhẹ chạy qua.</div>
+</div>
+
+<!-- skeleton panel -->
+<div style="position:absolute;left:80px;top:1888px;width:1080px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Trang danh sách đang tải</span></div>
+  <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:24px;box-shadow:0 18px 40px -24px rgba(0,0,0,.6);">
+    <div class="sk" style="height:188px;border-radius:16px;"></div>
+    <div style="display:flex;gap:14px;margin-top:18px;align-items:center;">
+      <div class="sk" style="width:48px;height:48px;border-radius:50%;"></div>
+      <div style="flex:1;">
+        <div class="sk" style="height:15px;width:34%;border-radius:6px;"></div>
+        <div class="sk" style="height:12px;width:56%;border-radius:6px;margin-top:10px;"></div>
+      </div>
+      <div class="sk" style="height:38px;width:120px;border-radius:11px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:22px;">
+      <sc-for list="{{ four }}" as="x" hint-placeholder-count="4">
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div class="sk" style="height:120px;"></div>
+          <div style="padding:13px;">
+            <div class="sk" style="height:14px;width:78%;border-radius:6px;"></div>
+            <div class="sk" style="height:11px;width:52%;border-radius:6px;margin-top:10px;"></div>
+            <div class="sk" style="height:11px;width:38%;border-radius:6px;margin-top:9px;"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:22px;display:flex;flex-direction:column;gap:11px;">
+      <sc-for list="{{ three }}" as="x" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:13px 15px;">
+          <div class="sk" style="width:30px;height:30px;border-radius:9px;"></div>
+          <div class="sk" style="width:46px;height:46px;border-radius:12px;"></div>
+          <div style="flex:1;">
+            <div class="sk" style="height:14px;width:42%;border-radius:6px;"></div>
+            <div class="sk" style="height:11px;width:28%;border-radius:6px;margin-top:9px;"></div>
+          </div>
+          <div class="sk" style="height:13px;width:72px;border-radius:6px;"></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- inline spinner loader -->
+<div style="position:absolute;left:1210px;top:1888px;width:280px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Spinner toàn màn</span></div>
+  <div style="height:300px;background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;box-shadow:0 18px 40px -24px rgba(0,0,0,.6);">
+    <svg class="vspin" width="46" height="46" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(212,178,106,.18)" stroke-width="2.4"/><path d="M21 12a9 9 0 0 0-9-9" stroke="#d4b26a" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <div style="text-align:center;"><div style="font-size:14px;font-weight:600;color:#f3f0ea;">Đang tải…</div><div style="font-size:11.5px;color:#8c8679;margin-top:4px;">Vui lòng đợi trong giây lát</div></div>
+  </div>
+</div>
+
+<!-- ============ SECTION 5 · EMPTY STATES (DESKTOP) ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:2700px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">E · Empty states</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Trạng thái rỗng · Desktop</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Màn không có dữ liệu — icon tile vàng tiết chế + CTA gold đưa người dùng quay lại luồng chính.</div>
+</div>
+
+<div style="position:absolute;left:80px;top:2744px;width:1432px;font-family:'Inter',sans-serif;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Bộ 4 trạng thái rỗng thường gặp</span></div>
+  <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:36px 24px;text-align:center;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);">
+    <div style="width:66px;height:66px;border-radius:18px;margin:0 auto 16px;background:linear-gradient(135deg,rgba(244,227,180,.14),rgba(168,124,60,.08));border:1px solid rgba(212,178,106,.28);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>
+    <div style="font-size:16.5px;font-weight:700;color:#f3f0ea;">Chưa có đặt chỗ nào</div>
+    <div style="font-size:12.5px;color:#8c8679;margin-top:8px;line-height:1.6;">Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây.</div>
+    <div style="display:inline-block;margin-top:18px;font-size:13.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:11px 22px;">Khám phá quán</div>
+  </div>
+  <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:36px 24px;text-align:center;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);">
+    <div style="width:66px;height:66px;border-radius:18px;margin:0 auto 16px;background:linear-gradient(135deg,rgba(244,227,180,.14),rgba(168,124,60,.08));border:1px solid rgba(212,178,106,.28);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></div>
+    <div style="font-size:16.5px;font-weight:700;color:#f3f0ea;">Bạn chưa lưu mục nào</div>
+    <div style="font-size:12.5px;color:#8c8679;margin-top:8px;line-height:1.6;">Nhấn biểu tượng trái tim trên quán hay cast để lưu vào yêu thích.</div>
+    <div style="display:inline-block;margin-top:18px;font-size:13.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:11px 22px;">Tìm quán</div>
+  </div>
+  <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:36px 24px;text-align:center;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);">
+    <div style="width:66px;height:66px;border-radius:18px;margin:0 auto 16px;background:linear-gradient(135deg,rgba(244,227,180,.14),rgba(168,124,60,.08));border:1px solid rgba(212,178,106,.28);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/></svg></div>
+    <div style="font-size:16.5px;font-weight:700;color:#f3f0ea;">Không tìm thấy kết quả</div>
+    <div style="font-size:12.5px;color:#8c8679;margin-top:8px;line-height:1.6;">Thử đổi từ khóa hoặc bỏ bớt bộ lọc để xem nhiều quán hơn.</div>
+    <div style="display:inline-block;margin-top:18px;font-size:13.5px;font-weight:700;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:11px 22px;">Xóa bộ lọc</div>
+  </div>
+  <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:36px 24px;text-align:center;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);">
+    <div style="width:66px;height:66px;border-radius:18px;margin:0 auto 16px;background:linear-gradient(135deg,rgba(244,227,180,.14),rgba(168,124,60,.08));border:1px solid rgba(212,178,106,.28);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v2a2 2 0 0 0 0 4v2a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 15.5v-2a2 2 0 0 0 0-4z"/><path d="M12 5v14" stroke-dasharray="2 3"/></svg></div>
+    <div style="font-size:16.5px;font-weight:700;color:#f3f0ea;">Ví ưu đãi trống</div>
+    <div style="font-size:12.5px;color:#8c8679;margin-top:8px;line-height:1.6;">Bạn chưa lấy mã nào. Khám phá Coupon Hot để nhận ưu đãi ngay.</div>
+    <div style="display:inline-block;margin-top:18px;font-size:13.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:11px 22px;">Xem ưu đãi</div>
+  </div>
+</div>
+
+<!-- ============ SECTION 6 · SKELETON & EMPTY (MOBILE) ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:3080px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">F · Loading &amp; Empty</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Mobile · 390px</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Khung xương khi tải trang chủ và màn rỗng "Chưa có đặt chỗ" kèm bottom nav.</div>
+</div>
+
+<!-- mobile skeleton -->
+<div style="position:absolute;left:80px;top:3126px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Skeleton đang tải</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:560px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:10px 18px 8px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-weight:800;font-size:20px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Vietyoru</span>
+        <span class="sk" style="width:64px;height:24px;border-radius:12px;"></span>
+      </div>
+      <div style="padding:6px 18px 18px;">
+        <div class="sk" style="height:120px;border-radius:14px;"></div>
+        <div class="sk" style="height:15px;width:50%;border-radius:6px;margin-top:18px;"></div>
+        <div style="display:flex;gap:12px;margin-top:14px;">
+          <sc-for list="{{ two }}" as="x" hint-placeholder-count="2">
+            <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;">
+              <div class="sk" style="height:92px;"></div>
+              <div style="padding:10px;"><div class="sk" style="height:12px;width:80%;border-radius:5px;"></div><div class="sk" style="height:10px;width:50%;border-radius:5px;margin-top:8px;"></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ three }}" as="x" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;">
+              <div class="sk" style="width:38px;height:38px;border-radius:11px;"></div>
+              <div style="flex:1;"><div class="sk" style="height:12px;width:58%;border-radius:5px;"></div><div class="sk" style="height:9px;width:38%;border-radius:5px;margin-top:8px;"></div></div>
+              <div class="sk" style="width:42px;height:11px;border-radius:5px;"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- mobile empty -->
+<div style="position:absolute;left:540px;top:3126px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Empty · Lịch sử đặt chỗ</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:560px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:8px 20px 14px;font-weight:600;font-size:17px;color:#f3f0ea;border-bottom:1px solid rgba(255,255,255,.06);">Lịch sử đặt chỗ</div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+        <div style="width:84px;height:84px;border-radius:24px;margin:0 auto 18px;background:linear-gradient(135deg,rgba(244,227,180,.14),rgba(168,124,60,.08));border:1px solid rgba(212,178,106,.28);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>
+        <div style="font-size:17px;font-weight:700;color:#f3f0ea;">Chưa có đặt chỗ nào</div>
+        <div style="font-size:13px;color:#8c8679;margin-top:8px;line-height:1.6;">Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị ở đây.</div>
+        <div style="margin-top:20px;font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px 26px;">Khám phá quán</div>
+      </div>
+      <div style="height:64px;background:rgba(8,8,11,.9);border-top:1px solid rgba(212,178,106,.12);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span style="font-size:9.5px;">Trang chủ</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg><span style="font-size:9.5px;">Cast</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a2 2 0 0 1 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a2 2 0 0 1-2-2z"/></svg><span style="font-size:9.5px;">Ưu đãi</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#e3c27e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span style="font-size:9.5px;font-weight:600;">Đặt chỗ</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6 6 0 0 1 11 0"/></svg><span style="font-size:9.5px;">Tài khoản</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 7 · 404 ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:3760px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">G · Lỗi 404</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Không tìm thấy trang · Desktop + Mobile</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Trang không tồn tại — giữ chrome đầy đủ, hướng người dùng tìm kiếm hoặc về trang chủ.</div>
+</div>
+
+<!-- 404 desktop -->
+<div style="position:absolute;left:80px;top:3804px;width:1080px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · 1080px</span></div>
+  <div style="border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 24px 60px -30px rgba(0,0,0,.7);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:17px 30px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:30px;">
+        <span style="font-weight:800;font-size:22px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span>
+        <div style="display:flex;gap:20px;font-size:13.5px;color:#c5c0b6;font-weight:500;"><span style="color:#d4b26a;font-weight:600;">Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span><span>Blog</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:18px;padding:6px 12px;font-weight:600;">VI · 日本語</span><span style="font-size:13px;color:#c5c0b6;">Đăng nhập</span><span style="font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:20px;padding:9px 16px;">Đăng ký đối tác</span></div>
+    </div>
+    <div style="padding:54px 34px 64px;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(212,178,106,.12);color:#e3c27e;font-size:12px;font-weight:700;border-radius:18px;padding:7px 15px;margin-bottom:20px;border:1px solid rgba(212,178,106,.24);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Có vẻ bạn đi lạc rồi</div>
+      <div style="font-size:140px;font-weight:800;line-height:1;letter-spacing:-.04em;background:linear-gradient(135deg,#f4e3b4,#d4b26a 52%,#a87c3c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">404</div>
+      <div style="font-size:29px;font-weight:700;margin-top:14px;color:#f3f0ea;">Không tìm thấy trang bạn cần</div>
+      <div style="font-size:14.5px;color:#c5c0b6;margin-top:13px;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7;">Trang có thể đã bị di chuyển, đổi tên hoặc không còn tồn tại. Bạn thử tìm một quán hoặc quay lại trang chủ nhé.</div>
+      <div style="margin:28px auto 0;max-width:540px;display:flex;gap:10px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:11px;align-items:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="2" stroke-linecap="round" style="margin-left:8px;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <div style="flex:1;text-align:left;color:#8c8679;font-size:14px;padding-left:4px;">Tìm quán hoặc cast gần bạn…</div>
+        <div style="font-weight:700;font-size:14px;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:11px 26px;">Tìm</div>
+      </div>
+      <div style="display:flex;gap:14px;justify-content:center;margin-top:24px;">
+        <div style="font-size:14.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px 28px;">Về trang chủ</div>
+        <div style="font-size:14.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:13px 28px;">Tìm quán</div>
+      </div>
+    </div>
+    <div style="background:#08080b;border-top:1px solid rgba(255,255,255,.06);padding:22px 34px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:#8c8679;">
+      <span style="font-weight:800;font-size:15px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Vietyoru</span>
+      <div style="display:flex;gap:20px;"><span>Về chúng tôi</span><span>Điều khoản</span><span>Bảo mật</span><span>Liên hệ hợp tác</span></div>
+      <span style="color:#6f6b62;">© 2026 Vietyoru</span>
+    </div>
+  </div>
+</div>
+
+<!-- 404 mobile -->
+<div style="position:absolute;left:1200px;top:3804px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Mobile · 390px</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:600px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:8px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="font-weight:800;font-size:19px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Vietyoru</span>
+        <span style="font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:16px;padding:5px 11px;font-weight:600;">Hà Nội ▾</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 24px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(212,178,106,.12);color:#e3c27e;font-size:11px;font-weight:700;border-radius:14px;padding:6px 12px;border:1px solid rgba(212,178,106,.24);">Đi lạc rồi</div>
+        <div style="font-size:84px;font-weight:800;line-height:1;letter-spacing:-.04em;margin-top:14px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 52%,#a87c3c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">404</div>
+        <div style="font-size:20px;font-weight:700;margin-top:8px;color:#f3f0ea;">Không tìm thấy trang</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:11px;line-height:1.65;">Trang có thể đã đổi tên hoặc không còn tồn tại. Thử tìm quán hoặc về trang chủ.</div>
+        <div style="margin-top:20px;width:100%;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.22);border-radius:13px;padding:13px 14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span style="font-size:13px;color:#8c8679;">Tìm quán hoặc cast…</span></div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:11px;margin-top:14px;">
+          <div style="font-size:14.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:14px;">Về trang chủ</div>
+          <div style="font-size:14.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:14px;">Tìm quán</div>
+        </div>
+      </div>
+      <div style="height:62px;background:rgba(8,8,11,.9);border-top:1px solid rgba(212,178,106,.12);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#e3c27e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span style="font-size:9.5px;font-weight:600;">Trang chủ</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg><span style="font-size:9.5px;">Cast</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a2 2 0 0 1 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a2 2 0 0 1-2-2z"/></svg><span style="font-size:9.5px;">Ưu đãi</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span style="font-size:9.5px;">Đặt chỗ</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#6f6b62;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 19a6 6 0 0 1 11 0"/></svg><span style="font-size:9.5px;">Tài khoản</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 8 · 500 ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:4580px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">H · Lỗi 500</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Sự cố máy chủ · Desktop + Mobile</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Lỗi phía server — có nút thử lại, mã sự cố và kênh hỗ trợ LINE cho khách Nhật.</div>
+</div>
+
+<!-- 500 desktop -->
+<div style="position:absolute;left:80px;top:4624px;width:1080px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · 1080px</span></div>
+  <div style="border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 24px 60px -30px rgba(0,0,0,.7);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:17px 30px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:30px;">
+        <span style="font-weight:800;font-size:22px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span>
+        <div style="display:flex;gap:20px;font-size:13.5px;color:#c5c0b6;font-weight:500;"><span style="color:#d4b26a;font-weight:600;">Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span><span>Blog</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:18px;padding:6px 12px;font-weight:600;">VI · 日本語</span><span style="font-size:13px;color:#c5c0b6;">Đăng nhập</span><span style="font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:20px;padding:9px 16px;">Đăng ký đối tác</span></div>
+    </div>
+    <div style="padding:54px 34px 60px;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(224,105,122,.12);color:#e88f9b;font-size:12px;font-weight:700;border-radius:18px;padding:7px 15px;margin-bottom:20px;border:1px solid rgba(224,105,122,.26);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9 16.5H3z"/><path d="M12 9.5v4M12 17v.01"/></svg>Sự cố hệ thống</div>
+      <div style="font-size:140px;font-weight:800;line-height:1;letter-spacing:-.04em;background:linear-gradient(135deg,#f4e3b4,#d4b26a 52%,#a87c3c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">500</div>
+      <div style="font-size:29px;font-weight:700;margin-top:14px;color:#f3f0ea;">Đã có lỗi xảy ra phía máy chủ</div>
+      <div style="font-size:14.5px;color:#c5c0b6;margin-top:13px;max-width:540px;margin-left:auto;margin-right:auto;line-height:1.7;">Hệ thống đang gặp trục trặc tạm thời. Vui lòng thử lại sau ít phút. Nếu vẫn lỗi, hãy liên hệ với chúng tôi qua LINE để được hỗ trợ.</div>
+      <div style="display:flex;gap:14px;justify-content:center;margin-top:30px;">
+        <div style="display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px 28px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v4h-4"/></svg>Thử lại</div>
+        <div style="font-size:14.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:13px 28px;">Về trang chủ</div>
+      </div>
+      <div style="margin-top:20px;font-size:12px;color:#6f6b62;">Mã sự cố: NL-500-20260625-23:08</div>
+    </div>
+    <div style="background:#08080b;border-top:1px solid rgba(255,255,255,.06);padding:22px 34px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:#8c8679;">
+      <span style="font-weight:800;font-size:15px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Vietyoru</span>
+      <div style="display:flex;gap:20px;"><span>Về chúng tôi</span><span>Điều khoản</span><span>Bảo mật</span><span>Liên hệ hợp tác</span></div>
+      <span style="color:#6f6b62;">© 2026 Vietyoru</span>
+    </div>
+  </div>
+</div>
+
+<!-- 500 mobile -->
+<div style="position:absolute;left:1200px;top:4624px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Mobile · 390px</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:600px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="padding:8px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="font-weight:800;font-size:19px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Vietyoru</span>
+        <span style="font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:16px;padding:5px 11px;font-weight:600;">Hà Nội ▾</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 24px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(224,105,122,.12);color:#e88f9b;font-size:11px;font-weight:700;border-radius:14px;padding:6px 12px;border:1px solid rgba(224,105,122,.26);">Sự cố hệ thống</div>
+        <div style="font-size:84px;font-weight:800;line-height:1;letter-spacing:-.04em;margin-top:14px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 52%,#a87c3c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">500</div>
+        <div style="font-size:20px;font-weight:700;margin-top:8px;color:#f3f0ea;">Lỗi máy chủ</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:11px;line-height:1.65;">Hệ thống đang gặp trục trặc tạm thời. Vui lòng thử lại sau ít phút.</div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:11px;margin-top:24px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:14.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:14px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v4h-4"/></svg>Thử lại</div>
+          <div style="font-size:14.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:14px;">Về trang chủ</div>
+        </div>
+        <div style="margin-top:16px;font-size:11px;color:#6f6b62;">Mã: NL-500-20260625</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION 9 · 403 & MAINTENANCE ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:5320px;width:900px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">I · 403 &amp; Bảo trì</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Forbidden · Maintenance</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Các màn trạng thái tương tự trong tài liệu — chặn truy cập và bảo trì hệ thống.</div>
+</div>
+
+<!-- 403 desktop -->
+<div style="position:absolute;left:80px;top:5364px;width:680px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">403 · Forbidden · Desktop</span></div>
+  <div style="height:472px;border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 24px 60px -30px rgba(0,0,0,.7);color:#f3f0ea;display:flex;flex-direction:column;">
+    <div style="padding:16px 28px;border-bottom:1px solid rgba(255,255,255,.06);text-align:center;"><span style="font-weight:800;font-size:20px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 40px;">
+      <div style="width:72px;height:72px;border-radius:20px;margin-bottom:18px;background:rgba(224,164,78,.12);border:1px solid rgba(224,164,78,.3);display:flex;align-items:center;justify-content:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e0a44e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+      <div style="font-size:56px;font-weight:800;line-height:1;letter-spacing:-.03em;background:linear-gradient(135deg,#f4e3b4,#d4b26a 52%,#a87c3c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">403</div>
+      <div style="font-size:22px;font-weight:700;margin-top:12px;color:#f3f0ea;">Bạn không có quyền truy cập</div>
+      <div style="font-size:13.5px;color:#c5c0b6;margin-top:11px;max-width:400px;line-height:1.65;">Trang này dành cho tài khoản đã đăng nhập hoặc có quyền phù hợp (Admin / Đối tác). Vui lòng đăng nhập đúng tài khoản.</div>
+      <div style="display:flex;gap:12px;margin-top:24px;">
+        <div style="font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:12px 26px;">Đăng nhập</div>
+        <div style="font-size:14px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:12px 26px;">Về trang chủ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- maintenance desktop -->
+<div style="position:absolute;left:800px;top:5364px;width:680px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Bảo trì · Desktop</span></div>
+  <div style="height:472px;border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 24px 60px -30px rgba(0,0,0,.7);color:#f3f0ea;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 40px;">
+    <div style="width:104px;height:104px;border-radius:28px;margin-bottom:20px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#a87c3c);display:flex;align-items:center;justify-content:center;box-shadow:0 18px 40px -16px rgba(168,124,60,.6);"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#241a0a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(224,164,78,.12);color:#e6b873;font-size:12px;font-weight:700;border-radius:18px;padding:6px 14px;border:1px solid rgba(224,164,78,.28);"><span style="width:7px;height:7px;border-radius:50%;background:#e0a44e;"></span>Đang nâng cấp</div>
+    <div style="font-size:26px;font-weight:700;margin-top:16px;color:#f3f0ea;">Hệ thống đang được bảo trì</div>
+    <div style="font-size:13.5px;color:#c5c0b6;margin-top:11px;max-width:440px;line-height:1.65;">Chúng tôi đang nâng cấp để mang lại trải nghiệm tốt hơn và sẽ trở lại trong giây lát. Cảm ơn bạn đã kiên nhẫn chờ đợi.</div>
+    <div style="display:flex;gap:14px;margin-top:22px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 22px;text-align:left;"><div style="font-size:10px;color:#8c8679;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Bắt đầu</div><div style="font-size:16px;font-weight:700;margin-top:5px;color:#f3f0ea;">25/06 · 21:00</div></div>
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(212,178,106,.28);border-radius:14px;padding:14px 22px;text-align:left;"><div style="font-size:10px;color:#8c8679;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Dự kiến hoàn tất</div><div style="font-size:16px;font-weight:700;margin-top:5px;color:#e3c27e;">25/06 · 23:30</div></div>
+    </div>
+    <div style="display:inline-flex;align-items:center;gap:9px;margin-top:22px;font-size:14px;font-weight:700;color:#4ad17f;background:rgba(6,199,85,.12);border:1px solid rgba(6,199,85,.36);border-radius:11px;padding:12px 24px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.6 8.6 0 0 1-4-1L3 20l1-5.5a8.5 8.5 0 1 1 17-3z"/></svg>Liên hệ qua LINE</div>
+  </div>
+</div>
+
+<!-- maintenance mobile -->
+<div style="position:absolute;left:1520px;top:5364px;width:390px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-24px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Bảo trì · Mobile</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:560px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;">
+        <div style="width:96px;height:96px;border-radius:26px;margin-bottom:18px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#a87c3c);display:flex;align-items:center;justify-content:center;box-shadow:0 18px 40px -16px rgba(168,124,60,.6);"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#241a0a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
+        <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(224,164,78,.12);color:#e6b873;font-size:11px;font-weight:700;border-radius:14px;padding:6px 12px;border:1px solid rgba(224,164,78,.28);"><span style="width:6px;height:6px;border-radius:50%;background:#e0a44e;"></span>Đang nâng cấp</div>
+        <div style="font-size:21px;font-weight:700;margin-top:14px;color:#f3f0ea;">Đang bảo trì hệ thống</div>
+        <div style="font-size:13px;color:#c5c0b6;margin-top:10px;line-height:1.65;">Chúng tôi sẽ trở lại trong giây lát. Cảm ơn bạn đã kiên nhẫn chờ đợi.</div>
+        <div style="width:100%;display:flex;gap:10px;margin-top:18px;">
+          <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px;"><div style="font-size:9.5px;color:#8c8679;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">Bắt đầu</div><div style="font-size:13.5px;font-weight:700;margin-top:4px;">21:00</div></div>
+          <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(212,178,106,.28);border-radius:13px;padding:11px;"><div style="font-size:9.5px;color:#8c8679;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">Hoàn tất</div><div style="font-size:13.5px;font-weight:700;margin-top:4px;color:#e3c27e;">23:30</div></div>
+        </div>
+        <div style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:14px;font-size:14px;font-weight:700;color:#4ad17f;background:rgba(6,199,85,.12);border:1px solid rgba(6,199,85,.36);border-radius:11px;padding:13px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.6 8.6 0 0 1-4-1L3 20l1-5.5a8.5 8.5 0 1 1 17-3z"/></svg>Liên hệ qua LINE</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){ return { four:[1,2,3,4], three:[1,2,3], two:[1,2] }; }
+}
+</script>
+</body>
+</html>

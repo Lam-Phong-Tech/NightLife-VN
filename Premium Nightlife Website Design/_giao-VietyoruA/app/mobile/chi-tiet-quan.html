@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+  .btn{cursor:pointer;transition:filter .14s;}
+  .btn:active{filter:brightness(.95);}
+</style>
+</helmet>
+
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+
+    <!-- hero -->
+    <div style="position:relative;height:200px;background:{{ mainBg }};">
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,12,15,.18),transparent 32%,rgba(12,12,15,.55));pointer-events:none;"></div>
+      <a href="danh-sach-quan.html" style="position:absolute;top:12px;left:14px;width:34px;height:34px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-size:18px;color:#e3c27e;">‹</a>
+      <span class="btn" onClick="{{ toggleFav }}" style="position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;"><img src="{{ favIconDark }}" style="width:17px;height:17px;" alt=""></span>
+      <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="#e3c27e" style="margin-left:2px;"><path d="M8 5v14l11-7z"/></svg></span>
+    </div>
+    <!-- thumbnails -->
+    <div class="hscroll" style="display:flex;gap:8px;padding:10px 18px 0;overflow-x:auto;">
+      <sc-for list="{{ thumbs }}" as="t" hint-placeholder-count="4"><span class="btn" onClick="{{ t.pick }}" style="width:60px;height:46px;flex:none;border-radius:9px;background:{{ t.bg }};"></span></sc-for>
+    </div>
+
+    <div style="background:#15131a;padding:14px 18px 14px;">
+      <h2 style="font-size:21px;font-weight:700;letter-spacing:-.2px;">{{ vName }}</h2>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:#c5c0b6;"><span style="color:#e3c27e;font-weight:600;">★ {{ vRating }}</span><span style="color:#a8a5b4;">({{ vReviews }})</span> · {{ vArea }}, Hà Nội</div>
+      <div style="display:flex;gap:7px;margin-top:11px;flex-wrap:wrap;"><span style="font-size:11px;background:rgba(212,178,106,.13);color:#d4b26a;border-radius:12px;padding:4px 10px;font-weight:600;">{{ vCat }}</span><span style="font-size:11px;background:rgba(60,160,110,.15);color:#7fd6a6;border-radius:12px;padding:4px 10px;">● Đang mở</span><span style="font-size:11px;background:#1b1922;color:#c5c0b6;border-radius:12px;padding:4px 10px;">Tiếng Nhật</span></div>
+
+      <!-- tabs -->
+      <div class="hscroll" style="display:flex;gap:20px;border-bottom:1px solid rgba(255,255,255,.08);margin-top:16px;font-size:13.5px;overflow-x:auto;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><span class="btn" onClick="{{ t.pick }}" style="white-space:nowrap;{{ t.style }}">{{ t.label }}</span></sc-for>
+      </div>
+
+      <sc-if value="{{ isIntro }}" hint-placeholder-val="{{ true }}"><p style="font-size:12.5px;line-height:1.65;color:#c5c0b6;margin-top:13px;">{{ vName }} là lounge bar cao cấp khu {{ vArea }} — không gian sang trọng, phòng VIP riêng tư, đội ngũ cast tuyển chọn kỹ, phục vụ khách Nhật với nhân viên thông thạo tiếng Nhật.</p></sc-if>
+      <sc-if value="{{ isPrice }}" hint-placeholder-val="{{ false }}"><div style="margin-top:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;font-size:12.5px;"><div style="display:flex;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.06);"><span>Set bàn thường (2 giờ)</span><span style="font-weight:600;">1.200.000đ</span></div><div style="display:flex;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.06);"><span>Phòng VIP (2 giờ)</span><span style="font-weight:600;">3.500.000đ</span></div><div style="display:flex;justify-content:space-between;padding:11px 14px;"><span>Phí cast / giờ</span><span style="font-weight:600;">từ 500.000đ</span></div></div></sc-if>
+      <sc-if value="{{ isCast }}" hint-placeholder-val="{{ false }}"><div class="hscroll" style="margin-top:13px;display:flex;gap:9px;overflow-x:auto;"><sc-for list="{{ cast }}" as="c" hint-placeholder-count="5"><div style="width:84px;flex:none;border-radius:11px;overflow:hidden;position:relative;height:108px;background:{{ c.img }};"><div style="position:absolute;bottom:0;left:0;right:0;padding:7px;background:linear-gradient(0deg,rgba(20,8,16,.8),transparent);color:#fff;font-size:11px;font-weight:600;">{{ c.name }}</div></div></sc-for></div></sc-if>
+      <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}"><div style="margin-top:13px;display:flex;flex-direction:column;gap:10px;"><div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;"><div style="display:flex;align-items:center;gap:9px;"><span style="width:28px;height:28px;border-radius:50%;background:url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=160&q=70') center/cover;"></span><div><div style="font-size:12.5px;font-weight:600;">Tanaka K.</div><div style="font-size:10px;color:#e3c27e;">★★★★★</div></div></div><p style="font-size:12px;color:#c5c0b6;margin-top:7px;line-height:1.5;">Không gian đẹp, nhân viên nói tiếng Nhật rất tốt.</p></div></div></sc-if>
+      <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}"><div style="margin-top:13px;height:160px;border-radius:12px;background:url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=600&q=70') center/cover;position:relative;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);"><img src="https://img.icons8.com/ios/100/D4B26A/marker.png" style="width:26px;height:26px;" alt=""></span></div><div style="font-size:12px;color:#c5c0b6;margin-top:8px;">12 Quảng An, {{ vArea }}, Hà Nội</div></sc-if>
+
+      <!-- booking selectors -->
+      <div style="margin-top:16px;font-size:11.5px;font-weight:700;color:#8c8679;letter-spacing:.04em;text-transform:uppercase;margin-bottom:7px;">Chọn ngày</div>
+      <div class="hscroll" style="display:flex;gap:7px;overflow-x:auto;"><sc-for list="{{ dates }}" as="d" hint-placeholder-count="3"><span class="btn" onClick="{{ d.pick }}" style="{{ d.style }}">{{ d.label }}</span></sc-for></div>
+      <div style="margin-top:12px;font-size:11.5px;font-weight:700;color:#8c8679;letter-spacing:.04em;text-transform:uppercase;margin-bottom:7px;">Khung giờ</div>
+      <div class="hscroll" style="display:flex;gap:7px;overflow-x:auto;"><sc-for list="{{ times }}" as="t" hint-placeholder-count="4"><span class="btn" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</span></sc-for></div>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;"><span style="font-size:11.5px;font-weight:700;color:#8c8679;letter-spacing:.04em;text-transform:uppercase;">Số khách</span><span style="display:flex;align-items:center;gap:14px;"><span class="btn" onClick="{{ dec }}" style="width:30px;height:30px;border-radius:8px;background:#1b1922;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;">−</span><span style="font-weight:700;font-size:14px;min-width:54px;text-align:center;">{{ guests }} người</span><span class="btn" onClick="{{ inc }}" style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;">+</span></span></div>
+    </div>
+
+    <!-- sticky CTA -->
+    <div style="background:#15131a;border-top:1px solid rgba(255,255,255,.08);padding:12px 18px 18px;display:flex;align-items:center;gap:12px;">
+      <div><div style="font-size:11px;color:#8c8679;">Đặt bàn từ</div><div style="font-size:16px;font-weight:800;">{{ vPriceShort }}</div></div>
+      <div class="btn" onClick="{{ book }}" style="flex:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;text-align:center;border-radius:12px;padding:14px;font-weight:700;font-size:14px;">Đặt chỗ ngay</div>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var b = NL.booking.get();
+    var v = NL.venue(b.venueSlug || 'club-lumiere');
+    var tab = st.tab || 'gioithieu';
+    var date = st.date || b.date || 'T6 · 21/06';
+    var time = st.time || b.time || '21:00';
+    var guests = st.guests || b.guests || 4;
+    var mainImg = st.mainImg || v.imgId;
+    var faved = NL.fav.has(v.name);
+    var tabs = [['gioithieu','Giới thiệu'],['banggia','Bảng giá'],['cast','Cast'],['danhgia','Đánh giá'],['bando','Bản đồ']].map(function(t){
+      return { label:t[1], style:NL.tab(tab===t[0]), pick:function(){ self.setState({tab:t[0]}); } };
+    });
+    var thumbs = ['1572116469696-31de0f17cc34','1551024601-bec78aea704b','1566417713940-fe7c737a9ef2','1470337458703-46ad1756a187'].map(function(id){
+      return { bg:NL.photo(id,300), pick:function(){ self.setState({mainImg:id}); } };
+    });
+    var cast = NL.CAST.slice(0,6).map(function(c){ return { name:c.name, img:NL.photo(c.imgId,300) }; });
+    var dates = ['T6 · 21/06','T7 · 22/06','CN · 23/06'].map(function(d){ return { label:d, style:NL.pillSm(date===d), pick:function(){ self.setState({date:d}); } }; });
+    var times = ['20:00','21:00','22:00','23:00'].map(function(t){ return { label:t, style:NL.pillSm(time===t), pick:function(){ self.setState({time:t}); } }; });
+    return {
+      vName:v.name, vArea:v.area, vCat:v.catLabel, vRating:v.rating, vReviews:v.reviews, vPriceShort:v.price,
+      mainBg:NL.bg(mainImg, v.gradA, v.gradB),
+      tabs:tabs, thumbs:thumbs, cast:cast, dates:dates, times:times, guests:guests,
+      isIntro:tab==='gioithieu', isPrice:tab==='banggia', isCast:tab==='cast', isReview:tab==='danhgia', isMap:tab==='bando',
+      favIconDark: faved ? 'https://img.icons8.com/ios-filled/100/E0729E/like.png' : 'https://img.icons8.com/ios/100/8C8679/like.png',
+      toggleFav:function(){ NL.fav.toggle(v.name); self.forceUpdate(); },
+      dec:function(){ self.setState({guests:Math.max(1,guests-1)}); },
+      inc:function(){ self.setState({guests:Math.min(20,guests+1)}); },
+      book:function(){ NL.booking.patch({venueSlug:v.slug, venueName:v.name, venueArea:v.area, venuePrice:v.price, venueImg:v.imgId, venueGradA:v.gradA, venueGradB:v.gradB, date:date, time:time, guests:guests}); location.href='dat-cho.html'; }
+    };
+  }
+}
+</script>
+</body>
+</html>

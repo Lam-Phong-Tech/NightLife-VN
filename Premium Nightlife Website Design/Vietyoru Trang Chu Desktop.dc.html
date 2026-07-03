@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .hs::-webkit-scrollbar{display:none;}
+  .hs{scrollbar-width:none;-ms-overflow-style:none;}
+</style>
+</helmet>
+
+<!-- ============ TITLE / BRIEF BAND ============ -->
+<div style="position:absolute;left:80px;top:40px;width:1280px;font-family:'Inter',sans-serif;">
+  <div style="font:600 11px/1 'Inter',sans-serif;letter-spacing:3px;color:#7d7a86;text-transform:uppercase;">Vietyoru · Premium Elegant · Dark Mode</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:36px;color:#16151a;margin-top:8px;letter-spacing:.2px;">Trang chủ <span style="color:#9a8758;">—</span> Desktop</div>
+  <div style="font-size:14px;color:#56535e;margin-top:5px;max-width:1040px;line-height:1.6;">Bản máy tính của trang chủ — cùng nội dung bản mobile, dàn lại theo lưới rộng: hero sự kiện · tìm kiếm · lối tắt · đề xuất · coupon + bảng xếp hạng (đã bỏ lượt đặt) · thẻ VIP · dịch vụ · video. Chuẩn than đen + <span style="color:#9a8758;">Gold</span>.</div>
+</div>
+
+<!-- ============ DESKTOP HOMEPAGE ============ -->
+<div data-screen-label="Trang chủ · Desktop" style="position:absolute;left:80px;top:150px;width:1280px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · 1280px</span></div>
+  <div style="border-radius:20px;overflow:hidden;background:#0c0c0f;border:1px solid rgba(255,255,255,.07);box-shadow:0 40px 90px -40px rgba(0,0,0,.75);color:#f3f0ea;">
+
+    <!-- ===== TOP NAV ===== -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 32px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:30px;">
+        <div>
+          <div style="font-weight:800;font-size:22px;line-height:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</div>
+          <div style="font-size:7.5px;letter-spacing:3px;color:#8c8679;margin-top:2px;text-transform:uppercase;">Vietnam Nightlife Guide</div>
+        </div>
+        <div style="display:flex;gap:20px;font-size:13px;color:#c5c0b6;font-weight:500;"><span style="color:#d4b26a;font-weight:600;">Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:18px;padding:7px 12px;font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>VI · 日本語</span>
+        <span style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(212,178,106,.32);display:flex;align-items:center;justify-content:center;color:#d4b26a;position:relative;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span style="position:absolute;top:8px;right:9px;width:6px;height:6px;border-radius:50%;background:#e0729e;border:1.5px solid #15131a;"></span></span>
+        <span style="font-size:13px;color:#c5c0b6;">Đăng nhập</span>
+        <span style="font-size:12px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:20px;padding:9px 16px;">Đăng ký đối tác</span>
+      </div>
+    </div>
+
+    <!-- ===== HERO ===== -->
+    <div style="position:relative;height:430px;background:linear-gradient(180deg,rgba(12,12,15,.12) 0%,rgba(12,12,15,.1) 38%,rgba(12,12,15,.9) 100%),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1600&q=80') center 38%/cover;">
+      <div style="position:absolute;top:22px;left:32px;display:flex;align-items:center;gap:8px;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(4px);border-radius:20px;padding:7px 13px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#e0729e;box-shadow:0 0 8px #e0729e;"></span>
+        <span style="font-size:10px;letter-spacing:1.6px;color:#f0e6d2;text-transform:uppercase;">Đang diễn ra</span>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:0 36px 34px;">
+        <div style="font-size:11px;letter-spacing:2.4px;color:#e3c27e;text-transform:uppercase;margin-bottom:9px;">Sự kiện đêm nay · Tây Hồ</div>
+        <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:42px;line-height:1.08;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.55);max-width:640px;">Đêm nhạc DJ SODA<br>tại Club Lumière</div>
+        <div style="display:flex;align-items:center;gap:20px;margin-top:20px;">
+          <span style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;font-size:14px;font-weight:700;padding:13px 26px;border-radius:12px;">Đặt bàn ngay<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          <span style="font-size:13.5px;color:#d8d3c7;">Đặt bàn VIP từ <b style="color:#fff;">2.500.000₫</b></span>
+        </div>
+      </div>
+      <div style="position:absolute;right:36px;bottom:38px;display:flex;gap:7px;">
+        <span style="width:22px;height:5px;border-radius:3px;background:#d4b26a;"></span>
+        <span style="width:7px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);"></span>
+        <span style="width:7px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);"></span>
+      </div>
+    </div>
+
+    <div style="padding:0 32px 40px;">
+
+      <!-- ===== SEARCH BAR (overlap hero) ===== -->
+      <div style="display:flex;gap:12px;align-items:center;margin-top:-30px;position:relative;z-index:2;background:#15141a;border:1px solid rgba(212,178,106,.28);border-radius:16px;padding:12px 14px;box-shadow:0 22px 50px -26px rgba(0,0,0,.85);">
+        <div style="flex:1;display:flex;align-items:center;gap:12px;padding:0 8px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <span style="flex:1;color:#8c8679;font-size:14.5px;">Tìm quán hoặc cast gần bạn…</span>
+        </div>
+        <span style="display:flex;align-items:center;gap:7px;border-left:1px solid rgba(255,255,255,.1);padding-left:16px;font-size:13.5px;color:#c5c0b6;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Hà Nội<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        <span style="font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:12px;padding:13px 32px;">Tìm</span>
+      </div>
+
+      <!-- ===== CATEGORIES ===== -->
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-top:26px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Tìm quán</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Tìm Cast</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Ưu đãi</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Sự kiện</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Nhà hàng</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3c0 4-3 5-3 9a3 3 0 0 0 6 0c0-4-3-5-3-9z"/><path d="M5 14c0 4 3 6 7 6s7-2 7-6"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Spa</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.18);display:flex;align-items:center;justify-content:center;color:#d9bd84;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span><span style="font-size:12px;color:#c5c0b6;">Ranking</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><span style="width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,rgba(244,227,180,.2),rgba(168,124,60,.12));border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;color:#f0dda8;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 5.6 6.1.6-4.6 4.1 1.3 6L12 19l-5.4 2.9 1.3-6-4.6-4.1 6.1-.6z"/></svg></span><span style="font-size:12px;color:#e3c27e;font-weight:600;">VIP</span></div>
+      </div>
+
+      <!-- ===== ĐỀ XUẤT TỐI NAY ===== -->
+      <div style="display:flex;align-items:center;gap:14px;margin-top:38px;margin-bottom:16px;">
+        <span style="font-size:22px;font-weight:600;color:#f3f0ea;">Đề xuất tối nay</span>
+        <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+        <span style="font-size:12.5px;color:#9b958a;">Xem tất cả</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="position:relative;height:168px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=600&q=80') center/cover;"><span style="position:absolute;top:11px;right:11px;width:30px;height:30px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span></div>
+          <div style="padding:13px 14px 15px;"><div style="font-size:16px;font-weight:600;color:#f3f0ea;">Sakura Lounge</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Hoàn Kiếm · Lounge</div><div style="display:flex;align-items:center;gap:4px;margin-top:9px;color:#e3c27e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 21l1.4-6.8L2.2 9.5 9 8.8z"/></svg><b style="font-size:13px;">4.9</b><span style="font-size:11.5px;color:#8c8679;">(212)</span></div></div>
+        </div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="position:relative;height:168px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80') center/cover;"><span style="position:absolute;top:11px;right:11px;width:30px;height:30px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span></div>
+          <div style="padding:13px 14px 15px;"><div style="font-size:16px;font-weight:600;color:#f3f0ea;">Bar Tokyo Night</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Ba Đình · Cocktail Bar</div><div style="display:flex;align-items:center;gap:4px;margin-top:9px;color:#e3c27e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 21l1.4-6.8L2.2 9.5 9 8.8z"/></svg><b style="font-size:13px;">4.8</b><span style="font-size:11.5px;color:#8c8679;">(96)</span></div></div>
+        </div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="position:relative;height:168px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80') center/cover;"><span style="position:absolute;top:11px;right:11px;width:30px;height:30px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span></div>
+          <div style="padding:13px 14px 15px;"><div style="font-size:16px;font-weight:600;color:#f3f0ea;">Akari Lounge</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Tây Hồ · Karaoke</div><div style="display:flex;align-items:center;gap:4px;margin-top:9px;color:#e3c27e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 21l1.4-6.8L2.2 9.5 9 8.8z"/></svg><b style="font-size:13px;">4.7</b><span style="font-size:11.5px;color:#8c8679;">(143)</span></div></div>
+        </div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="position:relative;height:168px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=600&q=80') center/cover;"><span style="position:absolute;top:11px;right:11px;width:30px;height:30px;border-radius:50%;background:rgba(12,12,15,.5);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span></div>
+          <div style="padding:13px 14px 15px;"><div style="font-size:16px;font-weight:600;color:#f3f0ea;">Club Lumière</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Tây Hồ · Club</div><div style="display:flex;align-items:center;gap:4px;margin-top:9px;color:#e3c27e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.7 1.4 6.8L12 17.8 5.9 21l1.4-6.8L2.2 9.5 9 8.8z"/></svg><b style="font-size:13px;">4.9</b><span style="font-size:11.5px;color:#8c8679;">(320)</span></div></div>
+        </div>
+      </div>
+
+      <!-- ===== COUPON + RANKING (2 cột) ===== -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:38px;">
+        <!-- coupon -->
+        <div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <span style="font-size:22px;font-weight:600;color:#f3f0ea;">Coupon Hot</span>
+            <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+            <span style="font-size:12.5px;color:#9b958a;">Xem tất cả</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:center;background:rgba(255,255,255,.035);border:1px solid rgba(212,178,106,.22);border-radius:15px;overflow:hidden;">
+              <span style="width:92px;height:92px;flex:none;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=300&q=70') center/cover;"></span>
+              <div style="flex:1;padding:14px 6px 14px 16px;"><div style="display:flex;align-items:center;gap:9px;"><span style="font-size:21px;font-weight:700;color:#e3c27e;">−30%</span><span style="font-size:13.5px;font-weight:600;color:#f3f0ea;">Happy Hour</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:4px;">Club Lumière · Tây Hồ · HSD 30/06</div></div>
+              <span style="border-left:1px dashed rgba(212,178,106,.4);align-self:stretch;display:flex;align-items:center;padding:0 17px;font-size:12px;font-weight:700;color:#d4b26a;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:1px;">LẤY MÃ</span>
+            </div>
+            <div style="display:flex;align-items:center;background:rgba(255,255,255,.035);border:1px solid rgba(212,178,106,.22);border-radius:15px;overflow:hidden;">
+              <span style="width:92px;height:92px;flex:none;background:url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=300&q=70') center/cover;"></span>
+              <div style="flex:1;padding:14px 6px 14px 16px;"><div style="display:flex;align-items:center;gap:9px;"><span style="font-size:21px;font-weight:700;color:#e3c27e;">2+1</span><span style="font-size:13.5px;font-weight:600;color:#f3f0ea;">Combo phòng VIP</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:4px;">KTV Hoàng Gia · Kim Mã · HSD 15/07</div></div>
+              <span style="border-left:1px dashed rgba(212,178,106,.4);align-self:stretch;display:flex;align-items:center;padding:0 17px;font-size:12px;font-weight:700;color:#d4b26a;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:1px;">LẤY MÃ</span>
+            </div>
+          </div>
+        </div>
+        <!-- ranking -->
+        <div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <span style="font-size:22px;font-weight:600;color:#f3f0ea;">Bảng xếp hạng</span>
+            <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="font-size:12px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:6px 14px;border-radius:16px;">Quán</span><span style="font-size:12px;color:#b6b1a6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:6px 14px;border-radius:16px;">Cast</span></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:13px;background:linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.03));border:1px solid rgba(212,178,106,.34);border-radius:14px;padding:12px 14px;">
+              <span style="width:32px;height:32px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);position:relative;">1<svg width="13" height="13" viewBox="0 0 24 24" fill="#d4b26a" style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg></span>
+              <span style="width:46px;height:46px;border-radius:12px;flex:none;background:url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=200&q=70') center/cover;border:1px solid rgba(212,178,106,.4);"></span>
+              <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Club Lumière</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Tây Hồ · Club</div></div>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9b8f6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px;">
+              <span style="width:32px;height:32px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">2</span>
+              <span style="width:46px;height:46px;border-radius:12px;flex:none;background:url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=200&q=70') center/cover;"></span>
+              <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Sakura Lounge</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Hoàn Kiếm · Lounge</div></div>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6f6b62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px;">
+              <span style="width:32px;height:32px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);">3</span>
+              <span style="width:46px;height:46px;border-radius:12px;flex:none;background:url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=200&q=70') center/cover;"></span>
+              <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">KTV Hoàng Gia</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Kim Mã · Karaoke</div></div>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6f6b62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== VIP BAND ===== -->
+      <div style="position:relative;overflow:hidden;margin-top:38px;border-radius:18px;padding:28px 32px;background:linear-gradient(135deg,#f4e3b4 0%,#d4b26a 46%,#a87c3c 100%);color:#241a0a;box-shadow:0 20px 44px -20px rgba(168,124,60,.6);display:flex;align-items:center;justify-content:space-between;gap:24px;">
+        <div style="position:absolute;right:120px;top:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.4),transparent 70%);"></div>
+        <div style="position:relative;">
+          <div style="display:flex;align-items:center;gap:10px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="#241a0a"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg><span style="font-weight:700;font-size:24px;letter-spacing:.5px;">Vietyoru VIP</span></div>
+          <div style="font-size:14px;line-height:1.5;margin-top:9px;max-width:520px;opacity:.85;">Mở khoá ưu đãi độc quyền, ưu tiên đặt bàn &amp; thứ hạng riêng cho thành viên. Trải nghiệm nightlife đẳng cấp concierge.</div>
+        </div>
+        <div style="position:relative;display:flex;align-items:center;gap:16px;flex:none;">
+          <span style="font-size:12.5px;color:#3a2c12;opacity:.8;">từ 199.000₫ / tháng</span>
+          <span style="background:#241a0a;color:#f0dda8;font-size:14px;font-weight:600;padding:13px 26px;border-radius:12px;">Trở thành VIP</span>
+        </div>
+      </div>
+
+      <!-- ===== DỊCH VỤ NỔI BẬT ===== -->
+      <div style="display:flex;align-items:center;gap:14px;margin-top:40px;margin-bottom:16px;">
+        <span style="font-size:22px;font-weight:600;color:#f3f0ea;">Dịch vụ nổi bật</span>
+        <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+        <span style="display:flex;gap:6px;"><span style="font-size:11.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:6px 13px;border-radius:14px;font-weight:600;">Nhà hàng</span><span style="font-size:11.5px;color:#b6b1a6;background:rgba(255,255,255,.05);padding:6px 13px;border-radius:14px;">Spa</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:15px;overflow:hidden;"><div style="position:relative;height:120px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.4)),url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=500&q=70') center/cover;"><span style="position:absolute;top:9px;left:9px;font-size:9.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:3px 10px;border-radius:10px;font-weight:700;">Đặt sớm</span></div><div style="padding:12px 13px 14px;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Hanami Teppanyaki</div><div style="font-size:11px;color:#8c8679;margin-top:3px;">Tây Hồ · Nhật Bản</div><div style="font-size:12px;color:#e3c27e;font-weight:600;margin-top:8px;">từ 650.000₫</div></div></div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:15px;overflow:hidden;"><div style="position:relative;height:120px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.4)),url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=500&q=70') center/cover;"><span style="position:absolute;top:9px;left:9px;font-size:9.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:3px 10px;border-radius:10px;font-weight:700;">Mới</span></div><div style="padding:12px 13px 14px;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Kaiseki Omakase</div><div style="font-size:11px;color:#8c8679;margin-top:3px;">Hoàn Kiếm · Fine dining</div><div style="font-size:12px;color:#e3c27e;font-weight:600;margin-top:8px;">từ 1.200.000₫</div></div></div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:15px;overflow:hidden;"><div style="position:relative;height:120px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.4)),url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=500&q=70') center/cover;"></div><div style="padding:12px 13px 14px;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Zen Spa &amp; Onsen</div><div style="font-size:11px;color:#8c8679;margin-top:3px;">Tây Hồ · Spa</div><div style="font-size:12px;color:#e3c27e;font-weight:600;margin-top:8px;">từ 450.000₫</div></div></div>
+        <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:15px;overflow:hidden;"><div style="position:relative;height:120px;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.4)),url('https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=500&q=70') center/cover;"></div><div style="padding:12px 13px 14px;"><div style="font-weight:600;font-size:15px;color:#f3f0ea;">Sora Massage</div><div style="font-size:11px;color:#8c8679;margin-top:3px;">Hoàn Kiếm · Spa</div><div style="font-size:12px;color:#e3c27e;font-weight:600;margin-top:8px;">từ 800.000₫</div></div></div>
+      </div>
+
+      <!-- ===== VIDEO HOT ===== -->
+      <div style="display:flex;align-items:center;gap:14px;margin-top:40px;margin-bottom:16px;">
+        <span style="font-size:22px;font-weight:600;color:#f3f0ea;">Video Hot</span>
+        <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></span>
+        <span style="font-size:12.5px;color:#9b958a;">Xem tất cả</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+        <div><div style="position:relative;height:150px;border-radius:14px;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=500&q=70') center/cover;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(212,178,106,.92);display:flex;align-items:center;justify-content:center;color:#241a0a;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div style="font-size:13px;color:#f3f0ea;margin-top:9px;font-weight:500;">Bên trong Club Lumière</div></div>
+        <div><div style="position:relative;height:150px;border-radius:14px;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=500&q=70') center/cover;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(212,178,106,.92);display:flex;align-items:center;justify-content:center;color:#241a0a;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div style="font-size:13px;color:#f3f0ea;margin-top:9px;font-weight:500;">Sakura Lounge tour</div></div>
+        <div><div style="position:relative;height:150px;border-radius:14px;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=500&q=70') center/cover;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(212,178,106,.92);display:flex;align-items:center;justify-content:center;color:#241a0a;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div style="font-size:13px;color:#f3f0ea;margin-top:9px;font-weight:500;">Đêm Tây Hồ về khuya</div></div>
+        <div><div style="position:relative;height:150px;border-radius:14px;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.5)),url('https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=500&q=70') center/cover;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(212,178,106,.92);display:flex;align-items:center;justify-content:center;color:#241a0a;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div><div style="font-size:13px;color:#f3f0ea;margin-top:9px;font-weight:500;">Gặp gỡ Cast nổi bật</div></div>
+      </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <div style="background:#100f14;border-top:1px solid rgba(255,255,255,.07);padding:30px 32px 26px;">
+      <div style="display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;">
+        <div style="max-width:300px;">
+          <div style="font-weight:800;font-size:20px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</div>
+          <div style="font-size:7.5px;letter-spacing:3px;color:#8c8679;margin-top:3px;text-transform:uppercase;">Vietnam Nightlife Guide</div>
+          <div style="font-size:12px;color:#8c8679;line-height:1.7;margin-top:12px;">Cẩm nang nightlife cao cấp cho khách Nhật &amp; quốc tế tại Việt Nam. Đặt bàn, đặt cast, ưu đãi VIP — tin cậy &amp; tinh tế.</div>
+        </div>
+        <div style="display:flex;gap:64px;">
+          <div>
+            <div style="font-size:10px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-bottom:12px;">Khám phá</div>
+            <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#c5c0b6;"><span>Tìm quán</span><span>Tìm Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span></div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-bottom:12px;">Hỗ trợ</div>
+            <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#c5c0b6;"><span>Trung tâm hỗ trợ</span><span>Điều khoản</span><span>Bảo mật</span><span>Đăng ký đối tác</span></div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-bottom:12px;">Theo dõi</div>
+            <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:#c5c0b6;"><span>Instagram</span><span>Facebook</span><span>LINE</span><span>YouTube</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:26px;padding-top:18px;border-top:1px solid rgba(255,255,255,.06);font-size:11.5px;color:#6f6b62;">
+        <span>© 2026 Vietyoru. Vietnam Nightlife Guide.</span>
+        <span>Hà Nội · TP. Hồ Chí Minh · Đà Nẵng</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

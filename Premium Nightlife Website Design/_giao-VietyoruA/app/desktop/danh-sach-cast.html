@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .card{transition:transform .16s ease, box-shadow .16s ease;cursor:pointer;}
+  .card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.18);}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="trang-chu.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Trang chủ</a>
+    <div style="font-size:13px;color:#8c8679;"><b style="color:#f3f0ea;">Danh sách Cast</b> — lọc theo tiêu chí, bấm để xem chi tiết</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;"><a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a><div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" class="lk">Tìm quán</a><a href="danh-sach-cast.html" style="color:#d4b26a;font-weight:600;">Cast</a><a href="xep-hang.html" class="lk">Bảng xếp hạng</a><span class="lk">Tour</span><span class="lk">Blog</span></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><a href="dang-nhap.html" class="lk" style="font-size:13px;color:#c5c0b6;">Đăng nhập</a><div style="font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:22px;padding:9px 18px;">Đăng ký đối tác</div></div>
+    </div>
+
+    <div style="padding:26px 34px 6px;"><h2 style="font-size:24px;font-weight:800;">Tìm Cast tại Hà Nội</h2><p style="font-size:13.5px;color:#c5c0b6;margin-top:6px;"><b style="color:#f3f0ea;">{{ count }} cast</b> đang hoạt động · cập nhật hôm nay</p></div>
+    <div style="padding:14px 34px 22px;display:flex;gap:10px;flex-wrap:wrap;">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><div onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</div></sc-for>
+    </div>
+
+    <div style="padding:0 34px 30px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+      <sc-for list="{{ cards }}" as="c" hint-placeholder-count="8">
+        <div onClick="{{ c.open }}" class="card" style="border-radius:14px;overflow:hidden;position:relative;height:240px;background:{{ c.img }};box-shadow:0 3px 12px rgba(0,0,0,.06);">
+          <span onClick="{{ c.fav }}" style="position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;"><img src="{{ c.favIcon }}" style="width:15px;height:15px;" alt=""></span>
+          <sc-if value="{{ c.jp }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;top:9px;left:9px;background:rgba(12,12,15,.55);color:#f3f0ea;font-size:9.5px;font-weight:700;border-radius:10px;padding:3px 8px;">🇯🇵 Tiếng Nhật</span></sc-if>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:12px;background:linear-gradient(0deg,rgba(20,8,16,.85),transparent);color:#fff;">
+            <div style="font-weight:600;font-size:14px;">{{ c.name }} · {{ c.age }}</div>
+            <div style="font-size:10.5px;color:#f0dde8;margin-top:3px;">{{ c.desc }} · ★ {{ c.rating }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var f = st.filter || 'Tất cả';
+    var list = NL.CAST.filter(function(c){
+      if(f==='Nói tiếng Nhật') return c.jp;
+      if(f==='20-23 tuổi') return c.age>=20 && c.age<=23;
+      if(f==='Tây Hồ') return c.area==='Tây Hồ';
+      if(f==='Đánh giá cao') return c.rating>=4.8;
+      return true;
+    });
+    var cards = list.map(function(c){
+      var faved = NL.fav.has(c.name);
+      return {
+        name:c.name, age:c.age, desc:c.desc, rating:c.rating, jp:c.jp,
+        img:NL.bg(c.imgId, c.gradA, c.gradB), favIcon:NL.heart(faved),
+        open:function(){ try{localStorage.setItem('nl_cast', c.name);}catch(e){} location.href='chi-tiet-cast.html'; },
+        fav:function(e){ if(e&&e.preventDefault){e.preventDefault();e.stopPropagation();} NL.fav.toggle(c.name); self.forceUpdate(); }
+      };
+    });
+    var filters = NL.CAST_FILTERS.map(function(x){ return { label:x, style:NL.chip(f===x), pick:function(){ self.setState({filter:x}); } }; });
+    return { cards:cards, count:list.length, filters:filters };
+  }
+}
+</script>
+</body>
+</html>
