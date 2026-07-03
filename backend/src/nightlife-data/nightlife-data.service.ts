@@ -10277,8 +10277,8 @@ export class NightlifeDataService {
         city: dto.city,
         address: dto.address,
         mapUrl: dto.mapUrl,
-        // openingHours: dto.openingHours as any,
-        // pricingInfo: dto.pricingInfo as any,
+        openingHours: dto.openingHours as any,
+        pricingInfo: dto.pricingInfo as any,
         status: dto.status || 'ACTIVE',
         areaId,
         ...(dto.mediaIds && dto.mediaIds.length > 0 ? {
@@ -10306,8 +10306,8 @@ export class NightlifeDataService {
         ...(dto.city && { city: dto.city }),
         ...(dto.address && { address: dto.address }),
         ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
-        // ...(dto.openingHours !== undefined && { openingHours: dto.openingHours as any }),
-        // ...(dto.pricingInfo !== undefined && { pricingInfo: dto.pricingInfo as any }),
+        ...(dto.openingHours !== undefined && { openingHours: dto.openingHours as any }),
+        ...(dto.pricingInfo !== undefined && { pricingInfo: dto.pricingInfo as any }),
         ...(dto.status && { status: dto.status }),
         ...(areaId && { areaId }),
         ...(dto.mediaIds ? {

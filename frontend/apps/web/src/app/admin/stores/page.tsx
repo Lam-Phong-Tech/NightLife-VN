@@ -44,7 +44,11 @@ export default function AdminStoresPage() {
   const [hoursForm, setHoursForm] = useState<any>(defaultHours);
   const [slugStatus, setSlugStatus] = useState<string>(''); // '', 'checking', 'ok', 'error'
   
-  // Unchanged for now, mock UI states
+  const [albums, setAlbums] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+
+  // UI states
   const [menuManage, setMenuManage] = useState(false);
   const [activeMenuTab, setActiveMenuTab] = useState('set');
 
@@ -95,6 +99,9 @@ export default function AdminStoresPage() {
   const openNewDrawer = () => {
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE' });
     setHoursForm(defaultHours);
+    setAlbums([]);
+    setVideos([]);
+    setMenuItems([]);
     setVenueSel('new');
   };
 
@@ -108,6 +115,9 @@ export default function AdminStoresPage() {
       status: st.status || 'ACTIVE' 
     });
     setHoursForm(st.openingHours || defaultHours);
+    setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE') || []);
+    setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
+    setMenuItems(st.pricingInfo?.items || []);
     setVenueSel(st.id);
   };
 
@@ -116,6 +126,8 @@ export default function AdminStoresPage() {
       const payload = {
         ...formData,
         openingHours: hoursForm,
+        pricingInfo: { items: menuItems },
+        mediaIds: [...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
       
       if (venueSel === 'new') {
@@ -144,13 +156,24 @@ export default function AdminStoresPage() {
   const g2 = 'linear-gradient(135deg,#241f2a,#181420)';
   const g3 = 'linear-gradient(135deg,#20262a,#141a1e)';
 
-  const videosMock = venueSel === 'new' ? [] : [{id:'vd1',title:'Tour không gian quán',meta:'01:24 · YouTube',thumb:g2},{id:'vd2',title:'Video sự kiện cuối tuần',meta:'00:48 · Tải lên',thumb:g3}];
+  const addMockVideo = () => {
+    setVideos(prev => [...prev, { id: 'vd' + Date.now(), title: 'Video upload mới', meta: 'Vừa tải lên', thumb: g3 }]);
+    showToast('Đã thêm video mẫu (Chưa hỗ trợ upload thật)');
+  };
 
-  const menuItemsMock = [
-    {id:'m1',name:'Cast hourly rate',desc:'Giá cast theo giờ thấp nhất đang áp dụng tại quán',tier:2,hot:false,thumb:g2},
-    {id:'m2',name:'Table or room package',desc:'Admin xác nhận sau khi có yêu cầu booking',tier:4,hot:true,thumb:g3},
-    {id:'m3',name:'Signature cocktail',desc:'Pha chế riêng theo phong cách quán',tier:2,hot:true,thumb:g1}
-  ];
+  const addMockAlbum = () => {
+    setAlbums(prev => [...prev, { id: 'img' + Date.now(), url: g2 }]);
+    showToast('Đã thêm ảnh mẫu (Chưa hỗ trợ upload thật)');
+  };
+
+  const addMockMenu = () => {
+    setMenuItems(prev => [...prev, { id: 'm' + Date.now(), name: 'Sản phẩm mới', desc: 'Mô tả sản phẩm', tier: 3, hot: false, thumb: g1 }]);
+    showToast('Đã thêm món mẫu');
+  };
+
+  const removeVideo = (id: string) => setVideos(prev => prev.filter(v => v.id !== id));
+  const removeMenu = (id: string) => setMenuItems(prev => prev.filter(m => m.id !== id));
+  const removeAlbum = (id: string) => setAlbums(prev => prev.filter(a => a.id !== id));
 
   const updateForm = (key: string, val: string) => setFormData(p => ({ ...p, [key]: val }));
   const updateHour = (day: string, key: string, val: any) => setHoursForm((p: any) => ({ ...p, [day]: { ...p[day], [key]: val } }));
@@ -303,10 +326,14 @@ export default function AdminStoresPage() {
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Album ảnh</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px' }}>
-                <div style={{ aspectRatio: 1, borderRadius: '11px', background: g1 }}></div>
-                <div style={{ aspectRatio: 1, borderRadius: '11px', background: venueSel === 'new' ? g1 : g2 }}></div>
-                <div style={{ aspectRatio: 1, borderRadius: '11px', background: venueSel === 'new' ? g1 : g3 }}></div>
-                <div style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer' }}>
+                {albums.map((al: any) => (
+                  <div key={al.id} style={{ position: 'relative', aspectRatio: 1, borderRadius: '11px', background: al.url || g1 }}>
+                    <span onClick={() => removeAlbum(al.id)} style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 6, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }} title="Xóa ảnh">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </span>
+                  </div>
+                ))}
+                <div onClick={addMockAlbum} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   <span style={{ fontSize: '9.5px' }}>Tải lên</span>
                 </div>
@@ -314,23 +341,23 @@ export default function AdminStoresPage() {
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Video quán</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-                {videosMock.map((vd: any) => (
+                {videos.map((vd: any) => (
                   <div key={vd.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb || g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg>
                       </span>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vd.title}</div>
-                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px' }}>{vd.meta}</div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vd.title || vd.url}</div>
+                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px' }}>{vd.meta || 'Tải lên'}</div>
                     </div>
-                    <span style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} title="Xóa video">
+                    <span onClick={() => removeVideo(vd.id)} style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} title="Xóa video">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                     </span>
                   </div>
                 ))}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
+                <div onClick={addMockVideo} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm video · link YouTube hoặc tải lên
                 </div>
               </div>
@@ -347,9 +374,9 @@ export default function AdminStoresPage() {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-                {menuItemsMock.map(mi => (
+                {menuItems.map(mi => (
                   <div key={mi.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb }}></div>
+                    <div style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb || g1 }}></div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                         <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mi.name}</span>
@@ -362,12 +389,12 @@ export default function AdminStoresPage() {
                       <span style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 3 ? '#d4b26a' : '#57534b', background: mi.tier === 3 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$</span>
                       <span style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 4 ? '#d4b26a' : '#57534b', background: mi.tier === 4 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$$</span>
                     </div>
-                    <span style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} title="Xóa món">
+                    <span onClick={() => removeMenu(mi.id)} style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} title="Xóa món">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                     </span>
                   </div>
                 ))}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
+                <div onClick={addMockMenu} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này
                 </div>
               </div>
