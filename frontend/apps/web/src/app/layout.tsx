@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <head>
         <Script src="/shared.js" strategy="beforeInteractive" />
         <Script src="/theme.js" strategy="beforeInteractive" />
@@ -45,7 +45,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <SocketProvider>
           <SiteChrome>{children}</SiteChrome>
         </SocketProvider>

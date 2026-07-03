@@ -5,9 +5,9 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
-  data?: unknown;
-  params?: Record<string, string>;
+export interface RequestOptions extends Omit<RequestInit, 'body'> {
+  data?: any;
+  params?: Record<string, string | undefined | null | number | boolean>;
 }
 
 const normalizeApiBaseUrl = (value: string) => value.replace(/\/api\/?$/, '').replace(/\/$/, '');
@@ -79,7 +79,10 @@ export const apiClient = async <T>(endpoint: string, options: RequestOptions = {
   let url = `${getBaseUrl()}/${endpoint.replace(/^\//, '')}`;
 
   if (params) {
-    const searchParams = new URLSearchParams(params);
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    const searchParams = new URLSearchParams(cleanParams as Record<string, string>);
     url += `?${searchParams.toString()}`;
   }
 

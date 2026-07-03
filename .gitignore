@@ -3,3 +3,4 @@
 .pnpm-home/
 .pnpm-store-local/
 .pnpm-store/
+docker-compose.yml

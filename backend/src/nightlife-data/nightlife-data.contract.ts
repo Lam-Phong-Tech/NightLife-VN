@@ -1514,6 +1514,47 @@ export function ReviewSensitiveBillContract() {
   );
 }
 
+const adminDashboardStatsExample = {
+  activeStores: 24,
+  totalCasts: 86,
+  todaysBookings: 12,
+  pendingBills: 5,
+  monthlyRevenue: 312000000,
+  pendingPartners: 3,
+  revenue7Days: [
+    { date: '2026-07-01', revenue: 15000000 },
+    { date: '2026-07-02', revenue: 20000000 },
+  ],
+  recentBookings: [],
+  telegramLogs: []
+};
+
+export function AdminDashboardStatsContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin action: Get dashboard statistics',
+      description: 'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Returns aggregated statistics for the admin dashboard.',
+    }),
+    ApiOkResponse({
+      description: 'Dashboard statistics successfully retrieved.',
+      schema: { example: adminDashboardStatsExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}
+
+export function CatalogParamsContract(options: { includeCastFilters?: boolean } = {}) {
+  return publicDiscoveryQueries(options);
+}
+
 function publicDiscoveryQueries(
   options: { includeCastFilters?: boolean } = {},
 ) {

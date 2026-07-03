@@ -6,11 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type * as express from 'express';
 import { ActionPolicy } from '../access/action-policy.decorator';
 import { ActionPolicyGuard } from '../access/action-policy.guard';
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
+  AdminDashboardStatsContract,
   AdminSensitiveBillsContract,
   CancelGuestBookingContract,
   CancelMemberBookingContract,
@@ -73,6 +75,7 @@ import {
   CreateAdminRankingConfigDto,
   UpdateAdminRankingConfigDto,
 } from './dto/admin-ranking.dto';
+import { AdminBookingQueryDto } from './dto/admin-booking.dto';
 import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
@@ -507,5 +510,68 @@ export class NightlifeDataController {
       billId,
       dto,
     );
+  }
+
+  @ApiOperation({ summary: 'Admin action: List bookings with filters and pagination' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/bookings')
+  listAdminBookings(@Query() query: AdminBookingQueryDto) {
+    return this.nightlifeDataService.listAdminBookings(query);
+  }
+
+  @ApiOperation({ summary: 'Admin action: List bills with filters and pagination' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/bills')
+  listAdminBills(@Query() query: import('./dto/admin-bill.dto').AdminBillQueryDto) {
+    return this.nightlifeDataService.listAdminBills(query);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Update booking status' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/bookings/:bookingId/status')
+  async updateAdminBookingStatus(
+    @Param('bookingId') bookingId: string,
+    @Body() dto: import('./dto/admin-booking.dto').UpdateAdminBookingStatusDto,
+  ) {
+    return this.nightlifeDataService.updateAdminBookingStatus(bookingId, dto.status);
+  }
+
+  @ApiOperation({ summary: 'Admin action: List coupons with filters and pagination' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/coupons')
+  listAdminCoupons(@Query() query: import('./dto/admin-coupon.dto').AdminCouponQueryDto) {
+    return this.nightlifeDataService.listAdminCoupons(query);
+  }
+
+  @ApiOperation({ summary: 'Admin action: List stores with filters and pagination' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/stores')
+  listAdminStores(@Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto) {
+    return this.nightlifeDataService.listAdminStores(query);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Approve or reject a bill' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Put('admin/bills/:id/status')
+  async updateAdminBillStatus(
+    @Req() request: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: import('./dto/update-bill-status.dto').UpdateBillStatusDto,
+  ) {
+    return this.nightlifeDataService.updateAdminBillStatus(id, dto, request.user as any);
+  }
+
+  @AdminDashboardStatsContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/dashboard/stats')
+  async getAdminDashboardStats(@Query('timeframe') timeframe?: string) {
+    return this.nightlifeDataService.getAdminDashboardStats(timeframe);
   }
 }
