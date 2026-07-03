@@ -5293,8 +5293,9 @@ describe('NightlifeDataService', () => {
         ],
       },
       funnel: [
-        expect.objectContaining({ key: 'booking_qr', count: 0 }),
-        expect.objectContaining({ key: 'qr_used', count: 0 }),
+        expect.objectContaining({ key: 'claim', count: 0 }),
+        expect.objectContaining({ key: 'scan', count: 0 }),
+        expect.objectContaining({ key: 'confirm_used', count: 0 }),
         expect.objectContaining({ key: 'bill_approved', count: 0 }),
         expect.objectContaining({
           key: 'commission',
