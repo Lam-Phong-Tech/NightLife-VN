@@ -193,6 +193,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
 
       {isOpen && typeof document !== "undefined" ? createPortal(
         <div
+          className="nl-language-picker-overlay"
           role="presentation"
           onMouseDown={(event) => {
             if (event.currentTarget === event.target) closePicker();
@@ -204,8 +205,8 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
             display: "flex",
             alignItems: isMobile ? "flex-end" : "center",
             justifyContent: "center",
-            background: isMobile ? "rgba(8,8,11,.5)" : "rgba(8,8,11,.72)",
-            backdropFilter: isMobile ? "blur(1.5px)" : "blur(2px)",
+            background: "transparent",
+            backdropFilter: "none",
             padding: isMobile ? "0" : "26px",
           }}
         >

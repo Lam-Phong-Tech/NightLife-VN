@@ -187,6 +187,11 @@ body > div {
   background: var(--nl-bg) !important;
 }
 
+body > .nl-language-picker-overlay {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
 .nl-mobile-simulator-root {
   background: #f6f5f2 !important;
 }
