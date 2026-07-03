@@ -42,6 +42,7 @@ import {
   MemberCouponIssuesContract,
   MemberFavoriteCastContract,
   MemberFavoriteCastsContract,
+  MemberPointSummaryContract,
   MemberUnfavoriteCastContract,
   PartnerBillsContract,
   PartnerBookingsContract,
@@ -690,6 +691,14 @@ export class NightlifeDataController {
   @Get('member/bookings')
   listMemberBookings(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listMemberBookings(request.user.id);
+  }
+
+  @MemberPointSummaryContract()
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/points/summary')
+  getMemberPointSummary(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.getMemberPointSummary(request.user.id);
   }
 
   @MemberFavoriteCastsContract()

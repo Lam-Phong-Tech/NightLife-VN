@@ -36,6 +36,7 @@ describe('NightlifeDataService', () => {
     },
     pointLedger: {
       upsert: jest.fn(),
+      findMany: jest.fn(),
     },
     coupon: {
       findMany: jest.fn(),
@@ -221,6 +222,7 @@ describe('NightlifeDataService', () => {
     prisma.pointLedger.upsert.mockResolvedValue({
       id: 'point-ledger-1',
     } as never);
+    prisma.pointLedger.findMany.mockResolvedValue([] as never);
     passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
       .spyOn(QRCode, 'toDataURL')
@@ -4322,6 +4324,96 @@ describe('NightlifeDataService', () => {
       }),
       { approve: true, reviewedById: 'admin-1' },
     );
+  });
+
+  it('returns the member point balance from posted point ledgers', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.pointLedger.findMany.mockResolvedValue([
+      {
+        id: 'ledger-earn-active',
+        type: 'EARN',
+        amountVnd: 18000000,
+        points: 180,
+        billId: 'bill-1',
+        bookingId: 'booking-1',
+        description: 'Approved bill points',
+        expiresAt: new Date('2027-07-03T10:00:00.000Z'),
+        postedAt: new Date('2026-07-03T10:00:00.000Z'),
+        createdAt: new Date('2026-07-03T10:00:00.000Z'),
+      },
+      {
+        id: 'ledger-adjust-active',
+        type: 'ADJUST',
+        amountVnd: 0,
+        points: 6,
+        billId: null,
+        bookingId: null,
+        description: 'Manual point adjustment',
+        expiresAt: new Date('2026-07-10T10:00:00.000Z'),
+        postedAt: new Date('2026-07-02T10:00:00.000Z'),
+        createdAt: new Date('2026-07-02T10:00:00.000Z'),
+      },
+      {
+        id: 'ledger-redeem',
+        type: 'REDEEM',
+        amountVnd: 0,
+        points: 20,
+        billId: null,
+        bookingId: null,
+        description: 'Redeemed points',
+        expiresAt: null,
+        postedAt: new Date('2026-07-01T10:00:00.000Z'),
+        createdAt: new Date('2026-07-01T10:00:00.000Z'),
+      },
+      {
+        id: 'ledger-reverse',
+        type: 'REVERSE',
+        amountVnd: 0,
+        points: 10,
+        billId: 'bill-reversed',
+        bookingId: null,
+        description: 'Reversed points',
+        expiresAt: null,
+        postedAt: new Date('2026-06-30T10:00:00.000Z'),
+        createdAt: new Date('2026-06-30T10:00:00.000Z'),
+      },
+      {
+        id: 'ledger-expired',
+        type: 'EARN',
+        amountVnd: 4000000,
+        points: 40,
+        billId: 'bill-old',
+        bookingId: null,
+        description: 'Expired bill points',
+        expiresAt: new Date('2026-06-01T10:00:00.000Z'),
+        postedAt: new Date('2025-06-01T10:00:00.000Z'),
+        createdAt: new Date('2025-06-01T10:00:00.000Z'),
+      },
+    ] as never);
+
+    const summary = await service.getMemberPointSummary('member-1');
+
+    expect(prisma.pointLedger.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: 'member-1',
+          status: 'POSTED',
+        },
+      }),
+    );
+    expect(summary).toMatchObject({
+      availablePoints: 156,
+      earnedPoints: 186,
+      spentPoints: 30,
+      expiredPoints: 40,
+      expiringSoonPoints: 6,
+      nextTierName: 'Premium+',
+      nextTierThreshold: 250,
+      pointsToNextTier: 94,
+      progressPercent: 62,
+      asOf: '2026-07-03T10:00:00.000Z',
+    });
+    expect(summary.recentLedgers).toHaveLength(5);
   });
 
   it('adds a posted loyalty point ledger for member bills after approval', async () => {

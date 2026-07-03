@@ -623,6 +623,33 @@ const memberCouponIssueExample = {
   },
 };
 
+const memberPointSummaryExample = {
+  availablePoints: 156,
+  earnedPoints: 186,
+  spentPoints: 30,
+  expiredPoints: 40,
+  expiringSoonPoints: 6,
+  nextTierName: 'Premium+',
+  nextTierThreshold: 250,
+  pointsToNextTier: 94,
+  progressPercent: 62,
+  asOf: '2026-07-03T10:00:00.000Z',
+  recentLedgers: [
+    {
+      id: 'ledger_01',
+      type: 'EARN',
+      billId: 'bill_01',
+      bookingId: 'booking_01',
+      amountVnd: 18000000,
+      points: 180,
+      description: 'Loyalty points from approved bill bill_01',
+      expiresAt: '2027-07-03T10:00:00.000Z',
+      postedAt: '2026-07-03T10:00:00.000Z',
+      createdAt: '2026-07-03T10:00:00.000Z',
+    },
+  ],
+};
+
 const adminCouponIssueExample = {
   ...memberCouponIssueExample,
   qrPayloadHash: '5f70bf18a086007016b3f5200f5ec3c9c1ed4f0d...',
@@ -1851,6 +1878,29 @@ export function MemberCouponIssuesContract() {
     'Coupon action: member lists own coupon issues',
     'Auth guard: JwtAuthGuard + RolesGuard(USER) + ActionPolicy(canViewMemberCoupon). Own-resource route; stale ISSUED codes are marked EXPIRED before returning.',
     memberCouponIssueExample,
+  );
+}
+
+export function MemberPointSummaryContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Loyalty action: member reads current point balance',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Computes the member point balance from posted PointLedger rows, excludes expired earn/positive adjustment rows, and returns the next tier progress used by the account screen.',
+    }),
+    ApiOkResponse({
+      description: 'Current member point balance and tier progress.',
+      schema: { example: memberPointSummaryExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not a member account.',
+      schema: { example: forbiddenExample },
+    }),
   );
 }
 

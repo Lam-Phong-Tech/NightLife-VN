@@ -47,12 +47,12 @@ export default function AdminPartnersPage() {
   const [activeTab, setActiveTab] = useState<'Chờ duyệt' | 'Đã duyệt' | 'Từ chối'>('Chờ duyệt');
   
   const filteredRequests = mockRequests.filter(r => r.status === activeTab);
-  const [selectedId, setSelectedId] = useState<string>(filteredRequests[0]?.id);
+  const [selectedId, setSelectedId] = useState<string>(filteredRequests[0]?.id ?? '');
 
   // If tab changes and selected is not in tab, select first item of new tab
   React.useEffect(() => {
     if (!filteredRequests.find(r => r.id === selectedId)) {
-      if (filteredRequests.length > 0) setSelectedId(filteredRequests[0].id);
+      if (filteredRequests.length > 0) setSelectedId(filteredRequests[0]?.id ?? '');
     }
   }, [activeTab, filteredRequests, selectedId]);
 

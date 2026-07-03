@@ -9,7 +9,7 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
-  data?: any;
+  data?: unknown;
   params?: Record<string, string | undefined | null | number | boolean>;
 }
 
@@ -81,14 +81,15 @@ const getAuthToken = () => {
   return null;
 };
 
-const buildApiUrl = (endpoint: string, params?: Record<string, string>) => {
+const buildApiUrl = (endpoint: string, params?: RequestOptions["params"]) => {
   let url = `${getBaseUrl()}/${endpoint.replace(/^\//, "")}`;
 
   if (params) {
     const cleanParams = Object.fromEntries(
-      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+      Object.entries(params).filter((entry) => entry[1] !== undefined && entry[1] !== null && entry[1] !== '')
+        .map(([key, value]) => [key, String(value)])
     );
-    const searchParams = new URLSearchParams(cleanParams as Record<string, string>);
+    const searchParams = new URLSearchParams(cleanParams);
     url += `?${searchParams.toString()}`;
   }
 

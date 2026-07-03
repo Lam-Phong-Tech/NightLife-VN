@@ -92,6 +92,12 @@ const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
 const BILL_LOYALTY_RULE_VERSION = 'v2.2';
 const BILL_LOYALTY_VND_PER_POINT = 100_000;
 const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
+const MEMBER_POINT_TIER_THRESHOLDS = [
+  { name: 'Premium+', points: 250 },
+  { name: 'Elite', points: 500 },
+  { name: 'Diamond', points: 1000 },
+] as const;
+const POINT_EXPIRING_SOON_MS = 30 * DAY_MS;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const BOOKING_DATE_WINDOW_DAYS = 14;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -3365,6 +3371,120 @@ export class NightlifeDataService {
         createdAt: true,
       },
     });
+  }
+
+  async getMemberPointSummary(userId: string) {
+    const now = new Date();
+    const expiringSoonCutoff = new Date(
+      now.getTime() + POINT_EXPIRING_SOON_MS,
+    );
+    const ledgers = await this.prisma.pointLedger.findMany({
+      where: {
+        userId,
+        status: 'POSTED',
+      },
+      orderBy: [{ postedAt: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        type: true,
+        amountVnd: true,
+        points: true,
+        billId: true,
+        bookingId: true,
+        description: true,
+        expiresAt: true,
+        postedAt: true,
+        createdAt: true,
+      },
+    });
+
+    let availablePoints = 0;
+    let earnedPoints = 0;
+    let spentPoints = 0;
+    let expiredPoints = 0;
+    let expiringSoonPoints = 0;
+
+    for (const ledger of ledgers) {
+      const points = Number.isFinite(ledger.points) ? ledger.points : 0;
+      const isPositiveLedger =
+        ledger.type === 'EARN' || (ledger.type === 'ADJUST' && points > 0);
+      const isExpired =
+        isPositiveLedger && Boolean(ledger.expiresAt && ledger.expiresAt <= now);
+
+      if (isExpired) {
+        expiredPoints += Math.max(points, 0);
+        continue;
+      }
+
+      if (ledger.type === 'EARN') {
+        earnedPoints += points;
+        availablePoints += points;
+        if (ledger.expiresAt && ledger.expiresAt <= expiringSoonCutoff) {
+          expiringSoonPoints += points;
+        }
+        continue;
+      }
+
+      if (ledger.type === 'ADJUST') {
+        availablePoints += points;
+        if (points >= 0) {
+          earnedPoints += points;
+          if (ledger.expiresAt && ledger.expiresAt <= expiringSoonCutoff) {
+            expiringSoonPoints += points;
+          }
+        } else {
+          spentPoints += Math.abs(points);
+        }
+        continue;
+      }
+
+      if (
+        ledger.type === 'REDEEM' ||
+        ledger.type === 'REVERSE' ||
+        ledger.type === 'EXPIRE'
+      ) {
+        const pointsUsed = Math.abs(points);
+        spentPoints += pointsUsed;
+        availablePoints -= pointsUsed;
+      }
+    }
+
+    availablePoints = Math.max(0, availablePoints);
+    const nextTier =
+      MEMBER_POINT_TIER_THRESHOLDS.find(
+        (tier) => availablePoints < tier.points,
+      ) ??
+      MEMBER_POINT_TIER_THRESHOLDS[MEMBER_POINT_TIER_THRESHOLDS.length - 1];
+    const pointsToNextTier = Math.max(nextTier.points - availablePoints, 0);
+    const progressPercent = Math.min(
+      100,
+      Math.round((availablePoints / nextTier.points) * 100),
+    );
+
+    return {
+      availablePoints,
+      earnedPoints,
+      spentPoints,
+      expiredPoints,
+      expiringSoonPoints,
+      nextTierName: nextTier.name,
+      nextTierThreshold: nextTier.points,
+      pointsToNextTier,
+      progressPercent,
+      asOf: now.toISOString(),
+      recentLedgers: ledgers.slice(0, 10).map((ledger) => ({
+        id: ledger.id,
+        type: ledger.type,
+        billId: ledger.billId,
+        bookingId: ledger.bookingId,
+        amountVnd: ledger.amountVnd,
+        points: ledger.points,
+        description: ledger.description,
+        expiresAt: ledger.expiresAt?.toISOString() ?? null,
+        postedAt: ledger.postedAt?.toISOString() ?? null,
+        createdAt: ledger.createdAt.toISOString(),
+      })),
+    };
   }
 
   async listMemberFavoriteCasts(userId: string) {

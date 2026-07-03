@@ -1,6 +1,7 @@
 "use client";
 
 import { clearAuthSession, getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { memberApi, type MemberPointSummary } from "@/lib/api/member";
 import {
   CalendarDays,
   ChevronRight,
@@ -14,7 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const colors = {
   bg: "#0c0c0f",
@@ -32,6 +33,10 @@ const colors = {
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
 
+const defaultPointTarget = 250;
+const defaultNextTierName = "Premium+";
+const pointFormatter = new Intl.NumberFormat("vi-VN");
+
 const menuItems = [
   { title: "Lịch sử đặt chỗ", desc: "Theo dõi yêu cầu và trạng thái xác nhận", href: "/lich-su-dat-cho", icon: CalendarDays },
   { title: "Ví ưu đãi", desc: "Coupon đã lưu và mã sắp hết hạn", href: "/vi-uu-dai", icon: Percent },
@@ -45,10 +50,46 @@ export default function Page() {
     if (typeof window === "undefined") return null;
     return getAuthUser();
   });
+  const [pointSummary, setPointSummary] = useState<MemberPointSummary | null>(null);
+  const [pointSummaryStatus, setPointSummaryStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Demo Member";
   const phone = authUser?.phone || "0912 345 678";
   const tier = authUser?.tier || "VIP";
+  const canLoadPoints = authUser?.role === "USER";
+  const rewardPoints = Math.max(0, pointSummary?.availablePoints ?? 0);
+  const rewardTarget = Math.max(pointSummary?.nextTierThreshold ?? defaultPointTarget, 1);
+  const rewardProgress = Math.min(100, Math.max(0, pointSummary?.progressPercent ?? Math.round((rewardPoints / rewardTarget) * 100)));
+  const nextTierName = pointSummary?.nextTierName ?? defaultNextTierName;
+  const pointsToNextTier = Math.max(0, pointSummary?.pointsToNextTier ?? rewardTarget - rewardPoints);
+  const isLoadingPoints = Boolean(canLoadPoints && pointSummaryStatus === "loading");
+  const pointSummaryError = Boolean(canLoadPoints && pointSummaryStatus === "error");
+
+  useEffect(() => {
+    let ignoreResult = false;
+
+    if (!canLoadPoints) {
+      return undefined;
+    }
+
+    memberApi
+      .getPointSummary()
+      .then((summary) => {
+        if (!ignoreResult) {
+          setPointSummary(summary);
+          setPointSummaryStatus("ready");
+        }
+      })
+      .catch(() => {
+        if (!ignoreResult) {
+          setPointSummaryStatus("error");
+        }
+      });
+
+    return () => {
+      ignoreResult = true;
+    };
+  }, [canLoadPoints]);
 
   const logout = () => {
     clearAuthSession();
@@ -99,13 +140,19 @@ export default function Page() {
               <div style={{ marginTop: 18, borderRadius: 16, background: "rgba(36,26,10,.16)", padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, fontWeight: 900 }}>
                   <span>Điểm thưởng</span>
-                  <span>156 / 250</span>
+                  <span>{pointFormatter.format(rewardPoints)} / {pointFormatter.format(rewardTarget)}</span>
                 </div>
                 <div style={{ marginTop: 10, height: 7, borderRadius: 999, background: "rgba(36,26,10,.22)", overflow: "hidden" }}>
-                  <div style={{ width: "62%", height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
+                  <div style={{ width: `${rewardProgress}%`, height: "100%", borderRadius: "inherit", background: "#fff2b6" }} />
                 </div>
                 <p style={{ marginTop: 8, fontSize: 11.5, color: "rgba(36,26,10,.76)" }}>
-                  Cần thêm 94 điểm để lên hạng Premium+
+                  {isLoadingPoints
+                    ? "Đang cập nhật điểm thưởng..."
+                    : pointSummaryError
+                      ? "Chưa tải được điểm thật, vui lòng thử lại."
+                      : pointsToNextTier > 0
+                        ? `Cần thêm ${pointFormatter.format(pointsToNextTier)} điểm để lên hạng ${nextTierName}`
+                        : `Đã đủ điểm để lên hạng ${nextTierName}`}
                 </p>
               </div>
             </section>

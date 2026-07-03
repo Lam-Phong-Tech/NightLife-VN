@@ -464,7 +464,7 @@ export default function AdminDashboardPage() {
                         cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
                         contentStyle={{ background: colors.surface2, border: `1px solid ${colors.borderSoft}`, borderRadius: '8px', color: colors.text, fontSize: '12px' }}
                         itemStyle={{ color: colors.gold }}
-                        formatter={(value: number) => [`${value}M₫`, 'Doanh thu']}
+                        formatter={(value) => [`${Number(value ?? 0)}M₫`, 'Doanh thu']}
                         labelStyle={{ color: colors.muted, marginBottom: '4px' }}
                       />
                       <Bar dataKey="revenue" radius={[6, 6, 6, 6]} barSize={12} minPointSize={12}>
