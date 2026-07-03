@@ -287,6 +287,16 @@
   color: #6f6b62;
 }
 
+.readOnlyInputWrap {
+  border-color: rgba(212, 178, 106, 0.24);
+  background: rgba(212, 178, 106, 0.065);
+}
+
+.readOnlyInput {
+  color: #e9ddbd;
+  cursor: default;
+}
+
 .phoneInput {
   gap: 9px;
   padding: 0 14px;

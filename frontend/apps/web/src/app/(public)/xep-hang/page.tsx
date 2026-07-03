@@ -266,7 +266,11 @@ function LoadingRows() {
   return (
     <>
       {Array.from({ length: 5 }).map((_, index) => (
-        <div key={index} className="vyr-rank-row vyr-rank-skeleton" data-testid="ranking-loading-row">
+        <div
+          key={index}
+          className="vyr-rank-row vyr-rank-skeleton"
+          data-testid="ranking-loading-row"
+        >
           <span className="vyr-rank-avatar" />
           <span className="vyr-rank-copy">
             <span className="vyr-rank-badge-line" />
@@ -279,14 +283,25 @@ function LoadingRows() {
   );
 }
 
-function RankingRow({ item, trackingContext }: { item: PublicRankingItem; trackingContext: RankingClickContext }) {
+function RankingRow({
+  item,
+  trackingContext,
+}: {
+  item: PublicRankingItem;
+  trackingContext: RankingClickContext;
+}) {
   const tone = getRankTone(item.rank);
   const topRank = item.rank === 1;
   const podiumRank = item.rank <= 3;
   const isStore = item.targetType === "STORE";
   const primaryHref = item.href || (isStore ? `/stores/${item.slug}` : `/casts/${item.slug}`);
-  const bookingHref = `/dat-cho?castSlug=${encodeURIComponent(item.slug)}`;
-  const areaLine = [item.area, item.cityCode?.toUpperCase() || item.city].filter(Boolean).join(" · ");
+  const bookingHref = `/dat-cho?${new URLSearchParams({
+    castSlug: item.slug,
+    castName: item.name,
+  }).toString()}`;
+  const areaLine = [item.area, item.cityCode?.toUpperCase() || item.city]
+    .filter(Boolean)
+    .join(" · ");
   const primaryAction = isStore ? "store" : "profile";
 
   return (
@@ -304,7 +319,14 @@ function RankingRow({ item, trackingContext }: { item: PublicRankingItem; tracki
     >
       <span
         className={item.image ? "vyr-rank-avatar" : "vyr-rank-avatar vyr-rank-avatar-fallback"}
-        style={item.image ? { backgroundImage: `url(${item.image})`, borderColor: topRank ? "#d4b26a" : undefined } : undefined}
+        style={
+          item.image
+            ? {
+                backgroundImage: `url(${item.image})`,
+                borderColor: topRank ? "#d4b26a" : undefined,
+              }
+            : undefined
+        }
         aria-hidden="true"
       >
         {!item.image ? getInitials(item.name) : null}
@@ -324,7 +346,11 @@ function RankingRow({ item, trackingContext }: { item: PublicRankingItem; tracki
           ) : (
             <span className="vyr-rank-number">{item.rank}</span>
           )}
-          {item.sponsored ? <span className="vyr-sponsored" data-testid="ranking-sponsored-badge">Tài trợ</span> : null}
+          {item.sponsored ? (
+            <span className="vyr-sponsored" data-testid="ranking-sponsored-badge">
+              Tài trợ
+            </span>
+          ) : null}
         </span>
         <strong>{item.name}</strong>
         <small>
@@ -351,7 +377,11 @@ function RankingRow({ item, trackingContext }: { item: PublicRankingItem; tracki
         </Link>
         {isStore ? (
           item.phone ? (
-            <a className="vyr-rank-action" href={`tel:${item.phone}`} onClick={() => trackRankingClick(item, "call", trackingContext)}>
+            <a
+              className="vyr-rank-action"
+              href={`tel:${item.phone}`}
+              onClick={() => trackRankingClick(item, "call", trackingContext)}
+            >
               <Phone size={15} />
               Gọi ngay
             </a>
@@ -362,7 +392,11 @@ function RankingRow({ item, trackingContext }: { item: PublicRankingItem; tracki
             </span>
           )
         ) : (
-          <Link className="vyr-rank-action" href={bookingHref} onClick={() => trackRankingClick(item, "booking", trackingContext)}>
+          <Link
+            className="vyr-rank-action"
+            href={bookingHref}
+            onClick={() => trackRankingClick(item, "booking", trackingContext)}
+          >
             <CalendarCheck size={15} />
             Đặt theo cast
           </Link>
@@ -482,12 +516,20 @@ export default function Page() {
               testId="ranking-category-select"
               className="vyr-category-select"
             />
-            <KindTabs rankingType={rankingType} onChange={changeRankingType} testIdPrefix="ranking-kind" />
+            <KindTabs
+              rankingType={rankingType}
+              onChange={changeRankingType}
+              testIdPrefix="ranking-kind"
+            />
           </div>
         </div>
 
         <div className="vyr-ranking-mobile-controls">
-          <KindTabs rankingType={rankingType} onChange={changeRankingType} testIdPrefix="ranking-kind-mobile" />
+          <KindTabs
+            rankingType={rankingType}
+            onChange={changeRankingType}
+            testIdPrefix="ranking-kind-mobile"
+          />
           <div className="vyr-ranking-mobile-filter-row">
             <PeriodTabs period={period} onChange={setPeriod} />
             <RankingSelect
@@ -542,7 +584,9 @@ export default function Page() {
           ) : null}
 
           {loadState === "ready" && hasItems
-            ? list.map((item) => <RankingRow key={item.targetId} item={item} trackingContext={trackingContext} />)
+            ? list.map((item) => (
+                <RankingRow key={item.targetId} item={item} trackingContext={trackingContext} />
+              ))
             : null}
         </div>
       </section>
@@ -798,7 +842,11 @@ export default function Page() {
         }
 
         .vyr-rank-row.is-top-rank {
-          background: linear-gradient(135deg, rgba(212, 178, 106, 0.13), rgba(255, 255, 255, 0.025));
+          background: linear-gradient(
+            135deg,
+            rgba(212, 178, 106, 0.13),
+            rgba(255, 255, 255, 0.025)
+          );
         }
 
         .vyr-rank-avatar {
@@ -987,7 +1035,12 @@ export default function Page() {
         .vyr-rank-skeleton strong,
         .vyr-rank-skeleton small {
           border: 0;
-          background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.05),
+            rgba(255, 255, 255, 0.11),
+            rgba(255, 255, 255, 0.05)
+          );
           background-size: 220% 100%;
           animation: vyrSkeleton 1.2s ease-in-out infinite;
         }
@@ -1185,15 +1238,27 @@ export default function Page() {
           .vyr-rank-row.is-podium-rank {
             grid-template-columns: 54px minmax(0, 1fr);
             border-width: 1.5px;
-            background: linear-gradient(135deg, rgba(212, 178, 106, 0.1), rgba(255, 255, 255, 0.025));
+            background: linear-gradient(
+              135deg,
+              rgba(212, 178, 106, 0.1),
+              rgba(255, 255, 255, 0.025)
+            );
           }
 
           .vyr-rank-row.is-rank-2 {
-            background: linear-gradient(135deg, rgba(232, 232, 238, 0.085), rgba(255, 255, 255, 0.025));
+            background: linear-gradient(
+              135deg,
+              rgba(232, 232, 238, 0.085),
+              rgba(255, 255, 255, 0.025)
+            );
           }
 
           .vyr-rank-row.is-rank-3 {
-            background: linear-gradient(135deg, rgba(240, 192, 138, 0.085), rgba(255, 255, 255, 0.025));
+            background: linear-gradient(
+              135deg,
+              rgba(240, 192, 138, 0.085),
+              rgba(255, 255, 255, 0.025)
+            );
           }
 
           .vyr-rank-row.is-podium-rank .vyr-rank-avatar {

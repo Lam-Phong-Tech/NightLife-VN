@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
+import { getCastDetail } from "@/lib/api/cast-detail";
 import styles from "../booking-flow.module.css";
 
 const bookingTimes = ["20:00", "21:00", "22:00", "23:00"] as const;
@@ -126,6 +127,16 @@ const parseRequestedMode = (value: string | null) => {
   return null;
 };
 
+const fallbackCastNameFromSlug = (slug: string) => {
+  const name = slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+  return name || "Cast đã chọn";
+};
+
 const parseContext = () => {
   const params = new URLSearchParams(window.location.search);
   const castSlug = params.get("castSlug") || undefined;
@@ -203,6 +214,42 @@ export default function Page() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!context.castSlug || context.castName) return;
+
+    let cancelled = false;
+
+    getCastDetail(context.castSlug)
+      .then((cast) => {
+        if (cancelled) return;
+
+        const castName = cast.publicAlias ?? cast.name ?? cast.stageName;
+        setContext((current) => {
+          if (current.castSlug !== cast.slug) return current;
+
+          return {
+            ...current,
+            castName,
+            storeSlug: current.storeSlug ?? cast.store.slug,
+            storeName: current.storeName || cast.store.name,
+            area: current.area ?? cast.store.area?.name ?? cast.store.district ?? undefined,
+          };
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setContext((current) => ({
+            ...current,
+            castName: current.castName ?? fallbackCastNameFromSlug(current.castSlug ?? ""),
+          }));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [context.castName, context.castSlug]);
+
   const memberLoginPath = useMemo(() => {
     const redirectParams = new URLSearchParams({
       mode: "member",
@@ -224,6 +271,9 @@ export default function Page() {
   const targetLabel = context.castName
     ? `${context.castName} @ ${context.storeName}`
     : context.storeName;
+  const castDisplayName = context.castSlug
+    ? (context.castName ?? "Đang tải cast...")
+    : "Không chọn cast";
   const isMemberMode = mode === "member";
 
   const submit = async () => {
@@ -409,6 +459,8 @@ export default function Page() {
                 </div>
               </div>
 
+              <ReadOnlyTextField label="Cast đã chọn" value={castDisplayName} />
+
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>
                   Ghi chú{" "}
@@ -482,6 +534,23 @@ export default function Page() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function ReadOnlyTextField({ label, value }: { label: string; value: string }) {
+  return (
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <span className={`${styles.inputWrap} ${styles.readOnlyInputWrap}`}>
+        <input
+          type="text"
+          value={value}
+          readOnly
+          aria-readonly="true"
+          className={`${styles.input} ${styles.readOnlyInput}`}
+        />
+      </span>
+    </label>
   );
 }
 
