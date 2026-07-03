@@ -38,13 +38,7 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
-
-      - name: Check Google OAuth client ID
-        run: |
-          if [ -z "${GOOGLE_CLIENT_ID:-}" ]; then
-            echo "::warning::Chua set GOOGLE_CLIENT_ID hoac NEXT_PUBLIC_GOOGLE_CLIENT_ID secret/variable; Google endpoint se tam thoi bao thieu cau hinh."
-          fi
-
+        
       - name: Build Project
         run: pnpm run build
 
