@@ -1,5 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsUUID } from 'class-validator';
+
+export const ADMIN_REVENUE_REPORT_FLAG_FILTERS = [
+  'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED',
+  'MISSING_ACTIVE_COMMISSION_CONFIG',
+] as const;
+
+export type AdminRevenueReportFlagFilter =
+  (typeof ADMIN_REVENUE_REPORT_FLAG_FILTERS)[number];
 
 export class AdminRevenueReportQueryDto {
   @ApiPropertyOptional({
@@ -35,4 +43,13 @@ export class AdminRevenueReportQueryDto {
   @IsOptional()
   @IsUUID()
   couponId?: string;
+
+  @ApiPropertyOptional({
+    enum: ADMIN_REVENUE_REPORT_FLAG_FILTERS,
+    description:
+      'Optional commission snapshot flag filter for negative commission or legacy missing config records.',
+  })
+  @IsOptional()
+  @IsIn(ADMIN_REVENUE_REPORT_FLAG_FILTERS)
+  flag?: AdminRevenueReportFlagFilter;
 }

@@ -678,13 +678,41 @@ const adminCouponIssueExample = {
 
 const sensitiveBillExample = {
   ...billExample,
+  subtotalVnd: 1800000,
+  discountVnd: 180000,
   serviceChargeVnd: 100000,
   taxVnd: 180000,
-  paidVnd: 2080000,
-  commissionAmountVnd: 180000,
+  grossRevenueVnd: 1800000,
+  netRevenueVnd: 1620000,
+  payableVnd: 1900000,
+  totalVnd: 1620000,
+  paidVnd: 1900000,
+  commissionAmountVnd: 0,
   pointsEarned: 18,
-  discountRuleSnapshot: { type: 'PERCENT', value: 10 },
-  commissionRuleSnapshot: { rate: 0.1 },
+  discountRuleSnapshot: {
+    version: 'ba-v3.2',
+    basis: 'bill_gross_before_discount',
+    grossRevenueVnd: 1800000,
+    discountVnd: 180000,
+    netRevenueVnd: 1620000,
+    payableVnd: 1900000,
+    serviceChargeVnd: 100000,
+    taxVnd: 180000,
+  },
+  commissionRuleSnapshot: {
+    version: 'ba-v3.2',
+    basis: 'bill_gross_before_discount',
+    grossRevenueVnd: 1800000,
+    discountVnd: 180000,
+    netRevenueVnd: 1620000,
+    payableVnd: 1900000,
+    serviceChargeVnd: 100000,
+    taxVnd: 180000,
+    grossCommissionVnd: 180000,
+    commissionVnd: 0,
+    commissionAmountVnd: 0,
+    flags: [],
+  },
   pointRuleSnapshot: {
     version: 'v2.2',
     basis: 'bill_subtotal_vnd',
@@ -731,6 +759,7 @@ const adminRevenueReportExample = {
     to: '2026-07-31T23:59:59.999Z',
     dateField: 'usedAt',
     statusIn: ['VERIFIED', 'PAID'],
+    flag: null,
     exportEnabled: false,
   },
   totals: {
@@ -738,6 +767,7 @@ const adminRevenueReportExample = {
     grossVnd: 6200000,
     discountVnd: 500000,
     netVnd: 5700000,
+    payableVnd: 6040000,
     commissionVnd: 620000,
   },
   days: [
@@ -747,6 +777,7 @@ const adminRevenueReportExample = {
       grossVnd: 4200000,
       discountVnd: 300000,
       netVnd: 3900000,
+      payableVnd: 4160000,
       commissionVnd: 420000,
       stores: [
         {
@@ -755,6 +786,7 @@ const adminRevenueReportExample = {
           grossVnd: 4200000,
           discountVnd: 300000,
           netVnd: 3900000,
+          payableVnd: 4160000,
           commissionVnd: 420000,
           coupons: [
             {
@@ -767,6 +799,7 @@ const adminRevenueReportExample = {
               grossVnd: 4200000,
               discountVnd: 300000,
               netVnd: 3900000,
+              payableVnd: 4160000,
               commissionVnd: 420000,
             },
           ],
@@ -2084,6 +2117,12 @@ export function AdminRevenueReportContract() {
       required: false,
       description: 'Optional coupon campaign filter.',
     }),
+    ApiQuery({
+      name: 'flag',
+      required: false,
+      description:
+        'Optional commission flag filter: NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED or MISSING_ACTIVE_COMMISSION_CONFIG.',
+    }),
     ApiOkResponse({
       description:
         'Revenue report grouped by service usage date, store, and discount code.',
@@ -2143,11 +2182,16 @@ export function ReviewSensitiveBillContract() {
       },
     }),
     ApiUnprocessableEntityResponse({
-      description: 'Bill exists but cannot be reviewed in the requested state.',
+      description:
+        'Bill exists but cannot be reviewed in the requested state or is missing required approval rules.',
       schema: {
         example: {
           statusCode: 422,
-          message: 'Bill has already been verified',
+          message: 'Missing active CommissionConfig for bill approval',
+          code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
+          flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
+          reason:
+            'Bill approval requires an active CommissionConfig before commission can be calculated.',
           error: 'Unprocessable Entity',
         },
       },

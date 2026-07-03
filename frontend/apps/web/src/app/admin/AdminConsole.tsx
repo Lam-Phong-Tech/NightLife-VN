@@ -133,10 +133,20 @@ type SensitiveBill = {
   id: string;
   billNumber: string | null;
   status: string;
+  subtotalVnd?: number | null;
+  discountVnd?: number | null;
+  serviceChargeVnd?: number | null;
+  taxVnd?: number | null;
+  grossRevenueVnd?: number | null;
+  netRevenueVnd?: number | null;
+  payableVnd?: number | null;
   totalVnd: number | null;
   paidVnd: number | null;
   commissionAmountVnd: number | null;
   pointsEarned: number | null;
+  discountRuleSnapshot?: Record<string, unknown> | null;
+  commissionRuleSnapshot?: Record<string, unknown> | null;
+  pointRuleSnapshot?: Record<string, unknown> | null;
   submittedAt: string | null;
   usedAt?: string | null;
   store: { id?: string; name: string; slug?: string };
@@ -152,6 +162,7 @@ type RevenueReportTotals = {
   grossVnd: number;
   discountVnd: number;
   netVnd: number;
+  payableVnd: number;
   commissionVnd: number;
 };
 
@@ -177,6 +188,7 @@ type RevenueReport = {
     statusIn: string[];
     storeId: string | null;
     couponId: string | null;
+    flag?: string | null;
     exportEnabled: boolean;
   };
   totals: RevenueReportTotals;
@@ -311,6 +323,7 @@ type BillFilterState = {
 type RevenueReportFilterState = {
   from: string;
   to: string;
+  flag: string;
 };
 
 type PartnerRequestFilterState = {
@@ -332,6 +345,7 @@ const emptyRevenueReportTotals: RevenueReportTotals = {
   grossVnd: 0,
   discountVnd: 0,
   netVnd: 0,
+  payableVnd: 0,
   commissionVnd: 0,
 };
 
@@ -343,6 +357,7 @@ const emptyRevenueReport: RevenueReport = {
     statusIn: ["VERIFIED", "PAID"],
     storeId: null,
     couponId: null,
+    flag: null,
     exportEnabled: false,
   },
   totals: emptyRevenueReportTotals,
@@ -578,6 +593,7 @@ const defaultRevenueReportFilters = (): RevenueReportFilterState => {
   return {
     from: formatDateOnlyInput(from),
     to: formatDateOnlyInput(to),
+    flag: "all",
   };
 };
 
@@ -623,10 +639,16 @@ const buildBillFilterParams = (filters: BillFilterState) =>
       .filter(([, value]) => value.length > 0),
   );
 
-const buildRevenueReportParams = (filters: RevenueReportFilterState) => ({
-  from: `${filters.from}T00:00:00.000Z`,
-  to: `${filters.to}T23:59:59.999Z`,
-});
+const buildRevenueReportParams = (filters: RevenueReportFilterState) => {
+  const params: Record<string, string> = {
+    from: `${filters.from}T00:00:00.000Z`,
+    to: `${filters.to}T23:59:59.999Z`,
+  };
+  if (filters.flag !== "all") {
+    params.flag = filters.flag;
+  }
+  return params;
+};
 
 const buildPartnerRequestParams = (filters: PartnerRequestFilterState) =>
   Object.fromEntries(
@@ -670,6 +692,14 @@ const snapshotValue = (snapshot: Record<string, unknown> | null | undefined, key
   typeof snapshot?.[key] === "string" || typeof snapshot?.[key] === "number"
     ? String(snapshot[key])
     : "-";
+
+const snapshotFlags = (snapshot: Record<string, unknown> | null | undefined) => {
+  const flags = snapshot?.flags;
+  return Array.isArray(flags) ? flags.filter((flag): flag is string => typeof flag === "string") : [];
+};
+
+const hasBillSnapshotFlag = (bill: SensitiveBill, flag: string) =>
+  snapshotFlags(bill.commissionRuleSnapshot).includes(flag);
 
 const couponRelationLabel = (
   coupon?: { code?: string | null; name?: string | null } | null,
@@ -1680,6 +1710,7 @@ export default function AdminConsole({ section }: { section?: string }) {
     setRevenueReportFilters({
       from: revenueReportDraft.from,
       to: revenueReportDraft.to,
+      flag: revenueReportDraft.flag,
     });
   };
 
@@ -2230,6 +2261,11 @@ export default function AdminConsole({ section }: { section?: string }) {
               <span style={{ display: "block", marginTop: 3 }}>
                 <Badge tone={billStatusLabel(bill.status)}>{billStatusLabel(bill.status)}</Badge>
               </span>
+              {hasBillSnapshotFlag(bill, "NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED") ? (
+                <span style={{ display: "block", marginTop: 6 }}>
+                  <Badge tone="REJECTED">Can PM/BA</Badge>
+                </span>
+              ) : null}
             </span>
             <span>{bill.store.name}</span>
             <span>
@@ -2252,7 +2288,22 @@ export default function AdminConsole({ section }: { section?: string }) {
                 </span>
               ) : null}
             </span>
-            <span style={{ color: colors.text, fontWeight: 800 }}>{formatMoney(bill.totalVnd)}</span>
+            <span>
+              <span style={{ display: "block", color: colors.text, fontWeight: 800 }}>
+                Net {formatMoney(bill.netRevenueVnd ?? bill.totalVnd)}
+              </span>
+              {(bill.payableVnd ?? bill.paidVnd) &&
+              (bill.payableVnd ?? bill.paidVnd) !== (bill.netRevenueVnd ?? bill.totalVnd) ? (
+                <span style={{ display: "block", marginTop: 3, color: colors.text2, fontSize: 11 }}>
+                  Payable {formatMoney(bill.payableVnd ?? bill.paidVnd)}
+                </span>
+              ) : null}
+              {typeof bill.commissionAmountVnd === "number" ? (
+                <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: 11 }}>
+                  Commission {formatMoney(bill.commissionAmountVnd)}
+                </span>
+              ) : null}
+            </span>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -3594,7 +3645,13 @@ export default function AdminConsole({ section }: { section?: string }) {
           icon={ReceiptText}
           label="Net"
           value={compactMoney(revenueReport.totals.netVnd)}
-          note="paidVnd sau giảm"
+          note="gross - discount"
+        />
+        <MetricCard
+          icon={ReceiptText}
+          label="Payable"
+          value={compactMoney(revenueReport.totals.payableVnd)}
+          note="net + fee/tax"
         />
         <MetricCard
           icon={TicketPercent}
@@ -3636,6 +3693,19 @@ export default function AdminConsole({ section }: { section?: string }) {
                 onChange={(event) => updateRevenueReportDraft("to", event.target.value)}
                 style={inputStyle({ minHeight: 38 })}
               />
+            </label>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Commission flag
+              <select
+                aria-label="Revenue report commission flag"
+                value={revenueReportDraft.flag}
+                onChange={(event) => updateRevenueReportDraft("flag", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+              >
+                <option value="all">All flags</option>
+                <option value="NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED">Negative commission</option>
+                <option value="MISSING_ACTIVE_COMMISSION_CONFIG">Missing config</option>
+              </select>
             </label>
             <div style={{ display: "flex", alignItems: "end", gap: 8, flexWrap: "wrap" }}>
               <button
@@ -3681,6 +3751,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                     </div>
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", color: colors.text2, fontSize: 12 }}>
                       <span>Net: <b style={{ color: colors.goldBright }}>{formatMoney(day.netVnd)}</b></span>
+                      <span>Payable: <b style={{ color: colors.goldBright }}>{formatMoney(day.payableVnd)}</b></span>
                       <span>Discount: <b style={{ color: colors.goldBright }}>{formatMoney(day.discountVnd)}</b></span>
                       <span>Commission: <b style={{ color: colors.goldBright }}>{formatMoney(day.commissionVnd)}</b></span>
                     </div>
@@ -3708,15 +3779,16 @@ export default function AdminConsole({ section }: { section?: string }) {
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                           <strong style={{ color: colors.goldPale }}>{store.store.name}</strong>
                           <span style={{ color: colors.text2, fontSize: 12 }}>
-                            Gross {formatMoney(store.grossVnd)} · Net {formatMoney(store.netVnd)} · Commission{" "}
+                            Gross {formatMoney(store.grossVnd)} · Net {formatMoney(store.netVnd)} · Payable{" "}
+                            {formatMoney(store.payableVnd)} · Commission{" "}
                             {formatMoney(store.commissionVnd)}
                           </span>
                         </div>
-                        <div style={{ minWidth: 760, overflowX: "auto" }}>
+                        <div style={{ minWidth: 840, overflowX: "auto" }}>
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                              gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr .85fr",
                               gap: 10,
                               color: colors.muted,
                               fontSize: 11,
@@ -3730,6 +3802,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                             <span>Gross</span>
                             <span>Discount</span>
                             <span>Net</span>
+                            <span>Payable</span>
                             <span>Commission</span>
                           </div>
                           {store.coupons.map((coupon) => (
@@ -3737,7 +3810,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                               key={`${day.date}-${store.store.id}-${coupon.coupon.code}`}
                               style={{
                                 display: "grid",
-                                gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                                gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr .85fr",
                                 gap: 10,
                                 color: colors.text2,
                                 fontSize: 12,
@@ -3754,6 +3827,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                               <span>{formatMoney(coupon.grossVnd)}</span>
                               <span>{formatMoney(coupon.discountVnd)}</span>
                               <span>{formatMoney(coupon.netVnd)}</span>
+                              <span>{formatMoney(coupon.payableVnd)}</span>
                               <span>{formatMoney(coupon.commissionVnd)}</span>
                             </div>
                           ))}

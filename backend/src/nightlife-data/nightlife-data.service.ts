@@ -266,6 +266,7 @@ type RevenueReportMoneyTotals = {
   grossVnd: number;
   discountVnd: number;
   netVnd: number;
+  payableVnd: number;
   commissionVnd: number;
 };
 
@@ -273,6 +274,7 @@ type BillRevenueApprovalSnapshot = {
   grossVnd: number;
   discountVnd: number;
   netVnd: number;
+  payableVnd: number;
   commissionVnd: number;
   discountRuleSnapshot: Record<string, unknown>;
   commissionRuleSnapshot: Record<string, unknown>;
@@ -4466,7 +4468,9 @@ export class NightlifeDataService {
       },
     });
 
-    return bills.map((bill) => this.maskSensitiveBillForRole(bill, user));
+    return bills.map((bill) =>
+      this.maskSensitiveBillForRole(this.withBillRevenueAliases(bill), user),
+    );
   }
 
   async getAdminRevenueReport(
@@ -4482,6 +4486,7 @@ export class NightlifeDataService {
     };
     const storeId = this.cleanText(query.storeId);
     const couponId = this.cleanText(query.couponId);
+    const flag = this.cleanText(query.flag);
 
     if (storeId) {
       where.storeId = storeId;
@@ -4489,6 +4494,13 @@ export class NightlifeDataService {
 
     if (couponId) {
       where.couponId = couponId;
+    }
+
+    if (flag) {
+      where.commissionRuleSnapshot = {
+        path: ['flags'],
+        array_contains: [flag],
+      };
     }
 
     const bills = await this.prisma.bill.findMany({
@@ -4542,6 +4554,7 @@ export class NightlifeDataService {
         statusIn: ['VERIFIED', 'PAID'],
         storeId: storeId || null,
         couponId: couponId || null,
+        flag: flag || null,
         exportEnabled: false,
       },
       totals,
@@ -4551,6 +4564,7 @@ export class NightlifeDataService {
         grossVnd: day.grossVnd,
         discountVnd: day.discountVnd,
         netVnd: day.netVnd,
+        payableVnd: day.payableVnd,
         commissionVnd: day.commissionVnd,
         stores: Array.from(day.stores.values()).map((store) => ({
           store: store.store,
@@ -4558,6 +4572,7 @@ export class NightlifeDataService {
           grossVnd: store.grossVnd,
           discountVnd: store.discountVnd,
           netVnd: store.netVnd,
+          payableVnd: store.payableVnd,
           commissionVnd: store.commissionVnd,
           coupons: Array.from(store.coupons.values()).map((coupon) => ({
             coupon: coupon.coupon,
@@ -4565,6 +4580,7 @@ export class NightlifeDataService {
             grossVnd: coupon.grossVnd,
             discountVnd: coupon.discountVnd,
             netVnd: coupon.netVnd,
+            payableVnd: coupon.payableVnd,
             commissionVnd: coupon.commissionVnd,
           })),
         })),
@@ -4645,6 +4661,7 @@ export class NightlifeDataService {
                 ...bill,
                 subtotalVnd: revenueApproval.grossVnd,
                 totalVnd: revenueApproval.netVnd,
+                paidVnd: revenueApproval.payableVnd,
               }
             : bill,
           now,
@@ -4667,7 +4684,7 @@ export class NightlifeDataService {
               subtotalVnd: revenueApproval?.grossVnd ?? bill.subtotalVnd,
               discountVnd: revenueApproval?.discountVnd ?? bill.discountVnd,
               totalVnd: revenueApproval?.netVnd ?? bill.totalVnd,
-              paidVnd: revenueApproval?.netVnd ?? bill.paidVnd,
+              paidVnd: revenueApproval?.payableVnd ?? bill.paidVnd,
               commissionAmountVnd:
                 revenueApproval?.commissionVnd ?? bill.commissionAmountVnd,
               discountRuleSnapshot: revenueApproval
@@ -4720,6 +4737,7 @@ export class NightlifeDataService {
                   grossVnd: revenueApproval.grossVnd,
                   discountVnd: revenueApproval.discountVnd,
                   netVnd: revenueApproval.netVnd,
+                  payableVnd: revenueApproval.payableVnd,
                   commissionVnd: revenueApproval.commissionVnd,
                   discountRuleSnapshot: revenueApproval.discountRuleSnapshot,
                   commissionRuleSnapshot:
@@ -4733,12 +4751,14 @@ export class NightlifeDataService {
       return reviewedBill;
     });
 
-    await this.adminNotificationService?.notifyBillReviewed(result, {
+    const resultWithRevenueAliases = this.withBillRevenueAliases(result);
+
+    await this.adminNotificationService?.notifyBillReviewed(resultWithRevenueAliases, {
       approve: dto.approve,
       reviewedById: adminId,
     });
 
-    return result;
+    return resultWithRevenueAliases;
   }
 
   private resolveAdminRevenueReportWindow(query: AdminRevenueReportQueryDto) {
@@ -4769,6 +4789,7 @@ export class NightlifeDataService {
       grossVnd: 0,
       discountVnd: 0,
       netVnd: 0,
+      payableVnd: 0,
       commissionVnd: 0,
     };
   }
@@ -4781,6 +4802,7 @@ export class NightlifeDataService {
     target.grossVnd += source.grossVnd;
     target.discountVnd += source.discountVnd;
     target.netVnd += source.netVnd;
+    target.payableVnd += source.payableVnd;
     target.commissionVnd += source.commissionVnd;
   }
 
@@ -4800,15 +4822,20 @@ export class NightlifeDataService {
     const grossVnd =
       Math.max(0, bill.subtotalVnd ?? 0) || totalVnd + discountVnd;
     const netVnd =
+      grossVnd > 0 || discountVnd > 0
+        ? Math.max(0, grossVnd - discountVnd)
+        : totalVnd;
+    const payableVnd =
       Math.max(0, bill.paidVnd ?? 0) ||
-      Math.max(0, grossVnd - discountVnd + serviceChargeVnd + taxVnd) ||
-      totalVnd;
+      Math.max(0, netVnd + serviceChargeVnd + taxVnd) ||
+      netVnd;
 
     return {
       billCount: 1,
       grossVnd,
       discountVnd,
       netVnd,
+      payableVnd,
       commissionVnd: Math.trunc(bill.commissionAmountVnd ?? 0),
     };
   }
@@ -4858,13 +4885,15 @@ export class NightlifeDataService {
       grossVnd,
       reviewedAt,
     );
-    const netVnd = Math.max(
-      0,
-      grossVnd - discount.discountVnd + serviceChargeVnd + taxVnd,
-    );
+    const netVnd = Math.max(0, grossVnd - discount.discountVnd);
+    const payableVnd = Math.max(0, netVnd + serviceChargeVnd + taxVnd);
     const commission = await this.resolveBillApprovalCommission({
       bill,
       grossVnd,
+      netVnd,
+      payableVnd,
+      serviceChargeVnd,
+      taxVnd,
       discountVnd: discount.discountVnd,
       discountPercent: discount.effectiveDiscountPercent,
       reviewedAt,
@@ -4874,8 +4903,16 @@ export class NightlifeDataService {
       grossVnd,
       discountVnd: discount.discountVnd,
       netVnd,
+      payableVnd,
       commissionVnd: commission.commissionVnd,
-      discountRuleSnapshot: discount.snapshot,
+      discountRuleSnapshot: {
+        ...discount.snapshot,
+        grossRevenueVnd: grossVnd,
+        netRevenueVnd: netVnd,
+        payableVnd,
+        serviceChargeVnd,
+        taxVnd,
+      },
       commissionRuleSnapshot: commission.snapshot,
     };
   }
@@ -4997,6 +5034,7 @@ export class NightlifeDataService {
 
   private async resolveBillApprovalCommission(input: {
     bill: {
+      id?: string;
       store?: {
         id?: string | null;
         name?: string | null;
@@ -5006,6 +5044,10 @@ export class NightlifeDataService {
       couponIssue?: { id: string; code: string; status: string } | null;
     };
     grossVnd: number;
+    netVnd: number;
+    payableVnd: number;
+    serviceChargeVnd: number;
+    taxVnd: number;
     discountVnd: number;
     discountPercent: number;
     reviewedAt: Date;
@@ -5044,6 +5086,25 @@ export class NightlifeDataService {
           },
         })
       : null;
+    if (storeId && !commissionConfig) {
+      throw new UnprocessableEntityException({
+        message: 'Missing active CommissionConfig for bill approval',
+        error: 'Unprocessable Entity',
+        code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
+        reason:
+          'Bill approval requires an active CommissionConfig before commission can be calculated.',
+        flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
+        bill: {
+          id: input.bill.id ?? null,
+        },
+        store: {
+          id: storeId,
+          name: input.bill.store?.name ?? null,
+          slug: input.bill.store?.slug ?? null,
+        },
+      });
+    }
+
     const configRuleSnapshot = this.asRecord(commissionConfig?.ruleSnapshot);
     const campaignOverride = this.resolveCampaignCommissionPercent(
       configRuleSnapshot,
@@ -5072,7 +5133,6 @@ export class NightlifeDataService {
       ...(requiresPmBaConfirmation
         ? ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED']
         : []),
-      ...(!commissionConfig ? ['MISSING_ACTIVE_COMMISSION_CONFIG'] : []),
     ];
 
     return {
@@ -5084,11 +5144,17 @@ export class NightlifeDataService {
         formula: 'grossVnd * (commission_rate - discount_rate)',
         source: commissionConfig
           ? (campaignOverride.source ?? 'STORE_COMMISSION_CONFIG')
-          : 'NO_ACTIVE_COMMISSION_CONFIG',
+          : 'NO_STORE_COMMISSION_CONFIG',
         grossVnd: input.grossVnd,
+        grossRevenueVnd: input.grossVnd,
         discountVnd: input.discountVnd,
+        serviceChargeVnd: input.serviceChargeVnd,
+        taxVnd: input.taxVnd,
+        netRevenueVnd: input.netVnd,
+        payableVnd: input.payableVnd,
         grossCommissionVnd,
         commissionVnd,
+        commissionAmountVnd: commissionVnd,
         commissionPercent,
         commissionRate: this.percentToRate(commissionPercent),
         discountPercent: input.discountPercent,
@@ -7084,6 +7150,8 @@ export class NightlifeDataService {
     rejectReason?: string | null;
     subtotalVnd?: number | null;
     discountVnd?: number | null;
+    serviceChargeVnd?: number | null;
+    taxVnd?: number | null;
     totalVnd?: number | null;
     paidVnd?: number | null;
     commissionAmountVnd?: number | null;
@@ -7103,6 +7171,8 @@ export class NightlifeDataService {
       rejectReason: bill.rejectReason ?? null,
       subtotalVnd: bill.subtotalVnd ?? null,
       discountVnd: bill.discountVnd ?? null,
+      serviceChargeVnd: bill.serviceChargeVnd ?? null,
+      taxVnd: bill.taxVnd ?? null,
       totalVnd: bill.totalVnd ?? null,
       paidVnd: bill.paidVnd ?? null,
       commissionAmountVnd: bill.commissionAmountVnd ?? null,
@@ -10446,6 +10516,21 @@ export class NightlifeDataService {
       ...bill,
       user: this.maskCustomerIdentity(bill.user),
       guest: this.maskCustomerIdentity(bill.guest),
+    };
+  }
+
+  private withBillRevenueAliases<
+    T extends {
+      subtotalVnd?: number | null;
+      totalVnd?: number | null;
+      paidVnd?: number | null;
+    },
+  >(bill: T) {
+    return {
+      ...bill,
+      grossRevenueVnd: bill.subtotalVnd ?? null,
+      netRevenueVnd: bill.totalVnd ?? null,
+      payableVnd: bill.paidVnd ?? null,
     };
   }
 
