@@ -439,7 +439,7 @@ export default function Page() {
   };
 
   return (
-    <main className={styles.bookingPage}>
+    <main className={`${styles.bookingPage} ${styles.historyPage}`}>
       <section className={`${styles.bookingViewport} ${styles.historyViewport}`}>
         <div className={`${styles.bookingFrame} ${styles.historyFrame} ${styles.wideFrame}`}>
           <header className={styles.bookingHeader}>

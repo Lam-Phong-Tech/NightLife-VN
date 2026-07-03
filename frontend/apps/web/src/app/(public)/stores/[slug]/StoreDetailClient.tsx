@@ -25,6 +25,7 @@ import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/li
 import { apiClient } from "@/lib/api/client";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { castImageForSlug, storeGalleryForSlug, storeImageForSlug } from "@/lib/demo-media";
+import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
   categoryLabels,
@@ -680,7 +681,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [note, setNote] = useState("");
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [bookingErrorMessage, setBookingErrorMessage] = useState("");
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => isFavoriteStore(store.slug));
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const recommendedStores = useMemo(
     () => personalizeRelatedStores(store.relatedStores),
@@ -785,6 +786,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
   const showNextMedia = () =>
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
+  const toggleFavorite = () => {
+    const nextValue = !isFavorite;
+    setIsFavorite(nextValue);
+    writeFavoriteStore(
+      {
+        slug: store.slug,
+        name: displayName,
+        categoryLabel,
+        areaLabel: store.area?.name ?? store.district ?? "",
+        cityLabel: store.cityCode ?? store.city,
+        image: galleryImageUrl(heroImage, fallbackHero),
+      },
+      nextValue,
+    );
+    trackStoreDetailClick(store, "favorite", { favorited: nextValue });
+  };
   const openGallery = (index: number) => {
     setSelectedGalleryIndex(index % gallery.length);
     setIsLightboxOpen(true);
@@ -873,7 +890,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <div className="hero-actions">
                   <IconButton
                     label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
-                    onClick={() => setIsFavorite((value) => !value)}
+                    onClick={toggleFavorite}
                   >
                     <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
                   </IconButton>

@@ -11,6 +11,10 @@
   min-height: auto;
 }
 
+.historyPage {
+  min-height: auto;
+}
+
 .bookingViewport {
   width: min(100%, 1120px);
   margin: 0 auto;
@@ -1196,6 +1200,14 @@
 
   .bookingFormViewport {
     padding-bottom: 0;
+  }
+
+  .historyViewport {
+    padding-bottom: 0;
+  }
+
+  .historyFrame {
+    min-height: auto;
   }
 
   .bookingFormPage .bookingFrame {

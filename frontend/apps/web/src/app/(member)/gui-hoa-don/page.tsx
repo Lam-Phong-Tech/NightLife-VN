@@ -2,20 +2,6 @@
 
 import Link from "next/link";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  Building2,
-  CheckCircle2,
-  ChevronLeft,
-  Clock3,
-  ImagePlus,
-  Loader2,
-  ReceiptText,
-  Store,
-  UploadCloud,
-  UserRound,
-  X,
-} from "lucide-react";
 import { ApiError } from "@/lib/api/client";
 import { billApi, type BillRecord } from "@/lib/api/bills";
 import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
@@ -112,6 +98,10 @@ export default function Page() {
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
+
+  const handleEvidenceFileChange = (input: HTMLInputElement) => {
+    setEvidenceFile(input.files?.[0] ?? null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -297,7 +287,6 @@ export default function Page() {
             fontWeight: 800,
           }}
         >
-          <ChevronLeft size={17} />
           Tài khoản
         </Link>
 
@@ -307,7 +296,6 @@ export default function Page() {
             <p>Gửi bill gốc để Admin đối soát điểm, ưu đãi và công nợ với quán.</p>
           </div>
           <div className="nl-bill-rule">
-            <Clock3 size={17} />
             Trong 10 ngày
           </div>
         </div>
@@ -320,7 +308,6 @@ export default function Page() {
                 className={mode === "member" ? "active" : ""}
                 onClick={() => setMode("member")}
               >
-                <UserRound size={16} />
                 Khách
               </button>
               <button
@@ -328,29 +315,25 @@ export default function Page() {
                 className={mode === "partner" ? "active" : ""}
                 onClick={() => setMode("partner")}
               >
-                <Building2 size={16} />
                 Chủ quán
               </button>
             </div>
 
             <div className="nl-field">
               <label htmlFor="bill-store">Quán / cơ sở *</label>
-              <div className="nl-input-icon">
-                <Store size={17} />
-                <select
-                  id="bill-store"
-                  value={storeSlug}
-                  onChange={(event) => setStoreSlug(event.target.value)}
-                  disabled={isLoadingOptions || Boolean(selectedBooking || selectedCouponIssue)}
-                >
-                  {stores.map((storeItem) => (
-                    <option key={storeItem.id} value={storeItem.slug}>
-                      {storeItem.name}
-                      {storeItem.district ? ` - ${storeItem.district}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                id="bill-store"
+                value={storeSlug}
+                onChange={(event) => setStoreSlug(event.target.value)}
+                disabled={isLoadingOptions || Boolean(selectedBooking || selectedCouponIssue)}
+              >
+                {stores.map((storeItem) => (
+                  <option key={storeItem.id} value={storeItem.slug}>
+                    {storeItem.name}
+                    {storeItem.district ? ` - ${storeItem.district}` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {mode === "member" && bookings.length ? (
@@ -392,16 +375,13 @@ export default function Page() {
             <div className="nl-form-grid">
               <div className="nl-field">
                 <label htmlFor="bill-total">Tổng tiền bill gốc *</label>
-                <div className="nl-input-icon">
-                  <ReceiptText size={17} />
-                  <input
-                    id="bill-total"
-                    inputMode="numeric"
-                    placeholder="VD: 1.800.000"
-                    value={amountInput}
-                    onChange={(event) => handleAmountChange(event.target.value)}
-                  />
-                </div>
+                <input
+                  id="bill-total"
+                  inputMode="numeric"
+                  placeholder="VD: 1.800.000"
+                  value={amountInput}
+                  onChange={(event) => handleAmountChange(event.target.value)}
+                />
               </div>
 
               <div className="nl-field">
@@ -420,24 +400,24 @@ export default function Page() {
               <label>Ảnh / chứng từ</label>
               <div className="nl-upload-row">
                 <label className="nl-upload-button">
-                  <ImagePlus size={18} />
                   <span>{evidenceFile ? "Đổi file" : "Chọn file"}</span>
                   <input
+                    className="nl-upload-input"
                     type="file"
                     accept="image/*,.pdf"
-                    onChange={(event) => setEvidenceFile(event.target.files?.[0] ?? null)}
+                    onInput={(event) => handleEvidenceFileChange(event.currentTarget)}
+                    onChange={(event) => handleEvidenceFileChange(event.currentTarget)}
                   />
                 </label>
                 {evidenceFile ? (
                   <span className="nl-file-pill">
-                    <UploadCloud size={15} />
                     {evidenceFile.name}
                     <button
                       type="button"
                       aria-label="Bỏ file"
                       onClick={() => setEvidenceFile(null)}
                     >
-                      <X size={14} />
+                      Bá»
                     </button>
                   </span>
                 ) : (
@@ -447,7 +427,6 @@ export default function Page() {
             </div>
 
             <div className={isPastDeadline || isFutureUsage ? "nl-rule danger" : "nl-rule"}>
-              <AlertTriangle size={17} />
               <span>
                 Chỉ nhập tổng tiền bill gốc, không nhập chi tiết món/dịch vụ. Bill quá 10 ngày sẽ
                 không được nhận.
@@ -456,18 +435,12 @@ export default function Page() {
 
             {notice ? (
               <div className={`nl-notice ${notice.tone}`}>
-                {notice.tone === "success" ? (
-                  <CheckCircle2 size={18} />
-                ) : (
-                  <AlertTriangle size={18} />
-                )}
                 <span>{notice.message}</span>
               </div>
             ) : null}
 
             <button type="submit" className="nl-submit" disabled={!canSubmit}>
-              {isSubmitting ? <Loader2 size={18} className="spin" /> : <ReceiptText size={18} />}
-              Gửi bill
+              {isSubmitting ? "Đang gửi bill..." : "Gửi bill"}
             </button>
           </form>
 
@@ -605,6 +578,11 @@ export default function Page() {
           cursor: pointer;
         }
 
+        .nl-upload-button {
+          position: relative;
+          overflow: hidden;
+        }
+
         .nl-segmented button.active,
         .nl-submit {
           background: ${colors.gold};
@@ -630,19 +608,6 @@ export default function Page() {
           gap: 12px;
         }
 
-        .nl-input-icon {
-          position: relative;
-        }
-
-        .nl-input-icon svg {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: ${colors.goldPale};
-          pointer-events: none;
-        }
-
         input,
         select {
           width: 100%;
@@ -654,11 +619,6 @@ export default function Page() {
           padding: 0 12px;
           font-size: 14px;
           outline: none;
-        }
-
-        .nl-input-icon input,
-        .nl-input-icon select {
-          padding-left: 40px;
         }
 
         select option {
@@ -680,7 +640,12 @@ export default function Page() {
         }
 
         .nl-upload-button input {
-          display: none;
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          cursor: pointer;
         }
 
         .nl-file-pill {
@@ -699,9 +664,8 @@ export default function Page() {
         }
 
         .nl-file-pill button {
-          width: 24px;
-          min-height: 24px;
-          padding: 0;
+          min-height: 28px;
+          padding: 0 9px;
           color: ${colors.success};
         }
 

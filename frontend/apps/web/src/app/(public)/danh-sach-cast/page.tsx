@@ -25,6 +25,7 @@ import {
   type PublicCast,
 } from "@/lib/api/discovery";
 import { castImageForSlug } from "@/lib/demo-media";
+import { readFavoriteCastSlugs, writeFavoriteCast } from "@/lib/member-favorites";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
@@ -145,6 +146,7 @@ export default function Page() {
   const [isSearchFocused, setSearchFocused] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>([]);
+  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(() => readFavoriteCastSlugs());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -294,6 +296,24 @@ export default function Page() {
     setHasActiveCoupon(true);
   };
 
+  const toggleCastFavorite = (cast: PublicCast, index: number) => {
+    const nextValue = !favoriteCastSlugs.includes(cast.slug);
+    writeFavoriteCast(
+      {
+        slug: cast.slug,
+        name: cast.publicAlias ?? cast.name ?? cast.stageName,
+        storeName: cast.store.name,
+        categoryLabel: categoryLabels[cast.store.category] ?? cast.store.category,
+        areaLabel: [cast.store.area?.name ?? cast.store.district, cityLabels[cast.store.cityCode ?? ""]]
+          .filter(Boolean)
+          .join(" · "),
+        image: castImageForSlug(cast.slug, index),
+      },
+      nextValue,
+    );
+    setFavoriteCastSlugs(readFavoriteCastSlugs());
+  };
+
   return (
     <main className="cast-search-page">
       <style>{castSearchCss}</style>
@@ -438,7 +458,13 @@ export default function Page() {
           ) : visibleCasts.length > 0 ? (
             <div className="cast-card-grid">
               {visibleCasts.map((cast, index) => (
-                <CastDiscoveryCard key={cast.id} cast={cast} index={index} />
+                <CastDiscoveryCard
+                  key={cast.id}
+                  cast={cast}
+                  index={index}
+                  isFavorite={favoriteCastSlugs.includes(cast.slug)}
+                  onToggleFavorite={toggleCastFavorite}
+                />
               ))}
             </div>
           ) : (
@@ -633,7 +659,17 @@ function SearchSuggestions({
   );
 }
 
-function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number }) {
+function CastDiscoveryCard({
+  cast,
+  index,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  cast: PublicCast;
+  index: number;
+  isFavorite: boolean;
+  onToggleFavorite: (cast: PublicCast, index: number) => void;
+}) {
   const image = castImageForSlug(cast.slug, index);
   const areaLabel = [
     cast.store.area?.name ?? cast.store.district,
@@ -648,6 +684,11 @@ function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number })
   const rating = (4.9 - Math.min(index, 4) * 0.1).toFixed(1);
   const badgeLabel = index < 3 ? `#${index + 1}` : index % 3 === 0 ? "Tối nay" : "Mới";
   const isRanked = index < 3;
+  const handleFavoriteClick = (event: React.MouseEvent | React.KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleFavorite(cast, index);
+  };
 
   return (
     <Link href={`/casts/${cast.slug}`} className="cast-card">
@@ -661,8 +702,18 @@ function CastDiscoveryCard({ cast, index }: { cast: PublicCast; index: number })
           {isRanked ? <Star size={11} fill="currentColor" /> : <span className="cast-live-dot" />}
           {badgeLabel}
         </span>
-        <span className="cast-fav-button" aria-hidden="true">
-          <Heart size={15} fill={index === 0 ? "currentColor" : "none"} />
+        <span
+          className={`cast-fav-button ${isFavorite ? "is-active" : ""}`}
+          role="button"
+          tabIndex={0}
+          aria-label={isFavorite ? "Bỏ lưu cast" : "Lưu cast"}
+          aria-pressed={isFavorite}
+          onClick={handleFavoriteClick}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") handleFavoriteClick(event);
+          }}
+        >
+          <Heart size={15} fill={isFavorite ? "currentColor" : "none"} />
         </span>
         <span className="cast-card-name">
           <b>{cast.name}</b>
@@ -1328,6 +1379,18 @@ const castSearchCss = `
   background: rgba(12, 12, 15, 0.5);
   color: #e0729e;
   backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.cast-fav-button.is-active {
+  border-color: rgba(255, 61, 113, 0.58);
+  background: rgba(255, 61, 113, 0.18);
+  color: #ff3d71;
+}
+
+.cast-fav-button:focus-visible {
+  outline: 2px solid #f0dda8;
+  outline-offset: 2px;
 }
 
 .cast-card-name,

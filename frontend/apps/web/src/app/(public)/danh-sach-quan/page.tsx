@@ -17,6 +17,7 @@ import {
 
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
 import { storeImageForSlug } from "@/lib/demo-media";
+import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
 
 type Coordinates = {
@@ -184,6 +185,7 @@ export default function Page() {
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [stores, setStores] = useState<PublicStore[]>([]);
+  const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(() => readFavoriteStoreSlugs());
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -354,6 +356,22 @@ export default function Page() {
     setOpenNow(true);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
+  };
+
+  const toggleVenueFavorite = (venue: VenueView) => {
+    const nextValue = !favoriteStoreSlugs.includes(venue.id);
+    writeFavoriteStore(
+      {
+        slug: venue.id,
+        name: venue.name,
+        categoryLabel: venue.categoryLabel,
+        areaLabel: venue.areaLabel,
+        cityLabel: venue.cityLabel,
+        image: venue.image,
+      },
+      nextValue,
+    );
+    setFavoriteStoreSlugs(readFavoriteStoreSlugs());
   };
 
   return (
@@ -532,7 +550,14 @@ export default function Page() {
           {isLoading ? (
             <VenueSkeletons />
           ) : venues.length > 0 ? (
-            venues.map((venue) => <VenueResultCard key={venue.id} venue={venue} />)
+            venues.map((venue) => (
+              <VenueResultCard
+                key={venue.id}
+                venue={venue}
+                isFavorite={favoriteStoreSlugs.includes(venue.id)}
+                onToggleFavorite={toggleVenueFavorite}
+              />
+            ))
           ) : (
             <div className="venue-empty">
               <strong>Chưa có quán phù hợp</strong>
@@ -739,7 +764,21 @@ function VenueFilterChipGroup({
   );
 }
 
-function VenueResultCard({ venue }: { venue: VenueView }) {
+function VenueResultCard({
+  venue,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  venue: VenueView;
+  isFavorite: boolean;
+  onToggleFavorite: (venue: VenueView) => void;
+}) {
+  const handleFavoriteClick = (event: React.MouseEvent | React.KeyboardEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleFavorite(venue);
+  };
+
   return (
     <Link href={`/stores/${venue.id}`} className="venue-card">
       <div
@@ -753,8 +792,18 @@ function VenueResultCard({ venue }: { venue: VenueView }) {
           {venue.statusLabel}
         </span>
         <span className="venue-deal">{venue.dealLabel}</span>
-        <span className="venue-heart" aria-hidden="true">
-          <Heart size={18} />
+        <span
+          className={`venue-heart ${isFavorite ? "is-active" : ""}`}
+          role="button"
+          tabIndex={0}
+          aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+          aria-pressed={isFavorite}
+          onClick={handleFavoriteClick}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") handleFavoriteClick(event);
+          }}
+        >
+          <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
         </span>
       </div>
 
@@ -1199,6 +1248,18 @@ const venueSearchCss = `
     background: rgba(12, 12, 15, .46);
     color: #f3f0ea;
     backdrop-filter: blur(8px);
+    cursor: pointer;
+  }
+
+  .venue-heart.is-active {
+    border-color: rgba(255, 61, 113, .58);
+    background: rgba(255, 61, 113, .18);
+    color: #ff3d71;
+  }
+
+  .venue-heart:focus-visible {
+    outline: 2px solid #f0dda8;
+    outline-offset: 2px;
   }
 
   .venue-card-body {

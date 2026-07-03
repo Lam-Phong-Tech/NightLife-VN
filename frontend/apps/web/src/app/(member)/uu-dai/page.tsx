@@ -462,7 +462,8 @@ export default function Page() {
 
         @media (max-width: 640px) {
           .coupon-page {
-            padding: 18px 16px calc(78px + env(safe-area-inset-bottom));
+            min-height: auto;
+            padding: 18px 16px 18px;
           }
 
           .coupon-shell {

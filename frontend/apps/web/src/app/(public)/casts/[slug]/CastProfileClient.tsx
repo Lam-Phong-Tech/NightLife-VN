@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { ApiError, apiClient } from "@/lib/api/client";
 import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
+import { isFavoriteCast, writeFavoriteCast } from "@/lib/member-favorites";
 import { CastBookingCTA } from "./CastBookingCTA";
 import { CastGallery } from "./CastGallery";
 import { CastHero } from "./CastHero";
@@ -26,35 +27,6 @@ type CastProfileClientProps = {
   cast: PublicCastDetail;
 };
 
-const favoriteStorageKey = "nightlife_member_favorite_casts";
-
-function readLocalFavorite(slug: string) {
-  if (typeof window === "undefined") return false;
-
-  try {
-    const raw = window.localStorage.getItem(favoriteStorageKey);
-    const slugs = raw ? (JSON.parse(raw) as string[]) : [];
-    return slugs.includes(slug);
-  } catch {
-    window.localStorage.removeItem(favoriteStorageKey);
-    return false;
-  }
-}
-
-function writeLocalFavorite(slug: string, favorited: boolean) {
-  if (typeof window === "undefined") return;
-
-  try {
-    const raw = window.localStorage.getItem(favoriteStorageKey);
-    const slugs = new Set(raw ? (JSON.parse(raw) as string[]) : []);
-    if (favorited) slugs.add(slug);
-    else slugs.delete(slug);
-    window.localStorage.setItem(favoriteStorageKey, JSON.stringify([...slugs].slice(0, 100)));
-  } catch {
-    window.localStorage.removeItem(favoriteStorageKey);
-  }
-}
-
 export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const profile = useMemo(() => profileFromCastDetail(cast), [cast]);
   const gallery = profile.gallery.length ? profile.gallery : placeholderGallery;
@@ -67,10 +39,22 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     () => personalizeRelatedCasts(profile, profile.relatedCasts),
     [profile],
   );
-  const [isFavorite, setIsFavorite] = useState(() => readLocalFavorite(profile.slug));
+  const [isFavorite, setIsFavorite] = useState(() => isFavoriteCast(profile.slug));
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
+  const favoriteImage = gallery.find((item) => item.type === "IMAGE")?.url;
+  const favoriteSnapshot = useMemo(
+    () => ({
+      slug: profile.slug,
+      name: profile.name,
+      storeName: profile.store.name,
+      categoryLabel: profile.store.category,
+      areaLabel: area,
+      image: favoriteImage,
+    }),
+    [area, favoriteImage, profile.name, profile.slug, profile.store.category, profile.store.name],
+  );
 
   useEffect(() => {
     void apiClient<{ recorded: boolean }>("/analytics/profile-view", {
@@ -82,15 +66,15 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     let ignore = false;
 
     Promise.resolve().then(() => {
-      if (!ignore) setIsFavorite(readLocalFavorite(profile.slug));
+      if (!ignore) setIsFavorite(isFavoriteCast(favoriteSnapshot.slug));
     });
 
     castFavoriteApi
-      .getState(profile.slug)
+      .getState(favoriteSnapshot.slug)
       .then((state) => {
         if (ignore) return;
         setIsFavorite(state.favorited);
-        writeLocalFavorite(profile.slug, state.favorited);
+        writeFavoriteCast(favoriteSnapshot, state.favorited);
       })
       .catch((error) => {
         if (error instanceof ApiError && [401, 403].includes(error.status)) return;
@@ -99,7 +83,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     return () => {
       ignore = true;
     };
-  }, [profile.slug]);
+  }, [favoriteSnapshot]);
 
   const track = (
     action: "booking" | "gallery" | "store" | "favorite" | "related",
@@ -138,7 +122,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const toggleFavorite = async () => {
     const nextValue = !isFavorite;
     setIsFavorite(nextValue);
-    writeLocalFavorite(profile.slug, nextValue);
+    writeFavoriteCast(favoriteSnapshot, nextValue);
     track("favorite", { favorited: nextValue });
 
     try {
@@ -146,14 +130,14 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
         ? await castFavoriteApi.favorite(profile.slug)
         : await castFavoriteApi.unfavorite(profile.slug);
       setIsFavorite(state.favorited);
-      writeLocalFavorite(profile.slug, state.favorited);
+      writeFavoriteCast(favoriteSnapshot, state.favorited);
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         return;
       }
 
       setIsFavorite(!nextValue);
-      writeLocalFavorite(profile.slug, !nextValue);
+      writeFavoriteCast(favoriteSnapshot, !nextValue);
     }
   };
 

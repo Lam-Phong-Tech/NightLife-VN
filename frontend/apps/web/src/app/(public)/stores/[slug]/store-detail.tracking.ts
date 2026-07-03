@@ -1,6 +1,6 @@
 import type { PublicStoreDetail } from "@/lib/api/store-detail";
 
-export type StoreDetailClickAction = "booking" | "coupon" | "call" | "map";
+export type StoreDetailClickAction = "booking" | "coupon" | "call" | "map" | "favorite";
 
 type TrackingWindow = Window & {
   dataLayer?: Array<Record<string, unknown>>;
