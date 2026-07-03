@@ -46,7 +46,7 @@ export default function AdminStoresPage() {
   
   const [albums, setAlbums] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuGroups, setMenuGroups] = useState<any[]>([]);
 
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const videoUploadRef = useRef<HTMLInputElement>(null);
@@ -55,7 +55,7 @@ export default function AdminStoresPage() {
 
   // UI states
   const [menuManage, setMenuManage] = useState(false);
-  const [activeMenuTab, setActiveMenuTab] = useState('set');
+  const [activeMenuGroupId, setActiveMenuGroupId] = useState<string>('');
 
   const fetchStores = async () => {
     try {
@@ -106,7 +106,12 @@ export default function AdminStoresPage() {
     setHoursForm(defaultHours);
     setAlbums([]);
     setVideos([]);
-    setMenuItems([]);
+    const initialGroups = [
+      { id: 'g1', name: 'Set menu', items: [] },
+      { id: 'g2', name: 'Cocktail', items: [] }
+    ];
+    setMenuGroups(initialGroups);
+    setActiveMenuGroupId('g1');
     setVenueSel('new');
   };
 
@@ -122,7 +127,16 @@ export default function AdminStoresPage() {
     setHoursForm(st.openingHours || defaultHours);
     setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE') || []);
     setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
-    setMenuItems(st.pricingInfo?.items || []);
+    
+    let groups = st.pricingInfo?.groups;
+    if (!groups || groups.length === 0) {
+      groups = [
+        { id: 'g1', name: 'Set menu', items: st.pricingInfo?.items || [] },
+        { id: 'g2', name: 'Cocktail', items: [] }
+      ];
+    }
+    setMenuGroups(groups);
+    setActiveMenuGroupId(groups[0]?.id || '');
     setVenueSel(st.id);
   };
 
@@ -131,7 +145,7 @@ export default function AdminStoresPage() {
       const payload = {
         ...formData,
         openingHours: hoursForm,
-        pricingInfo: { items: menuItems },
+        pricingInfo: { groups: menuGroups },
         mediaIds: [...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
       
@@ -221,13 +235,39 @@ export default function AdminStoresPage() {
     }
   };
 
+  const updateMenuItem = (itemId: string, field: string, value: any) => {
+    setMenuGroups(prev => prev.map(g => {
+      if (g.id === activeMenuGroupId) {
+        return {
+          ...g,
+          items: g.items.map((mi: any) => mi.id === itemId ? { ...mi, [field]: value } : mi)
+        };
+      }
+      return g;
+    }));
+  };
+
   const addMockMenu = () => {
-    setMenuItems(prev => [...prev, { id: 'm' + Date.now(), name: 'Sản phẩm mới', desc: 'Mô tả sản phẩm', tier: 3, hot: false, thumb: g1 }]);
-    showToast('Đã thêm món mẫu');
+    setMenuGroups(prev => prev.map(g => {
+      if (g.id === activeMenuGroupId) {
+        return {
+          ...g,
+          items: [...g.items, { id: 'm' + Date.now(), name: '', desc: '', tier: 3, hot: false, thumb: g1 }]
+        };
+      }
+      return g;
+    }));
   };
 
   const removeVideo = (id: string) => setVideos(prev => prev.filter(v => v.id !== id));
-  const removeMenu = (id: string) => setMenuItems(prev => prev.filter(m => m.id !== id));
+  const removeMenu = (id: string) => {
+    setMenuGroups(prev => prev.map(g => {
+      if (g.id === activeMenuGroupId) {
+        return { ...g, items: g.items.filter((mi: any) => mi.id !== id) };
+      }
+      return g;
+    }));
+  };
   const removeAlbum = (id: string) => setAlbums(prev => prev.filter(a => a.id !== id));
 
   const updateForm = (key: string, val: string) => setFormData(p => ({ ...p, [key]: val }));
@@ -422,9 +462,40 @@ export default function AdminStoresPage() {
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Thực đơn & mức giá</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '11px' }}>
-                <span onClick={() => setActiveMenuTab('set')} style={{ padding: '6px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', color: activeMenuTab === 'set' ? '#241a0a' : '#c5c0b6', background: activeMenuTab === 'set' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.05)' }}>Set menu</span>
-                <span onClick={() => setActiveMenuTab('cocktail')} style={{ padding: '6px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', color: activeMenuTab === 'cocktail' ? '#241a0a' : '#c5c0b6', background: activeMenuTab === 'cocktail' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.05)' }}>Cocktail</span>
-                <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#8c8679', border: '1.5px dashed rgba(212,178,106,.35)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer' }}>+ Nhóm</span>
+                {menuGroups.map(g => (
+                  <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {menuManage ? (
+                      <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.05)', borderRadius: '9px', padding: '2px 2px 2px 8px' }}>
+                        <input 
+                          value={g.name} 
+                          onChange={(e) => {
+                            setMenuGroups(prev => prev.map(pg => pg.id === g.id ? { ...pg, name: e.target.value } : pg));
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12px', outline: 'none', width: '80px' }}
+                        />
+                        <span onClick={() => {
+                          const newGroups = menuGroups.filter(pg => pg.id !== g.id);
+                          setMenuGroups(newGroups);
+                          if (activeMenuGroupId === g.id && newGroups.length > 0) setActiveMenuGroupId(newGroups[0].id);
+                        }} style={{ width: 24, height: 24, borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#e88b99', background: 'rgba(232,139,153,.15)', marginLeft: '4px' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </span>
+                      </div>
+                    ) : (
+                      <span onClick={() => setActiveMenuGroupId(g.id)} style={{ padding: '6px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', color: activeMenuGroupId === g.id ? '#241a0a' : '#c5c0b6', background: activeMenuGroupId === g.id ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.05)' }}>
+                        {g.name}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                
+                <span onClick={() => {
+                  const newId = 'g' + Date.now();
+                  setMenuGroups(prev => [...prev, { id: newId, name: 'Nhóm mới', items: [] }]);
+                  setActiveMenuGroupId(newId);
+                  setMenuManage(true);
+                }} style={{ fontSize: '11.5px', fontWeight: 600, color: '#8c8679', border: '1.5px dashed rgba(212,178,106,.35)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer' }}>+ Nhóm</span>
+                
                 <span style={{ flex: 1 }}></span>
                 <span onClick={() => setMenuManage(!menuManage)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: menuManage ? '#d4b26a' : '#8c8679', cursor: 'pointer' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>{menuManage ? 'Hoàn tất' : 'Sửa nhóm'}
@@ -432,29 +503,31 @@ export default function AdminStoresPage() {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-                {menuItems.map(mi => (
+                {menuGroups.find(g => g.id === activeMenuGroupId)?.items.map((mi: any) => (
                   <div key={mi.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
                     <div style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb ? (mi.thumb.startsWith('linear-gradient') ? mi.thumb : `url(${resolveClientUrl(mi.thumb)}) center/cover no-repeat`) : g1 }}></div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mi.name}</span>
-                        {mi.hot && <span style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.8px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '2.5px 7px', borderRadius: '5px' }}>BÁN CHẠY</span>}
+                        <input value={mi.name} onChange={e => updateMenuItem(mi.id, 'name', e.target.value)} style={{ background: 'transparent', border: 'none', color: '#e8e4db', fontSize: '12.5px', fontWeight: 600, outline: 'none', width: '100%' }} placeholder="Tên món" />
+                        <span onClick={() => updateMenuItem(mi.id, 'hot', !mi.hot)} style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.8px', color: mi.hot ? '#241a0a' : '#8c8679', background: mi.hot ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.1)', padding: '2.5px 7px', borderRadius: '5px', cursor: 'pointer' }}>HOT</span>
                       </div>
-                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mi.desc}</div>
+                      <input value={mi.desc} onChange={e => updateMenuItem(mi.id, 'desc', e.target.value)} style={{ background: 'transparent', border: 'none', color: '#8c8679', fontSize: '10.5px', marginTop: '2px', outline: 'none', width: '100%' }} placeholder="Mô tả" />
                     </div>
                     <div style={{ display: 'flex', flex: 'none', gap: '3px', background: 'rgba(12,12,15,.4)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '9px', padding: '3px' }}>
-                      <span style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 2 ? '#d4b26a' : '#57534b', background: mi.tier === 2 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$</span>
-                      <span style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 3 ? '#d4b26a' : '#57534b', background: mi.tier === 3 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$</span>
-                      <span style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 4 ? '#d4b26a' : '#57534b', background: mi.tier === 4 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$$</span>
+                      <span onClick={() => updateMenuItem(mi.id, 'tier', 2)} style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 2 ? '#d4b26a' : '#57534b', background: mi.tier === 2 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$</span>
+                      <span onClick={() => updateMenuItem(mi.id, 'tier', 3)} style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 3 ? '#d4b26a' : '#57534b', background: mi.tier === 3 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$</span>
+                      <span onClick={() => updateMenuItem(mi.id, 'tier', 4)} style={{ padding: '4px 7px', borderRadius: '6px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer', color: mi.tier === 4 ? '#d4b26a' : '#57534b', background: mi.tier === 4 ? 'rgba(212,178,106,.15)' : 'transparent' }}>$$$$</span>
                     </div>
                     <span onClick={() => removeMenu(mi.id)} style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} title="Xóa món">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                     </span>
                   </div>
                 ))}
-                <div onClick={addMockMenu} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này
-                </div>
+                {menuGroups.length > 0 && (
+                  <div onClick={addMockMenu} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
