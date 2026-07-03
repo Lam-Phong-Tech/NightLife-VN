@@ -113,7 +113,9 @@ describe('NightlifeDataService', () => {
       update: jest.fn(),
     },
     commissionConfig: {
+      findMany: jest.fn(),
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
     auditLog: {
       create: jest.fn(),
@@ -235,7 +237,11 @@ describe('NightlifeDataService', () => {
     prisma.pointLedger.findFirst.mockResolvedValue(null as never);
     prisma.pointLedger.findMany.mockResolvedValue([] as never);
     prisma.pointLedger.updateMany.mockResolvedValue({ count: 0 } as never);
+    prisma.commissionConfig.findMany.mockResolvedValue([] as never);
     prisma.commissionConfig.findFirst.mockResolvedValue(null as never);
+    prisma.commissionConfig.update.mockResolvedValue({
+      id: 'commission-config-1',
+    } as never);
     passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
       .spyOn(QRCode, 'toDataURL')
@@ -4996,12 +5002,12 @@ describe('NightlifeDataService', () => {
     } as never);
     prisma.bill.update.mockResolvedValue({
       id: 'bill-negative-commission',
-      status: 'VERIFIED',
+      status: 'PENDING_PM_BA',
       reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
-      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: null,
       rejectedAt: null,
       reviewedById: 'admin-1',
-      verifiedById: 'admin-1',
+      verifiedById: null,
       rejectedById: null,
       rejectReason: null,
       subtotalVnd: 1000000,
@@ -5029,6 +5035,9 @@ describe('NightlifeDataService', () => {
     expect(prisma.bill.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          status: 'PENDING_PM_BA',
+          verifiedAt: null,
+          verifiedById: null,
           subtotalVnd: 1000000,
           discountVnd: 80000,
           totalVnd: 920000,
@@ -5040,6 +5049,9 @@ describe('NightlifeDataService', () => {
             commissionPercent: 5,
             discountPercent: 8,
             requiresPmBaConfirmation: true,
+            workflowStatus: 'PENDING_PM_BA',
+            pmBaConfirmationRequired: true,
+            pmBaConfirmationConfirmed: false,
             pmBaConfirmationReason:
               'Commission is negative because discount rate is higher than commission rate.',
             flags: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
@@ -5047,6 +5059,272 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(adminNotificationService.notifyBillReviewed).not.toHaveBeenCalled();
+  });
+
+  it('verifies a negative commission bill after PM/BA confirmation with reason', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-negative-confirm',
+      billNumber: 'BILL-20260703-PMBA',
+      status: 'PENDING_PM_BA',
+      reviewedAt: new Date('2026-07-03T09:00:00.000Z'),
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1000000,
+      discountVnd: 0,
+      serviceChargeVnd: 0,
+      taxVnd: 0,
+      totalVnd: 1000000,
+      paidVnd: 1000000,
+      commissionAmountVnd: -30000,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: {
+        flags: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
+      },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: null,
+      coupon: {
+        id: 'coupon-1',
+        code: 'VIP8',
+        name: 'VIP 8%',
+        discountType: 'PERCENT',
+        discountValue: 8,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+      },
+      couponIssue: {
+        id: 'issue-negative',
+        code: 'VIP-code',
+        status: 'USED',
+        metadata: { discountPercent: 8 },
+      },
+      user: null,
+      guest: { id: 'guest-1', displayName: 'Walk-in', phone: '+84901234567' },
+    } as never);
+    prisma.commissionConfig.findFirst.mockResolvedValue({
+      id: 'commission-low',
+      commissionType: 'PERCENT',
+      commissionValue: 5,
+      minBillVnd: null,
+      ruleSnapshot: {},
+      activeFrom: new Date('2026-01-01T00:00:00.000Z'),
+      activeTo: null,
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-negative-confirm',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1000000,
+      discountVnd: 80000,
+      totalVnd: 920000,
+      paidVnd: 920000,
+      commissionAmountVnd: -30000,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: {},
+    } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-negative-confirm', {
+      approve: true,
+      confirmNegativeCommission: true,
+      pmBaReason: 'PM approved campaign loss leader.',
+    });
+
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'VERIFIED',
+          verifiedById: 'admin-1',
+          commissionRuleSnapshot: expect.objectContaining({
+            workflowStatus: 'VERIFIED',
+            pmBaConfirmationRequired: true,
+            pmBaConfirmationConfirmed: true,
+            pmBaConfirmation: expect.objectContaining({
+              status: 'CONFIRMED',
+              reason: 'PM approved campaign loss leader.',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(adminNotificationService.notifyBillReviewed).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'bill-negative-confirm', status: 'VERIFIED' }),
+      expect.objectContaining({ approve: true, reviewedById: 'admin-1' }),
+    );
+  });
+
+  it('voids a verified bill and writes an idempotent point reversal ledger', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-04T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-void-1',
+      billNumber: 'BILL-VOID-1',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 2000000,
+      discountVnd: 0,
+      serviceChargeVnd: 0,
+      taxVnd: 0,
+      totalVnd: 2000000,
+      paidVnd: 2000000,
+      commissionAmountVnd: 200000,
+      pointsEarned: 20,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+      pointRuleSnapshot: null,
+      submittedAt: new Date('2026-07-03T09:00:00.000Z'),
+      updatedAt: new Date('2026-07-03T10:00:00.000Z'),
+      usedAt: new Date('2026-07-03T09:00:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: { id: 'booking-1', status: 'CONFIRMED', scheduledAt: null },
+      coupon: null,
+      couponIssue: null,
+      user: { id: 'member-1', displayName: 'Minh', tier: 'MEMBER' },
+      guest: null,
+      pointLedgers: [
+        {
+          id: 'ledger-earn-1',
+          userId: 'member-1',
+          bookingId: 'booking-1',
+          amountVnd: 2000000,
+          points: 20,
+          ruleSnapshot: null,
+          postedAt: new Date('2026-07-03T10:00:00.000Z'),
+        },
+      ],
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-void-1',
+      status: 'VOIDED',
+      reviewedAt: new Date('2026-07-04T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-2',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: 'Refunded',
+      subtotalVnd: 2000000,
+      discountVnd: 0,
+      totalVnd: 2000000,
+      paidVnd: 2000000,
+      commissionAmountVnd: 200000,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+      pointRuleSnapshot: null,
+    } as never);
+
+    await service.voidSensitiveBill('admin-2', 'bill-void-1', {
+      reason: 'Refunded',
+      refundReference: 'REF-1',
+    });
+
+    expect(prisma.pointLedger.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { billId_type: { billId: 'bill-void-1', type: 'REVERSE' } },
+        create: expect.objectContaining({
+          userId: 'member-1',
+          billId: 'bill-void-1',
+          reversedLedgerId: 'ledger-earn-1',
+          type: 'REVERSE',
+          status: 'POSTED',
+          amountVnd: -2000000,
+          points: -20,
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'bill.review.void',
+        targetId: 'bill-void-1',
+        metadata: expect.objectContaining({
+          reversedPoints: 20,
+          refundReference: 'REF-1',
+        }),
+      }),
+    });
+  });
+
+  it('creates a campaign commission override inside CommissionConfig ruleSnapshot', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-04T10:00:00.000Z'));
+    prisma.commissionConfig.findFirst.mockResolvedValue({
+      id: 'commission-config-1',
+      storeId: 'store-1',
+      commissionType: 'PERCENT',
+      commissionValue: 15,
+      ruleSnapshot: { version: 'ba-v3.2' },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+    } as never);
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME20',
+      name: 'Welcome 20%',
+      storeId: 'store-1',
+    } as never);
+    prisma.commissionConfig.update.mockResolvedValue({
+      id: 'commission-config-1',
+      storeId: 'store-1',
+      commissionType: 'PERCENT',
+      commissionValue: 15,
+      ruleSnapshot: {},
+      updatedAt: new Date('2026-07-04T10:00:00.000Z'),
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+    } as never);
+
+    await service.createAdminCommissionOverride('admin-1', {
+      storeId: 'store-1',
+      couponId: 'coupon-1',
+      commissionPercent: 18,
+      note: 'PM override',
+      active: true,
+    });
+
+    expect(prisma.commissionConfig.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'commission-config-1' },
+        data: {
+          ruleSnapshot: expect.objectContaining({
+            version: 'ba-v3.2',
+            campaignCommissionOverrides: [
+              expect.objectContaining({
+                couponId: 'coupon-1',
+                couponCode: 'WELCOME20',
+                commissionPercent: 18,
+                active: true,
+              }),
+            ],
+            campaignCommissionRates: expect.objectContaining({
+              'coupon-1': expect.objectContaining({ commissionPercent: 18 }),
+              WELCOME20: expect.objectContaining({ commissionPercent: 18 }),
+            }),
+          }),
+        },
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'commission.override.create',
+        targetType: 'CommissionConfig',
+        targetId: 'commission-config-1',
+      }),
+    });
   });
 
   it('returns the member point balance from posted point ledgers', async () => {
@@ -5758,6 +6036,22 @@ describe('NightlifeDataService', () => {
         },
       ],
       breakdowns: {
+        stores: [
+          expect.objectContaining({
+            id: 'store-1',
+            code: 'neon-club',
+            name: 'Neon Club',
+            billCount: 2,
+            commissionVnd: 280000,
+          }),
+          expect.objectContaining({
+            id: 'store-2',
+            code: 'velvet',
+            name: 'Velvet Lounge',
+            billCount: 1,
+            commissionVnd: 50000,
+          }),
+        ],
         partners: [
           expect.objectContaining({
             id: 'partner-1',
@@ -5774,6 +6068,18 @@ describe('NightlifeDataService', () => {
           }),
         ],
         campaigns: [
+          expect.objectContaining({
+            id: 'coupon-1',
+            code: 'WELCOME20',
+            billCount: 2,
+          }),
+          expect.objectContaining({
+            id: null,
+            code: 'NO_COUPON',
+            billCount: 1,
+          }),
+        ],
+        coupons: [
           expect.objectContaining({
             id: 'coupon-1',
             code: 'WELCOME20',
@@ -5848,6 +6154,12 @@ describe('NightlifeDataService', () => {
           netVnd: {
             current: 3300000,
             previous: 3300000,
+            delta: 0,
+            deltaPercent: 0,
+          },
+          payableVnd: {
+            current: 3450000,
+            previous: 3450000,
             delta: 0,
             deltaPercent: 0,
           },

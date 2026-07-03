@@ -160,6 +160,7 @@ enum DiscountType {
 enum BillStatus {
   DRAFT
   SUBMITTED
+  PENDING_PM_BA
   VERIFIED
   REJECTED
   PAID

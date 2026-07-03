@@ -74,6 +74,11 @@ import {
   CreateBillDto,
 } from './dto/create-bill.dto';
 import { BillOcrPreviewDto, ReverseBillDto } from './dto/bill-p2.dto';
+import {
+  AdminCommissionOverrideQueryDto,
+  CreateCommissionOverrideDto,
+  UpdateCommissionOverrideDto,
+} from './dto/commission-override.dto';
 import { AdminRevenueReportQueryDto } from './dto/admin-revenue-report.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
@@ -87,7 +92,7 @@ import {
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
 import { RecordProfileViewDto } from './dto/profile-view.dto';
-import { ReviewBillDto } from './dto/review-bill.dto';
+import { ReviewBillDto, VoidBillDto } from './dto/review-bill.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
@@ -100,6 +105,9 @@ const BILL_REVENUE_RULE_VERSION = 'ba-v3.2';
 const BILL_LOYALTY_RULE_VERSION = 'v2.2';
 const BILL_LOYALTY_VND_PER_POINT = 100_000;
 const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
+const NEGATIVE_COMMISSION_FLAG =
+  'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED';
+const MISSING_COMMISSION_CONFIG_FLAG = 'MISSING_ACTIVE_COMMISSION_CONFIG';
 const DEFAULT_REVENUE_REPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const REVENUE_REPORT_TIMEZONE_OFFSETS_MINUTES: Record<string, number> = {
   'Asia/Ho_Chi_Minh': 7 * 60,
@@ -305,8 +313,10 @@ type RevenueReportDimensionNode = RevenueReportMoneyTotals & {
 };
 
 type RevenueReportBreakdowns = {
+  stores: RevenueReportDimensionNode[];
   partners: RevenueReportDimensionNode[];
   campaigns: RevenueReportDimensionNode[];
+  coupons: RevenueReportDimensionNode[];
   areas: RevenueReportDimensionNode[];
   casts: RevenueReportDimensionNode[];
 };
@@ -4755,7 +4765,7 @@ export class NightlifeDataService {
   ) {
     const where: Prisma.BillWhereInput = {
       deletedAt: null,
-      status: { in: ['SUBMITTED', 'REJECTED'] },
+      status: { in: ['SUBMITTED', 'PENDING_PM_BA', 'REJECTED'] },
     };
     const bookingId = this.cleanText(query.bookingId);
     const couponId = this.cleanText(query.couponId);
@@ -5066,12 +5076,22 @@ export class NightlifeDataService {
       const money = this.billRevenueReportMoney(bill);
       this.addRevenueReportTotals(totals, money);
       this.addRevenueReportBreakdown(
+        breakdownMaps.stores,
+        this.revenueReportStoreDimension(bill.store),
+        money,
+      );
+      this.addRevenueReportBreakdown(
         breakdownMaps.partners,
         this.revenueReportPartnerDimension(bill.store),
         money,
       );
       this.addRevenueReportBreakdown(
         breakdownMaps.campaigns,
+        this.revenueReportCampaignDimension(bill),
+        money,
+      );
+      this.addRevenueReportBreakdown(
+        breakdownMaps.coupons,
         this.revenueReportCampaignDimension(bill),
         money,
       );
@@ -5182,74 +5202,212 @@ export class NightlifeDataService {
     };
   }
 
+  async listAdminCommissionOverrides(
+    query: AdminCommissionOverrideQueryDto = {},
+  ) {
+    const storeId = this.cleanText(query.storeId);
+    const couponId = this.cleanText(query.couponId);
+    const configs = await this.prisma.commissionConfig.findMany({
+      where: {
+        status: 'ACTIVE',
+        ...(storeId ? { storeId } : {}),
+      },
+      orderBy: [{ storeId: 'asc' }, { activeFrom: 'desc' }],
+      select: {
+        id: true,
+        storeId: true,
+        commissionType: true,
+        commissionValue: true,
+        ruleSnapshot: true,
+        activeFrom: true,
+        activeTo: true,
+        store: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    const data = configs.flatMap((config) =>
+      this.readCampaignCommissionOverrides(
+        this.asRecord(config.ruleSnapshot) ?? {},
+      )
+        .filter((override) => !couponId || override.couponId === couponId)
+        .map((override) => ({
+          ...override,
+          commissionConfig: {
+            id: config.id,
+            storeId: config.storeId,
+            commissionType: config.commissionType,
+            commissionValue: config.commissionValue,
+            activeFrom: config.activeFrom.toISOString(),
+            activeTo: config.activeTo?.toISOString() ?? null,
+          },
+          store: config.store,
+        })),
+    );
+
+    return {
+      data,
+      meta: {
+        total: data.length,
+        storeId: storeId || null,
+        couponId: couponId || null,
+      },
+    };
+  }
+
+  async createAdminCommissionOverride(
+    adminId: string,
+    dto: CreateCommissionOverrideDto,
+  ) {
+    return this.upsertAdminCommissionOverride(adminId, dto.storeId, dto);
+  }
+
+  async updateAdminCommissionOverride(
+    adminId: string,
+    storeId: string,
+    couponId: string,
+    dto: UpdateCommissionOverrideDto,
+  ) {
+    return this.upsertAdminCommissionOverride(adminId, storeId, {
+      ...dto,
+      couponId,
+    });
+  }
+
+  async deleteAdminCommissionOverride(
+    adminId: string,
+    storeId: string,
+    couponId: string,
+  ) {
+    return this.upsertAdminCommissionOverride(adminId, storeId, {
+      couponId,
+      active: false,
+      note: 'Disabled by admin',
+    });
+  }
+
+  async previewSensitiveBillApproval(adminId: string, billId: string) {
+    void adminId;
+    const bill = await this.findSensitiveBillForReview(billId);
+
+    if (!['SUBMITTED', 'PENDING_PM_BA'].includes(bill.status)) {
+      throw new UnprocessableEntityException(
+        'Only submitted or pending PM/BA bills can be previewed',
+      );
+    }
+
+    const previewedAt = new Date();
+    const revenueApproval = await this.buildBillRevenueApprovalSnapshot(
+      bill,
+      previewedAt,
+    );
+    const flags = this.extractSnapshotFlags(
+      revenueApproval.commissionRuleSnapshot,
+    );
+    const requiresPmBaConfirmation = flags.includes(NEGATIVE_COMMISSION_FLAG);
+    const loyaltyAward = this.buildBillLoyaltyAward(
+      {
+        ...bill,
+        subtotalVnd: revenueApproval.grossVnd,
+        totalVnd: revenueApproval.netVnd,
+        paidVnd: revenueApproval.payableVnd,
+      },
+      previewedAt,
+    );
+
+    return {
+      bill: this.withBillRevenueAliases(bill),
+      preview: {
+        ruleVersion: BILL_REVENUE_RULE_VERSION,
+        previewedAt: previewedAt.toISOString(),
+        nextStatus: requiresPmBaConfirmation ? 'PENDING_PM_BA' : 'VERIFIED',
+        requiresPmBaConfirmation,
+        pmBaConfirmationReason:
+          typeof revenueApproval.commissionRuleSnapshot
+            .pmBaConfirmationReason === 'string'
+            ? revenueApproval.commissionRuleSnapshot.pmBaConfirmationReason
+            : null,
+        flags,
+        grossRevenueVnd: revenueApproval.grossVnd,
+        discountVnd: revenueApproval.discountVnd,
+        netRevenueVnd: revenueApproval.netVnd,
+        payableVnd: revenueApproval.payableVnd,
+        commissionAmountVnd: revenueApproval.commissionVnd,
+        loyaltyPoints: loyaltyAward?.points ?? 0,
+        loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
+        discountRuleSnapshot: revenueApproval.discountRuleSnapshot,
+        commissionRuleSnapshot: revenueApproval.commissionRuleSnapshot,
+      },
+    };
+  }
+
   async reviewSensitiveBill(
     adminId: string,
     billId: string,
     dto: ReviewBillDto,
   ) {
-    const bill = await this.prisma.bill.findFirst({
-      where: {
-        id: billId,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        billNumber: true,
-        status: true,
-        reviewedAt: true,
-        verifiedAt: true,
-        rejectedAt: true,
-        reviewedById: true,
-        verifiedById: true,
-        rejectedById: true,
-        rejectReason: true,
-        subtotalVnd: true,
-        discountVnd: true,
-        serviceChargeVnd: true,
-        taxVnd: true,
-        totalVnd: true,
-        paidVnd: true,
-        commissionAmountVnd: true,
-        pointsEarned: true,
-        discountRuleSnapshot: true,
-        commissionRuleSnapshot: true,
-        store: { select: { id: true, name: true, slug: true } },
-        booking: { select: { id: true, status: true, scheduledAt: true } },
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            discountType: true,
-            discountValue: true,
-            maxDiscountVnd: true,
-            minSpendVnd: true,
-          },
-        },
-        couponIssue: {
-          select: { id: true, code: true, status: true, metadata: true },
-        },
-        user: {
-          select: { id: true, displayName: true, role: true, tier: true },
-        },
-        guest: { select: { id: true, displayName: true, phone: true } },
-      },
-    });
-
-    if (!bill) {
-      throw new NotFoundException('Bill not found');
-    }
+    const bill = await this.findSensitiveBillForReview(billId);
 
     if (bill.status === 'VERIFIED') {
       throw new UnprocessableEntityException('Bill has already been verified');
+    }
+
+    if (bill.status === 'PAID' || bill.status === 'VOIDED') {
+      throw new UnprocessableEntityException(
+        'Paid or voided bills cannot be reviewed',
+      );
+    }
+
+    if (!['SUBMITTED', 'PENDING_PM_BA'].includes(bill.status)) {
+      throw new UnprocessableEntityException(
+        'Bill is not in a reviewable status',
+      );
     }
 
     const now = new Date();
     const revenueApproval = dto.approve
       ? await this.buildBillRevenueApprovalSnapshot(bill, now)
       : null;
-    const loyaltyAward = dto.approve
-      ? this.buildBillLoyaltyAward(
+    const revenueFlags = revenueApproval
+      ? this.extractSnapshotFlags(revenueApproval.commissionRuleSnapshot)
+      : [];
+    const requiresPmBaConfirmation = revenueFlags.includes(
+      NEGATIVE_COMMISSION_FLAG,
+    );
+    const pmBaReason = this.cleanText(dto.pmBaReason);
+    const nextApproveStatus =
+      dto.approve && requiresPmBaConfirmation && !dto.confirmNegativeCommission
+        ? 'PENDING_PM_BA'
+        : 'VERIFIED';
+
+    if (
+      dto.approve &&
+      requiresPmBaConfirmation &&
+      dto.confirmNegativeCommission &&
+      !pmBaReason
+    ) {
+      throw new BadRequestException(
+        'PM/BA confirmation reason is required for negative commission approval',
+      );
+    }
+
+    const reviewedCommissionSnapshot =
+      revenueApproval?.commissionRuleSnapshot && dto.approve
+        ? this.decorateBillCommissionReviewSnapshot(
+            revenueApproval.commissionRuleSnapshot,
+            {
+              status: nextApproveStatus,
+              reviewedAt: now,
+              reviewedById: adminId,
+              confirmNegativeCommission:
+                Boolean(dto.confirmNegativeCommission) &&
+                requiresPmBaConfirmation,
+              pmBaReason,
+            },
+          )
+        : null;
+    const loyaltyAward =
+      dto.approve && nextApproveStatus === 'VERIFIED'
+        ? this.buildBillLoyaltyAward(
           revenueApproval
             ? {
                 ...bill,
@@ -5260,17 +5418,18 @@ export class NightlifeDataService {
             : bill,
           now,
         )
-      : null;
+        : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
       const reviewedBill = await tx.bill.update({
         where: { id: billId },
         data: dto.approve
           ? {
-              status: 'VERIFIED',
-              verifiedAt: now,
+              status: nextApproveStatus,
+              verifiedAt: nextApproveStatus === 'VERIFIED' ? now : null,
               reviewedById: adminId,
-              verifiedById: adminId,
+              verifiedById:
+                nextApproveStatus === 'VERIFIED' ? adminId : null,
               reviewedAt: now,
               rejectedAt: null,
               rejectedById: null,
@@ -5285,7 +5444,10 @@ export class NightlifeDataService {
                 ? this.toPrismaJson(revenueApproval.discountRuleSnapshot)
                 : Prisma.JsonNull,
               commissionRuleSnapshot: revenueApproval
-                ? this.toPrismaJson(revenueApproval.commissionRuleSnapshot)
+                ? this.toPrismaJson(
+                    reviewedCommissionSnapshot ??
+                      revenueApproval.commissionRuleSnapshot,
+                  )
                 : Prisma.JsonNull,
               pointsEarned: loyaltyAward?.points ?? 0,
               pointRuleSnapshot: loyaltyAward
@@ -5312,7 +5474,11 @@ export class NightlifeDataService {
       await tx.auditLog.create({
         data: {
           actorId: adminId,
-          action: dto.approve ? 'bill.review.approve' : 'bill.review.reject',
+          action: dto.approve
+            ? nextApproveStatus === 'PENDING_PM_BA'
+              ? 'bill.review.pending_pm_ba'
+              : 'bill.review.approve'
+            : 'bill.review.reject',
           targetType: 'Bill',
           targetId: billId,
           beforeJson: this.buildBillReviewAuditSnapshot(bill),
@@ -5323,6 +5489,12 @@ export class NightlifeDataService {
             previousStatus: bill.status,
             nextStatus: reviewedBill.status,
             reviewedAt: now.toISOString(),
+            requiresPmBaConfirmation,
+            pmBaConfirmationReason:
+              reviewedCommissionSnapshot?.pmBaConfirmationReason ?? null,
+            pmBaConfirmed:
+              reviewedCommissionSnapshot?.pmBaConfirmationConfirmed ?? false,
+            pmBaReason: pmBaReason || null,
             loyaltyPoints: loyaltyAward?.points ?? 0,
             loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
             loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
@@ -5347,10 +5519,15 @@ export class NightlifeDataService {
 
     const resultWithRevenueAliases = this.withBillRevenueAliases(result);
 
-    await this.adminNotificationService?.notifyBillReviewed(resultWithRevenueAliases, {
-      approve: dto.approve,
-      reviewedById: adminId,
-    });
+    if (result.status === 'VERIFIED' || result.status === 'REJECTED') {
+      await this.adminNotificationService?.notifyBillReviewed(
+        resultWithRevenueAliases,
+        {
+          approve: dto.approve,
+          reviewedById: adminId,
+        },
+      );
+    }
 
     return resultWithRevenueAliases;
   }
@@ -5360,27 +5537,44 @@ export class NightlifeDataService {
     billId: string,
     dto: ReverseBillDto = {},
   ) {
+    return this.applySensitiveBillReversal(adminId, billId, dto, {
+      action: 'bill.reversal',
+      defaultReason: 'Bill reversed by admin reconciliation',
+    });
+  }
+
+  async voidSensitiveBill(adminId: string, billId: string, dto: VoidBillDto) {
+    return this.applySensitiveBillReversal(adminId, billId, dto, {
+      action: 'bill.review.void',
+      defaultReason: 'Bill voided/refunded by admin',
+    });
+  }
+
+  private async applySensitiveBillReversal(
+    adminId: string,
+    billId: string,
+    dto: { reason?: string; refundReference?: string } = {},
+    options: {
+      action: 'bill.reversal' | 'bill.review.void';
+      defaultReason: string;
+    },
+  ) {
     const bill = await this.prisma.bill.findFirst({
       where: { id: billId, deletedAt: null },
       select: {
-        id: true,
-        billNumber: true,
-        status: true,
-        reviewedAt: true,
-        verifiedAt: true,
-        rejectedAt: true,
-        reviewedById: true,
-        verifiedById: true,
-        rejectedById: true,
-        rejectReason: true,
-        subtotalVnd: true,
-        discountVnd: true,
-        totalVnd: true,
-        paidVnd: true,
-        commissionAmountVnd: true,
-        pointsEarned: true,
-        discountRuleSnapshot: true,
-        commissionRuleSnapshot: true,
+        ...this.billNotificationSelect(),
+        pointLedgers: {
+          where: { type: 'EARN', status: 'POSTED' },
+          select: {
+            id: true,
+            userId: true,
+            bookingId: true,
+            amountVnd: true,
+            points: true,
+            ruleSnapshot: true,
+            postedAt: true,
+          },
+        },
       },
     });
 
@@ -5388,32 +5582,41 @@ export class NightlifeDataService {
       throw new NotFoundException('Bill not found');
     }
 
-    if (!['VERIFIED', 'PAID'].includes(bill.status)) {
+    if (bill.status === 'VOIDED') {
+      return this.withBillRevenueAliases(bill);
+    }
+
+    if (!['VERIFIED', 'PAID', 'PENDING_PM_BA'].includes(bill.status)) {
       throw new UnprocessableEntityException(
-        'Only VERIFIED or PAID bills can be reversed',
+        'Only verified, paid, or pending PM/BA bills can be voided',
       );
     }
 
     const now = new Date();
     const reason =
-      this.cleanText(dto.reason) ?? 'Bill reversed by admin reconciliation';
+      this.cleanText(dto.reason) ?? options.defaultReason;
+    const refundReference = this.cleanText(dto.refundReference);
+    const selectedEarnLedger = Array.isArray(bill.pointLedgers)
+      ? (bill.pointLedgers[0] ?? null)
+      : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const earnLedger = await tx.pointLedger.findFirst({
-        where: {
-          billId,
-          type: 'EARN',
-          status: 'POSTED',
-        },
-        select: {
-          id: true,
-          userId: true,
-          bookingId: true,
-          amountVnd: true,
-          points: true,
-        },
-      });
-
+      const earnLedger =
+        selectedEarnLedger ??
+        (await tx.pointLedger.findFirst({
+          where: {
+            billId,
+            type: 'EARN',
+            status: 'POSTED',
+          },
+          select: {
+            id: true,
+            userId: true,
+            bookingId: true,
+            amountVnd: true,
+            points: true,
+          },
+        }));
       const reversedBill = await tx.bill.update({
         where: { id: billId },
         data: {
@@ -5427,62 +5630,40 @@ export class NightlifeDataService {
           rejectReason: reason,
           commissionAmountVnd: 0,
           pointsEarned: 0,
+          pointRuleSnapshot: this.toPrismaJson({
+            ...(this.asRecord(bill.pointRuleSnapshot) ?? {}),
+            reversedAt: now.toISOString(),
+            reversedById: adminId,
+            refundReference: refundReference || null,
+            reason,
+          }),
         },
         select: this.billNotificationSelect(),
       });
 
-      if (earnLedger) {
+      if (earnLedger && earnLedger.points > 0) {
         await tx.pointLedger.updateMany({
           where: { id: earnLedger.id, status: 'POSTED' },
           data: { status: 'REVERSED' },
         });
 
-        await tx.pointLedger.upsert({
-          where: {
-            billId_type: {
-              billId,
-              type: 'REVERSE',
-            },
-          },
-          update: {
-            userId: earnLedger.userId,
-            bookingId: earnLedger.bookingId,
-            reversedLedgerId: earnLedger.id,
-            status: 'POSTED',
-            amountVnd: -Math.abs(earnLedger.amountVnd),
-            points: -Math.abs(earnLedger.points),
-            description: `Auto reversal for bill ${billId}`,
-            ruleSnapshot: this.toPrismaJson({
-              version: BILL_LOYALTY_RULE_VERSION,
-              source: 'bill_reversal',
-              reason,
-            }),
-            postedAt: now,
-          },
-          create: {
-            userId: earnLedger.userId,
-            bookingId: earnLedger.bookingId,
-            billId,
-            reversedLedgerId: earnLedger.id,
-            type: 'REVERSE',
-            status: 'POSTED',
-            amountVnd: -Math.abs(earnLedger.amountVnd),
-            points: -Math.abs(earnLedger.points),
-            description: `Auto reversal for bill ${billId}`,
-            ruleSnapshot: this.toPrismaJson({
-              version: BILL_LOYALTY_RULE_VERSION,
-              source: 'bill_reversal',
-              reason,
-            }),
-            postedAt: now,
-          },
+        await this.recordBillLoyaltyReverseLedger(tx, {
+          billId,
+          bookingId: earnLedger.bookingId,
+          userId: earnLedger.userId,
+          reversedLedgerId: earnLedger.id,
+          amountVnd: -Math.abs(earnLedger.amountVnd),
+          points: -Math.abs(earnLedger.points),
+          postedAt: now,
+          reason,
+          refundReference: refundReference || null,
         });
       }
 
       await tx.auditLog.create({
         data: {
           actorId: adminId,
-          action: 'bill.reversal',
+          action: options.action,
           targetType: 'Bill',
           targetId: billId,
           beforeJson: this.buildBillReviewAuditSnapshot(bill),
@@ -5491,9 +5672,12 @@ export class NightlifeDataService {
             reason,
             previousStatus: bill.status,
             nextStatus: reversedBill.status,
+            refundReference: refundReference || null,
             reversedAt: now.toISOString(),
             reversedLedgerId: earnLedger?.id ?? null,
             pointsReversed: earnLedger?.points ?? 0,
+            reversedPoints: earnLedger?.points ?? 0,
+            voidedAt: now.toISOString(),
           }),
         },
       });
@@ -5501,12 +5685,14 @@ export class NightlifeDataService {
       return reversedBill;
     });
 
-    await this.adminNotificationService?.notifyBillReviewed(result, {
+    const resultWithRevenueAliases = this.withBillRevenueAliases(result);
+
+    await this.adminNotificationService?.notifyBillReviewed(resultWithRevenueAliases, {
       approve: false,
       reviewedById: adminId,
     });
 
-    return result;
+    return resultWithRevenueAliases;
   }
 
   private resolveAdminRevenueReportWindow(
@@ -5650,8 +5836,10 @@ export class NightlifeDataService {
 
   private emptyRevenueReportBreakdownMaps() {
     return {
+      stores: new Map<string, RevenueReportDimensionNode>(),
       partners: new Map<string, RevenueReportDimensionNode>(),
       campaigns: new Map<string, RevenueReportDimensionNode>(),
+      coupons: new Map<string, RevenueReportDimensionNode>(),
       areas: new Map<string, RevenueReportDimensionNode>(),
       casts: new Map<string, RevenueReportDimensionNode>(),
     };
@@ -5679,8 +5867,10 @@ export class NightlifeDataService {
   }
 
   private finalizeRevenueReportBreakdowns(breakdowns: {
+    stores: Map<string, RevenueReportDimensionNode>;
     partners: Map<string, RevenueReportDimensionNode>;
     campaigns: Map<string, RevenueReportDimensionNode>;
+    coupons: Map<string, RevenueReportDimensionNode>;
     areas: Map<string, RevenueReportDimensionNode>;
     casts: Map<string, RevenueReportDimensionNode>;
   }): RevenueReportBreakdowns {
@@ -5693,12 +5883,29 @@ export class NightlifeDataService {
       left.name.localeCompare(right.name);
 
     return {
+      stores: Array.from(breakdowns.stores.values()).sort(sortByCommission),
       partners: Array.from(breakdowns.partners.values()).sort(sortByCommission),
       campaigns: Array.from(breakdowns.campaigns.values()).sort(
         sortByCommission,
       ),
+      coupons: Array.from(breakdowns.coupons.values()).sort(sortByCommission),
       areas: Array.from(breakdowns.areas.values()).sort(sortByCommission),
       casts: Array.from(breakdowns.casts.values()).sort(sortByCommission),
+    };
+  }
+
+  private revenueReportStoreDimension(store: {
+    id: string;
+    name: string;
+    slug?: string | null;
+    city?: string | null;
+    district?: string | null;
+  }): Pick<RevenueReportDimensionNode, 'id' | 'code' | 'name' | 'secondary'> {
+    return {
+      id: store.id,
+      code: store.slug ?? store.id,
+      name: store.name,
+      secondary: [store.city, store.district].filter(Boolean).join(' / ') || null,
     };
   }
 
@@ -6000,6 +6207,10 @@ export class NightlifeDataService {
         netVnd: this.revenueReportComparisonMetric(
           currentTotals.netVnd,
           previousTotals.netVnd,
+        ),
+        payableVnd: this.revenueReportComparisonMetric(
+          currentTotals.payableVnd,
+          previousTotals.payableVnd,
         ),
         commissionVnd: this.revenueReportComparisonMetric(
           currentTotals.commissionVnd,
@@ -6349,10 +6560,10 @@ export class NightlifeDataService {
       throw new UnprocessableEntityException({
         message: 'Missing active CommissionConfig for bill approval',
         error: 'Unprocessable Entity',
-        code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
+        code: MISSING_COMMISSION_CONFIG_FLAG,
         reason:
           'Bill approval requires an active CommissionConfig before commission can be calculated.',
-        flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
+        flags: [MISSING_COMMISSION_CONFIG_FLAG],
         bill: {
           id: input.bill.id ?? null,
         },
@@ -6390,7 +6601,7 @@ export class NightlifeDataService {
     const requiresPmBaConfirmation = commissionVnd < 0;
     const flags = [
       ...(requiresPmBaConfirmation
-        ? ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED']
+        ? [NEGATIVE_COMMISSION_FLAG]
         : []),
     ];
 
@@ -6457,12 +6668,185 @@ export class NightlifeDataService {
     };
   }
 
+  private async upsertAdminCommissionOverride(
+    adminId: string,
+    storeId: string,
+    dto: (CreateCommissionOverrideDto | UpdateCommissionOverrideDto) & {
+      couponId?: string;
+      couponCode?: string;
+    },
+  ) {
+    const couponId = this.cleanText(dto.couponId);
+    const couponCode = this.cleanText(dto.couponCode);
+
+    if (!couponId && !couponCode) {
+      throw new BadRequestException('couponId or couponCode is required');
+    }
+
+    const [config, coupon] = await Promise.all([
+      this.prisma.commissionConfig.findFirst({
+        where: {
+          storeId,
+          status: 'ACTIVE',
+          activeFrom: { lte: new Date() },
+          OR: [{ activeTo: null }, { activeTo: { gt: new Date() } }],
+        },
+        orderBy: [{ activeFrom: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          storeId: true,
+          commissionType: true,
+          commissionValue: true,
+          ruleSnapshot: true,
+          store: { select: { id: true, name: true, slug: true } },
+        },
+      }),
+      this.prisma.coupon.findFirst({
+        where: {
+          storeId,
+          deletedAt: null,
+          ...(couponId ? { id: couponId } : { code: couponCode }),
+        },
+        select: { id: true, code: true, name: true, storeId: true },
+      }),
+    ]);
+
+    if (!config) {
+      throw new UnprocessableEntityException({
+        message: 'Missing active CommissionConfig for override',
+        code: MISSING_COMMISSION_CONFIG_FLAG,
+        flags: [MISSING_COMMISSION_CONFIG_FLAG],
+        store: { id: storeId },
+      });
+    }
+
+    if (!coupon) {
+      throw new NotFoundException('Coupon campaign not found for store');
+    }
+
+    const currentSnapshot = this.asRecord(config.ruleSnapshot) ?? {};
+    const overrides = this.readCampaignCommissionOverrides(currentSnapshot);
+    const existing = overrides.find(
+      (override) =>
+        override.couponId === coupon.id || override.couponCode === coupon.code,
+    );
+
+    if (
+      dto.commissionPercent === undefined &&
+      dto.active !== false &&
+      !existing
+    ) {
+      throw new NotFoundException('Commission override not found');
+    }
+
+    const now = new Date().toISOString();
+    const nextOverride = {
+      couponId: coupon.id,
+      couponCode: coupon.code,
+      couponName: coupon.name,
+      commissionPercent:
+        dto.commissionPercent ?? existing?.commissionPercent ?? 0,
+      active: dto.active ?? existing?.active ?? true,
+      note: this.cleanText(dto.note) || existing?.note || null,
+      createdAt: existing?.createdAt ?? now,
+      createdById: existing?.createdById ?? adminId,
+      updatedAt: now,
+      updatedById: adminId,
+    };
+
+    const nextOverrides = [
+      ...overrides.filter(
+        (override) =>
+          override.couponId !== coupon.id &&
+          override.couponCode !== coupon.code,
+      ),
+      nextOverride,
+    ];
+    const nextSnapshot = this.withCampaignCommissionOverrides(
+      currentSnapshot,
+      nextOverrides,
+    );
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const commissionConfig = await tx.commissionConfig.update({
+        where: { id: config.id },
+        data: { ruleSnapshot: this.toPrismaJson(nextSnapshot) },
+        select: {
+          id: true,
+          storeId: true,
+          commissionType: true,
+          commissionValue: true,
+          ruleSnapshot: true,
+          updatedAt: true,
+          store: { select: { id: true, name: true, slug: true } },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: nextOverride.active
+            ? existing
+              ? 'commission.override.update'
+              : 'commission.override.create'
+            : 'commission.override.disable',
+          targetType: 'CommissionConfig',
+          targetId: config.id,
+          beforeJson: this.toPrismaJson({
+            override: existing ?? null,
+            ruleSnapshot: currentSnapshot,
+          }),
+          afterJson: this.toPrismaJson({
+            override: nextOverride,
+            ruleSnapshot: nextSnapshot,
+          }),
+          metadata: this.toPrismaJson({
+            storeId,
+            couponId: coupon.id,
+            couponCode: coupon.code,
+            commissionPercent: nextOverride.commissionPercent,
+            active: nextOverride.active,
+          }),
+        },
+      });
+
+      return commissionConfig;
+    });
+
+    return {
+      ...nextOverride,
+      commissionConfig: {
+        id: updated.id,
+        storeId: updated.storeId,
+        commissionType: updated.commissionType,
+        commissionValue: updated.commissionValue,
+        updatedAt: updated.updatedAt.toISOString(),
+      },
+      store: updated.store,
+    };
+  }
+
   private resolveCampaignCommissionPercent(
     ruleSnapshot: Record<string, unknown> | undefined,
     coupon?: { id: string; code: string } | null,
   ) {
     if (!ruleSnapshot || !coupon) {
       return { percent: null, source: null };
+    }
+
+    const explicitOverride = this.readCampaignCommissionOverrides(
+      ruleSnapshot,
+    ).find(
+      (override) =>
+        override.active &&
+        (override.couponId === coupon.id || override.couponCode === coupon.code),
+    );
+
+    if (explicitOverride) {
+      return {
+        percent: explicitOverride.commissionPercent,
+        source: 'CAMPAIGN_COMMISSION_OVERRIDE',
+      };
     }
 
     const campaignGroups = [
@@ -6498,10 +6882,182 @@ export class NightlifeDataService {
     return { percent: null, source: null };
   }
 
+  private readCampaignCommissionOverrides(
+    ruleSnapshot: Record<string, unknown>,
+  ) {
+    const entries = new Map<
+      string,
+      {
+        couponId: string | null;
+        couponCode: string;
+        couponName: string | null;
+        commissionPercent: number;
+        active: boolean;
+        note: string | null;
+        createdAt: string | null;
+        createdById: string | null;
+        updatedAt: string | null;
+        updatedById: string | null;
+      }
+    >();
+    const addEntry = (
+      raw: unknown,
+      fallback: { couponId?: string | null; couponCode?: string | null } = {},
+    ) => {
+      const record = this.asRecord(raw);
+      const percent = this.extractCommissionPercent(raw);
+      const couponId =
+        (typeof record?.couponId === 'string' ? record.couponId : null) ??
+        fallback.couponId ??
+        null;
+      const couponCode =
+        (typeof record?.couponCode === 'string' ? record.couponCode : null) ??
+        fallback.couponCode ??
+        couponId;
+
+      if (percent === null || !couponCode) {
+        return;
+      }
+
+      entries.set(couponId ?? couponCode, {
+        couponId,
+        couponCode,
+        couponName:
+          typeof record?.couponName === 'string'
+            ? record.couponName
+            : typeof record?.name === 'string'
+              ? record.name
+              : null,
+        commissionPercent: percent,
+        active: record?.active !== false,
+        note: typeof record?.note === 'string' ? record.note : null,
+        createdAt:
+          typeof record?.createdAt === 'string' ? record.createdAt : null,
+        createdById:
+          typeof record?.createdById === 'string' ? record.createdById : null,
+        updatedAt:
+          typeof record?.updatedAt === 'string' ? record.updatedAt : null,
+        updatedById:
+          typeof record?.updatedById === 'string' ? record.updatedById : null,
+      });
+    };
+
+    const overrideList = Array.isArray(ruleSnapshot.campaignCommissionOverrides)
+      ? ruleSnapshot.campaignCommissionOverrides
+      : [];
+    overrideList.forEach((override) => addEntry(override));
+
+    [
+      this.asRecord(ruleSnapshot.campaignCommissionRates),
+      this.asRecord(ruleSnapshot.campaignRates),
+      this.asRecord(ruleSnapshot.couponCommissionRates),
+      this.asRecord(ruleSnapshot.couponRates),
+    ]
+      .filter((group): group is Record<string, unknown> => Boolean(group))
+      .forEach((group) => {
+        Object.entries(group).forEach(([key, value]) => {
+          addEntry(value, { couponId: key, couponCode: key });
+        });
+      });
+
+    return Array.from(entries.values());
+  }
+
+  private withCampaignCommissionOverrides(
+    ruleSnapshot: Record<string, unknown>,
+    overrides: Array<{
+      couponId: string | null;
+      couponCode: string;
+      couponName: string | null;
+      commissionPercent: number;
+      active: boolean;
+      note: string | null;
+      createdAt: string | null;
+      createdById: string | null;
+      updatedAt: string | null;
+      updatedById: string | null;
+    }>,
+  ) {
+    const activeRateMap = overrides.reduce<Record<string, unknown>>(
+      (map, override) => {
+        if (!override.active) {
+          return map;
+        }
+
+        const value = {
+          commissionPercent: override.commissionPercent,
+          active: override.active,
+          note: override.note,
+          updatedAt: override.updatedAt,
+        };
+
+        if (override.couponId) {
+          map[override.couponId] = value;
+        }
+        map[override.couponCode] = value;
+        return map;
+      },
+      {},
+    );
+
+    return {
+      ...ruleSnapshot,
+      version: BILL_REVENUE_RULE_VERSION,
+      campaignCommissionOverrides: overrides,
+      campaignCommissionRates: activeRateMap,
+    };
+  }
+
+  private extractSnapshotFlags(snapshot: Record<string, unknown> | null) {
+    const flags = Array.isArray(snapshot?.flags) ? snapshot.flags : [];
+    return flags.filter((flag): flag is string => typeof flag === 'string');
+  }
+
+  private decorateBillCommissionReviewSnapshot(
+    snapshot: Record<string, unknown>,
+    input: {
+      status: string;
+      reviewedAt: Date;
+      reviewedById: string;
+      confirmNegativeCommission: boolean;
+      pmBaReason: string;
+    },
+  ) {
+    const requiresPmBaConfirmation = this.extractSnapshotFlags(snapshot).includes(
+      NEGATIVE_COMMISSION_FLAG,
+    );
+
+    return {
+      ...snapshot,
+      workflowStatus: input.status,
+      pmBaConfirmationRequired: requiresPmBaConfirmation,
+      pmBaConfirmationReason:
+        typeof snapshot.pmBaConfirmationReason === 'string'
+          ? snapshot.pmBaConfirmationReason
+          : requiresPmBaConfirmation
+            ? 'Commission is negative and requires PM/BA confirmation.'
+            : null,
+      pmBaConfirmationConfirmed:
+        requiresPmBaConfirmation && input.confirmNegativeCommission,
+      pmBaConfirmation: requiresPmBaConfirmation
+        ? {
+            status: input.confirmNegativeCommission ? 'CONFIRMED' : 'PENDING',
+            reason: input.pmBaReason || null,
+            reviewedById: input.reviewedById,
+            reviewedAt: input.reviewedAt.toISOString(),
+          }
+        : null,
+    };
+  }
+
   private extractCommissionPercent(value: unknown) {
     const record = this.asRecord(value);
     if (!record) {
       return this.normalizePercent(value);
+    }
+
+    if (record.active === false) {
+      return null;
     }
 
     return (
@@ -8361,6 +8917,69 @@ export class NightlifeDataService {
     } satisfies Prisma.BookingSelect;
   }
 
+  private billReviewSelect() {
+    return {
+      id: true,
+      billNumber: true,
+      status: true,
+      reviewedAt: true,
+      verifiedAt: true,
+      rejectedAt: true,
+      reviewedById: true,
+      verifiedById: true,
+      rejectedById: true,
+      rejectReason: true,
+      subtotalVnd: true,
+      discountVnd: true,
+      serviceChargeVnd: true,
+      taxVnd: true,
+      totalVnd: true,
+      paidVnd: true,
+      commissionAmountVnd: true,
+      pointsEarned: true,
+      discountRuleSnapshot: true,
+      commissionRuleSnapshot: true,
+      pointRuleSnapshot: true,
+      usedAt: true,
+      store: { select: { id: true, name: true, slug: true } },
+      booking: { select: { id: true, status: true, scheduledAt: true } },
+      coupon: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          discountType: true,
+          discountValue: true,
+          maxDiscountVnd: true,
+          minSpendVnd: true,
+        },
+      },
+      couponIssue: {
+        select: { id: true, code: true, status: true, metadata: true },
+      },
+      user: {
+        select: { id: true, displayName: true, role: true, tier: true },
+      },
+      guest: { select: { id: true, displayName: true, phone: true } },
+    } satisfies Prisma.BillSelect;
+  }
+
+  private async findSensitiveBillForReview(billId: string) {
+    const bill = await this.prisma.bill.findFirst({
+      where: {
+        id: billId,
+        deletedAt: null,
+      },
+      select: this.billReviewSelect(),
+    });
+
+    if (!bill) {
+      throw new NotFoundException('Bill not found');
+    }
+
+    return bill;
+  }
+
   private billNotificationSelect() {
     return {
       id: true,
@@ -8569,6 +9188,7 @@ export class NightlifeDataService {
       id: string;
       subtotalVnd?: number | null;
       totalVnd?: number | null;
+      paidVnd?: number | null;
       booking?: { id: string } | null;
       user?: { id: string; role?: string | null } | null;
     },
@@ -8657,6 +9277,68 @@ export class NightlifeDataService {
         ruleSnapshot: this.toPrismaJson(award.ruleSnapshot),
         expiresAt: award.expiresAt,
         postedAt: award.postedAt,
+      },
+    });
+  }
+
+  private async recordBillLoyaltyReverseLedger(
+    client: NightlifePrismaClient,
+    reversal: {
+      billId: string;
+      bookingId: string | null;
+      userId: string;
+      reversedLedgerId: string;
+      amountVnd: number;
+      points: number;
+      postedAt: Date;
+      reason: string;
+      refundReference: string | null;
+    },
+  ) {
+    await client.pointLedger.upsert({
+      where: {
+        billId_type: {
+          billId: reversal.billId,
+          type: 'REVERSE',
+        },
+      },
+      update: {
+        userId: reversal.userId,
+        bookingId: reversal.bookingId,
+        reversedLedgerId: reversal.reversedLedgerId,
+        amountVnd: reversal.amountVnd,
+        points: reversal.points,
+        status: 'POSTED',
+        description: `Reversed loyalty points for voided bill ${reversal.billId}`,
+        ruleSnapshot: this.toPrismaJson({
+          version: BILL_LOYALTY_RULE_VERSION,
+          type: 'BILL_VOID_REVERSAL',
+          reason: reversal.reason,
+          refundReference: reversal.refundReference,
+          reversedLedgerId: reversal.reversedLedgerId,
+        }),
+        expiresAt: null,
+        postedAt: reversal.postedAt,
+      },
+      create: {
+        userId: reversal.userId,
+        bookingId: reversal.bookingId,
+        billId: reversal.billId,
+        reversedLedgerId: reversal.reversedLedgerId,
+        type: 'REVERSE',
+        status: 'POSTED',
+        amountVnd: reversal.amountVnd,
+        points: reversal.points,
+        description: `Reversed loyalty points for voided bill ${reversal.billId}`,
+        ruleSnapshot: this.toPrismaJson({
+          version: BILL_LOYALTY_RULE_VERSION,
+          type: 'BILL_VOID_REVERSAL',
+          reason: reversal.reason,
+          refundReference: reversal.refundReference,
+          reversedLedgerId: reversal.reversedLedgerId,
+        }),
+        expiresAt: null,
+        postedAt: reversal.postedAt,
       },
     });
   }
@@ -12379,29 +13061,16 @@ export class NightlifeDataService {
     dto: import('./dto/update-bill-status.dto').UpdateBillStatusDto,
     adminUser: import('@prisma/client').User,
   ) {
-    const bill = await this.prisma.bill.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        guest: true,
-        store: true,
-        coupon: true,
-        couponIssue: true,
-      },
-    });
-
-    if (!bill) {
-      throw new NotFoundException('Bill not found');
-    }
-
-    if (bill.status !== 'SUBMITTED') {
-      throw new BadRequestException('Bill is not in SUBMITTED status');
-    }
-
-    if (dto.status === 'REJECTED' && !dto.reason) {
+    if (dto.status === 'REJECTED' && !this.cleanText(dto.reason)) {
       throw new BadRequestException('Reason is required when rejecting a bill');
     }
 
+    return this.reviewSensitiveBill(adminUser.id, id, {
+      approve: dto.status === 'VERIFIED',
+      rejectReason: dto.status === 'REJECTED' ? dto.reason : undefined,
+    });
+
+    /*
     const updatedBill = await this.prisma.$transaction(async (tx) => {
       if (dto.status === 'REJECTED') {
         const rejected = await tx.bill.update({
@@ -12465,6 +13134,7 @@ export class NightlifeDataService {
     }
 
     return updatedBill;
+    */
   }
 
   async updateAdminBookingStatus(

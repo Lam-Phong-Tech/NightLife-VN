@@ -261,8 +261,10 @@ type RevenueReport = {
   totals: RevenueReportTotals;
   days: RevenueReportDay[];
   breakdowns?: {
+    stores?: RevenueReportDimension[];
     partners: RevenueReportDimension[];
     campaigns: RevenueReportDimension[];
+    coupons?: RevenueReportDimension[];
     areas: RevenueReportDimension[];
     casts: RevenueReportDimension[];
   };
@@ -271,6 +273,42 @@ type RevenueReport = {
     previousPeriod: { from: string; to: string; fromDate: string; toDate: string };
     totals: Record<keyof RevenueReportTotals, RevenueReportComparisonMetric>;
   };
+};
+
+type BillApprovalPreview = {
+  preview: {
+    nextStatus: string;
+    requiresPmBaConfirmation: boolean;
+    pmBaConfirmationReason?: string | null;
+    flags: string[];
+    grossRevenueVnd: number;
+    discountVnd: number;
+    netRevenueVnd: number;
+    payableVnd: number;
+    commissionAmountVnd: number;
+    loyaltyPoints: number;
+    loyaltyExpiresAt?: string | null;
+  };
+};
+
+type CommissionOverride = {
+  couponId: string | null;
+  couponCode: string;
+  couponName: string | null;
+  commissionPercent: number;
+  active: boolean;
+  note: string | null;
+  updatedAt: string | null;
+  store?: { id: string; name: string; slug?: string | null };
+};
+
+type CommissionOverrideFormState = {
+  storeId: string;
+  couponId: string;
+  couponCode: string;
+  commissionPercent: string;
+  note: string;
+  active: boolean;
 };
 
 type AdminPartnerRequest = {
@@ -415,6 +453,15 @@ type PartnerRequestFilterState = {
   limit: string;
 };
 
+const defaultCommissionOverrideForm: CommissionOverrideFormState = {
+  storeId: "",
+  couponId: "",
+  couponCode: "",
+  commissionPercent: "",
+  note: "",
+  active: true,
+};
+
 const defaultPartnerRequestFilters: PartnerRequestFilterState = {
   status: "all",
   keyword: "",
@@ -467,8 +514,10 @@ const emptyRevenueReport: RevenueReport = {
   totals: emptyRevenueReportTotals,
   days: [],
   breakdowns: {
+    stores: [],
     partners: [],
     campaigns: [],
+    coupons: [],
     areas: [],
     casts: [],
   },
@@ -493,8 +542,10 @@ const normalizeRevenueReport = (value: unknown): RevenueReport => {
     totals: { ...emptyRevenueReportTotals, ...(report.totals ?? {}) },
     days: Array.isArray(report.days) ? report.days : [],
     breakdowns: {
+      stores: Array.isArray(report.breakdowns?.stores) ? report.breakdowns.stores : [],
       partners: Array.isArray(report.breakdowns?.partners) ? report.breakdowns.partners : [],
       campaigns: Array.isArray(report.breakdowns?.campaigns) ? report.breakdowns.campaigns : [],
+      coupons: Array.isArray(report.breakdowns?.coupons) ? report.breakdowns.coupons : [],
       areas: Array.isArray(report.breakdowns?.areas) ? report.breakdowns.areas : [],
       casts: Array.isArray(report.breakdowns?.casts) ? report.breakdowns.casts : [],
     },
@@ -774,6 +825,8 @@ const adminBookingStatusLabel = (status: string) => {
 
 const billStatusLabel = (status: string) => {
   const normalized = status.toUpperCase();
+  if (normalized === "PENDING_PM_BA") return "Cho PM/BA";
+  if (normalized === "VOIDED") return "Da void";
   if (["APPROVED", "VERIFIED", "PAID"].includes(normalized)) return "Đã duyệt";
   if (["REJECTED", "DECLINED"].includes(normalized)) return "Từ chối";
   return "Chờ duyệt";
@@ -1659,6 +1712,12 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
   const [couponIssueActionId, setCouponIssueActionId] = useState<string | null>(null);
   const [expandedRevenueCouponKey, setExpandedRevenueCouponKey] = useState<string | null>(null);
+  const [commissionOverrides, setCommissionOverrides] = useState<CommissionOverride[]>([]);
+  const [commissionOverrideForm, setCommissionOverrideForm] = useState<CommissionOverrideFormState>(
+    defaultCommissionOverrideForm,
+  );
+  const [savingCommissionOverride, setSavingCommissionOverride] = useState(false);
+  const [billPreviews, setBillPreviews] = useState<Record<string, BillApprovalPreview["preview"]>>({});
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reversingBillId, setReversingBillId] = useState<string | null>(null);
@@ -1714,6 +1773,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         contentData,
         bookingChangeRequestData,
         cancelAnalyticsData,
+        commissionOverrideData,
       ] = await Promise.all([
         apiClient<AdminStore[]>("/partner/stores"),
         apiClient<AdminBooking[]>("/partner/bookings"),
@@ -1734,6 +1794,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         contentApi.adminList({ limit: 100 }),
         bookingApi.listAdminBookingChangeRequests({ status: "REQUESTED" }),
         bookingApi.getAdminCancelAnalytics(30),
+        apiClient<{ data: CommissionOverride[] }>("/admin/commission-overrides").catch(() => ({ data: [] })),
       ]);
 
       setStores(storeData);
@@ -1747,6 +1808,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setContentItems(contentData);
       setBookingChangeRequests(bookingChangeRequestData);
       setCancelAnalytics(cancelAnalyticsData);
+      setCommissionOverrides(Array.isArray(commissionOverrideData.data) ? commissionOverrideData.data : []);
       setBookingPolicyStoreId((current) => current || storeData[0]?.id || "");
       setStatusMessage("Đang xem bằng token ADMIN.");
       setRankingStatusMessage(`Đã tải ${rankingData.length} cấu hình ranking.`);
@@ -1960,8 +2022,10 @@ export default function AdminConsole({ section }: { section?: string }) {
   }, [couponIssues, revenueReport.days]);
   const revenueReportBreakdownSections = useMemo(
     () => [
+      { key: "stores", title: "Store", items: revenueReport.breakdowns?.stores ?? [] },
       { key: "partners", title: "Partner", items: revenueReport.breakdowns?.partners ?? [] },
       { key: "campaigns", title: "Campaign", items: revenueReport.breakdowns?.campaigns ?? [] },
+      { key: "coupons", title: "Coupon", items: revenueReport.breakdowns?.coupons ?? [] },
       { key: "areas", title: "Khu vuc", items: revenueReport.breakdowns?.areas ?? [] },
       { key: "casts", title: "Cast mong muon", items: revenueReport.breakdowns?.casts ?? [] },
     ],
@@ -1974,10 +2038,19 @@ export default function AdminConsole({ section }: { section?: string }) {
     return [
       { label: "Gross", metric: totals.grossVnd, money: true },
       { label: "Net", metric: totals.netVnd, money: true },
+      { label: "Payable", metric: totals.payableVnd, money: true },
       { label: "Discount", metric: totals.discountVnd, money: true },
       { label: "Commission", metric: totals.commissionVnd, money: true },
       { label: "Bill", metric: totals.billCount, money: false },
-    ];
+    ].filter(
+      (
+        item,
+      ): item is {
+        label: string;
+        metric: NonNullable<typeof item.metric>;
+        money: boolean;
+      } => Boolean(item.metric),
+    );
   }, [revenueReport.comparison]);
   const counts: AdminCounts = useMemo(
     () => ({
@@ -2290,6 +2363,118 @@ export default function AdminConsole({ section }: { section?: string }) {
       setStatusMessage(error instanceof ApiError ? error.message : "Khong reverse duoc bill.");
     } finally {
       setReversingBillId(null);
+    }
+  };
+
+  const previewBillApproval = async (billId: string) => {
+    setReviewingId(billId);
+    try {
+      const response = await apiClient<BillApprovalPreview>(
+        `/admin/sensitive-bills/${billId}/approval-preview`,
+      );
+      setBillPreviews((current) => ({ ...current, [billId]: response.preview }));
+      setStatusMessage(
+        response.preview.requiresPmBaConfirmation
+          ? "Preview xong: bill này cần PM/BA xác nhận trước khi duyệt."
+          : "Preview xong: bill có thể duyệt bình thường.",
+      );
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong preview duoc bill.");
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const confirmNegativeBill = async (billId: string) => {
+    const reason = window.prompt("Nhap ly do PM/BA xac nhan commission am:");
+    if (!reason?.trim()) return;
+
+    setReviewingId(billId);
+    try {
+      await apiClient(`/admin/sensitive-bills/${billId}/confirm-negative-commission`, {
+        method: "PATCH",
+        data: { reason: reason.trim() },
+      });
+      setStatusMessage("Da xac nhan PM/BA va duyet bill commission am.");
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong confirm duoc bill.");
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const voidBill = async (billId: string) => {
+    const reason = window.prompt("Nhap ly do void/refund bill:");
+    if (!reason?.trim()) return;
+
+    setReviewingId(billId);
+    try {
+      await apiClient(`/admin/sensitive-bills/${billId}/void`, {
+        method: "PATCH",
+        data: { reason: reason.trim() },
+      });
+      setStatusMessage("Da void bill va reverse diem neu bill da cong diem.");
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong void duoc bill.");
+    } finally {
+      setReviewingId(null);
+    }
+  };
+
+  const updateCommissionOverrideForm = (key: keyof CommissionOverrideFormState, value: string | boolean) => {
+    setCommissionOverrideForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const saveCommissionOverride = async () => {
+    const percent = Number(commissionOverrideForm.commissionPercent);
+    if (!commissionOverrideForm.storeId || (!commissionOverrideForm.couponId && !commissionOverrideForm.couponCode)) {
+      setStatusMessage("Chon quan va nhap coupon id/code truoc khi luu override.");
+      return;
+    }
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      setStatusMessage("Commission override phai tu 0 den 100%.");
+      return;
+    }
+
+    setSavingCommissionOverride(true);
+    try {
+      await apiClient("/admin/commission-overrides", {
+        method: "POST",
+        data: {
+          storeId: commissionOverrideForm.storeId,
+          couponId: commissionOverrideForm.couponId || undefined,
+          couponCode: commissionOverrideForm.couponCode || undefined,
+          commissionPercent: Math.round(percent),
+          note: commissionOverrideForm.note || undefined,
+          active: commissionOverrideForm.active,
+        },
+      });
+      setStatusMessage("Da luu campaign commission override.");
+      setCommissionOverrideForm(defaultCommissionOverrideForm);
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong luu duoc commission override.");
+    } finally {
+      setSavingCommissionOverride(false);
+    }
+  };
+
+  const disableCommissionOverride = async (override: CommissionOverride) => {
+    if (!override.store?.id || !override.couponId) return;
+
+    setSavingCommissionOverride(true);
+    try {
+      await apiClient(`/admin/commission-overrides/${override.store.id}/${override.couponId}`, {
+        method: "DELETE",
+      });
+      setStatusMessage("Da tat campaign commission override.");
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong tat duoc commission override.");
+    } finally {
+      setSavingCommissionOverride(false);
     }
   };
 
@@ -2759,7 +2944,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr .9fr 1.1fr .8fr 190px",
+            gridTemplateColumns: "1fr 1fr .9fr 1.1fr .95fr 280px",
             padding: "12px 18px",
             color: colors.muted,
             fontSize: 11,
@@ -2782,7 +2967,7 @@ export default function AdminConsole({ section }: { section?: string }) {
             data-testid={`admin-sensitive-bill-row-${bill.id}`}
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr .9fr 1.1fr .8fr 190px",
+              gridTemplateColumns: "1fr 1fr .9fr 1.1fr .95fr 280px",
               padding: "13px 18px",
               alignItems: "center",
               borderBottom: `1px solid ${bill.id === focusedBillId ? colors.borderGold32 : colors.borderSoft}`,
@@ -2856,8 +3041,24 @@ export default function AdminConsole({ section }: { section?: string }) {
                   Commission {formatMoney(bill.commissionAmountVnd)}
                 </span>
               ) : null}
+              {billPreviews[bill.id] ? (
+                <span style={{ display: "block", marginTop: 6, color: colors.goldBright, fontSize: 11 }}>
+                  Preview: Net {formatMoney(billPreviews[bill.id].netRevenueVnd)} · Payable{" "}
+                  {formatMoney(billPreviews[bill.id].payableVnd)} · Commission{" "}
+                  {formatMoney(billPreviews[bill.id].commissionAmountVnd)}
+                </span>
+              ) : null}
             </span>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                disabled={reviewingId === bill.id}
+                onClick={() => void previewBillApproval(bill.id)}
+                style={buttonStyle("secondary")}
+              >
+                <Search size={14} />
+                Preview
+              </button>
               <button
                 type="button"
                 disabled={reviewingId === bill.id}
@@ -3072,10 +3273,32 @@ export default function AdminConsole({ section }: { section?: string }) {
                   disabled={request.status !== "PENDING_REVIEW" || reviewingPartnerRequestId === request.id}
                   onClick={() => void reviewPartnerRequest(request.id, false)}
                   style={buttonStyle("danger")}
+              >
+                Tá»« chá»‘i
+              </button>
+              {bill.status === "PENDING_PM_BA" ? (
+                <button
+                  type="button"
+                  disabled={reviewingId === bill.id}
+                  onClick={() => void confirmNegativeBill(bill.id)}
+                  style={buttonStyle("primary")}
                 >
-                  Tá»« chá»‘i
+                  <ShieldCheck size={14} />
+                  PM/BA
                 </button>
-              </span>
+              ) : null}
+              {["VERIFIED", "PAID", "PENDING_PM_BA"].includes(bill.status) ? (
+                <button
+                  type="button"
+                  disabled={reviewingId === bill.id}
+                  onClick={() => void voidBill(bill.id)}
+                  style={buttonStyle("danger")}
+                >
+                  <Trash2 size={14} />
+                  Void
+                </button>
+              ) : null}
+            </span>
             </span>
           </div>
         ))}
@@ -3772,6 +3995,122 @@ export default function AdminConsole({ section }: { section?: string }) {
         <MetricCard icon={Clock3} label="Đang giữ" value={String(couponIssues.filter((item) => item.status === "ISSUED").length)} note="issued" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,.9fr) minmax(0,1.1fr)", gap: 16 }}>
+        <Panel style={{ padding: 18 }}>
+          <SectionTitle title="Commission override" eyebrow="CAMPAIGN RULES" />
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+                Quán
+                <select
+                  value={commissionOverrideForm.storeId}
+                  onChange={(event) => updateCommissionOverrideForm("storeId", event.target.value)}
+                  style={inputStyle({ minHeight: 38 })}
+                >
+                  <option value="">Chọn quán</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+                Coupon ID
+                <input
+                  value={commissionOverrideForm.couponId}
+                  onChange={(event) => updateCommissionOverrideForm("couponId", event.target.value)}
+                  style={inputStyle({ minHeight: 38 })}
+                  placeholder="UUID"
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+                Coupon code
+                <input
+                  value={commissionOverrideForm.couponCode}
+                  onChange={(event) => updateCommissionOverrideForm("couponCode", event.target.value)}
+                  style={inputStyle({ minHeight: 38 })}
+                  placeholder="VIP10"
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+                Commission %
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={commissionOverrideForm.commissionPercent}
+                  onChange={(event) => updateCommissionOverrideForm("commissionPercent", event.target.value)}
+                  style={inputStyle({ minHeight: 38 })}
+                />
+              </label>
+            </div>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Note
+              <input
+                value={commissionOverrideForm.note}
+                onChange={(event) => updateCommissionOverrideForm("note", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+                placeholder="PM approved launch override"
+              />
+            </label>
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: colors.text2, fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={commissionOverrideForm.active}
+                  onChange={(event) => updateCommissionOverrideForm("active", event.target.checked)}
+                />
+                Active
+              </label>
+              <button
+                type="button"
+                disabled={savingCommissionOverride}
+                onClick={() => void saveCommissionOverride()}
+                style={buttonStyle("primary")}
+              >
+                <Save size={14} />
+                Lưu override
+              </button>
+            </span>
+            <div style={{ display: "grid", gap: 8 }}>
+              {commissionOverrides.slice(0, 6).map((override) => (
+                <div
+                  key={`${override.store?.id ?? "store"}-${override.couponId ?? override.couponCode}`}
+                  style={{
+                    border: `1px solid ${colors.borderSoft}`,
+                    background: colors.surface2,
+                    padding: 12,
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <span>
+                    <b style={{ color: colors.text }}>{override.couponCode}</b>
+                    <span style={{ display: "block", color: colors.muted, fontSize: 12, marginTop: 3 }}>
+                      {override.store?.name ?? "-"} · {override.commissionPercent}% · {override.note ?? "no note"}
+                    </span>
+                  </span>
+                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <Badge tone={override.active ? "ACTIVE" : "INACTIVE"}>{override.active ? "ACTIVE" : "INACTIVE"}</Badge>
+                    {override.active ? (
+                      <button
+                        type="button"
+                        disabled={savingCommissionOverride || !override.couponId}
+                        onClick={() => void disableCommissionOverride(override)}
+                        style={buttonStyle("danger")}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
+              {!commissionOverrides.length ? <EmptyState>Chưa có commission override.</EmptyState> : null}
+            </div>
+          </div>
+        </Panel>
         <Panel style={{ padding: 18 }}>
           <SectionTitle title="Campaign đang quản lý" eyebrow="PROMOTION LIST" />
           <div style={{ display: "grid", gap: 10 }}>

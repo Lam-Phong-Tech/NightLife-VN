@@ -114,7 +114,16 @@ import {
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
 import { RecordProfileViewDto } from './dto/profile-view.dto';
-import { ReviewBillDto } from './dto/review-bill.dto';
+import {
+  ConfirmNegativeCommissionDto,
+  ReviewBillDto,
+  VoidBillDto,
+} from './dto/review-bill.dto';
+import {
+  AdminCommissionOverrideQueryDto,
+  CreateCommissionOverrideDto,
+  UpdateCommissionOverrideDto,
+} from './dto/commission-override.dto';
 import { NightlifeDataService } from './nightlife-data.service';
 
 type RequestWithUser = express.Request & {
@@ -817,6 +826,72 @@ export class NightlifeDataController {
     return this.nightlifeDataService.getAdminRevenueReport(request.user, query);
   }
 
+  @ApiOperation({
+    summary: 'Admin action: list campaign commission overrides',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/commission-overrides')
+  listAdminCommissionOverrides(
+    @Query() query: AdminCommissionOverrideQueryDto,
+  ) {
+    return this.nightlifeDataService.listAdminCommissionOverrides(query);
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: create campaign commission override',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/commission-overrides')
+  createAdminCommissionOverride(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateCommissionOverrideDto,
+  ) {
+    return this.nightlifeDataService.createAdminCommissionOverride(
+      request.user.id,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: update campaign commission override',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/commission-overrides/:storeId/:couponId')
+  updateAdminCommissionOverride(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Param('couponId') couponId: string,
+    @Body() dto: UpdateCommissionOverrideDto,
+  ) {
+    return this.nightlifeDataService.updateAdminCommissionOverride(
+      request.user.id,
+      storeId,
+      couponId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: delete campaign commission override',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('admin/commission-overrides/:storeId/:couponId')
+  deleteAdminCommissionOverride(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Param('couponId') couponId: string,
+  ) {
+    return this.nightlifeDataService.deleteAdminCommissionOverride(
+      request.user.id,
+      storeId,
+      couponId,
+    );
+  }
+
   @AdminPartnerRequestsContract()
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -971,6 +1046,65 @@ export class NightlifeDataController {
     return this.nightlifeDataService.updateStoreBookingPolicy(
       request.user,
       storeId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: preview bill approval before changing status',
+  })
+  @ActionPolicy('canReviewBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Get('admin/sensitive-bills/:billId/approval-preview')
+  previewSensitiveBillApproval(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+  ) {
+    return this.nightlifeDataService.previewSensitiveBillApproval(
+      request.user.id,
+      billId,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: confirm a negative commission bill after PM/BA review',
+  })
+  @ActionPolicy('canReviewBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Patch('admin/sensitive-bills/:billId/confirm-negative-commission')
+  confirmSensitiveBillNegativeCommission(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: ConfirmNegativeCommissionDto,
+  ) {
+    return this.nightlifeDataService.reviewSensitiveBill(
+      request.user.id,
+      billId,
+      {
+        approve: true,
+        confirmNegativeCommission: true,
+        pmBaReason: dto.reason,
+      },
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: void or refund a reviewed bill and reverse points',
+  })
+  @ActionPolicy('canReviewBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Patch('admin/sensitive-bills/:billId/void')
+  voidSensitiveBill(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: VoidBillDto,
+  ) {
+    return this.nightlifeDataService.voidSensitiveBill(
+      request.user.id,
+      billId,
       dto,
     );
   }
