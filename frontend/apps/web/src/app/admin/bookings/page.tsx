@@ -57,6 +57,28 @@ export default function AdminBookingsPage() {
     return { color: '#c5c0b6', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)' };
   };
 
+  const formatPhone = (phone?: string) => {
+    if (!phone || phone.length < 6) return phone || 'Chưa cung cấp';
+    return `${phone.slice(0, 3)} •• ${phone.slice(-3)}`;
+  };
+
+  const formatTime = (isoString: string) => {
+    const d = new Date(isoString);
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    const D = d.getDate().toString().padStart(2, '0');
+    const M = (d.getMonth() + 1).toString().padStart(2, '0');
+    return `${h}:${m} - ${D}/${M}`;
+  };
+
+  const formatBookingId = (id: string) => {
+    const numericMatch = id.match(/\d+/g);
+    if (numericMatch && numericMatch.length > 0) {
+      return `BK-${numericMatch.join('').slice(-4)}`;
+    }
+    return `BK-${id.slice(0, 4).toUpperCase()}`;
+  };
+
   return (
     <div data-screen-label="Admin · Booking" style={{ padding: '22px 26px 44px' }}>
       
@@ -110,7 +132,7 @@ export default function AdminBookingsPage() {
       {/* Table */}
       <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-          <span>Mã</span><span>Khách</span><span>Quán · Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+          <span>Mã</span><span>Khách</span><span>Quán - Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
         {bookings.map(b => {
           const stStyle = getStatusStyle(b.status);
@@ -123,12 +145,12 @@ export default function AdminBookingsPage() {
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>BK-{b.id.slice(0,4).toUpperCase()}</span>
-              <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px' }}>{b.customerPhone || 'Chưa cung cấp'}</div></div>
+              <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>{formatBookingId(b.id)}</span>
+              <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px' }}>{formatPhone(b.customerPhone)}</div></div>
               <div style={{ minWidth: 0 }}><div style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.store?.name}</div><div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{b.cast ? `Cast: ${b.cast.stageName}` : 'Không cast'}</div></div>
               <span style={{ color: '#c5c0b6' }}>{b.partySize} người</span>
-              <span style={{ color: '#8c8679', fontSize: '12px' }}>{new Date(b.scheduledAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
-              <span style={{ fontSize: '11.5px', color: '#9b958a' }}>{b.source || 'Telegram'}</span>
+              <span style={{ color: '#8c8679', fontSize: '12px' }}>{formatTime(b.scheduledAt)}</span>
+              <span style={{ fontSize: '11.5px', color: '#9b958a' }}>{b.source || 'Form web'}</span>
               <span style={{ textAlign: 'right' }}><span style={{ ...stStyle, fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px' }}>{stLabel}</span></span>
             </div>
           );
@@ -157,12 +179,12 @@ export default function AdminBookingsPage() {
                 <span onClick={() => setSelectedBooking(null)} style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
               </div>
               <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số điện thoại</span><span style={{ fontSize: '13px', color: '#e3c27e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1"/></svg>{bk.customerPhone || 'Chưa cung cấp'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số điện thoại</span><span style={{ fontSize: '13px', color: '#e3c27e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1"/></svg>{formatPhone(bk.customerPhone)}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Quán</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.store?.name}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Cast chỉ định</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.cast ? bk.cast.stageName : 'Không'}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số người</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.partySize} khách</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Khung giờ</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{new Date(bk.scheduledAt).toLocaleString('vi-VN')}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Nguồn gửi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.source || 'Telegram'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Khung giờ</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{formatTime(bk.scheduledAt)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Nguồn gửi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.source || 'Form web'}</span></div>
                 <div style={{ padding: '14px 0 4px' }}>
                   <div style={{ fontSize: '12.5px', color: '#8c8679', marginBottom: '7px' }}>Ghi chú</div>
                   <div style={{ fontSize: '12.5px', color: '#c5c0b6', lineHeight: 1.6, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '11px', padding: '12px 14px', minHeight: '44px' }}>{bk.customerNote || 'Không có ghi chú.'}</div>
