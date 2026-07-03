@@ -1,9 +1,11 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type * as express from 'express';
+import { PublicUserDto } from '../auth/dto/auth-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { AdminCheckResponseDto } from './dto/users-response.dto';
 import { UsersService } from './users.service';
 
 type RequestWithUser = express.Request & {
@@ -17,6 +19,8 @@ type RequestWithUser = express.Request & {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiOperation({ summary: 'Lấy thông tin profile người dùng hiện tại' })
+  @ApiOkResponse({ type: PublicUserDto })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -26,6 +30,8 @@ export class UsersController {
     return this.usersService.toPublicUser(user);
   }
 
+  @ApiOperation({ summary: 'Kiểm tra quyền Partner/Admin' })
+  @ApiOkResponse({ type: AdminCheckResponseDto })
   @ApiBearerAuth()
   @Roles('ADMIN', 'PARTNER')
   @UseGuards(JwtAuthGuard, RolesGuard)
