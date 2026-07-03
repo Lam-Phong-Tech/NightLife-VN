@@ -74,26 +74,9 @@ export default function AdminStoresPage() {
     fetchStores();
   }, [search]);
 
-  // Debounce Name check for slug uniqueness
+  // Clear slug status when typing
   useEffect(() => {
-    if (venueSel === 'new' && formData.name) {
-      setSlugStatus('checking');
-      const handler = setTimeout(async () => {
-        try {
-          const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-          if (!generatedSlug) { setSlugStatus(''); return; }
-          const res = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);
-          console.log('check-slug res:', res);
-          setSlugStatus(res.available ? 'ok' : 'error_api');
-        } catch(e: any) {
-          console.error('check-slug error:', e);
-          setSlugStatus('error_catch_' + (e.status || 'unknown'));
-        }
-      }, 500);
-      return () => clearTimeout(handler);
-    } else {
-      setSlugStatus('');
-    }
+    setSlugStatus('');
   }, [formData.name, venueSel]);
 
   const showToast = (m: string) => {
@@ -154,10 +137,21 @@ export default function AdminStoresPage() {
       };
       
       if (venueSel === 'new') {
-        if (slugStatus === 'error') {
+        const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        if (!generatedSlug) {
+          showToast('Vui lòng nhập tên quán!');
+          return;
+        }
+        
+        setSlugStatus('checking');
+        const checkRes = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);
+        if (!checkRes.available) {
+          setSlugStatus('error');
           showToast('Tên quán bị trùng lặp, vui lòng chọn tên khác!');
           return;
         }
+        setSlugStatus('ok');
+
         await apiClient('/admin/stores', { method: 'POST', data: payload });
         showToast('Đã tạo quán mới!');
       } else {
@@ -168,6 +162,7 @@ export default function AdminStoresPage() {
       fetchStores();
     } catch (e: any) {
       showToast(e.message || 'Có lỗi xảy ra khi lưu');
+      setSlugStatus('error_catch_' + (e.status || 'unknown'));
     }
   };
 
