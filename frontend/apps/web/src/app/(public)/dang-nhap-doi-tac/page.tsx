@@ -78,8 +78,8 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
       setAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {
-      const detail = error instanceof ApiError ? error.message : 'Khong ket noi duoc API dang nhap.';
-      setMessage(`${detail} Tai khoan seed: partner@nightlife.vn / Str0ngPass!`);
+      const detail = error instanceof ApiError ? error.message : 'Không kết nối được API đăng nhập.';
+      setMessage(`${detail} Tài khoản seed: partner@nightlife.vn / Str0ngPass!`);
     } finally {
       setIsSubmitting(false);
     }

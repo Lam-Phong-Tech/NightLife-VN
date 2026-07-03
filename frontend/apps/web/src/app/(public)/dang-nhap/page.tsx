@@ -10,7 +10,7 @@ import {
   loginMember,
   registerMember,
 } from "@/lib/api/auth";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { setAuthSession } from "@/lib/auth/session";
 
 const colors = {
@@ -148,7 +148,11 @@ export default function Page() {
   const [message, setMessage] = useState(() => {
     if (typeof window === "undefined") return "";
 
-    return new URLSearchParams(window.location.search).get("line_error") || "";
+    return translateApiMessage(
+      new URLSearchParams(window.location.search).get("line_error"),
+      undefined,
+      "",
+    );
   });
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -584,7 +588,7 @@ export default function Page() {
                 {subtitle}
               </p>
 
-              <form onSubmit={submit} style={{ marginTop: 24, display: "grid", gap: 14 }}>
+              <form noValidate onSubmit={submit} style={{ marginTop: 24, display: "grid", gap: 14 }}>
                 {isReg ? (
                   <Field
                     label="Họ tên"

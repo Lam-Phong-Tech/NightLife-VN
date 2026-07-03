@@ -400,7 +400,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
       );
       setSubmitResult({
         tone: 'success',
-        message: `Da gui ho so ${result.id}. Admin se thay trong CMS va duyet truoc khi public.`,
+        message: `Đã gửi hồ sơ ${result.id}. Admin sẽ thấy trong CMS và duyệt trước khi public.`,
       });
       setForm(initialPartnerForm);
     } catch (error) {
@@ -409,7 +409,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
         message:
           error instanceof ApiError
             ? String(error.message)
-            : 'Chua gui duoc ho so. Vui long thu lai.',
+            : 'Chưa gửi được hồ sơ. Vui lòng thử lại.',
       });
     } finally {
       setSubmitting(false);

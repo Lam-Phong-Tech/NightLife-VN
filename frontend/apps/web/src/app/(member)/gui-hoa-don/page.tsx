@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { billApi, type BillRecord } from "@/lib/api/bills";
 import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
@@ -70,14 +70,14 @@ const cleanApiMessage = (error: unknown) => {
       return "Bạn cần đăng nhập bằng tài khoản khách hoặc chủ quán trước khi gửi bill.";
     }
 
-    if (Array.isArray(error.message)) {
-      return error.message.join(", ");
-    }
-
-    return error.message;
+    return translateApiMessage(error.message, error.status);
   }
 
-  return "Chưa gửi được bill. Vui lòng thử lại.";
+  return translateApiMessage(
+    error instanceof Error ? error.message : undefined,
+    undefined,
+    "Chưa gửi được bill. Vui lòng thử lại.",
+  );
 };
 
 export default function Page() {
@@ -301,7 +301,7 @@ export default function Page() {
         </div>
 
         <div className="nl-bill-layout">
-          <form className="nl-bill-form" onSubmit={handleSubmit}>
+          <form className="nl-bill-form" noValidate onSubmit={handleSubmit}>
             <div className="nl-segmented" aria-label="Vai trò gửi bill">
               <button
                 type="button"

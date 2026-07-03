@@ -512,6 +512,7 @@ function BookingCard({
     <aside className="booking-card" aria-label="Đặt bàn">
       <form
         className="booking-card-form"
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
