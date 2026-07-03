@@ -83,9 +83,11 @@ export default function AdminStoresPage() {
           const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           if (!generatedSlug) { setSlugStatus(''); return; }
           const res = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);
-          setSlugStatus(res.available ? 'ok' : 'error');
+          console.log('check-slug res:', res);
+          setSlugStatus(res.available ? 'ok' : 'error_api');
         } catch(e) {
-          setSlugStatus('error');
+          console.error('check-slug error:', e);
+          setSlugStatus('error_catch');
         }
       }, 500);
       return () => clearTimeout(handler);
@@ -409,9 +411,11 @@ export default function AdminStoresPage() {
                     <div style={{ fontSize: '11.5px', color: '#8c8679' }}>Tên quán</div>
                     {slugStatus === 'checking' && <div style={{ fontSize: '10.5px', color: '#8fb6e4' }}>Đang kiểm tra...</div>}
                     {slugStatus === 'ok' && <div style={{ fontSize: '10.5px', color: '#7fd3a2' }}>Tên hợp lệ</div>}
+                    {slugStatus === 'error_api' && <div style={{ fontSize: '10.5px', color: '#e88b99' }}>Lỗi API trả về false</div>}
+                    {slugStatus === 'error_catch' && <div style={{ fontSize: '10.5px', color: '#e88b99' }}>Lỗi ngoại lệ Catch</div>}
                     {slugStatus === 'error' && <div style={{ fontSize: '10.5px', color: '#e88b99' }}>Tên trùng lặp</div>}
                   </div>
-                  <input style={{ ...inputS, borderColor: slugStatus === 'error' ? 'rgba(232,139,153,.4)' : inputS.border }} placeholder="Nhập tên quán…" value={formData.name} onChange={e => updateForm('name', e.target.value)} />
+                  <input style={{ ...inputS, borderColor: slugStatus.startsWith('error') ? 'rgba(232,139,153,.4)' : inputS.border }} placeholder="Nhập tên quán…" value={formData.name} onChange={e => updateForm('name', e.target.value)} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
