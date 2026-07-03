@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { apiClient, apiFormDataClient } from '@/lib/api/client';
 
 const getStatusMeta = (status: string) => {
   if (status === 'ACTIVE' || status === 'active' || status === 'Đang hoạt động') return { label: 'Đang hoạt động', style: 'success' };
@@ -47,6 +47,11 @@ export default function AdminStoresPage() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
+
+  const imageUploadRef = useRef<HTMLInputElement>(null);
+  const videoUploadRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   // UI states
   const [menuManage, setMenuManage] = useState(false);
@@ -156,14 +161,52 @@ export default function AdminStoresPage() {
   const g2 = 'linear-gradient(135deg,#241f2a,#181420)';
   const g3 = 'linear-gradient(135deg,#20262a,#141a1e)';
 
-  const addMockVideo = () => {
-    setVideos(prev => [...prev, { id: 'vd' + Date.now(), title: 'Video upload mới', meta: 'Vừa tải lên', thumb: g3 }]);
-    showToast('Đã thêm video mẫu (Chưa hỗ trợ upload thật)');
+  const handleUploadVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingVideo(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'STORE_VIDEO');
+      if (venueSel && venueSel !== 'new') {
+        form.append('storeId', venueSel);
+      }
+      
+      const res = await apiFormDataClient<any>('/storage/upload', form);
+      if (res && res.id) {
+        setVideos(prev => [...prev, { id: res.id, title: file.name, meta: 'Mới tải lên', thumb: res.url }]);
+        showToast('Tải video lên thành công');
+      }
+    } catch (err: any) {
+      showToast('Lỗi tải video: ' + err.message);
+    } finally {
+      setUploadingVideo(false);
+    }
   };
 
-  const addMockAlbum = () => {
-    setAlbums(prev => [...prev, { id: 'img' + Date.now(), url: g2 }]);
-    showToast('Đã thêm ảnh mẫu (Chưa hỗ trợ upload thật)');
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingImage(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'STORE_GALLERY');
+      if (venueSel && venueSel !== 'new') {
+        form.append('storeId', venueSel);
+      }
+      
+      const res = await apiFormDataClient<any>('/storage/upload', form);
+      if (res && res.id) {
+        setAlbums(prev => [...prev, { id: res.id, url: res.url }]);
+        showToast('Tải ảnh lên thành công');
+      }
+    } catch (err: any) {
+      showToast('Lỗi tải ảnh: ' + err.message);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const addMockMenu = () => {
@@ -333,9 +376,10 @@ export default function AdminStoresPage() {
                     </span>
                   </div>
                 ))}
-                <div onClick={addMockAlbum} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer' }}>
+                <div onClick={() => imageUploadRef.current?.click()} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                  <span style={{ fontSize: '9.5px' }}>Tải lên</span>
+                  <span style={{ fontSize: '9.5px' }}>{uploadingImage ? 'Đang tải...' : 'Tải lên'}</span>
+                  <input type="file" accept="image/*" hidden ref={imageUploadRef} onChange={handleUploadImage} />
                 </div>
               </div>
 
@@ -357,8 +401,10 @@ export default function AdminStoresPage() {
                     </span>
                   </div>
                 ))}
-                <div onClick={addMockVideo} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px' }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm video · link YouTube hoặc tải lên
+                <div onClick={() => videoUploadRef.current?.click()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px', opacity: uploadingVideo ? 0.5 : 1 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  {uploadingVideo ? 'Đang tải video...' : 'Thêm video · link YouTube hoặc tải lên'}
+                  <input type="file" accept="video/*" hidden ref={videoUploadRef} onChange={handleUploadVideo} />
                 </div>
               </div>
 
