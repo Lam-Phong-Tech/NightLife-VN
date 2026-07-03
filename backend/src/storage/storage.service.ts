@@ -107,7 +107,7 @@ export class StorageService implements OnModuleInit {
     const access = this.resolveAccess(options.access);
 
     let mimeType = 'application/octet-stream';
-    let type = MediaType.OTHER;
+    let type: MediaType = MediaType.OTHER;
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       mimeType = 'video/youtube';
       type = MediaType.VIDEO;
