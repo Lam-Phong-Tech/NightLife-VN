@@ -186,26 +186,36 @@ export default function AdminStoresPage() {
   };
 
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     try {
       setUploadingImage(true);
-      const form = new FormData();
-      form.append('file', file);
-      form.append('purpose', 'STORE_GALLERY');
-      if (venueSel && venueSel !== 'new') {
-        form.append('storeId', venueSel);
+      const uploaded: any[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const form = new FormData();
+        form.append('file', file);
+        form.append('purpose', 'STORE_GALLERY');
+        if (venueSel && venueSel !== 'new') {
+          form.append('storeId', venueSel);
+        }
+        
+        const res = await apiFormDataClient<any>('/storage/upload', form);
+        if (res && res.id) {
+          uploaded.push({ id: res.id, url: res.url });
+        }
       }
-      
-      const res = await apiFormDataClient<any>('/storage/upload', form);
-      if (res && res.id) {
-        setAlbums(prev => [...prev, { id: res.id, url: res.url }]);
-        showToast('Tải ảnh lên thành công');
+      if (uploaded.length > 0) {
+        setAlbums(prev => [...prev, ...uploaded]);
+        showToast(`Đã tải lên ${uploaded.length} ảnh thành công`);
       }
     } catch (err: any) {
       showToast('Lỗi tải ảnh: ' + err.message);
     } finally {
       setUploadingImage(false);
+      if (imageUploadRef.current) {
+        imageUploadRef.current.value = ''; // reset input so same files can be uploaded again if needed
+      }
     }
   };
 
@@ -379,7 +389,7 @@ export default function AdminStoresPage() {
                 <div onClick={() => imageUploadRef.current?.click()} style={{ aspectRatio: 1, borderRadius: '11px', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   <span style={{ fontSize: '9.5px' }}>{uploadingImage ? 'Đang tải...' : 'Tải lên'}</span>
-                  <input type="file" accept="image/*" hidden ref={imageUploadRef} onChange={handleUploadImage} />
+                  <input type="file" accept="image/*" multiple hidden ref={imageUploadRef} onChange={handleUploadImage} />
                 </div>
               </div>
 
