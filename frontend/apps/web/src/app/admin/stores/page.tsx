@@ -199,25 +199,27 @@ export default function AdminStoresPage() {
       showToast('Lỗi tải video: ' + err.message);
     } finally {
       setUploadingVideo(false);
-    }
+    } 
   };
 
   const handleAddYoutubeVideo = async (url: string) => {
     if (!url) return;
     try {
       setUploadingVideo(true);
-      const res = await apiClient.post<any>('/storage/external', {
-        url,
-        purpose: 'STORE_VIDEO',
-        access: 'PUBLIC',
-        storeId: venueSel && venueSel !== 'new' ? venueSel : undefined
+      const res = await apiClient<any>('/storage/external', {
+        data: {
+          url,
+          purpose: 'STORE_VIDEO',
+          access: 'PUBLIC',
+          storeId: venueSel && venueSel !== 'new' ? venueSel : undefined
+        }
       });
-      if (res.data && res.data.id) {
-        setVideos(prev => [...prev, { id: res.data.id, title: url, meta: 'YouTube', thumb: res.data.url }]);
+      if (res && res.id) {
+        setVideos(prev => [...prev, { id: res.id, title: url, meta: 'YouTube', thumb: res.url }]);
         showToast('Thêm video YouTube thành công');
       }
     } catch (err: any) {
-      showToast('Lỗi thêm video: ' + (err.response?.data?.message || err.message));
+      showToast('Lỗi thêm video: ' + (err.message || 'Lỗi không xác định'));
     } finally {
       setUploadingVideo(false);
     }
