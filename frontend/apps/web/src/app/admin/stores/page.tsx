@@ -202,6 +202,27 @@ export default function AdminStoresPage() {
     }
   };
 
+  const handleAddYoutubeVideo = async (url: string) => {
+    if (!url) return;
+    try {
+      setUploadingVideo(true);
+      const res = await apiClient.post<any>('/storage/external', {
+        url,
+        purpose: 'STORE_VIDEO',
+        access: 'PUBLIC',
+        storeId: venueSel && venueSel !== 'new' ? venueSel : undefined
+      });
+      if (res.data && res.data.id) {
+        setVideos(prev => [...prev, { id: res.data.id, title: url, meta: 'YouTube', thumb: res.data.url }]);
+        showToast('Thêm video YouTube thành công');
+      }
+    } catch (err: any) {
+      showToast('Lỗi thêm video: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   const handleUploadMenuImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadingMenuImageId) return;
@@ -479,10 +500,28 @@ export default function AdminStoresPage() {
                     </span>
                   </div>
                 ))}
-                <div onClick={() => videoUploadRef.current?.click()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '12px', color: '#8c8679', cursor: 'pointer', fontSize: '11.5px', opacity: uploadingVideo ? 0.5 : 1 }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                  {uploadingVideo ? 'Đang tải video...' : 'Thêm video · link YouTube hoặc tải lên'}
-                  <input type="file" accept="video/*" hidden ref={videoUploadRef} onChange={handleUploadVideo} />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '0 12px' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e06c75" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="#e06c75"/></svg>
+                    <input 
+                      placeholder={uploadingVideo ? "Đang xử lý..." : "Dán link YouTube vào đây và nhấn Enter..."} 
+                      disabled={uploadingVideo}
+                      style={{ background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '11.5px', outline: 'none', width: '100%', padding: '12px 0' }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = e.currentTarget.value.trim();
+                          if (val) {
+                             handleAddYoutubeVideo(val);
+                             e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <div onClick={() => videoUploadRef.current?.click()} style={{ width: '44px', flex: 'none', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer', opacity: uploadingVideo ? 0.5 : 1 }} title="Tải video từ máy">
+                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                     <input type="file" accept="video/*" hidden ref={videoUploadRef} onChange={handleUploadVideo} />
+                  </div>
                 </div>
               </div>
 

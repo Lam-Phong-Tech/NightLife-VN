@@ -136,6 +136,35 @@ export class StorageController {
     });
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('external')
+  uploadExternal(
+    @Req() request: RequestWithUser,
+    @Body('url') url: string,
+    @Body('purpose') purpose?: string,
+    @Body('access') access?: 'PUBLIC' | 'PROTECTED',
+    @Body('storeId') storeId?: string,
+    @Body('castId') castId?: string,
+    @Body('bookingId') bookingId?: string,
+    @Body('billId') billId?: string,
+    @Body('contentId') contentId?: string,
+  ) {
+    if (!url) {
+      throw new BadRequestException('URL is required');
+    }
+    return this.storageService.saveExternalUrl(url, {
+      ownerId: request.user.id,
+      purpose,
+      access,
+      storeId,
+      castId,
+      bookingId,
+      billId,
+      contentId,
+    });
+  }
+
   @Get('public/:storageKey')
   async getPublicFile(
     @Param('storageKey') storageKey: string,

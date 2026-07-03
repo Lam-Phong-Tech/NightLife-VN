@@ -99,6 +99,40 @@ export class StorageService implements OnModuleInit {
     });
   }
 
+  async saveExternalUrl(
+    url: string,
+    options: SaveLocalFileOptions,
+  ) {
+    const storageKey = `ext-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const access = this.resolveAccess(options.access);
+
+    let mimeType = 'application/octet-stream';
+    let type = MediaType.OTHER;
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      mimeType = 'video/youtube';
+      type = MediaType.VIDEO;
+    }
+
+    return this.prisma.media.create({
+      data: {
+        ownerId: options.ownerId,
+        storeId: options.storeId,
+        castId: options.castId,
+        bookingId: options.bookingId,
+        billId: options.billId,
+        contentId: options.contentId,
+        storageKey,
+        originalName: url,
+        mimeType,
+        sizeBytes: 0,
+        purpose: options.purpose,
+        type,
+        access,
+        url,
+      },
+    });
+  }
+
   async resolvePublicLocalFile(storageKey: string) {
     const resolvedFile = await this.resolveLocalFile(storageKey);
 
