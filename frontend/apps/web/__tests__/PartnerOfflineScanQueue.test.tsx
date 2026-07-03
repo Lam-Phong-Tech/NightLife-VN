@@ -53,6 +53,26 @@ vi.mock("../src/lib/api/client", () => {
           },
         });
       }
+      if (endpoint === "/partner/dashboard-lite") {
+        return Promise.resolve({
+          period: "seven",
+          from: "2026-06-27T00:00:00.000Z",
+          to: "2026-07-03T10:00:00.000Z",
+          bookingCount: 0,
+          profileViewCount: 0,
+          customerArrivalCount: 0,
+          customerArrivalSource: "QR_USED",
+          qrUsedCount: 0,
+          billApprovedCount: 0,
+          storeCount: 0,
+          stores: [],
+          weeklyBookings: [],
+          privacy: {
+            customerDetailVisible: false,
+            note: "Partner dashboard returns aggregate metrics only.",
+          },
+        });
+      }
 
       return Promise.resolve([]);
     }),

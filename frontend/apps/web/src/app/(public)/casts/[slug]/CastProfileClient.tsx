@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, apiClient } from "@/lib/api/client";
 import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
 import { CastBookingCTA } from "./CastBookingCTA";
 import { CastGallery } from "./CastGallery";
@@ -71,6 +71,12 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
+
+  useEffect(() => {
+    void apiClient<{ recorded: boolean }>("/analytics/profile-view", {
+      data: { targetType: "CAST", targetId: profile.id },
+    }).catch(() => undefined);
+  }, [profile.id]);
 
   useEffect(() => {
     let ignore = false;
@@ -153,13 +159,20 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
 
   return (
     <>
-      <main className="cast-page nl-scroll-reveal-skip" data-testid="cast-detail-page" data-no-scroll-reveal="true">
+      <main
+        className="cast-page nl-scroll-reveal-skip"
+        data-testid="cast-detail-page"
+        data-no-scroll-reveal="true"
+      >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
 
-        <div className="block md:hidden cast-mobile nl-scroll-reveal-skip" data-no-scroll-reveal="true">
+        <div
+          className="block md:hidden cast-mobile nl-scroll-reveal-skip"
+          data-no-scroll-reveal="true"
+        >
           <CastHero
             profile={profile}
             activeMedia={activeMedia}
@@ -240,7 +253,11 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                     aria-label={isFavorite ? "Bỏ lưu cast" : "Lưu cast"}
                     aria-pressed={isFavorite}
                   >
-                    <Heart size={20} strokeWidth={1.9} fill={isFavorite ? "currentColor" : "none"} />
+                    <Heart
+                      size={20}
+                      strokeWidth={1.9}
+                      fill={isFavorite ? "currentColor" : "none"}
+                    />
                   </button>
                 </div>
 

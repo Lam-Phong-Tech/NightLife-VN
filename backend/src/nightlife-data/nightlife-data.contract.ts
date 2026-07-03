@@ -21,6 +21,7 @@ import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import { ScanCouponIssueDto } from './dto/coupon-issue.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { RecordProfileViewDto } from './dto/profile-view.dto';
 import {
   CreatePartnerRequestDto,
   ReviewPartnerRequestDto,
@@ -459,6 +460,37 @@ const partnerCouponExample = {
   startsAt: '2026-06-01T00:00:00.000Z',
   endsAt: '2026-07-01T00:00:00.000Z',
   store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+};
+
+const partnerLiteDashboardExample = {
+  period: 'seven',
+  from: '2026-07-01T00:00:00.000Z',
+  to: '2026-07-07T23:59:59.999Z',
+  bookingCount: 18,
+  profileViewCount: 240,
+  customerArrivalCount: 12,
+  customerArrivalSource: 'QR_USED',
+  qrUsedCount: 12,
+  billApprovedCount: 8,
+  storeCount: 2,
+  stores: [
+    {
+      id: 'store_01',
+      name: 'Luna Lounge',
+      slug: 'luna-lounge',
+      bookingCount: 10,
+      profileViewCount: 140,
+      customerArrivalCount: 7,
+    },
+  ],
+  weeklyBookings: [
+    { label: 'T2', date: '2026-07-01', count: 3 },
+    { label: 'T3', date: '2026-07-02', count: 4 },
+  ],
+  privacy: {
+    customerDetailVisible: false,
+    note: 'Partner dashboard returns aggregate metrics only.',
+  },
 };
 
 const bookingExample = {
@@ -1538,6 +1570,58 @@ export function PartnerStoresContract() {
     'Partner action: list own stores',
     'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN) + ActionPolicy(canViewPartnerStore).',
     partnerStoreExample,
+  );
+}
+
+export function RecordProfileViewContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Analytics action: record a public profile view',
+      description:
+        'Public endpoint for lightweight store/cast profile view counting. Stores only target type/id in AuditLog and does not store customer identity, phone, email, or raw visitor details.',
+    }),
+    ApiBody({ type: RecordProfileViewDto }),
+    ApiCreatedResponse({
+      description: 'Profile view recorded.',
+      schema: { example: { recorded: true } },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid target type or target id.',
+      schema: { example: badRequestExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Target store or cast does not exist.',
+      schema: { example: notFoundExample },
+    }),
+  );
+}
+
+export function PartnerLiteDashboardContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: lite dashboard aggregate metrics',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN) + ActionPolicy(canViewPartnerStore). Returns only aggregate metrics for stores in the partner access scope: bookings, public profile views, and customer arrivals. Customer detail records are not returned.',
+    }),
+    ApiQuery({
+      name: 'period',
+      required: false,
+      enum: ['today', 'seven', 'thirty'],
+      example: 'seven',
+    }),
+    ApiOkResponse({
+      description: 'Partner lite dashboard metrics.',
+      schema: { example: partnerLiteDashboardExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user cannot view partner store data.',
+      schema: { example: forbiddenExample },
+    }),
   );
 }
 

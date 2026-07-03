@@ -47,6 +47,7 @@ describe('NightlifeDataService', () => {
     },
     couponIssue: {
       create: jest.fn(),
+      count: jest.fn(),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
@@ -93,18 +94,21 @@ describe('NightlifeDataService', () => {
     },
     booking: {
       create: jest.fn(),
+      count: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
     },
     bill: {
       create: jest.fn(),
+      count: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
     },
     auditLog: {
       create: jest.fn(),
+      count: jest.fn(),
       findMany: jest.fn(),
     },
     notificationLog: {
@@ -240,6 +244,7 @@ describe('NightlifeDataService', () => {
     prisma.rankingConfig.findMany.mockResolvedValue([] as never);
     prisma.rankingConfig.findFirst.mockResolvedValue(null as never);
     prisma.couponIssue.findFirst.mockResolvedValue(null as never);
+    prisma.couponIssue.count.mockResolvedValue(0 as never);
     prisma.couponIssue.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.notificationLog.create.mockResolvedValue({
       id: 'notification-1',
@@ -257,6 +262,9 @@ describe('NightlifeDataService', () => {
     );
     prisma.notificationLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.findMany.mockResolvedValue([] as never);
+    prisma.auditLog.count.mockResolvedValue(0 as never);
+    prisma.booking.count.mockResolvedValue(0 as never);
+    prisma.bill.count.mockResolvedValue(0 as never);
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
       messageId: 'smtp-message-1',
     });
@@ -1940,6 +1948,167 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('returns a lite partner dashboard with scoped aggregate metrics only', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    const previousArrivalSource = process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE;
+    delete process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE;
+    accessService.getAccessibleStoreIds.mockResolvedValue(['store-a']);
+    prisma.store.findMany.mockResolvedValue([
+      { id: 'store-a', name: 'Partner A Store', slug: 'partner-a-store' },
+    ] as never);
+    prisma.cast.findMany.mockResolvedValue([
+      { id: 'cast-a', storeId: 'store-a' },
+    ] as never);
+    prisma.booking.findMany.mockResolvedValue([
+      { createdAt: new Date('2026-07-01T20:00:00.000Z') },
+      { createdAt: new Date('2026-07-03T21:00:00.000Z') },
+    ] as never);
+    prisma.booking.count
+      .mockResolvedValueOnce(3 as never)
+      .mockResolvedValueOnce(3 as never);
+    prisma.auditLog.count
+      .mockResolvedValueOnce(5 as never)
+      .mockResolvedValueOnce(5 as never);
+    prisma.couponIssue.count
+      .mockResolvedValueOnce(2 as never)
+      .mockResolvedValueOnce(2 as never);
+    prisma.bill.count.mockResolvedValueOnce(1 as never);
+
+    try {
+      const result = await service.getPartnerLiteDashboard(
+        { id: 'partner-a', role: 'PARTNER' },
+        'seven',
+      );
+
+      expect(accessService.getAccessibleStoreIds).toHaveBeenCalledWith(
+        { id: 'partner-a', role: 'PARTNER' },
+        'store.partner.view',
+      );
+      expect(prisma.booking.count).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          deletedAt: null,
+          storeId: { in: ['store-a'] },
+        }),
+      });
+      expect(prisma.auditLog.count).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          action: 'PROFILE_VIEW_RECORDED',
+          OR: [
+            { targetType: 'STORE', targetId: { in: ['store-a'] } },
+            { targetType: 'CAST', targetId: { in: ['cast-a'] } },
+          ],
+        }),
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          bookingCount: 3,
+          profileViewCount: 5,
+          customerArrivalCount: 2,
+          customerArrivalSource: 'QR_USED',
+          qrUsedCount: 2,
+          billApprovedCount: 1,
+          storeCount: 1,
+          privacy: {
+            customerDetailVisible: false,
+            note: 'Partner dashboard returns aggregate metrics only.',
+          },
+        }),
+      );
+      expect(result.stores).toEqual([
+        expect.objectContaining({
+          id: 'store-a',
+          bookingCount: 3,
+          profileViewCount: 5,
+          customerArrivalCount: 2,
+        }),
+      ]);
+      expect(JSON.stringify(result)).not.toContain('phone');
+      expect(JSON.stringify(result)).not.toContain('email');
+      expect(result.weeklyBookings).toHaveLength(7);
+    } finally {
+      if (previousArrivalSource === undefined) {
+        delete process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE;
+      } else {
+        process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE = previousArrivalSource;
+      }
+    }
+  });
+
+  it('can count partner customer arrivals from approved bills', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    const previousArrivalSource = process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE;
+    process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE = 'BILL_APPROVED';
+    accessService.getAccessibleStoreIds.mockResolvedValue(['store-a']);
+    prisma.store.findMany.mockResolvedValue([
+      { id: 'store-a', name: 'Partner A Store', slug: 'partner-a-store' },
+    ] as never);
+    prisma.cast.findMany.mockResolvedValue([] as never);
+    prisma.booking.findMany.mockResolvedValue([] as never);
+    prisma.booking.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prisma.auditLog.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prisma.couponIssue.count.mockResolvedValueOnce(9 as never);
+    prisma.bill.count
+      .mockResolvedValueOnce(4 as never)
+      .mockResolvedValueOnce(4 as never);
+
+    try {
+      const result = await service.getPartnerLiteDashboard({
+        id: 'partner-a',
+        role: 'PARTNER',
+      });
+
+      expect(result.customerArrivalSource).toBe('BILL_APPROVED');
+      expect(result.customerArrivalCount).toBe(4);
+      expect(result.qrUsedCount).toBe(9);
+      expect(result.billApprovedCount).toBe(4);
+      expect(result.stores[0]).toEqual(
+        expect.objectContaining({
+          customerArrivalCount: 4,
+        }),
+      );
+    } finally {
+      if (previousArrivalSource === undefined) {
+        delete process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE;
+      } else {
+        process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE = previousArrivalSource;
+      }
+    }
+  });
+
+  it('records public profile views without visitor metadata', async () => {
+    prisma.store.findFirst.mockResolvedValue({ id: 'store-a' } as never);
+    prisma.auditLog.create.mockResolvedValue({ id: 'audit-profile-1' });
+
+    await expect(
+      service.recordPublicProfileView({
+        targetType: 'STORE',
+        targetId: 'store-a',
+      }),
+    ).resolves.toEqual({ recorded: true });
+
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: null,
+        action: 'PROFILE_VIEW_RECORDED',
+        targetType: 'STORE',
+        targetId: 'store-a',
+        metadata: {
+          source: 'public_profile',
+        },
+      },
+    });
+    const createArgs = prisma.auditLog.create.mock.calls[0][0] as {
+      data: { metadata: Record<string, unknown> };
+    };
+    expect(createArgs.data.metadata).not.toHaveProperty('ip');
+    expect(createArgs.data.metadata).not.toHaveProperty('device');
+    expect(createArgs.data.metadata).not.toHaveProperty('session');
+  });
+
   it('does not add a store filter for admin access', async () => {
     accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
     prisma.bill.findMany.mockResolvedValue([] as never);
@@ -3581,31 +3750,32 @@ describe('NightlifeDataService', () => {
     prisma.content.create.mockResolvedValueOnce({
       id: 'content-draft-1',
     } as never);
-    prisma.partnerRequest.create.mockImplementation((args) =>
-      Promise.resolve(
-        partnerRequestRecord({
-          id: args.data?.id,
-          status: args.data?.status,
-          businessName: args.data?.businessName,
-          businessType: args.data?.businessType,
-          area: args.data?.area,
-          contactName: args.data?.contactName,
-          contactPhone: args.data?.contactPhone,
-          contactEmail: args.data?.contactEmail,
-          note: args.data?.note,
-          storeDescription: args.data?.storeDescription,
-          storeAddress: args.data?.storeAddress,
-          storeCity: args.data?.storeCity,
-          storeDistrict: args.data?.storeDistrict,
-          openingHours: args.data?.openingHours,
-          menuSummary: args.data?.menuSummary,
-          mediaUrls: args.data?.mediaUrls,
-          draftCastIds: args.data?.draftCastIds,
-          draftMediaIds: args.data?.draftMediaIds,
-          draftContentIds: args.data?.draftContentIds,
-          submittedAt: args.data?.submittedAt,
-        }),
-      ) as never,
+    prisma.partnerRequest.create.mockImplementation(
+      (args) =>
+        Promise.resolve(
+          partnerRequestRecord({
+            id: args.data?.id,
+            status: args.data?.status,
+            businessName: args.data?.businessName,
+            businessType: args.data?.businessType,
+            area: args.data?.area,
+            contactName: args.data?.contactName,
+            contactPhone: args.data?.contactPhone,
+            contactEmail: args.data?.contactEmail,
+            note: args.data?.note,
+            storeDescription: args.data?.storeDescription,
+            storeAddress: args.data?.storeAddress,
+            storeCity: args.data?.storeCity,
+            storeDistrict: args.data?.storeDistrict,
+            openingHours: args.data?.openingHours,
+            menuSummary: args.data?.menuSummary,
+            mediaUrls: args.data?.mediaUrls,
+            draftCastIds: args.data?.draftCastIds,
+            draftMediaIds: args.data?.draftMediaIds,
+            draftContentIds: args.data?.draftContentIds,
+            submittedAt: args.data?.submittedAt,
+          }),
+        ) as never,
     );
 
     const result = await service.createPartnerRequest({
@@ -3759,16 +3929,17 @@ describe('NightlifeDataService', () => {
       slug: 'neon-club-tay-ho-partner-abc12345',
       status: 'PENDING_REVIEW',
     } as never);
-    prisma.partnerRequest.create.mockImplementation((args) =>
-      Promise.resolve(
-        partnerRequestRecord({
-          id: args.data?.id,
-          draftCastIds: [],
-          draftMediaIds: [],
-          draftContentIds: [],
-          submittedAt: args.data?.submittedAt,
-        }),
-      ) as never,
+    prisma.partnerRequest.create.mockImplementation(
+      (args) =>
+        Promise.resolve(
+          partnerRequestRecord({
+            id: args.data?.id,
+            draftCastIds: [],
+            draftMediaIds: [],
+            draftContentIds: [],
+            submittedAt: args.data?.submittedAt,
+          }),
+        ) as never,
     );
     adminNotificationService.notifyPartnerRequest.mockRejectedValueOnce(
       new Error('Telegram down'),
@@ -4039,7 +4210,9 @@ describe('NightlifeDataService', () => {
     prisma.partnerRequest.findFirst.mockResolvedValue(
       partnerRequestRecord() as never,
     );
-    prisma.partnerRequest.updateMany.mockResolvedValueOnce({ count: 0 } as never);
+    prisma.partnerRequest.updateMany.mockResolvedValueOnce({
+      count: 0,
+    } as never);
 
     await expect(
       service.reviewPartnerRequest('admin-1', 'PARTNER-ABC12345', {

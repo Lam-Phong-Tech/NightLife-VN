@@ -20,8 +20,9 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
+import { apiClient } from "@/lib/api/client";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { castImageForSlug, storeGalleryForSlug, storeImageForSlug } from "@/lib/demo-media";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
@@ -685,6 +686,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     () => personalizeRelatedStores(store.relatedStores),
     [store.relatedStores],
   );
+
+  useEffect(() => {
+    void apiClient<{ recorded: boolean }>("/analytics/profile-view", {
+      data: { targetType: "STORE", targetId: store.id },
+    }).catch(() => undefined);
+  }, [store.id]);
 
   const displayName = readableName(store.name);
   const localGallery = storeGalleryForSlug(store.slug, displayName);

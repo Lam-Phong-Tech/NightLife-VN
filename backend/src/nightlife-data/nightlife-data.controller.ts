@@ -45,8 +45,10 @@ import {
   MemberUnfavoriteCastContract,
   PartnerBillsContract,
   PartnerBookingsContract,
+  PartnerLiteDashboardContract,
   PartnerConfirmCheckInContract,
   PartnerCouponsContract,
+  RecordProfileViewContract,
   PartnerScanCouponPayloadContract,
   PartnerScanCouponContract,
   PartnerStoresContract,
@@ -106,6 +108,7 @@ import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
+import { RecordProfileViewDto } from './dto/profile-view.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 import { NightlifeDataService } from './nightlife-data.service';
 
@@ -238,6 +241,12 @@ export class NightlifeDataController {
     return this.nightlifeDataService.getPublicStoreBySlug(slug);
   }
 
+  @RecordProfileViewContract()
+  @Post('analytics/profile-view')
+  recordProfileView(@Body() dto: RecordProfileViewDto) {
+    return this.nightlifeDataService.recordPublicProfileView(dto);
+  }
+
   @PublicCastsContract()
   @Get('casts')
   listPublicCasts(@Query() query: PublicDiscoveryQueryDto) {
@@ -356,6 +365,21 @@ export class NightlifeDataController {
   @Get('partner/stores')
   listPartnerStores(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerStores(request.user);
+  }
+
+  @PartnerLiteDashboardContract()
+  @ActionPolicy('canViewPartnerStore')
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Get('partner/dashboard-lite')
+  getPartnerLiteDashboard(
+    @Req() request: RequestWithUser,
+    @Query('period') period?: string,
+  ) {
+    return this.nightlifeDataService.getPartnerLiteDashboard(
+      request.user,
+      period,
+    );
   }
 
   @PartnerCouponsContract()

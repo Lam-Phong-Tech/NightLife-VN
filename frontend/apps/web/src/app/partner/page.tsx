@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import {
@@ -90,6 +90,29 @@ type PartnerBill = {
   coupon?: { code: string; name: string } | null;
 };
 
+type PartnerLiteDashboard = {
+  period: 'today' | 'seven' | 'thirty';
+  from: string;
+  to: string;
+  bookingCount: number;
+  profileViewCount: number;
+  customerArrivalCount: number;
+  customerArrivalSource: 'QR_USED' | 'BILL_APPROVED';
+  qrUsedCount: number;
+  billApprovedCount: number;
+  storeCount: number;
+  stores: {
+    id: string;
+    name: string;
+    slug: string;
+    bookingCount: number;
+    profileViewCount: number;
+    customerArrivalCount: number;
+  }[];
+  weeklyBookings: { label: string; date: string; count: number }[];
+  privacy: { customerDetailVisible: boolean; note: string };
+};
+
 type PartnerScanIssue = {
   id: string;
   code: string;
@@ -176,7 +199,9 @@ const readQrFromVideoFrame = async (
 
   context.drawImage(video, 0, 0, width, height);
   const imageData = context.getImageData(0, 0, width, height);
-  return jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })?.data.trim() ?? null;
+  return (
+    jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })?.data.trim() ?? null
+  );
 };
 
 const pruneOfflineScanQueue = (items: OfflineScanQueueItem[], now = Date.now()) => {
@@ -212,7 +237,9 @@ const normalizeOfflineScanQueue = (value: unknown, now = Date.now()) => {
   const rawItems = Array.isArray(value) ? value : [];
   const items = rawItems.flatMap((item): OfflineScanQueueItem[] => {
     if (typeof item === 'string') {
-      return [{ payload: item, queuedAt: new Date(now).toISOString(), attempts: 0, lastError: null }];
+      return [
+        { payload: item, queuedAt: new Date(now).toISOString(), attempts: 0, lastError: null },
+      ];
     }
 
     if (!item || typeof item !== 'object') {
@@ -387,12 +414,28 @@ function SectionHeading({
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
       <div>
-        <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>{title}</h2>
-        <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>
+        <h2 style={{ margin: 0, color: colors.text, fontSize: '21px', fontWeight: 600 }}>
+          {title}
+        </h2>
+        <div
+          style={{
+            marginTop: '4px',
+            fontSize: '9px',
+            fontWeight: 600,
+            letterSpacing: '1.6px',
+            color: colors.muted,
+          }}
+        >
           {eyebrow}
         </div>
       </div>
-      <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
+      <div
+        style={{
+          flex: 1,
+          height: '1px',
+          background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)',
+        }}
+      />
       {action}
     </div>
   );
@@ -416,7 +459,13 @@ function StatusPill({
   tone?: 'neutral' | 'gold' | 'success' | 'danger';
 }) {
   const toneColor =
-    tone === 'success' ? colors.success : tone === 'danger' ? colors.danger : tone === 'gold' ? colors.goldBright : colors.text2;
+    tone === 'success'
+      ? colors.success
+      : tone === 'danger'
+        ? colors.danger
+        : tone === 'gold'
+          ? colors.goldBright
+          : colors.text2;
 
   return (
     <span
@@ -514,15 +563,17 @@ function GhostButton({
   );
 }
 
-function FormField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label style={{ display: 'grid', gap: '7px', color: colors.text2, fontSize: '12px', fontWeight: 700 }}>
+    <label
+      style={{
+        display: 'grid',
+        gap: '7px',
+        color: colors.text2,
+        fontSize: '12px',
+        fontWeight: 700,
+      }}
+    >
       {label}
       {children}
     </label>
@@ -535,6 +586,7 @@ export default function PartnerPage() {
   const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);
   const [bookings, setBookings] = useState<PartnerBooking[]>([]);
   const [bills, setBills] = useState<PartnerBill[]>([]);
+  const [dashboard, setDashboard] = useState<PartnerLiteDashboard | null>(null);
   const [activePanel, setActivePanel] = useState<PanelKey>('scan');
   const [listingTab, setListingTab] = useState<ListingTabKey>('store');
   const [period, setPeriod] = useState<PeriodKey>('seven');
@@ -544,8 +596,12 @@ export default function PartnerPage() {
   const [scanMessage, setScanMessage] = useState('Sẵn sàng quét QR, dán link hoặc nhập mã coupon.');
   const [isScanning, setIsScanning] = useState(false);
   const [isConfirmingScan, setIsConfirmingScan] = useState(false);
-  const [offlineScanQueue, setOfflineScanQueue] = useState<OfflineScanQueueItem[]>(() => readOfflineScanQueue());
-  const [cameraStatus, setCameraStatus] = useState<'idle' | 'starting' | 'active' | 'unsupported' | 'error'>('idle');
+  const [offlineScanQueue, setOfflineScanQueue] = useState<OfflineScanQueueItem[]>(() =>
+    readOfflineScanQueue(),
+  );
+  const [cameraStatus, setCameraStatus] = useState<
+    'idle' | 'starting' | 'active' | 'unsupported' | 'error'
+  >('idle');
   const [cameraMessage, setCameraMessage] = useState('');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -600,7 +656,9 @@ export default function PartnerPage() {
       }
 
       setIsScanning(true);
-      setScanMessage(options.fromQueue ? 'Đang gửi lại mã offline...' : 'Đang xác thực mã tại quán...');
+      setScanMessage(
+        options.fromQueue ? 'Đang gửi lại mã offline...' : 'Đang xác thực mã tại quán...',
+      );
 
       try {
         const issue = isSignedQrPayload(trimmedPayload)
@@ -616,7 +674,9 @@ export default function PartnerPage() {
             );
 
         setScanIssue(issue);
-        setScanMessage(`${issue.statusLabel ?? issue.status} - hợp lệ tại ${issue.coupon?.store?.name ?? 'quán được phân quyền'}.`);
+        setScanMessage(
+          `${issue.statusLabel ?? issue.status} - hợp lệ tại ${issue.coupon?.store?.name ?? 'quán được phân quyền'}.`,
+        );
         return true;
       } catch (error) {
         if (!(error instanceof ApiError) && typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -628,7 +688,9 @@ export default function PartnerPage() {
           return false;
         }
 
-        setScanMessage(error instanceof ApiError ? error.message : 'Không kiểm tra được mã. Thử lại sau.');
+        setScanMessage(
+          error instanceof ApiError ? error.message : 'Không kiểm tra được mã. Thử lại sau.',
+        );
         return false;
       } finally {
         setIsScanning(false);
@@ -644,7 +706,9 @@ export default function PartnerPage() {
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraStatus('unsupported');
-      setCameraMessage('Trình duyệt hiện tại chưa cho phép mở camera. Vẫn có thể dán link hoặc nhập mã.');
+      setCameraMessage(
+        'Trình duyệt hiện tại chưa cho phép mở camera. Vẫn có thể dán link hoặc nhập mã.',
+      );
       return;
     }
 
@@ -712,7 +776,9 @@ export default function PartnerPage() {
         videoRef.current.srcObject = null;
       }
       setCameraStatus('error');
-      setCameraMessage('Không mở được camera. Kiểm tra quyền camera rồi thử lại, hoặc nhập mã thủ công.');
+      setCameraMessage(
+        'Không mở được camera. Kiểm tra quyền camera rồi thử lại, hoặc nhập mã thủ công.',
+      );
     }
   }, [scanCouponPayload, stopCameraScan]);
 
@@ -728,7 +794,11 @@ export default function PartnerPage() {
     for (const item of queuedItems) {
       const sent = await scanCouponPayload(item.payload, { fromQueue: true });
       if (!sent) {
-        remaining.push({ ...item, attempts: item.attempts + 1, lastError: new Date().toISOString() });
+        remaining.push({
+          ...item,
+          attempts: item.attempts + 1,
+          lastError: new Date().toISOString(),
+        });
       }
     }
 
@@ -761,6 +831,27 @@ export default function PartnerPage() {
               : coupon,
           ),
         );
+        setDashboard((current) => {
+          if (!current || current.customerArrivalSource !== 'QR_USED') {
+            return current;
+          }
+
+          const storeId = nextIssue.coupon?.store?.id;
+
+          return {
+            ...current,
+            customerArrivalCount: current.customerArrivalCount + 1,
+            qrUsedCount: current.qrUsedCount + 1,
+            stores: current.stores.map((store) =>
+              store.id === storeId
+                ? {
+                    ...store,
+                    customerArrivalCount: store.customerArrivalCount + 1,
+                  }
+                : store,
+            ),
+          };
+        });
       }
       setScanMessage(`${nextIssue.statusLabel ?? nextIssue.status} - mã này không thể dùng lại.`);
     } catch (error) {
@@ -775,19 +866,20 @@ export default function PartnerPage() {
 
     const loadPartnerData = async () => {
       try {
-        const [storeData, couponData, bookingData, billData] = await Promise.all([
+        const [storeData, couponData, billData, dashboardData] = await Promise.all([
           apiClient<PartnerStore[]>('/partner/stores'),
           apiClient<PartnerCoupon[]>('/partner/coupons'),
-          apiClient<PartnerBooking[]>('/partner/bookings'),
           apiClient<PartnerBill[]>('/partner/bills'),
+          apiClient<PartnerLiteDashboard>('/partner/dashboard-lite'),
         ]);
 
         if (!isMounted) return;
 
         setStores(storeData);
         setCoupons(couponData);
-        setBookings(bookingData);
+        setBookings([]);
         setBills(billData);
+        setDashboard(dashboardData);
         setStatusMessage('Dữ liệu đang hiển thị theo phạm vi quán của tài khoản Partner.');
       } catch (error) {
         if (!isMounted) return;
@@ -838,10 +930,17 @@ export default function PartnerPage() {
   const usedCouponCount = coupons.reduce((sum, item) => sum + item.usedCount, 0);
   const activeCoupons = coupons.filter((coupon) => coupon.status === 'ACTIVE').length;
   const totalDiscount = bills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
-  const completedBookings = bookings.filter((booking) => ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(booking.status)).length;
-  const estimatedViews = stores.length ? Math.max(usedCouponCount * 24 + bookings.length * 16 + coupons.length * 120, 186) : 0;
+  const bookingMetricCount = dashboard?.bookingCount ?? 0;
+  const profileViewMetricCount = dashboard?.profileViewCount ?? 0;
+  const customerArrivalMetricCount = dashboard?.customerArrivalCount ?? usedCouponCount;
+  const customerArrivalSourceLabel =
+    dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Bill approved' : 'QR used';
+  const scopedStoreCount = dashboard?.storeCount ?? stores.length;
+  const completedBookings = bookingMetricCount;
   const scannedCustomerLabel = scanIssue?.customer?.label ?? 'Khách đã ẩn';
-  const scannedExpiryLabel = scanIssue?.expiresAt ? new Date(scanIssue.expiresAt).toLocaleString('vi-VN') : 'Không giới hạn';
+  const scannedExpiryLabel = scanIssue?.expiresAt
+    ? new Date(scanIssue.expiresAt).toLocaleString('vi-VN')
+    : 'Không giới hạn';
   const scannedBookingLabel = scanIssue?.booking?.scheduledAt
     ? `Booking ${scanIssue.booking.status} · ${new Date(scanIssue.booking.scheduledAt).toLocaleString('vi-VN')}`
     : scanIssue?.booking?.status
@@ -860,25 +959,44 @@ export default function PartnerPage() {
       }))
     : fallbackSettlementRows;
 
+  const bookingTrendBars = useMemo(() => {
+    const rows = dashboard?.weeklyBookings ?? [];
+    if (!rows.length) {
+      return chartBars.map((bar) => ({
+        label: bar.label,
+        count: 0,
+        height: bar.value,
+      }));
+    }
+
+    const maxCount = Math.max(1, ...rows.map((row) => row.count));
+
+    return rows.map((row) => ({
+      label: row.label,
+      count: row.count,
+      height: Math.max(6, Math.round((row.count / maxCount) * 100)),
+    }));
+  }, [dashboard?.weeklyBookings]);
+
   const metrics = useMemo(
     () => [
       {
         label: 'Đặt chỗ tại quán',
-        value: String(bookings.length),
+        value: bookingMetricCount.toLocaleString('vi-VN'),
         sub: `${completedBookings} lượt đã xác nhận`,
         trend: '+12% tuần này',
         icon: TicketCheck,
       },
       {
         label: 'Lượt xem trang',
-        value: estimatedViews.toLocaleString('vi-VN'),
+        value: profileViewMetricCount.toLocaleString('vi-VN'),
         sub: 'Ước tính từ hoạt động partner',
         trend: stores.length ? '+8% so với kỳ trước' : 'Chờ dữ liệu',
         icon: Eye,
       },
       {
         label: 'Số khách đến',
-        value: String(usedCouponCount),
+        value: customerArrivalMetricCount.toLocaleString('vi-VN'),
         sub: `${activeCoupons} coupon đang hoạt động`,
         trend: `${coupons.length} coupon trong scope`,
         icon: UsersRound,
@@ -891,7 +1009,16 @@ export default function PartnerPage() {
         icon: FileClock,
       },
     ],
-    [activeCoupons, bills.length, bookings.length, completedBookings, coupons.length, estimatedViews, stores.length, totalDiscount, usedCouponCount],
+    [
+      activeCoupons,
+      bills.length,
+      bookingMetricCount,
+      customerArrivalMetricCount,
+      profileViewMetricCount,
+      coupons.length,
+      stores.length,
+      totalDiscount,
+    ],
   );
 
   const rejectScanResult = () => {
@@ -912,7 +1039,14 @@ export default function PartnerPage() {
           const Icon = metric.icon;
           return (
             <PanelCard key={metric.label} style={{ padding: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}
+              >
                 <span
                   style={{
                     width: '42px',
@@ -930,9 +1064,30 @@ export default function PartnerPage() {
                 </span>
                 <StatusPill tone="gold">{metric.trend}</StatusPill>
               </div>
-              <div style={{ marginTop: '16px', color: colors.muted, fontSize: '12px', fontWeight: 700 }}>{metric.label}</div>
-              <div style={{ marginTop: '8px', color: colors.text, fontSize: '32px', fontWeight: 800, lineHeight: 1 }}>{metric.value}</div>
-              <div style={{ marginTop: '8px', color: colors.goldBright, fontSize: '12px' }}>{metric.sub}</div>
+              <div
+                style={{
+                  marginTop: '16px',
+                  color: colors.muted,
+                  fontSize: '12px',
+                  fontWeight: 700,
+                }}
+              >
+                {metric.label}
+              </div>
+              <div
+                style={{
+                  marginTop: '8px',
+                  color: colors.text,
+                  fontSize: '32px',
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                {metric.value}
+              </div>
+              <div style={{ marginTop: '8px', color: colors.goldBright, fontSize: '12px' }}>
+                {metric.sub}
+              </div>
             </PanelCard>
           );
         })}
@@ -951,7 +1106,7 @@ export default function PartnerPage() {
             }
           />
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
-            {chartBars.map((bar, index) => (
+            {bookingTrendBars.map((bar, index) => (
               <div
                 key={bar.label}
                 style={{
@@ -968,12 +1123,15 @@ export default function PartnerPage() {
                 <div
                   style={{
                     width: '100%',
-                    height: `${bar.value}%`,
+                    height: `${bar.height}%`,
                     borderRadius: '8px 8px 0 0',
                     background: index === 4 ? colors.goldGrad : 'rgba(212,178,106,.22)',
                     boxShadow: index === 4 ? '0 14px 26px -18px rgba(212,178,106,.85)' : 'none',
                   }}
                 />
+                <span style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800 }}>
+                  {bar.count}
+                </span>
                 <span style={{ color: colors.muted, fontSize: '11px' }}>{bar.label}</span>
               </div>
             ))}
@@ -985,12 +1143,41 @@ export default function PartnerPage() {
           <div style={{ display: 'grid', gap: '10px' }}>
             {settlementRows.slice(0, 4).map((row) => (
               <div key={row.code} style={{ ...softCardStyle, padding: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                  <span style={{ color: colors.gold, fontSize: '12px', fontWeight: 800 }}>{row.code}</span>
-                  <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>-{moneyVnd(row.amount)}</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ color: colors.gold, fontSize: '12px', fontWeight: 800 }}>
+                    {row.code}
+                  </span>
+                  <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>
+                    -{moneyVnd(row.amount)}
+                  </span>
                 </div>
-                <div style={{ marginTop: '6px', color: colors.text, fontSize: '12.5px', lineHeight: 1.45 }}>{row.service}</div>
-                <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', gap: '8px', color: colors.muted, fontSize: '11px' }}>
+                <div
+                  style={{
+                    marginTop: '6px',
+                    color: colors.text,
+                    fontSize: '12.5px',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {row.service}
+                </div>
+                <div
+                  style={{
+                    marginTop: '5px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    color: colors.muted,
+                    fontSize: '11px',
+                  }}
+                >
                   <span>{row.time}</span>
                   <span>Khách đã ẩn</span>
                 </div>
@@ -1000,13 +1187,82 @@ export default function PartnerPage() {
         </PanelCard>
       </div>
 
+      <PanelCard style={{ marginTop: '14px' }}>
+        <SectionHeading eyebrow="SCOPED STORES" title="Quán trong quyền partner" />
+        <div className="partner-store-scope-grid">
+          {(dashboard?.stores?.length
+            ? dashboard.stores
+            : stores.map((store) => ({
+                id: store.id,
+                name: store.name,
+                slug: store.slug,
+                bookingCount: 0,
+                profileViewCount: 0,
+                customerArrivalCount: 0,
+              }))
+          )
+            .slice(0, 6)
+            .map((store) => (
+              <div key={store.id} style={{ ...softCardStyle, padding: '13px' }}>
+                <div style={{ color: colors.gold, fontSize: '12px', fontWeight: 800 }}>
+                  {store.name}
+                </div>
+                <div style={{ marginTop: '5px', color: colors.muted, fontSize: '11px' }}>
+                  {store.slug}
+                </div>
+                <div
+                  style={{
+                    marginTop: '12px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: '8px',
+                  }}
+                >
+                  {[
+                    ['Booking', store.bookingCount],
+                    ['Profile', store.profileViewCount],
+                    ['Khách đến', store.customerArrivalCount],
+                  ].map(([label, value]) => (
+                    <span
+                      key={label}
+                      style={{ color: colors.text2, fontSize: '11px', lineHeight: 1.45 }}
+                    >
+                      {label}
+                      <strong
+                        style={{ display: 'block', color: colors.goldBright, fontSize: '14px' }}
+                      >
+                        {value}
+                      </strong>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          {!dashboard?.stores?.length && !stores.length ? (
+            <div
+              style={{
+                ...softCardStyle,
+                padding: '14px',
+                color: colors.text2,
+                fontSize: '12px',
+                lineHeight: 1.6,
+              }}
+            >
+              Chưa có quán nào trong quyền truy cập của tài khoản partner này.
+            </div>
+          ) : null}
+        </div>
+      </PanelCard>
+
       <PanelCard style={{ marginTop: '14px', background: 'rgba(212,178,106,.08)' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
           <ShieldCheck size={20} color={colors.gold} />
           <div style={{ color: colors.text2, fontSize: '12px', lineHeight: 1.65 }}>
-            Đối tác chỉ xem dữ liệu tổng hợp của riêng quán. Bảng đối soát không hiển thị hồ sơ khách chi tiết, chỉ giữ mã giao dịch và usage log phục vụ xác nhận coupon.
+            Đối tác chỉ xem dữ liệu tổng hợp của riêng quán. Bảng đối soát không hiển thị hồ sơ
+            khách chi tiết, chỉ giữ mã giao dịch và usage log phục vụ xác nhận coupon.
             <br />
-            {statusMessage}
+            {dashboard?.privacy.note ?? statusMessage} Source: {customerArrivalSourceLabel}. Stores:{' '}
+            {scopedStoreCount}.
           </div>
         </div>
       </PanelCard>
@@ -1019,7 +1275,11 @@ export default function PartnerPage() {
         <SectionHeading
           eyebrow="MVP P0 SCAN ONLY"
           title="Quét / nhập mã QR"
-          action={<StatusPill tone={offlineScanQueue.length ? 'gold' : 'neutral'}>{offlineScanQueue.length} offline</StatusPill>}
+          action={
+            <StatusPill tone={offlineScanQueue.length ? 'gold' : 'neutral'}>
+              {offlineScanQueue.length} offline
+            </StatusPill>
+          }
         />
 
         <div
@@ -1027,10 +1287,9 @@ export default function PartnerPage() {
             minHeight: '320px',
             borderRadius: '16px',
             border: `1px solid ${cameraStatus === 'active' ? colors.borderGold40 : colors.borderGold22}`,
-            background:
-              cameraActive
-                ? 'rgba(0,0,0,.35)'
-                : 'linear-gradient(135deg,rgba(212,178,106,.12),rgba(255,255,255,.025)), rgba(0,0,0,.24)',
+            background: cameraActive
+              ? 'rgba(0,0,0,.35)'
+              : 'linear-gradient(135deg,rgba(212,178,106,.12),rgba(255,255,255,.025)), rgba(0,0,0,.24)',
             overflow: 'hidden',
             position: 'relative',
             display: 'grid',
@@ -1065,8 +1324,12 @@ export default function PartnerPage() {
               >
                 <QrCode size={44} strokeWidth={1.6} />
               </span>
-              <div style={{ color: colors.text, fontSize: '15px', fontWeight: 800 }}>Đưa QR vào khung xác thực tại quán</div>
-              <div style={{ marginTop: '8px', color: colors.muted, fontSize: '12px' }}>Có thể dán link hoặc nhập mã thủ công ở bên dưới.</div>
+              <div style={{ color: colors.text, fontSize: '15px', fontWeight: 800 }}>
+                Đưa QR vào khung xác thực tại quán
+              </div>
+              <div style={{ marginTop: '8px', color: colors.muted, fontSize: '12px' }}>
+                Có thể dán link hoặc nhập mã thủ công ở bên dưới.
+              </div>
             </div>
           ) : (
             <span
@@ -1084,25 +1347,39 @@ export default function PartnerPage() {
         </div>
 
         <div style={{ marginTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <PrimaryButton disabled={cameraStatus === 'starting'} onClick={cameraActive ? stopCameraScan : () => void startCameraScan()}>
+          <PrimaryButton
+            disabled={cameraStatus === 'starting'}
+            onClick={cameraActive ? stopCameraScan : () => void startCameraScan()}
+          >
             <Camera size={16} />
-            {cameraStatus === 'active' ? 'Tắt camera' : cameraStatus === 'starting' ? 'Đang mở' : 'Mở camera'}
+            {cameraStatus === 'active'
+              ? 'Tắt camera'
+              : cameraStatus === 'starting'
+                ? 'Đang mở'
+                : 'Mở camera'}
           </PrimaryButton>
-          <GhostButton disabled={isScanning || !offlineScanQueue.length} onClick={() => void replayOfflineScans()}>
+          <GhostButton
+            disabled={isScanning || !offlineScanQueue.length}
+            onClick={() => void replayOfflineScans()}
+          >
             <Upload size={16} />
             Gửi offline
           </GhostButton>
         </div>
 
         <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-          Flow demo P0 chỉ gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in. Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
+          Flow demo P0 chỉ gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
+          Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
         </div>
 
         {cameraMessage ? (
           <div
             style={{
               marginTop: '12px',
-              color: cameraStatus === 'error' || cameraStatus === 'unsupported' ? colors.danger : colors.goldBright,
+              color:
+                cameraStatus === 'error' || cameraStatus === 'unsupported'
+                  ? colors.danger
+                  : colors.goldBright,
               fontSize: '12px',
               lineHeight: 1.55,
             }}
@@ -1116,7 +1393,12 @@ export default function PartnerPage() {
             event.preventDefault();
             void scanCouponPayload(scanPayload);
           }}
-          style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '10px' }}
+          style={{
+            marginTop: '16px',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0,1fr) auto',
+            gap: '10px',
+          }}
         >
           <input
             value={scanPayload}
@@ -1130,7 +1412,9 @@ export default function PartnerPage() {
           </PrimaryButton>
         </form>
 
-        <div style={{ marginTop: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.6 }}>{scanMessage}</div>
+        <div style={{ marginTop: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.6 }}>
+          {scanMessage}
+        </div>
       </PanelCard>
 
       <PanelCard>
@@ -1138,14 +1422,33 @@ export default function PartnerPage() {
         {scanIssue ? (
           <div style={{ display: 'grid', gap: '12px' }}>
             <div style={{ ...softCardStyle, padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  alignItems: 'flex-start',
+                }}
+              >
                 <div>
-                  <div style={{ color: colors.gold, fontSize: '18px', fontWeight: 900 }}>{scanIssue.code}</div>
-                  <div style={{ marginTop: '6px', color: colors.text, fontSize: '14px', fontWeight: 800 }}>
-                    {scanIssue.coupon?.name ?? 'Coupon'} · {scanIssue.coupon?.store?.name ?? storeName}
+                  <div style={{ color: colors.gold, fontSize: '18px', fontWeight: 900 }}>
+                    {scanIssue.code}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '6px',
+                      color: colors.text,
+                      fontSize: '14px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {scanIssue.coupon?.name ?? 'Coupon'} ·{' '}
+                    {scanIssue.coupon?.store?.name ?? storeName}
                   </div>
                 </div>
-                <StatusPill tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}>{scanIssue.statusLabel ?? scanIssue.status}</StatusPill>
+                <StatusPill tone={scanIssue.status === 'ISSUED' ? 'success' : 'neutral'}>
+                  {scanIssue.statusLabel ?? scanIssue.status}
+                </StatusPill>
               </div>
             </div>
 
@@ -1169,14 +1472,23 @@ export default function PartnerPage() {
                 }}
               >
                 <span style={{ color: colors.muted }}>{label}</span>
-                <span style={{ color: colors.text, textAlign: 'right', fontWeight: 700 }}>{value}</span>
+                <span style={{ color: colors.text, textAlign: 'right', fontWeight: 700 }}>
+                  {value}
+                </span>
               </div>
             ))}
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
-              <PrimaryButton disabled={!canConfirmScan || isConfirmingScan} onClick={confirmScannedIssue}>
+              <PrimaryButton
+                disabled={!canConfirmScan || isConfirmingScan}
+                onClick={confirmScannedIssue}
+              >
                 <CheckCircle2 size={16} />
-                {scanIssue.status === 'USED' ? 'Đã sử dụng' : isConfirmingScan ? 'Đang xác nhận' : 'Xác nhận USED'}
+                {scanIssue.status === 'USED'
+                  ? 'Đã sử dụng'
+                  : isConfirmingScan
+                    ? 'Đang xác nhận'
+                    : 'Xác nhận USED'}
               </PrimaryButton>
               <GhostButton onClick={rejectScanResult}>
                 <XCircle size={16} />
@@ -1185,8 +1497,17 @@ export default function PartnerPage() {
             </div>
           </div>
         ) : (
-          <div style={{ ...softCardStyle, padding: '18px', color: colors.text2, fontSize: '13px', lineHeight: 1.7 }}>
-            Chưa có mã nào được kiểm tra trong phiên này. Khi partner quét QR, màn này chỉ hiển thị dữ liệu cần để xác nhận: mã, quán áp dụng, hạn dùng, trạng thái và nhãn khách đã ẩn.
+          <div
+            style={{
+              ...softCardStyle,
+              padding: '18px',
+              color: colors.text2,
+              fontSize: '13px',
+              lineHeight: 1.7,
+            }}
+          >
+            Chưa có mã nào được kiểm tra trong phiên này. Khi partner quét QR, màn này chỉ hiển thị
+            dữ liệu cần để xác nhận: mã, quán áp dụng, hạn dùng, trạng thái và nhãn khách đã ẩn.
           </div>
         )}
       </PanelCard>
@@ -1196,7 +1517,15 @@ export default function PartnerPage() {
   const renderSettlementPanel = () => (
     <>
       <PanelCard style={{ marginBottom: '14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '14px',
+            flexWrap: 'wrap',
+          }}
+        >
           <SectionHeading eyebrow="PERIOD FILTER" title="Kỳ đối soát" />
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {periodItems.map((item) => (
@@ -1225,12 +1554,27 @@ export default function PartnerPage() {
         <div className="partner-settlement-summary">
           {[
             ['Coupon đã dùng', String(usedCouponCount), 'Tự tăng sau khi confirm USED'],
-            ['Tổng giảm giá', totalDiscount ? moneyVnd(totalDiscount) : moneyVnd(fallbackSettlementRows.reduce((sum, row) => sum + row.amount, 0)), 'Theo bill trong scope'],
+            [
+              'Tổng giảm giá',
+              totalDiscount
+                ? moneyVnd(totalDiscount)
+                : moneyVnd(fallbackSettlementRows.reduce((sum, row) => sum + row.amount, 0)),
+              'Theo bill trong scope',
+            ],
             ['Bill chờ soát', String(bills.length), 'Không lộ dữ liệu khách chi tiết'],
           ].map(([label, value, sub]) => (
             <div key={label} style={{ ...softCardStyle, padding: '15px' }}>
               <div style={{ color: colors.muted, fontSize: '12px', fontWeight: 700 }}>{label}</div>
-              <div style={{ marginTop: '8px', color: colors.goldBright, fontSize: '24px', fontWeight: 900 }}>{value}</div>
+              <div
+                style={{
+                  marginTop: '8px',
+                  color: colors.goldBright,
+                  fontSize: '24px',
+                  fontWeight: 900,
+                }}
+              >
+                {value}
+              </div>
               <div style={{ marginTop: '5px', color: colors.text2, fontSize: '11.5px' }}>{sub}</div>
             </div>
           ))}
@@ -1253,7 +1597,14 @@ export default function PartnerPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
             <thead>
               <tr>
-                {['Mã giao dịch', 'Dịch vụ / Coupon', 'Thời gian', 'Khách', 'Giảm giá', 'Trạng thái'].map((heading) => (
+                {[
+                  'Mã giao dịch',
+                  'Dịch vụ / Coupon',
+                  'Thời gian',
+                  'Khách',
+                  'Giảm giá',
+                  'Trạng thái',
+                ].map((heading) => (
                   <th
                     key={heading}
                     style={{
@@ -1273,22 +1624,61 @@ export default function PartnerPage() {
             <tbody>
               {settlementRows.map((row) => (
                 <tr key={row.code}>
-                  <td style={{ padding: '14px 12px', color: colors.gold, fontSize: '12px', fontWeight: 900, borderBottom: `1px solid ${colors.borderHair}` }}>
+                  <td
+                    style={{
+                      padding: '14px 12px',
+                      color: colors.gold,
+                      fontSize: '12px',
+                      fontWeight: 900,
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                    }}
+                  >
                     {row.code}
                   </td>
-                  <td style={{ padding: '14px 12px', color: colors.text, fontSize: '12.5px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                  <td
+                    style={{
+                      padding: '14px 12px',
+                      color: colors.text,
+                      fontSize: '12.5px',
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                    }}
+                  >
                     {row.service}
                   </td>
-                  <td style={{ padding: '14px 12px', color: colors.text2, fontSize: '12px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                  <td
+                    style={{
+                      padding: '14px 12px',
+                      color: colors.text2,
+                      fontSize: '12px',
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                    }}
+                  >
                     {row.time}
                   </td>
-                  <td style={{ padding: '14px 12px', color: colors.muted, fontSize: '12px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                  <td
+                    style={{
+                      padding: '14px 12px',
+                      color: colors.muted,
+                      fontSize: '12px',
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                    }}
+                  >
                     Đã ẩn
                   </td>
-                  <td style={{ padding: '14px 12px', color: colors.goldBright, fontSize: '12px', fontWeight: 900, borderBottom: `1px solid ${colors.borderHair}` }}>
+                  <td
+                    style={{
+                      padding: '14px 12px',
+                      color: colors.goldBright,
+                      fontSize: '12px',
+                      fontWeight: 900,
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                    }}
+                  >
                     -{moneyVnd(row.amount)}
                   </td>
-                  <td style={{ padding: '14px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                  <td
+                    style={{ padding: '14px 12px', borderBottom: `1px solid ${colors.borderHair}` }}
+                  >
                     <StatusPill tone="gold">{row.status}</StatusPill>
                   </td>
                 </tr>
@@ -1305,7 +1695,16 @@ export default function PartnerPage() {
       return (
         <div className="partner-listing-grid">
           {['Minh Anh', 'Yuki', 'Linh Chi'].map((name, index) => (
-            <div key={name} style={{ ...softCardStyle, padding: '14px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div
+              key={name}
+              style={{
+                ...softCardStyle,
+                padding: '14px',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+              }}
+            >
               <span
                 style={{
                   width: '58px',
@@ -1318,7 +1717,9 @@ export default function PartnerPage() {
               />
               <div style={{ minWidth: 0 }}>
                 <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>{name}</div>
-                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>{index === 0 ? 'Đang duyệt hồ sơ nổi bật' : 'Hiển thị trong trang quán'}</div>
+                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>
+                  {index === 0 ? 'Đang duyệt hồ sơ nổi bật' : 'Hiển thị trong trang quán'}
+                </div>
               </div>
             </div>
           ))}
@@ -1334,12 +1735,32 @@ export default function PartnerPage() {
             ['Phòng VIP', '2.500.000đ - 6.000.000đ', 'Ưu tiên khách VIP'],
             ['Combo sinh nhật', '3.000.000đ+', 'Cần duyệt nội dung trước khi đăng'],
           ].map(([label, value, sub]) => (
-            <div key={label} style={{ ...softCardStyle, padding: '14px', display: 'flex', justifyContent: 'space-between', gap: '14px' }}>
+            <div
+              key={label}
+              style={{
+                ...softCardStyle,
+                padding: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '14px',
+              }}
+            >
               <div>
-                <div style={{ color: colors.text, fontSize: '13.5px', fontWeight: 800 }}>{label}</div>
+                <div style={{ color: colors.text, fontSize: '13.5px', fontWeight: 800 }}>
+                  {label}
+                </div>
                 <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>{sub}</div>
               </div>
-              <div style={{ color: colors.goldBright, fontSize: '13px', fontWeight: 900, whiteSpace: 'nowrap' }}>{value}</div>
+              <div
+                style={{
+                  color: colors.goldBright,
+                  fontSize: '13px',
+                  fontWeight: 900,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {value}
+              </div>
             </div>
           ))}
         </div>
@@ -1357,16 +1778,25 @@ export default function PartnerPage() {
                 minHeight: '132px',
                 borderRadius: '14px',
                 border: `1px dashed ${colors.borderGold32}`,
-                background: item === 1
-                  ? "linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.75)), url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=500&q=70') center/cover"
-                  : colors.surface2,
+                background:
+                  item === 1
+                    ? "linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.75)), url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=500&q=70') center/cover"
+                    : colors.surface2,
                 color: item === 1 ? colors.goldPale : colors.gold,
                 display: 'grid',
                 placeItems: 'center',
                 cursor: 'pointer',
               }}
             >
-              <span style={{ display: 'grid', gap: '8px', justifyItems: 'center', fontSize: '12px', fontWeight: 800 }}>
+              <span
+                style={{
+                  display: 'grid',
+                  gap: '8px',
+                  justifyItems: 'center',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                }}
+              >
                 <ImagePlus size={22} />
                 {item === 1 ? 'Ảnh cover' : 'Thêm ảnh'}
               </span>
@@ -1426,7 +1856,15 @@ export default function PartnerPage() {
 
       {renderListingTab()}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginTop: '18px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginTop: '18px',
+        }}
+      >
         <GhostButton>
           <Save size={16} />
           Lưu nháp
@@ -1444,11 +1882,35 @@ export default function PartnerPage() {
       <PanelCard>
         <SectionHeading eyebrow="STORE ACCESS" title="Quán trong phạm vi" />
         <div style={{ display: 'grid', gap: '10px' }}>
-          {(stores.length ? stores : [{ id: 'fallback-store', name: storeName, slug: 'partner-store', status: activeStoreStatus }]).map((store) => (
-            <div key={store.id} style={{ ...softCardStyle, padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          {(stores.length
+            ? stores
+            : [
+                {
+                  id: 'fallback-store',
+                  name: storeName,
+                  slug: 'partner-store',
+                  status: activeStoreStatus,
+                },
+              ]
+          ).map((store) => (
+            <div
+              key={store.id}
+              style={{
+                ...softCardStyle,
+                padding: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+              }}
+            >
               <div>
-                <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>{store.name}</div>
-                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>/{store.slug}</div>
+                <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>
+                  {store.name}
+                </div>
+                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>
+                  /{store.slug}
+                </div>
               </div>
               <StatusPill tone="gold">{store.status}</StatusPill>
             </div>
@@ -1465,8 +1927,21 @@ export default function PartnerPage() {
             'Usage log được ghi khi mã chuyển USED.',
             'Thông tin khách chi tiết không hiển thị trên portal partner.',
           ].map((item) => (
-            <div key={item} style={{ display: 'flex', gap: '10px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-              <CheckCircle2 size={16} color={colors.gold} style={{ marginTop: '2px', flex: '0 0 auto' }} />
+            <div
+              key={item}
+              style={{
+                display: 'flex',
+                gap: '10px',
+                color: colors.text2,
+                fontSize: '12.5px',
+                lineHeight: 1.6,
+              }}
+            >
+              <CheckCircle2
+                size={16}
+                color={colors.gold}
+                style={{ marginTop: '2px', flex: '0 0 auto' }}
+              />
               <span>{item}</span>
             </div>
           ))}
@@ -1492,7 +1967,14 @@ export default function PartnerPage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: 'var(--nl-font-sans)' }}>
+    <main
+      style={{
+        minHeight: '100vh',
+        background: colors.bg,
+        color: colors.text,
+        fontFamily: 'var(--nl-font-sans)',
+      }}
+    >
       <style>{`
         .partner-shell {
           display: grid;
@@ -1517,7 +1999,8 @@ export default function PartnerPage() {
         }
         .partner-settlement-summary,
         .partner-listing-grid,
-        .partner-media-grid {
+        .partner-media-grid,
+        .partner-store-scope-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 12px;
@@ -1527,7 +2010,8 @@ export default function PartnerPage() {
         }
         @media (max-width: 1180px) {
           .partner-metric-grid,
-          .partner-settlement-summary {
+          .partner-settlement-summary,
+          .partner-store-scope-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .partner-overview-grid,
@@ -1562,7 +2046,8 @@ export default function PartnerPage() {
           .partner-metric-grid,
           .partner-settlement-summary,
           .partner-listing-grid,
-          .partner-media-grid {
+          .partner-media-grid,
+          .partner-store-scope-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -1583,7 +2068,15 @@ export default function PartnerPage() {
             flexDirection: 'column',
           }}
         >
-          <Link href="/" style={{ display: 'inline-flex', flexDirection: 'column', textDecoration: 'none', margin: '0 6px 26px' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex',
+              flexDirection: 'column',
+              textDecoration: 'none',
+              margin: '0 6px 26px',
+            }}
+          >
             <span
               style={{
                 fontSize: '25px',
@@ -1596,7 +2089,14 @@ export default function PartnerPage() {
             >
               Vietyoru
             </span>
-            <span style={{ marginTop: '4px', fontSize: '8.5px', letterSpacing: '3.2px', color: colors.muted }}>
+            <span
+              style={{
+                marginTop: '4px',
+                fontSize: '8.5px',
+                letterSpacing: '3.2px',
+                color: colors.muted,
+              }}
+            >
               PARTNER PORTAL
             </span>
           </Link>
@@ -1631,7 +2131,14 @@ export default function PartnerPage() {
                   <Icon size={18} strokeWidth={1.7} />
                   <span style={{ minWidth: 0 }}>
                     <span style={{ display: 'block' }}>{item.label}</span>
-                    <span style={{ display: 'block', marginTop: '2px', color: active ? 'rgba(36,26,10,.72)' : colors.muted, fontSize: '10.5px' }}>
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: '2px',
+                        color: active ? 'rgba(36,26,10,.72)' : colors.muted,
+                        fontSize: '10.5px',
+                      }}
+                    >
                       {item.sub}
                     </span>
                   </span>
@@ -1662,10 +2169,28 @@ export default function PartnerPage() {
               }}
             />
             <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: '13px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {storeName}
               </span>
-              <span style={{ display: 'block', marginTop: '2px', fontSize: '11px', color: colors.muted }}>Đối tác đang hoạt động</span>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: '2px',
+                  fontSize: '11px',
+                  color: colors.muted,
+                }}
+              >
+                Đối tác đang hoạt động
+              </span>
             </span>
           </div>
         </aside>
@@ -1686,10 +2211,19 @@ export default function PartnerPage() {
             }}
           >
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.7px', color: colors.gold }}>
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '1.7px',
+                  color: colors.gold,
+                }}
+              >
                 {panelTitles[activePanel].eyebrow}
               </div>
-              <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>{panelTitles[activePanel].title}</h1>
+              <h1 style={{ margin: '5px 0 0', fontSize: '24px', fontWeight: 700 }}>
+                {panelTitles[activePanel].title}
+              </h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span
@@ -1773,12 +2307,39 @@ export default function PartnerPage() {
                   "linear-gradient(90deg,rgba(212,178,106,.13),rgba(255,255,255,.025)), linear-gradient(180deg,rgba(12,12,15,.18),rgba(12,12,15,.72)), url('https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&w=1400&q=72') center/cover",
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '16px',
+                  flexWrap: 'wrap',
+                }}
+              >
                 <div>
-                  <div style={{ color: colors.gold, fontSize: '10px', fontWeight: 800, letterSpacing: '1.6px' }}>LIVE STORE SCOPE</div>
-                  <div style={{ marginTop: '6px', color: colors.text, fontSize: '18px', fontWeight: 800 }}>{storeName}</div>
+                  <div
+                    style={{
+                      color: colors.gold,
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      letterSpacing: '1.6px',
+                    }}
+                  >
+                    LIVE STORE SCOPE
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '6px',
+                      color: colors.text,
+                      fontSize: '18px',
+                      fontWeight: 800,
+                    }}
+                  >
+                    {storeName}
+                  </div>
                   <div style={{ marginTop: '5px', color: colors.text2, fontSize: '12px' }}>
-                    MVP demo mở thẳng tab Scan/check-in P0; dashboard, đối soát và đăng tin là nhóm P1.
+                    MVP demo mở thẳng tab Scan/check-in P0; dashboard, đối soát và đăng tin là nhóm
+                    P1.
                   </div>
                 </div>
                 <GhostButton onClick={() => setActivePanel('scan')}>

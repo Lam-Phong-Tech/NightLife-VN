@@ -83,6 +83,7 @@ import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
+import { RecordProfileViewDto } from './dto/profile-view.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -248,6 +249,9 @@ type CouponClaimContext = {
   sessionId?: string | null;
 };
 
+type PartnerDashboardPeriod = 'today' | 'seven' | 'thirty';
+type PartnerCustomerArrivalSource = 'QR_USED' | 'BILL_APPROVED';
+
 type NightlifePrismaClient = PrismaService | Prisma.TransactionClient;
 
 type PartnerRequestCmsRecord = {
@@ -384,6 +388,16 @@ const STORE_SLUG_ALIASES: Record<string, string> = {
   'diamond-bar': 'crimson-bar',
   'sora-lounge': 'jade-lounge',
 };
+
+const PARTNER_DASHBOARD_DAY_LABELS = [
+  'CN',
+  'T2',
+  'T3',
+  'T4',
+  'T5',
+  'T6',
+  'T7',
+] as const;
 
 const CAST_SLUG_ALIASES: Record<string, string> = {
   aiko: 'aya-velvet',
@@ -1950,6 +1964,52 @@ export class NightlifeDataService {
     };
   }
 
+  async recordPublicProfileView(dto: RecordProfileViewDto) {
+    const targetType = dto.targetType;
+
+    const target =
+      targetType === 'STORE'
+        ? await this.prisma.store.findFirst({
+            where: {
+              id: dto.targetId,
+              deletedAt: null,
+              status: 'ACTIVE',
+            },
+            select: { id: true },
+          })
+        : await this.prisma.cast.findFirst({
+            where: {
+              id: dto.targetId,
+              deletedAt: null,
+              status: 'ACTIVE',
+              isPublic: true,
+              store: {
+                deletedAt: null,
+                status: 'ACTIVE',
+              },
+            },
+            select: { id: true },
+          });
+
+    if (!target) {
+      throw new NotFoundException('Profile target not found');
+    }
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: null,
+        action: 'PROFILE_VIEW_RECORDED',
+        targetType,
+        targetId: target.id,
+        metadata: {
+          source: 'public_profile',
+        },
+      },
+    });
+
+    return { recorded: true };
+  }
+
   listPublicCoupons() {
     const now = new Date();
 
@@ -2035,6 +2095,139 @@ export class NightlifeDataService {
         createdAt: true,
       },
     });
+  }
+
+  async getPartnerLiteDashboard(user: AuthenticatedUser, periodInput?: string) {
+    const period = this.resolvePartnerDashboardPeriod(periodInput);
+    const { from, to } = this.resolvePartnerDashboardWindow(period);
+    const arrivalSource = this.resolvePartnerArrivalSource();
+    const storeIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'store.partner.view',
+    );
+    const storeScopeWhere = storeIds ? { id: { in: storeIds } } : {};
+    const scopedStores = await this.prisma.store.findMany({
+      where: {
+        deletedAt: null,
+        ...storeScopeWhere,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, name: true, slug: true },
+    });
+    const scopedStoreIds = scopedStores.map((store) => store.id);
+    const scopedCastRecords = await this.prisma.cast.findMany({
+      where: {
+        deletedAt: null,
+        ...(storeIds ? { storeId: { in: storeIds } } : {}),
+      },
+      select: { id: true, storeId: true },
+    });
+    const scopedCastIds = scopedCastRecords.map((cast) => cast.id);
+    const bookingWhere = this.partnerBookingCountWhere(
+      scopedStoreIds,
+      from,
+      to,
+    );
+    const qrUsedWhere = this.partnerQrUsedCountWhere(scopedStoreIds, from, to);
+    const approvedBillWhere = this.partnerApprovedBillCountWhere(
+      scopedStoreIds,
+      from,
+      to,
+    );
+    const profileViewWhere = this.partnerProfileViewWhere(
+      scopedStoreIds,
+      scopedCastIds,
+      from,
+      to,
+    );
+    const bookingRows = await this.prisma.booking.findMany({
+      where: bookingWhere,
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+
+    const [bookingCount, profileViewCount, qrUsedCount, billApprovedCount] =
+      await Promise.all([
+        this.prisma.booking.count({ where: bookingWhere }),
+        this.prisma.auditLog.count({ where: profileViewWhere }),
+        this.prisma.couponIssue.count({ where: qrUsedWhere }),
+        this.prisma.bill.count({ where: approvedBillWhere }),
+      ]);
+
+    const castsByStoreId = scopedCastRecords.reduce(
+      (acc, cast) => {
+        acc[cast.storeId] = [...(acc[cast.storeId] ?? []), cast.id];
+        return acc;
+      },
+      {} as Record<string, string[]>,
+    );
+    const stores = await Promise.all(
+      scopedStores.map(async (store) => {
+        const storeCastIds = castsByStoreId[store.id] ?? [];
+        const storeIdsForCount = [store.id];
+        const storeBookingWhere = this.partnerBookingCountWhere(
+          storeIdsForCount,
+          from,
+          to,
+        );
+        const storeProfileViewWhere = this.partnerProfileViewWhere(
+          storeIdsForCount,
+          storeCastIds,
+          from,
+          to,
+        );
+        const storeCustomerArrivalCountPromise =
+          arrivalSource === 'BILL_APPROVED'
+            ? this.prisma.bill.count({
+                where: this.partnerApprovedBillCountWhere(
+                  storeIdsForCount,
+                  from,
+                  to,
+                ),
+              })
+            : this.prisma.couponIssue.count({
+                where: this.partnerQrUsedCountWhere(storeIdsForCount, from, to),
+              });
+        const [
+          storeBookingCount,
+          storeProfileViewCount,
+          storeCustomerArrivalCount,
+        ] = await Promise.all([
+          this.prisma.booking.count({ where: storeBookingWhere }),
+          this.prisma.auditLog.count({ where: storeProfileViewWhere }),
+          storeCustomerArrivalCountPromise,
+        ]);
+
+        return {
+          id: store.id,
+          name: store.name,
+          slug: store.slug,
+          bookingCount: storeBookingCount,
+          profileViewCount: storeProfileViewCount,
+          customerArrivalCount: storeCustomerArrivalCount,
+        };
+      }),
+    );
+
+    return {
+      period,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      bookingCount,
+      profileViewCount,
+      customerArrivalCount:
+        arrivalSource === 'BILL_APPROVED' ? billApprovedCount : qrUsedCount,
+      customerArrivalSource: arrivalSource,
+      qrUsedCount,
+      billApprovedCount,
+      storeCount: scopedStores.length,
+      stores,
+      weeklyBookings: this.mapPartnerWeeklyBookings(bookingRows, to),
+      privacy: {
+        customerDetailVisible: false,
+        note: 'Partner dashboard returns aggregate metrics only.',
+      },
+    };
   }
 
   async listPartnerCoupons(user: AuthenticatedUser) {
@@ -3519,7 +3712,8 @@ export class NightlifeDataService {
       couponId: couponLink.couponId ?? null,
       couponIssueId: couponLink.couponIssueId ?? null,
       couponIssueStatus: couponLink.couponIssueStatus ?? null,
-      source: booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
+      source:
+        booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
     });
     await this.adminNotificationService?.notifyBillSubmitted(bill);
     if (couponLink.couponIssueId) {
@@ -3656,7 +3850,8 @@ export class NightlifeDataService {
       couponId: couponLink.couponId ?? null,
       couponIssueId: couponLink.couponIssueId ?? null,
       couponIssueStatus: couponLink.couponIssueStatus ?? null,
-      source: booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
+      source:
+        booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
     });
     await this.adminNotificationService?.notifyBillSubmitted(bill);
     return bill;
@@ -7517,14 +7712,17 @@ export class NightlifeDataService {
     });
   }
 
-  private async createPartnerRequestMedia(input: {
-    requestId: string;
-    url: string;
-    index: number;
-    storeId?: string;
-    castId?: string;
-    purpose: string;
-  }, client: NightlifePrismaClient = this.prisma) {
+  private async createPartnerRequestMedia(
+    input: {
+      requestId: string;
+      url: string;
+      index: number;
+      storeId?: string;
+      castId?: string;
+      purpose: string;
+    },
+    client: NightlifePrismaClient = this.prisma,
+  ) {
     return client.media.create({
       data: {
         storeId: input.storeId,
@@ -7608,7 +7806,10 @@ export class NightlifeDataService {
       query.submittedFrom,
       'submittedFrom',
     );
-    const submittedTo = this.parseOptionalDate(query.submittedTo, 'submittedTo');
+    const submittedTo = this.parseOptionalDate(
+      query.submittedTo,
+      'submittedTo',
+    );
     const submittedAt: Prisma.DateTimeFilter = {};
 
     if (submittedFrom) {
@@ -7964,15 +8165,11 @@ export class NightlifeDataService {
           12,
         );
         const languages = this.cleanStringArray(
-          Array.isArray(record.languages)
-            ? (record.languages as string[])
-            : [],
+          Array.isArray(record.languages) ? (record.languages as string[]) : [],
           8,
         );
         const mediaUrls = this.cleanStringArray(
-          Array.isArray(record.mediaUrls)
-            ? (record.mediaUrls as string[])
-            : [],
+          Array.isArray(record.mediaUrls) ? (record.mediaUrls as string[]) : [],
           8,
         );
 
@@ -9371,6 +9568,127 @@ export class NightlifeDataService {
       user: this.maskCustomerIdentity(bill.user),
       guest: this.maskCustomerIdentity(bill.guest),
     };
+  }
+
+  private resolvePartnerDashboardPeriod(
+    input?: string,
+  ): PartnerDashboardPeriod {
+    if (input === 'today' || input === 'seven' || input === 'thirty') {
+      return input;
+    }
+
+    return 'seven';
+  }
+
+  private resolvePartnerDashboardWindow(period: PartnerDashboardPeriod) {
+    const to = new Date();
+    const from = new Date(to);
+    from.setHours(0, 0, 0, 0);
+
+    if (period === 'seven') {
+      from.setDate(from.getDate() - 6);
+    }
+
+    if (period === 'thirty') {
+      from.setDate(from.getDate() - 29);
+    }
+
+    return { from, to };
+  }
+
+  private resolvePartnerArrivalSource(): PartnerCustomerArrivalSource {
+    return process.env.PARTNER_CUSTOMER_ARRIVAL_SOURCE === 'BILL_APPROVED'
+      ? 'BILL_APPROVED'
+      : 'QR_USED';
+  }
+
+  private partnerBookingCountWhere(
+    storeIds: string[],
+    from: Date,
+    to: Date,
+  ): Prisma.BookingWhereInput {
+    return {
+      deletedAt: null,
+      storeId: { in: storeIds },
+      createdAt: { gte: from, lte: to },
+    };
+  }
+
+  private partnerQrUsedCountWhere(
+    storeIds: string[],
+    from: Date,
+    to: Date,
+  ): Prisma.CouponIssueWhereInput {
+    return {
+      status: 'USED',
+      usedAt: { gte: from, lte: to },
+      coupon: {
+        deletedAt: null,
+        storeId: { in: storeIds },
+      },
+    };
+  }
+
+  private partnerApprovedBillCountWhere(
+    storeIds: string[],
+    from: Date,
+    to: Date,
+  ): Prisma.BillWhereInput {
+    return {
+      deletedAt: null,
+      storeId: { in: storeIds },
+      status: { in: ['VERIFIED', 'PAID'] },
+      OR: [
+        { reviewedAt: { gte: from, lte: to } },
+        { verifiedAt: { gte: from, lte: to } },
+        { paidAt: { gte: from, lte: to } },
+      ],
+    };
+  }
+
+  private partnerProfileViewWhere(
+    storeIds: string[],
+    castIds: string[],
+    from: Date,
+    to: Date,
+  ): Prisma.AuditLogWhereInput {
+    return {
+      action: 'PROFILE_VIEW_RECORDED',
+      createdAt: { gte: from, lte: to },
+      OR: [
+        { targetType: 'STORE', targetId: { in: storeIds } },
+        { targetType: 'CAST', targetId: { in: castIds } },
+      ],
+    };
+  }
+
+  private mapPartnerWeeklyBookings(
+    rows: Array<{ createdAt: Date | string }>,
+    to: Date,
+  ) {
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(to);
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - 6 + index);
+      return date;
+    });
+    const countByDate = rows.reduce(
+      (acc, row) => {
+        const key = new Date(row.createdAt).toISOString().slice(0, 10);
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    return days.map((date) => {
+      const isoDate = date.toISOString().slice(0, 10);
+      return {
+        label: PARTNER_DASHBOARD_DAY_LABELS[date.getDay()],
+        date: isoDate,
+        count: countByDate[isoDate] ?? 0,
+      };
+    });
   }
 
   private maskCustomerIdentity(customer: unknown) {
