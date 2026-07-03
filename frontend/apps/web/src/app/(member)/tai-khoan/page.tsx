@@ -108,6 +108,7 @@ export default function Page() {
                 background:
                   "radial-gradient(circle at 82% 12%,rgba(255,255,255,.22),transparent 24%), linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#9c742c)",
                 color: colors.onGold,
+                overflow: "hidden",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -127,7 +128,23 @@ export default function Page() {
                   <UserRound size={28} />
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <h1 style={{ fontSize: 22, fontWeight: 950, lineHeight: 1.05 }}>{name}</h1>
+                  <h1
+                    style={{
+                      display: "-webkit-box",
+                      margin: 0,
+                      maxWidth: "100%",
+                      overflow: "hidden",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 2,
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
+                      fontSize: 22,
+                      fontWeight: 950,
+                      lineHeight: 1.08,
+                    }}
+                  >
+                    {name}
+                  </h1>
                   <p style={{ marginTop: 5, fontSize: 13, color: "rgba(36,26,10,.75)", fontWeight: 800 }}>
                     {phone}
                   </p>

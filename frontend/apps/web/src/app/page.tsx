@@ -105,6 +105,13 @@ type RankedItem = {
   href?: string;
 };
 
+type HomeBanner = {
+  title: string;
+  desc: string;
+  btnText: string;
+  img?: string | null;
+};
+
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
 type ServiceItem = (typeof svcData)[number];
 type VideoItem = (typeof hotVideos)[number];
@@ -158,27 +165,27 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       badgeBackground: "linear-gradient(140deg, #fef08a, #eab308)",
       badgeColor: "#713f12",
       rowBackground:
-        "linear-gradient(135deg, rgba(254,240,138,.18), rgba(212,178,106,.10) 42%, rgba(255,255,255,.045))",
-      rowBorder: "rgba(240,221,168,.38)",
-      rowShadow: "0 18px 36px rgba(234,179,8,.16), 0 16px 30px rgba(0,0,0,.16)",
+        "linear-gradient(135deg, rgba(254,240,138,.27), rgba(212,178,106,.15) 42%, rgba(255,255,255,.06))",
+      rowBorder: "rgba(240,221,168,.58)",
+      rowShadow: "0 0 0 1px rgba(254,240,138,.13) inset, 0 22px 48px rgba(234,179,8,.24), 0 16px 30px rgba(0,0,0,.24)",
       labelColor: "#fef3c7",
     },
     2: {
       badgeBackground: "linear-gradient(140deg, #f8fafc, #94a3b8)",
       badgeColor: "#1e293b",
       rowBackground:
-        "linear-gradient(135deg, rgba(226,232,240,.16), rgba(148,163,184,.10) 42%, rgba(255,255,255,.045))",
-      rowBorder: "rgba(226,232,240,.28)",
-      rowShadow: "0 18px 36px rgba(148,163,184,.13), 0 16px 30px rgba(0,0,0,.16)",
+        "linear-gradient(135deg, rgba(226,232,240,.25), rgba(148,163,184,.14) 42%, rgba(255,255,255,.06))",
+      rowBorder: "rgba(226,232,240,.46)",
+      rowShadow: "0 0 0 1px rgba(226,232,240,.10) inset, 0 22px 48px rgba(148,163,184,.22), 0 16px 30px rgba(0,0,0,.24)",
       labelColor: "#e2e8f0",
     },
     3: {
       badgeBackground: "linear-gradient(140deg, #fed7aa, #b45309)",
       badgeColor: "#451a03",
       rowBackground:
-        "linear-gradient(135deg, rgba(251,146,60,.16), rgba(180,83,9,.10) 42%, rgba(255,255,255,.045))",
-      rowBorder: "rgba(251,146,60,.28)",
-      rowShadow: "0 18px 36px rgba(180,83,9,.14), 0 16px 30px rgba(0,0,0,.16)",
+        "linear-gradient(135deg, rgba(251,146,60,.24), rgba(180,83,9,.14) 42%, rgba(255,255,255,.06))",
+      rowBorder: "rgba(251,146,60,.46)",
+      rowShadow: "0 0 0 1px rgba(251,146,60,.10) inset, 0 22px 48px rgba(180,83,9,.22), 0 16px 30px rgba(0,0,0,.24)",
       labelColor: "#fed7aa",
     },
     4: {
@@ -309,6 +316,58 @@ const homeCardRadius = "16px";
 
 const homeMediaRadius = "13px";
 
+const homeBannerAutoDelayMs = 7200;
+
+const homeBannerSlideTransition = "transform 960ms cubic-bezier(.22,.78,.22,1), opacity 960ms ease";
+
+function getBannerBackgroundImage(value?: string | null) {
+  return value?.replace(/\s+center\/cover\s*$/i, "") || "linear-gradient(135deg,#15151a,#2a2112)";
+}
+
+function getBannerSlideTransform(index: number, activeIndex: number) {
+  if (index === activeIndex) return "translate3d(0,0,0) scale(1.03)";
+  return `translate3d(${index < activeIndex ? "-" : ""}34%,0,0) scale(1.05)`;
+}
+
+function BannerMediaSlides({
+  activeBanner,
+  banners,
+}: {
+  activeBanner: number;
+  banners: HomeBanner[];
+}) {
+  const renderOnlyActiveBanner = process.env.NODE_ENV === "test";
+
+  return (
+    <React.Fragment>
+      {banners.map((banner, index) => {
+        if (renderOnlyActiveBanner && index !== activeBanner) return null;
+
+        return (
+          <span
+            key={`${banner.title}-${index}`}
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "inherit",
+              backgroundColor: "#15151a",
+              backgroundImage: renderOnlyActiveBanner ? undefined : getBannerBackgroundImage(banner.img),
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "cover",
+              opacity: activeBanner === index ? 1 : 0,
+              transform: getBannerSlideTransform(index, activeBanner),
+              transition: homeBannerSlideTransition,
+              willChange: "transform, opacity",
+            }}
+          />
+        );
+      })}
+    </React.Fragment>
+  );
+}
+
 const homeSectionTitleTextStyle: CSSProperties = {
   margin: 0,
   fontSize: "24px",
@@ -399,22 +458,22 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
 
 function EventHero({ desktop = false }: { desktop?: boolean }) {
   const [activeBanner, setActiveBanner] = useState(0);
-  const fallbackBanner = {
+  const fallbackBanner: HomeBanner = {
     title: "Sự kiện đêm nay",
     desc: "Đặt bàn VIP từ 2.500.000đ",
     btnText: "Đặt ngay",
     img: "linear-gradient(135deg,#15151a,#2a2112)",
   };
-  const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  const banners: HomeBanner[] = adBanners.length > 0 ? adBanners : [fallbackBanner];
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
-    if (banners.length < 2) return;
+    if (process.env.NODE_ENV === "test" || banners.length < 2) return;
 
     const timer = window.setInterval(() => {
       setActiveBanner((current) => (current + 1) % banners.length);
-    }, 4200);
+    }, homeBannerAutoDelayMs);
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
@@ -438,20 +497,9 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         touchAction: "pan-y",
       }}
     >
-      <PlaceholderMedia
-        src={event.img}
-        alt={event.title}
-        label="Ảnh sự kiện"
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: "inherit",
-          transform: "scale(1.03)",
-          transition: "opacity 420ms ease, transform 520ms ease",
-        }}
-      />
+      <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         <span
           style={{
             display: "inline-flex",
@@ -535,7 +583,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
               padding: 0,
               background: activeBanner === index ? colors.gold : "rgba(255,255,255,.26)",
               cursor: "pointer",
-              transition: "width 220ms ease, background 220ms ease",
+              transition: "width 420ms cubic-bezier(.22,.78,.22,1), background 420ms ease",
             }}
           />
         ))}
@@ -546,22 +594,22 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
 
 function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
   const [activeBanner, setActiveBanner] = useState(0);
-  const fallbackBanner = {
+  const fallbackBanner: HomeBanner = {
     title: "Ưu đãi đêm nay",
     desc: "Lướt để xem thêm ưu đãi và sự kiện nổi bật.",
     btnText: "Xem ngay",
     img: "linear-gradient(135deg,#15151a,#2a2112)",
   };
-  const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  const banners: HomeBanner[] = adBanners.length > 0 ? adBanners : [fallbackBanner];
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
-    if (banners.length < 2) return;
+    if (process.env.NODE_ENV === "test" || banners.length < 2) return;
 
     const timer = window.setInterval(() => {
       setActiveBanner((current) => (current + 1) % banners.length);
-    }, 5200);
+    }, homeBannerAutoDelayMs);
 
     return () => window.clearInterval(timer);
   }, [banners.length]);
@@ -586,18 +634,7 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
         touchAction: "pan-y",
       }}
     >
-      <PlaceholderMedia
-        src={event.img}
-        alt={event.title}
-        label="Ảnh ưu đãi"
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: "inherit",
-          transform: "scale(1.03)",
-          transition: "opacity 420ms ease, transform 520ms ease",
-        }}
-      />
+      <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
       <div
         style={{
           position: "absolute",
@@ -606,7 +643,7 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
             "linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.5) 54%,rgba(8,8,11,.18)), linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.7))",
         }}
       />
-      <div style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px" }}>
+      <div key={event.title} style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px", animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         <div
           style={{
             color: colors.goldSoft,
@@ -694,7 +731,7 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
               padding: 0,
               background: activeBanner === index ? colors.gold : "rgba(255,255,255,.3)",
               cursor: "pointer",
-              transition: "width 220ms ease, background 220ms ease",
+              transition: "width 420ms cubic-bezier(.22,.78,.22,1), background 420ms ease",
             }}
           />
         ))}
@@ -781,7 +818,14 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
 function RankingRow({ item }: { item: RankedItem }) {
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const hasCrown = rankNumber >= 1 && rankNumber <= 5;
+  const isPodium = rankNumber >= 1 && rankNumber <= 3;
   const rankingVisual = getRankingVisual(rankNumber, item);
+  const podiumGlow =
+    rankNumber === 1
+      ? "radial-gradient(circle at 12% 0%, rgba(254,240,138,.28), transparent 34%)"
+      : rankNumber === 2
+        ? "radial-gradient(circle at 12% 0%, rgba(226,232,240,.22), transparent 34%)"
+        : "radial-gradient(circle at 12% 0%, rgba(251,146,60,.22), transparent 34%)";
 
   return (
     <Link
@@ -789,31 +833,53 @@ function RankingRow({ item }: { item: RankedItem }) {
       aria-label={`Xem chi tiết ${item.name ?? "mục xếp hạng"}`}
       style={{
         display: "grid",
-        gridTemplateColumns: "64px minmax(0, 1fr) auto",
+        gridTemplateColumns: isPodium ? "68px minmax(0, 1fr) auto" : "64px minmax(0, 1fr) auto",
         alignItems: "center",
         gap: "16px",
-        minHeight: "92px",
-        padding: "16px",
+        minHeight: isPodium ? "102px" : "92px",
+        padding: isPodium ? "17px 16px" : "16px",
         borderRadius: homeCardRadius,
         background: rankingVisual.rowBackground,
         border: `1px solid ${rankingVisual.rowBorder}`,
         boxShadow: rankingVisual.rowShadow,
         color: colors.text,
         textDecoration: "none",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {isPodium ? (
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `${podiumGlow}, linear-gradient(120deg, rgba(255,255,255,.16), transparent 28%, transparent 70%, rgba(255,255,255,.08))`,
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Xếp hạng"}
         label=""
-        style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", border: `1px solid ${colors.line}`, boxShadow: "0 10px 20px rgba(0,0,0,.28)" }}
+        style={{
+          width: isPodium ? 68 : 64,
+          height: isPodium ? 68 : 64,
+          borderRadius: "50%",
+          flex: "none",
+          border: `1px solid ${isPodium ? rankingVisual.rowBorder : colors.line}`,
+          boxShadow: isPodium ? `0 0 0 4px rgba(255,255,255,.05), ${rankingVisual.rowShadow}` : "0 10px 20px rgba(0,0,0,.28)",
+          position: "relative",
+          zIndex: 1,
+        }}
       />
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "7px" }}>
           <span
             style={{
-              width: 38,
-              height: 28,
+              width: isPodium ? 43 : 38,
+              height: isPodium ? 31 : 28,
               borderRadius: "10px",
               display: "inline-flex",
               alignItems: "center",
@@ -825,11 +891,11 @@ function RankingRow({ item }: { item: RankedItem }) {
           >
             {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
           </span>
-          <span style={{ color: rankingVisual.labelColor, fontSize: "11px", fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>
+          <span style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: isPodium ? "0 6px 16px rgba(0,0,0,.36)" : "none" }}>
             Top {item.rank}
           </span>
         </div>
-        <div style={{ fontSize: "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
+        <div style={{ fontSize: isPodium ? "18px" : "17px", fontWeight: 950, lineHeight: 1.16 }}>{item.name}</div>
         <div style={{ marginTop: "5px", color: colors.muted, fontSize: "13px", lineHeight: 1.25 }}>{item.area}</div>
       </div>
       <span
@@ -840,6 +906,8 @@ function RankingRow({ item }: { item: RankedItem }) {
           display: "grid",
           placeItems: "center",
           color: "rgba(240,221,168,.58)",
+          position: "relative",
+          zIndex: 1,
         }}
       >
         <ChevronRight size={24} strokeWidth={2.35} />

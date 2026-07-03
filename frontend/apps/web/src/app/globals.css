@@ -431,10 +431,10 @@ textarea::placeholder {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: fit-content;
   max-width: 100%;
-  padding: 0 0 8px 14px;
+  padding: 0 0 6px 10px;
   text-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
 }
 
@@ -442,24 +442,37 @@ textarea::placeholder {
   content: "";
   position: absolute;
   left: 0;
-  top: 2px;
-  width: 4px;
-  min-height: 18px;
-  height: calc(100% - 12px);
+  top: 3px;
+  width: 3px;
+  min-height: 14px;
+  height: calc(100% - 11px);
   border-radius: 999px;
   background: linear-gradient(180deg, #f0dda8, #d4b26a 58%, rgba(212, 178, 106, 0));
-  box-shadow: 0 0 18px rgba(212, 178, 106, 0.3);
+  box-shadow: 0 0 12px rgba(212, 178, 106, 0.24);
 }
 
 .nl-home-section-title::after {
   content: "";
   position: absolute;
-  left: 14px;
-  right: 0;
+  left: 10px;
+  right: auto;
   bottom: 0;
-  height: 2px;
+  width: min(72px, calc(100% - 10px));
+  height: 1px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(240, 221, 168, 0.86), rgba(212, 178, 106, 0.16), rgba(212, 178, 106, 0));
+  background: linear-gradient(90deg, rgba(240, 221, 168, 0.74), rgba(212, 178, 106, 0.1), rgba(212, 178, 106, 0));
+}
+
+@keyframes nl-banner-copy-in {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .nl-admin-section-title {
