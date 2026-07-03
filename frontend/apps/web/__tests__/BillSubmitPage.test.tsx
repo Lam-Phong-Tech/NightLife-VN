@@ -5,11 +5,8 @@ import BillSubmitPage from "../src/app/(member)/gui-hoa-don/page";
 
 const mocks = vi.hoisted(() => ({
   listMemberBills: vi.fn(),
-  listPartnerBills: vi.fn(),
-  listPartnerStores: vi.fn(),
   previewBillOcr: vi.fn(),
   submitMemberBill: vi.fn(),
-  submitPartnerBill: vi.fn(),
   uploadEvidence: vi.fn(),
   listMemberBookings: vi.fn(),
   listMemberCouponIssues: vi.fn(),
@@ -36,11 +33,8 @@ vi.mock("@/lib/api/client", () => {
 vi.mock("@/lib/api/bills", () => ({
   billApi: {
     listMemberBills: mocks.listMemberBills,
-    listPartnerBills: mocks.listPartnerBills,
-    listPartnerStores: mocks.listPartnerStores,
     previewBillOcr: mocks.previewBillOcr,
     submitMemberBill: mocks.submitMemberBill,
-    submitPartnerBill: mocks.submitPartnerBill,
     uploadEvidence: mocks.uploadEvidence,
   },
 }));
@@ -72,23 +66,12 @@ const publicStore = {
   district: "Tay Ho",
 };
 
-const partnerStore = {
-  id: "store-partner",
-  name: "Partner Moon",
-  slug: "partner-moon",
-  category: "BAR",
-  status: "ACTIVE",
-  city: "Ha Noi",
-  district: "Hoan Kiem",
-};
-
 describe("Bill submit page", () => {
   beforeEach(() => {
     mocks.listStores.mockResolvedValue([publicStore]);
     mocks.listMemberBookings.mockResolvedValue([]);
     mocks.listMemberCouponIssues.mockResolvedValue([]);
     mocks.listMemberBills.mockResolvedValue([]);
-    mocks.listPartnerStores.mockResolvedValue([partnerStore]);
     mocks.previewBillOcr.mockResolvedValue({
       source: "HEURISTIC_OCR_AI_MVP",
       suggestions: {
@@ -99,18 +82,6 @@ describe("Bill submit page", () => {
       warnings: [],
       requiresManualReview: false,
     });
-    mocks.listPartnerBills.mockResolvedValue([
-      {
-        id: "bill-partner-history",
-        billNumber: "BILL-PARTNER-HISTORY",
-        storeId: "store-partner",
-        status: "SUBMITTED",
-        submitterType: "PARTNER",
-        totalVnd: 2000000,
-        usedAt: "2026-07-03T09:30:00.000Z",
-        store: { id: "store-partner", name: "Partner Moon", slug: "partner-moon" },
-      },
-    ]);
     mocks.submitMemberBill.mockResolvedValue({
       id: "bill-member-1",
       billNumber: "BILL-20260701-TEST",
@@ -121,16 +92,6 @@ describe("Bill submit page", () => {
       usedAt: "2026-07-03T09:30:00.000Z",
       store: { id: "store-public", name: "Public Neon", slug: "public-neon" },
     });
-    mocks.submitPartnerBill.mockResolvedValue({
-      id: "bill-partner-1",
-      billNumber: "BILL-PARTNER-1",
-      storeId: "store-partner",
-      status: "SUBMITTED",
-      submitterType: "PARTNER",
-      totalVnd: 1800000,
-      usedAt: "2026-07-03T09:30:00.000Z",
-      store: { id: "store-partner", name: "Partner Moon", slug: "partner-moon" },
-    });
     mocks.uploadEvidence.mockResolvedValue({ id: "media-1" });
   });
 
@@ -138,22 +99,14 @@ describe("Bill submit page", () => {
     vi.clearAllMocks();
   });
 
-  it("loads partner stores from partner scope when owner mode is selected", async () => {
+  it("keeps the member bill page scoped to member submission only", async () => {
     render(<BillSubmitPage />);
 
     await waitFor(() => {
       expect(mocks.listStores).toHaveBeenCalledWith({ city: "all", limit: 80 });
     });
-    mocks.listStores.mockClear();
-
-    fireEvent.click(screen.getByRole("button", { name: "Gui bill vai tro partner" }));
-
-    await waitFor(() => {
-      expect(mocks.listPartnerStores).toHaveBeenCalled();
-    });
-    expect(mocks.listStores).not.toHaveBeenCalled();
-    expect((await screen.findAllByText("Partner Moon")).length).toBeGreaterThan(0);
-    expect(await screen.findByText("BILL-PARTNER-HISTORY")).toBeInTheDocument();
+    expect(screen.queryByText("Chủ quán")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Gui bill vai tro partner" })).not.toBeInTheDocument();
   });
 
   it("prefills bill total and used time from OCR preview", async () => {
