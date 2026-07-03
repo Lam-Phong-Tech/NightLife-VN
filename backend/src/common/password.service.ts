@@ -14,18 +14,36 @@ export class PasswordService {
     return `scrypt:${salt}:${key.toString('hex')}`;
   }
 
-  async verify(password: string, passwordHash: string): Promise<boolean> {
+  async verify(
+    password: string,
+    passwordHash?: string | null,
+  ): Promise<boolean> {
+    if (typeof password !== 'string' || typeof passwordHash !== 'string') {
+      return false;
+    }
+
     const [algorithm, salt, storedKey] = passwordHash.split(':');
     if (algorithm !== 'scrypt' || !salt || !storedKey) {
       return false;
     }
 
-    const key = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer;
-    const storedKeyBuffer = Buffer.from(storedKey, 'hex');
+    if (
+      !/^[a-f0-9]+$/i.test(storedKey) ||
+      storedKey.length !== KEY_LENGTH * 2
+    ) {
+      return false;
+    }
 
-    return (
-      key.length === storedKeyBuffer.length &&
-      timingSafeEqual(key, storedKeyBuffer)
-    );
+    try {
+      const key = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer;
+      const storedKeyBuffer = Buffer.from(storedKey, 'hex');
+
+      return (
+        key.length === storedKeyBuffer.length &&
+        timingSafeEqual(key, storedKeyBuffer)
+      );
+    } catch {
+      return false;
+    }
   }
 }

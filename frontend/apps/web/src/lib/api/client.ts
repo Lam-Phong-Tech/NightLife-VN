@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-export interface RequestOptions extends Omit<RequestInit, 'body'> {
+export interface RequestOptions extends Omit<RequestInit, "body"> {
   data?: unknown;
   params?: Record<string, string | undefined | null | number | boolean>;
 }
@@ -36,7 +36,8 @@ const exactMessageTranslations: Record<string, string> = {
   "booking change request not found": "Không tìm thấy yêu cầu đổi lịch booking.",
   "booking not found": "Không tìm thấy booking.",
   "booking cannot be rescheduled in its current state": "Booking hiện tại không thể đổi lịch.",
-  "booking already has a pending reschedule request": "Booking này đã có yêu cầu đổi lịch đang chờ duyệt.",
+  "booking already has a pending reschedule request":
+    "Booking này đã có yêu cầu đổi lịch đang chờ duyệt.",
   "booking can only be rescheduled at least 1 hour before scheduled time":
     "Chỉ có thể đổi lịch trước giờ đặt tối thiểu 1 tiếng.",
   "bill has already been verified": "Hóa đơn này đã được xác nhận.",
@@ -52,9 +53,11 @@ const exactMessageTranslations: Record<string, string> = {
   "coupon issue is already linked to a booking": "Mã ưu đãi này đã được liên kết với một booking.",
   "coupon issue is already linked to a bill": "Mã ưu đãi này đã được liên kết với một hóa đơn.",
   "coupon issue does not belong to this member": "Mã ưu đãi này không thuộc tài khoản của bạn.",
-  "coupon issue phone does not match booking phone": "Số điện thoại của mã ưu đãi không khớp với booking.",
+  "coupon issue phone does not match booking phone":
+    "Số điện thoại của mã ưu đãi không khớp với booking.",
   "coupon issue is not available for booking": "Mã ưu đãi này chưa thể dùng để đặt chỗ.",
-  "coupon issue is not available for bill reconciliation": "Mã ưu đãi này chưa thể đối soát hóa đơn.",
+  "coupon issue is not available for bill reconciliation":
+    "Mã ưu đãi này chưa thể đối soát hóa đơn.",
   "coupon issue has expired": "Mã ưu đãi đã hết hạn.",
   "coupon issue is not usable": "Mã ưu đãi không còn sử dụng được.",
   "coupon not found": "Không tìm thấy ưu đãi.",
@@ -77,7 +80,8 @@ const exactMessageTranslations: Record<string, string> = {
   "invalid line authorization code": "Mã xác thực LINE không hợp lệ.",
   "invalid line id token": "Phiên đăng nhập LINE không hợp lệ.",
   "line login is not configured": "Đăng nhập LINE chưa được cấu hình.",
-  "line login state is invalid. please try again": "Phiên đăng nhập LINE không hợp lệ. Vui lòng thử lại.",
+  "line login state is invalid. please try again":
+    "Phiên đăng nhập LINE không hợp lệ. Vui lòng thử lại.",
   "line did not return a verified email address. please approve email permission and try again":
     "LINE chưa trả về email đã xác thực. Vui lòng đồng ý chia sẻ email rồi thử lại.",
   "line account is not active": "Tài khoản LINE chưa hoạt động hoặc đã bị khóa.",
@@ -99,11 +103,12 @@ const exactMessageTranslations: Record<string, string> = {
   "sort=nearest requires lat and lng": "Sắp xếp theo gần nhất cần bật vị trí.",
   "startsat must be before endsat": "Thời gian bắt đầu phải trước thời gian kết thúc.",
   "targettype must be cast or store": "Loại xếp hạng phải là cast hoặc quán.",
-  "this google account is not a member account": "Tài khoản Google này không phải tài khoản hội viên.",
+  "this google account is not a member account":
+    "Tài khoản Google này không phải tài khoản hội viên.",
   "token has been revoked": "Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.",
   "token session is not active": "Phiên đăng nhập không còn hiệu lực. Vui lòng đăng nhập lại.",
   "type must be blog or policy": "Loại nội dung phải là blog hoặc chính sách.",
-  "unauthorized": "Bạn cần đăng nhập để tiếp tục.",
+  unauthorized: "Bạn cần đăng nhập để tiếp tục.",
   "forbidden resource": "Bạn không có quyền thực hiện thao tác này.",
   "usedat cannot be in the future": "Thời gian sử dụng không được ở tương lai.",
   "usedat must be a valid iso date": "Thời gian sử dụng không hợp lệ.",
@@ -171,12 +176,20 @@ const normalizeKey = (value: string) =>
 const translateSingleApiMessage = (message: string, status?: number, fallback?: string) => {
   const trimmed = message.trim();
   if (!trimmed) {
-    return fallback ?? (status ? genericStatusMessages[status] : undefined) ?? "Đã xảy ra lỗi. Vui lòng thử lại.";
+    return (
+      fallback ??
+      (status ? genericStatusMessages[status] : undefined) ??
+      "Đã xảy ra lỗi. Vui lòng thử lại."
+    );
   }
 
   const key = normalizeKey(trimmed);
   const exact = exactMessageTranslations[key];
   if (exact) return exact;
+
+  if (status && status >= 500) {
+    return genericStatusMessages[status] ?? "Hệ thống đang gặp lỗi. Vui lòng thử lại sau.";
+  }
 
   const notEmptyMatch = key.match(/^([a-zA-Z][\w.]*) should not be empty$/);
   if (notEmptyMatch) return `Vui lòng nhập ${fieldLabel(notEmptyMatch[1] ?? "")}.`;
@@ -199,26 +212,39 @@ const translateSingleApiMessage = (message: string, status?: number, fallback?: 
   const dateMatch = key.match(/^([a-zA-Z][\w.]*) must be a valid iso date$/);
   if (dateMatch) return `${fieldLabel(dateMatch[1] ?? "")} không hợp lệ.`;
 
-  const minLengthMatch = key.match(/^([a-zA-Z][\w.]*) must be longer than or equal to (\d+) characters$/);
-  if (minLengthMatch) return `${fieldLabel(minLengthMatch[1] ?? "")} cần tối thiểu ${minLengthMatch[2]} ký tự.`;
+  const minLengthMatch = key.match(
+    /^([a-zA-Z][\w.]*) must be longer than or equal to (\d+) characters$/,
+  );
+  if (minLengthMatch)
+    return `${fieldLabel(minLengthMatch[1] ?? "")} cần tối thiểu ${minLengthMatch[2]} ký tự.`;
 
-  const maxLengthMatch = key.match(/^([a-zA-Z][\w.]*) must be shorter than or equal to (\d+) characters$/);
-  if (maxLengthMatch) return `${fieldLabel(maxLengthMatch[1] ?? "")} không được vượt quá ${maxLengthMatch[2]} ký tự.`;
+  const maxLengthMatch = key.match(
+    /^([a-zA-Z][\w.]*) must be shorter than or equal to (\d+) characters$/,
+  );
+  if (maxLengthMatch)
+    return `${fieldLabel(maxLengthMatch[1] ?? "")} không được vượt quá ${maxLengthMatch[2]} ký tự.`;
 
   const minNumberMatch = key.match(/^([a-zA-Z][\w.]*) must not be less than (\d+)$/);
-  if (minNumberMatch) return `${fieldLabel(minNumberMatch[1] ?? "")} phải từ ${minNumberMatch[2]} trở lên.`;
+  if (minNumberMatch)
+    return `${fieldLabel(minNumberMatch[1] ?? "")} phải từ ${minNumberMatch[2]} trở lên.`;
 
   const maxNumberMatch = key.match(/^([a-zA-Z][\w.]*) must not be greater than (\d+)$/);
-  if (maxNumberMatch) return `${fieldLabel(maxNumberMatch[1] ?? "")} không được lớn hơn ${maxNumberMatch[2]}.`;
+  if (maxNumberMatch)
+    return `${fieldLabel(maxNumberMatch[1] ?? "")} không được lớn hơn ${maxNumberMatch[2]}.`;
 
-  const passwordRuleMatch = key.match(/^password must contain at least one lowercase letter, one uppercase letter, and one number$/);
+  const passwordRuleMatch = key.match(
+    /^password must contain at least one lowercase letter, one uppercase letter, and one number$/,
+  );
   if (passwordRuleMatch) return "Mật khẩu cần có chữ thường, chữ hoa và chữ số.";
 
   const roleMatch = key.match(/^this account is not a ([a-z_]+) account$/);
   if (roleMatch) return "Tài khoản này không đúng vai trò để đăng nhập.";
 
-  const billDeadlineMatch = key.match(/^bill can only be submitted within (\d+) days of usage time$/);
-  if (billDeadlineMatch) return `Chỉ có thể gửi hóa đơn trong vòng ${billDeadlineMatch[1]} ngày từ thời gian sử dụng.`;
+  const billDeadlineMatch = key.match(
+    /^bill can only be submitted within (\d+) days of usage time$/,
+  );
+  if (billDeadlineMatch)
+    return `Chỉ có thể gửi hóa đơn trong vòng ${billDeadlineMatch[1]} ngày từ thời gian sử dụng.`;
 
   const rescheduleCutoffMatch = key.match(
     /^booking can only be rescheduled at least (\d+) minutes before scheduled time$/,
@@ -234,13 +260,18 @@ const translateSingleApiMessage = (message: string, status?: number, fallback?: 
 
   if (key.includes("not found")) return "Không tìm thấy dữ liệu phù hợp.";
   if (key.includes("must be")) return "Thông tin nhập vào chưa hợp lệ. Vui lòng kiểm tra lại.";
-  if (key.includes("is required") || key.includes("required")) return "Vui lòng nhập đầy đủ thông tin bắt buộc.";
+  if (key.includes("is required") || key.includes("required"))
+    return "Vui lòng nhập đầy đủ thông tin bắt buộc.";
   if (key.includes("invalid")) return "Thông tin không hợp lệ. Vui lòng kiểm tra lại.";
 
   return trimmed;
 };
 
-export const translateApiMessage = (message: unknown, status?: number, fallback?: string): string => {
+export const translateApiMessage = (
+  message: unknown,
+  status?: number,
+  fallback?: string,
+): string => {
   if (Array.isArray(message)) {
     return message
       .map((item) => translateSingleApiMessage(String(item), status, fallback))
@@ -252,7 +283,11 @@ export const translateApiMessage = (message: unknown, status?: number, fallback?
     return translateSingleApiMessage(message, status, fallback);
   }
 
-  return fallback ?? (status ? genericStatusMessages[status] : undefined) ?? "Đã xảy ra lỗi. Vui lòng thử lại.";
+  return (
+    fallback ??
+    (status ? genericStatusMessages[status] : undefined) ??
+    "Đã xảy ra lỗi. Vui lòng thử lại."
+  );
 };
 
 const readApiErrorMessage = (payload: unknown, status: number, fallback: string) => {
@@ -283,23 +318,23 @@ const isLoopbackUrl = (value: string) => {
 };
 
 export const resolveClientUrl = (url?: string | null) => {
-  if (!url || typeof url !== 'string') return url;
-  if (typeof window === 'undefined') return url;
-  
-  const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const prefix = isLocalHost ? 'http://localhost:3001' : '/api/backend';
+  if (!url || typeof url !== "string") return url;
+  if (typeof window === "undefined") return url;
 
-  if (url.startsWith('http://localhost:3001')) {
-    return url.replace('http://localhost:3001', prefix);
+  const isLocalHost =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const prefix = isLocalHost ? "http://localhost:3001" : "/api/backend";
+
+  if (url.startsWith("http://localhost:3001")) {
+    return url.replace("http://localhost:3001", prefix);
   }
-  
-  if (url.startsWith('https://demonightlight.test9.io.vn/api/backend')) {
-    return url.replace('https://demonightlight.test9.io.vn/api/backend', prefix);
+
+  if (url.startsWith("https://demonightlight.test9.io.vn/api/backend")) {
+    return url.replace("https://demonightlight.test9.io.vn/api/backend", prefix);
   }
-  
+
   return url;
 };
-
 
 const getBaseUrl = () => {
   if (typeof window !== "undefined") {
@@ -352,8 +387,9 @@ const buildApiUrl = (endpoint: string, params?: RequestOptions["params"]) => {
 
   if (params) {
     const cleanParams = Object.fromEntries(
-      Object.entries(params).filter((entry) => entry[1] !== undefined && entry[1] !== null && entry[1] !== '')
-        .map(([key, value]) => [key, String(value)])
+      Object.entries(params)
+        .filter((entry) => entry[1] !== undefined && entry[1] !== null && entry[1] !== "")
+        .map(([key, value]) => [key, String(value)]),
     );
     const searchParams = new URLSearchParams(cleanParams);
     url += `?${searchParams.toString()}`;
@@ -390,7 +426,11 @@ export const apiClient = async <T>(endpoint: string, options: RequestOptions = {
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    let errorMessage = translateApiMessage(undefined, response.status, "Không tải được dữ liệu. Vui lòng thử lại.");
+    let errorMessage = translateApiMessage(
+      undefined,
+      response.status,
+      "Không tải được dữ liệu. Vui lòng thử lại.",
+    );
     try {
       const errorData = await response.json();
       errorMessage = readApiErrorMessage(errorData, response.status, errorMessage);
@@ -431,7 +471,11 @@ export const apiFormDataClient = async <T>(
   });
 
   if (!response.ok) {
-    let errorMessage = translateApiMessage(undefined, response.status, "Không tải file lên được. Vui lòng thử lại.");
+    let errorMessage = translateApiMessage(
+      undefined,
+      response.status,
+      "Không tải file lên được. Vui lòng thử lại.",
+    );
     try {
       const errorData = await response.json();
       errorMessage = readApiErrorMessage(errorData, response.status, errorMessage);
