@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .card{transition:transform .14s, box-shadow .14s;cursor:pointer;}
+  .card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.12);}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="trang-chu.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Trang chủ</a>
+    <div style="font-size:13px;color:#8c8679;"><b style="color:#f3f0ea;">Bảng xếp hạng</b> — chọn khu vực × Cast/Quán, Top 5</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;"><a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a><div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" class="lk">Tìm quán</a><a href="danh-sach-cast.html" class="lk">Cast</a><a href="xep-hang.html" style="color:#d4b26a;font-weight:600;">Bảng xếp hạng</a><a href="uu-dai.html" class="lk">Ưu đãi</a><span class="lk">Blog</span></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><a href="tai-khoan.html" class="lk" style="font-size:13px;color:#c5c0b6;">Tài khoản</a></div>
+    </div>
+
+    <div style="padding:26px 34px 8px;"><h2 style="font-size:24px;font-weight:800;">Bảng xếp hạng {{ typeLabel }}</h2><p style="font-size:13px;color:#c5c0b6;margin-top:5px;">Kỳ tháng 6/2026 · cập nhật 21/06 · giới hạn Top 5</p></div>
+
+    <div style="padding:14px 34px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <sc-for list="{{ areas }}" as="a" hint-placeholder-count="5"><div onClick="{{ a.pick }}" style="{{ a.style }}">{{ a.label }}</div></sc-for>
+      <div style="margin-left:auto;display:flex;gap:8px;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:4px;">
+        <div onClick="{{ pickCast }}" style="{{ segCast }}">Cast</div>
+        <div onClick="{{ pickQuan }}" style="{{ segQuan }}">Quán</div>
+      </div>
+    </div>
+
+    <div style="padding:18px 34px 32px;display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ list }}" as="r" hint-placeholder-count="5">
+        <div onClick="{{ r.open }}" class="card" style="display:flex;align-items:center;gap:16px;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;box-shadow:0 3px 12px rgba(0,0,0,.05);">
+          <span style="width:42px;height:42px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:{{ r.numColor }};background:{{ r.crown }};">{{ r.rank }}</span>
+          <span style="width:56px;height:56px;border-radius:50%;flex:none;background:{{ r.img }};"></span>
+          <div style="flex:1;"><div style="font-weight:700;font-size:16px;">{{ r.name }}</div><div style="font-size:12.5px;color:#8c8679;margin-top:2px;">{{ r.area }}</div></div>
+          <div style="font-size:13px;color:#d4b26a;font-weight:700;">{{ r.metric }}</div>
+          <img src="https://img.icons8.com/ios/100/6F6B62/chevron-right.png" style="width:16px;height:16px;" alt="">
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  get EXTRA(){
+    return {
+      dn:{ quan:[['Bana Lounge','Hải Châu','5.2k lượt'],['Sun Bar','Sơn Trà','4.8k lượt'],['Helio Night','Hải Châu','4.1k lượt'],['Danang Velvet','Thanh Khê','3.6k lượt'],['Moon KTV','Ngũ Hành Sơn','3.2k lượt']],
+           cast:[['Lan · 22','Dịu dàng','★ 4.8 · 410'],['Thu · 24','Vui vẻ','★ 4.7 · 380'],['My · 23','Nói tiếng Nhật','★ 4.8 · 350'],['Ha · 21','Trẻ trung','★ 4.6 · 300'],['Vy · 25','Hát hay','★ 4.7 · 280']] },
+      hp:{ quan:[['Hai Phong Bar','Lê Chân','3.9k lượt'],['Port Lounge','Ngô Quyền','3.4k lượt'],['Cat Ba Night','Đồ Sơn','2.9k lượt'],['Red Dragon KTV','Hồng Bàng','2.5k lượt'],['Sea Pearl','Hải An','2.1k lượt']],
+           cast:[['Linh · 23','Thân thiện','★ 4.7 · 260'],['Trang · 24','Phong cách đẹp','★ 4.6 · 240'],['Quynh · 22','Dịu dàng','★ 4.7 · 210'],['Hoa · 25','Nói chuyện duyên','★ 4.6 · 190'],['Yen · 21','Trẻ trung','★ 4.5 · 170']] }
+    };
+  }
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var area = st.area || 'all', type = st.type || 'cast';
+    var data = NL.RANK[area] || this.EXTRA[area] || NL.RANK.all;
+    var rows = data[type] || [];
+    var list = NL.buildRank(rows, type).map(function(r){
+      r.open = function(){
+        if(type==='cast'){ try{localStorage.setItem('nl_cast', String(r.name).split(' · ')[0]);}catch(e){} location.href='chi-tiet-cast.html'; }
+        else { location.href='danh-sach-quan.html'; }
+      };
+      return r;
+    });
+    var areas = [['all','Tổng hợp'],['hn','Hà Nội'],['hcm','TP.HCM'],['dn','Đà Nẵng'],['hp','Hải Phòng']].map(function(a){
+      return { label:a[1], style:NL.pill(area===a[0]), pick:function(){ self.setState({area:a[0]}); } };
+    });
+    return {
+      list:list, areas:areas, typeLabel: type==='cast'?'Cast':'Quán',
+      segCast:NL.seg(type==='cast'), segQuan:NL.seg(type==='quan'),
+      pickCast:function(){ self.setState({type:'cast'}); }, pickQuan:function(){ self.setState({type:'quan'}); }
+    };
+  }
+}
+</script>
+</body>
+</html>

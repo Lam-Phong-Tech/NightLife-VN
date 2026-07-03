@@ -1,64 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Info, X, Check, Search, Filter, Phone, Send } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
-
-const colors = {
-  bg: '#0f0f13',
-  surface1: '#18181f',
-  surface2: '#202028',
-  borderSoft: 'rgba(255,255,255,.05)',
-  borderGold22: 'rgba(212,178,106,.22)',
-  text: '#f3f0ea',
-  text2: '#c5c0b6',
-  muted: '#8c8679',
-  onGold: '#241a0a',
-  gold: '#d4b26a',
-  goldBright: '#e3c27e',
-  goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
-  green: '#4ade80',
-  greenBg: 'rgba(74,222,128,0.1)',
-  red: '#f87171',
-  redBg: 'rgba(248,113,113,0.1)',
-  blue: '#60a5fa',
-  blueBg: 'rgba(96,165,250,0.1)',
-  neonPink: '#e0729e',
-};
-
-
-function CustomSelect({ label, value, onChange, options }: { label: string, value: string, onChange: (v: string) => void, options: {label: string, value: string}[] }) {
-  const [open, setOpen] = useState(false);
-  const selectedLabel = options.find(o => o.value === value)?.label || options[0]?.label;
-  
-  return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>{label}</div>
-      <div 
-        onClick={() => setOpen(!open)}
-        style={{ width: '100%', height: '36px', background: colors.surface2, border: `1px solid ${colors.borderSoft}`, borderRadius: '6px', color: colors.text, padding: '0 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: '13px' }}
-      >
-        {selectedLabel}
-        <span style={{ fontSize: '10px', color: colors.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
-      </div>
-      {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '6px', marginTop: '4px', zIndex: 20, padding: '4px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
-          {options.map(opt => (
-            <div 
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              style={{ padding: '8px 12px', fontSize: '13px', color: opt.value === value ? colors.gold : colors.text, background: opt.value === value ? colors.surface2 : 'transparent', borderRadius: '4px', cursor: 'pointer' }}
-              onMouseEnter={(e) => { if (opt.value !== value) e.currentTarget.style.background = colors.surface2; }}
-              onMouseLeave={(e) => { if (opt.value !== value) e.currentTarget.style.background = 'transparent'; }}
-            >
-              {opt.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function AdminBookingsPage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -66,12 +9,6 @@ export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>({ all: 0, new: 0, completed: 0, cancelled: 0 });
   const [search, setSearch] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [timeframe, setTimeframe] = useState('');
-  const [storeId, setStoreId] = useState('');
-  const [source, setSource] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   const handleUpdateStatus = async (bookingId: string, status: string) => {
@@ -92,7 +29,7 @@ export default function AdminBookingsPage() {
     try {
       let statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<any>('/admin/bookings', { 
-        params: { status: statusParam, search: search || undefined, timeframe: timeframe || undefined, storeId: storeId || undefined, source: source || undefined, sortBy } 
+        params: { status: statusParam, search: search || undefined } 
       });
       setBookings(res.data);
       setMeta(res.meta);
@@ -103,7 +40,7 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     fetchBookings();
-  }, [activeTab, search, timeframe, storeId, source, sortBy]);
+  }, [activeTab, search]);
 
   const getDisplayStatus = (status: string) => {
     if (status === 'REQUESTED') return 'Mới';
@@ -114,380 +51,142 @@ export default function AdminBookingsPage() {
 
   const getStatusStyle = (status: string) => {
     const s = getDisplayStatus(status);
-    if (s === 'Mới') return { color: colors.blue, bg: colors.blueBg, border: `1px solid ${colors.blue}40` };
-    if (s === 'Hoàn tất') return { color: colors.green, bg: colors.greenBg, border: `1px solid ${colors.green}40` };
-    if (s === 'Đã hủy') return { color: colors.neonPink, bg: 'rgba(224,114,158,.1)', border: `1px solid rgba(224,114,158,.3)` };
-    return { color: colors.muted, bg: colors.surface2, border: `1px solid ${colors.borderSoft}` };
+    if (s === 'Mới') return { color: '#8fb6e4', background: 'rgba(111,159,216,.12)', border: '1px solid rgba(111,159,216,.28)' };
+    if (s === 'Hoàn tất') return { color: '#7fd3a2', background: 'rgba(95,191,134,.1)', border: '1px solid rgba(95,191,134,.28)' };
+    if (s === 'Đã hủy') return { color: '#e88b99', background: 'rgba(224,105,122,.1)', border: '1px solid rgba(224,105,122,.28)' };
+    return { color: '#c5c0b6', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)' };
   };
 
   return (
-    <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
+    <div data-screen-label="Admin · Booking" style={{ padding: '22px 26px 44px' }}>
       
-      {/* TOP FILTERS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
-          <button 
-            onClick={() => setActiveTab('all')}
-            style={{
-              background: activeTab === 'all' ? colors.goldGrad : 'transparent',
-              color: activeTab === 'all' ? colors.onGold : colors.muted,
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: activeTab === 'all' ? 700 : 500,
-              cursor: 'pointer'
-            }}
-          >
-            Tất cả {meta.all}
-          </button>
-          <button 
-            onClick={() => setActiveTab('new')}
-            style={{
-              background: activeTab === 'new' ? colors.surface2 : 'transparent',
-              color: activeTab === 'new' ? colors.text : colors.muted,
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: activeTab === 'new' ? 700 : 500,
-              cursor: 'pointer'
-            }}
-          >
-            Mới {meta.new}
-          </button>
-          <button 
-            onClick={() => setActiveTab('completed')}
-            style={{
-              background: activeTab === 'completed' ? colors.surface2 : 'transparent',
-              color: activeTab === 'completed' ? colors.text : colors.muted,
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: activeTab === 'completed' ? 700 : 500,
-              cursor: 'pointer'
-            }}
-          >
-            Hoàn tất {meta.completed}
-          </button>
-          <button 
-            onClick={() => setActiveTab('cancelled')}
-            style={{
-              background: activeTab === 'cancelled' ? colors.surface2 : 'transparent',
-              color: activeTab === 'cancelled' ? colors.text : colors.muted,
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: activeTab === 'cancelled' ? 700 : 500,
-              cursor: 'pointer'
-            }}
-          >
-            Đã hủy {meta.cancelled}
-          </button>
+      {/* Filters */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+          {[
+            { id: 'all', label: 'Tất cả', count: meta.all },
+            { id: 'REQUESTED', label: 'Mới', count: meta.new },
+            { id: 'COMPLETED', label: 'Hoàn tất', count: meta.completed },
+            { id: 'CANCELLED', label: 'Đã hủy', count: meta.cancelled }
+          ].map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <span 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  fontSize: '12px',
+                  color: isActive ? '#241a0a' : '#c5c0b6',
+                  background: isActive ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {tab.label} <b style={{ fontWeight: isActive ? 800 : 600 }}>{tab.count}</b>
+              </span>
+            );
+          })}
         </div>
+        <div style={{ flex: 1 }}></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '220px' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.9" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          <input 
+            type="text" 
+            placeholder="Tìm khách / mã booking…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12.5px', outline: 'none' }}
+          />
+        </div>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Bộ lọc
+        </span>
+      </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} color={colors.muted} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
-            <input 
-              type="text" 
-              placeholder="Tìm khách / mã booking..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                height: '40px',
-                width: '260px',
-                borderRadius: '8px',
-                border: `1px solid ${colors.borderSoft}`,
-                background: colors.surface1,
-                color: colors.text,
-                padding: '0 16px 0 42px',
-                fontSize: '13px',
-                outline: 'none',
-              }}
-            />
-          </div>
-          <div style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              style={{
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: showFilters ? colors.surface2 : colors.surface1,
-                color: colors.text,
-                border: `1px solid ${colors.borderSoft}`,
-                padding: '0 16px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
+      {/* Table */}
+      <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <span>Mã</span><span>Khách</span><span>Quán · Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+        </div>
+        {bookings.map(b => {
+          const stStyle = getStatusStyle(b.status);
+          const stLabel = getDisplayStatus(b.status);
+          return (
+            <div 
+              key={b.id} 
+              onClick={() => setSelectedBooking(b)} 
+              style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <Filter size={16} />
-              Bộ lọc
-            </button>
-
-            {showFilters && (
-              <div style={{
-                position: 'absolute',
-                top: '48px',
-                right: 0,
-                width: '280px',
-                background: colors.surface1,
-                border: `1px solid ${colors.borderSoft}`,
-                borderRadius: '12px',
-                padding: '16px',
-                zIndex: 10,
-                boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px'
-              }}>
-                <CustomSelect 
-                  label="Thời gian" 
-                  value={timeframe} 
-                  onChange={setTimeframe} 
-                  options={[
-                    { label: 'Tất cả thời gian', value: '' },
-                    { label: 'Hôm nay', value: 'today' },
-                    { label: '7 ngày qua', value: 'week' },
-                    { label: '30 ngày qua', value: 'month' }
-                  ]}
-                />
-                
-                <CustomSelect 
-                  label="Sắp xếp" 
-                  value={sortBy} 
-                  onChange={setSortBy} 
-                  options={[
-                    { label: 'Mới nhất', value: 'newest' },
-                    { label: 'Cũ nhất', value: 'oldest' }
-                  ]}
-                />
-
-                <CustomSelect 
-                  label="Nguồn" 
-                  value={source} 
-                  onChange={setSource} 
-                  options={[
-                    { label: 'Tất cả nguồn', value: '' },
-                    { label: 'Telegram', value: 'Telegram' },
-                    { label: 'LINE', value: 'LINE' },
-                    { label: 'Web', value: 'Web' }
-                  ]}
-                />
-                
-                <button 
-                  onClick={() => { setTimeframe(''); setStoreId(''); setSource(''); setSortBy('newest'); setShowFilters(false); }}
-                  style={{ width: '100%', height: '36px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '6px', color: colors.muted, fontSize: '13px', cursor: 'pointer', marginTop: '4px' }}
-                >
-                  Xóa bộ lọc
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* TABLE */}
-      <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${colors.borderSoft}` }}>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>MÃ</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>KHÁCH</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>QUÁN · CAST</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>SỐ NGƯỜI</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>KHUNG GIỜ</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>NGUỒN</th>
-              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px', textAlign: 'right' }}>TRẠNG THÁI</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.map((bk, idx) => {
-              const statusStyle = getStatusStyle(bk.status);
-              return (
-                <tr 
-                  key={idx} 
-                  onClick={() => setSelectedBooking(bk)}
-                  style={{ 
-                    borderBottom: `1px solid ${colors.borderSoft}`,
-                    cursor: 'pointer',
-                    background: selectedBooking?.id === bk.id ? colors.surface2 : 'transparent',
-                    transition: 'background 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = colors.surface2}
-                  onMouseLeave={(e) => e.currentTarget.style.background = selectedBooking?.id === bk.id ? colors.surface2 : 'transparent'}
-                >
-                  <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 700, color: colors.gold }}>{bk.id.substring(0,8)}</td>
-                  <td style={{ padding: '16px 24px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: colors.text }}>{bk.customerName}</div>
-                    <div style={{ fontSize: '12px', color: colors.muted, marginTop: '2px' }}>{bk.phone}</div>
-                  </td>
-                  <td style={{ padding: '16px 24px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text }}>{bk.store}</div>
-                    <div style={{ fontSize: '12px', color: colors.muted, marginTop: '2px' }}>{bk.cast}</div>
-                  </td>
-                  <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{bk.partySize}</td>
-                  <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{new Date(bk.scheduledAt).toLocaleString('vi-VN')}</td>
-                  <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{bk.source}</td>
-                  <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                    <span style={{ 
-                      background: statusStyle.bg, 
-                      color: statusStyle.color, 
-                      border: statusStyle.border,
-                      padding: '4px 16px', 
-                      borderRadius: '20px', 
-                      fontSize: '12px', 
-                      fontWeight: 600,
-                    }}>
-                      {getDisplayStatus(bk.status)}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* SIDE DRAWER (Modal) */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        right: selectedBooking ? 0 : '-400px',
-        bottom: 0,
-        width: '400px',
-        background: colors.bg,
-        borderLeft: `1px solid ${colors.borderSoft}`,
-        boxShadow: selectedBooking ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
-        transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        zIndex: 100,
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {selectedBooking && (
-          <>
-            <div style={{ padding: '24px', borderBottom: `1px solid ${colors.borderSoft}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: colors.muted, marginBottom: '8px' }}>
-                    BOOKING · {selectedBooking.id.substring(0,8)}
-                  </div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: colors.text, margin: '0 0 16px 0' }}>{selectedBooking.customerName}</h2>
-                  <span style={{ 
-                    ...getStatusStyle(selectedBooking.status),
-                    padding: '4px 12px', 
-                    borderRadius: '12px', 
-                    fontSize: '12px', 
-                    fontWeight: 600,
-                  }}>
-                    {getDisplayStatus(selectedBooking.status)}
-                  </span>
-                </div>
-                <button 
-                  onClick={() => setSelectedBooking(null)}
-                  style={{
-                    width: 32, height: 32, borderRadius: '8px', 
-                    background: colors.surface2, color: colors.muted, 
-                    border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
+              <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>BK-{b.id.slice(0,4).toUpperCase()}</span>
+              <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px' }}>{b.customerPhone || 'Chưa cung cấp'}</div></div>
+              <div style={{ minWidth: 0 }}><div style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.store?.name}</div><div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{b.cast ? `Cast: ${b.cast.stageName}` : 'Không cast'}</div></div>
+              <span style={{ color: '#c5c0b6' }}>{b.partySize} người</span>
+              <span style={{ color: '#8c8679', fontSize: '12px' }}>{new Date(b.scheduledAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</span>
+              <span style={{ fontSize: '11.5px', color: '#9b958a' }}>{b.source || 'Telegram'}</span>
+              <span style={{ textAlign: 'right' }}><span style={{ ...stStyle, fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px' }}>{stLabel}</span></span>
             </div>
-
-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-              
-              {/* Basic Info */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Số điện thoại</span>
-                <span style={{ color: colors.gold, fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Phone size={14} />
-                  {selectedBooking.phone}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Quán</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBooking.store}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Cast chỉ định</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBooking.cast}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Số người</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBooking.partySize} khách</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Khung giờ</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{new Date(selectedBooking.scheduledAt).toLocaleString('vi-VN')}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', marginBottom: '8px' }}>
-                <span style={{ color: colors.muted, fontSize: '14px' }}>Nguồn gửi</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBooking.source}</span>
-              </div>
-
-              {/* Note */}
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ color: colors.muted, fontSize: '14px', marginBottom: '8px' }}>Ghi chú</div>
-                <div style={{ 
-                  background: colors.surface1, 
-                  border: `1px solid ${colors.borderSoft}`, 
-                  borderRadius: '8px', 
-                  padding: '16px',
-                  color: colors.text2,
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                  minHeight: '60px'
-                }}>
-                  {selectedBooking.note || 'Không có ghi chú.'}
-                </div>
-              </div>
-
-              {/* Info Banner */}
-              <div style={{ 
-                background: colors.blueBg, 
-                border: `1px solid rgba(96,165,250,0.2)`, 
-                borderRadius: '8px', 
-                padding: '16px',
-                display: 'flex',
-                gap: '12px',
-                color: colors.blue,
-                fontSize: '13px',
-                lineHeight: '1.5'
-              }}>
-                <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>Khách đổi giờ/số người → hủy & đặt lại. Chỉ được hủy trước giờ hẹn tối thiểu 1 giờ (BOO-08).</span>
-              </div>
-
-            </div>
-
-            {/* Actions Footer */}
-            {selectedBooking.status !== 'COMPLETED' && selectedBooking.status !== 'CANCELLED' && (
-              <div style={{ padding: '24px', borderTop: `1px solid ${colors.borderSoft}` }}>
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                  <button onClick={() => handleUpdateStatus(selectedBooking.id, 'COMPLETED')} disabled={isActionLoading} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: colors.goldGrad, color: colors.onGold, border: 'none', height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: isActionLoading ? 'not-allowed' : 'pointer', opacity: isActionLoading ? 0.5 : 1 }}>
-                    <Check size={18} strokeWidth={3} />
-                    Đánh dấu hoàn tất
-                  </button>
-                  <button onClick={() => handleUpdateStatus(selectedBooking.id, 'CANCELLED')} disabled={isActionLoading} style={{ width: '100px', background: 'transparent', color: colors.neonPink, border: `1px solid rgba(224,114,158,.3)`, height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isActionLoading ? 'not-allowed' : 'pointer', opacity: isActionLoading ? 0.5 : 1 }}>
-                    Hủy
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+          );
+        })}
+        {bookings.length === 0 && (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có booking nào.</div>
         )}
       </div>
 
+      {/* Drawer */}
+      {selectedBooking && (() => {
+        const bk = selectedBooking;
+        const stStyle = getStatusStyle(bk.status);
+        const stLabel = getDisplayStatus(bk.status);
+        
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
+            <div onClick={() => setSelectedBooking(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
+            <div className="scw" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '428px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Booking · BK-{bk.id.slice(0,4).toUpperCase()}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#f3f0ea', marginTop: '5px' }}>{bk.customerName}</div>
+                  <span style={{ ...stStyle, fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', display: 'inline-block', marginTop: '9px' }}>{stLabel}</span>
+                </div>
+                <span onClick={() => setSelectedBooking(null)} style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+              </div>
+              <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số điện thoại</span><span style={{ fontSize: '13px', color: '#e3c27e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1"/></svg>{bk.customerPhone || 'Chưa cung cấp'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Quán</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.store?.name}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Cast chỉ định</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.cast ? bk.cast.stageName : 'Không'}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số người</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.partySize} khách</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Khung giờ</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{new Date(bk.scheduledAt).toLocaleString('vi-VN')}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Nguồn gửi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.source || 'Telegram'}</span></div>
+                <div style={{ padding: '14px 0 4px' }}>
+                  <div style={{ fontSize: '12.5px', color: '#8c8679', marginBottom: '7px' }}>Ghi chú</div>
+                  <div style={{ fontSize: '12.5px', color: '#c5c0b6', lineHeight: 1.6, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '11px', padding: '12px 14px', minHeight: '44px' }}>{bk.customerNote || 'Không có ghi chú.'}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', padding: '12px 14px', background: 'rgba(111,159,216,.06)', border: '1px solid rgba(111,159,216,.2)', borderRadius: '11px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
+                  <span style={{ fontSize: '11.5px', color: '#a9c4e6', lineHeight: 1.55 }}>Khách đổi giờ/số người → hủy &amp; đặt lại. Chỉ được hủy trước giờ hẹn tối thiểu 1 giờ (BOO-08).</span>
+                </div>
+              </div>
+              <div style={{ padding: '16px 24px 26px', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {bk.status === 'REQUESTED' && (
+                  <>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <span onClick={() => !isActionLoading && handleUpdateStatus(bk.id, 'COMPLETED')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '13px', borderRadius: '11px', cursor: isActionLoading ? 'not-allowed' : 'pointer', opacity: isActionLoading ? 0.6 : 1 }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Đánh dấu hoàn tất</span>
+                      <span onClick={() => !isActionLoading && handleUpdateStatus(bk.id, 'CANCELLED')} style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', fontSize: '13px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.32)', padding: '13px 18px', borderRadius: '11px', cursor: isActionLoading ? 'not-allowed' : 'pointer', opacity: isActionLoading ? 0.6 : 1 }}>Hủy</span>
+                    </div>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', padding: '12px', borderRadius: '11px', cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Gửi Telegram báo quán</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
-

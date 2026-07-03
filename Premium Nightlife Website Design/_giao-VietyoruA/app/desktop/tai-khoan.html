@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  .row{transition:background .14s;cursor:pointer;}
+  .row:hover{background:rgba(212,178,106,.06);}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="trang-chu.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Trang chủ</a>
+    <div style="font-size:13px;color:#8c8679;"><b style="color:#f3f0ea;">Tài khoản</b> — hồ sơ · hạng · điểm thưởng</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;"><a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a><div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" class="lk">Tìm quán</a><a href="danh-sach-cast.html" class="lk">Cast</a><a href="xep-hang.html" class="lk">Bảng xếp hạng</a><a href="uu-dai.html" class="lk">Ưu đãi</a><span class="lk">Blog</span></div></div>
+      <div style="display:flex;align-items:center;gap:14px;"><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><span style="font-size:13px;color:#d4b26a;font-weight:600;">{{ name }}</span></div>
+    </div>
+
+    <div style="display:flex;gap:24px;padding:26px 34px 34px;">
+      <!-- profile -->
+      <div style="width:360px;flex:none;">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#f4e3b4 0%,#d4b26a 48%,#a87c3c 100%);border-radius:18px;padding:24px;color:#241a0a;box-shadow:0 16px 34px -18px rgba(168,124,60,.55);">
+          <div style="position:absolute;top:-34px;right:-24px;width:160px;height:160px;background:radial-gradient(circle,rgba(255,255,255,.4),transparent 70%);"></div>
+          <div style="position:relative;display:flex;align-items:center;gap:14px;"><span style="width:60px;height:60px;border-radius:50%;background:url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=70') center/cover;border:2px solid rgba(36,26,10,.25);"></span><div><div style="font-size:18px;font-weight:800;">{{ name }}</div><div style="font-size:12.5px;color:rgba(36,26,10,.7);margin-top:2px;">{{ phone }}</div></div><span style="margin-left:auto;font-size:11px;font-weight:700;background:#241a0a;color:#f0dda8;border-radius:10px;padding:5px 11px;">Hạng {{ tier }}</span></div>
+          <div style="position:relative;margin-top:18px;background:rgba(36,26,10,.12);border-radius:12px;padding:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;"><span style="color:rgba(36,26,10,.72);">Điểm thưởng</span><span style="font-weight:800;font-size:16px;">{{ points }}</span></div>
+            <div style="height:6px;background:rgba(36,26,10,.18);border-radius:3px;margin-top:10px;"><div style="width:62%;height:100%;background:#241a0a;border-radius:3px;"></div></div>
+            <div style="font-size:11px;color:rgba(36,26,10,.72);margin-top:7px;">Cần thêm <b style="color:#241a0a;">{{ need }} điểm</b> để lên hạng {{ nextTier }}</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;">
+          <div><div style="font-size:20px;font-weight:800;color:#d4b26a;">12</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Lượt đặt</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:#d4b26a;">3</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Mã đang giữ</div></div>
+          <div><div style="font-size:20px;font-weight:800;color:#d4b26a;">8</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">Yêu thích</div></div>
+        </div>
+      </div>
+
+      <!-- menu -->
+      <div style="flex:1;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;">
+        <sc-for list="{{ menu }}" as="m" hint-placeholder-count="6">
+          <a href="{{ m.href }}" class="row" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="width:38px;height:38px;border-radius:10px;background:rgba(212,178,106,.13);display:flex;align-items:center;justify-content:center;flex:none;"><img src="{{ m.icon }}" style="width:19px;height:19px;" alt=""></span>
+            <div style="flex:1;"><div style="font-size:14px;font-weight:600;">{{ m.title }}</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">{{ m.sub }}</div></div>
+            <img src="https://img.icons8.com/ios/100/6F6B62/chevron-right.png" style="width:16px;height:16px;" alt="">
+          </a>
+        </sc-for>
+        <a href="dang-nhap.html" class="row" style="display:flex;align-items:center;gap:14px;padding:16px 20px;color:#e89aa0;"><span style="width:38px;height:38px;border-radius:10px;background:rgba(190,70,84,.16);display:flex;align-items:center;justify-content:center;flex:none;"><img src="https://img.icons8.com/ios/100/B03A4A/exit.png" style="width:19px;height:19px;" alt=""></span><div style="flex:1;font-size:14px;font-weight:600;">Đăng xuất</div></a>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, a = NL.ACCOUNT;
+    var menu = [
+      { title:'Đặt chỗ của tôi', sub:'Lịch sử & trạng thái đặt chỗ', href:'lich-su-dat-cho.html', icon:'https://img.icons8.com/ios/100/D4B26A/planner.png' },
+      { title:'Ví ưu đãi', sub:'Mã giảm giá đang giữ', href:'vi-uu-dai.html', icon:'https://img.icons8.com/ios/100/D4B26A/gift.png' },
+      { title:'Cast yêu thích', sub:'Cast & quán đã lưu', href:'danh-sach-cast.html', icon:'https://img.icons8.com/ios/100/D4B26A/like.png' },
+      { title:'Hóa đơn & điểm', sub:'Gửi hóa đơn để tích điểm', href:'tai-khoan.html', icon:'https://img.icons8.com/ios/100/D4B26A/invoice.png' },
+      { title:'Cài đặt tài khoản', sub:'Thông tin cá nhân, ngôn ngữ', href:'tai-khoan.html', icon:'https://img.icons8.com/ios/100/D4B26A/settings.png' }
+    ];
+    return { name:a.name, phone:a.phone, tier:a.tier, points:a.points, nextTier:a.nextTier, need:a.need, menu:menu };
+  }
+}
+</script>
+</body>
+</html>

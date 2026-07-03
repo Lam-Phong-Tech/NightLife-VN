@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  input{font-family:inherit;outline:none;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+    <div style="background:#15131a;padding:8px 18px 12px;display:flex;align-items:center;gap:12px;"><a href="trang-chu.html" style="font-size:22px;color:#c5c0b6;line-height:1;">‹</a><span style="font-weight:800;font-size:16px;">Tìm quán · Hà Nội</span></div>
+    <div style="padding:0 18px 12px;background:#15131a;"><div style="display:flex;align-items:center;gap:9px;background:#1b1922;border-radius:12px;padding:11px 13px;"><img src="https://img.icons8.com/ios/100/8C8679/search.png" style="width:16px;height:16px;" alt=""><input onInput="{{ onSearch }}" placeholder="Tên quán, khu vực…" style="background:rgba(255,255,255,.04);color:#f3f0ea;flex:1;border:none;font-size:13px;color:#f3f0ea;background:transparent;"></div></div>
+
+    <!-- filter chips -->
+    <div class="hscroll" style="padding:12px 18px 4px;display:flex;gap:7px;overflow-x:auto;background:#15131a;">
+      <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
+    </div>
+    <div class="hscroll" style="padding:8px 18px 12px;display:flex;gap:7px;overflow-x:auto;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <sc-for list="{{ areas }}" as="a" hint-placeholder-count="6"><div onClick="{{ a.pick }}" style="{{ a.style }}">{{ a.label }}</div></sc-for>
+    </div>
+
+    <div style="padding:12px 18px 6px;font-size:12.5px;color:#c5c0b6;"><b style="color:#f3f0ea;">{{ count }} quán</b> phù hợp</div>
+    <div style="padding:0 18px 12px;display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ venues }}" as="v" hint-placeholder-count="6">
+        <div onClick="{{ v.open }}" style="display:flex;gap:12px;background:#15131a;border-radius:14px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.06);cursor:pointer;">
+          <div style="width:108px;flex:none;background:{{ v.img }};position:relative;"><span onClick="{{ v.fav }}" style="position:absolute;top:7px;left:7px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;"><img src="{{ v.favIcon }}" style="width:14px;height:14px;" alt=""></span></div>
+          <div style="padding:11px 12px 11px 0;flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="font-weight:600;font-size:14px;">{{ v.name }}</span><sc-if value="{{ v.hasBadge }}" hint-placeholder-val="{{ true }}"><span style="font-size:9px;font-weight:700;color:{{ v.badgeColor }};background:#1b1922;border-radius:8px;padding:2px 6px;">{{ v.badgeText }}</span></sc-if></div>
+            <div style="font-size:11.5px;color:#8c8679;margin-top:2px;">{{ v.area }} · {{ v.catLabel }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;"><span style="font-size:12px;color:#e3c27e;">★ {{ v.rating }} <span style="color:#a8a5b4;">({{ v.reviews }})</span></span><span style="font-size:12px;font-weight:600;">từ {{ v.price }}</span></div>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;color:#8c8679;font-size:13px;padding:30px 0;">Không có quán nào khớp bộ lọc.</div></sc-if>
+    </div>
+
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/home.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Trang chủ</span></a>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/D4B26A/search.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#d4b26a;font-weight:600;">Tìm quán</span></div>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/gift.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Ưu đãi</span></a>
+      <a href="lich-su-dat-cho.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/calendar.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var cat = st.cat || 'all', area = st.area || 'Tất cả', q = (st.q || '').toLowerCase();
+    var list = NL.VENUES.filter(function(v){
+      return (cat==='all'||v.cat===cat) && (area==='Tất cả'||v.area===area) && (q===''||v.name.toLowerCase().indexOf(q)>=0);
+    });
+    var venues = list.map(function(v){
+      var faved = NL.fav.has(v.name);
+      return {
+        name:v.name, catLabel:v.catLabel, area:v.area, price:v.price, rating:v.rating, reviews:v.reviews,
+        img:NL.bg(v.imgId, v.gradA, v.gradB), favIcon:NL.heart(faved),
+        hasBadge: !!(v.disc || v.tag),
+        badgeText: v.disc ? v.disc : v.tag,
+        badgeColor: v.disc ? '#c0246a' : '#d4b26a',
+        open:function(){ NL.booking.patch({venueSlug:v.slug, venueName:v.name, venueArea:v.area, venuePrice:v.price, venueCat:v.catLabel, venueImg:v.imgId, venueGradA:v.gradA, venueGradB:v.gradB}); location.href='chi-tiet-quan.html'; },
+        fav:function(e){ if(e&&e.preventDefault){e.preventDefault();e.stopPropagation();} NL.fav.toggle(v.name); self.forceUpdate(); }
+      };
+    });
+    var cats = NL.CATS.map(function(c){ return { label:c[1], style:NL.chip(cat===c[0]), pick:function(){ self.setState({cat:c[0]}); } }; });
+    var areas = NL.AREAS.map(function(a){ return { label:a, style:NL.chip(area===a), pick:function(){ self.setState({area:a}); } }; });
+    return { venues:venues, count:list.length, empty:list.length===0, cats:cats, areas:areas, onSearch:function(e){ self.setState({q:e.target.value}); } };
+  }
+}
+</script>
+</body>
+</html>

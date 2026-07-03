@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+</style>
+</helmet>
+<header style="position:relative;display:flex;align-items:center;gap:18px;padding:14px 26px;background:rgba(12,12,15,.86);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="min-width:0;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.8px;color:#8c8679;text-transform:uppercase;">{{ pageEn }}</div>
+    <div style="font-size:19px;font-weight:700;color:#f3f0ea;letter-spacing:.1px;margin-top:2px;">{{ title }}</div>
+  </div>
+  <div style="flex:1;"></div>
+  <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:9px 14px;width:280px;max-width:26vw;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+    <span style="font-size:13px;color:#6f6b62;">Tìm quán, cast, booking, bill…</span>
+  </div>
+  <span onClick="{{ rgToggle }}" style="{{ rgChipStyle }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+    {{ regionLabel }}
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="{{ rgCaret }}"><path d="M6 9l6 6 6-6"/></svg>
+  </span>
+
+  <sc-if value="{{ rgOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ rgClose }}" style="position:fixed;inset:0;z-index:48;"></div>
+    <div style="position:absolute;top:62px;right:76px;z-index:49;width:248px;background:#15141a;border:1px solid rgba(212,178,106,.24);border-radius:15px;box-shadow:0 34px 70px -24px rgba(0,0,0,.9);overflow:hidden;animation:vrise .18s ease;">
+      <div style="padding:12px 15px 9px;font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.05);">Khu vực dữ liệu</div>
+      <sc-for list="{{ rgItems }}" as="r" hint-placeholder-count="3">
+        <div onClick="{{ r.pick }}" style="{{ r.rowS }}" style-hover="background:rgba(212,178,106,.07);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;">{{ r.label }}</div>
+            <div style="font-size:10.5px;color:#8c8679;margin-top:1px;">{{ r.sub }}</div>
+          </div>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e3c27e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="{{ r.chk }}"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+      </sc-for>
+      <div style="padding:10px 15px;background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.05);font-size:10px;color:#8c8679;line-height:1.5;">Số liệu &amp; danh sách trên trang admin lọc theo khu vực này.</div>
+    </div>
+  </sc-if>
+  <span onClick="{{ ntToggle }}" style="{{ bellStyle }}">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+      <span style="position:absolute;top:6px;right:7px;min-width:15px;height:15px;border-radius:8px;background:#e0729e;border:1.5px solid #0c0c0f;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:800;color:#fff;padding:0 3px;">{{ unreadCount }}</span>
+    </sc-if>
+  </span>
+
+  <sc-if value="{{ ntOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ ntClose }}" style="position:fixed;inset:0;z-index:48;"></div>
+    <div style="position:absolute;top:62px;right:22px;z-index:49;width:378px;max-width:92vw;background:#15141a;border:1px solid rgba(212,178,106,.24);border-radius:16px;box-shadow:0 34px 70px -24px rgba(0,0,0,.9);overflow:hidden;animation:vrise .18s ease;">
+      <div style="display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="font-size:14.5px;font-weight:700;color:#f3f0ea;">Thông báo</span>
+        <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size:10px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:2.5px 8px;border-radius:9px;">{{ unreadCount }} mới</span>
+        </sc-if>
+        <span style="flex:1;"></span>
+        <span onClick="{{ ntMarkAll }}" style="font-size:11px;font-weight:600;color:#9b958a;cursor:pointer;" style-hover="color:#e3c27e;">Đọc tất cả</span>
+      </div>
+      <div class="scw" style="max-height:392px;overflow-y:auto;">
+        <sc-for list="{{ ntItems }}" as="n" hint-placeholder-count="5">
+          <a href="{{ n.href }}" style="display:flex;gap:12px;align-items:flex-start;padding:13px 17px;border-bottom:1px solid rgba(255,255,255,.04);text-decoration:none;background:{{ n.bg }};" style-hover="background:rgba(212,178,106,.06);">
+            <span style="width:34px;height:34px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;letter-spacing:.5px;{{ n.tagStyle }}">{{ n.tag }}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12.5px;color:#e6e2da;line-height:1.45;">{{ n.text }}</div>
+              <div style="font-size:10.5px;color:#57534b;margin-top:3px;">{{ n.time }}</div>
+            </div>
+            <span style="{{ n.dot }}"></span>
+          </a>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 17px;background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.05);">
+        <span style="width:7px;height:7px;border-radius:50%;background:#5fbf86;box-shadow:0 0 7px #5fbf86;animation:vpulse 2s infinite;"></span>
+        <span style="font-size:10.5px;color:#8c8679;">Đồng thời đẩy về nhóm Telegram vận hành</span>
+        <span style="flex:1;"></span>
+        <span style="font-size:10.5px;font-weight:600;color:#7fd3a2;">Đang bật</span>
+      </div>
+    </div>
+  </sc-if>
+</header>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1190,&quot;height&quot;:520},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Bảng điều khiển&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Topbar&quot;},&quot;pageEn&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Topbar&quot;}}">
+class Component extends DCLogic {
+  state = { open:false, readAll:false, read:{}, region:'HN', regionOpen:false };
+  renderVals(){
+    const S=this.state;
+    const NT=[
+      {id:'n1',tag:'BK',kind:'info',text:'Booking mới #BK-2041 — Club Lumière · 4 khách · Tanaka Hiro',time:'2 phút trước · gửi từ Telegram',href:'Booking.dc.html',unread:true},
+      {id:'n2',tag:'BILL',kind:'warn',text:'Hóa đơn #BILL-8842 chờ duyệt — 12.500.000₫ · Sakura Lounge',time:'14 phút trước · người gửi: Khách',href:'Duyet Hoa Don.dc.html',unread:true},
+      {id:'n3',tag:'ĐT',kind:'pink',text:'Yêu cầu hợp tác mới — Lotus Club Saigon (HCM)',time:'31 phút trước · form Join Us',href:'Duyet Doi Tac.dc.html',unread:true},
+      {id:'n4',tag:'CAST',kind:'gold',text:'Hồ sơ cast Yuki (Club Lumière) chờ kiểm duyệt',time:'1 giờ trước · nội dung mới',href:'Cast.dc.html',unread:true},
+      {id:'n5',tag:'QR',kind:'success',text:'Coupon −30% Happy Hour đã dùng tại Club Lumière',time:'48 phút trước · nhân viên quét QR',href:'Coupon QR.dc.html',unread:false},
+      {id:'n6',tag:'BK',kind:'error',text:'Booking #BK-2039 đã hủy — KTV Hoàng Gia · trước giờ hẹn 3 giờ',time:'Hôm qua 22:15',href:'Booking.dc.html',unread:false},
+    ];
+    const chip=(kind)=>{const m={success:['rgba(95,191,134,.12)','#7fd3a2'],info:['rgba(111,159,216,.14)','#8fb6e4'],warn:['rgba(224,164,78,.14)','#e7b869'],error:['rgba(224,105,122,.12)','#e88b99'],gold:['rgba(212,178,106,.14)','#e3c27e'],pink:['rgba(224,114,158,.14)','#e79ab8']};const c=m[kind]||m.info;return 'background:'+c[0]+';color:'+c[1]+';';};
+    const isUnread=(n)=>n.unread&&!S.readAll&&!S.read[n.id];
+    const unread=NT.filter(isUnread).length;
+    const REGIONS=[
+      {k:'HN',label:'Hà Nội',short:'HN',sub:'15 quán đang hoạt động'},
+      {k:'HCM',label:'TP. Hồ Chí Minh',short:'HCM',sub:'9 quán đang hoạt động'},
+      {k:'ALL',label:'Tổng hợp',short:'Tổng hợp',sub:'Toàn bộ 24 quán · 2 thành phố'},
+    ];
+    const region=S.region||'HN';
+    const curRegion=REGIONS.find(r=>r.k===region)||REGIONS[0];
+    return {
+      title:this.props.title??'Trang quản trị',
+      pageEn:this.props.pageEn??'Admin',
+      regionLabel:curRegion.short,
+      rgOpen:S.regionOpen,
+      rgToggle:()=>this.setState({regionOpen:!S.regionOpen,open:false}),
+      rgClose:()=>this.setState({regionOpen:false}),
+      rgChipStyle:'display:flex;align-items:center;gap:7px;font-size:12.5px;border-radius:11px;padding:8px 13px;font-weight:500;cursor:pointer;white-space:nowrap;'+(S.regionOpen?'color:#f0dda8;border:1px solid rgba(212,178,106,.6);background:rgba(212,178,106,.1);':'color:#c5c0b6;border:1px solid rgba(212,178,106,.28);'),
+      rgCaret:S.regionOpen?'transform:rotate(180deg);':'',
+      rgItems:REGIONS.map(r=>({...r,
+        rowS:'display:flex;align-items:center;gap:11px;padding:11px 15px;cursor:pointer;'+(r.k===region?'color:#f0dda8;background:rgba(212,178,106,.08);':'color:#c5c0b6;'),
+        chk:r.k===region?'flex:none;':'display:none;',
+        pick:()=>this.setState({region:r.k,regionOpen:false})})),
+      ntOpen:S.open,
+      hasUnread:unread>0,
+      unreadCount:unread,
+      bellStyle:'position:relative;width:39px;height:39px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;'+(S.open?'color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a);border:1px solid rgba(212,178,106,.5);':'color:#d4b26a;border:1px solid rgba(212,178,106,.28);'),
+      ntToggle:()=>this.setState({open:!S.open,regionOpen:false}),
+      ntClose:()=>this.setState({open:false}),
+      ntMarkAll:()=>this.setState({readAll:true}),
+      ntItems:NT.map(n=>({...n,
+        tagStyle:chip(n.kind),
+        bg:isUnread(n)?'rgba(212,178,106,.045)':'transparent',
+        dot:isUnread(n)?'width:8px;height:8px;flex:none;border-radius:50%;background:#e0729e;box-shadow:0 0 7px #e0729e;margin-top:5px;':'display:none;'})),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

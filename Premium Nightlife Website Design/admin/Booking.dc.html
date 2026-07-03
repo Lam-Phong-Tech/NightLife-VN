@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="booking" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Quản lý Booking" page-en="Bookings" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Booking" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ bkAll }}" style="{{ bkTabAll }}">Tất cả <b>{{ bkCountAll }}</b></span>
+            <span onClick="{{ bkNew }}" style="{{ bkTabNew }}">Mới <b>{{ bkCountNew }}</b></span>
+            <span onClick="{{ bkDone }}" style="{{ bkTabDone }}">Hoàn tất <b>{{ bkCountDone }}</b></span>
+            <span onClick="{{ bkCancel }}" style="{{ bkTabCancel }}">Đã hủy <b>{{ bkCountCancel }}</b></span>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;width:220px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <span style="font-size:12.5px;color:#6f6b62;">Tìm khách / mã booking…</span>
+          </div>
+          <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 13px;cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Bộ lọc
+          </span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:96px 1.5fr 1.6fr 78px 118px 92px 108px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Mã</span><span>Khách</span><span>Quán · Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style="text-align:right;">Trạng thái</span>
+          </div>
+          <sc-for list="{{ bkRows }}" as="b" hint-placeholder-count="7">
+            <div onClick="{{ b.open }}" style="display:grid;grid-template-columns:96px 1.5fr 1.6fr 78px 118px 92px 108px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <span style="font-family:'Inter';font-size:12px;font-weight:600;color:#d4b26a;">{{ b.id }}</span>
+              <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.name }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;">{{ b.phone }}</div></div>
+              <div style="min-width:0;"><div style="color:#c5c0b6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ b.venue }}</div><div style="font-size:11px;color:#8c8679;margin-top:2px;">{{ b.castLabel }}</div></div>
+              <span style="color:#c5c0b6;">{{ b.ppl }} người</span>
+              <span style="color:#8c8679;font-size:12px;">{{ b.time }}</span>
+              <span style="font-size:11.5px;color:#9b958a;">{{ b.src }}</span>
+              <span style="text-align:right;"><span style="{{ b.stStyle }}">{{ b.stLabel }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ bkOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:60;">
+    <div onClick="{{ bkClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:428px;max-width:92vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Booking · {{ bk.id }}</div>
+          <div style="font-size:20px;font-weight:700;color:#f3f0ea;margin-top:5px;">{{ bk.name }}</div>
+          <span style="{{ bk.stStyle }}margin-top:9px;">{{ bk.stLabel }}</span>
+        </div>
+        <span onClick="{{ bkClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:22px 24px;display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Số điện thoại</span><span style="font-size:13px;color:#e3c27e;font-weight:600;display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1"/></svg>{{ bk.phone }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Quán</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.venue }} · {{ bk.area }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Cast chỉ định</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.castLabel }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Số người</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.ppl }} khách</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Khung giờ</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.time }}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Nguồn gửi</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ bk.src }}</span></div>
+        <div style="padding:14px 0 4px;">
+          <div style="font-size:12.5px;color:#8c8679;margin-bottom:7px;">Ghi chú</div>
+          <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:12px 14px;min-height:44px;">{{ bk.noteText }}</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;padding:12px 14px;background:rgba(111,159,216,.06);border:1px solid rgba(111,159,216,.2);border-radius:11px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
+          <span style="font-size:11.5px;color:#a9c4e6;line-height:1.55;">Khách đổi giờ/số người → hủy &amp; đặt lại. Chỉ được hủy trước giờ hẹn tối thiểu 1 giờ (BOO-08).</span>
+        </div>
+      </div>
+      <div style="padding:16px 24px 26px;border-top:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:10px;">
+        <sc-if value="{{ bk.isNew }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:10px;">
+            <span onClick="{{ bkMarkDone }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Đánh dấu hoàn tất</span>
+            <span onClick="{{ bkCancelBk }}" style="flex:none;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#e88b99;background:rgba(224,105,122,.08);border:1px solid rgba(224,105,122,.32);padding:13px 18px;border-radius:11px;cursor:pointer;">Hủy</span>
+          </div>
+          <span onClick="{{ bkNotify }}" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);padding:12px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Gửi Telegram báo quán</span>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = { toast:null };
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  chip(kind){ const m={success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],warn:['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],error:['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],pink:['rgba(224,114,158,.1)','rgba(224,114,158,.28)','#e79ab8'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
+  pill(kind){ return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; }
+
+  renderVals(){
+    const S=this.state, o={ toast:S.toast };
+    const BK=[
+      {id:'BK-2041',name:'Tanaka Hiro',phone:'090 •• 221',ppl:4,time:'21:30 · 01/07',venue:'Club Lumière',area:'Tây Hồ',cast:'Yuki',status:'new',src:'Form web',note:'Bàn gần sàn DJ. Khách VIP quen, chuẩn bị Dom Pérignon.'},
+      {id:'BK-2038',name:'Kobayashi Aya',phone:'090 •• 118',ppl:3,time:'23:00 · 01/07',venue:'Club Lumière',area:'Tây Hồ',cast:'Rin',status:'new',src:'Form web',note:'Yêu cầu bàn riêng tư.'},
+      {id:'BK-2042',name:'Fujimoto Ken',phone:'097 •• 640',ppl:2,time:'22:00 · 01/07',venue:'Bar Tokyo Night',area:'Ba Đình',cast:'—',status:'new',src:'Form web',note:''},
+      {id:'BK-2040',name:'Suzuki Ken',phone:'091 •• 776',ppl:2,time:'20:00 · 01/07',venue:'Sakura Lounge',area:'Hoàn Kiếm',cast:'Mai',status:'done',src:'Form web',note:'Đã tới quán, dùng coupon −8%.'},
+      {id:'BK-2037',name:'Sato Daiki',phone:'097 •• 552',ppl:5,time:'19:30 · 30/06',venue:'Bar Tokyo Night',area:'Ba Đình',cast:'—',status:'done',src:'Form web',note:''},
+      {id:'BK-2036',name:'Watanabe Yui',phone:'096 •• 990',ppl:2,time:'21:00 · 30/06',venue:'Akari Lounge',area:'Tây Hồ',cast:'Hana',status:'done',src:'Form web',note:''},
+      {id:'BK-2039',name:'Yamada Rei',phone:'098 •• 004',ppl:6,time:'22:15 · 01/07',venue:'KTV Hoàng Gia',area:'Kim Mã',cast:'—',status:'cancelled',src:'Form web',note:'Khách đổi lịch, hủy trước 3 giờ.'},
+      {id:'BK-2035',name:'Inoue Sho',phone:'090 •• 333',ppl:8,time:'22:45 · 30/06',venue:'Sakura Lounge',area:'Hoàn Kiếm',cast:'Mai',status:'cancelled',src:'Form web',note:'Hủy sát giờ — đã ghi nhận.'},
+    ];
+    const bmeta={new:['Mới','info'],done:['Hoàn tất','success'],cancelled:['Đã hủy','error']};
+    const bstat=(b)=>S['bk_'+b.id]||b.status;
+    const bAll=BK.map(b=>({...b,_s:bstat(b)}));
+    o.bkCountAll=bAll.length; o.bkCountNew=bAll.filter(b=>b._s==='new').length; o.bkCountDone=bAll.filter(b=>b._s==='done').length; o.bkCountCancel=bAll.filter(b=>b._s==='cancelled').length;
+    const bf=S.bookingFilter||'all';
+    const btab=(a)=>'font-size:12.5px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.bkTabAll=btab(bf==='all'); o.bkTabNew=btab(bf==='new'); o.bkTabDone=btab(bf==='done'); o.bkTabCancel=btab(bf==='cancelled');
+    o.bkAll=()=>this.setState({bookingFilter:'all'}); o.bkNew=()=>this.setState({bookingFilter:'new'}); o.bkDone=()=>this.setState({bookingFilter:'done'}); o.bkCancel=()=>this.setState({bookingFilter:'cancelled'});
+    o.bkRows=(bf==='all'?bAll:bAll.filter(b=>b._s===bf)).map(b=>{const m=bmeta[b._s];return {...b,castLabel:b.cast==='—'?'Không cast':('Cast: '+b.cast),stStyle:this.pill(m[1]),stLabel:m[0],open:()=>this.setState({bookingSel:b.id})};});
+    const selB=bAll.find(b=>b.id===S.bookingSel);
+    o.bkOpen=!!selB;
+    o.bk = selB ? {...selB, castLabel:selB.cast==='—'?'Không có':('Cast: '+selB.cast), noteText:selB.note||'Không có ghi chú.', stStyle:this.chip(bmeta[selB._s][1])+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;', stLabel:bmeta[selB._s][0], isNew:selB._s==='new'} : {};
+    o.bkClose=()=>this.setState({bookingSel:null});
+    o.bkMarkDone=()=>{ if(selB){this.setState({['bk_'+selB.id]:'done',bookingSel:null}); this.showToast('Đã đánh dấu hoàn tất '+selB.id);} };
+    o.bkCancelBk=()=>{ if(selB){this.setState({['bk_'+selB.id]:'cancelled',bookingSel:null}); this.showToast('Đã hủy booking '+selB.id);} };
+    o.bkNotify=()=>{ if(selB) this.showToast('Đã gửi Telegram báo quán '+selB.venue); };
+    return o;
+  }
+}
+
+</script>
+</body>
+</html>

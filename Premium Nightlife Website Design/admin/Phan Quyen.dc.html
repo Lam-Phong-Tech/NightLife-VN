@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="roles" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Phân quyền" page-en="Access Control" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Roles" style="padding:22px 26px 44px;">
+        <div style="display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start;">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Tài khoản</span>
+              <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+              <span onClick="{{ rlAdd }}" style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:7px 13px;border-radius:9px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm</span>
+            </div>
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+              <sc-for list="{{ rlAccounts }}" as="a" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
+                  <span style="width:40px;height:40px;flex:none;border-radius:11px;background:{{ a.avaBg }};display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:15px;">{{ a.ini }}</span>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#f3f0ea;">{{ a.name }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.email }}</div></div>
+                  <div style="text-align:right;"><span style="{{ a.roleStyle }}">{{ a.role }}</span><div style="font-size:10.5px;color:#8c8679;margin-top:5px;">{{ a.last }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <span style="font-size:16px;font-weight:600;color:#f3f0ea;">Ma trận phân quyền</span>
+              <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
+            </div>
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:1.6fr 56px 66px 66px;gap:6px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);align-items:center;">
+                <span style="font-size:10px;font-weight:700;letter-spacing:.8px;color:#57534b;text-transform:uppercase;">Chức năng</span>
+                <span style="text-align:center;font-size:10.5px;font-weight:700;color:#e3c27e;">Admin</span>
+                <span style="text-align:center;"><div style="font-size:10.5px;font-weight:700;color:#c5c0b6;">Operator</div><div style="font-size:7.5px;font-weight:700;color:#8c8679;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 4px;display:inline-block;margin-top:2px;">P1</div></span>
+                <span style="text-align:center;font-size:10.5px;font-weight:700;color:#c5c0b6;">Partner</span>
+              </div>
+              <sc-for list="{{ rlCaps }}" as="c" hint-placeholder-count="10">
+                <div style="display:grid;grid-template-columns:1.6fr 56px 66px 66px;gap:6px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">
+                  <span style="font-size:12px;color:#c5c0b6;">{{ c.name }}</span>
+                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.aCol }};">{{ c.aTxt }}</span>
+                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.oCol }};">{{ c.oTxt }}</span>
+                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.pCol }};">{{ c.pTxt }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:14px;padding:12px 14px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:12px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+              <span style="font-size:11px;color:#cbb884;line-height:1.5;">MVP (P0): <b style="color:#f0dda8;">Admin</b> toàn quyền · <b style="color:#f0dda8;">Partner</b> chỉ đăng nhập + quét QR + xác nhận check-in. Vai trò <b style="color:#f0dda8;">Operator</b> mở rộng ở P1.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = { toast:null };
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  chip(kind){ const m={info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
+
+  renderVals(){
+    const S=this.state, o={ toast:S.toast };
+    o.rlAdd=()=>this.showToast('Mở form thêm tài khoản');
+    const rst=(kind)=>this.chip(kind==='admin'?'gold':kind==='operator'?'info':'muted')+'font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:7px;display:inline-flex;';
+    o.rlAccounts=[
+      {ini:'A',name:'Nguyễn Admin',email:'admin@vietyoru.vn',role:'Super Admin',kind:'admin',last:'● Đang online',avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
+      {ini:'O',name:'Trần Vận Hành',email:'operator@vietyoru.vn',role:'Operator',kind:'operator',last:'2 giờ trước',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {ini:'CL',name:'Club Lumière',email:'partner.lumiere@vietyoru.vn',role:'Đối tác',kind:'partner',last:'15 phút trước',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {ini:'SL',name:'Sakura Lounge',email:'partner.sakura@vietyoru.vn',role:'Đối tác',kind:'partner',last:'1 ngày trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {ini:'KH',name:'KTV Hoàng Gia',email:'partner.hoanggia@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+    ].map(a=>({...a,roleStyle:rst(a.kind)}));
+    const yes='#e3c27e', no='#413d36', mark=(v)=>v?'✓':'—';
+    const CAPS=[
+      ['Đăng nhập hệ thống',1,1,1],
+      ['CRUD quán & cast',1,1,0],
+      ['Duyệt / quản lý booking',1,1,0],
+      ['Duyệt hóa đơn & đối soát',1,0,0],
+      ['Điều khiển ranking',1,1,0],
+      ['Campaign / banner / blog',1,1,0],
+      ['Báo cáo doanh thu',1,0,0],
+      ['Quét mã QR của khách',1,0,1],
+      ['Xác nhận khách check-in',1,0,1],
+      ['Phân quyền tài khoản',1,0,0],
+    ];
+    o.rlCaps=CAPS.map(c=>({name:c[0], aTxt:mark(c[1]), aCol:c[1]?yes:no, oTxt:mark(c[2]), oCol:c[2]?yes:no, pTxt:mark(c[3]), pCol:c[3]?yes:no}));
+    return o;
+  }
+}
+
+</script>
+</body>
+</html>

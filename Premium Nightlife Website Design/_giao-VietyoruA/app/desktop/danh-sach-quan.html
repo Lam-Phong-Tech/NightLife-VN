@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0c0c0f;}
+  a{text-decoration:none;color:inherit;}
+  input{font-family:inherit;outline:none;}
+  .card{transition:transform .16s ease, box-shadow .16s ease;}
+  .card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.14);}
+  .lk{transition:color .14s ease;}
+  .lk:hover{color:#d4b26a;}
+</style>
+</helmet>
+
+<div style="width:max-content;min-width:100%;min-height:100vh;box-sizing:border-box;padding:34px 48px 64px;background:#0c0c0f;font-family:'Inter',sans-serif;">
+
+  <div style="max-width:1100px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+    <a href="trang-chu.html" style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:7px 14px;font-weight:600;">‹ Trang chủ</a>
+    <div style="font-size:13px;color:#8c8679;">Bước 2/5 · <b style="color:#f3f0ea;">Danh sách quán</b> — lọc / tìm / bấm vào quán</div>
+  </div>
+
+  <div style="width:1100px;background:#0e0d12;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.10);color:#f3f0ea;">
+    <!-- header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:34px;">
+        <a href="trang-chu.html" style="font-weight:800;font-size:20px;color:#d4b26a;">nightlife<span style="color:#f3f0ea;">.hn</span></a>
+        <div style="display:flex;gap:22px;font-size:14px;color:#c5c0b6;font-weight:500;"><a href="trang-chu.html" class="lk">Trang chủ</a><a href="danh-sach-quan.html" style="color:#d4b26a;font-weight:600;">Tìm quán</a><a href="danh-sach-cast.html" class="lk">Cast</a><a href="xep-hang.html" class="lk">Bảng xếp hạng</a><span class="lk">Tour</span><span class="lk">Blog</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;"><div style="font-size:13px;color:#d4b26a;background:rgba(212,178,106,.13);border-radius:20px;padding:6px 12px;font-weight:600;">VI · 日本語</div><a href="../../index.html" class="lk" style="font-size:13px;color:#c5c0b6;">Đăng nhập</a><div style="font-size:13px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:22px;padding:9px 18px;">Đăng ký đối tác</div></div>
+    </div>
+
+    <!-- search bar -->
+    <div style="padding:20px 34px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;">
+      <div style="display:flex;align-items:center;gap:8px;padding:0 16px;height:46px;border:1px solid rgba(255,255,255,.08);border-radius:11px;color:#d4b26a;font-size:14px;font-weight:600;"><img src="https://img.icons8.com/ios/100/D4B26A/marker.png" style="width:15px;height:15px;" alt="">Hà Nội</div>
+      <div style="flex:1;display:flex;align-items:center;gap:10px;height:46px;padding:0 16px;border:1px solid rgba(255,255,255,.08);border-radius:11px;"><img src="https://img.icons8.com/ios/100/8C8679/search.png" style="width:17px;height:17px;" alt=""><input onInput="{{ onSearch }}" placeholder="Tìm theo tên quán…" style="background:rgba(255,255,255,.04);color:#f3f0ea;flex:1;border:none;font-size:14px;color:#f3f0ea;background:transparent;"></div>
+      <div style="display:flex;align-items:center;gap:8px;height:46px;padding:0 26px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;border-radius:11px;font-weight:600;font-size:14px;">Tìm</div>
+    </div>
+
+    <div style="display:flex;gap:0;">
+      <!-- filter sidebar -->
+      <div style="width:262px;flex:none;background:#15131a;border-right:1px solid rgba(255,255,255,.08);padding:24px;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:18px;">Bộ lọc</div>
+        <div style="font-size:12px;font-weight:700;color:#8c8679;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Loại hình</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#8c8679;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;">Khu vực</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+          <sc-for list="{{ areas }}" as="a" hint-placeholder-count="6"><div onClick="{{ a.pick }}" style="{{ a.style }}">{{ a.label }}</div></sc-for>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#8c8679;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;">Đánh giá</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;color:#c5c0b6;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid #d4b26a;display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);"></span></span><span style="color:#e3c27e;">★★★★★</span> từ 4.5</div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.14);"></span><span style="color:#e3c27e;">★★★★</span><span style="color:#d8d6e0;">★</span> từ 4.0</div>
+        </div>
+      </div>
+
+      <!-- results -->
+      <div style="flex:1;padding:22px 28px 30px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+          <div style="font-size:14px;color:#c5c0b6;"><b style="color:#f3f0ea;">{{ count }} quán</b> phù hợp</div>
+          <div style="font-size:13.5px;color:#c5c0b6;border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:8px 14px;background:#15131a;">Sắp xếp: <b style="color:#f3f0ea;">Nổi bật</b> ▾</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+          <sc-for list="{{ venues }}" as="v" hint-placeholder-count="6">
+            <div onClick="{{ v.open }}" class="card" style="background:#15131a;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.06);cursor:pointer;">
+              <div style="height:128px;background:{{ v.img }};position:relative;">
+                <sc-if value="{{ v.hasBadge }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;top:10px;left:10px;background:#15131a;color:{{ v.badgeColor }};font-size:10.5px;font-weight:700;border-radius:14px;padding:3px 9px;">{{ v.badgeText }}</span></sc-if>
+                <span onClick="{{ v.fav }}" style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;"><img src="{{ v.favIcon }}" style="width:16px;height:16px;" alt=""></span>
+              </div>
+              <div style="padding:13px;">
+                <div style="font-weight:600;font-size:14.5px;">{{ v.name }}</div>
+                <div style="font-size:12px;color:#8c8679;margin-top:3px;">{{ v.area }} · {{ v.catLabel }}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;"><span style="font-size:12.5px;color:#e3c27e;">★ {{ v.rating }} <span style="color:#a8a5b4;">({{ v.reviews }})</span></span><span style="font-size:12.5px;color:#f3f0ea;font-weight:600;">từ {{ v.price }}</span></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;color:#8c8679;font-size:14px;padding:40px 0;">Không có quán nào khớp bộ lọc. Thử bỏ bớt điều kiện.</div></sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var cat = st.cat || 'all', area = st.area || 'Tất cả', q = (st.q || '').toLowerCase();
+    var list = NL.VENUES.filter(function(v){
+      return (cat==='all'||v.cat===cat) && (area==='Tất cả'||v.area===area) && (q===''||v.name.toLowerCase().indexOf(q)>=0);
+    });
+    var venues = list.map(function(v){
+      var faved = NL.fav.has(v.name);
+      return {
+        name:v.name, catLabel:v.catLabel, area:v.area, price:v.price, rating:v.rating, reviews:v.reviews,
+        img:NL.bg(v.imgId, v.gradA, v.gradB),
+        favIcon:NL.heart(faved),
+        hasBadge: !!(v.disc || v.tag),
+        badgeText: v.disc ? ('Ưu đãi '+v.disc) : v.tag,
+        badgeColor: v.disc ? '#c0246a' : '#d4b26a',
+        open:function(){ NL.booking.patch({venueSlug:v.slug, venueName:v.name, venueArea:v.area, venuePrice:v.price, venueCat:v.catLabel, venueImg:v.imgId, venueGradA:v.gradA, venueGradB:v.gradB}); location.href='chi-tiet-quan.html'; },
+        fav:function(e){ if(e&&e.preventDefault){e.preventDefault();e.stopPropagation();} NL.fav.toggle(v.name); self.forceUpdate(); }
+      };
+    });
+    var cats = NL.CATS.map(function(c){ return {label:c[1], style:NL.chip(cat===c[0]), pick:function(){ self.setState({cat:c[0]}); }}; });
+    var areas = NL.AREAS.map(function(a){ return {label:a, style:NL.chip(area===a), pick:function(){ self.setState({area:a}); }}; });
+    return {
+      venues:venues, count:list.length, empty:list.length===0,
+      cats:cats, areas:areas,
+      onSearch:function(e){ self.setState({q:e.target.value}); }
+    };
+  }
+}
+</script>
+</body>
+</html>

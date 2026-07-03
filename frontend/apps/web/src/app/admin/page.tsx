@@ -1,33 +1,9 @@
 "use client";
 
-import { Download, Building2, CalendarCheck, ReceiptText, Handshake, UsersRound, MessageCircle, TicketPercent } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { apiClient } from '@/lib/api/client';
 import { clearAuthSession } from '@/lib/auth/session';
-
-const colors = {
-  surface1: '#18181f',
-  surface2: '#202028',
-  borderSoft: 'rgba(255,255,255,.05)',
-  borderGold12: 'rgba(212,178,106,.12)',
-  borderGold22: 'rgba(104, 79, 25, 0.22)',
-  text: '#f3f0ea',
-  text2: '#c5c0b6',
-  muted: '#8c8679',
-  onGold: '#241a0a',
-  gold: '#d4b26a',
-  goldBright: '#e3c27e',
-  goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
-  neonPink: '#e0729e',
-  green: '#4ade80',
-  greenBg: 'rgba(74,222,128,0.1)',
-  red: '#f87171',
-  redBg: 'rgba(248,113,113,0.1)',
-  blue: '#60a5fa',
-  blueBg: 'rgba(96,165,250,0.1)',
-};
 
 type AdminDashboardStats = {
   activeStores: number;
@@ -68,7 +44,7 @@ type AdminDashboardStats = {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState(0);
+  const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
 
   const loadStats = async () => {
     setIsLoading(true);
@@ -93,394 +69,289 @@ export default function AdminDashboardPage() {
   }, [activeFilter]);
 
   const formatVnd = (val: number) => {
-    if (val >= 1000000) return `${(val / 1000000).toFixed(0)}M₫`;
+    if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M₫`.replace('.0', '');
     return `${val.toLocaleString('vi-VN')}₫`;
   };
 
   const formatDateStr = () => {
     const d = new Date();
     const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    return `${days[d.getDay()]} - ${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    return `${days[d.getDay()]} · ${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
   };
 
-  const labelMap = ['hôm nay', 'tuần này', 'tháng này'];
-  const lbl = labelMap[activeFilter];
+  // Convert stats to fallbacks
+  const pendingBills = stats?.pendingBills ?? 5;
+  const pendingPartners = stats?.pendingPartners ?? 3;
+  const activeStores = stats?.activeStores ?? 24;
+  const totalCasts = stats?.totalCasts ?? 86;
+  const pendingCasts = stats?.pendingCasts ?? 4;
+  const todaysBookings = stats?.todaysBookings ?? 12;
+  const todaysBookingsCompleted = stats?.todaysBookingsCompleted ?? 9;
+  const todaysBookingsNew = stats?.todaysBookingsNew ?? 3;
+  const pendingBillsAmount = stats?.pendingBillsAmount ?? 48200000;
+  const monthlyRevenue = stats?.monthlyRevenue ?? 312000000;
+  const commissionAmount = stats?.commissionAmount ?? 41800000;
+
+  // Chart
+  const chartData = stats?.revenue7Days || [
+    { date: 'T2', revenue: 160 },
+    { date: 'T3', revenue: 210 },
+    { date: 'T4', revenue: 135 },
+    { date: 'T5', revenue: 250 },
+    { date: 'T6', revenue: 198 },
+    { date: 'T7', revenue: 312 },
+    { date: 'CN', revenue: 274 },
+  ];
+  const maxRev = Math.max(...chartData.map(d => d.revenue), 1);
 
   return (
-    <div style={{ padding: '24px 26px 40px' }}>
-      {/* HERO SECTION */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
+    <div data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
+      {/* welcome + range */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: '28px', fontWeight: 700, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            Chào buổi tối, Admin <span style={{ color: colors.gold }}>🌙</span>
-          </h2>
-          <p style={{ color: colors.muted, margin: 0, fontSize: '14px' }}>
-            {formatDateStr()} - Có <strong style={{ color: colors.gold }}>{stats?.pendingBills ?? 5} hóa đơn</strong> và <strong style={{ color: colors.gold }}>{stats?.pendingPartners ?? 3} đối tác</strong> đang chờ bạn xử lý.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
-            {['Hôm nay', 'Tuần', 'Tháng'].map((t, i) => (
-              <button 
-                key={t} 
-                onClick={() => setActiveFilter(i)}
-                style={{
-                  background: activeFilter === i ? colors.goldGrad : 'transparent',
-                  color: activeFilter === i ? colors.onGold : colors.muted,
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: activeFilter === i ? 700 : 500,
-                  cursor: 'pointer'
-                }}
-              >
-                {t}
-              </button>
-            ))}
+          <div style={{ fontSize: '22px', fontWeight: 700, color: '#f3f0ea' }}>Chào buổi tối, Admin 🌙</div>
+          <div style={{ fontSize: '13px', color: '#8c8679', marginTop: '4px' }}>
+            {formatDateStr()} · Có <b style={{ color: '#e3c27e' }}>{pendingBills} hóa đơn</b> và <b style={{ color: '#e3c27e' }}>{pendingPartners} đối tác</b> đang chờ bạn xử lý.
           </div>
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: colors.goldGrad,
-            color: colors.onGold,
-            border: 'none',
-            padding: '0 20px',
-            height: '40px',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 700,
-            cursor: 'pointer'
-          }}>
-            <Download size={16} />
-            Xuất báo cáo
-          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '3px', gap: '2px' }}>
+            {['Hôm nay', 'Tuần', 'Tháng'].map((t, i) => {
+              const isActive = activeFilter === i;
+              return (
+                <span 
+                  key={t}
+                  onClick={() => setActiveFilter(i)}
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? '#241a0a' : '#9b958a',
+                    background: isActive ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {t}
+                </span>
+              );
+            })}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Xuất báo cáo
+          </span>
         </div>
       </div>
 
-      {/* TOP CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '14px', marginBottom: '24px' }}>
-        {/* Card 1 */}
-        <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: colors.surface2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building2 size={20} color={colors.muted} />
-            </div>
-            <span style={{ color: colors.green, fontSize: '13px', fontWeight: 600 }}>+2</span>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>{stats?.activeStores ?? 24}</div>
-          <div style={{ fontSize: '13px', color: colors.muted, fontWeight: 500 }}>Quán hoạt động<br/>HN {stats?.activeStoresHn ?? 15} · HCM {stats?.activeStoresHcm ?? 9}</div>
+      {/* stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: '14px' }}>
+        <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+2</span></div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{activeStores}</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Quán hoạt động</div>
+          <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>HN {stats?.activeStoresHn ?? 15} · HCM {stats?.activeStoresHcm ?? 9}</div>
         </div>
-        
-        {/* Card 2 */}
-        <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: colors.surface2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <UsersRound size={20} color={colors.muted} />
-            </div>
-            <span style={{ color: colors.gold, fontSize: '13px', fontWeight: 600 }}>{stats?.pendingCasts ?? 4} chờ</span>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>{stats?.totalCasts ?? 86}</div>
-          <div style={{ fontSize: '13px', color: colors.muted, fontWeight: 500 }}>Cast<br/>{stats?.pendingCasts ?? 4} chờ kiểm duyệt</div>
+        <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6a3 3 0 0 1 0 6"/></svg></span><span style={{ fontSize: '11px', color: '#e7b869', fontWeight: 600 }}>{pendingCasts} chờ</span></div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{totalCasts}</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Cast</div>
+          <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>{pendingCasts} chờ kiểm duyệt</div>
         </div>
-
-        {/* Card 3 */}
-        <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: colors.blueBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CalendarCheck size={20} color={colors.blue} />
-            </div>
-            <span style={{ color: colors.green, fontSize: '13px', fontWeight: 600 }}></span>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>{stats?.todaysBookings ?? 12}</div>
-          <div style={{ fontSize: '13px', color: colors.muted, fontWeight: 500 }}>Booking {lbl}<br/>{stats?.todaysBookingsCompleted ?? 9} hoàn tất · {stats?.todaysBookingsNew ?? 3} mới</div>
+        <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(111,159,216,.12)', border: '1px solid rgba(111,159,216,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8fb6e4' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+{todaysBookingsNew} mới</span></div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{todaysBookings}</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Booking hôm nay</div>
+          <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>{todaysBookingsCompleted} hoàn tất · {todaysBookingsNew} mới</div>
         </div>
-
-        {/* Card 4 - Highlight */}
-        <div style={{ background: 'rgba(212,178,106,.05)', border: `1px solid ${colors.borderGold22}`, borderRadius: '16px', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ReceiptText size={20} color={colors.gold} />
-            </div>
-            <span style={{ background: colors.gold, color: colors.onGold, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', height: 'fit-content' }}>CHỜ</span>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '4px', color: colors.gold }}>{stats?.pendingBills ?? 5}</div>
-          <div style={{ fontSize: '13px', color: colors.gold, fontWeight: 500 }}>Hóa đơn chờ duyệt<br/>≈ {stats ? formatVnd(stats.pendingBillsAmount || 0) : '48.200.000₫'}</div>
+        <div style={{ background: 'rgba(224,164,78,.07)', border: '1px solid rgba(224,164,78,.28)', borderRadius: '16px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(224,164,78,.14)', border: '1px solid rgba(224,164,78,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b869' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h4"/></svg></span><span style={{ fontSize: '10px', fontWeight: 700, color: '#241a0a', background: '#e0a44e', borderRadius: '8px', padding: '3px 7px' }}>CHỜ</span></div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#e7b869', marginTop: '12px', letterSpacing: '-.5px' }}>{pendingBills}</div>
+          <div style={{ fontSize: '11.5px', color: '#c5c0b6', marginTop: '1px' }}>Hóa đơn chờ duyệt</div>
+          <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '6px' }}>≈ {formatVnd(pendingBillsAmount)}</div>
         </div>
-
-        {/* Card 5 */}
-        <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '10px', background: colors.surface2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: '20px', color: colors.muted }}>$</span>
-            </div>
-            <span style={{ color: colors.green, fontSize: '13px', fontWeight: 600 }}></span>
+        <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+18%</span></div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#e3c27e', marginTop: '12px', letterSpacing: '-.5px' }}>
+            {formatVnd(monthlyRevenue).replace('M₫', '')}
+            <span style={{ fontSize: '15px', fontWeight: 700 }}>M₫</span>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, marginBottom: '4px' }}>
-            {stats ? formatVnd(stats.monthlyRevenue) : '312M₫'}
-          </div>
-          <div style={{ fontSize: '13px', color: colors.muted, fontWeight: 500 }}>Doanh thu {lbl}<br/>Hoa hồng {stats ? formatVnd(stats.commissionAmount || 0) : '41.8M₫'}</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Doanh thu tháng 6</div>
+          <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>Hoa hồng {formatVnd(commissionAmount)}</div>
         </div>
-
-        {/* Card 6 */}
-        <div style={{ background: 'rgba(224,114,158,.06)', border: `1px solid rgba(224,114,158,.24)`, borderRadius: '16px', padding: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ width: 38, height: 38, borderRadius: '11px', background: 'rgba(224,114,158,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(224,114,158,.3)' }}>
-              <Handshake size={19} color="#e79ab8" />
-            </div>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: colors.neonPink, boxShadow: `0 0 7px ${colors.neonPink}` }}></div>
-          </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, marginBottom: '4px', letterSpacing: '-0.5px' }}>{stats?.pendingPartners ?? 3}</div>
-          <div style={{ fontSize: '11.5px', color: colors.muted, fontWeight: 500 }}>Đối tác Join Us</div>
+        <div style={{ background: 'rgba(224,114,158,.06)', border: '1px solid rgba(224,114,158,.24)', borderRadius: '16px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(224,114,158,.12)', border: '1px solid rgba(224,114,158,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e79ab8' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 10.5-2.3M17 8v6M20 11h-6"/></svg></span><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#e0729e', boxShadow: '0 0 7px #e0729e' }}></span></div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{pendingPartners}</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Đối tác Join Us</div>
           <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>Chờ duyệt hợp tác</div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 400px', gap: '24px' }}>
-        
-        {/* LEFT COLUMN */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* ACTION REQUIRED SECTION */}
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: colors.text }}>Cần xử lý ngay</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              
-              <div style={{ background: 'rgba(212,178,106,.05)', border: `1px solid ${colors.borderGold22}`, borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: colors.gold }}></div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: colors.gold, marginBottom: '8px' }}>{stats?.pendingBills ?? 5}</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text, marginBottom: '16px' }}>Hóa đơn chờ duyệt</div>
-                <Link href="/admin/bills" style={{ textDecoration: 'none' }}>
-                  <div style={{ fontSize: '13px', color: colors.muted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    Duyệt ngay <span style={{ color: colors.gold }}>›</span>
-                  </div>
-                </Link>
-              </div>
+      {/* two columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '18px', marginTop: '20px', alignItems: 'start' }}>
 
-              <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>{stats?.pendingCasts ?? 4}</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text, marginBottom: '16px' }}>Cast chờ kiểm duyệt</div>
-                <Link href="/admin/casts" style={{ textDecoration: 'none' }}>
-                  <div style={{ fontSize: '13px', color: colors.muted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    Kiểm duyệt <span style={{ color: colors.gold }}>›</span>
-                  </div>
-                </Link>
-              </div>
-
-              <div style={{ background: 'rgba(224,114,158,.05)', border: `1px solid rgba(224,114,158,.2)`, borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: colors.neonPink }}></div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>{stats?.pendingPartners ?? 3}</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text, marginBottom: '16px' }}>Đối tác Join Us</div>
-                <Link href="/admin/partners" style={{ textDecoration: 'none' }}>
-                  <div style={{ fontSize: '13px', color: colors.muted, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    Xem yêu cầu <span style={{ color: colors.gold }}>›</span>
-                  </div>
-                </Link>
-              </div>
-
+        {/* LEFT */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* cần xử lý */}
+          <div style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '18px', padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Cần xử lý ngay</span>
+              <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.4),transparent)' }}></span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+              <Link href="/admin/bills" style={{ textDecoration: 'none', background: 'rgba(224,164,78,.07)', border: '1px solid rgba(224,164,78,.24)', borderRadius: '14px', padding: '14px', cursor: 'pointer', display: 'block' }}>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#e7b869' }}>{pendingBills}</div>
+                <div style={{ fontSize: '12px', color: '#c5c0b6', fontWeight: 500, marginTop: '2px' }}>Hóa đơn chờ duyệt</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>Duyệt ngay <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+              </Link>
+              <Link href="/admin/casts" style={{ textDecoration: 'none', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '14px', padding: '14px', cursor: 'pointer', display: 'block' }}>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#f3f0ea' }}>{pendingCasts}</div>
+                <div style={{ fontSize: '12px', color: '#c5c0b6', fontWeight: 500, marginTop: '2px' }}>Cast chờ kiểm duyệt</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>Kiểm duyệt <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+              </Link>
+              <Link href="/admin/partners" style={{ textDecoration: 'none', background: 'rgba(224,114,158,.06)', border: '1px solid rgba(224,114,158,.22)', borderRadius: '14px', padding: '14px', cursor: 'pointer', display: 'block' }}>
+                <div style={{ fontSize: '24px', fontWeight: 800, color: '#f3f0ea' }}>{pendingPartners}</div>
+                <div style={{ fontSize: '12px', color: '#c5c0b6', fontWeight: 500, marginTop: '2px' }}>Đối tác Join Us</div>
+                <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>Xem yêu cầu <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+              </Link>
             </div>
           </div>
 
-          {/* RECENT BOOKINGS */}
-          <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.borderSoft}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: colors.text }}>Booking gần đây</h3>
-              <span style={{ fontSize: '13px', color: colors.muted, cursor: 'pointer' }}>Xem tất cả</span>
+          {/* recent bookings */}
+          <div style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '18px', padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Booking gần đây</span>
+              <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.4),transparent)' }}></span>
+              <Link href="/admin/bookings" style={{ fontSize: '11.5px', color: '#9b958a', cursor: 'pointer', textDecoration: 'none' }}>Xem tất cả</Link>
             </div>
-            
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>KHÁCH</th>
-                  <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>QUÁN · CAST</th>
-                  <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>GIỜ</th>
-                  <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px', textAlign: 'right' }}>TRẠNG THÁI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(stats?.recentBookings ?? [
-                  { customerName: 'Tanaka Hiro', partySize: 4, store: { name: 'Club Lumiere' }, cast: { stageName: 'Yuki' }, scheduledAt: '2026-07-01T21:30:00', status: 'Mới' },
-                  { customerName: 'Suzuki Ken', partySize: 2, store: { name: 'Sakura Lounge' }, cast: { stageName: 'Mai' }, scheduledAt: '2026-07-01T20:00:00', status: 'Hoàn tất' },
-                  { customerName: 'Yamada Rei', partySize: 6, store: { name: 'KTV Hoàng Gia' }, cast: null, scheduledAt: '2026-07-01T22:15:00', status: 'Đã hủy' },
-                  { customerName: 'Kobayashi Aya', partySize: 3, store: { name: 'Club Lumiere' }, cast: { stageName: 'Rin' }, scheduledAt: '2026-07-01T23:00:00', status: 'Mới' },
-                ]).map((row, idx) => {
-                  const statusColor = row.status === 'Mới' || row.status === 'REQUESTED' ? colors.blue : 
-                                      row.status === 'Hoàn tất' || row.status === 'COMPLETED' ? colors.green : 
-                                      colors.red;
-                  const statusBg = row.status === 'Mới' || row.status === 'REQUESTED' ? colors.blueBg : 
-                                   row.status === 'Hoàn tất' || row.status === 'COMPLETED' ? colors.greenBg : 
-                                   colors.redBg;
-                  const displayStatus = row.status === 'REQUESTED' ? 'Mới' :
-                                        row.status === 'COMPLETED' ? 'Hoàn tất' :
-                                        row.status === 'CANCELLED' ? 'Đã hủy' : row.status;
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr .7fr 1fr', gap: '10px', fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#57534b', textTransform: 'uppercase', padding: '0 4px 10px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                <span>Khách</span><span>Quán · Cast</span><span>Giờ</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+              </div>
+              {stats?.recentBookings?.map((b, idx, arr) => {
+                const isLast = idx === arr.length - 1;
+                let statusColor = '#8fb6e4';
+                let statusBg = 'rgba(111,159,216,.12)';
+                let statusBorder = 'rgba(111,159,216,.28)';
+                let statusText = 'Mới';
 
-                  return (
-                    <tr key={idx} style={{ borderTop: `1px solid ${colors.borderSoft}` }}>
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text }}>{row.customerName}</div>
-                        <div style={{ fontSize: '12px', color: colors.muted, marginTop: '2px' }}>{row.partySize} khách · Telegram</div>
-                      </td>
-                      <td style={{ padding: '16px 24px' }}>
-                        <div style={{ fontSize: '14px', color: colors.text }}>{row.store.name}</div>
-                        <div style={{ fontSize: '12px', color: colors.muted, marginTop: '2px' }}>Cast: {row.cast?.stageName || 'Không cast'}</div>
-                      </td>
-                      <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>
-                        {new Date(row.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        <span style={{ 
-                          background: statusBg, 
-                          color: statusColor, 
-                          border: `1px solid ${statusColor}40`,
-                          padding: '4px 12px', 
-                          borderRadius: '12px', 
-                          fontSize: '12px', 
-                          fontWeight: 600 
-                        }}>
-                          {displayStatus}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* TELEGRAM ALERTS */}
-          <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '24px', flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: colors.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.red, boxShadow: `0 0 8px ${colors.red}` }}></div>
-                Cảnh báo & Telegram
-              </h3>
-              <span style={{ fontSize: '11px', color: colors.muted }}>Trực tiếp</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {stats?.telegramLogs?.length ? stats.telegramLogs.map(log => {
-                let icon = <MessageCircle size={16} color={colors.blue} />;
-                let bg = colors.blueBg;
-                let title = 'Thông báo';
-                let detail = '';
-                
-                if (log.templateKey === 'NEW_BOOKING') {
-                  title = `Booking mới #${log.payload?.bookingCode || ''}`;
-                  detail = `${log.payload?.storeName || ''} · ${log.payload?.partySize || 0} khách`;
-                } else if (log.templateKey === 'NEW_BILL' || log.templateKey === 'BILL_PENDING') {
-                  icon = <ReceiptText size={16} color={colors.gold} />;
-                  bg = 'rgba(212,178,106,.1)';
-                  title = `Hóa đơn mới #${log.payload?.billNumber || ''} chờ duyệt`;
-                  detail = log.payload?.totalVnd ? `${log.payload.totalVnd.toLocaleString('vi-VN')}₫` : '';
-                } else if (log.templateKey === 'NEW_PARTNER') {
-                  icon = <Handshake size={16} color={colors.red} />;
-                  bg = colors.redBg;
-                  title = 'Yêu cầu hợp tác mới';
-                  detail = log.payload?.storeName || '';
+                if (b.status === 'COMPLETED') {
+                  statusColor = '#7fd3a2'; statusBg = 'rgba(95,191,134,.1)'; statusBorder = 'rgba(95,191,134,.28)'; statusText = 'Hoàn tất';
+                } else if (b.status === 'CANCELLED') {
+                  statusColor = '#e88b99'; statusBg = 'rgba(224,105,122,.1)'; statusBorder = 'rgba(224,105,122,.28)'; statusText = 'Đã hủy';
                 }
 
-                const timeString = new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr .7fr 1fr', gap: '10px', alignItems: 'center', padding: '12px 4px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,.04)', fontSize: '13px' }}>
+                    <div><div style={{ color: '#f3f0ea', fontWeight: 500 }}>{b.customerName}</div><div style={{ fontSize: '10.5px', color: '#57534b' }}>{b.partySize} khách · Telegram</div></div>
+                    <div style={{ color: '#c5c0b6' }}>{b.store.name}<div style={{ fontSize: '10.5px', color: '#8c8679' }}>{b.cast ? `Cast: ${b.cast.stageName}` : 'Không cast'}</div></div>
+                    <div style={{ color: '#8c8679', fontSize: '12px' }}>{new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div style={{ textAlign: 'right' }}><span style={{ fontSize: '11px', fontWeight: 600, color: statusColor, background: statusBg, border: `1px solid ${statusBorder}`, padding: '4px 10px', borderRadius: '20px' }}>{statusText}</span></div>
+                  </div>
+                );
+              })}
+              {(!stats?.recentBookings || stats.recentBookings.length === 0) && (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#8c8679', fontSize: '13px' }}>Chưa có booking nào.</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* telegram feed */}
+          <div style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '18px', padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#e0729e', boxShadow: '0 0 8px #e0729e', animation: 'vpulse 1.8s infinite' }}></span>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#f3f0ea' }}>Cảnh báo &amp; Telegram</span>
+              <span style={{ flex: 1 }}></span>
+              <span style={{ fontSize: '10px', color: '#57534b' }}>Trực tiếp</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {stats?.telegramLogs?.slice(0, 4).map((log, idx, arr) => {
+                const isLast = idx === arr.length - 1;
+                // mock styling based on templateKey
+                let icon = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>;
+                let iconColor = '#8fb6e4';
+                let iconBg = 'rgba(111,159,216,.12)';
+                
+                if (log.templateKey === 'bill_new') {
+                  icon = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/></svg>;
+                  iconColor = '#e7b869'; iconBg = 'rgba(224,164,78,.12)';
+                } else if (log.templateKey === 'partner_new') {
+                  icon = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 10.5-2.3M17 8v6M20 11h-6"/></svg>;
+                  iconColor = '#e79ab8'; iconBg = 'rgba(224,114,158,.12)';
+                } else if (log.templateKey === 'coupon_used') {
+                  icon = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>;
+                  iconColor = '#7fd3a2'; iconBg = 'rgba(95,191,134,.12)';
+                }
 
                 return (
-                  <div key={log.id} style={{ display: 'flex', gap: '12px' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '8px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', color: colors.text, lineHeight: '1.4' }}>
-                        <strong style={{ fontWeight: 700 }}>{title}</strong> {detail ? `— ${detail}` : ''}
+                  <div key={log.id} style={{ display: 'flex', gap: '11px', padding: '10px 0', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,.04)' }}>
+                    <span style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: iconColor }}>{icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12.5px', color: '#e6e2da', lineHeight: 1.4 }}>
+                        {log.templateKey === 'booking_new' ? <>Booking mới <b style={{ color: '#fff' }}>#BK-{log.id.slice(0,4)}</b> — 4 khách</> :
+                         log.templateKey === 'bill_new' ? <>Hóa đơn mới <b style={{ color: '#fff' }}>#BILL-{log.id.slice(0,4)}</b> chờ duyệt</> :
+                         log.templateKey === 'partner_new' ? <>Yêu cầu hợp tác mới — <b style={{ color: '#fff' }}>Lotus Club</b></> :
+                         <>Coupon <b style={{ color: '#fff' }}>−30%</b> đã dùng</>}
                       </div>
-                      <div style={{ fontSize: '12px', color: colors.muted, marginTop: '4px' }}>{timeString} · Telegram</div>
+                      <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '3px' }}>vài phút trước · {log.recipient}</div>
                     </div>
                   </div>
                 );
-              }) : (
-                <div style={{ fontSize: '13px', color: colors.muted, textAlign: 'center', padding: '20px 0' }}>Không có hoạt động mới</div>
+              })}
+              {(!stats?.telegramLogs || stats.telegramLogs.length === 0) && (
+                <div style={{ display: 'flex', gap: '11px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                  <span style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: 'rgba(111,159,216,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8fb6e4' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg></span>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: '12.5px', color: '#e6e2da', lineHeight: 1.4 }}>Booking mới <b style={{ color: '#fff' }}>#BK-2041</b> — Club Lumière · 4 khách</div><div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '3px' }}>2 phút trước · gửi nhóm Telegram</div></div>
+                </div>
+              )}
+              {(!stats?.telegramLogs || stats.telegramLogs.length === 0) && (
+                <div style={{ display: 'flex', gap: '11px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                  <span style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: 'rgba(224,164,78,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b869' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/></svg></span>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: '12.5px', color: '#e6e2da', lineHeight: 1.4 }}>Hóa đơn mới <b style={{ color: '#fff' }}>#BILL-8842</b> chờ duyệt — 12.500.000₫</div><div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '3px' }}>14 phút trước · Sakura Lounge</div></div>
+                </div>
+              )}
+              {(!stats?.telegramLogs || stats.telegramLogs.length === 0) && (
+                <div style={{ display: 'flex', gap: '11px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                  <span style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: 'rgba(224,114,158,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e79ab8' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 10.5-2.3M17 8v6M20 11h-6"/></svg></span>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: '12.5px', color: '#e6e2da', lineHeight: 1.4 }}>Yêu cầu hợp tác mới — <b style={{ color: '#fff' }}>Lotus Club</b> (HCM)</div><div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '3px' }}>31 phút trước · Join Us form</div></div>
+                </div>
+              )}
+              {(!stats?.telegramLogs || stats.telegramLogs.length === 0) && (
+                <div style={{ display: 'flex', gap: '11px', padding: '10px 0' }}>
+                  <span style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: 'rgba(95,191,134,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fd3a2' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg></span>
+                  <div style={{ flex: 1 }}><div style={{ fontSize: '12.5px', color: '#e6e2da', lineHeight: 1.4 }}>Coupon <b style={{ color: '#fff' }}>−30%</b> đã dùng tại Club Lumière</div><div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '3px' }}>48 phút trước · nhân viên quét QR</div></div>
+                </div>
               )}
             </div>
           </div>
 
-          {/* 7 DAY REVENUE CHART (Placeholder) */}
-          <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '24px', height: '200px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text, marginBottom: '4px' }}>Doanh thu 7 ngày</div>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: colors.gold }}>
-                  {stats?.revenue7Days ? formatVnd(stats.revenue7Days.reduce((acc, curr) => acc + curr.revenue, 0)) : '312M₫'}
-                </div>
-              </div>
-              <div style={{ fontSize: '11px', color: colors.muted }}>Quy : triệu đ</div>
+          {/* revenue chart */}
+          <div style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '18px', padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#f3f0ea' }}>Doanh thu 7 ngày</span>
+              <span style={{ fontSize: '11px', color: '#8c8679' }}>Gộp · triệu ₫</span>
             </div>
-            
-            {/* Chart Bars (Recharts) */}
-            <div style={{ flex: 1, width: '100%', minHeight: 0 }}>
-              {(() => {
-                const data = stats?.revenue7Days?.length === 7 ? stats.revenue7Days : [
-                  { date: '2026-06-26', revenue: 12000000 },
-                  { date: '2026-06-27', revenue: 18000000 },
-                  { date: '2026-06-28', revenue: 14000000 },
-                  { date: '2026-06-29', revenue: 15000000 },
-                  { date: '2026-06-30', revenue: 16000000 },
-                  { date: '2026-07-01', revenue: 28000000 },
-                  { date: '2026-07-02', revenue: 20000000 },
-                ];
-
-                const chartData = data.map(d => {
-                  const dateObj = new Date(d.date);
-                  const isToday = new Date().toDateString() === dateObj.toDateString();
-                  const label = dateObj.toLocaleDateString('vi-VN', { weekday: 'short' }).replace('Th ', 'T').replace('CN', 'CN');
-                  return {
-                    name: label,
-                    revenue: d.revenue / 1000000,
-                    isToday
-                  };
-                });
-
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#e3c27e', margin: '6px 0 16px' }}>{formatVnd(monthlyRevenue).replace('M₫', '')}<span style={{ fontSize: '13px', fontWeight: 600, color: '#8c8679' }}> M₫ · tháng 6</span></div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', height: '120px' }}>
+              {chartData.map((d, i) => {
+                const isLast = i === chartData.length - 1 || i === chartData.length - 2; // style difference for weekend
+                const h = Math.max(10, (d.revenue / maxRev) * 100);
+                const bg = isLast ? 'linear-gradient(180deg,#f4e3b4,#d4b26a)' : 'linear-gradient(180deg,rgba(212,178,106,.55),rgba(212,178,106,.12))';
+                const labelColor = isLast ? '#e3c27e' : '#57534b';
+                const fw = isLast ? 600 : 400;
+                
                 return (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#f4e3b4" />
-                          <stop offset="55%" stopColor="#d4b26a" />
-                          <stop offset="100%" stopColor="#b6924a" />
-                        </linearGradient>
-                      </defs>
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fontSize: 10, fill: colors.muted, fontWeight: 500 }} 
-                        dy={5} 
-                      />
-                      <Tooltip 
-                        cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
-                        contentStyle={{ background: colors.surface2, border: `1px solid ${colors.borderSoft}`, borderRadius: '8px', color: colors.text, fontSize: '12px' }}
-                        itemStyle={{ color: colors.gold }}
-                        formatter={(value) => [`${Number(value ?? 0)}M₫`, 'Doanh thu']}
-                        labelStyle={{ color: colors.muted, marginBottom: '4px' }}
-                      />
-                      <Bar dataKey="revenue" radius={[6, 6, 6, 6]} barSize={12} minPointSize={12}>
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.isToday ? 'url(#goldGrad)' : colors.surface2} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px' }}>
+                    <span style={{ width: '100%', height: `${h}%`, background: bg, borderRadius: '6px 6px 0 0', transition: 'height 0.3s ease' }}></span>
+                    <span style={{ fontSize: '9.5px', color: labelColor, fontWeight: fw }}>{d.date}</span>
+                  </div>
                 );
-              })()}
+              })}
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
   );

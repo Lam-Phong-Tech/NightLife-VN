@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+  .btn{cursor:pointer;transition:filter .14s;}
+  .btn:active{filter:brightness(.95);}
+</style>
+</helmet>
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+
+    <div style="position:relative;height:300px;background:{{ mainBg }};">
+      <a href="danh-sach-cast.html" style="position:absolute;top:12px;left:14px;width:34px;height:34px;border-radius:50%;background:rgba(12,12,15,.55);display:flex;align-items:center;justify-content:center;font-size:18px;color:#f3f0ea;">‹</a>
+      <span class="btn" onClick="{{ toggleFav }}" style="position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:50%;background:rgba(12,12,15,.55);display:flex;align-items:center;justify-content:center;"><img src="{{ favIconDark }}" style="width:17px;height:17px;" alt=""></span>
+      <sc-if value="{{ isVideo }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:rgba(12,12,15,.5);display:flex;align-items:center;justify-content:center;"><img src="https://img.icons8.com/ios/100/D4B26A/play.png" style="width:22px;height:22px;margin-left:2px;" alt=""></span></sc-if>
+    </div>
+    <div class="hscroll" style="display:flex;gap:7px;padding:10px 18px 0;overflow-x:auto;">
+      <sc-for list="{{ album }}" as="a" hint-placeholder-count="6"><div class="btn" onClick="{{ a.pick }}" style="width:54px;height:54px;flex:none;border-radius:9px;background:{{ a.bg }};position:relative;"><sc-if value="{{ a.video }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><img src="https://img.icons8.com/ios-filled/100/FFFFFF/play.png" style="width:14px;height:14px;" alt=""></span></sc-if></div></sc-for>
+    </div>
+
+    <div style="background:#15131a;padding:14px 18px;">
+      <h2 style="font-size:20px;font-weight:800;">{{ cName }} <span style="font-size:14px;color:#8c8679;font-weight:600;">· {{ cAge }} tuổi</span></h2>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:#c5c0b6;"><span style="color:#e3c27e;font-weight:600;">★ {{ cRating }}</span> · {{ cArea }}, Hà Nội</div>
+      <div style="display:flex;gap:7px;margin-top:11px;flex-wrap:wrap;"><sc-if value="{{ cJp }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;background:rgba(224,114,158,.14);color:#e0729e;border-radius:12px;padding:4px 10px;font-weight:600;">🇯🇵 Tiếng Nhật</span></sc-if><span style="font-size:11px;background:rgba(212,178,106,.13);color:#d4b26a;border-radius:12px;padding:4px 10px;font-weight:600;">{{ cLang }}</span></div>
+      <div style="margin-top:13px;display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:11px;"><div style="font-size:10.5px;color:#8c8679;">Năm sinh · tuổi tự tính</div><div style="font-size:14px;font-weight:700;margin-top:2px;">{{ cBorn }} · {{ cAge }}t</div></div>
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:11px;"><div style="font-size:10.5px;color:#8c8679;">Đang làm tại</div><div style="font-size:13px;font-weight:600;margin-top:3px;">Club Lumière</div></div>
+      </div>
+      <p style="font-size:12.5px;line-height:1.6;color:#c5c0b6;margin-top:13px;">{{ cName }} — {{ cDesc }}. Phong cách thân thiện, biết lắng nghe, phù hợp tiếp khách công việc lẫn bạn bè.</p>
+    </div>
+
+    <div style="background:#15131a;border-top:1px solid rgba(255,255,255,.08);padding:12px 18px 18px;display:flex;align-items:center;gap:12px;">
+      <div><div style="font-size:11px;color:#8c8679;">Phí cast từ</div><div style="font-size:16px;font-weight:800;">500K<span style="font-size:11px;color:#8c8679;">/giờ</span></div></div>
+      <div class="btn" onClick="{{ book }}" style="flex:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;text-align:center;border-radius:12px;padding:14px;font-weight:700;font-size:14px;">Đặt theo cast</div>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var name = 'Michi'; try{ name = localStorage.getItem('nl_cast') || 'Michi'; }catch(e){}
+    var c = NL.cast(name);
+    var pool = [c.imgId, '1517841905240-472988babdf9', '1438761681033-6461ffad8d80', '1524504388940-b1c1722653e1', '1534528741775-53994a69daeb'];
+    var mainImg = st.mainImg != null ? st.mainImg : c.imgId;
+    var faved = NL.fav.has(c.name);
+    var album = pool.map(function(id){ return { bg:NL.bg(id, c.gradA, c.gradB, 300), video:false, pick:function(){ self.setState({mainImg:id, mainVideo:false}); } }; });
+    album.push({ bg:NL.bg(c.imgId, c.gradA, c.gradB, 300), video:true, pick:function(){ self.setState({mainImg:c.imgId, mainVideo:true}); } });
+    return {
+      cName:c.name, cAge:c.age, cBorn:c.bornYear, cRating:c.rating, cArea:c.area, cLang:c.lang, cJp:c.jp, cDesc:c.desc,
+      mainBg:NL.bg(mainImg, c.gradA, c.gradB), isVideo:st.mainVideo||false, album:album,
+      favIconDark: faved ? 'https://img.icons8.com/ios-filled/100/E0729E/like.png' : 'https://img.icons8.com/ios/100/8C8679/like.png',
+      toggleFav:function(){ NL.fav.toggle(c.name); self.forceUpdate(); },
+      book:function(){ var b=NL.booking.get(); NL.booking.patch({castName:c.name+' · '+c.age, venueSlug:b.venueSlug||'club-lumiere'}); location.href='dat-cho.html'; }
+    };
+  }
+}
+</script>
+</body>
+</html>

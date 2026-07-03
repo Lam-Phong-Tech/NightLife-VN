@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="casts" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Quản lý Cast" page-en="Cast Profiles" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Casts" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ csAll }}" style="{{ csTabAll }}">Tất cả <b>{{ csCountAll }}</b></span>
+            <span onClick="{{ csPending }}" style="{{ csTabPending }}">Chờ duyệt <b>{{ csCountP }}</b></span>
+            <span onClick="{{ csPublic }}" style="{{ csTabPublic }}">Hiển thị <b>{{ csCountPub }}</b></span>
+            <span onClick="{{ csHidden }}" style="{{ csTabHidden }}">Ẩn <b>{{ csCountH }}</b></span>
+          </div>
+          <div style="flex:1;"></div>
+          <span onClick="{{ csAddNew }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 17px;border-radius:10px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm cast</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1.5fr 1.4fr 1fr 1.3fr 128px 40px;gap:12px;padding:13px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Cast</span><span>Quán trực thuộc</span><span>Ngôn ngữ</span><span>Tags</span><span>Trạng thái</span><span></span>
+          </div>
+          <sc-for list="{{ csRows }}" as="c" hint-placeholder-count="6">
+            <div onClick="{{ c.open }}" style="display:grid;grid-template-columns:1.5fr 1.4fr 1fr 1.3fr 128px 40px;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;font-size:13px;" style-hover="background:rgba(212,178,106,.05);">
+              <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+                <span style="width:40px;height:40px;flex:none;border-radius:50%;background:{{ c.avaBg }};border:1.5px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:14px;">{{ c.ini }}</span>
+                <div style="min-width:0;"><div style="color:#f3f0ea;font-weight:500;">{{ c.nick }}</div><div style="font-size:11px;color:#57534b;margin-top:1px;">{{ c.zodiacShort }}</div></div>
+              </div>
+              <span style="color:#c5c0b6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.venue }}</span>
+              <span style="color:#9b958a;font-size:12px;">{{ c.langs }}</span>
+              <span style="color:#9b958a;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.tags }}</span>
+              <span><span style="{{ c.stStyle }}">{{ c.stLabel }}</span></span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ csOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:60;">
+    <div onClick="{{ csClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:512px;max-width:96vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="position:sticky;top:0;z-index:2;padding:19px 26px;background:#131218;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Hồ sơ Cast</div>
+        <span onClick="{{ csClose }}" style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:22px 26px 30px;">
+        <sc-if value="{{ cd.isPending }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:9px;align-items:center;padding:12px 14px;background:rgba(224,164,78,.08);border:1px solid rgba(224,164,78,.3);border-radius:12px;margin-bottom:18px;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e7b869" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 3.5l9 16.5H3z"/><path d="M12 10v4.2M12 17.4v.01"/></svg>
+            <span style="font-size:11.5px;color:#e7c58f;line-height:1.5;">Nội dung chờ <b style="color:#f0dda8;">kiểm duyệt</b> trước khi public. Kiểm tra ảnh, thông tin &amp; lời chào.</span>
+          </div>
+        </sc-if>
+        <div style="display:flex;gap:16px;align-items:center;">
+          <span style="width:84px;height:84px;flex:none;border-radius:18px;background:{{ cd.avaBg }};border:2px solid rgba(212,178,106,.35);"></span>
+          <div>
+            <div style="font-size:22px;font-weight:700;color:#f3f0ea;">{{ cd.nick }}</div>
+            <div style="font-size:12.5px;color:#8c8679;margin-top:3px;">Trực thuộc <span style="color:#c5c0b6;">{{ cd.venue }}</span></div>
+            <div style="margin-top:8px;"><span style="{{ cd.stStyle }}">{{ cd.stLabel }}</span></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;">
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Tháng sinh · cung HĐ</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.zodiac }}</div></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Chiều cao</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.height }}</div></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Số đo</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.measure }}</div></div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:12px 13px;"><div style="font-size:10.5px;color:#8c8679;">Ngôn ngữ</div><div style="font-size:13px;color:#f3f0ea;font-weight:500;margin-top:4px;">{{ cd.langs }}</div></div>
+        </div>
+
+        <div style="margin-top:14px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Sở thích</div><div style="font-size:13px;color:#c5c0b6;">{{ cd.hobby }}</div></div>
+        <div style="margin-top:16px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Tags / từ khóa</div><div style="display:flex;flex-wrap:wrap;gap:7px;">
+          <sc-for list="{{ cd.tagList }}" as="t" hint-placeholder-count="3"><span style="font-size:11.5px;color:#d4b26a;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.25);border-radius:16px;padding:5px 12px;">{{ t }}</span></sc-for>
+        </div></div>
+
+        <div style="margin-top:18px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Lời chào (greeting)</div>
+          <div style="font-size:12.5px;color:#c5c0b6;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:13px 14px;">{{ cd.greeting }}</div>
+        </div>
+
+        <div style="margin-top:18px;"><div style="font-size:11.5px;color:#8c8679;margin-bottom:8px;">Album ảnh &amp; video</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;">
+            <div style="aspect-ratio:3/4;border-radius:11px;background:{{ cd.a1 }};position:relative;"><span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:rgba(12,12,15,.55);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></div>
+            <div style="aspect-ratio:3/4;border-radius:11px;background:{{ cd.a2 }};"></div>
+            <div style="aspect-ratio:3/4;border-radius:11px;background:{{ cd.a3 }};"></div>
+            <div style="aspect-ratio:3/4;border-radius:11px;border:1.5px dashed rgba(212,178,106,.35);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div style="position:sticky;bottom:0;padding:15px 26px;background:#131218;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;">
+        <sc-if value="{{ cd.isPending }}" hint-placeholder-val="{{ false }}">
+          <span onClick="{{ csApprove }}" style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Duyệt &amp; hiển thị</span>
+        </sc-if>
+        <sc-if value="{{ cd.notPending }}" hint-placeholder-val="{{ true }}">
+          <span onClick="{{ csSave }}" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:13px;border-radius:11px;cursor:pointer;">Lưu hồ sơ</span>
+        </sc-if>
+        <span onClick="{{ csHide }}" style="flex:none;font-size:13px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:13px 20px;border-radius:11px;cursor:pointer;">Ẩn</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = { toast:null };
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  chip(kind){ const m={success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],warn:['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],error:['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
+  pill(kind){ return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; }
+
+  renderVals(){
+    const S=this.state, o={ toast:S.toast };
+    const CS=[
+      {id:'c1',nick:'Yuki',ini:'Y',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',venue:'Club Lumière',langs:'JP · EN · VN',tags:'Sang chảnh, Vui vẻ, Rượu vang',status:'pending',zodiac:'Tháng 5 · Kim Ngưu',height:'165 cm',measure:'86 – 60 – 88',hobby:'Rượu vang, nhạc Jazz, du lịch',greeting:'こんばんは！Rất vui được gặp bạn tại Lumière ✨'},
+      {id:'c2',nick:'Rin',ini:'R',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)',venue:'Club Lumière',langs:'JP · EN',tags:'Dễ thương, Năng động',status:'pending',zodiac:'Tháng 9 · Xử Nữ',height:'160 cm',measure:'84 – 58 – 86',hobby:'Karaoke, cà phê',greeting:'Hân hạnh được phục vụ quý khách 🌸'},
+      {id:'c3',nick:'Mai',ini:'M',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)',venue:'Sakura Lounge',langs:'JP · VN',tags:'Thanh lịch, Trò chuyện tốt',status:'pending',zodiac:'Tháng 3 · Song Ngư',height:'168 cm',measure:'88 – 62 – 90',hobby:'Đọc sách, trà đạo',greeting:'Chào mừng đến Sakura ~'},
+      {id:'c4',nick:'Hana',ini:'H',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)',venue:'Akari Lounge',langs:'JP · EN',tags:'Sôi nổi, Nhảy đẹp',status:'pending',zodiac:'Tháng 7 · Cự Giải',height:'162 cm',measure:'85 – 59 – 87',hobby:'Nhảy, thời trang',greeting:'Cùng quẩy nào! 💃'},
+      {id:'c5',nick:'Sora',ini:'S',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',venue:'Bar Tokyo Night',langs:'EN · VN',tags:'Cool, Bartender',status:'public',zodiac:'Tháng 11 · Bọ Cạp',height:'170 cm',measure:'—',hobby:'Pha chế, guitar',greeting:'Welcome to Tokyo Night 🍸'},
+      {id:'c6',nick:'Aoi',ini:'A',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',venue:'Sakura Lounge',langs:'JP · EN · VN',tags:'Dịu dàng, Hát hay',status:'public',zodiac:'Tháng 1 · Ma Kết',height:'166 cm',measure:'87 – 61 – 89',hobby:'Hát, piano',greeting:'Rất mong được gặp bạn 🎹'},
+      {id:'c7',nick:'Emi',ini:'E',avaBg:'linear-gradient(135deg,#b0a0c0,#6f5f8f)',venue:'Akari Lounge',langs:'JP',tags:'Trầm tĩnh',status:'hidden',zodiac:'Tháng 8 · Sư Tử',height:'164 cm',measure:'—',hobby:'Vẽ',greeting:'—'},
+    ];
+    const cmeta={pending:['Chờ duyệt','warn'],public:['Đang hiển thị','success'],hidden:['Đã ẩn','muted']};
+    const cstat=(c)=>S['cs_'+c.id]||c.status;
+    const csAll=CS.map(c=>({...c,_s:cstat(c)}));
+    o.csCountAll=csAll.length; o.csCountP=csAll.filter(c=>c._s==='pending').length; o.csCountPub=csAll.filter(c=>c._s==='public').length; o.csCountH=csAll.filter(c=>c._s==='hidden').length;
+    const cf=S.castFilter||'pending';
+    const ctab=(a)=>'font-size:12.5px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.csTabAll=ctab(cf==='all'); o.csTabPending=ctab(cf==='pending'); o.csTabPublic=ctab(cf==='public'); o.csTabHidden=ctab(cf==='hidden');
+    o.csAll=()=>this.setState({castFilter:'all'}); o.csPending=()=>this.setState({castFilter:'pending'}); o.csPublic=()=>this.setState({castFilter:'public'}); o.csHidden=()=>this.setState({castFilter:'hidden'});
+    o.csAddNew=()=>this.showToast('Mở form thêm cast mới');
+    o.csRows=(cf==='all'?csAll:csAll.filter(c=>c._s===cf)).map(c=>({...c,zodiacShort:c.zodiac.split(' · ')[1]||c.zodiac,stStyle:this.pill(cmeta[c._s][1]),stLabel:cmeta[c._s][0],open:()=>this.setState({castSel:c.id})}));
+    const csel=csAll.find(c=>c.id===S.castSel);
+    o.csOpen=!!csel;
+    o.cd = csel ? {...csel, tagList:csel.tags.split(', '), a1:csel.avaBg, a2:'linear-gradient(135deg,#241f2a,#181420)', a3:'linear-gradient(135deg,#20262a,#141a1e)', stStyle:this.chip(cmeta[csel._s][1])+'font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:20px;display:inline-flex;', stLabel:cmeta[csel._s][0], isPending:csel._s==='pending', notPending:csel._s!=='pending'} : {tagList:[]};
+    o.csClose=()=>this.setState({castSel:null});
+    o.csApprove=()=>{ if(csel){this.setState({['cs_'+csel.id]:'public',castSel:null}); this.showToast('Đã duyệt & hiển thị cast '+csel.nick);} };
+    o.csHide=()=>{ if(csel){this.setState({['cs_'+csel.id]:'hidden',castSel:null}); this.showToast('Đã ẩn cast '+csel.nick);} };
+    o.csSave=()=>{ this.setState({castSel:null}); this.showToast('Đã lưu hồ sơ cast'); };
+    return o;
+  }
+}
+
+</script>
+</body>
+</html>

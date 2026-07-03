@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+</style>
+</helmet>
+
+<!-- ============ TITLE / BRIEF BAND ============ -->
+<div style="position:absolute;left:80px;top:40px;width:1400px;font-family:'Inter',sans-serif;">
+  <div style="font:600 11px/1 'Inter',sans-serif;letter-spacing:3px;color:#7d7a86;text-transform:uppercase;">Vietyoru · Premium Elegant · Dark Mode</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:36px;color:#16151a;margin-top:8px;letter-spacing:.2px;">Chọn ngôn ngữ <span style="color:#9a8758;">—</span> Language Picker</div>
+  <div style="font-size:14px;color:#56535e;margin-top:5px;max-width:1000px;line-height:1.6;">Phương án đã chốt: huy hiệu tròn + nút <b style="color:#16151a;">Áp dụng</b>. Trình bày cả <b style="color:#16151a;">Desktop</b> (modal giữa màn) và <b style="color:#16151a;">Mobile</b> (bottom-sheet). 5 ngôn ngữ — không cờ, theo chuẩn than đen + <span style="color:#9a8758;">Gold</span>.</div>
+  <div style="display:flex;gap:10px;margin-top:15px;">
+    <span style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e7e3da;border-radius:20px;padding:8px 15px;font-size:12px;font-weight:600;color:#16151a;box-shadow:0 1px 3px rgba(0,0,0,.05);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a8758" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Huy hiệu tròn + Áp dụng · Đã chốt</span>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ============ PHƯƠNG ÁN · MEDALLION ================== -->
+<!-- ===================================================== -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:188px;width:1000px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:12px;"><span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">Huy hiệu tròn + Áp dụng</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Medallion · chọn rồi áp dụng</span></div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Danh sách kiểu cài đặt — huy hiệu tròn mang mã ngôn ngữ, nút radio bên phải, chọn rồi bấm <b style="color:#16151a;">Áp dụng</b>. Cho cảm giác concierge, chắc tay.</div>
+</div>
+
+<!-- DESKTOP -->
+<div style="position:absolute;left:80px;top:262px;width:940px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · Modal giữa màn hình</span></div>
+  <div style="position:relative;width:940px;height:580px;border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 30px 70px -34px rgba(0,0,0,.7);color:#f3f0ea;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:24px;">
+        <span style="font-weight:800;font-size:21px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span>
+        <div style="display:flex;gap:18px;font-size:13px;color:#c5c0b6;font-weight:500;"><span style="color:#d4b26a;font-weight:600;">Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#e3c27e;border:1px solid rgba(212,178,106,.6);border-radius:18px;padding:7px 13px;font-weight:600;box-shadow:0 0 0 3px rgba(212,178,106,.13);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Tiếng Việt<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        <span style="font-size:13px;color:#c5c0b6;">Đăng nhập</span>
+        <span style="font-size:12px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:20px;padding:9px 15px;">Đăng ký đối tác</span>
+      </div>
+    </div>
+    <div style="position:relative;height:528px;overflow:hidden;">
+      <div style="padding:24px 26px;filter:blur(3px);opacity:.5;">
+        <div style="height:170px;border-radius:16px;background:linear-gradient(160deg,rgba(212,178,106,.38),rgba(168,124,60,.14));"></div>
+        <div style="display:flex;gap:16px;margin-top:18px;">
+          <div style="flex:1;height:150px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);"></div>
+          <div style="flex:1;height:150px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);"></div>
+          <div style="flex:1;height:150px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);"></div>
+          <div style="flex:1;height:150px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);"></div>
+        </div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(8,8,11,.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:26px;">
+        <div style="width:444px;background:#16141b;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:24px 22px;box-shadow:0 30px 70px -20px rgba(0,0,0,.85);">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:40px;height:40px;border-radius:12px;background:rgba(212,178,106,.12);border:1px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;color:#e3c27e;flex:none;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+              <div><div style="font-size:19px;font-weight:700;color:#f3f0ea;letter-spacing:.2px;">Chọn ngôn ngữ</div><div style="font-size:9px;font-weight:600;letter-spacing:1.8px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Select language</div></div>
+            </div>
+            <span style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#9b958a;flex:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.06);">
+              <span style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;letter-spacing:.5px;color:#241a0a;flex:none;">VI</span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:15.5px;font-weight:700;color:#f3f0ea;">Tiếng Việt</span><span style="font-size:9px;font-weight:700;letter-spacing:.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);border-radius:6px;padding:2px 7px;text-transform:uppercase;">Đang dùng</span></div><div style="font-size:12px;color:#8c8679;margin-top:2px;">Vietnamese</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;flex:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.06);">
+              <span style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">EN</span>
+              <div style="flex:1;min-width:0;"><div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">English</div><div style="font-size:12px;color:#8c8679;margin-top:2px;">International</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.06);">
+              <span style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">JA</span>
+              <div style="flex:1;min-width:0;"><div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">日本語</div><div style="font-size:12px;color:#8c8679;margin-top:2px;">Japanese</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.06);">
+              <span style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">KO</span>
+              <div style="flex:1;min-width:0;"><div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">한국어</div><div style="font-size:12px;color:#8c8679;margin-top:2px;">Korean</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 4px;">
+              <span style="width:42px;height:42px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">ZH</span>
+              <div style="flex:1;min-width:0;"><div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">中文</div><div style="font-size:12px;color:#8c8679;margin-top:2px;">Chinese</div></div>
+              <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);">
+            <span style="flex:1;text-align:center;font-size:14px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:13px;">Hủy</span>
+            <span style="flex:1.7;text-align:center;font-size:14px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:11px;padding:13px;">Áp dụng</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE -->
+<div style="position:absolute;left:1090px;top:262px;width:388px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Mobile · Bottom-sheet</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:620px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;color:#f3f0ea;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 12px;">
+        <div><div style="font-weight:800;font-size:23px;line-height:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</div><div style="font-size:8px;letter-spacing:3.4px;color:#8c8679;margin-top:3px;text-transform:uppercase;">Vietnam Nightlife Guide</div></div>
+        <span style="display:flex;align-items:center;gap:5px;height:36px;padding:0 12px;border-radius:18px;border:1px solid rgba(212,178,106,.6);color:#e3c27e;font-size:12px;font-weight:600;box-shadow:0 0 0 3px rgba(212,178,106,.14);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>VI</span>
+      </div>
+      <div style="padding:4px 18px;filter:blur(2.5px);opacity:.45;">
+        <div style="height:110px;border-radius:16px;background:linear-gradient(160deg,rgba(212,178,106,.4),rgba(168,124,60,.16));"></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:82px;bottom:0;background:rgba(8,8,11,.5);"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#16141b;border-top:1px solid rgba(255,255,255,.08);border-radius:24px 24px 0 0;padding:12px 18px 20px;box-shadow:0 -18px 44px rgba(0,0,0,.55);">
+        <div style="width:42px;height:4px;border-radius:3px;background:rgba(255,255,255,.18);margin:0 auto 14px;"></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
+          <div><div style="font-size:17px;font-weight:700;color:#f3f0ea;">Chọn ngôn ngữ</div><div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:3px;">Select language</div></div>
+          <span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#9b958a;flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:13px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;letter-spacing:.5px;color:#241a0a;flex:none;">VI</span>
+            <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:7px;"><span style="font-size:15px;font-weight:700;color:#f3f0ea;">Tiếng Việt</span><span style="font-size:8.5px;font-weight:700;letter-spacing:.5px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);border-radius:5px;padding:2px 6px;text-transform:uppercase;">Đang dùng</span></div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Vietnamese</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;flex:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:13px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">EN</span>
+            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">English</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">International</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:13px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">JA</span>
+            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">日本語</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Japanese</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:13px;padding:10px 2px;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">KO</span>
+            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">한국어</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Korean</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:13px;padding:10px 2px;">
+            <span style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(212,178,106,.4);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;letter-spacing:.5px;color:#d4b26a;flex:none;">ZH</span>
+            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">中文</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Chinese</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;border:2px solid rgba(212,178,106,.3);flex:none;"></span>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:14.5px;font-weight:700;text-align:center;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:12px;padding:14px;">Áp dụng</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

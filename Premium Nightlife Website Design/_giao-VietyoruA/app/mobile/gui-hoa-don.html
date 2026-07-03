@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+
+    <div style="background:#15131a;padding:8px 18px 12px;display:flex;align-items:center;gap:12px;"><a href="tai-khoan.html" style="font-size:22px;color:#c5c0b6;line-height:1;">‹</a><span style="font-weight:800;font-size:16px;">Gửi hóa đơn</span></div>
+
+    <div style="padding:14px 18px;">
+      <!-- form -->
+      <div style="display:flex;flex-direction:column;gap:11px;">
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Quán <span style="color:#e0729e;">*</span></label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#c5c0b6;display:flex;align-items:center;justify-content:space-between;">Club Lumière · Tây Hồ<span style="color:#8c8679;">▾</span></div></div>
+        <div style="display:flex;gap:10px;"><div style="flex:1;"><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Số tiền <span style="color:#e0729e;">*</span></label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;font-weight:600;">2.400.000đ</div></div><div style="flex:1;"><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Thời gian <span style="color:#e0729e;">*</span></label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#c5c0b6;">21/06 · 21:00</div></div></div>
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Cơ sở / chi nhánh <span style="color:#8c8679;font-weight:500;">(tùy chọn)</span></label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#8c8679;">VD: cơ sở Quảng An</div></div>
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Liên kết đặt chỗ / mã <span style="color:#8c8679;font-weight:500;">(tùy chọn)</span></label><div style="margin-top:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;font-size:13px;color:#c5c0b6;display:flex;align-items:center;justify-content:space-between;">Booking #BK-2041<span style="color:#8c8679;">▾</span></div></div>
+        <div><label style="font-size:11.5px;font-weight:600;color:#c5c0b6;">Ảnh chứng từ <span style="color:#8c8679;font-weight:500;">(tùy chọn)</span></label><div style="margin-top:5px;border:1.5px dashed #d9c9f7;border-radius:10px;padding:18px;text-align:center;background:rgba(212,178,106,.06);"><img src="https://img.icons8.com/ios/100/D4B26A/add-image.png" style="width:28px;height:28px;" alt=""><div style="font-size:11.5px;color:#d4b26a;font-weight:600;margin-top:5px;">Chọn ảnh bill</div><div style="font-size:10.5px;color:#8c8679;margin-top:2px;">Nên gửi để Admin đối chiếu nhanh hơn</div></div></div>
+      </div>
+
+      <!-- notes -->
+      <div style="margin-top:12px;background:rgba(224,160,60,.14);border:1px solid rgba(224,160,60,.3);border-radius:10px;padding:11px 12px;font-size:11px;color:#e0b15f;line-height:1.6;">Gửi trong vòng <b>10 ngày</b> kể từ ngày dùng dịch vụ. Chỉ ghi <b>tổng tiền</b>, không nhập chi tiết món.</div>
+
+      <div style="margin-top:12px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;text-align:center;border-radius:11px;padding:13px;font-weight:700;font-size:14px;">Gửi hóa đơn</div>
+
+      <!-- history -->
+      <div style="margin-top:20px;font-weight:800;font-size:15px;">Lịch sử hóa đơn</div>
+      <div class="hscroll" style="display:flex;gap:7px;margin-top:10px;overflow-x:auto;">
+        <span style="display:inline-flex;align-items:center;font-size:11.5px;border-radius:15px;padding:7px 13px;font-weight:600;white-space:nowrap;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;border:1px solid #d4b26a;">Tất cả</span>
+        <span style="display:inline-flex;align-items:center;font-size:11.5px;border-radius:15px;padding:7px 13px;font-weight:600;white-space:nowrap;background:#15131a;color:#c5c0b6;border:1px solid rgba(255,255,255,.08);">Chờ duyệt</span>
+        <span style="display:inline-flex;align-items:center;font-size:11.5px;border-radius:15px;padding:7px 13px;font-weight:600;white-space:nowrap;background:#15131a;color:#c5c0b6;border:1px solid rgba(255,255,255,.08);">Đã duyệt</span>
+        <span style="display:inline-flex;align-items:center;font-size:11.5px;border-radius:15px;padding:7px 13px;font-weight:600;white-space:nowrap;background:#15131a;color:#c5c0b6;border:1px solid rgba(255,255,255,.08);">Bị từ chối</span>
+      </div>
+
+      <div style="margin-top:11px;display:flex;flex-direction:column;gap:9px;">
+        <!-- approved -->
+        <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px 12px;">
+          <div style="display:flex;align-items:center;gap:11px;"><span style="width:40px;height:40px;border-radius:10px;flex:none;background:linear-gradient(140deg,#d6336c,#7b2d6b);"></span><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">Club Lumière</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">21/06 · 2.400.000đ</div></div><span style="font-size:9.5px;font-weight:700;border-radius:8px;padding:4px 8px;color:#7fd6a6;background:rgba(60,160,110,.15);">Đã duyệt</span></div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#7fd6a6;font-weight:600;"><span>+24 điểm đã cộng</span></div>
+        </div>
+        <!-- pending -->
+        <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px 12px;">
+          <div style="display:flex;align-items:center;gap:11px;"><span style="width:40px;height:40px;border-radius:10px;flex:none;background:linear-gradient(140deg,#3a8fb0,#2d5fae);"></span><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">KTV Hoàng Gia</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">18/06 · 1.800.000đ</div></div><span style="font-size:9.5px;font-weight:700;border-radius:8px;padding:4px 8px;color:#e0b15f;background:rgba(224,160,60,.14);">Pending</span></div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:#8c8679;">Đang chờ Admin duyệt</div>
+        </div>
+        <!-- rejected -->
+        <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px 12px;">
+          <div style="display:flex;align-items:center;gap:11px;"><span style="width:40px;height:40px;border-radius:10px;flex:none;background:linear-gradient(140deg,#e0a23a,#c0782d);"></span><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">Diamond Bar</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">08/06 · 1.200.000đ</div></div><span style="font-size:9.5px;font-weight:700;border-radius:8px;padding:4px 8px;color:#e89aa0;background:rgba(190,70,84,.16);">Bị từ chối</span></div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-size:11px;color:#e89aa0;flex:1;">Lý do: Ảnh mờ — vui lòng gửi lại.</span><span style="font-size:11px;color:#d4b26a;font-weight:700;border:1px solid rgba(212,178,106,.22);border-radius:9px;padding:6px 11px;">Gửi lại</span></div>
+        </div>
+        <!-- approved 2 -->
+        <div style="background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px 12px;">
+          <div style="display:flex;align-items:center;gap:11px;"><span style="width:40px;height:40px;border-radius:10px;flex:none;background:linear-gradient(140deg,#8a6ad0,#5d3da8);"></span><div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:13px;">Sakura Lounge</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">12/06 · 3.500.000đ</div></div><span style="font-size:9.5px;font-weight:700;border-radius:8px;padding:4px 8px;color:#7fd6a6;background:rgba(60,160,110,.15);">Đã duyệt</span></div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:#7fd6a6;font-weight:600;">+35 điểm đã cộng</div>
+        </div>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+
+    <!-- bottom nav -->
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/home.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Trang chủ</span></a>
+      <a href="danh-sach-cast.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/geisha.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Cast</span></a>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/D4B26A/gift.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#d4b26a;font-weight:600;">Ưu đãi</span></a>
+      <a href="lich-su-dat-cho.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/calendar.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>

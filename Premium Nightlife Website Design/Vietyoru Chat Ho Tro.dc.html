@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  .hs::-webkit-scrollbar{display:none;}
+  .hs{scrollbar-width:none;-ms-overflow-style:none;}
+</style>
+</helmet>
+
+<!-- ============ TITLE / BRIEF BAND ============ -->
+<div style="position:absolute;left:80px;top:40px;width:1320px;font-family:'Inter',sans-serif;">
+  <div style="font:600 11px/1 'Inter',sans-serif;letter-spacing:3px;color:#7d7a86;text-transform:uppercase;">Vietyoru · Premium Elegant · Dark Mode</div>
+  <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:36px;color:#16151a;margin-top:8px;letter-spacing:.2px;">Chat hỗ trợ <span style="color:#9a8758;">—</span> Người dùng &amp; Admin</div>
+  <div style="font-size:14px;color:#56535e;margin-top:5px;max-width:1040px;line-height:1.6;">Giao diện phía người dùng · CSKH 1 luồng với admin · chỉ văn bản · có dấu thời gian. <b style="color:#16151a;">Cửa sổ chat nổi</b> — mở từ icon chat, đè lên trang đang xem. Kèm Desktop + Mobile. Bong bóng của bạn = gold, của admin = nền tối. Chuẩn than đen + <span style="color:#9a8758;">Gold</span>.</div>
+</div>
+
+<!-- ============ NHÃN PHƯƠNG ÁN ============ -->
+<div data-drags-parent="1" style="position:absolute;left:80px;top:152px;width:1100px;font-family:'Inter',sans-serif;">
+  <div style="display:flex;align-items:center;gap:11px;">
+    <span style="font:700 18px/1 'Inter',sans-serif;color:#16151a;">Cửa sổ chat nổi</span><span style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9a8758;text-transform:uppercase;">Floating widget</span>
+  </div>
+  <div style="font-size:12.5px;color:#6e6b64;margin-top:5px;">Bấm icon chat ở góc app → mở widget nổi góc phải, đè lên trang đang xem. Quen thuộc như CSKH web. Mobile mở toàn màn.</div>
+</div>
+
+<!-- A · DESKTOP -->
+<div data-screen-label="Chat · Desktop widget" style="position:absolute;left:80px;top:212px;width:884px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:2px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Desktop · widget nổi</span></div>
+  <div style="border-radius:18px;overflow:hidden;background:#0e0d12;border:1px solid rgba(255,255,255,.07);box-shadow:0 30px 70px -34px rgba(0,0,0,.7);color:#f3f0ea;">
+    <!-- top nav -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 24px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="display:flex;align-items:center;gap:22px;">
+        <span style="font-weight:800;font-size:20px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">Vietyoru</span>
+        <div style="display:flex;gap:17px;font-size:12.5px;color:#c5c0b6;font-weight:500;"><span style="color:#d4b26a;font-weight:600;">Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Bảng xếp hạng</span><span>Ưu đãi</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;">
+        <span style="font-size:11.5px;color:#d4b26a;border:1px solid rgba(212,178,106,.32);border-radius:18px;padding:6px 11px;font-weight:600;">VI · 日本語</span>
+        <span style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(212,178,106,.32);display:flex;align-items:center;justify-content:center;color:#d4b26a;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></span>
+        <span style="width:30px;height:30px;border-radius:50%;background:url('https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=120&q=70') center/cover;border:1px solid rgba(255,255,255,.15);"></span>
+      </div>
+    </div>
+    <!-- faux app page (dimmed) + widget overlay -->
+    <div style="position:relative;height:548px;background:#0c0c0f;overflow:hidden;">
+      <div style="padding:24px 28px;">
+        <div style="font-size:22px;font-weight:700;color:#f3f0ea;opacity:.5;">Tối nay tại Hà Nội</div>
+        <div style="height:150px;border-radius:16px;margin-top:14px;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.55)),url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=900&q=70') center/cover;opacity:.42;"></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;opacity:.4;">
+          <div style="height:120px;border-radius:14px;background:rgba(255,255,255,.05);"></div>
+          <div style="height:120px;border-radius:14px;background:rgba(255,255,255,.05);"></div>
+          <div style="height:120px;border-radius:14px;background:rgba(255,255,255,.05);"></div>
+        </div>
+        <div style="height:14px;width:42%;border-radius:6px;background:rgba(255,255,255,.05);margin-top:24px;opacity:.5;"></div>
+        <div style="height:14px;width:64%;border-radius:6px;background:rgba(255,255,255,.05);margin-top:12px;opacity:.4;"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(8,8,11,.5);"></div>
+
+      <!-- WIDGET -->
+      <div style="position:absolute;right:26px;bottom:26px;width:374px;height:498px;background:#121116;border:1px solid rgba(212,178,106,.22);border-radius:18px;box-shadow:0 30px 70px -22px rgba(0,0,0,.85);display:flex;flex-direction:column;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:11px;padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(212,178,106,.08),rgba(255,255,255,0));">
+          <span style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:17px;flex:none;">V</span>
+          <div style="flex:1;"><div style="font-size:14.5px;font-weight:600;color:#f3f0ea;">Vietyoru Hỗ trợ</div><div style="font-size:11px;color:#8c8679;margin-top:1px;">Chăm sóc khách hàng</div></div>
+          <span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#c5c0b6;flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <span style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#c5c0b6;flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div class="hs" style="flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;justify-content:center;margin-bottom:2px;"><span style="font-size:10px;font-weight:600;letter-spacing:1.2px;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:4px 11px;text-transform:uppercase;">Hôm nay</span></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:84%;"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:11px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 14px 14px 14px;padding:9px 13px;font-size:13px;line-height:1.5;color:#e7e1d4;">Dạ anh đi mấy người và khoảng mấy giờ để em kiểm tra bàn trống giúp anh ạ?</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:31</div></div></div>
+          <div style="align-self:flex-end;max-width:84%;"><div style="background:linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57);color:#241a0a;border-radius:14px 4px 14px 14px;padding:9px 13px;font-size:13px;line-height:1.5;font-weight:500;">4 người, khoảng 21:00 nhé</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;text-align:right;margin-right:4px;">21:32</div></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:84%;"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:11px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 14px 14px 14px;padding:9px 13px;font-size:13px;line-height:1.5;color:#e7e1d4;">Sakura Lounge vẫn còn bàn khung 21:00 cho 4 khách ạ. Em giữ chỗ trước cho anh nhé?</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:33</div></div></div>
+          <div style="align-self:flex-end;max-width:84%;"><div style="background:linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57);color:#241a0a;border-radius:14px 4px 14px 14px;padding:9px 13px;font-size:13px;line-height:1.5;font-weight:500;">Vâng bạn giữ giúp mình</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;text-align:right;margin-right:4px;">21:33</div></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:84%;"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:11px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 14px 14px 14px;padding:9px 13px;font-size:13px;line-height:1.5;color:#e7e1d4;">Em đã giữ chỗ cho anh. Anh vào mục Đặt chỗ xác nhận trong 15 phút giúp em là xong ạ. Cảm ơn anh!</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:34</div></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;padding:11px 13px;border-top:1px solid rgba(255,255,255,.07);">
+          <div style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:10px 15px;font-size:13px;color:#8c8679;">Nhập tin nhắn…</div>
+          <span style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#241a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- A · MOBILE -->
+<div data-screen-label="Chat · Mobile" style="position:absolute;left:1000px;top:212px;width:388px;font-family:'Inter',sans-serif;">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:4px;"><span style="font:600 12px/1 'Inter',sans-serif;color:#16151a;">Mobile · toàn màn</span></div>
+  <div style="background:#000;border-radius:44px;padding:8px;box-shadow:0 40px 80px -34px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);">
+    <div style="width:372px;height:788px;border-radius:36px;overflow:hidden;background:#0c0c0f;color:#f3f0ea;position:relative;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:13px;font-weight:500;color:#f3f0ea;flex:none;"><span style="letter-spacing:.5px;">23:08</span><span style="display:flex;align-items:center;gap:7px;"><svg width="18" height="12" viewBox="0 0 18 12" fill="#f3f0ea"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="16" height="12" viewBox="0 0 16 12" fill="#f3f0ea"><path d="M8 11l2-2.4a3 3 0 0 0-4 0zM2.2 5.1a9 9 0 0 1 11.6 0l-1.5 1.9a6.4 6.4 0 0 0-8.6 0z"/></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2.6" stroke="#f3f0ea" opacity=".5"/><rect x="3" y="3" width="14" height="6" rx="1.2" fill="#f3f0ea"/><rect x="22.4" y="4" width="1.8" height="4" rx="1" fill="#f3f0ea"/></svg></span></div>
+      <div style="display:flex;align-items:center;gap:11px;padding:8px 14px 11px;border-bottom:1px solid rgba(255,255,255,.07);flex:none;">
+        <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#f3f0ea;flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+        <span style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:17px;flex:none;">V</span>
+        <div style="flex:1;"><div style="font-size:15px;font-weight:600;color:#f3f0ea;">Vietyoru Hỗ trợ</div><div style="font-size:11px;color:#8c8679;margin-top:1px;">Chăm sóc khách hàng</div></div>
+        <span style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#c5c0b6;flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>
+      </div>
+      <div class="hs" style="flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:center;margin-bottom:2px;"><span style="font-size:10px;font-weight:600;letter-spacing:1.2px;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:4px 11px;text-transform:uppercase;">Hôm nay</span></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:82%;"><span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:12px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 15px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;color:#e7e1d4;">Dạ chào anh, Vietyoru Hỗ trợ có thể giúp gì cho anh ạ?</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:30</div></div></div>
+        <div style="align-self:flex-end;max-width:82%;"><div style="background:linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57);color:#241a0a;border-radius:15px 4px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;font-weight:500;">Mình muốn hỏi về đặt bàn tối nay ở Sakura Lounge</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;text-align:right;margin-right:4px;">21:31</div></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:82%;"><span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:12px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 15px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;color:#e7e1d4;">Dạ anh đi mấy người và khoảng mấy giờ để em kiểm tra bàn trống giúp anh ạ?</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:31</div></div></div>
+        <div style="align-self:flex-end;max-width:82%;"><div style="background:linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57);color:#241a0a;border-radius:15px 4px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;font-weight:500;">4 người, khoảng 21:00 nhé</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;text-align:right;margin-right:4px;">21:32</div></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:82%;"><span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:12px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 15px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;color:#e7e1d4;">Sakura Lounge vẫn còn bàn khung 21:00 cho 4 khách ạ. Em giữ chỗ trước cho anh nhé?</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:33</div></div></div>
+        <div style="align-self:flex-end;max-width:82%;"><div style="background:linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57);color:#241a0a;border-radius:15px 4px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;font-weight:500;">Vâng bạn giữ giúp mình</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;text-align:right;margin-right:4px;">21:33</div></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;align-self:flex-start;max-width:82%;"><span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:800;font-size:12px;flex:none;">V</span><div><div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);border-radius:4px 15px 15px 15px;padding:10px 13px;font-size:13.5px;line-height:1.5;color:#e7e1d4;">Em đã giữ chỗ cho anh. Anh vào mục Đặt chỗ xác nhận trong 15 phút giúp em là xong ạ. Cảm ơn anh!</div><div style="font-size:10px;color:#6f6b62;margin-top:4px;margin-left:4px;">21:34</div></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;padding:11px 14px 14px;border-top:1px solid rgba(255,255,255,.07);flex:none;">
+        <div style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:11px 16px;font-size:13.5px;color:#8c8679;">Nhập tin nhắn…</div>
+        <span style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#241a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../shared.js"></script>
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#0e0d12;}
+  a{text-decoration:none;color:inherit;}
+  .hscroll{scrollbar-width:none;}
+  .hscroll::-webkit-scrollbar{display:none;}
+</style>
+</helmet>
+
+
+  <div style="margin:0 auto;width:100%;max-width:480px;background:#0e0d12;min-height:100vh;display:flex;flex-direction:column;padding-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.05);color:#f3f0ea;font-family:'Inter',sans-serif;position:relative;">
+    
+    <div style="background:#15131a;padding:8px 18px 8px;"><h2 style="font-size:19px;font-weight:800;">Xếp hạng {{ typeLabel }}</h2><p style="font-size:10.5px;color:#8c8679;margin-top:1px;">Tháng 6/2026 · Top 5</p></div>
+    <div class="hscroll" style="padding:8px 18px 8px;display:flex;gap:7px;overflow-x:auto;background:#15131a;">
+      <sc-for list="{{ areas }}" as="a" hint-placeholder-count="5"><div onClick="{{ a.pick }}" style="{{ a.style }}">{{ a.label }}</div></sc-for>
+    </div>
+    <div style="padding:0 18px 12px;background:#15131a;border-bottom:1px solid rgba(255,255,255,.08);"><div style="display:flex;gap:6px;background:#1b1922;border-radius:14px;padding:4px;"><div onClick="{{ pickCast }}" style="{{ segCast }}">Cast</div><div onClick="{{ pickQuan }}" style="{{ segQuan }}">Quán</div></div></div>
+
+    <div style="padding:12px 18px;display:flex;flex-direction:column;gap:9px;">
+      <sc-for list="{{ list }}" as="r" hint-placeholder-count="5">
+        <div onClick="{{ r.open }}" style="display:flex;align-items:center;gap:11px;background:#15131a;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:10px 12px;cursor:pointer;">
+          <span style="width:32px;height:32px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:{{ r.numColor }};background:{{ r.crown }};">{{ r.rank }}</span>
+          <span style="width:44px;height:44px;border-radius:50%;flex:none;background:{{ r.img }};"></span>
+          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:14px;">{{ r.name }}</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;">{{ r.area }}</div></div>
+          <span style="font-size:11px;color:#d4b26a;font-weight:700;">{{ r.metric }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="position:sticky;bottom:0;z-index:99;margin-top:auto;height:66px;background:rgba(8,8,11,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(212,178,106,.14);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px;">
+      <a href="trang-chu.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/home.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Trang chủ</span></a>
+      <a href="danh-sach-cast.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/geisha.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Cast</span></a>
+      <a href="uu-dai.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/gift.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Ưu đãi</span></a>
+      <a href="lich-su-dat-cho.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/calendar.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Đặt chỗ</span></a>
+      <a href="tai-khoan.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;"><img src="https://img.icons8.com/ios/100/6F6B62/user.png" style="width:21px;height:21px;" alt=""><span style="font-size:10px;color:#6f6b62;">Tài khoản</span></a>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {};
+  get EXTRA(){
+    return {
+      dn:{ quan:[['Bana Lounge','Hải Châu','5.2k'],['Sun Bar','Sơn Trà','4.8k'],['Helio Night','Hải Châu','4.1k'],['Danang Velvet','Thanh Khê','3.6k'],['Moon KTV','NHS','3.2k']],
+           cast:[['Lan · 22','Dịu dàng','★ 4.8'],['Thu · 24','Vui vẻ','★ 4.7'],['My · 23','Tiếng Nhật','★ 4.8'],['Ha · 21','Trẻ trung','★ 4.6'],['Vy · 25','Hát hay','★ 4.7']] },
+      hp:{ quan:[['Hai Phong Bar','Lê Chân','3.9k'],['Port Lounge','Ngô Quyền','3.4k'],['Cat Ba Night','Đồ Sơn','2.9k'],['Red Dragon KTV','Hồng Bàng','2.5k'],['Sea Pearl','Hải An','2.1k']],
+           cast:[['Linh · 23','Thân thiện','★ 4.7'],['Trang · 24','Phong cách','★ 4.6'],['Quynh · 22','Dịu dàng','★ 4.7'],['Hoa · 25','Duyên','★ 4.6'],['Yen · 21','Trẻ trung','★ 4.5']] }
+    };
+  }
+  renderVals(){
+    var NL = window.NL, self = this, st = this.state;
+    var area = st.area || 'all', type = st.type || 'cast';
+    var data = NL.RANK[area] || this.EXTRA[area] || NL.RANK.all;
+    var list = NL.buildRank(data[type] || [], type).map(function(r){
+      r.open = function(){
+        if(type==='cast'){ try{localStorage.setItem('nl_cast', String(r.name).split(' · ')[0]);}catch(e){} location.href='chi-tiet-cast.html'; }
+        else { location.href='danh-sach-quan.html'; }
+      };
+      return r;
+    });
+    var areas = [['all','Tổng hợp'],['hn','HN'],['hcm','HCM'],['dn','Đà Nẵng'],['hp','Hải Phòng']].map(function(a){
+      return { label:a[1], style:NL.pillSm(area===a[0]), pick:function(){ self.setState({area:a[0]}); } };
+    });
+    return { list:list, areas:areas, typeLabel: type==='cast'?'Cast':'Quán', segCast:NL.seg(type==='cast'), segQuan:NL.seg(type==='quan'), pickCast:function(){ self.setState({type:'cast'}); }, pickQuan:function(){ self.setState({type:'quan'}); } };
+  }
+}
+</script>
+</body>
+</html>

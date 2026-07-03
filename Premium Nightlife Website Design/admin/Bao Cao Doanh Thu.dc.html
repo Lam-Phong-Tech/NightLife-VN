@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="reports" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Báo cáo doanh thu" page-en="Revenue" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Reports" style="padding:22px 26px 44px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+          <span style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+            <span style="font-size:12px;color:#9b958a;padding:6px 14px;border-radius:8px;cursor:pointer;">Tuần</span>
+            <span style="font-size:12px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:6px 14px;border-radius:8px;">Tháng 6</span>
+            <span style="font-size:12px;color:#9b958a;padding:6px 14px;border-radius:8px;cursor:pointer;">Năm</span>
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 13px;">Tất cả khu vực<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <div style="flex:1;"></div>
+          <span style="font-size:9px;font-weight:700;letter-spacing:1px;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:5px 8px;border-radius:6px;">P2</span>
+          <span onClick="{{ rpExport }}" style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#c5c0b6;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:9px 16px;border-radius:10px;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Xuất Excel / PDF</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+          <div style="background:rgba(212,178,106,.07);border:1px solid rgba(212,178,106,.24);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;">Doanh thu gộp</div><div style="font-size:23px;font-weight:800;color:#e3c27e;margin-top:9px;">312.000.000₫</div><div style="font-size:11px;color:#7fd3a2;margin-top:4px;">▲ 18% so tháng 5</div></div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Doanh thu thuần</div><div style="font-size:23px;font-weight:800;color:#f3f0ea;margin-top:9px;">288.000.000₫</div><div style="font-size:11px;color:#8c8679;margin-top:4px;">Sau giảm giá khách</div></div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Hoa hồng Admin</div><div style="font-size:23px;font-weight:800;color:#f0dda8;margin-top:9px;">41.800.000₫</div><div style="font-size:11px;color:#8c8679;margin-top:4px;">Sàn thực nhận</div></div>
+          <div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:17px 18px;"><div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:#8c8679;text-transform:uppercase;">Tiền giảm giá</div><div style="font-size:23px;font-weight:800;color:#e88b99;margin-top:9px;">24.000.000₫</div><div style="font-size:11px;color:#8c8679;margin-top:4px;">Ưu đãi cho khách</div></div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:20px 22px;margin-top:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <span style="font-size:15px;font-weight:600;color:#f3f0ea;">Doanh thu theo ngày · tháng 6</span>
+            <div style="display:flex;gap:16px;font-size:11px;color:#8c8679;"><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:linear-gradient(180deg,#f4e3b4,#d4b26a);"></span>Gộp</span><span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:rgba(212,178,106,.3);"></span>Hoa hồng</span></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:150px;">
+            <sc-for list="{{ rpBars }}" as="b" hint-placeholder-count="15">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%;">
+                <div style="width:100%;position:relative;display:flex;align-items:flex-end;justify-content:center;height:{{ b.h }}%;">
+                  <span style="width:100%;background:linear-gradient(180deg,{{ b.c1 }},{{ b.c2 }});border-radius:4px 4px 0 0;height:100%;"></span>
+                </div>
+                <span style="font-size:8px;color:#57534b;">{{ b.day }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;overflow:hidden;margin-top:18px;">
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 20px 0;flex-wrap:wrap;">
+            <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:3px;gap:2px;">
+              <span onClick="{{ rpByDay }}" style="{{ rpTabDay }}">Theo ngày</span>
+              <span onClick="{{ rpByVenue }}" style="{{ rpTabVenue }}">Theo quán</span>
+              <span onClick="{{ rpByCoupon }}" style="{{ rpTabCoupon }}">Theo mã giảm</span>
+            </div>
+            <div style="flex:1;"></div>
+            <span style="font-size:10.5px;color:#57534b;">Ưu tiên xem: ngày → quán → mã giảm → khác</span>
+          </div>
+          <div style="padding:16px 20px 8px;">
+            <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 70px;gap:12px;padding:0 6px 12px;font-size:10px;font-weight:700;letter-spacing:.8px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);">
+              <span>{{ rpDim }}</span><span style="text-align:right;">Gộp</span><span style="text-align:right;">Thuần</span><span style="text-align:right;">Hoa hồng</span><span style="text-align:right;">Giảm giá</span><span style="text-align:right;">Bill</span>
+            </div>
+            <sc-for list="{{ rpRows }}" as="r" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 70px;gap:12px;align-items:center;padding:12px 6px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12.5px;">
+                <span style="color:#f3f0ea;font-weight:500;">{{ r.label }}</span>
+                <span style="text-align:right;color:#c5c0b6;">{{ r.gross }}</span>
+                <span style="text-align:right;color:#c5c0b6;">{{ r.net }}</span>
+                <span style="text-align:right;color:#e3c27e;font-weight:600;">{{ r.comm }}</span>
+                <span style="text-align:right;color:#e88b99;">{{ r.disc }}</span>
+                <span style="text-align:right;color:#8c8679;">{{ r.bills }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  state = { toast:null };
+  showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  money(n){ return (n||0).toLocaleString('vi-VN')+'\u20ab'; }
+
+  renderVals(){
+    const S=this.state, o={ toast:S.toast };
+    o.rpExport=()=>this.showToast('Xuất báo cáo Excel / PDF (tính năng P2)');
+    const bars=[42,55,38,61,48,72,58,44,67,52,78,60,49,70,63,55,82,68,58,90,74,62,85,71,66,95,80,70,88,76];
+    o.rpBars=bars.map((h,i)=>({h:h, day:(i%3===0)?String(i+1):'', c1: h>80?'#f4e3b4':'rgba(212,178,106,.6)', c2: h>80?'#d4b26a':'rgba(212,178,106,.15)'}));
+    const rt=S.reportTab||'day';
+    const rptab=(a)=>'font-size:12px;padding:7px 13px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
+    o.rpTabDay=rptab(rt==='day'); o.rpTabVenue=rptab(rt==='venue'); o.rpTabCoupon=rptab(rt==='coupon');
+    o.rpByDay=()=>this.setState({reportTab:'day'}); o.rpByVenue=()=>this.setState({reportTab:'venue'}); o.rpByCoupon=()=>this.setState({reportTab:'coupon'});
+    const M=(n)=>this.money(n);
+    const byDay=[['30/06',22.0,20.2,3.1,1.8,7],['29/06',18.4,17.0,2.6,1.4,5],['28/06',14.2,13.1,2.0,1.1,4],['27/06',26.5,24.4,3.7,2.1,8],['26/06',19.8,18.2,2.8,1.6,6],['25/06',12.4,11.4,1.7,1.0,3],['24/06',9.6,8.9,1.3,0.7,3]];
+    const byVenue=[['Club Lumière',88.5,81.4,15.9,7.1,26],['Akari Lounge',62.0,56.9,12.4,5.1,19],['Sakura Lounge',54.3,50.1,8.1,4.2,17],['KTV Hoàng Gia',48.7,45.6,5.8,3.1,15],['Bar Tokyo Night',36.2,33.5,5.4,2.7,12],['Lotus Club Saigon',22.3,20.5,3.2,1.8,7]];
+    const byCoupon=[['−30% Happy Hour',68.4,47.9,9.2,20.5,22],['−10% VIP độc quyền',42.1,37.9,6.8,4.2,11],['−8% Thành viên',55.6,51.2,8.3,4.4,18],['−5% Khách mới',31.2,29.6,4.4,1.6,14],['2+1 Combo VIP',24.8,22.3,3.7,2.5,6]];
+    const src = rt==='venue'?byVenue : rt==='coupon'?byCoupon : byDay;
+    o.rpDim = rt==='venue'?'Quán' : rt==='coupon'?'Mã giảm giá' : 'Ngày';
+    o.rpRows = src.map(r=>({label:r[0], gross:M(r[1]*1000000), net:M(r[2]*1000000), comm:M(r[3]*1000000), disc:M(r[4]*1000000), bills:r[5]}));
+    return o;
+  }
+}
+
+</script>
+</body>
+</html>
