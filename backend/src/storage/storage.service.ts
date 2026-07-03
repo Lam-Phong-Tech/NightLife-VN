@@ -67,9 +67,13 @@ export class StorageService implements OnModuleInit {
     }
 
     const storageKey = file.filename;
+    const webBaseUrl = this.configService.get<string>('WEB_BASE_URL');
+    const defaultPublicBase = webBaseUrl
+      ? `${webBaseUrl}/api/backend`
+      : `http://localhost:${this.configService.get<string>('PORT', '3001')}`;
     const publicBaseUrl = this.configService.get<string>(
       'PUBLIC_BASE_URL',
-      `http://localhost:${this.configService.get<string>('PORT', '3001')}`,
+      defaultPublicBase,
     );
     const access = this.resolveAccess(options.access);
 

@@ -35,6 +35,25 @@ const isLoopbackUrl = (value: string) => {
   );
 };
 
+export const resolveClientUrl = (url?: string | null) => {
+  if (!url || typeof url !== 'string') return url;
+  if (typeof window === 'undefined') return url;
+  
+  const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const prefix = isLocalHost ? 'http://localhost:3001' : '/api/backend';
+
+  if (url.startsWith('http://localhost:3001')) {
+    return url.replace('http://localhost:3001', prefix);
+  }
+  
+  if (url.startsWith('https://demonightlight.test9.io.vn/api/backend')) {
+    return url.replace('https://demonightlight.test9.io.vn/api/backend', prefix);
+  }
+  
+  return url;
+};
+
+
 const getBaseUrl = () => {
   if (typeof window !== "undefined") {
     const isLocalHost =
