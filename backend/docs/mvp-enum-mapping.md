@@ -88,6 +88,11 @@ taxonomy; no `EVENT`, `OTHER`, or plain `SPA` category is used in P0.
 ## CouponIssue Scan Actor
 
 Coupon inventory uses `Coupon` as the campaign/rule and `CouponIssue` as the issued, scannable coupon instance.
+For Booking QR discount/redeem flows, `CouponIssue` is the runtime source-of-truth:
+it owns the signed coupon QR payload, token hash, QR lifecycle status, booking
+link, bill link, claim/scan/USED events, and campaign reconciliation export.
+`BookingQr` remains the booking attendance/email QR model and must not be used
+to decide coupon discount state or campaign coupon reconciliation.
 
 - `CouponIssue.issuedById`: admin/partner/operator actor who issued the coupon instance.
 - `CouponIssue.scannedById`: admin/partner/operator actor who scanned or redeemed the issued coupon.
@@ -125,6 +130,13 @@ Booking QR creation records `coupon.analytics.claimed.v1`, masked
 `coupon.fraud.claim_signal.v1` fingerprints for IP/device/session/user-agent,
 and QR tokens support `COUPON_QR_PREVIOUS_SECRETS` during secret rotation while
 production requires `COUPON_QR_SECRET`.
+Creating the booking and issuing its `CouponIssue` QR happen in one database
+transaction. If booking creation fails after QR issue creation starts, the
+transaction rolls back so no orphan coupon QR remains.
+Admin can revoke an exposed issue token with
+`PATCH /admin/coupon-issues/:issueId/revoke-qr` or rotate it with
+`POST /admin/coupon-issues/:issueId/rotate-qr`; scans reject revoked or rotated
+token hashes.
 
 ## Audit And Session Security
 

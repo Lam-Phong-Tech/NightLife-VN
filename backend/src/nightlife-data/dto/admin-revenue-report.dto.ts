@@ -7,6 +7,14 @@ import {
   Matches,
 } from 'class-validator';
 
+export const ADMIN_REVENUE_REPORT_FLAG_FILTERS = [
+  'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED',
+  'MISSING_ACTIVE_COMMISSION_CONFIG',
+] as const;
+
+export type AdminRevenueReportFlagFilter =
+  (typeof ADMIN_REVENUE_REPORT_FLAG_FILTERS)[number];
+
 export class AdminRevenueReportQueryDto {
   @ApiPropertyOptional({
     example: '2026-07-01T00:00:00.000Z',
@@ -93,4 +101,13 @@ export class AdminRevenueReportQueryDto {
   @IsOptional()
   @IsUUID()
   castId?: string;
+
+  @ApiPropertyOptional({
+    enum: ADMIN_REVENUE_REPORT_FLAG_FILTERS,
+    description:
+      'Optional commission snapshot flag filter for negative commission or legacy missing config records.',
+  })
+  @IsOptional()
+  @IsIn(ADMIN_REVENUE_REPORT_FLAG_FILTERS)
+  flag?: AdminRevenueReportFlagFilter;
 }

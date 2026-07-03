@@ -83,7 +83,7 @@ export default function AdminStoresPage() {
           const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           if (!generatedSlug) { setSlugStatus(''); return; }
           const res = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);
-          setSlugStatus(res.data?.available ? 'ok' : 'error');
+          setSlugStatus(res.available ? 'ok' : 'error');
         } catch(e) {
           setSlugStatus('error');
         }

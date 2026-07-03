@@ -277,6 +277,7 @@ type RevenueReportMoneyTotals = {
   grossVnd: number;
   discountVnd: number;
   netVnd: number;
+  payableVnd: number;
   commissionVnd: number;
 };
 
@@ -329,6 +330,7 @@ type BillRevenueApprovalSnapshot = {
   grossVnd: number;
   discountVnd: number;
   netVnd: number;
+  payableVnd: number;
   commissionVnd: number;
   discountRuleSnapshot: Record<string, unknown>;
   commissionRuleSnapshot: Record<string, unknown>;
@@ -3131,17 +3133,18 @@ export class NightlifeDataService {
     dto: ScanCouponIssueDto,
     user: AuthenticatedUser,
   ) {
-    const couponIssueId = this.resolveCouponIssueIdFromQrPayload(dto.payload);
-    return this.scanCouponIssueByUnique({ id: couponIssueId }, user, {
+    const token = this.resolveCouponIssueTokenFromQrPayload(dto.payload);
+    return this.scanCouponIssueByUnique({ id: token.issueId }, user, {
       source: 'SIGNED_QR_PAYLOAD',
       offline: Boolean(dto.offline),
+      qrTokenHash: token.tokenHash,
     });
   }
 
   private async scanCouponIssueByUnique(
     where: Prisma.CouponIssueWhereUniqueInput,
     user: AuthenticatedUser,
-    metadata: { source: string; offline?: boolean },
+    metadata: { source: string; offline?: boolean; qrTokenHash?: string },
   ) {
     const issue = await this.prisma.couponIssue.findUnique({
       where,
@@ -3177,6 +3180,7 @@ export class NightlifeDataService {
       issue.coupon.storeId,
       'coupon.scan',
     );
+    this.assertCouponQrTokenUsable(issue.metadata, metadata.qrTokenHash);
     await this.assertIssueCanBeConfirmed(issue);
 
     await this.writeCouponIssueAudit({
@@ -3905,6 +3909,178 @@ export class NightlifeDataService {
       warnings,
       requiresManualReview: warnings.length > 0,
     };
+  }
+
+  async revokeAdminCouponIssueQrToken(
+    issueId: string,
+    user: AuthenticatedUser,
+  ) {
+    const issue = await this.prisma.couponIssue.findUnique({
+      where: { id: issueId },
+      select: {
+        id: true,
+        code: true,
+        couponId: true,
+        qrPayloadHash: true,
+        status: true,
+        expiresAt: true,
+        usedAt: true,
+        metadata: true,
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    if (issue.status !== 'ISSUED') {
+      throw new UnprocessableEntityException(
+        'Only issued coupon QR tokens can be revoked',
+      );
+    }
+
+    const now = new Date();
+    const metadata = this.asRecord(issue.metadata) ?? {};
+    const nextMetadata = {
+      ...metadata,
+      qrRevokedAt: now.toISOString(),
+      qrRevokedBy: user.id,
+      revokedQrTokenHashes: this.mergeRevokedQrTokenHashes(metadata),
+    };
+
+    const updated = await this.prisma.couponIssue.update({
+      where: { id: issue.id },
+      data: {
+        status: 'REVOKED',
+        revokedAt: now,
+        metadata: this.toPrismaJson(nextMetadata),
+      },
+      select: this.adminCouponIssueSelect(),
+    });
+
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_QR_TOKEN_REVOKED',
+      issue: {
+        ...updated,
+        coupon: { storeId: updated.coupon.store?.id ?? null },
+      },
+      actorId: user.id,
+      beforeJson: {
+        id: issue.id,
+        status: issue.status,
+        qrPayloadHash: issue.qrPayloadHash,
+      },
+      afterJson: {
+        id: updated.id,
+        status: updated.status,
+        qrPayloadHash: updated.qrPayloadHash,
+      },
+      metadata: {
+        source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+        revokedAt: now.toISOString(),
+      },
+    });
+
+    await this.recordCouponLifecycleEvent('coupon.issue.qr_revoked.v1', updated, {
+      actorId: user.id,
+      source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+      revokedAt: now.toISOString(),
+    });
+
+    return this.decorateAdminCouponIssue(updated);
+  }
+
+  async rotateAdminCouponIssueQrToken(
+    issueId: string,
+    user: AuthenticatedUser,
+  ) {
+    const issue = await this.prisma.couponIssue.findUnique({
+      where: { id: issueId },
+      select: this.adminCouponIssueSelect(),
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    if (issue.status !== 'ISSUED') {
+      throw new UnprocessableEntityException(
+        'Only issued coupon QR tokens can be rotated',
+      );
+    }
+
+    const now = new Date();
+    const metadata = this.asRecord(issue.metadata) ?? {};
+    const qrPayload = this.buildCouponQrPayload(issue.id);
+    const qrTokenHash = this.buildCouponQrTokenHashFromPayload(qrPayload);
+    const rotationCount =
+      typeof metadata.qrRotationCount === 'number'
+        ? metadata.qrRotationCount + 1
+        : 1;
+    const nextMetadata = {
+      ...metadata,
+      qrPayload,
+      qrPayloadType: 'SIGNED_DEEP_LINK',
+      qrTokenHash,
+      qrRotatedAt: now.toISOString(),
+      qrRotatedBy: user.id,
+      qrRotationCount: rotationCount,
+      revokedQrTokenHashes: this.mergeRevokedQrTokenHashes(metadata),
+    };
+
+    const updated = await this.prisma.couponIssue.update({
+      where: { id: issue.id },
+      data: {
+        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
+        metadata: this.toPrismaJson(nextMetadata),
+      },
+      select: this.adminCouponIssueSelect(),
+    });
+
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_QR_TOKEN_ROTATED',
+      issue: {
+        ...updated,
+        coupon: { storeId: updated.coupon.store?.id ?? null },
+      },
+      actorId: user.id,
+      beforeJson: {
+        id: issue.id,
+        status: issue.status,
+        qrPayloadHash: issue.qrPayloadHash,
+      },
+      afterJson: {
+        id: updated.id,
+        status: updated.status,
+        qrPayloadHash: updated.qrPayloadHash,
+      },
+      metadata: {
+        source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+        rotatedAt: now.toISOString(),
+        rotationCount,
+      },
+    });
+
+    await this.recordCouponLifecycleEvent('coupon.issue.qr_rotated.v1', updated, {
+      actorId: user.id,
+      source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+      rotatedAt: now.toISOString(),
+      rotationCount,
+    });
+
+    return this.decorateAdminCouponIssue(updated);
   }
 
   async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
@@ -4670,7 +4846,7 @@ export class NightlifeDataService {
     );
 
     return billsWithFraudWarnings.map((bill) =>
-      this.maskSensitiveBillForRole(bill, user),
+      this.maskSensitiveBillForRole(this.withBillRevenueAliases(bill), user),
     );
   }
 
@@ -4799,6 +4975,7 @@ export class NightlifeDataService {
     };
     const storeId = this.cleanText(query.storeId);
     const couponId = this.cleanText(query.couponId);
+    const flag = this.cleanText(query.flag);
     const partnerAccountId = this.cleanText(query.partnerAccountId);
     const areaId = this.cleanText(query.areaId);
     const castId = this.cleanText(query.castId);
@@ -4809,6 +4986,13 @@ export class NightlifeDataService {
 
     if (couponId) {
       where.couponId = couponId;
+    }
+
+    if (flag) {
+      where.commissionRuleSnapshot = {
+        path: ['flags'],
+        array_contains: [flag],
+      };
     }
 
     if (partnerAccountId || areaId) {
@@ -4937,6 +5121,7 @@ export class NightlifeDataService {
         billStatusIncluded: [...REVENUE_REPORT_BILL_STATUSES],
         storeId: storeId || null,
         couponId: couponId || null,
+        flag: flag || null,
         partnerAccountId: partnerAccountId || null,
         areaId: areaId || null,
         castId: castId || null,
@@ -4952,7 +5137,8 @@ export class NightlifeDataService {
         formula: {
           grossVnd: 'subtotalVnd',
           discountVnd: 'discountVnd',
-          netVnd: 'paidVnd || subtotalVnd - discountVnd',
+          netVnd: 'subtotalVnd - discountVnd',
+          payableVnd: 'netVnd + serviceChargeVnd + taxVnd',
           commissionVnd: 'commissionAmountVnd',
         },
       },
@@ -4963,6 +5149,7 @@ export class NightlifeDataService {
         grossVnd: day.grossVnd,
         discountVnd: day.discountVnd,
         netVnd: day.netVnd,
+        payableVnd: day.payableVnd,
         commissionVnd: day.commissionVnd,
         stores: Array.from(day.stores.values()).map((store) => ({
           store: store.store,
@@ -4970,6 +5157,7 @@ export class NightlifeDataService {
           grossVnd: store.grossVnd,
           discountVnd: store.discountVnd,
           netVnd: store.netVnd,
+          payableVnd: store.payableVnd,
           commissionVnd: store.commissionVnd,
           coupons: Array.from(store.coupons.values()).map((coupon) => ({
             coupon: coupon.coupon,
@@ -4977,6 +5165,7 @@ export class NightlifeDataService {
             grossVnd: coupon.grossVnd,
             discountVnd: coupon.discountVnd,
             netVnd: coupon.netVnd,
+            payableVnd: coupon.payableVnd,
             commissionVnd: coupon.commissionVnd,
             bills: coupon.bills,
           })),
@@ -5066,6 +5255,7 @@ export class NightlifeDataService {
                 ...bill,
                 subtotalVnd: revenueApproval.grossVnd,
                 totalVnd: revenueApproval.netVnd,
+                paidVnd: revenueApproval.payableVnd,
               }
             : bill,
           now,
@@ -5088,7 +5278,7 @@ export class NightlifeDataService {
               subtotalVnd: revenueApproval?.grossVnd ?? bill.subtotalVnd,
               discountVnd: revenueApproval?.discountVnd ?? bill.discountVnd,
               totalVnd: revenueApproval?.netVnd ?? bill.totalVnd,
-              paidVnd: revenueApproval?.netVnd ?? bill.paidVnd,
+              paidVnd: revenueApproval?.payableVnd ?? bill.paidVnd,
               commissionAmountVnd:
                 revenueApproval?.commissionVnd ?? bill.commissionAmountVnd,
               discountRuleSnapshot: revenueApproval
@@ -5141,6 +5331,7 @@ export class NightlifeDataService {
                   grossVnd: revenueApproval.grossVnd,
                   discountVnd: revenueApproval.discountVnd,
                   netVnd: revenueApproval.netVnd,
+                  payableVnd: revenueApproval.payableVnd,
                   commissionVnd: revenueApproval.commissionVnd,
                   discountRuleSnapshot: revenueApproval.discountRuleSnapshot,
                   commissionRuleSnapshot:
@@ -5154,12 +5345,14 @@ export class NightlifeDataService {
       return reviewedBill;
     });
 
-    await this.adminNotificationService?.notifyBillReviewed(result, {
+    const resultWithRevenueAliases = this.withBillRevenueAliases(result);
+
+    await this.adminNotificationService?.notifyBillReviewed(resultWithRevenueAliases, {
       approve: dto.approve,
       reviewedById: adminId,
     });
 
-    return result;
+    return resultWithRevenueAliases;
   }
 
   async reverseSensitiveBill(
@@ -5438,6 +5631,7 @@ export class NightlifeDataService {
       grossVnd: 0,
       discountVnd: 0,
       netVnd: 0,
+      payableVnd: 0,
       commissionVnd: 0,
     };
   }
@@ -5450,6 +5644,7 @@ export class NightlifeDataService {
     target.grossVnd += source.grossVnd;
     target.discountVnd += source.discountVnd;
     target.netVnd += source.netVnd;
+    target.payableVnd += source.payableVnd;
     target.commissionVnd += source.commissionVnd;
   }
 
@@ -5628,7 +5823,6 @@ export class NightlifeDataService {
             ...(castId ? { castId } : {}),
           }
         : undefined;
-
     const bookingQrBaseWhere: Prisma.BookingQrWhereInput = {
       ...(storeId ? { storeId } : {}),
       ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
@@ -5641,6 +5835,7 @@ export class NightlifeDataService {
         ...(storeId ? { storeId } : {}),
         ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
       },
+      ...(castId ? { booking: { castId } } : {}),
     };
 
     const billSubmittedBaseWhere: Prisma.BillWhereInput = {
@@ -5656,6 +5851,7 @@ export class NightlifeDataService {
       qrIssuedCount,
       couponIssueCount,
       qrUsedCount,
+      couponIssueScannedCount,
       couponIssueUsedCount,
       billSubmittedCount,
       billApprovedCount,
@@ -5677,6 +5873,13 @@ export class NightlifeDataService {
           ...bookingQrBaseWhere,
           status: 'USED',
           usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+        },
+      }),
+      this.prisma.couponIssue.count({
+        where: {
+          ...couponIssueBaseWhere,
+          scannedById: { not: null },
+          updatedAt: { gte: reportWindow.from, lte: reportWindow.to },
         },
       }),
       this.prisma.couponIssue.count({
@@ -5709,6 +5912,11 @@ export class NightlifeDataService {
       {
         key: 'qr_scan',
         label: 'QR scan',
+        count: qrUsedCount + couponIssueScannedCount,
+      },
+      {
+        key: 'confirm_used',
+        label: 'Confirm USED',
         count: qrUsedCount + couponIssueUsedCount,
       },
       {
@@ -5724,7 +5932,6 @@ export class NightlifeDataService {
         commissionVnd: totals.commissionVnd,
       },
     ];
-
     return steps.map((step, index) => {
       const previous = index > 0 ? steps[index - 1] : null;
       const rateFromPrevious =
@@ -5874,15 +6081,20 @@ export class NightlifeDataService {
     const grossVnd =
       Math.max(0, bill.subtotalVnd ?? 0) || totalVnd + discountVnd;
     const netVnd =
+      grossVnd > 0 || discountVnd > 0
+        ? Math.max(0, grossVnd - discountVnd)
+        : totalVnd;
+    const payableVnd =
       Math.max(0, bill.paidVnd ?? 0) ||
-      Math.max(0, grossVnd - discountVnd + serviceChargeVnd + taxVnd) ||
-      totalVnd;
+      Math.max(0, netVnd + serviceChargeVnd + taxVnd) ||
+      netVnd;
 
     return {
       billCount: 1,
       grossVnd,
       discountVnd,
       netVnd,
+      payableVnd,
       commissionVnd: Math.trunc(bill.commissionAmountVnd ?? 0),
     };
   }
@@ -5932,13 +6144,15 @@ export class NightlifeDataService {
       grossVnd,
       reviewedAt,
     );
-    const netVnd = Math.max(
-      0,
-      grossVnd - discount.discountVnd + serviceChargeVnd + taxVnd,
-    );
+    const netVnd = Math.max(0, grossVnd - discount.discountVnd);
+    const payableVnd = Math.max(0, netVnd + serviceChargeVnd + taxVnd);
     const commission = await this.resolveBillApprovalCommission({
       bill,
       grossVnd,
+      netVnd,
+      payableVnd,
+      serviceChargeVnd,
+      taxVnd,
       discountVnd: discount.discountVnd,
       discountPercent: discount.effectiveDiscountPercent,
       reviewedAt,
@@ -5948,8 +6162,16 @@ export class NightlifeDataService {
       grossVnd,
       discountVnd: discount.discountVnd,
       netVnd,
+      payableVnd,
       commissionVnd: commission.commissionVnd,
-      discountRuleSnapshot: discount.snapshot,
+      discountRuleSnapshot: {
+        ...discount.snapshot,
+        grossRevenueVnd: grossVnd,
+        netRevenueVnd: netVnd,
+        payableVnd,
+        serviceChargeVnd,
+        taxVnd,
+      },
       commissionRuleSnapshot: commission.snapshot,
     };
   }
@@ -6071,6 +6293,7 @@ export class NightlifeDataService {
 
   private async resolveBillApprovalCommission(input: {
     bill: {
+      id?: string;
       store?: {
         id?: string | null;
         name?: string | null;
@@ -6080,6 +6303,10 @@ export class NightlifeDataService {
       couponIssue?: { id: string; code: string; status: string } | null;
     };
     grossVnd: number;
+    netVnd: number;
+    payableVnd: number;
+    serviceChargeVnd: number;
+    taxVnd: number;
     discountVnd: number;
     discountPercent: number;
     reviewedAt: Date;
@@ -6118,6 +6345,25 @@ export class NightlifeDataService {
           },
         })
       : null;
+    if (storeId && !commissionConfig) {
+      throw new UnprocessableEntityException({
+        message: 'Missing active CommissionConfig for bill approval',
+        error: 'Unprocessable Entity',
+        code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
+        reason:
+          'Bill approval requires an active CommissionConfig before commission can be calculated.',
+        flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
+        bill: {
+          id: input.bill.id ?? null,
+        },
+        store: {
+          id: storeId,
+          name: input.bill.store?.name ?? null,
+          slug: input.bill.store?.slug ?? null,
+        },
+      });
+    }
+
     const configRuleSnapshot = this.asRecord(commissionConfig?.ruleSnapshot);
     const campaignOverride = this.resolveCampaignCommissionPercent(
       configRuleSnapshot,
@@ -6146,7 +6392,6 @@ export class NightlifeDataService {
       ...(requiresPmBaConfirmation
         ? ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED']
         : []),
-      ...(!commissionConfig ? ['MISSING_ACTIVE_COMMISSION_CONFIG'] : []),
     ];
 
     return {
@@ -6158,11 +6403,17 @@ export class NightlifeDataService {
         formula: 'grossVnd * (commission_rate - discount_rate)',
         source: commissionConfig
           ? (campaignOverride.source ?? 'STORE_COMMISSION_CONFIG')
-          : 'NO_ACTIVE_COMMISSION_CONFIG',
+          : 'NO_STORE_COMMISSION_CONFIG',
         grossVnd: input.grossVnd,
+        grossRevenueVnd: input.grossVnd,
         discountVnd: input.discountVnd,
+        serviceChargeVnd: input.serviceChargeVnd,
+        taxVnd: input.taxVnd,
+        netRevenueVnd: input.netVnd,
+        payableVnd: input.payableVnd,
         grossCommissionVnd,
         commissionVnd,
+        commissionAmountVnd: commissionVnd,
         commissionPercent,
         commissionRate: this.percentToRate(commissionPercent),
         discountPercent: input.discountPercent,
@@ -6477,7 +6728,9 @@ export class NightlifeDataService {
     target: BookingTarget;
     userId?: string;
     phone?: string;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const couponId = this.cleanText(input.dto.couponId);
     const couponIssueId = this.cleanText(input.dto.couponIssueId);
 
@@ -6488,7 +6741,7 @@ export class NightlifeDataService {
     const now = new Date();
 
     if (couponIssueId) {
-      const issue = await this.prisma.couponIssue.findFirst({
+      const issue = await prisma.couponIssue.findFirst({
         where: {
           id: couponIssueId,
           coupon: { deletedAt: null },
@@ -6560,7 +6813,7 @@ export class NightlifeDataService {
       }
 
       if (issue.expiresAt && issue.expiresAt <= now) {
-        await this.expireIssuedCouponIssues({ id: issue.id });
+        await this.expireIssuedCouponIssues({ id: issue.id }, prisma);
         throw new UnprocessableEntityException('Coupon issue has expired');
       }
 
@@ -6570,7 +6823,7 @@ export class NightlifeDataService {
       };
     }
 
-    const coupon = await this.prisma.coupon.findFirst({
+    const coupon = await prisma.coupon.findFirst({
       where: {
         id: couponId,
         storeId: input.target.store.id,
@@ -7163,9 +7416,11 @@ export class NightlifeDataService {
     phone?: string;
     scheduledAt: Date;
     context?: CouponClaimContext;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const now = new Date();
-    const coupon = await this.prisma.coupon.findFirst({
+    const coupon = await prisma.coupon.findFirst({
       where: {
         id: input.couponId,
         storeId: input.target.store.id,
@@ -7211,13 +7466,14 @@ export class NightlifeDataService {
     const issueId = randomUUID();
     const issueCode = `${recipientType}-${randomUUID()}`;
     const qrPayload = this.buildCouponQrPayload(issueId);
+    const qrTokenHash = this.buildCouponQrTokenHashFromPayload(qrPayload);
     const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
       coupon,
       userType,
       input.user?.tier ?? null,
     );
 
-    const issue = await this.prisma.couponIssue.create({
+    const issue = await prisma.couponIssue.create({
       data: {
         id: issueId,
         couponId: coupon.id,
@@ -7238,6 +7494,8 @@ export class NightlifeDataService {
           bookingScheduledAt: input.scheduledAt.toISOString(),
           qrPayload,
           qrPayloadType: 'SIGNED_DEEP_LINK',
+          qrTokenHash,
+          revokedQrTokenHashes: [],
           statusLabel: this.couponIssueStatusLabel('ISSUED'),
           discountPercent: discountRuleSnapshot.discountPercent,
           discountRuleSnapshot,
@@ -7274,6 +7532,7 @@ export class NightlifeDataService {
         status: issue.status,
         sourceFlow: 'BOOKING_QR',
       },
+      prisma,
     });
 
     const claimKey = input.user
@@ -7288,12 +7547,14 @@ export class NightlifeDataService {
       recipientType,
       userId: input.user?.id,
       guestId: input.guestId,
+      prisma,
     });
     await this.detectCouponClaimFraud({
       claimKey,
       coupon,
       issue,
       context,
+      prisma,
     });
 
     return issue;
@@ -7311,50 +7572,54 @@ export class NightlifeDataService {
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
 
-    const couponLink = await this.resolveBookingCouponLink({
-      dto: input.dto,
-      target: input.target,
-      userId: input.userId,
-      phone: input.phone,
-    });
-    const bookingCouponIssueId =
-      couponLink.couponIssueId ??
-      (couponLink.couponId
-        ? (
-            await this.issueBookingCouponQr({
-              couponId: couponLink.couponId,
-              target: input.target,
-              user: input.user,
-              guestId: input.guestId,
-              phone: input.phone,
-              scheduledAt,
-              context: input.context,
-            })
-          ).id
-        : undefined);
-
-    return this.prisma.booking.create({
-      data: {
+    return this.prisma.$transaction(async (prisma) => {
+      const couponLink = await this.resolveBookingCouponLink({
+        dto: input.dto,
+        target: input.target,
         userId: input.userId,
-        guestId: input.guestId,
-        storeId: input.target.store.id,
-        castId: input.target.cast?.id,
-        couponId: couponLink.couponId,
-        couponIssueId: bookingCouponIssueId,
-        status: 'REQUESTED',
-        scheduledAt,
-        partySize: input.dto.partySize,
-        note: input.note,
-        discountSnapshot: {
-          couponId: couponLink.couponId ?? null,
-          couponIssueId: bookingCouponIssueId ?? null,
-        } as Prisma.InputJsonValue,
-        customerType: input.userId ? 'MEMBER' : 'GUEST',
-        customerNameSnapshot: this.cleanText(input.dto.displayName),
-        customerEmailSnapshot:
-          this.cleanEmail(input.dto.email) ?? input.user?.email ?? '',
-      },
-      select: this.bookingNotificationSelect(),
+        phone: input.phone,
+        prisma,
+      });
+      const bookingCouponIssueId =
+        couponLink.couponIssueId ??
+        (couponLink.couponId
+          ? (
+              await this.issueBookingCouponQr({
+                couponId: couponLink.couponId,
+                target: input.target,
+                user: input.user,
+                guestId: input.guestId,
+                phone: input.phone,
+                scheduledAt,
+                context: input.context,
+                prisma,
+              })
+            ).id
+          : undefined);
+
+      return prisma.booking.create({
+        data: {
+          userId: input.userId,
+          guestId: input.guestId,
+          storeId: input.target.store.id,
+          castId: input.target.cast?.id,
+          couponId: couponLink.couponId,
+          couponIssueId: bookingCouponIssueId,
+          status: 'REQUESTED',
+          scheduledAt,
+          partySize: input.dto.partySize,
+          note: input.note,
+          discountSnapshot: {
+            couponId: couponLink.couponId ?? null,
+            couponIssueId: bookingCouponIssueId ?? null,
+          } as Prisma.InputJsonValue,
+          customerType: input.userId ? 'MEMBER' : 'GUEST',
+          customerNameSnapshot: this.cleanText(input.dto.displayName),
+          customerEmailSnapshot:
+            this.cleanEmail(input.dto.email) ?? input.user?.email ?? '',
+        },
+        select: this.bookingNotificationSelect(),
+      });
     });
   }
 
@@ -8408,6 +8673,8 @@ export class NightlifeDataService {
     rejectReason?: string | null;
     subtotalVnd?: number | null;
     discountVnd?: number | null;
+    serviceChargeVnd?: number | null;
+    taxVnd?: number | null;
     totalVnd?: number | null;
     paidVnd?: number | null;
     commissionAmountVnd?: number | null;
@@ -8427,6 +8694,8 @@ export class NightlifeDataService {
       rejectReason: bill.rejectReason ?? null,
       subtotalVnd: bill.subtotalVnd ?? null,
       discountVnd: bill.discountVnd ?? null,
+      serviceChargeVnd: bill.serviceChargeVnd ?? null,
+      taxVnd: bill.taxVnd ?? null,
       totalVnd: bill.totalVnd ?? null,
       paidVnd: bill.paidVnd ?? null,
       commissionAmountVnd: bill.commissionAmountVnd ?? null,
@@ -11112,6 +11381,10 @@ export class NightlifeDataService {
   }
 
   private resolveCouponIssueIdFromQrPayload(payload: string) {
+    return this.resolveCouponIssueTokenFromQrPayload(payload).issueId;
+  }
+
+  private resolveCouponIssueTokenFromQrPayload(payload: string) {
     const token = this.extractCouponQrToken(payload);
     const [encodedPayload, signature] = token.split('.');
     if (!encodedPayload || !signature) {
@@ -11138,7 +11411,10 @@ export class NightlifeDataService {
         throw new Error('Invalid QR token payload');
       }
 
-      return parsed.issueId;
+      return {
+        issueId: parsed.issueId,
+        tokenHash: this.buildCouponQrTokenHash(token),
+      };
     } catch {
       throw new BadRequestException('Invalid coupon QR payload');
     }
@@ -11160,6 +11436,14 @@ export class NightlifeDataService {
     } catch {
       return value;
     }
+  }
+
+  private buildCouponQrTokenHash(token: string) {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private buildCouponQrTokenHashFromPayload(payload: string) {
+    return this.buildCouponQrTokenHash(this.extractCouponQrToken(payload));
   }
 
   private couponQrVerificationSecrets() {
@@ -11399,8 +11683,10 @@ export class NightlifeDataService {
     recipientType: string;
     userId?: string | null;
     guestId?: string | null;
+    prisma?: Prisma.TransactionClient;
   }) {
-    await this.prisma.notificationLog.create({
+    const prisma = input.prisma ?? this.prisma;
+    await prisma.notificationLog.create({
       data: {
         userId: input.userId ?? undefined,
         guestId: input.guestId ?? undefined,
@@ -11428,14 +11714,16 @@ export class NightlifeDataService {
     coupon: { id: string; code: string; storeId: string };
     issue: { id: string; code: string };
     context: CouponClaimContext;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const since = new Date(Date.now() - COUPON_CLAIM_FRAUD_WINDOW_MS);
     const signalKeys = this.couponFraudSignals(
       input.claimKey,
       input.context,
     ).map((signal) => signal.key);
     const [recentClaims, recentSignalClaims] = await Promise.all([
-      this.prisma.notificationLog.findMany({
+      prisma.notificationLog.findMany({
         where: {
           templateKey: 'coupon.analytics.claimed.v1',
           recipient: input.claimKey,
@@ -11445,7 +11733,7 @@ export class NightlifeDataService {
         take: COUPON_CLAIM_FRAUD_THRESHOLD,
       }),
       signalKeys.length
-        ? this.prisma.notificationLog.findMany({
+        ? prisma.notificationLog.findMany({
             where: {
               templateKey: COUPON_FRAUD_SIGNAL_TEMPLATE,
               recipient: { in: signalKeys },
@@ -11481,7 +11769,7 @@ export class NightlifeDataService {
       return;
     }
 
-    await this.prisma.notificationLog.create({
+    await prisma.notificationLog.create({
       data: {
         storeId: input.coupon.storeId,
         channel: 'IN_APP',
@@ -11511,11 +11799,13 @@ export class NightlifeDataService {
     recipientType: string;
     userId?: string | null;
     guestId?: string | null;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const signals = this.couponFraudSignals(input.claimKey, input.context);
     await Promise.all(
       signals.map((signal) =>
-        this.prisma.notificationLog.create({
+        prisma.notificationLog.create({
           data: {
             userId: input.userId ?? undefined,
             guestId: input.guestId ?? undefined,
@@ -11603,8 +11893,10 @@ export class NightlifeDataService {
     metadata?: Record<string, unknown>;
     beforeJson?: Record<string, unknown>;
     afterJson?: Record<string, unknown>;
+    prisma?: Prisma.TransactionClient;
   }) {
-    await this.prisma.auditLog.create({
+    const prisma = input.prisma ?? this.prisma;
+    await prisma.auditLog.create({
       data: {
         actorId: input.actorId ?? undefined,
         action: input.action,
@@ -11621,6 +11913,80 @@ export class NightlifeDataService {
         },
       },
     });
+  }
+
+  private adminCouponIssueSelect() {
+    return {
+      id: true,
+      code: true,
+      guestId: true,
+      userId: true,
+      qrPayloadHash: true,
+      status: true,
+      expiresAt: true,
+      usedAt: true,
+      revokedAt: true,
+      createdAt: true,
+      metadata: true,
+      user: { select: { id: true, displayName: true, tier: true } },
+      guest: { select: { id: true, displayName: true } },
+      scannedBy: { select: { id: true, displayName: true } },
+      booking: { select: { id: true, status: true, scheduledAt: true } },
+      bill: {
+        select: {
+          id: true,
+          billNumber: true,
+          status: true,
+          totalVnd: true,
+        },
+      },
+      coupon: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          discountType: true,
+          discountValue: true,
+          maxDiscountVnd: true,
+          minSpendVnd: true,
+          store: { select: { id: true, name: true, slug: true } },
+        },
+      },
+    } satisfies Prisma.CouponIssueSelect;
+  }
+
+  private async decorateAdminCouponIssue<
+    T extends { id: string; code: string; status: string; metadata?: unknown },
+  >(issue: T) {
+    const metadata = this.asRecord(issue.metadata);
+    return {
+      ...(await this.decorateCouponIssue(issue)),
+      campaignSnapshot: this.asRecord(metadata?.campaignSnapshot) ?? null,
+      auditLogs: (await this.listCouponIssueAuditLogs([issue.id])).get(issue.id) ?? [],
+    };
+  }
+
+  private mergeRevokedQrTokenHashes(metadata: Record<string, unknown>) {
+    const hashes = new Set<string>();
+    if (Array.isArray(metadata.revokedQrTokenHashes)) {
+      metadata.revokedQrTokenHashes.forEach((value) => {
+        if (typeof value === 'string' && value.trim()) {
+          hashes.add(value.trim());
+        }
+      });
+    }
+
+    const currentHash =
+      typeof metadata.qrTokenHash === 'string'
+        ? metadata.qrTokenHash
+        : typeof metadata.qrPayload === 'string'
+          ? this.buildCouponQrTokenHashFromPayload(metadata.qrPayload)
+          : null;
+    if (currentHash) {
+      hashes.add(currentHash);
+    }
+
+    return Array.from(hashes);
   }
 
   private async listCouponIssueAuditLogs(issueIds: string[]) {
@@ -11727,8 +12093,9 @@ export class NightlifeDataService {
   private async recordCouponExpireEvent(
     count: number,
     where: Prisma.CouponIssueWhereInput,
+    prisma: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    await this.prisma.notificationLog.create({
+    await prisma.notificationLog.create({
       data: {
         channel: 'IN_APP',
         status: 'QUEUED',
@@ -11742,8 +12109,11 @@ export class NightlifeDataService {
     });
   }
 
-  private async expireIssuedCouponIssues(where: Prisma.CouponIssueWhereInput) {
-    const result = await this.prisma.couponIssue.updateMany({
+  private async expireIssuedCouponIssues(
+    where: Prisma.CouponIssueWhereInput,
+    prisma: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const result = await prisma.couponIssue.updateMany({
       where: {
         ...where,
         status: 'ISSUED',
@@ -11753,7 +12123,7 @@ export class NightlifeDataService {
     });
 
     if (result.count > 0) {
-      await this.recordCouponExpireEvent(result.count, where);
+      await this.recordCouponExpireEvent(result.count, where, prisma);
     }
     return result;
   }
@@ -11770,6 +12140,21 @@ export class NightlifeDataService {
       ...bill,
       user: this.maskCustomerIdentity(bill.user),
       guest: this.maskCustomerIdentity(bill.guest),
+    };
+  }
+
+  private withBillRevenueAliases<
+    T extends {
+      subtotalVnd?: number | null;
+      totalVnd?: number | null;
+      paidVnd?: number | null;
+    },
+  >(bill: T) {
+    return {
+      ...bill,
+      grossRevenueVnd: bill.subtotalVnd ?? null,
+      netRevenueVnd: bill.totalVnd ?? null,
+      payableVnd: bill.paidVnd ?? null,
     };
   }
 
@@ -11959,6 +12344,33 @@ export class NightlifeDataService {
     if (issue.expiresAt && issue.expiresAt <= new Date()) {
       await this.expireIssuedCouponIssues({ id: issue.id });
       throw new UnprocessableEntityException('Coupon issue has expired');
+    }
+  }
+
+  private assertCouponQrTokenUsable(
+    metadata: unknown,
+    qrTokenHash?: string,
+  ) {
+    if (!qrTokenHash) {
+      return;
+    }
+
+    const record = this.asRecord(metadata);
+    const currentTokenHash =
+      typeof record?.qrTokenHash === 'string' ? record.qrTokenHash : null;
+    const revokedTokenHashes = Array.isArray(record?.revokedQrTokenHashes)
+      ? record.revokedQrTokenHashes.filter(
+          (value): value is string => typeof value === 'string',
+        )
+      : [];
+
+    if (
+      revokedTokenHashes.includes(qrTokenHash) ||
+      (currentTokenHash && currentTokenHash !== qrTokenHash)
+    ) {
+      throw new UnprocessableEntityException(
+        'Coupon QR token has been revoked or rotated',
+      );
     }
   }
 

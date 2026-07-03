@@ -18,6 +18,18 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/documentation',
+        destination: '/api/backend/api/documentation',
+      },
+      {
+        source: '/api/documentation/:path*',
+        destination: '/api/backend/api/documentation/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

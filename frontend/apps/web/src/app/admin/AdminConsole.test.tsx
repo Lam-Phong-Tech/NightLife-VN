@@ -335,6 +335,7 @@ const revenueReport = {
   funnel: [
     { key: "coupon_qr", label: "Coupon/QR", count: 3, rateFromPrevious: null },
     { key: "qr_scan", label: "QR scan", count: 2, rateFromPrevious: 66.67 },
+    { key: "confirm_used", label: "Confirm USED", count: 2, rateFromPrevious: 100 },
     { key: "bill_submitted", label: "Bill submitted", count: 2, rateFromPrevious: 100 },
     { key: "bill_approved", label: "Bill approved", count: 2, rateFromPrevious: 100 },
     { key: "commission", label: "Commission", count: 280000, commissionVnd: 280000, rateFromPrevious: null },
@@ -493,6 +494,7 @@ describe("AdminConsole coupon issue panel", () => {
     expect(screen.getByTestId("admin-revenue-p2-dashboard")).toBeInTheDocument();
     expect(within(panel).getByText("Coupon/QR")).toBeInTheDocument();
     expect(within(panel).getByText("QR scan")).toBeInTheDocument();
+    expect(within(panel).getByText("Confirm USED")).toBeInTheDocument();
     expect(within(panel).getByText("Bill submitted")).toBeInTheDocument();
     expect(within(panel).getByText("Bill approved")).toBeInTheDocument();
     expect(within(panel).getByTestId("admin-bill-reversal-panel")).toBeInTheDocument();

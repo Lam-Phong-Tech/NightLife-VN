@@ -679,13 +679,41 @@ const adminCouponIssueExample = {
 
 const sensitiveBillExample = {
   ...billExample,
+  subtotalVnd: 1800000,
+  discountVnd: 180000,
   serviceChargeVnd: 100000,
   taxVnd: 180000,
-  paidVnd: 2080000,
-  commissionAmountVnd: 180000,
+  grossRevenueVnd: 1800000,
+  netRevenueVnd: 1620000,
+  payableVnd: 1900000,
+  totalVnd: 1620000,
+  paidVnd: 1900000,
+  commissionAmountVnd: 0,
   pointsEarned: 18,
-  discountRuleSnapshot: { type: 'PERCENT', value: 10 },
-  commissionRuleSnapshot: { rate: 0.1 },
+  discountRuleSnapshot: {
+    version: 'ba-v3.2',
+    basis: 'bill_gross_before_discount',
+    grossRevenueVnd: 1800000,
+    discountVnd: 180000,
+    netRevenueVnd: 1620000,
+    payableVnd: 1900000,
+    serviceChargeVnd: 100000,
+    taxVnd: 180000,
+  },
+  commissionRuleSnapshot: {
+    version: 'ba-v3.2',
+    basis: 'bill_gross_before_discount',
+    grossRevenueVnd: 1800000,
+    discountVnd: 180000,
+    netRevenueVnd: 1620000,
+    payableVnd: 1900000,
+    serviceChargeVnd: 100000,
+    taxVnd: 180000,
+    grossCommissionVnd: 180000,
+    commissionVnd: 0,
+    commissionAmountVnd: 0,
+    flags: [],
+  },
   pointRuleSnapshot: {
     version: 'v2.2',
     basis: 'bill_subtotal_vnd',
@@ -735,6 +763,7 @@ const adminRevenueReportExample = {
     timezone: 'Asia/Ho_Chi_Minh',
     dateField: 'usedAt',
     statusIn: ['VERIFIED', 'PAID'],
+    flag: null,
     billStatusIncluded: ['VERIFIED', 'PAID'],
     partnerAccountId: null,
     areaId: null,
@@ -751,7 +780,8 @@ const adminRevenueReportExample = {
     formula: {
       grossVnd: 'subtotalVnd',
       discountVnd: 'discountVnd',
-      netVnd: 'paidVnd || subtotalVnd - discountVnd',
+      netVnd: 'subtotalVnd - discountVnd',
+      payableVnd: 'netVnd + serviceChargeVnd + taxVnd',
       commissionVnd: 'commissionAmountVnd',
     },
   },
@@ -760,6 +790,7 @@ const adminRevenueReportExample = {
     grossVnd: 6200000,
     discountVnd: 500000,
     netVnd: 5700000,
+    payableVnd: 6040000,
     commissionVnd: 620000,
   },
   days: [
@@ -769,6 +800,7 @@ const adminRevenueReportExample = {
       grossVnd: 4200000,
       discountVnd: 300000,
       netVnd: 3900000,
+      payableVnd: 4160000,
       commissionVnd: 420000,
       stores: [
         {
@@ -777,6 +809,7 @@ const adminRevenueReportExample = {
           grossVnd: 4200000,
           discountVnd: 300000,
           netVnd: 3900000,
+          payableVnd: 4160000,
           commissionVnd: 420000,
           coupons: [
             {
@@ -789,6 +822,7 @@ const adminRevenueReportExample = {
               grossVnd: 4200000,
               discountVnd: 300000,
               netVnd: 3900000,
+              payableVnd: 4160000,
               commissionVnd: 420000,
               bills: [
                 {
@@ -878,10 +912,16 @@ const adminRevenueReportExample = {
     { key: 'coupon_qr', label: 'Coupon/QR', count: 9, rateFromPrevious: null },
     { key: 'qr_scan', label: 'QR scan', count: 6, rateFromPrevious: 66.67 },
     {
+      key: 'confirm_used',
+      label: 'Confirm USED',
+      count: 5,
+      rateFromPrevious: 83.33,
+    },
+    {
       key: 'bill_submitted',
       label: 'Bill submitted',
       count: 3,
-      rateFromPrevious: 50,
+      rateFromPrevious: 60,
     },
     {
       key: 'bill_approved',
@@ -2271,6 +2311,12 @@ export function AdminRevenueReportContract() {
       description: 'Optional coupon campaign filter.',
     }),
     ApiQuery({
+      name: 'flag',
+      required: false,
+      description:
+        'Optional commission flag filter: NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED or MISSING_ACTIVE_COMMISSION_CONFIG.',
+    }),
+    ApiQuery({
       name: 'partnerAccountId',
       required: false,
       description: 'Optional partner account filter.',
@@ -2344,11 +2390,16 @@ export function ReviewSensitiveBillContract() {
       },
     }),
     ApiUnprocessableEntityResponse({
-      description: 'Bill exists but cannot be reviewed in the requested state.',
+      description:
+        'Bill exists but cannot be reviewed in the requested state or is missing required approval rules.',
       schema: {
         example: {
           statusCode: 422,
-          message: 'Bill has already been verified',
+          message: 'Missing active CommissionConfig for bill approval',
+          code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
+          flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
+          reason:
+            'Bill approval requires an active CommissionConfig before commission can be calculated.',
           error: 'Unprocessable Entity',
         },
       },

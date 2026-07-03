@@ -134,10 +134,20 @@ type SensitiveBill = {
   billNumber: string | null;
   status: string;
   submitterType?: "MEMBER" | "PARTNER" | string | null;
+  subtotalVnd?: number | null;
+  discountVnd?: number | null;
+  serviceChargeVnd?: number | null;
+  taxVnd?: number | null;
+  grossRevenueVnd?: number | null;
+  netRevenueVnd?: number | null;
+  payableVnd?: number | null;
   totalVnd: number | null;
   paidVnd: number | null;
   commissionAmountVnd: number | null;
   pointsEarned: number | null;
+  discountRuleSnapshot?: Record<string, unknown> | null;
+  commissionRuleSnapshot?: Record<string, unknown> | null;
+  pointRuleSnapshot?: Record<string, unknown> | null;
   submittedAt: string | null;
   usedAt?: string | null;
   store: { id?: string; name: string; slug?: string };
@@ -167,6 +177,7 @@ type RevenueReportTotals = {
   grossVnd: number;
   discountVnd: number;
   netVnd: number;
+  payableVnd: number;
   commissionVnd: number;
 };
 
@@ -226,6 +237,7 @@ type RevenueReport = {
     billStatusIncluded?: string[];
     storeId: string | null;
     couponId: string | null;
+    flag?: string | null;
     partnerAccountId?: string | null;
     areaId?: string | null;
     castId?: string | null;
@@ -242,6 +254,7 @@ type RevenueReport = {
       grossVnd: string;
       discountVnd: string;
       netVnd: string;
+      payableVnd?: string;
       commissionVnd: string;
     };
   };
@@ -304,6 +317,7 @@ type AdminCouponIssue = {
   auditLogs?: AdminCouponIssueAuditLog[];
   expiresAt?: string | null;
   usedAt?: string | null;
+  revokedAt?: string | null;
   createdAt?: string | null;
   userType?: string | null;
   user?: { id: string; displayName?: string | null; tier?: string | null } | null;
@@ -388,6 +402,7 @@ type BillFilterState = {
 type RevenueReportFilterState = {
   from: string;
   to: string;
+  flag: string;
   storeId: string;
   couponId: string;
   quickRange: "today" | "seven" | "thirty" | "month" | "custom";
@@ -412,6 +427,7 @@ const emptyRevenueReportTotals: RevenueReportTotals = {
   grossVnd: 0,
   discountVnd: 0,
   netVnd: 0,
+  payableVnd: 0,
   commissionVnd: 0,
 };
 
@@ -427,6 +443,7 @@ const emptyRevenueReport: RevenueReport = {
     billStatusIncluded: ["VERIFIED", "PAID"],
     storeId: null,
     couponId: null,
+    flag: null,
     partnerAccountId: null,
     areaId: null,
     castId: null,
@@ -442,7 +459,8 @@ const emptyRevenueReport: RevenueReport = {
     formula: {
       grossVnd: "subtotalVnd",
       discountVnd: "discountVnd",
-      netVnd: "paidVnd || subtotalVnd - discountVnd",
+      netVnd: "subtotalVnd - discountVnd",
+      payableVnd: "netVnd + serviceChargeVnd + taxVnd",
       commissionVnd: "commissionAmountVnd",
     },
   },
@@ -724,6 +742,7 @@ const defaultRevenueReportFilters = (): RevenueReportFilterState => {
   return {
     from: shiftDateKey(to, -29),
     to,
+    flag: "all",
     storeId: "",
     couponId: "",
     quickRange: "thirty",
@@ -772,8 +791,8 @@ const buildBillFilterParams = (filters: BillFilterState) =>
       .filter(([, value]) => value.length > 0),
   );
 
-const buildRevenueReportParams = (filters: RevenueReportFilterState) =>
-  Object.fromEntries(
+const buildRevenueReportParams = (filters: RevenueReportFilterState) => {
+  const params = Object.fromEntries(
     Object.entries({
       fromDate: filters.from,
       toDate: filters.to,
@@ -783,12 +802,19 @@ const buildRevenueReportParams = (filters: RevenueReportFilterState) =>
     }).filter(([, value]) => value.length > 0),
   );
 
+  if (filters.flag !== "all") {
+    params.flag = filters.flag;
+  }
+
+  return params;
+};
+
 const revenueReportFileStem = (report: RevenueReport) =>
   `nightlife-revenue-${report.filters.fromDate || "from"}-${report.filters.toDate || "to"}`;
 
 const revenueReportExportRows = (report: RevenueReport): Array<Array<string | number>> => {
   const rows: Array<Array<string | number>> = [
-    ["Date", "Store", "Coupon", "Bill", "Gross", "Discount", "Net", "Commission"],
+    ["Date", "Store", "Coupon", "Bill", "Gross", "Discount", "Net", "Payable", "Commission"],
   ];
 
   report.days.forEach((day) =>
@@ -804,6 +830,7 @@ const revenueReportExportRows = (report: RevenueReport): Array<Array<string | nu
               bill.grossVnd,
               bill.discountVnd,
               bill.netVnd,
+              bill.payableVnd,
               bill.commissionVnd,
             ]);
           });
@@ -818,6 +845,7 @@ const revenueReportExportRows = (report: RevenueReport): Array<Array<string | nu
           coupon.grossVnd,
           coupon.discountVnd,
           coupon.netVnd,
+          coupon.payableVnd,
           coupon.commissionVnd,
         ]);
       }),
@@ -833,6 +861,17 @@ const escapeXmlCell = (value: string | number) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+
+const escapeCsvCell = (value: unknown) => {
+  const text = value === null || value === undefined ? "" : String(value);
+  if (!/[",\r\n]/.test(text)) return text;
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const buildCsvBlob = (rows: unknown[][]) =>
+  new Blob([rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n")], {
+    type: "text/csv;charset=utf-8",
+  });
 
 const buildRevenueReportExcelBlob = (report: RevenueReport) => {
   const rows = revenueReportExportRows(report)
@@ -870,7 +909,9 @@ const buildRevenueReportPdfBlob = (report: RevenueReport) => {
     "NightLife revenue report",
     `Period: ${report.filters.fromDate ?? report.filters.from} -> ${report.filters.toDate ?? report.filters.to}`,
     `Timezone: ${report.meta?.timezone ?? report.filters.timezone ?? revenueReportTimezone}`,
-    `Gross: ${formatMoney(report.totals.grossVnd)} | Net: ${formatMoney(report.totals.netVnd)} | Commission: ${formatMoney(
+    `Gross: ${formatMoney(report.totals.grossVnd)} | Net: ${formatMoney(report.totals.netVnd)} | Payable: ${formatMoney(
+      report.totals.payableVnd,
+    )} | Commission: ${formatMoney(
       report.totals.commissionVnd,
     )}`,
     "",
@@ -981,6 +1022,14 @@ const snapshotValue = (snapshot: Record<string, unknown> | null | undefined, key
   typeof snapshot?.[key] === "string" || typeof snapshot?.[key] === "number"
     ? String(snapshot[key])
     : "-";
+
+const snapshotFlags = (snapshot: Record<string, unknown> | null | undefined) => {
+  const flags = snapshot?.flags;
+  return Array.isArray(flags) ? flags.filter((flag): flag is string => typeof flag === "string") : [];
+};
+
+const hasBillSnapshotFlag = (bill: SensitiveBill, flag: string) =>
+  snapshotFlags(bill.commissionRuleSnapshot).includes(flag);
 
 const couponRelationLabel = (
   coupon?: { code?: string | null; name?: string | null } | null,
@@ -1608,6 +1657,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
   const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
   const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
+  const [couponIssueActionId, setCouponIssueActionId] = useState<string | null>(null);
   const [expandedRevenueCouponKey, setExpandedRevenueCouponKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -1808,6 +1858,25 @@ export default function AdminConsole({ section }: { section?: string }) {
     ],
     [couponIssues, couponLinkedBills],
   );
+  const couponLifecycleMetrics = useMemo(() => {
+    const scannedCount = couponIssues.filter(
+      (issue) =>
+        issue.scannedBy ||
+        issue.usedAt ||
+        issue.auditLogs?.some((log) => ["COUPON_ISSUE_SCANNED", "COUPON_ISSUE_USED"].includes(log.action)),
+    ).length;
+    const confirmedCount = couponIssues.filter((issue) => issue.status === "USED" || issue.usedAt).length;
+    const billedCount = couponLinkedBills.filter((bill) => bill.couponIssue).length;
+    const revokedCount = couponIssues.filter((issue) => issue.status === "REVOKED").length;
+
+    return [
+      { label: "Claim", value: couponIssues.length, note: "issue created" },
+      { label: "Scan", value: scannedCount, note: "partner scan" },
+      { label: "Confirm USED", value: confirmedCount, note: "one-time update" },
+      { label: "Bill", value: billedCount, note: "bill linked" },
+      { label: "Fraud review", value: revokedCount, note: "revoked tokens" },
+    ];
+  }, [couponIssues, couponLinkedBills]);
   const reconciliationWarnings = useMemo(() => {
     const warnings: Array<{ id: string; title: string; detail: string }> = [];
     const oneDayMs = 24 * 60 * 60 * 1000;
@@ -2041,6 +2110,7 @@ export default function AdminConsole({ section }: { section?: string }) {
     setRevenueReportFilters({
       from: revenueReportDraft.from,
       to: revenueReportDraft.to,
+      flag: revenueReportDraft.flag,
       storeId: revenueReportDraft.storeId.trim(),
       couponId: revenueReportDraft.couponId.trim(),
       quickRange: "custom",
@@ -2061,6 +2131,86 @@ export default function AdminConsole({ section }: { section?: string }) {
     downloadBlob(buildRevenueReportPdfBlob(revenueReport), `${revenueReportFileStem(revenueReport)}.pdf`);
   };
 
+  const updateCouponIssueInState = (nextIssue: AdminCouponIssue) => {
+    setCouponIssues((current) =>
+      current.map((issue) => (issue.id === nextIssue.id ? { ...issue, ...nextIssue } : issue)),
+    );
+  };
+
+  const revokeCouponIssueQr = async (issue: AdminCouponIssue) => {
+    if (issue.status !== "ISSUED") return;
+
+    setCouponIssueActionId(issue.id);
+    try {
+      const nextIssue = await apiClient<AdminCouponIssue>(`/admin/coupon-issues/${issue.id}/revoke-qr`, {
+        method: "PATCH",
+      });
+      updateCouponIssueInState(nextIssue);
+      setStatusMessage(`Da revoke QR token cho ${issue.code}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong revoke duoc QR token.");
+    } finally {
+      setCouponIssueActionId(null);
+    }
+  };
+
+  const rotateCouponIssueQr = async (issue: AdminCouponIssue) => {
+    if (issue.status !== "ISSUED") return;
+
+    setCouponIssueActionId(issue.id);
+    try {
+      const nextIssue = await apiClient<AdminCouponIssue>(`/admin/coupon-issues/${issue.id}/rotate-qr`, {
+        method: "POST",
+      });
+      updateCouponIssueInState(nextIssue);
+      setStatusMessage(`Da rotate QR token cho ${issue.code}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong rotate duoc QR token.");
+    } finally {
+      setCouponIssueActionId(null);
+    }
+  };
+
+  const exportCouponLifecycleCsv = () => {
+    const rows: unknown[][] = [
+      [
+        "Issue ID",
+        "Issue code",
+        "Coupon",
+        "Store",
+        "Status",
+        "Created at",
+        "Scanned at",
+        "Used at",
+        "Revoked at",
+        "Booking",
+        "Bill",
+        "QR payload hash",
+      ],
+    ];
+
+    visibleCouponIssues.forEach((issue) => {
+      const linkedBill = couponLinkedBills.find((bill) => bill.couponIssue?.id === issue.id);
+      const scannedAt = issue.auditLogs?.find((log) => log.action === "COUPON_ISSUE_SCANNED")?.createdAt;
+      rows.push([
+        issue.id,
+        issue.code,
+        issue.coupon.code,
+        issue.coupon.store?.name ?? "",
+        issue.status,
+        issue.createdAt ?? "",
+        scannedAt ?? "",
+        issue.usedAt ?? "",
+        issue.revokedAt ?? "",
+        issue.booking?.id ?? "",
+        linkedBill?.billNumber ?? linkedBill?.id ?? issue.bill?.billNumber ?? issue.bill?.id ?? "",
+        issue.qrPayloadHash ?? "",
+      ]);
+    });
+
+    downloadBlob(buildCsvBlob(rows), `nightlife-coupon-qr-lifecycle-${dateKeyInVietnam()}.csv`);
+  };
+
   const applyRevenueQuickRange = (range: RevenueReportFilterState["quickRange"]) => {
     const today = dateKeyInVietnam();
     const nextFilters: RevenueReportFilterState = {
@@ -2073,6 +2223,7 @@ export default function AdminConsole({ section }: { section?: string }) {
               ? monthStartDateKey(today)
               : shiftDateKey(today, -29),
       to: today,
+      flag: revenueReportDraft.flag,
       storeId: revenueReportDraft.storeId.trim(),
       couponId: revenueReportDraft.couponId.trim(),
       quickRange: range,
@@ -2653,6 +2804,11 @@ export default function AdminConsole({ section }: { section?: string }) {
                   <Badge tone="INFO">{bill.submitterType === "PARTNER" ? "Chủ quán" : "Member"}</Badge>
                 </span>
               ) : null}
+              {hasBillSnapshotFlag(bill, "NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED") ? (
+                <span style={{ display: "block", marginTop: 6 }}>
+                  <Badge tone="REJECTED">Can PM/BA</Badge>
+                </span>
+              ) : null}
             </span>
             <span>{bill.store.name}</span>
             <span>
@@ -2685,7 +2841,22 @@ export default function AdminConsole({ section }: { section?: string }) {
                 </span>
               ) : null}
             </span>
-            <span style={{ color: colors.text, fontWeight: 800 }}>{formatMoney(bill.totalVnd)}</span>
+            <span>
+              <span style={{ display: "block", color: colors.text, fontWeight: 800 }}>
+                Net {formatMoney(bill.netRevenueVnd ?? bill.totalVnd)}
+              </span>
+              {(bill.payableVnd ?? bill.paidVnd) &&
+              (bill.payableVnd ?? bill.paidVnd) !== (bill.netRevenueVnd ?? bill.totalVnd) ? (
+                <span style={{ display: "block", marginTop: 3, color: colors.text2, fontSize: 11 }}>
+                  Payable {formatMoney(bill.payableVnd ?? bill.paidVnd)}
+                </span>
+              ) : null}
+              {typeof bill.commissionAmountVnd === "number" ? (
+                <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: 11 }}>
+                  Commission {formatMoney(bill.commissionAmountVnd)}
+                </span>
+              ) : null}
+            </span>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -2916,6 +3087,8 @@ export default function AdminConsole({ section }: { section?: string }) {
   const couponIssueDetail = (issue: AdminCouponIssue) => {
     const campaignSnapshot = issue.campaignSnapshot ?? null;
     const auditLogs = issue.auditLogs ?? [];
+    const isQrActionRunning = couponIssueActionId === issue.id;
+    const canManageQrToken = issue.status === "ISSUED" && !isQrActionRunning;
 
     return (
       <div
@@ -2949,6 +3122,28 @@ export default function AdminConsole({ section }: { section?: string }) {
           </code>
           <span style={{ color: colors.muted }}>
             {issue.discountRuleSnapshot ? `Discount: ${compactJson(issue.discountRuleSnapshot)}` : "Discount snapshot: -"}
+          </span>
+          <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              aria-label={`Revoke QR token ${issue.code}`}
+              disabled={!canManageQrToken}
+              onClick={() => void revokeCouponIssueQr(issue)}
+              style={{ ...buttonStyle("danger"), opacity: canManageQrToken ? 1 : 0.55 }}
+            >
+              <XCircle size={14} />
+              Revoke
+            </button>
+            <button
+              type="button"
+              aria-label={`Rotate QR token ${issue.code}`}
+              disabled={!canManageQrToken}
+              onClick={() => void rotateCouponIssueQr(issue)}
+              style={{ ...buttonStyle("secondary"), opacity: canManageQrToken ? 1 : 0.55 }}
+            >
+              <RefreshCcw size={14} />
+              Rotate
+            </button>
           </span>
         </div>
 
@@ -3001,19 +3196,53 @@ export default function AdminConsole({ section }: { section?: string }) {
           title="Coupon issue"
           eyebrow="COUPON LIFECYCLE"
           action={
-            <select
-              value={couponIssueStatusFilter}
-              onChange={(event) => setCouponIssueStatusFilter(event.target.value)}
-              style={inputStyle({ width: 170, minHeight: 38 })}
-            >
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                aria-label="Export coupon QR lifecycle report"
+                onClick={exportCouponLifecycleCsv}
+                style={buttonStyle("secondary")}
+              >
+                <FileText size={14} />
+                Export CSV
+              </button>
+              <select
+                value={couponIssueStatusFilter}
+                onChange={(event) => setCouponIssueStatusFilter(event.target.value)}
+                style={inputStyle({ width: 170, minHeight: 38 })}
+              >
               <option value="all">Tất cả</option>
               <option value="ISSUED">Đã cấp</option>
               <option value="USED">Đã dùng</option>
               <option value="EXPIRED">Hết hạn</option>
               <option value="REVOKED">Đã hủy</option>
-            </select>
+              </select>
+            </span>
           }
         />
+        <div
+          data-testid="admin-coupon-lifecycle-metrics"
+          style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(120px,1fr))", gap: 10, marginTop: 14 }}
+        >
+          {couponLifecycleMetrics.map((metric) => (
+            <span
+              key={metric.label}
+              style={{
+                border: `1px solid ${colors.borderHair}`,
+                background: "rgba(255,255,255,.032)",
+                padding: "10px 12px",
+                display: "grid",
+                gap: 3,
+              }}
+            >
+              <span style={{ color: colors.muted, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>
+                {metric.label}
+              </span>
+              <strong style={{ color: colors.text, fontSize: 20 }}>{metric.value}</strong>
+              <span style={{ color: colors.text2, fontSize: 11 }}>{metric.note}</span>
+            </span>
+          ))}
+        </div>
       </div>
       <div style={{ minWidth: 980, overflowX: "auto" }}>
         <div
@@ -4038,7 +4267,13 @@ export default function AdminConsole({ section }: { section?: string }) {
           icon={ReceiptText}
           label="Net"
           value={compactMoney(revenueReport.totals.netVnd)}
-          note="paidVnd sau giảm"
+          note="gross - discount"
+        />
+        <MetricCard
+          icon={ReceiptText}
+          label="Payable"
+          value={compactMoney(revenueReport.totals.payableVnd)}
+          note="net + fee/tax"
         />
         <MetricCard
           icon={TicketPercent}
@@ -4124,6 +4359,19 @@ export default function AdminConsole({ section }: { section?: string }) {
                 onChange={(event) => updateRevenueReportDraft("to", event.target.value)}
                 style={inputStyle({ minHeight: 38 })}
               />
+            </label>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Commission flag
+              <select
+                aria-label="Revenue report commission flag"
+                value={revenueReportDraft.flag}
+                onChange={(event) => updateRevenueReportDraft("flag", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+              >
+                <option value="all">All flags</option>
+                <option value="NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED">Negative commission</option>
+                <option value="MISSING_ACTIVE_COMMISSION_CONFIG">Missing config</option>
+              </select>
             </label>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
               Quán
@@ -4344,6 +4592,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                     </div>
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", color: colors.text2, fontSize: 12 }}>
                       <span>Net: <b style={{ color: colors.goldBright }}>{formatMoney(day.netVnd)}</b></span>
+                      <span>Payable: <b style={{ color: colors.goldBright }}>{formatMoney(day.payableVnd)}</b></span>
                       <span>Discount: <b style={{ color: colors.goldBright }}>{formatMoney(day.discountVnd)}</b></span>
                       <span>Commission: <b style={{ color: colors.goldBright }}>{formatMoney(day.commissionVnd)}</b></span>
                     </div>
@@ -4371,15 +4620,16 @@ export default function AdminConsole({ section }: { section?: string }) {
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                           <strong style={{ color: colors.goldPale }}>{store.store.name}</strong>
                           <span style={{ color: colors.text2, fontSize: 12 }}>
-                            Gross {formatMoney(store.grossVnd)} · Net {formatMoney(store.netVnd)} · Commission{" "}
+                            Gross {formatMoney(store.grossVnd)} · Net {formatMoney(store.netVnd)} · Payable{" "}
+                            {formatMoney(store.payableVnd)} · Commission{" "}
                             {formatMoney(store.commissionVnd)}
                           </span>
                         </div>
-                        <div style={{ minWidth: 760, overflowX: "auto" }}>
+                        <div style={{ minWidth: 840, overflowX: "auto" }}>
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                              gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr .85fr",
                               gap: 10,
                               color: colors.muted,
                               fontSize: 11,
@@ -4393,6 +4643,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                             <span>Gross</span>
                             <span>Discount</span>
                             <span>Net</span>
+                            <span>Payable</span>
                             <span>Commission</span>
                           </div>
                           {store.coupons.map((coupon) => {
@@ -4404,7 +4655,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                                 <div
                                   style={{
                                     display: "grid",
-                                    gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                                    gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr .85fr",
                                     gap: 10,
                                     color: colors.text2,
                                     fontSize: 12,
@@ -4434,6 +4685,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                                   <span>{formatMoney(coupon.grossVnd)}</span>
                                   <span>{formatMoney(coupon.discountVnd)}</span>
                                   <span>{formatMoney(coupon.netVnd)}</span>
+                                  <span>{formatMoney(coupon.payableVnd)}</span>
                                   <span>{formatMoney(coupon.commissionVnd)}</span>
                                 </div>
                                 {isExpanded && coupon.bills?.length ? (
@@ -4451,7 +4703,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                                         key={bill.id}
                                         style={{
                                           display: "grid",
-                                          gridTemplateColumns: "1.25fr .8fr .8fr .8fr .8fr",
+                                          gridTemplateColumns: "1.25fr .8fr .8fr .8fr .8fr .8fr",
                                           gap: 10,
                                           color: colors.text2,
                                           fontSize: 12,
@@ -4461,6 +4713,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                                         <span>{new Date(bill.usedAt).toLocaleString("vi-VN")}</span>
                                         <span>{bill.status}</span>
                                         <span>{formatMoney(bill.netVnd)}</span>
+                                        <span>{formatMoney(bill.payableVnd)}</span>
                                         <span>{formatMoney(bill.commissionVnd)}</span>
                                       </div>
                                     ))}

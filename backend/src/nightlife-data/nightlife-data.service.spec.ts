@@ -4663,7 +4663,7 @@ describe('NightlifeDataService', () => {
     });
   });
 
-  it('calculates revenue, discount, and admin commission from the original bill when approving', async () => {
+  it('calculates net revenue without service charge or tax when approving', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
     prisma.bill.findFirst.mockResolvedValue({
       id: 'bill-revenue-1',
@@ -4678,10 +4678,10 @@ describe('NightlifeDataService', () => {
       rejectReason: null,
       subtotalVnd: 2000000,
       discountVnd: 0,
-      serviceChargeVnd: 0,
-      taxVnd: 0,
-      totalVnd: 2000000,
-      paidVnd: 2000000,
+      serviceChargeVnd: 100000,
+      taxVnd: 50000,
+      totalVnd: 2150000,
+      paidVnd: 2150000,
       commissionAmountVnd: 0,
       pointsEarned: 0,
       discountRuleSnapshot: null,
@@ -4743,8 +4743,10 @@ describe('NightlifeDataService', () => {
       rejectReason: null,
       subtotalVnd: 2000000,
       discountVnd: 160000,
+      serviceChargeVnd: 100000,
+      taxVnd: 50000,
       totalVnd: 1840000,
-      paidVnd: 1840000,
+      paidVnd: 1990000,
       commissionAmountVnd: 80000,
       pointsEarned: 20,
       discountRuleSnapshot: {
@@ -4778,7 +4780,7 @@ describe('NightlifeDataService', () => {
           subtotalVnd: 2000000,
           discountVnd: 160000,
           totalVnd: 1840000,
-          paidVnd: 1840000,
+          paidVnd: 1990000,
           commissionAmountVnd: 80000,
           pointsEarned: 20,
           discountRuleSnapshot: expect.objectContaining({
@@ -4787,6 +4789,11 @@ describe('NightlifeDataService', () => {
             source: 'COUPON_ISSUE_SNAPSHOT',
             grossVnd: 2000000,
             discountVnd: 160000,
+            grossRevenueVnd: 2000000,
+            netRevenueVnd: 1840000,
+            payableVnd: 1990000,
+            serviceChargeVnd: 100000,
+            taxVnd: 50000,
             effectiveDiscountPercent: 8,
           }),
           commissionRuleSnapshot: expect.objectContaining({
@@ -4796,8 +4803,13 @@ describe('NightlifeDataService', () => {
             source: 'STORE_COMMISSION_CONFIG',
             grossVnd: 2000000,
             discountVnd: 160000,
+            netRevenueVnd: 1840000,
+            payableVnd: 1990000,
+            serviceChargeVnd: 100000,
+            taxVnd: 50000,
             grossCommissionVnd: 240000,
             commissionVnd: 80000,
+            commissionAmountVnd: 80000,
             commissionPercent: 12,
             discountPercent: 8,
             requiresPmBaConfirmation: false,
@@ -4820,11 +4832,86 @@ describe('NightlifeDataService', () => {
             grossVnd: 2000000,
             discountVnd: 160000,
             netVnd: 1840000,
+            payableVnd: 1990000,
             commissionVnd: 80000,
           }),
         }),
       }),
     });
+  });
+
+  it('rejects bill approval when active CommissionConfig is missing', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-missing-commission-config',
+      billNumber: 'BILL-20260703-NOCONFIG',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 2000000,
+      discountVnd: 0,
+      serviceChargeVnd: 100000,
+      taxVnd: 50000,
+      totalVnd: 2150000,
+      paidVnd: 2150000,
+      commissionAmountVnd: 0,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+      store: { id: 'store-without-config', name: 'No Config Club', slug: 'no-config' },
+      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      coupon: {
+        id: 'coupon-1',
+        code: 'MEMBER8',
+        name: 'Member 8%',
+        discountType: 'PERCENT',
+        discountValue: 8,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+      },
+      couponIssue: null,
+      user: {
+        id: 'member-1',
+        displayName: 'Minh',
+        role: 'USER',
+        tier: 'MEMBER',
+      },
+      guest: null,
+    } as never);
+    prisma.commissionConfig.findFirst.mockResolvedValue(null as never);
+
+    expect.assertions(6);
+    try {
+      await service.reviewSensitiveBill('admin-1', 'bill-missing-commission-config', {
+        approve: true,
+      });
+      throw new Error('Expected approval to require active CommissionConfig');
+    } catch (error) {
+      expect(error).toBeInstanceOf(UnprocessableEntityException);
+      const exception = error as UnprocessableEntityException;
+      expect(exception.getStatus()).toBe(422);
+      expect(exception.getResponse()).toEqual(
+        expect.objectContaining({
+          code: 'MISSING_ACTIVE_COMMISSION_CONFIG',
+          flags: ['MISSING_ACTIVE_COMMISSION_CONFIG'],
+          reason:
+            'Bill approval requires an active CommissionConfig before commission can be calculated.',
+          store: expect.objectContaining({
+            id: 'store-without-config',
+            name: 'No Config Club',
+          }),
+        }),
+      );
+    }
+
+    expect(prisma.bill.update).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(adminNotificationService.notifyBillReviewed).not.toHaveBeenCalled();
   });
 
   it('flags bill approval when discount makes admin commission negative', async () => {
@@ -5408,10 +5495,10 @@ describe('NightlifeDataService', () => {
         usedAt: new Date('2026-07-01T14:00:00.000Z'),
         subtotalVnd: 2000000,
         discountVnd: 200000,
-        serviceChargeVnd: 0,
-        taxVnd: 0,
+        serviceChargeVnd: 100000,
+        taxVnd: 50000,
         totalVnd: 1800000,
-        paidVnd: 1800000,
+        paidVnd: 1950000,
         commissionAmountVnd: 180000,
         store: {
           id: 'store-1',
@@ -5515,6 +5602,7 @@ describe('NightlifeDataService', () => {
         billStatusIncluded: ['VERIFIED', 'PAID'],
         storeId: null,
         couponId: null,
+        flag: null,
         partnerAccountId: null,
         areaId: null,
         castId: null,
@@ -5530,7 +5618,8 @@ describe('NightlifeDataService', () => {
         formula: {
           grossVnd: 'subtotalVnd',
           discountVnd: 'discountVnd',
-          netVnd: 'paidVnd || subtotalVnd - discountVnd',
+          netVnd: 'subtotalVnd - discountVnd',
+          payableVnd: 'netVnd + serviceChargeVnd + taxVnd',
           commissionVnd: 'commissionAmountVnd',
         },
       }),
@@ -5539,6 +5628,7 @@ describe('NightlifeDataService', () => {
         grossVnd: 3500000,
         discountVnd: 200000,
         netVnd: 3300000,
+        payableVnd: 3450000,
         commissionVnd: 330000,
       },
       days: [
@@ -5548,6 +5638,7 @@ describe('NightlifeDataService', () => {
           grossVnd: 3000000,
           discountVnd: 200000,
           netVnd: 2800000,
+          payableVnd: 2950000,
           commissionVnd: 280000,
           stores: [
             {
@@ -5556,6 +5647,7 @@ describe('NightlifeDataService', () => {
               grossVnd: 3000000,
               discountVnd: 200000,
               netVnd: 2800000,
+              payableVnd: 2950000,
               commissionVnd: 280000,
               coupons: [
                 {
@@ -5568,6 +5660,7 @@ describe('NightlifeDataService', () => {
                   grossVnd: 3000000,
                   discountVnd: 200000,
                   netVnd: 2800000,
+                  payableVnd: 2950000,
                   commissionVnd: 280000,
                   bills: [
                     expect.objectContaining({
@@ -5604,6 +5697,7 @@ describe('NightlifeDataService', () => {
           grossVnd: 500000,
           discountVnd: 0,
           netVnd: 500000,
+          payableVnd: 500000,
           commissionVnd: 50000,
           stores: [
             {
@@ -5612,6 +5706,7 @@ describe('NightlifeDataService', () => {
               grossVnd: 500000,
               discountVnd: 0,
               netVnd: 500000,
+              payableVnd: 500000,
               commissionVnd: 50000,
               coupons: [
                 {
@@ -5624,6 +5719,7 @@ describe('NightlifeDataService', () => {
                   grossVnd: 500000,
                   discountVnd: 0,
                   netVnd: 500000,
+                  payableVnd: 500000,
                   commissionVnd: 50000,
                   bills: [
                     expect.objectContaining({
@@ -5702,6 +5798,7 @@ describe('NightlifeDataService', () => {
       funnel: [
         expect.objectContaining({ key: 'coupon_qr', count: 0 }),
         expect.objectContaining({ key: 'qr_scan', count: 0 }),
+        expect.objectContaining({ key: 'confirm_used', count: 0 }),
         expect.objectContaining({ key: 'bill_submitted', count: 0 }),
         expect.objectContaining({ key: 'bill_approved', count: 0 }),
         expect.objectContaining({
@@ -5763,6 +5860,9 @@ describe('NightlifeDataService', () => {
           usedAt: true,
           subtotalVnd: true,
           discountVnd: true,
+          serviceChargeVnd: true,
+          taxVnd: true,
+          totalVnd: true,
           paidVnd: true,
           commissionAmountVnd: true,
           store: {
@@ -5779,6 +5879,41 @@ describe('NightlifeDataService', () => {
               id: true,
               bookingCode: true,
             }),
+          },
+        }),
+      }),
+    );
+  });
+
+  it('filters the revenue report by commission snapshot flag', async () => {
+    prisma.bill.findMany.mockResolvedValue([] as never);
+
+    await expect(
+      service.getAdminRevenueReport(
+        { id: 'admin-1', role: 'ADMIN' },
+        {
+          from: '2026-07-01T00:00:00.000Z',
+          to: '2026-07-02T23:59:59.999Z',
+          flag: 'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED',
+        },
+      ),
+    ).resolves.toMatchObject({
+      filters: {
+        flag: 'NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED',
+      },
+      totals: {
+        billCount: 0,
+        payableVnd: 0,
+      },
+      days: [],
+    });
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          commissionRuleSnapshot: {
+            path: ['flags'],
+            array_contains: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
           },
         }),
       }),
