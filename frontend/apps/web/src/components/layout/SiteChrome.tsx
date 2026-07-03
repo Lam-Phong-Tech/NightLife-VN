@@ -228,6 +228,10 @@ function isRevealTarget(element: HTMLElement) {
     return false;
   }
 
+  if (element.classList.contains("md:block") || element.classList.contains("md:hidden")) {
+    return false;
+  }
+
   const rect = element.getBoundingClientRect();
   if (rect.width < 72 || rect.height < 28) return false;
 

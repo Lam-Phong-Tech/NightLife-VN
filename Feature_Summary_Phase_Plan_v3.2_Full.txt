@@ -1,0 +1,426 @@
+NightLife Vietnam - Tổng hợp tính năng & Phân chia Phase - v3.2
+Bản cập nhật tài liệu gốc: gộp Booking + QR ưu đãi
+INTERNAL DOCUMENT - CONFIDENTIAL
+
+NIGHTLIFE VIETNAM
+Tổng hợp tính năng & Phân chia Phase
+Bản cập nhật tài liệu gốc - Flow Booking kèm QR ưu đãi & quy tắc gửi bill
+
+Hạng mục Nội dung
+Document version v3.2 - cập nhật từ tài liệu gốc v3.0
+Ngày cập nhật 02/07/2026
+Loại tài liệu Feature Summary & Phase Plan
+Đối tượng Khách hàng, PM/Lead, BA, UI/UX, Dev, QA
+Phạm vi cập nhật Gộp Flow A Booking và Flow B Coupon/QR thành một luồng duy nhất: Booking kèm QR ưu đãi. Cập nhật bổ sung quy tắc gửi bill: Guest/khách vãng lai không được gửi bill trong MVP; chỉ Member/VIP hoặc chủ quán/Partner có thể gửi bill; Member/VIP gửi bill là tùy chọn, không bắt buộc.
+Trạng thái Ready for review. Đã chốt thêm rule P0 về quyền gửi bill và tính tùy chọn của bill đối với Member/VIP.
+
+Các điểm chốt chính trong bản v3.2
+- MVP chỉ còn một flow: Booking kèm QR ưu đãi. Không còn flow lấy coupon/QR độc lập.
+- Guest dùng email bắt buộc và nhận QR qua email; Member/VIP autofill từ tài khoản.
+- Guest giảm 5%, Member giảm 8%, VIP giảm 10%; mức giảm snapshot tại thời điểm tạo booking.
+- Cast chỉ là thông tin mong muốn/tham chiếu trong booking; không giữ lịch cast và không cam kết cast khả dụng.
+- Khách có thể chọn cast active/public thuộc quán; booking từ profile cast tự gắn cast_id.
+- Số người trong booking: tối thiểu 1, tối đa 20.
+- Hạn QR/booking tính từ ngày giờ khách đặt đến quán: Guest 24h, Member/VIP 7 ngày.
+- Email nhắc trước hết hạn 6 giờ và email thông báo hủy khi quá hạn.
+- Guest/khách vãng lai không được gửi bill trong MVP; chỉ Member/VIP hoặc chủ quán/Partner có thể gửi bill.
+- Member/VIP không bắt buộc phải gửi bill. Nếu không gửi bill và không có bill từ Partner, hệ thống không phát sinh điểm/doanh thu/hoa hồng từ bill đó.
+
+Mục lục
+1. Baseline & mô hình nghiệp vụ
+2. Quy ước trạng thái xác nhận & Phase
+3. Tính năng theo nhóm chức năng
+3.A Public Website & Navigation
+3.B Search, Filter & Discovery
+3.C Ranking Page & Ranking Control
+3.D Store Detail
+3.E Cast / Staff Profile
+3.F Booking & Notification - đã cập nhật
+3.G Membership, Point, Booking QR - đã cập nhật
+3.H Bill, Revenue & Commission
+3.I Partner Registration & Approval
+3.J Admin CMS & Dashboard
+3.K Blog, Tour, SEO & Legal
+3.L Notification & Communication - đã cập nhật
+4. Các luồng nghiệp vụ chính - đã cập nhật
+5. Dữ liệu chính cần quản lý - đã cập nhật
+6. Phạm vi KHÔNG thuộc MVP - đã cập nhật
+7. Thứ tự triển khai MVP đề xuất - đã cập nhật
+8. Acceptance Criteria trọng tâm cho DEV/TEST
+
+Thông tin tài liệu
+Hạng mục Nội dung
+Dự án NightLife Vietnam - nền tảng giới thiệu & booking dịch vụ nightlife
+Loại tài liệu Feature Summary & Phase Plan
+Phiên bản gốc v3.0 - bản phát hành 22/06/2026
+Phiên bản hiện tại v3.2 - cập nhật Flow Booking kèm QR ưu đãi và rule Bill Member/VIP/Partner
+Nguồn tổng hợp Biên bản & transcript họp, BA Requirement, các vòng xác nhận với khách hàng; cập nhật thêm các rule đã chốt ngày 02/07/2026, gồm rule Guest không gửi bill trong MVP và Member/VIP gửi bill tùy chọn.
+
+1. Baseline & mô hình nghiệp vụ
+NightLife là sàn trung gian/phễu dẫn khách, không phải hệ thống vận hành đặt bàn nội bộ kiểu Haidilao. Hệ thống không quản lý order, không POS, không thanh toán online, không cho đặt món/lên đơn trên web. Menu/bảng giá chỉ để tham khảo.
+Luồng nghiệp vụ lõi sau cập nhật v3.2: Khách xem quán/cast -> bấm Booking/CTA -> nhập form hoặc đăng nhập để autofill thông tin -> hệ thống tạo booking và sinh QR ưu đãi gắn với booking -> hiển thị QR ngay và gửi email cho khách vãng lai -> gửi Telegram cho Admin -> Admin điều phối offline với quán -> khách đến quán -> nhân viên quán quét/xác nhận QR qua tài khoản Partner. Về sau, bill chỉ được gửi bởi Member/VIP đã đăng nhập hoặc chủ quán/Partner; Guest không gửi bill trong MVP. Bill có thể liên kết Booking/QR để đối soát doanh thu, hoa hồng và điểm.
+
+Phạm vi dịch vụ
+- Dịch vụ lõi: Bar, Club, Lounge, Karaoke/KTV, Girls bar - trọng tâm nghiệp vụ.
+- Dịch vụ phễu: nhà hàng, quán ăn, massage, khách sạn, casino - chỉ hiển thị thông tin/menu/thông tin ưu đãi, nghiệp vụ nhẹ hơn.
+- Phiên bản đầu tập trung HN và HCM, kèm tab Tổng hợp. Đà Nẵng và Hải Phòng không thuộc MVP.
+- MVP ưu tiên tích điểm cho nhóm nightlife chính.
+
+Hạng khách v1 và mức giảm
+Hạng khách | Điều kiện xác định | Mức giảm | Thời hạn QR/booking tính từ giờ đặt đến quán
+Guest / khách vãng lai | Không đăng nhập, nhập form booking bằng email | 5% | 24 giờ
+Member | Khách đăng nhập bằng tài khoản thường | 8% | 7 ngày
+VIP | Khách đăng nhập bằng tài khoản VIP | 10% | 7 ngày
+
+Mức giảm được snapshot tại thời điểm tạo booking và không tự động thay đổi nếu hạng khách thay đổi sau đó. Snapshot này dùng để đối soát bill, doanh thu, hoa hồng và điểm.
+
+Kiểm bill, hoa hồng và điểm - nguyên tắc đã chốt v3.2
+- Công thức hoa hồng: Hoa hồng Admin = Tổng bill GỐC x (% hoa hồng thỏa thuận - % giảm giá cho khách), tính trên bill TRƯỚC giảm giá.
+- Tỷ lệ tích điểm: 1.000.000đ trên hóa đơn GỐC = 10 điểm.
+- Thời hạn điểm: 1 năm.
+- Đảo điểm: Khi hóa đơn bị hủy/hoàn tiền, hệ thống đảo lại số điểm tương ứng.
+- Hóa đơn v1 chỉ ghi nhận tổng tiền hóa đơn, không nhập chi tiết từng món/dịch vụ.
+- Thời hạn gửi hóa đơn: trong vòng 10 ngày kể từ ngày khách sử dụng dịch vụ. Guest/khách vãng lai không được gửi bill trong MVP; chỉ Member/VIP đã đăng nhập hoặc chủ quán/Partner có thể gửi bill. Việc Member/VIP gửi bill là tùy chọn, không bắt buộc.
+
+2. Quy ước trạng thái xác nhận & Phase
+Hạng mục | Nội dung
+✓ Đã chốt | Khách đã xác nhận; sẵn sàng đưa vào phase & viết user story chi tiết.
+» Phase sau | Có giá trị nhưng đồng ý để Phase 2/3, không bắt buộc cho MVP.
+◇ Backlog | Hạng mục chỉ xem xét lại nếu khách xác nhận bổ sung; không thuộc MVP/P1.
+Blocker | 0 blocker nghiệp vụ lớn sau cập nhật Flow Booking kèm QR.
+
+Quy ước Phase
+- P0 - MVP bắt buộc: public site HN/HCM/Tổng hợp, tìm kiếm, chi tiết quán/cast, booking kèm QR ưu đãi, bill manual + Admin duyệt, ghi nhận điểm cơ bản, CMS cơ bản, tài khoản đối tác tối giản, thông báo qua Telegram/email. Bill phía khách chỉ hỗ trợ Member/VIP đã đăng nhập; Guest chưa đăng ký không gửi bill trong MVP.
+- P1 - Tự động hóa & tối ưu: partner tự đăng thông tin, dashboard partner, quản lý đối tác + chat 1-1 trong CMS, paid ranking, audit log, chat khách realtime, báo cáo chi tiết, partner portal mở rộng.
+- P2 - Mở rộng: tour, video/SNS nâng cao trên trang chủ, đa ngôn ngữ đầy đủ, BI dashboard, Bill Reversal tự động.
+
+3. Tính năng theo nhóm chức năng
+Mỗi nhóm bên dưới gồm bảng tính năng ID / Tính năng / Phase / Trạng thái / Ghi chú. Các nhóm không bị ảnh hưởng trực tiếp được giữ nguyên nội dung gốc, các nhóm Booking, QR, Bill, Notification, Flow, Data và MVP Order đã được cập nhật theo v3.2.
+
+3.A Public Website & Navigation
+Mặt tiền hệ thống: khách tìm địa điểm, xem nhanh thông tin và chuyển sang booking kèm QR ưu đãi.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+WEB-01 | Header/nav, menu danh mục, login/register, chọn ngôn ngữ | P0 | Đã chốt | Ưu tiên tiếng Nhật
+WEB-02 | Hero slider/banner: sự kiện hot, quán nổi bật, cast mới | P0 | Đã chốt | Admin quản lý trong CMS
+WEB-03 | Quick access grid: tìm quán, ưu đãi, album ảnh, tìm cast, sự kiện, blog | P0 | Đã chốt | CTA ưu đãi/booking dẫn về cùng form Booking kèm QR
+WEB-04 | Video/SNS section trên trang chủ | P2 | Phase sau | Trang chủ: phase sau. Video tại Store Detail & Cast Profile vẫn P0.
+WEB-05 | New updates: quán/cast mới cập nhật | P0 | Đã chốt | Dùng publish date từ CMS
+WEB-06 | Blog nổi bật + footer | P0 | Đã chốt | Liên quan SEO/legal
+WEB-07 | Trang chủ mobile: cấu trúc rõ, ưu tiên ranking + CTA nhanh | P0 | Đã chốt | CTA Booking/ưu đãi thống nhất về một flow
+
+3.B Search, Filter & Discovery
+Giúp khách tìm đúng địa điểm/cast theo nhu cầu, khu vực, loại hình.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+SEA-01 | Tìm nhanh theo tên quán / tên cast | P0 | Đã chốt | Thanh tìm Shop/Cast
+SEA-02 | Tìm theo địa điểm gần nhất + khu vực thành phố | P0 | Đã chốt | Chỉ HN/HCM ở MVP. ĐN/HP không thuộc phạm vi.
+SEA-03 | Lọc theo loại hình: Bar, Club, Lounge, Girls bar, Karaoke, Massage/Spa, Nhà hàng, Casino | P0 | Đã chốt | Taxonomy cuối: 8 loại, tách riêng Club/Lounge/Girls bar
+SEA-04 | Lọc theo ưu đãi/rating/lượt thích/view | P1 | Đã chốt | Mở khi có đủ dữ liệu thật ở P1
+SEA-05 | Gợi ý địa điểm liên quan dưới trang chi tiết | P0/P1 | Đã chốt | P0 chọn thủ công bởi Admin; P1 tự động theo tag/khu vực
+
+3.C Ranking Page & Ranking Control
+Quan trọng cho trải nghiệm và mô hình kinh doanh quảng cáo/VIP. Giai đoạn đầu manual ranking.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+RAN-01 | Trang xếp hạng có tab khu vực HN, HCM, Tổng hợp | P0 | Đã chốt | Top 1-5 mỗi khu vực
+RAN-02 | Lọc ranking theo danh mục | P0 | Đã chốt | Top Karaoke/Bar/Massage/Quán ăn
+RAN-03 | Ranking card: ảnh, tên quán, khu vực, nút xem chi tiết/gọi ngay | P0 | Đã chốt | Chuyển đổi nhanh
+RAN-04 | Chỉ số stars/hearts/views trong tháng | P1 | Đã chốt | P0 hiển thị thủ công; P1 đếm tự động
+RAN-05 | Admin điều hướng ranking thủ công | P0 | Đã chốt | Manual ranking cho MVP
+RAN-07 | Ranking giai đoạn đầu 100% thủ công; quán trả tiền tài trợ/quảng cáo có thể lên Top | P0 | Đã chốt | Không phụ thuộc thuật toán view/like/rating
+RAN-08 | Ưu tiên thứ tự xếp hạng: Cast trước, rồi đến Quán | P0 | Đã chốt | Theo bản chốt 21/06/2026
+
+3.D Store Detail - Trang chi tiết địa điểm
+Trang chuyển đổi chính. Bảng giá/menu chỉ để tham khảo, không lên đơn trên web.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+STO-01 | Sidebar nhanh: logo/avatar, tên quán, SĐT click-to-call | P0 | Đã chốt | Theo ghi chú ảnh
+STO-02 | Giờ mở/đóng cửa, ngày nghỉ lễ/định kỳ | P0 | Đã chốt | Admin nhập CMS
+STO-03 | Địa chỉ + link Google Maps chỉ đường | P0 | Đã chốt | Quan trọng để khách tới quán
+STO-04 | Đặc điểm nhân sự: tỷ lệ quốc tịch, khả năng ngôn ngữ | P0 | Đã chốt | Rất quan trọng với khách Nhật
+STO-05 | Cast grid -> click sang profile cast | P0 | Đã chốt | Cast active/public thuộc quán có thể được chọn là cast mong muốn trong booking
+STO-06 | Favorite quán/cast tại trang địa điểm | P1 | Đã chốt | Liên kết membership
+STO-07 | Bảng giá - chỉ hiển thị | P0 | Đã chốt | P0 cơ bản; tách chi tiết P1
+STO-08 | Campaign/discount: banner ưu đãi, thời gian áp dụng, first-time offer | P0 | Đã chốt | CTA ưu đãi dẫn về Booking kèm QR; không tách flow coupon độc lập
+STO-09 | Booking trên trang quán -> tạo booking kèm QR -> gửi Admin điều phối | P0 | Đã chốt | Không gửi thẳng quán ở MVP. Sau booking thành công hệ thống sinh QR.
+STO-10 | Gợi ý quán liên quan bên dưới | P1/P0 | Đã chốt | P0 chọn thủ công; P1 tự động
+STO-11 | Album ảnh và video tại trang chi tiết quán | P0 | Đã chốt | Cho phép gắn link hoặc tải video lên
+
+3.E Cast / Staff Profile - Trang chi tiết nhân viên
+Khách xem hình ảnh, thông tin ở mức cho phép, ngôn ngữ, tags. Không hiển thị lịch trống. Cast chỉ là thông tin mong muốn/tham chiếu trong booking.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+CAS-01 | Ảnh đại diện lớn, chất lượng cao | P0 | Đã chốt | Theo ghi chú ảnh
+CAS-02 | Breadcrumbs: Trang chủ > Tìm quán > Quán > Nhân viên | P0 | Đã chốt | 
+CAS-03 | Like/Favorite cast | P1 | Đã chốt | Phục vụ membership
+CAS-04 | Ảnh/video tại trang Cast, KHÔNG hiển thị lịch trống | P0 | Đã chốt | Không hiển thị lịch trống. Video & album ảnh được phép gắn link hoặc tải lên.
+CAS-05 | Booking từ profile cast -> dùng chung form booking, tự gắn cast_id | P0 | Đã chốt | Không giữ lịch cast. Cast chỉ là mong muốn/tham chiếu để Admin điều phối offline với quán.
+CAS-06 | Bio data & field public: nickname, avatar/album, video, tháng sinh & cung HĐ, chiều cao, số đo nếu có, sở thích, tags, ngôn ngữ | P0 | Đã chốt | Không hiển thị ngày/năm sinh cụ thể
+CAS-07 | Tags/keywords: độ tuổi, phong cách, ngôn ngữ, ngoại hình | P0 | Đã chốt | Phục vụ tìm kiếm/lọc
+CAS-08 | Personal message/greeting | P1 | Đã chốt | Có kiểm duyệt nội dung trước khi public
+CAS-09 | Gallery đa góc + lightbox/swipe mobile | P0 | Đã chốt | P0 cơ bản; nâng cao P1
+CAS-10 | Sidebar liên kết ngược về quán chủ quản | P0 | Đã chốt | Để khách lấy địa chỉ/SĐT quán
+CAS-11 | Admin kiểm duyệt dữ liệu cast trước khi public | P0 | Đã chốt | Admin kiểm duyệt dữ liệu được phép hiển thị
+
+3.F Booking & Notification - CẬP NHẬT v3.2
+Luồng chuyển đổi chính của MVP là Booking kèm QR ưu đãi. Khách không còn lấy coupon/QR như một flow độc lập. QR được sinh tự động sau khi booking thành công và luôn gắn với booking tương ứng. Admin nhận booking qua Telegram để điều phối offline với quán. Không thanh toán online.
+ID | Tính năng | Phase | Trạng thái | Ghi chú cập nhật
+BOO-01 | Khách bấm Booking/CTA từ trang quán hoặc trang cast | P0 | Đã chốt | Tất cả CTA liên quan ưu đãi/đặt bàn dẫn về cùng form booking. Không tách flow lấy coupon độc lập trong MVP.
+BOO-02 | Form booking cho Guest và khách đăng nhập | P0 | Đã chốt | Guest nhập email bắt buộc. Member/VIP đăng nhập thì hệ thống autofill thông tin từ hồ sơ tài khoản.
+BOO-03 | Form tối thiểu gồm tên khách, email, quán, ngày đến, giờ đến, số người, cast mong muốn nếu có và ghi chú | P0 | Đã chốt | Số người bắt buộc, min 1, max 20. Nếu lớn hơn 20, hệ thống chặn và yêu cầu liên hệ Admin.
+BOO-03B | Booking theo cast không giữ lịch cast | P0 | Đã chốt | Cast chỉ là thông tin tham chiếu/mong muốn. Không kiểm tra lịch trống, không khóa lịch, không cam kết cast khả dụng.
+BOO-03C | Chọn cast mong muốn theo quán | P0 | Đã chốt | Nếu booking từ profile cast, hệ thống tự gắn cast_id. Nếu booking từ trang quán, khách có thể chọn cast active/public thuộc quán đó. Không chọn cast thì là booking quán thông thường.
+BOO-04 | Sau khi submit thành công, hệ thống tạo booking ở trạng thái Mới và sinh QR ưu đãi gắn với booking | P0 | Đã chốt | QR hiển thị ngay trên màn hình thành công. Guest nhận email chứa thông tin booking và QR.
+BOO-05 | Gửi Telegram Admin khi có booking mới | P0 | Đã chốt | Telegram cần có mã booking, tên khách, email, loại khách, mức giảm, quán, ngày/giờ, số người, cast mong muốn nếu có, ghi chú, trạng thái booking và QR.
+BOO-06 | 3 trạng thái booking: Mới / Đã hủy / Hoàn tất | P0 | Đã chốt | Mới = booking còn hiệu lực nhưng chưa kết thúc. Đã hủy = khách/Admin/hệ thống hủy. Hoàn tất = khách đã đến và được xác nhận qua QR hoặc Admin.
+BOO-08A | Hủy booking trước giờ hẹn tối thiểu 01 giờ | P0 | Đã chốt | Khi booking bị hủy, QR đi kèm bị vô hiệu và không dùng lại được.
+BOO-08B | Không sửa trực tiếp booking cũ | P0 | Đã chốt | Muốn đổi giờ, số người, quán hoặc cast mong muốn thì hủy booking cũ và đặt lại, hoặc liên hệ hỗ trợ.
+BOO-08C | Kênh hỗ trợ hủy/đổi booking | P0 | Đã chốt | Khách Nhật ưu tiên LINE OA của Admin; fallback Mail nếu P0 chưa setup LINE OA. Nội bộ team vẫn dùng Telegram.
+BOO-09 | Liên kết Booking - QR - Bill | P0 | Đã chốt | Booking có thể liên kết QR và hóa đơn về sau để đối soát doanh thu, hoa hồng, điểm.
+
+Thông báo lỗi bắt buộc cho số người
+- Nếu số người > 20: "Số người tối đa cho mỗi booking là 20. Vui lòng liên hệ Admin nếu cần đặt nhóm lớn hơn."
+- Nếu số người < 1 hoặc bỏ trống: "Vui lòng nhập số người hợp lệ từ 1 đến 20."
+
+
+3.G Membership, Point, Booking QR - CẬP NHẬT v3.2
+Mục này được điều chỉnh lại để phản ánh rằng QR trong MVP không còn là coupon độc lập. QR là mã ưu đãi sinh ra từ booking, gắn với booking_id, dùng một lần, phục vụ check-in/áp ưu đãi tại quán và đối soát với bill.
+ID | Tính năng | Phase | Trạng thái | Ghi chú cập nhật
+MEM-01 | Đăng ký / đăng nhập thành viên | P0 | Đã chốt | Member/VIP dùng tài khoản để autofill thông tin và lưu lịch sử booking/QR.
+MEM-02 | Hạng khách v1: Guest / Member / VIP | P0 | Đã chốt | Guest giảm 5%, Member giảm 8%, VIP giảm 10%. Mức giảm snapshot tại thời điểm tạo booking.
+MEM-03 | Booking QR: mã, ảnh QR, booking_id, store_id, customer_type, discount_snapshot, hạn dùng, trạng thái | P0 | Đã chốt | QR không tách khỏi booking. Không còn CTA lấy coupon độc lập trong MVP.
+MEM-04 | QR dùng một lần cho mỗi booking | P0 | Đã chốt | Mỗi booking sinh một QR riêng. Sau khi Partner scan/xác nhận thành công, QR chuyển Đã sử dụng và không dùng lại.
+MEM-04B | Trạng thái QR: Còn hiệu lực / Đã sử dụng / Hết hạn / Vô hiệu | P0 | Đã chốt | Không dùng Expired cho trường hợp đã quét thành công. Đã sử dụng = redeemed; Hết hạn = quá hạn chưa dùng; Vô hiệu = booking bị hủy.
+MEM-04C | Hạn QR/booking tính từ ngày giờ khách đặt đến quán | P0 | Đã chốt | Guest hết hạn sau 24h. Member/VIP hết hạn sau 7 ngày. Không tính từ thời điểm tạo booking.
+MEM-04D | Email nhắc trước hết hạn 6 giờ và email hủy khi quá hạn | P0 | Đã chốt | Chỉ gửi nếu booking vẫn Mới và QR chưa được sử dụng/chưa hoàn tất.
+MEM-05A | QR dùng để khách nhận ưu đãi/check-in tại quán | P0 | Đã chốt | Partner Staff scan/xác nhận qua tài khoản Partner.
+MEM-05B | Redeem/scan/validate QR | P0 | Đã chốt | Kiểm tra QR tồn tại, đúng booking, đúng quán, còn hiệu lực, chưa dùng, booking chưa hủy.
+MEM-06 | Lịch sử QR đã dùng | P0 | Đã chốt | Lưu ngày giờ scan, quán, booking, bill nếu có, giá trị giảm, người scan/xác nhận.
+MEM-07 | Ghi nhận điểm sau khi Admin duyệt bill | P0 | Đã chốt | Điểm chỉ phát sinh sau khi có bill được Member/VIP hoặc Partner gửi và Admin duyệt. Member/VIP không bắt buộc gửi bill.
+MEM-07B | Điểm có thời hạn 1 năm | P0 | Đã chốt | Quá hạn tự hủy; có log để Admin tra cứu.
+MEM-07C | Hủy/hoàn bill -> đảo điểm | P1/P2 | Đã chốt | MVP xử lý ngoài hệ thống; P1 Admin chỉnh điểm thủ công; P2 tự động cùng BIL-11.
+MEM-10 | Thông báo chương trình/đổi thưởng qua LINE/Mail | P1 | Đã chốt | P0 ưu tiên thông báo Admin và email nghiệp vụ booking/QR.
+
+Quy tắc hết hạn QR/Booking
+Loại khách | Mức giảm | Rule hết hạn | Ví dụ
+Guest / khách vãng lai | 5% | Hết hạn sau 24 giờ kể từ ngày/giờ khách đặt đến quán nếu QR chưa được dùng và booking chưa hoàn tất. | Đặt ngày 02/07 cho lịch 20:00 ngày 05/07 -> hết hạn 20:00 ngày 06/07.
+Member | 8% | Hết hạn sau 7 ngày kể từ ngày/giờ khách đặt đến quán nếu QR chưa được dùng và booking chưa hoàn tất. | Lịch 20:00 ngày 05/07 -> hết hạn 20:00 ngày 12/07.
+VIP | 10% | Áp dụng cùng rule 7 ngày như Member. | Lịch 20:00 ngày 05/07 -> hết hạn 20:00 ngày 12/07.
+
+Trước thời điểm hết hạn 06 giờ, hệ thống gửi email nhắc nhở cho khách nếu booking vẫn ở trạng thái Mới và QR vẫn chưa được sử dụng. Khi đến thời điểm hết hạn, nếu booking vẫn Mới và QR chưa dùng, hệ thống tự động chuyển booking sang Đã hủy với lý do Quá hạn sử dụng / khách không đến, đồng thời chuyển QR sang Hết hạn hoặc Vô hiệu và gửi email thông báo hủy cho khách.
+
+3.H Bill, Revenue & Commission
+Bill là bằng chứng khách đã dùng dịch vụ, dùng để đối soát. Admin duyệt thủ công bằng mắt. Sau cập nhật v3.2, Guest/khách vãng lai không được gửi bill trong MVP. Chỉ Member/VIP đã đăng nhập hoặc chủ quán/Partner có thể gửi bill. Member/VIP gửi bill là tùy chọn, không bắt buộc. Bill có thể liên kết trực tiếp với Booking và Booking QR đã dùng.
+
+Quy tắc quyền gửi bill trong MVP: Guest/khách vãng lai không có endpoint/form gửi bill public và không được gửi bill ở MVP. Nếu Guest muốn gửi bill để ghi nhận lịch sử hoặc tích điểm, UI hướng dẫn khách đăng ký/đăng nhập tài khoản Member. Ở phía khách hàng, route gửi bill yêu cầu đăng nhập Member/VIP; không triển khai POST /guest/bills trong MVP. Ở phía đối tác, chủ quán/Partner vẫn có thể gửi bill theo luồng đối soát nếu nghiệp vụ này được bật.
+Member/VIP không bắt buộc phải gửi bill. Booking và QR vẫn hợp lệ nếu khách không gửi bill. Chỉ khi có bill từ Member/VIP hoặc Partner và bill được Admin duyệt thì hệ thống mới ghi nhận doanh thu, hoa hồng và điểm.
+
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+BIL-01 | Member/VIP hoặc chủ quán/Partner gửi hóa đơn; Guest không được gửi bill trong MVP; ảnh/chứng từ khuyến khích, không bắt buộc | P0 | Đã chốt | Bill phía khách yêu cầu đăng nhập Member/VIP. Không triển khai POST /guest/bills trong MVP. Member/VIP gửi bill là tùy chọn.
+BIL-02 | Bill tối thiểu: tên quán, số tiền, thời gian, liên kết Booking/QR nếu có, địa điểm/cơ sở nếu có, ảnh nếu có | P0 | Đã chốt | Bắt buộc: quán + số tiền + thời gian. Nếu bill từ Member/VIP nên ưu tiên link bookingCode/QR để đối soát.
+BIL-02B | Bill chỉ ghi nhận tổng tiền, không nhập chi tiết từng món/dịch vụ | P0 | Đã chốt | 
+BIL-02C | Thời hạn gửi hóa đơn: trong vòng 10 ngày kể từ ngày khách dùng dịch vụ | P0 | Đã chốt | Quá hạn không nhận
+BIL-03 | Bill ở trạng thái Pending Admin Approval trước khi ghi nhận | P0 | Đã chốt | 
+BIL-04 | Admin duyệt/từ chối bill thủ công bằng mắt; từ chối có lý do | P0 | Đã chốt | Luồng từ chối có lý do đã chốt
+BIL-05 | Sau duyệt: ghi nhận doanh thu, hoa hồng, điểm nếu đủ điều kiện, gửi Telegram | P0 | Đã chốt | Không có bill được duyệt thì không phát sinh điểm/doanh thu/hoa hồng từ bill đó.
+BIL-06 | Báo cáo doanh thu theo ngày/tháng/năm, quán, bill; tách doanh thu gộp/thuần/hoa hồng/giảm giá | P0 | Đã chốt | Tính theo ngày khách sử dụng dịch vụ
+BIL-06B | Xuất báo cáo ra Excel/PDF | P2 | Đã chốt | Sau MVP
+BIL-09 | Commission cấu hình theo từng quán/thỏa thuận riêng | P0 | Đã chốt | Admin nhập % cụ thể khi onboard từng quán
+BIL-10 | Tính lợi nhuận từng bill | P1 | Phase sau | Cần giá vốn/margin
+BIL-11 | Hủy/hoàn tiền bill -> bản ghi điều chỉnh ngược, không xóa bill gốc | P2 | Đã chốt | MVP/P1 xử lý thủ công; P2 tự động
+BIL-12 | Thứ tự ưu tiên xem báo cáo: ngày -> quán -> mã giảm giá -> khác | P0 | Đã chốt | Ảnh hưởng cấu trúc menu báo cáo
+
+3.I Partner Registration & Approval
+MVP Partner Account vẫn tối giản: đăng nhập, quét QR, xác nhận khách đến quán. Các tính năng đăng thông tin và dashboard để P1.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+PAR-01 | Form Join Us cho đối tác gửi thông tin | P0 | Đã chốt | Gửi CMS + Telegram/Zalo
+PAR-02 | Admin duyệt đối tác trước khi hiển thị public | P0 | Đã chốt | 
+PAR-03 | Admin tự nhập thông tin quán lấy từ đối tác | P0 | Đã chốt | Luồng chính ở MVP
+PAR-04 | Đối tác có tài khoản riêng: đăng nhập, quét QR, xác nhận khách đến quán | P0 | Đã chốt | 3 quyền lõi ở MVP. Áp dụng cho Booking QR.
+PAR-04B | Đối tác đăng thông tin quán, thực đơn/bảng giá, hình ảnh, video, cast | P1 | Đã chốt | Tất cả qua Admin duyệt trước khi public
+PAR-05 | Chuyển form Join Us -> bài đăng chính thức 1 click | P1 | Đã chốt | Mapping form -> store profile
+PAR-06 | Thông báo khi có yêu cầu hợp tác mới | P0 | Đã chốt | 
+PAR-07 | Không yêu cầu giấy phép kinh doanh | P0 | Đã chốt | Nên xác nhận trách nhiệm bằng văn bản
+PAR-08 | Đối tác xem dữ liệu tổng hợp tối thiểu của riêng quán họ | P1 | Đã chốt | Dashboard partner tối thiểu P1
+
+3.J Admin CMS & Dashboard
+Quản lý tập trung toàn bộ dữ liệu website không cần can thiệp code. Cập nhật thêm quản lý Booking QR/email nghiệp vụ trong phạm vi P0 tối thiểu.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+ADM-01 | Dashboard: số quán, cast, bài viết, booking, bill, alert | P0 | Đã chốt | P0 thống kê cơ bản; nên có số Booking QR đã cấp/đã dùng/hết hạn
+ADM-02 | CRUD địa điểm | P0 | Đã chốt | 
+ADM-03 | CRUD nhân sự/cast | P0 | Đã chốt | Cast active/public mới được chọn trong booking
+ADM-04 | Thư viện media tập trung + tối ưu ảnh/video | P0 | Đã chốt | P0 upload; tối ưu nâng cao P1
+ADM-05 | Quản lý bảng giá/phụ phí/thuế | P0 | Đã chốt | P0 mô tả; cấu trúc chi tiết P1
+ADM-06 | Quản lý campaign/discount/banner | P0 | Đã chốt | Áp vào booking QR theo snapshot mức giảm/hạng khách
+ADM-07 | Ranking control thủ công | P0 | Đã chốt | Paid ranking sang P1
+ADM-08 | Membership & point management | P1 | Đã chốt | Điểm cơ bản vẫn ghi nhận theo bill duyệt ở P0
+ADM-09 | Bill/revenue/commission management | P0 | Đã chốt | Bill link Booking/QR để đối soát
+ADM-09B | Báo cáo doanh thu gộp/thuần/hoa hồng/giảm giá | P0 | Đã chốt | Ưu tiên ngày -> quán -> mã giảm giá/QR -> khác
+ADM-10 | Bộ lọc tìm kiếm Admin trên dữ liệu lớn | P1 | Đã chốt | Mở khi dữ liệu CMS lớn
+ADM-11 | Internal alerts thời gian thực | P0 | Đã chốt | P0 qua Telegram; bổ sung email nghiệp vụ QR cho khách
+ADM-12 | Phân quyền Admin / Operator / Partner | P0/P1 | Đã chốt | Admin full; Partner P0 = login + quét QR + check-in; Operator P1
+ADM-13 | Quản lý đối tác + Chat 1-1 | P1 | Đã chốt | Dùng chung tầng chat realtime với BOO-07
+
+
+3.K Blog, Tour, SEO & Legal
+Nội dung phục vụ SEO, quảng bá quán có booking và tour trải nghiệm ở phase sau.
+ID | Tính năng | Phase | Trạng thái | Ghi chú
+CON-01 | Trang blog hiển thị bài viết hệ thống | P0 | Đã chốt | Dùng SEO + quảng bá quán
+CON-02 | Trang chi tiết blog | P0 | Đã chốt | Thumbnail, nội dung trái, liên quan/ads phải
+CON-03 | Trang tour chi tiết | P2 | Phase sau | Không thuộc nightlife core
+CON-04 | Chính sách bảo mật + chính sách hoạt động | P0 | Đã chốt | Nội dung legal cuối từ khách
+CON-05 | robots.txt, sitemap / Google Console | P0 | Đã chốt | Kỹ thuật cơ bản
+CON-06 | SEO metadata cho store/cast/blog | P0 | Đã chốt | P0 title/meta description; structured data P1
+
+3.L Notification & Communication - CẬP NHẬT v3.2
+Vận hành nhanh, tránh phụ thuộc Admin phải đăng nhập CMS liên tục. P0 dùng Telegram cho nội bộ, email nghiệp vụ cho khách vãng lai và hỗ trợ LINE OA/Mail cho khách Nhật.
+Mã | Sự kiện | Kênh | Nội dung tối thiểu
+NOT-01 | Booking mới | Telegram Admin | Mã booking, tên khách, email, loại khách, mức giảm, quán, ngày/giờ, số người, cast mong muốn, ghi chú, trạng thái booking, trạng thái QR.
+NOT-02 | Booking thành công cho Guest | Email khách | Thông tin booking, quán, ngày/giờ, số người, QR ưu đãi, mức giảm, rule hết hạn, hướng dẫn đưa QR cho nhân viên quán.
+NOT-03 | QR/Booking sắp hết hạn | Email khách | Gửi trước thời điểm hết hạn 6 giờ nếu booking vẫn Mới và QR chưa dùng.
+NOT-04 | Booking bị hủy do quá hạn | Email khách | Thông báo booking đã bị hủy do quá hạn, QR không còn hiệu lực, hướng dẫn đặt lại nếu cần.
+NOT-05 | Khách hủy booking | Telegram Admin + Email khách | Thông báo booking đã hủy, QR bị vô hiệu.
+NOT-06 | Khách cần hỗ trợ đổi/hủy | LINE OA hoặc Mail fallback | Khi bấm nút hỗ trợ, điều hướng sang LINE OA của Admin; fallback Mail nếu chưa setup LINE OA.
+NOT-07 | Bill mới/pending/duyệt/từ chối từ Member/VIP hoặc Partner | Telegram Admin | Cần template nội dung, bao gồm lý do từ chối nếu có. Không có bill từ Guest trong MVP.
+NOT-08 | Partner request mới | Telegram Admin | Bao gồm nội dung partner tự đăng ở P1 khi PAR-04B làm.
+
+Template Telegram Booking mới
+[BOOKING MỚI]
+Mã booking: BK-000123
+Khách: Nguyễn A
+Email: a@example.com
+Loại khách: Guest / Member / VIP
+Mức giảm: 5% / 8% / 10%
+Quán: Store X
+Cast mong muốn: Cast Y / Không có
+Ngày giờ đến: 20:00 - 05/07/2026
+Số người: 4
+Ghi chú: ...
+QR: Đã cấp - Còn hiệu lực
+Trạng thái booking: Mới
+Lưu ý: Cast mong muốn chưa phải xác nhận giữ lịch cast. Admin cần điều phối offline với quán.
+
+4. Các luồng nghiệp vụ chính
+FLOW A - Booking kèm QR ưu đãi P0 - Đã chốt
+Khách xem quán/cast -> bấm Booking/CTA -> hệ thống mở form đặt bàn. Với khách vãng lai, khách nhập thông tin tối thiểu gồm tên, email, quán, ngày đến, giờ đến, số người và ghi chú nếu có. Với khách đã đăng nhập, hệ thống tự động điền thông tin cá nhân từ hồ sơ; khách chỉ cần xác nhận/chỉnh thông tin booking. Số người bắt buộc, tối thiểu 1 và tối đa 20.
+Nếu khách booking từ trang cast, hệ thống tự động gắn cast_id của cast đó vào booking dưới dạng Cast mong muốn. Nếu khách booking từ trang quán, hệ thống cho phép khách chọn Cast mong muốn từ danh sách cast active/public thuộc quán đó. Việc chọn cast là tùy chọn. MVP không booking cast theo nghĩa giữ lịch cast; hệ thống không kiểm tra lịch trống, không khóa lịch và không cam kết cast khả dụng. Cast chỉ là thông tin để Admin điều phối offline với quán.
+Sau khi khách gửi form thành công, hệ thống tạo booking ở trạng thái Mới, đồng thời tự sinh mã QR ưu đãi riêng gắn với booking. Mức giảm được xác định theo hạng khách tại thời điểm tạo booking: Guest 5%, Member 8%, VIP 10%. QR được hiển thị ngay trên màn hình đặt bàn thành công. Với Guest, hệ thống gửi email chứa thông tin booking và mã QR. Với Member/VIP, QR được lưu trong tài khoản/lịch sử booking và có thể gửi thêm email xác nhận nếu hệ thống bật cấu hình gửi email.
+Hệ thống gửi thông báo booking mới về nhóm Telegram Admin để Admin điều phối với quán. Khi khách đến quán, nhân viên quán đăng nhập tài khoản Partner để quét QR và xác nhận khách đến. Nếu QR hợp lệ, đúng booking, đúng quán, còn hiệu lực và chưa sử dụng, hệ thống chuyển QR sang Đã sử dụng, ghi lịch sử sử dụng và log cho Admin. Booking, QR và hóa đơn có thể được liên kết với nhau để phục vụ đối soát bill, doanh thu, hoa hồng và điểm về sau.
+Quy tắc hủy: khách được hủy booking trước giờ hẹn tối thiểu 01 giờ. Khi booking bị hủy, QR đi kèm bị vô hiệu và không thể sử dụng. Hệ thống không cho sửa trực tiếp booking cũ. Nếu khách muốn đổi giờ, số người, quán hoặc cast mong muốn, khách phải hủy booking cũ và đặt lại booking mới, hoặc bấm nút liên hệ hỗ trợ. Kênh hỗ trợ khách hủy/đổi ưu tiên LINE Official Account của Admin đối với khách Nhật; fallback Mail nếu P0 chưa setup LINE OA. Nội bộ team vẫn nhận thông báo qua Telegram.
+Quy tắc hết hạn: thời hạn QR/booking không tính từ thời điểm tạo booking, mà tính từ ngày/giờ khách đặt đến quán. Guest hết hạn sau 24 giờ; Member/VIP hết hạn sau 7 ngày. Trước thời điểm hết hạn 6 giờ, hệ thống gửi email nhắc. Khi quá hạn mà booking vẫn Mới và QR chưa sử dụng, hệ thống tự động chuyển booking sang Đã hủy và QR sang Hết hạn/Vô hiệu, đồng thời gửi email thông báo hủy cho khách.
+
+FLOW B - Không còn là flow độc lập trong MVP
+Flow B Lấy & dùng Coupon/QR độc lập được gộp vào Flow A. Trong MVP, khách không lấy coupon/QR riêng trước hoặc ngoài booking. QR chỉ sinh sau khi booking thành công và luôn gắn với booking_id. Các quy tắc cũ về coupon độc lập được thay bằng rule Booking QR nêu ở mục 3.G cập nhật.
+
+FLOW C - Ghi nhận Bill P0 - Đã chốt, có cập nhật liên kết
+Member/VIP đã đăng nhập hoặc chủ quán/Partner có thể gửi thông tin bill trong vòng 10 ngày; Guest/khách vãng lai không được hỗ trợ gửi bill trong MVP. Ảnh/chứng từ khuyến khích nhưng không bắt buộc; tối thiểu gồm tên quán, số tiền và thời gian. Bill ở trạng thái Pending Admin Approval. Admin đối chiếu với quán, duyệt hoặc từ chối có lý do và yêu cầu gửi lại. Sau khi duyệt, hệ thống ghi nhận doanh thu, hoa hồng, điểm và gửi Telegram.
+Điểm cập nhật v3.2: bill có thể liên kết trực tiếp với Booking và QR đã dùng để đối soát mức giảm, hạng khách, store, thời gian dùng dịch vụ và lịch sử check-in. Nếu Member/VIP không gửi bill và không có bill từ Partner, hệ thống không phát sinh điểm, doanh thu hoặc hoa hồng từ bill đó. Bill v1 chỉ ghi nhận tổng tiền, không nhập chi tiết món/dịch vụ. Hủy/hoàn bill sau duyệt vẫn xử lý thủ công ngoài hệ thống ở MVP; P1 Admin chỉnh điểm qua CMS; P2 tự động hóa BIL-11.
+
+FLOW D - Partner onboarding & vận hành P0
+Đối tác điền Join Us -> request vào CMS + Telegram -> Admin kiểm duyệt -> duyệt -> Admin nhập thông tin quán/cast lên hệ thống. Đối tác có tài khoản riêng để đăng nhập, quét mã QR của khách và xác nhận khách đến quán.
+Scope MVP: chỉ 3 quyền lõi ở P0 - đăng nhập, quét QR, xác nhận check-in. Các tính năng đăng thông tin quán/cast và dashboard partner thuộc P1. Trong flow v3.2, tài khoản Partner dùng để scan Booking QR.
+
+FLOW E - Ranking / Ads P0
+Admin cấu hình ranking 100% thủ công: tự đưa quán/cast lên Top. Phạm vi khu vực ở MVP: HN, HCM, Tổng hợp. Ưu tiên thứ tự xếp hạng Cast trước, rồi đến Quán. Quán trả tiền tài trợ/quảng cáo có thể lên Top; không phụ thuộc thuật toán view/like/rating.
+
+FLOW F - Membership / Point P0
+Member/VIP dùng dịch vụ -> có thể gửi bill nếu muốn ghi nhận lịch sử/điểm -> Admin duyệt -> hệ thống ghi nhận điểm theo bill GỐC: 1.000.000đ = 10 điểm -> member xem lịch sử điểm. Việc gửi bill là tùy chọn, không bắt buộc. Nếu không có bill được gửi/duyệt, hệ thống không phát sinh điểm. Khi bill bị hủy/hoàn, hệ thống đảo lại điểm tương ứng theo phase đã chốt. Thời hạn điểm: 1 năm.
+
+5. Dữ liệu chính cần quản lý - CẬP NHẬT v3.2
+Entity | Thông tin chính sau cập nhật | Phase
+User / Member / VIP | Đăng nhập, hồ sơ, email, ngôn ngữ, hạng khách Member/VIP, điểm, lịch sử booking/QR/bill/favorite. Member giảm 8%, VIP giảm 10%. Member/VIP có quyền gửi bill nhưng không bắt buộc. | P0/P1
+Guest | Khách chưa đăng ký nhập form booking bằng email. Lưu tên, email, booking history tối thiểu, QR đã cấp, trạng thái email gửi, thời hạn QR/booking 24h tính từ ngày giờ đặt đến quán. Guest không được gửi bill trong MVP. | P0
+Partner / Store | Tên quán, loại hình, khu vực, địa chỉ, maps, giờ, liên hệ, trạng thái hợp tác, album ảnh, video, % hoa hồng thỏa thuận. | P0
+Partner Account | Tài khoản đăng nhập của đối tác - 3 quyền lõi ở MVP: đăng nhập, quét QR của khách, xác nhận khách đến quán. | P0
+Cast / Staff | Public fields theo CAS-06. KHÔNG lưu/hiển thị lịch trống. Cast có thể được chọn làm cast mong muốn trong booking nếu active/public và thuộc quán. | P0
+Booking | Người đặt, email, customer_type, discount_snapshot, store_id, cast_id nullable, ngày/giờ đến, số người 1-20, ghi chú, trạng thái Mới/Đã hủy/Hoàn tất, nguồn gửi, liên kết QR và Bill nếu có. | P0
+Booking QR | Mã, ảnh QR, booking_id, store_id, discount_snapshot, hạn dùng theo ngày/giờ booking, trạng thái Còn hiệu lực/Đã sử dụng/Hết hạn/Vô hiệu, scan log, lịch sử dùng. | P0
+Bill | Quán, người gửi (Member/VIP hoặc Partner), thời gian dùng dịch vụ, số tiền tổng, giảm giá, phí/thuế nếu có, ảnh nếu có, trạng thái duyệt, lý do từ chối, liên kết Booking và Booking QR nếu có, thời hạn gửi 10 ngày. Không có bill từ Guest trong MVP. | P0
+Bill Reversal | Bản ghi điều chỉnh ngược khi bill bị hủy/hoàn tiền. Tham chiếu bill gốc; cờ trừ/đảo điểm và doanh thu. Không xóa bill gốc. | P2
+Commission / Revenue | Tỷ lệ hoa hồng snapshot theo quán/campaign, % giảm giá snapshot từ booking/QR, doanh thu gộp/thuần, tiền giảm giá, hoa hồng Admin, lợi nhuận P1. | P0/P1
+Point / Loyalty | Điểm tích lũy 1tr = 10đ trên bill GỐC sau khi Admin duyệt. Nếu Member/VIP không gửi bill và không có bill từ Partner, không phát sinh điểm. | P0
+Content / Media | Banner, blog, video, album Store/Cast, thumbnail, SEO metadata. | P0/P1
+Notification Log | Kênh Telegram/LINE OA/Mail, nội dung, người nhận, thời gian, trạng thái gửi. Với P0 cần log email QR, email nhắc hết hạn, email hủy quá hạn. | P1/P0 tối thiểu cho email nghiệp vụ
+Partner Message Thread | Phục vụ ADM-13 - luồng chat 1-1 giữa Admin và đối tác qua CMS. | P1
+Audit Log | Người thao tác, hành động, dữ liệu trước/sau, lý do, thời gian. | P1
+
+Field tối thiểu đề xuất cho Booking
+Field | Bắt buộc | Ghi chú
+booking_id | Có | Mã booking duy nhất.
+customer_type | Có | Guest / Member / VIP.
+customer_name | Có | Guest nhập; Member/VIP autofill.
+customer_email | Có | Guest bắt buộc để nhận QR; Member/VIP lấy từ profile.
+store_id | Có | Quán được booking.
+cast_id | Không | Cast mong muốn, nullable. Chỉ cho phép cast active/public thuộc quán.
+booking_date_time | Có | Ngày giờ khách đặt đến quán.
+party_size | Có | Số người, min 1, max 20.
+note | Không | Ghi chú của khách.
+discount_snapshot | Có | 5% / 8% / 10% theo hạng khách tại thời điểm tạo booking.
+status | Có | Mới / Đã hủy / Hoàn tất.
+cancel_reason | Không | Lý do hủy nếu có: khách hủy, Admin hủy, quá hạn, khác.
+
+Field tối thiểu đề xuất cho Booking QR
+Field | Bắt buộc | Ghi chú
+qr_id | Có | Mã QR record duy nhất.
+booking_id | Có | Mỗi QR gắn với một booking.
+qr_code/token | Có | Token/mã dùng để render QR.
+store_id | Có | Dùng để validate đúng quán khi scan.
+discount_snapshot | Có | Mức giảm tại thời điểm tạo booking.
+valid_from | Có | Có thể là thời điểm tạo booking hoặc cấu hình theo rule vận hành.
+expires_at | Có | Guest: booking_time + 24h; Member/VIP: booking_time + 7 ngày.
+status | Có | Còn hiệu lực / Đã sử dụng / Hết hạn / Vô hiệu.
+used_at | Không | Thời điểm QR được scan/xác nhận.
+scanned_by_partner_account_id | Không | Nhân viên quán scan/xác nhận.
+
+6. Phạm vi KHÔNG thuộc MVP
+Hạng mục KHÔNG thuộc MVP | Đề xuất | Lý do/Ghi chú cập nhật
+Thanh toán online trực tiếp trên web | Baseline | Mô hình không phải e-commerce/checkout
+Đặt món/lên đơn/chọn dịch vụ trên web trước khi tới quán | Baseline | Menu chỉ để tham khảo
+Nhập chi tiết từng món/dịch vụ trên hóa đơn | Baseline | Phiên bản đầu chỉ ghi nhận tổng tiền hóa đơn
+Tích hợp POS tại quán | Baseline | Không quản lý vận hành nội bộ quán
+Vận hành đặt bàn nội bộ kiểu Haidilao | Baseline | NightLife là sàn trung gian, không phải hệ vận hành quán
+Hiển thị lịch trống của Cast | Backlog | Không hiển thị vì khó kiểm soát; v3.2 chốt cast chỉ là mong muốn/tham chiếu
+Xác nhận/giữ lịch cast | Không thuộc MVP | Booking theo cast không giữ lịch; Admin điều phối offline với quán
+Lấy coupon/QR độc lập ngoài booking | Không thuộc MVP | v3.2 đã gộp vào Flow A. QR chỉ sinh sau booking thành công và gắn booking_id
+Tab khu vực ĐN, HP trong ranking/search | Backlog | Không thuộc MVP
+Partner tự đăng thông tin quán/cast | P1 | MVP Admin nhập thay qua PAR-03
+Đối tác xem dashboard/dữ liệu tổng hợp | P1 | Dashboard partner ra mắt P1
+Quản lý đối tác + chat 1-1 trong CMS | P1 | Sau MVP
+Tự động duyệt bill dưới ngưỡng tiền | P2 | Chưa có rule gian lận/bill trùng
+Bill Reversal tự động | P2 | MVP/P1 xử lý thủ công
+Partner Portal đầy đủ | P2 | Cần phân quyền + đối soát chặt
+BI dashboard nâng cao | P2 | Cần dữ liệu lịch sử đủ lớn
+Đa ngôn ngữ đầy đủ 5 thứ tiếng | P2 | Khối lượng nhập liệu/QA lớn
+Tour trải nghiệm đầy đủ | P2 | Không thuộc nightlife core
+Quản lý margin/giá vốn chi tiết | P1 | Phiên bản đầu chỉ tính doanh thu & hoa hồng
+Guest/khách vãng lai gửi bill không đăng nhập | KHÔNG thuộc MVP | MVP chỉ hỗ trợ gửi bill từ Member/VIP đã đăng nhập hoặc chủ quán/Partner. UI hướng dẫn Guest đăng ký/đăng nhập nếu muốn gửi bill.
+
+7. Thứ tự triển khai MVP đề xuất
+Bước | Hạng mục | Kết quả cập nhật
+1 | Khóa scope P0 & cấu hình ban đầu | Confirm MVP chỉ có 1 flow Booking kèm QR. Guest/Member/VIP = 5%/8%/10%. Guest hết hạn sau 24h từ giờ đặt đến; Member/VIP sau 7 ngày. Số người tối đa 20.
+2 | Thiết kế data model lõi | Booking gắn store_id, cast_id nullable, discount_snapshot, party_size 1-20. Booking QR gắn booking_id, store_id, expires_at, status. Bill link Booking/QR nếu được gửi bởi Member/VIP hoặc Partner; không có guest_bill endpoint trong MVP.
+3 | Public Website core | Trang chủ, search, ranking cơ bản, store detail, cast profile. Store detail và cast profile đều dẫn về cùng form Booking. Cast profile tự gắn cast_id; store detail cho chọn cast active/public thuộc quán.
+4 | Booking + QR + Notification | Submit booking -> tạo Booking Mới -> sinh QR -> hiển thị QR -> email QR cho Guest -> Telegram Admin. Rule hủy trước 01 giờ, không sửa booking cũ.
+5 | Partner Account tối giản | Partner đăng nhập, scan QR, xác nhận khách đến. Scan thành công -> QR Đã sử dụng; booking có thể Hoàn tất hoặc chờ Admin xác nhận theo rule vận hành.
+6 | Email scheduler / Cron | Gửi email nhắc 6 giờ trước hết hạn; tự hủy booking/QR quá hạn; gửi email thông báo hủy. Cron kiểm tra các booking Mới có QR chưa dùng.
+7 | Bill manual + Admin approval | Member/VIP hoặc chủ quán/Partner gửi bill; Guest không gửi bill trong MVP. Member/VIP gửi bill là tùy chọn. Admin duyệt/từ chối; Bill link Booking/QR để đối soát mức giảm, hạng khách, quán, doanh thu, hoa hồng, điểm.
+8 | Admin CMS + báo cáo | CMS quản lý booking, QR, bill, doanh thu. Báo cáo vẫn tách doanh thu gộp/thuần/hoa hồng/giảm giá.
+9 | QA/UAT | Test E2E: Guest booking + email QR + expiry 24h; Member/VIP booking + expiry 7 ngày; cast mong muốn; party_size max 20; hủy trước 1 giờ; QR scan; Guest không thấy form/API gửi bill; Member/VIP gửi bill tùy chọn; Partner gửi bill nếu bật nghiệp vụ.
+10 | P1 sau MVP ổn định | Partner tự đăng thông tin, dashboard partner, chat 1-1, chat realtime khách, Admin chỉnh điểm khi hủy bill, margin/giá vốn, mở rộng trạng thái booking nếu cần.
+
+8. Acceptance Criteria trọng tâm cho DEV/TEST
+Nhóm | Acceptance Criteria
+Booking form | Guest bắt buộc nhập email. Member/VIP autofill email/tên từ profile. Số người chỉ nhận 1-20. Booking từ cast profile tự gắn cast_id.
+Cast mong muốn | Chỉ hiển thị cast active/public thuộc quán. Không hiển thị lịch trống. UI phải ghi rõ cast là mong muốn, chưa phải xác nhận giữ lịch.
+Tạo booking | Submit thành công tạo booking trạng thái Mới, sinh QR gắn booking_id, snapshot mức giảm theo hạng khách.
+QR hiển thị/gửi email | QR hiển thị ngay trên màn thành công. Guest nhận email có thông tin booking và QR.
+Telegram Admin | Telegram có đủ thông tin booking, email, quán, ngày giờ, số người, cast mong muốn, mức giảm, QR status.
+Hết hạn | Guest: expires_at = booking_date_time + 24h. Member/VIP: expires_at = booking_date_time + 7 ngày. Email nhắc trước expires_at 6h. Quá hạn thì booking Đã hủy, QR Hết hạn/Vô hiệu.
+Hủy/đổi | Hủy trước giờ hẹn >= 1h thì booking Đã hủy, QR Vô hiệu. Không sửa trực tiếp booking cũ; đổi thì hủy và tạo booking mới.
+Scan QR | Partner scan QR hợp lệ thì QR Đã sử dụng, ghi lịch sử/log. QR đã dùng/hết hạn/vô hiệu không dùng lại được.
+Bill quyền gửi/link | Guest không gửi được bill trong MVP. Form/API gửi bill phía khách yêu cầu đăng nhập Member/VIP. Member/VIP gửi bill là tùy chọn, không bắt buộc. Partner có thể gửi bill theo luồng đối soát nếu bật. Bill có thể link Booking/QR để đối soát mức giảm và tính doanh thu/hoa hồng/điểm sau khi Admin duyệt.
+
+9. Các điểm đã được làm rõ, không còn cần hỏi thêm trước khi sửa
+- Flow MVP đã thống nhất: một luồng Booking kèm QR ưu đãi; không còn coupon/QR độc lập; Guest nhận QR qua email; Member/VIP autofill; mức giảm Guest/Member/VIP = 5%/8%/10%; hạn QR tính từ ngày giờ khách đặt đến quán.
+- Booking/cast đã thống nhất: cast chỉ là thông tin mong muốn, không giữ lịch cast; khách có thể chọn cast active/public thuộc quán; booking từ profile cast tự gắn cast_id; số người tối đa 20.
+- Bill đã thống nhất: Guest không gửi bill trong MVP; chỉ Member/VIP hoặc chủ quán/Partner có thể gửi bill; Member/VIP gửi bill là tùy chọn; chỉ khi bill được Admin duyệt mới phát sinh điểm/doanh thu/hoa hồng.
+
+— HẾT TÀI LIỆU · NightLife Vietnam · Tổng hợp tính năng v3.2 —
+
+

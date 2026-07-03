@@ -1,3 +1,5 @@
+"use client";
+
 import { Download, Building2, CalendarCheck, ReceiptText, Handshake, UsersRound, MessageCircle, TicketPercent } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -10,7 +12,7 @@ const colors = {
   surface2: '#202028',
   borderSoft: 'rgba(255,255,255,.05)',
   borderGold12: 'rgba(212,178,106,.12)',
-  borderGold22: 'rgba(212,178,106,.22)',
+  borderGold22: 'rgba(104, 79, 25, 0.22)',
   text: '#f3f0ea',
   text2: '#c5c0b6',
   muted: '#8c8679',

@@ -885,7 +885,6 @@ export class NightlifeDataController {
     );
   }
 
-<<<<<<< HEAD
   @ApiOperation({ summary: 'Admin action: List bookings with filters and pagination' })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -947,7 +946,8 @@ export class NightlifeDataController {
   @Get('admin/dashboard/stats')
   async getAdminDashboardStats(@Query('timeframe') timeframe?: string) {
     return this.nightlifeDataService.getAdminDashboardStats(timeframe);
-=======
+  }
+
   private couponRequestContext(request: express.Request) {
     const forwardedFor = request.headers['x-forwarded-for'];
     const deviceId = request.headers['x-device-id'];
@@ -965,6 +965,5 @@ export class NightlifeDataController {
       userAgent: Array.isArray(userAgent) ? userAgent[0] : (userAgent ?? null),
       deviceId: Array.isArray(deviceId) ? deviceId[0] : (deviceId ?? null),
     };
->>>>>>> origin/main
   }
 }
