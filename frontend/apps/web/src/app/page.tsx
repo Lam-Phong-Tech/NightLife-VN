@@ -142,6 +142,73 @@ function filterVideosByRegion(items: VideoItem[], region: ServiceRegion) {
   return items.filter((item) => getAreaRegion(item.name) === region);
 }
 
+function getRankingVisual(rankNumber: number, item: RankedItem) {
+  const rankVisuals: Record<
+    number,
+    {
+      badgeBackground: string;
+      badgeColor: string;
+      rowBackground: string;
+      rowBorder: string;
+      rowShadow: string;
+      labelColor: string;
+    }
+  > = {
+    1: {
+      badgeBackground: "linear-gradient(140deg, #fef08a, #eab308)",
+      badgeColor: "#713f12",
+      rowBackground:
+        "linear-gradient(135deg, rgba(254,240,138,.18), rgba(212,178,106,.10) 42%, rgba(255,255,255,.045))",
+      rowBorder: "rgba(240,221,168,.38)",
+      rowShadow: "0 18px 36px rgba(234,179,8,.16), 0 16px 30px rgba(0,0,0,.16)",
+      labelColor: "#fef3c7",
+    },
+    2: {
+      badgeBackground: "linear-gradient(140deg, #f8fafc, #94a3b8)",
+      badgeColor: "#1e293b",
+      rowBackground:
+        "linear-gradient(135deg, rgba(226,232,240,.16), rgba(148,163,184,.10) 42%, rgba(255,255,255,.045))",
+      rowBorder: "rgba(226,232,240,.28)",
+      rowShadow: "0 18px 36px rgba(148,163,184,.13), 0 16px 30px rgba(0,0,0,.16)",
+      labelColor: "#e2e8f0",
+    },
+    3: {
+      badgeBackground: "linear-gradient(140deg, #fed7aa, #b45309)",
+      badgeColor: "#451a03",
+      rowBackground:
+        "linear-gradient(135deg, rgba(251,146,60,.16), rgba(180,83,9,.10) 42%, rgba(255,255,255,.045))",
+      rowBorder: "rgba(251,146,60,.28)",
+      rowShadow: "0 18px 36px rgba(180,83,9,.14), 0 16px 30px rgba(0,0,0,.16)",
+      labelColor: "#fed7aa",
+    },
+    4: {
+      badgeBackground: "linear-gradient(140deg, #a7f3d0, #22c55e)",
+      badgeColor: "#064e3b",
+      rowBackground: "rgba(255,255,255,.045)",
+      rowBorder: "rgba(255,255,255,.12)",
+      rowShadow: "0 16px 30px rgba(0,0,0,.14)",
+      labelColor: colors.goldSoft,
+    },
+    5: {
+      badgeBackground: "linear-gradient(140deg, #bfdbfe, #3b82f6)",
+      badgeColor: "#1e3a8a",
+      rowBackground: "rgba(255,255,255,.045)",
+      rowBorder: "rgba(255,255,255,.12)",
+      rowShadow: "0 16px 30px rgba(0,0,0,.14)",
+      labelColor: colors.goldSoft,
+    },
+  };
+
+  return rankVisuals[rankNumber] ?? {
+    badgeBackground: item.crown ?? colors.gold,
+    badgeColor: item.numColor ?? "#241a0a",
+    rowBackground: "rgba(255,255,255,.045)",
+    rowBorder: "rgba(255,255,255,.12)",
+    rowShadow: "0 16px 30px rgba(0,0,0,.14)",
+    labelColor: colors.goldSoft,
+  };
+}
+
 function useBannerSwipe(
   bannerCount: number,
   setActiveBanner: React.Dispatch<React.SetStateAction<number>>,
@@ -714,6 +781,7 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
 function RankingRow({ item }: { item: RankedItem }) {
   const rankNumber = Number.parseInt(String(item.rank ?? ""), 10);
   const hasCrown = rankNumber >= 1 && rankNumber <= 5;
+  const rankingVisual = getRankingVisual(rankNumber, item);
 
   return (
     <Link
@@ -727,9 +795,9 @@ function RankingRow({ item }: { item: RankedItem }) {
         minHeight: "92px",
         padding: "16px",
         borderRadius: homeCardRadius,
-        background: "rgba(255,255,255,.045)",
-        border: "1px solid rgba(255,255,255,.12)",
-        boxShadow: "0 16px 30px rgba(0,0,0,.14)",
+        background: rankingVisual.rowBackground,
+        border: `1px solid ${rankingVisual.rowBorder}`,
+        boxShadow: rankingVisual.rowShadow,
         color: colors.text,
         textDecoration: "none",
       }}
@@ -750,14 +818,14 @@ function RankingRow({ item }: { item: RankedItem }) {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              background: item.crown ?? colors.gold,
-              color: item.numColor ?? "#241a0a",
+              background: rankingVisual.badgeBackground,
+              color: rankingVisual.badgeColor,
               boxShadow: "inset 0 1px 0 rgba(255,255,255,.34), 0 8px 18px rgba(0,0,0,.22)",
             }}
           >
             {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
           </span>
-          <span style={{ color: colors.goldSoft, fontSize: "11px", fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>
+          <span style={{ color: rankingVisual.labelColor, fontSize: "11px", fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>
             Top {item.rank}
           </span>
         </div>
