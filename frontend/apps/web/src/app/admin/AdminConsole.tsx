@@ -784,7 +784,7 @@ function SectionTitle({
       }}
     >
       <div>
-        <h2 style={{ margin: 0, color: colors.text, fontSize: 21, fontWeight: 600 }}>{title}</h2>
+        <h2 className="nl-admin-section-title" style={{ margin: 0, color: colors.text, fontSize: 21, fontWeight: 700 }}>{title}</h2>
         <div
           style={{
             marginTop: 4,

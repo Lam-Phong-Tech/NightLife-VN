@@ -52,9 +52,9 @@ const categoryItems = [
   { label: "Tìm Cast", icon: UserRound, href: "/danh-sach-cast" },
   { label: "Ưu đãi", icon: Ticket, href: "/uu-dai" },
   { label: "Sự kiện", icon: CalendarDays, href: "/danh-sach-quan" },
-  { label: "Nhà hàng", icon: Utensils, href: "/danh-sach-quan" },
-  { label: "Spa", icon: Waves, href: "/danh-sach-quan" },
   { label: "Ranking", icon: Crown, href: "/xep-hang" },
+  { label: "Spa", icon: Waves, href: "/danh-sach-quan" },
+  { label: "Nhà hàng", icon: Utensils, href: "/danh-sach-quan" },
   { label: "VIP", icon: Star, href: "/dang-nhap", featured: true },
 ];
 
@@ -238,6 +238,17 @@ const sectionTitleStyle: CSSProperties = {
   marginBottom: "14px",
 };
 
+const homeCardRadius = "16px";
+
+const homeMediaRadius = "13px";
+
+const homeSectionTitleTextStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "24px",
+  lineHeight: 1.1,
+  fontWeight: 900,
+};
+
 const pillStyle: CSSProperties = {
   border: `1px solid ${colors.line}`,
   background: "rgba(255,255,255,.04)",
@@ -294,7 +305,7 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
               style={{
                 width: desktop ? "64px" : "54px",
                 height: desktop ? "64px" : "54px",
-                borderRadius: "16px",
+                borderRadius: homeCardRadius,
                 margin: "0 auto",
                 display: "flex",
                 alignItems: "center",
@@ -348,7 +359,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
       {...swipeHandlers}
       style={{
         minHeight: desktop ? "310px" : "208px",
-        borderRadius: desktop ? "26px" : "18px",
+        borderRadius: homeCardRadius,
         overflow: "hidden",
         position: "relative",
         display: "flex",
@@ -495,7 +506,7 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
       {...swipeHandlers}
       style={{
         minHeight: desktop ? "210px" : "132px",
-        borderRadius: desktop ? "22px" : "18px",
+        borderRadius: homeCardRadius,
         overflow: "hidden",
         position: "relative",
         display: "flex",
@@ -628,7 +639,7 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
 function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div style={sectionTitleStyle}>
-      <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>{title}</h2>
+      <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{title}</h2>
       {action ? <Link href="/danh-sach-quan" style={{ color: colors.muted, fontSize: "12px" }}>{action}</Link> : null}
     </div>
   );
@@ -642,7 +653,7 @@ function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number];
         minWidth: compact ? "162px" : "0",
         display: "block",
         overflow: "hidden",
-        borderRadius: "18px",
+        borderRadius: homeCardRadius,
         background: "rgba(255,255,255,.045)",
         border: "1px solid rgba(255,255,255,.08)",
         color: colors.text,
@@ -678,7 +689,7 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
         alignItems: "center",
         gap: "14px",
         padding: compact ? "10px" : "12px",
-        borderRadius: "16px",
+        borderRadius: homeCardRadius,
         color: colors.text,
         border: `1px solid ${colors.line}`,
         background: "rgba(255,255,255,.045)",
@@ -688,7 +699,7 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
         src={item.img}
         alt={item.title ?? "Coupon"}
         label="Ảnh ưu đãi"
-        style={{ height: compact ? "62px" : "82px", borderRadius: "13px" }}
+        style={{ height: compact ? "62px" : "82px", borderRadius: homeMediaRadius }}
       />
       <div style={{ minWidth: 0 }}>
         <div style={{ color: colors.goldSoft, fontSize: compact ? "18px" : "22px", fontWeight: 900 }}>{item.value}</div>
@@ -715,7 +726,7 @@ function RankingRow({ item }: { item: RankedItem }) {
         gap: "16px",
         minHeight: "92px",
         padding: "16px",
-        borderRadius: "16px",
+        borderRadius: homeCardRadius,
         background: "rgba(255,255,255,.045)",
         border: "1px solid rgba(255,255,255,.12)",
         boxShadow: "0 16px 30px rgba(0,0,0,.14)",
@@ -782,7 +793,7 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
       href={`/stores/${slug}`}
       style={{
         overflow: "hidden",
-        borderRadius: "17px",
+        borderRadius: homeCardRadius,
         background: "rgba(255,255,255,.045)",
         border: "1px solid rgba(255,255,255,.08)",
         color: colors.text,
@@ -813,7 +824,7 @@ function VideoCard({ item, compact = false }: { item: (typeof hotVideos)[number]
         src={item.img}
         alt={item.name ?? "Video"}
         label="Ảnh video"
-        style={{ height: compact ? "96px" : "138px", borderRadius: "16px", position: "relative" }}
+        style={{ height: compact ? "96px" : "138px", borderRadius: homeCardRadius, position: "relative" }}
       >
         <span style={{ position: "absolute", inset: 0, background: "rgba(12,12,15,.22)" }} />
         <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(243,240,234,.92)", color: colors.ink }}>
@@ -840,7 +851,7 @@ function ContentPlaceholderCard({
       style={{
         minWidth: compact ? "172px" : "0",
         display: "block",
-        borderRadius: "17px",
+        borderRadius: homeCardRadius,
         border: `1px solid ${colors.line}`,
         background: "rgba(255,255,255,.045)",
         color: colors.text,
@@ -851,7 +862,7 @@ function ContentPlaceholderCard({
         style={{
           width: compact ? 40 : 46,
           height: compact ? 40 : 46,
-          borderRadius: "14px",
+          borderRadius: homeMediaRadius,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -885,14 +896,14 @@ function TabSwitch({
   onChange: (value: string) => void;
 }) {
   return (
-    <div style={{ display: "flex", gap: "6px", border: `1px solid ${colors.line}`, borderRadius: "999px", padding: "4px", background: "rgba(255,255,255,.035)" }}>
+    <div style={{ display: "flex", gap: "6px", border: `1px solid ${colors.line}`, borderRadius: homeCardRadius, padding: "4px", background: "rgba(255,255,255,.035)" }}>
       {items.map((item) => (
         <button
           key={item.id}
           onClick={() => onChange(item.id)}
           style={{
             border: 0,
-            borderRadius: "999px",
+            borderRadius: homeMediaRadius,
             padding: "7px 14px",
             background: active === item.id ? colors.gold : "transparent",
             color: active === item.id ? "#241a0a" : colors.muted,
@@ -942,7 +953,7 @@ function RankingRegionDropdown({
           justifyContent: "center",
           gap: "7px",
           border: `1px solid ${colors.line}`,
-          borderRadius: "999px",
+          borderRadius: homeCardRadius,
           background: "rgba(255,255,255,.04)",
           color: colors.goldSoft,
           padding: "0 13px 0 15px",
@@ -1076,7 +1087,7 @@ function RankingSectionHeader({
     <div style={{ display: "grid", gap: "12px", marginBottom: "13px" }}>
       <div style={{ display: "flex", alignItems: "end", gap: "13px" }}>
         <div style={{ minWidth: 0, flex: "none" }}>
-          <h2 style={{ fontSize: "24px", lineHeight: 1.08, fontWeight: 950 }}>Bảng xếp hạng</h2>
+          <h2 className="nl-home-section-title" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>Bảng xếp hạng</h2>
         </div>
       </div>
 
@@ -1164,7 +1175,7 @@ export default function Page() {
 
             <section style={{ marginTop: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Dịch vụ nổi bật</h2>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Dịch vụ nổi bật</h2>
               </div>
               <ServiceFilterControls
                 activeTab={activeSvcTab}
@@ -1186,7 +1197,7 @@ export default function Page() {
 
             <section style={{ marginTop: "22px", paddingBottom: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
-                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Video Hot</h2>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Video Hot</h2>
                 <RankingRegionDropdown
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
@@ -1252,7 +1263,7 @@ export default function Page() {
 
             <section style={{ marginTop: "34px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-                <h2 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>
                   <Trophy size={24} color={colors.gold} />
                   Dịch vụ nổi bật
                 </h2>
@@ -1277,7 +1288,7 @@ export default function Page() {
 
             <section style={{ marginTop: "34px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "14px" }}>
-                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Video Hot</h2>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Video Hot</h2>
                 <RankingRegionDropdown
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
@@ -1292,7 +1303,7 @@ export default function Page() {
             <section
               style={{
                 marginTop: "34px",
-                borderRadius: "22px",
+                borderRadius: homeCardRadius,
                 border: `1px solid ${colors.line}`,
                 background: "rgba(212,178,106,.08)",
                 padding: "26px",

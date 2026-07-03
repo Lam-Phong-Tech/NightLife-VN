@@ -67,7 +67,7 @@ const bottomNav = [
   { href: "/", label: "Trang chủ", icon: Home },
   { href: "/danh-sach-cast", label: "Tìm Cast", icon: Search },
   { href: "/uu-dai", label: "Ưu đãi", icon: Ticket },
-  { href: "/lich-su-dat-cho", label: "Đơn đặt", icon: CalendarDays },
+  { href: "/lich-su-dat-cho", label: "Lịch đặt", icon: CalendarDays },
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
 ];
 
@@ -727,7 +727,7 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
             }}
           >
             <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>Vietyoru</span>
-            <span style={{ marginTop: "5px", color: colors.goldPale, opacity: 0.64, fontSize: "9px", letterSpacing: "2px" }}>
+            <span style={{ marginTop: "5px", color: colors.goldPale, opacity: 0.64, fontSize: "9px", letterSpacing: "1.2px" }}>
               VIETNAM NIGHTLIFE GUIDE
             </span>
           </Link>
@@ -813,7 +813,7 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
             <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
               Vietyoru
             </span>
-            <span style={{ marginTop: "6px", color: colors.goldPale, opacity: 0.7, letterSpacing: "2px" }}>
+            <span style={{ marginTop: "6px", color: colors.goldPale, opacity: 0.7, letterSpacing: "1.2px" }}>
               VIETNAM NIGHTLIFE GUIDE
             </span>
           </Link>
@@ -1225,7 +1225,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               style={{
                 marginTop: "3px",
                 fontSize: isMobile ? "7px" : "8.5px",
-                letterSpacing: "3.6px",
+                letterSpacing: isMobile ? "1.2px" : "1.6px",
                 color: colors.goldPale,
                 opacity: 0.72,
                 overflow: "hidden",
