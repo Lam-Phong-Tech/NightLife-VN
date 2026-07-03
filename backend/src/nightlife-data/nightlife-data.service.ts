@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  GoneException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -239,6 +240,7 @@ type CouponClaimContext = {
   ip?: string | null;
   userAgent?: string | null;
   deviceId?: string | null;
+  sessionId?: string | null;
 };
 
 type PartnerRequestNotificationLog = {
@@ -259,12 +261,15 @@ const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   MEMBER: 8,
   VIP: 10,
 } as const;
+const COUPON_FRAUD_SIGNAL_TEMPLATE = 'coupon.fraud.claim_signal.v1';
 const COUPON_ISSUE_STATUS_LABELS: Record<string, string> = {
   ISSUED: 'Đang giữ chỗ',
   USED: 'Đã sử dụng',
   EXPIRED: 'Hết hạn',
   REVOKED: 'Đã hủy',
 };
+const INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE =
+  'Independent coupon claim is not part of MVP v3.2. Create a booking to receive the Booking QR.';
 
 type CouponUserType = keyof typeof COUPON_DISCOUNT_PERCENT_BY_USER_TYPE;
 
@@ -1947,134 +1952,10 @@ export class NightlifeDataService {
     dto: ClaimGuestCouponDto,
     context: CouponClaimContext = {},
   ) {
-    const now = new Date();
-    const phone = this.cleanText(dto.phone);
-    this.assertCouponClaimRateLimit(
-      `coupon:claim:guest:${couponId}:${phone}`,
-      'Too many coupon claim attempts. Please try again shortly.',
-    );
-
-    const coupon = await this.prisma.coupon.findFirst({
-      where: {
-        id: couponId,
-        status: 'ACTIVE',
-        deletedAt: null,
-        store: { status: 'ACTIVE', deletedAt: null },
-      },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        storeId: true,
-        discountType: true,
-        discountValue: true,
-        maxDiscountVnd: true,
-        minSpendVnd: true,
-        endsAt: true,
-        usageLimit: true,
-        usedCount: true,
-        store: { select: { id: true, name: true, slug: true } },
-      },
-    });
-
-    if (!coupon || (coupon.endsAt && coupon.endsAt <= now)) {
-      throw new NotFoundException('Coupon not found');
-    }
-
-    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new UnprocessableEntityException(
-        'Coupon usage limit has been reached',
-      );
-    }
-
-    await this.assertNoDuplicateActiveGuestCouponIssue(coupon.id, phone, now);
-
-    const guest = await this.prisma.guest.create({
-      data: {
-        displayName: dto.displayName,
-        phone,
-        email: dto.email?.toLowerCase(),
-      },
-      select: { id: true },
-    });
-    const issueId = randomUUID();
-    const issueCode = `GUEST-${randomUUID()}`;
-    const userType: CouponUserType = 'GUEST';
-    const expiresAt = this.capExpiry(
-      new Date(now.getTime() + DAY_MS),
-      coupon.endsAt,
-    );
-    const qrPayload = this.buildCouponQrPayload(issueId);
-    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
-      coupon,
-      userType,
-    );
-
-    const issue = await this.prisma.couponIssue.create({
-      data: {
-        id: issueId,
-        couponId: coupon.id,
-        guestId: guest.id,
-        code: issueCode,
-        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-        expiresAt,
-        metadata: {
-          recipientType: 'GUEST',
-          userType,
-          validityHours: 24,
-          qrPayload,
-          qrPayloadType: 'SIGNED_DEEP_LINK',
-          statusLabel: this.couponIssueStatusLabel('ISSUED'),
-          discountPercent: discountRuleSnapshot.discountPercent,
-          discountRuleSnapshot,
-          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
-          claimContext: this.buildCouponClaimContextSnapshot(context),
-        },
-      },
-      select: {
-        id: true,
-        couponId: true,
-        code: true,
-        guestId: true,
-        userId: true,
-        status: true,
-        expiresAt: true,
-        createdAt: true,
-        metadata: true,
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            discountType: true,
-            discountValue: true,
-            maxDiscountVnd: true,
-            minSpendVnd: true,
-            store: { select: { id: true, name: true, slug: true } },
-          },
-        },
-      },
-    });
-
-    await this.recordCouponClaimEvent({
-      claimKey: `phone:${phone}`,
-      coupon,
-      issue,
-      context,
-      recipientType: 'GUEST',
-      guestId: guest.id,
-    });
-    await this.detectCouponClaimFraud({
-      claimKey: `phone:${phone}`,
-      coupon,
-      issue,
-      context,
-    });
-
-    return {
-      issue: await this.decorateCouponIssue(issue),
-      guest: { id: guest.id },
-    };
+    void couponId;
+    void dto;
+    void context;
+    throw new GoneException(INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE);
   }
 
   async claimMemberCoupon(
@@ -2082,127 +1963,10 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
     context: CouponClaimContext = {},
   ) {
-    const now = new Date();
-    this.assertCouponClaimRateLimit(
-      `coupon:claim:member:${couponId}:${user.id}`,
-      'Too many coupon claim attempts. Please try again shortly.',
-    );
-
-    const coupon = await this.prisma.coupon.findFirst({
-      where: {
-        id: couponId,
-        status: 'ACTIVE',
-        deletedAt: null,
-        store: { status: 'ACTIVE', deletedAt: null },
-      },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        storeId: true,
-        discountType: true,
-        discountValue: true,
-        maxDiscountVnd: true,
-        minSpendVnd: true,
-        endsAt: true,
-        usageLimit: true,
-        usedCount: true,
-        store: { select: { id: true, name: true, slug: true } },
-      },
-    });
-
-    if (!coupon || (coupon.endsAt && coupon.endsAt <= now)) {
-      throw new NotFoundException('Coupon not found');
-    }
-
-    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new UnprocessableEntityException(
-        'Coupon usage limit has been reached',
-      );
-    }
-
-    await this.assertNoDuplicateActiveMemberCouponIssue(
-      coupon.id,
-      user.id,
-      now,
-    );
-
-    const issueId = randomUUID();
-    const issueCode = `MEMBER-${randomUUID()}`;
-    const userType = this.resolveCouponUserType(user);
-    const expiresAt = this.capExpiry(
-      new Date(now.getTime() + 7 * DAY_MS),
-      coupon.endsAt,
-    );
-    const qrPayload = this.buildCouponQrPayload(issueId);
-    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
-      coupon,
-      userType,
-      user.tier ?? 'FREE',
-    );
-
-    const issue = await this.prisma.couponIssue.create({
-      data: {
-        id: issueId,
-        couponId: coupon.id,
-        userId: user.id,
-        code: issueCode,
-        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-        expiresAt,
-        metadata: {
-          recipientType: 'MEMBER',
-          userType,
-          tier: user.tier ?? 'FREE',
-          validityDays: 7,
-          qrPayload,
-          qrPayloadType: 'SIGNED_DEEP_LINK',
-          statusLabel: this.couponIssueStatusLabel('ISSUED'),
-          discountPercent: discountRuleSnapshot.discountPercent,
-          discountRuleSnapshot,
-          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
-          claimContext: this.buildCouponClaimContextSnapshot(context),
-        },
-      },
-      select: {
-        id: true,
-        code: true,
-        guestId: true,
-        userId: true,
-        status: true,
-        expiresAt: true,
-        createdAt: true,
-        metadata: true,
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            discountType: true,
-            discountValue: true,
-            maxDiscountVnd: true,
-            minSpendVnd: true,
-            store: { select: { id: true, name: true, slug: true } },
-          },
-        },
-      },
-    });
-
-    await this.recordCouponClaimEvent({
-      claimKey: `user:${user.id}`,
-      coupon,
-      issue,
-      context,
-      recipientType: userType,
-      userId: user.id,
-    });
-    await this.detectCouponClaimFraud({
-      claimKey: `user:${user.id}`,
-      coupon,
-      issue,
-      context,
-    });
-
-    return this.decorateCouponIssue(issue);
+    void couponId;
+    void user;
+    void context;
+    throw new GoneException(INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE);
   }
 
   async listPartnerStores(user: AuthenticatedUser) {
@@ -2301,7 +2065,10 @@ export class NightlifeDataService {
     return this.listPartnerBookings(user);
   }
 
-  async createGuestBooking(dto: CreateBookingDto) {
+  async createGuestBooking(
+    dto: CreateBookingDto,
+    context: CouponClaimContext = {},
+  ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
     this.resolveBookingScheduledAt(dto.scheduledAt);
@@ -2327,6 +2094,7 @@ export class NightlifeDataService {
       note: contact.note,
       guestId: guest.id,
       phone: contact.phone,
+      context,
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
@@ -2335,7 +2103,11 @@ export class NightlifeDataService {
     return booking;
   }
 
-  async createMemberBooking(user: AuthenticatedUser, dto: CreateBookingDto) {
+  async createMemberBooking(
+    user: AuthenticatedUser,
+    dto: CreateBookingDto,
+    context: CouponClaimContext = {},
+  ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
     this.resolveBookingScheduledAt(dto.scheduledAt);
@@ -2360,9 +2132,14 @@ export class NightlifeDataService {
       dto,
       target,
       note: contact.note,
+      user,
       userId: user.id,
       guestId: guest.id,
       phone: contact.phone,
+      context: {
+        ...context,
+        sessionId: context.sessionId ?? user.jti ?? null,
+      },
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
@@ -4888,13 +4665,159 @@ export class NightlifeDataService {
     return `BILL-${dateToken}-${randomToken}`;
   }
 
+  private async issueBookingCouponQr(input: {
+    couponId: string;
+    target: BookingTarget;
+    user?: AuthenticatedUser;
+    guestId: string;
+    phone?: string;
+    scheduledAt: Date;
+    context?: CouponClaimContext;
+  }) {
+    const now = new Date();
+    const coupon = await this.prisma.coupon.findFirst({
+      where: {
+        id: input.couponId,
+        storeId: input.target.store.id,
+        status: 'ACTIVE',
+        deletedAt: null,
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        storeId: true,
+        discountType: true,
+        discountValue: true,
+        maxDiscountVnd: true,
+        minSpendVnd: true,
+        endsAt: true,
+        usageLimit: true,
+        usedCount: true,
+        store: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+      throw new UnprocessableEntityException(
+        'Coupon usage limit has been reached',
+      );
+    }
+
+    const userType = input.user
+      ? this.resolveCouponUserType(input.user)
+      : 'GUEST';
+    const recipientType = input.user ? 'MEMBER' : 'GUEST';
+    const validityMs = userType === 'GUEST' ? DAY_MS : 7 * DAY_MS;
+    const expiresAt = this.capExpiry(
+      new Date(input.scheduledAt.getTime() + validityMs),
+      coupon.endsAt,
+    );
+    const issueId = randomUUID();
+    const issueCode = `${recipientType}-${randomUUID()}`;
+    const qrPayload = this.buildCouponQrPayload(issueId);
+    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
+      coupon,
+      userType,
+      input.user?.tier ?? null,
+    );
+
+    const issue = await this.prisma.couponIssue.create({
+      data: {
+        id: issueId,
+        couponId: coupon.id,
+        userId: input.user?.id,
+        guestId: input.guestId,
+        code: issueCode,
+        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
+        expiresAt,
+        metadata: {
+          sourceFlow: 'BOOKING_QR',
+          recipientType,
+          userType,
+          tier: input.user?.tier ?? null,
+          ...(userType === 'GUEST'
+            ? { validityHours: 24 }
+            : { validityDays: 7 }),
+          expiresFrom: 'BOOKING_SCHEDULED_AT',
+          bookingScheduledAt: input.scheduledAt.toISOString(),
+          qrPayload,
+          qrPayloadType: 'SIGNED_DEEP_LINK',
+          statusLabel: this.couponIssueStatusLabel('ISSUED'),
+          discountPercent: discountRuleSnapshot.discountPercent,
+          discountRuleSnapshot,
+          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
+          claimContext: this.buildCouponClaimContextSnapshot(
+            input.context ?? {},
+          ),
+        },
+      },
+      select: {
+        id: true,
+        code: true,
+        couponId: true,
+        status: true,
+        metadata: true,
+        coupon: { select: { storeId: true } },
+      },
+    });
+
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_ISSUE_BOOKING_QR_ISSUED',
+      issue,
+      actorId: input.user?.id,
+      metadata: {
+        sourceFlow: 'BOOKING_QR',
+        customerType: userType,
+        guestId: input.guestId,
+        scheduledAt: input.scheduledAt.toISOString(),
+      },
+      afterJson: {
+        id: issue.id,
+        code: issue.code,
+        couponId: issue.couponId,
+        status: issue.status,
+        sourceFlow: 'BOOKING_QR',
+      },
+    });
+
+    const claimKey = input.user
+      ? `user:${input.user.id}`
+      : `phone:${input.phone ?? input.guestId}`;
+    const context = input.context ?? {};
+    await this.recordCouponClaimEvent({
+      claimKey,
+      coupon,
+      issue,
+      context,
+      recipientType,
+      userId: input.user?.id,
+      guestId: input.guestId,
+    });
+    await this.detectCouponClaimFraud({
+      claimKey,
+      coupon,
+      issue,
+      context,
+    });
+
+    return issue;
+  }
+
   private async createBookingRecord(input: {
     dto: CreateBookingDto;
     target: BookingTarget;
+    user?: AuthenticatedUser;
     userId?: string;
     guestId: string;
     phone?: string;
     note?: string;
+    context?: CouponClaimContext;
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
 
@@ -4904,6 +4827,21 @@ export class NightlifeDataService {
       userId: input.userId,
       phone: input.phone,
     });
+    const bookingCouponIssueId =
+      couponLink.couponIssueId ??
+      (couponLink.couponId
+        ? (
+            await this.issueBookingCouponQr({
+              couponId: couponLink.couponId,
+              target: input.target,
+              user: input.user,
+              guestId: input.guestId,
+              phone: input.phone,
+              scheduledAt,
+              context: input.context,
+            })
+          ).id
+        : undefined);
 
     return this.prisma.booking.create({
       data: {
@@ -4912,7 +4850,7 @@ export class NightlifeDataService {
         storeId: input.target.store.id,
         castId: input.target.cast?.id,
         couponId: couponLink.couponId,
-        couponIssueId: couponLink.couponIssueId,
+        couponIssueId: bookingCouponIssueId,
         status: 'REQUESTED',
         scheduledAt,
         partySize: input.dto.partySize,
@@ -8175,8 +8113,11 @@ export class NightlifeDataService {
     return `${encodedPayload}.${signature}`;
   }
 
-  private signCouponQrPayload(encodedPayload: string) {
-    return createHmac('sha256', this.couponQrSecret())
+  private signCouponQrPayload(
+    encodedPayload: string,
+    secret = this.couponQrSecret(),
+  ) {
+    return createHmac('sha256', secret)
       .update(encodedPayload)
       .digest('base64url');
   }
@@ -8187,7 +8128,9 @@ export class NightlifeDataService {
     }
 
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('COUPON_QR_SECRET is required in production');
+      throw new Error(
+        'COUPON_QR_SECRET is required in production for Booking QR signing.',
+      );
     }
 
     return process.env.JWT_SECRET ?? 'nightlife-dev-coupon-qr-secret';
@@ -8200,8 +8143,14 @@ export class NightlifeDataService {
       throw new BadRequestException('Invalid coupon QR payload');
     }
 
-    const expectedSignature = this.signCouponQrPayload(encodedPayload);
-    if (!this.safeCompare(signature, expectedSignature)) {
+    const matchesKnownSecret = this.couponQrVerificationSecrets().some(
+      (secret) =>
+        this.safeCompare(
+          signature,
+          this.signCouponQrPayload(encodedPayload, secret),
+        ),
+    );
+    if (!matchesKnownSecret) {
       throw new BadRequestException('Invalid coupon QR signature');
     }
 
@@ -8236,6 +8185,22 @@ export class NightlifeDataService {
     } catch {
       return value;
     }
+  }
+
+  private couponQrVerificationSecrets() {
+    const secrets = [
+      this.couponQrSecret(),
+      ...this.couponQrPreviousSecrets(),
+    ].filter((secret) => secret.trim());
+
+    return [...new Set(secrets)];
+  }
+
+  private couponQrPreviousSecrets() {
+    return (process.env.COUPON_QR_PREVIOUS_SECRETS ?? '')
+      .split(',')
+      .map((secret) => secret.trim())
+      .filter(Boolean);
   }
 
   private safeCompare(value: string, expected: string) {
@@ -8441,6 +8406,7 @@ export class NightlifeDataService {
       ip: context.ip ?? null,
       userAgent: context.userAgent ?? null,
       deviceId: context.deviceId ?? null,
+      sessionId: context.sessionId ?? null,
     };
   }
 
@@ -8479,6 +8445,7 @@ export class NightlifeDataService {
         },
       },
     });
+    await this.recordCouponFraudSignals(input);
   }
 
   private async detectCouponClaimFraud(input: {
@@ -8488,17 +8455,54 @@ export class NightlifeDataService {
     context: CouponClaimContext;
   }) {
     const since = new Date(Date.now() - COUPON_CLAIM_FRAUD_WINDOW_MS);
-    const recentClaims = await this.prisma.notificationLog.findMany({
-      where: {
-        templateKey: 'coupon.analytics.claimed.v1',
-        recipient: input.claimKey,
-        createdAt: { gte: since },
-      },
-      select: { id: true },
-      take: COUPON_CLAIM_FRAUD_THRESHOLD,
-    });
+    const signalKeys = this.couponFraudSignals(
+      input.claimKey,
+      input.context,
+    ).map((signal) => signal.key);
+    const [recentClaims, recentSignalClaims] = await Promise.all([
+      this.prisma.notificationLog.findMany({
+        where: {
+          templateKey: 'coupon.analytics.claimed.v1',
+          recipient: input.claimKey,
+          createdAt: { gte: since },
+        },
+        select: { id: true },
+        take: COUPON_CLAIM_FRAUD_THRESHOLD,
+      }),
+      signalKeys.length
+        ? this.prisma.notificationLog.findMany({
+            where: {
+              templateKey: COUPON_FRAUD_SIGNAL_TEMPLATE,
+              recipient: { in: signalKeys },
+              createdAt: { gte: since },
+            },
+            select: { id: true, recipient: true },
+            take: signalKeys.length * COUPON_CLAIM_FRAUD_THRESHOLD,
+          })
+        : Promise.resolve([]),
+    ]);
+    const signalCounts = new Map<string, number>();
+    for (const claim of recentSignalClaims) {
+      signalCounts.set(
+        claim.recipient,
+        (signalCounts.get(claim.recipient) ?? 0) + 1,
+      );
+    }
+    const suspiciousSignals = this.couponFraudSignals(
+      input.claimKey,
+      input.context,
+    )
+      .map((signal) => ({
+        kind: signal.kind,
+        fingerprint: signal.fingerprint,
+        count: signalCounts.get(signal.key) ?? 0,
+      }))
+      .filter((signal) => signal.count >= COUPON_CLAIM_FRAUD_THRESHOLD);
 
-    if (recentClaims.length < COUPON_CLAIM_FRAUD_THRESHOLD) {
+    if (
+      recentClaims.length < COUPON_CLAIM_FRAUD_THRESHOLD &&
+      !suspiciousSignals.length
+    ) {
       return;
     }
 
@@ -8511,15 +8515,104 @@ export class NightlifeDataService {
         templateKey: 'coupon.fraud.claim_burst.v1',
         payload: {
           claimKey: input.claimKey,
+          claimKeyFingerprint: this.hashFraudSignal(input.claimKey),
           couponId: input.coupon.id,
           couponCode: input.coupon.code,
           couponIssueId: input.issue.id,
           recentClaimCount: recentClaims.length,
+          suspiciousSignals,
           windowMinutes: Math.round(COUPON_CLAIM_FRAUD_WINDOW_MS / 60000),
-          context: this.buildCouponClaimContextSnapshot(input.context),
+          context: this.buildCouponFraudContextSnapshot(input.context),
         },
       },
     });
+  }
+
+  private async recordCouponFraudSignals(input: {
+    claimKey: string;
+    coupon: { id: string; code: string; storeId: string };
+    issue: { id: string; code: string; status: string };
+    context: CouponClaimContext;
+    recipientType: string;
+    userId?: string | null;
+    guestId?: string | null;
+  }) {
+    const signals = this.couponFraudSignals(input.claimKey, input.context);
+    await Promise.all(
+      signals.map((signal) =>
+        this.prisma.notificationLog.create({
+          data: {
+            userId: input.userId ?? undefined,
+            guestId: input.guestId ?? undefined,
+            storeId: input.coupon.storeId,
+            channel: 'IN_APP',
+            status: 'QUEUED',
+            recipient: signal.key,
+            templateKey: COUPON_FRAUD_SIGNAL_TEMPLATE,
+            payload: {
+              signalKind: signal.kind,
+              signalFingerprint: signal.fingerprint,
+              claimKeyFingerprint: this.hashFraudSignal(input.claimKey),
+              couponId: input.coupon.id,
+              couponCode: input.coupon.code,
+              couponIssueId: input.issue.id,
+              issueCode: input.issue.code,
+              status: input.issue.status,
+              recipientType: input.recipientType,
+            },
+          },
+        }),
+      ),
+    );
+  }
+
+  private couponFraudSignals(claimKey: string, context: CouponClaimContext) {
+    const signals: Array<[string, string | null | undefined]> = [
+      ['CLAIM', claimKey],
+      ['IP', context.ip],
+      ['DEVICE', context.deviceId],
+      ['SESSION', context.sessionId],
+      ['USER_AGENT', context.userAgent],
+    ];
+
+    return signals
+      .map(([kind, value]) => {
+        const text = typeof value === 'string' ? value.trim() : '';
+        if (!text) {
+          return null;
+        }
+        const fingerprint = this.hashFraudSignal(text);
+        return {
+          kind,
+          fingerprint,
+          key: `coupon:fraud:${String(kind).toLowerCase()}:${fingerprint}`,
+        };
+      })
+      .filter(
+        (
+          signal,
+        ): signal is { kind: string; fingerprint: string; key: string } =>
+          Boolean(signal),
+      );
+  }
+
+  private hashFraudSignal(value: string) {
+    return createHash('sha256').update(value).digest('hex').slice(0, 16);
+  }
+
+  private buildCouponFraudContextSnapshot(context: CouponClaimContext) {
+    return {
+      ipFingerprint: context.ip ? this.hashFraudSignal(context.ip) : null,
+      userAgentFingerprint: context.userAgent
+        ? this.hashFraudSignal(context.userAgent)
+        : null,
+      deviceFingerprint: context.deviceId
+        ? this.hashFraudSignal(context.deviceId)
+        : null,
+      sessionFingerprint: context.sessionId
+        ? this.hashFraudSignal(context.sessionId)
+        : null,
+    };
   }
 
   private async writeCouponIssueAudit(input: {

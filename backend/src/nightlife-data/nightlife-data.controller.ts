@@ -254,8 +254,14 @@ export class NightlifeDataController {
 
   @CreateGuestBookingContract()
   @Post('bookings')
-  createGuestBooking(@Body() dto: CreateBookingDto) {
-    return this.nightlifeDataService.createGuestBooking(dto);
+  createGuestBooking(
+    @Req() request: express.Request,
+    @Body() dto: CreateBookingDto,
+  ) {
+    return this.nightlifeDataService.createGuestBooking(
+      dto,
+      this.couponRequestContext(request),
+    );
   }
 
   @CancelGuestBookingContract()
@@ -582,7 +588,11 @@ export class NightlifeDataController {
     @Req() request: RequestWithUser,
     @Body() dto: CreateBookingDto,
   ) {
-    return this.nightlifeDataService.createMemberBooking(request.user, dto);
+    return this.nightlifeDataService.createMemberBooking(
+      request.user,
+      dto,
+      this.couponRequestContext(request),
+    );
   }
 
   @CancelMemberBookingContract()
@@ -885,10 +895,12 @@ export class NightlifeDataController {
   private couponRequestContext(request: express.Request) {
     const forwardedFor = request.headers['x-forwarded-for'];
     const deviceId = request.headers['x-device-id'];
+    const sessionId = request.headers['x-session-id'];
     const userAgent = request.headers['user-agent'];
     const forwardedIp = Array.isArray(forwardedFor)
       ? forwardedFor[0]
       : forwardedFor;
+    const requestUser = (request as Partial<RequestWithUser>).user;
 
     return {
       ip:
@@ -898,6 +910,9 @@ export class NightlifeDataController {
         null,
       userAgent: Array.isArray(userAgent) ? userAgent[0] : (userAgent ?? null),
       deviceId: Array.isArray(deviceId) ? deviceId[0] : (deviceId ?? null),
+      sessionId: Array.isArray(sessionId)
+        ? sessionId[0]
+        : (sessionId ?? requestUser?.jti ?? null),
     };
   }
 }

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { createHash, createHmac } from 'node:crypto';
 import QRCode from 'qrcode';
 import { AccessService } from '../access/access.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1303,8 +1304,27 @@ describe('NightlifeDataService', () => {
     });
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
+      code: 'WELCOME',
+      name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: null,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
     });
     prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.couponIssue.create.mockResolvedValue({
+      id: 'issue-1',
+      code: 'GUEST-code',
+      couponId: 'coupon-1',
+      status: 'ISSUED',
+      metadata: {},
+      coupon: { storeId: 'store-1' },
+    });
     prisma.booking.create.mockResolvedValue({
       id: 'booking-1',
       status: 'REQUESTED',
@@ -1334,7 +1354,7 @@ describe('NightlifeDataService', () => {
         data: expect.objectContaining({
           storeId: 'store-1',
           couponId: 'coupon-1',
-          couponIssueId: undefined,
+          couponIssueId: 'issue-1',
         }),
       }),
     );
@@ -1828,7 +1848,16 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('claims a coupon for a guest without linking member history', async () => {
+  it('rejects independent guest coupon claim after the Booking QR scope change', async () => {
+    await expect(
+      service.claimGuestCoupon('coupon-1', {
+        email: 'GUEST@example.com',
+        phone: '+84901234567',
+      }),
+    ).rejects.toThrow('Independent coupon claim is not part of MVP v3.2');
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    return;
+
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
       code: 'WELCOME',
@@ -1904,7 +1933,13 @@ describe('NightlifeDataService', () => {
     expect(prisma.couponIssue.findMany).not.toHaveBeenCalled();
   });
 
-  it('caps guest coupon expiry to 24 hours', async () => {
+  it('keeps independent guest coupon expiry disabled after Booking QR scope change', async () => {
+    await expect(
+      service.claimGuestCoupon('coupon-1', { phone: '+84901234567' }),
+    ).rejects.toThrow('Independent coupon claim is not part of MVP v3.2');
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    return;
+
     const now = new Date();
     const couponEndsAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     prisma.coupon.findFirst.mockResolvedValue({
@@ -1937,7 +1972,13 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('caps guest coupon expiry to coupon end when it is earlier than 24 hours', async () => {
+  it('keeps independent guest coupon end-date capping disabled after Booking QR scope change', async () => {
+    await expect(
+      service.claimGuestCoupon('coupon-1', { phone: '+84901234567' }),
+    ).rejects.toThrow('Independent coupon claim is not part of MVP v3.2');
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    return;
+
     const now = new Date();
     const couponEndsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     prisma.coupon.findFirst.mockResolvedValue({
@@ -1965,7 +2006,17 @@ describe('NightlifeDataService', () => {
     expect(createArgs.data.expiresAt.getTime()).toBe(couponEndsAt.getTime());
   });
 
-  it('claims a coupon for a member with 7-day expiry and tier snapshot', async () => {
+  it('rejects independent member coupon claim after the Booking QR scope change', async () => {
+    await expect(
+      service.claimMemberCoupon('coupon-1', {
+        id: 'user-1',
+        role: 'USER',
+        tier: 'VIP',
+      }),
+    ).rejects.toThrow('Independent coupon claim is not part of MVP v3.2');
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    return;
+
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
       code: 'MEMBER8',
@@ -2025,7 +2076,17 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('claims a coupon for a regular member with an 8 percent snapshot', async () => {
+  it('keeps independent regular member coupon claim disabled after Booking QR scope change', async () => {
+    await expect(
+      service.claimMemberCoupon('coupon-1', {
+        id: 'user-1',
+        role: 'USER',
+        tier: 'FREE',
+      }),
+    ).rejects.toThrow('Independent coupon claim is not part of MVP v3.2');
+    expect(prisma.couponIssue.create).not.toHaveBeenCalled();
+    return;
+
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
       code: 'MEMBER8',
@@ -2067,6 +2128,375 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+  });
+
+  it('creates a Booking QR coupon issue from a guest booking and expires it from scheduledAt', async () => {
+    const scheduledAt = new Date('2026-07-05T20:00:00.000Z');
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    });
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME',
+      name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
+    });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.couponIssue.create.mockResolvedValue({
+      id: 'issue-1',
+      code: 'GUEST-code',
+      couponId: 'coupon-1',
+      status: 'ISSUED',
+      metadata: {},
+      coupon: { storeId: 'store-1' },
+    });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      status: 'REQUESTED',
+      scheduledAt,
+      partySize: 4,
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+        email: null,
+      },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      coupon: { id: 'coupon-1', code: 'WELCOME', name: 'Welcome' },
+      couponIssue: {
+        id: 'issue-1',
+        code: 'GUEST-code',
+        status: 'ISSUED',
+      },
+    });
+
+    await service.createGuestBooking({
+      storeSlug: 'neon-club',
+      couponId: 'coupon-1',
+      displayName: 'Guest Name',
+      phone: '+84901234567',
+      scheduledAt: scheduledAt.toISOString(),
+      partySize: 4,
+    });
+
+    const createArgs = prisma.couponIssue.create.mock.calls[0][0] as {
+      data: { expiresAt: Date; metadata: Record<string, unknown> };
+    };
+    expect(createArgs.data.expiresAt.toISOString()).toBe(
+      '2026-07-06T20:00:00.000Z',
+    );
+    expect(createArgs.data.metadata).toEqual(
+      expect.objectContaining({
+        sourceFlow: 'BOOKING_QR',
+        recipientType: 'GUEST',
+        userType: 'GUEST',
+        validityHours: 24,
+        expiresFrom: 'BOOKING_SCHEDULED_AT',
+        bookingScheduledAt: scheduledAt.toISOString(),
+        qrPayload: expect.stringContaining('scanToken='),
+        campaignSnapshot: expect.objectContaining({
+          id: 'coupon-1',
+          code: 'WELCOME',
+          storeId: 'store-1',
+        }),
+      }),
+    );
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          couponId: 'coupon-1',
+          couponIssueId: 'issue-1',
+        }),
+      }),
+    );
+  });
+
+  it('records Booking QR claim analytics and fraud signals with request context', async () => {
+    const scheduledAt = new Date('2026-07-05T20:00:00.000Z');
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    });
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME',
+      name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
+    });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.couponIssue.create.mockResolvedValue({
+      id: 'issue-1',
+      code: 'GUEST-code',
+      couponId: 'coupon-1',
+      status: 'ISSUED',
+      metadata: {},
+      coupon: { storeId: 'store-1' },
+    });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      status: 'REQUESTED',
+      scheduledAt,
+      partySize: 4,
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+        email: null,
+      },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      couponIssue: {
+        id: 'issue-1',
+        code: 'GUEST-code',
+        status: 'ISSUED',
+      },
+    });
+
+    await service.createGuestBooking(
+      {
+        storeSlug: 'neon-club',
+        couponId: 'coupon-1',
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+        scheduledAt: scheduledAt.toISOString(),
+        partySize: 4,
+      },
+      {
+        ip: '203.0.113.10',
+        userAgent: 'NightLife Test Browser',
+        deviceId: 'device-1',
+        sessionId: 'session-1',
+      },
+    );
+
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipient: 'phone:+84901234567',
+          templateKey: 'coupon.analytics.claimed.v1',
+          payload: expect.objectContaining({
+            couponId: 'coupon-1',
+            couponIssueId: 'issue-1',
+            context: expect.objectContaining({
+              ip: '203.0.113.10',
+              deviceId: 'device-1',
+              sessionId: 'session-1',
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipient: expect.stringMatching(/^coupon:fraud:ip:/),
+          templateKey: 'coupon.fraud.claim_signal.v1',
+          payload: expect.objectContaining({
+            signalKind: 'IP',
+            couponIssueId: 'issue-1',
+          }),
+        }),
+      }),
+    );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipient: expect.stringMatching(/^coupon:fraud:device:/),
+          templateKey: 'coupon.fraud.claim_signal.v1',
+        }),
+      }),
+    );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipient: expect.stringMatching(/^coupon:fraud:session:/),
+          templateKey: 'coupon.fraud.claim_signal.v1',
+        }),
+      }),
+    );
+  });
+
+  it('raises a fraud alert when Booking QR claims burst from the same IP signal', async () => {
+    const scheduledAt = new Date('2026-07-05T20:00:00.000Z');
+    const ipSignal = `coupon:fraud:ip:${createHash('sha256')
+      .update('203.0.113.10')
+      .digest('hex')
+      .slice(0, 16)}`;
+    prisma.notificationLog.findMany.mockImplementation((args: unknown) => {
+      const where = (args as { where?: { templateKey?: string } }).where;
+      if (where?.templateKey === 'coupon.fraud.claim_signal.v1') {
+        return Promise.resolve(
+          Array.from({ length: 5 }, (_, index) => ({
+            id: `signal-${index}`,
+            recipient: ipSignal,
+          })),
+        ) as never;
+      }
+
+      return Promise.resolve([]) as never;
+    });
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+    });
+    prisma.coupon.findFirst.mockResolvedValue({
+      id: 'coupon-1',
+      code: 'WELCOME',
+      name: 'Welcome',
+      storeId: 'store-1',
+      discountType: 'PERCENT',
+      discountValue: 5,
+      maxDiscountVnd: 500000,
+      minSpendVnd: null,
+      endsAt: null,
+      usageLimit: null,
+      usedCount: 0,
+      store: { id: 'store-1', name: 'Store', slug: 'store' },
+    });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.couponIssue.create.mockResolvedValue({
+      id: 'issue-1',
+      code: 'GUEST-code',
+      couponId: 'coupon-1',
+      status: 'ISSUED',
+      metadata: {},
+      coupon: { storeId: 'store-1' },
+    });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      storeId: 'store-1',
+      status: 'REQUESTED',
+      scheduledAt,
+      partySize: 4,
+      guest: {
+        id: 'guest-1',
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+        email: null,
+      },
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      couponIssue: {
+        id: 'issue-1',
+        code: 'GUEST-code',
+        status: 'ISSUED',
+      },
+    });
+
+    await service.createGuestBooking(
+      {
+        storeSlug: 'neon-club',
+        couponId: 'coupon-1',
+        displayName: 'Guest Name',
+        phone: '+84901234567',
+        scheduledAt: scheduledAt.toISOString(),
+        partySize: 4,
+      },
+      { ip: '203.0.113.10' },
+    );
+
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipient: 'admin',
+          templateKey: 'coupon.fraud.claim_burst.v1',
+          payload: expect.objectContaining({
+            suspiciousSignals: [
+              expect.objectContaining({
+                kind: 'IP',
+                count: 5,
+              }),
+            ],
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('accepts previous QR secrets during token rotation', () => {
+    const originalSecret = process.env.COUPON_QR_SECRET;
+    const originalPreviousSecrets = process.env.COUPON_QR_PREVIOUS_SECRETS;
+    process.env.COUPON_QR_SECRET = 'current-secret';
+    process.env.COUPON_QR_PREVIOUS_SECRETS = 'previous-secret';
+    const encodedPayload = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        type: 'coupon_issue',
+        issueId: 'issue-rotated',
+      }),
+    ).toString('base64url');
+    const signature = createHmac('sha256', 'previous-secret')
+      .update(encodedPayload)
+      .digest('base64url');
+
+    try {
+      const qrService = service as unknown as {
+        resolveCouponIssueIdFromQrPayload(payload: string): string;
+      };
+      expect(
+        qrService.resolveCouponIssueIdFromQrPayload(
+          `https://nightlife.vn/partner?scanToken=${encodedPayload}.${signature}`,
+        ),
+      ).toBe('issue-rotated');
+    } finally {
+      if (originalSecret === undefined) {
+        delete process.env.COUPON_QR_SECRET;
+      } else {
+        process.env.COUPON_QR_SECRET = originalSecret;
+      }
+      if (originalPreviousSecrets === undefined) {
+        delete process.env.COUPON_QR_PREVIOUS_SECRETS;
+      } else {
+        process.env.COUPON_QR_PREVIOUS_SECRETS = originalPreviousSecrets;
+      }
+    }
+  });
+
+  it('fails closed without a production QR secret', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalSecret = process.env.COUPON_QR_SECRET;
+    delete process.env.COUPON_QR_SECRET;
+    process.env.NODE_ENV = 'production';
+
+    try {
+      const qrService = service as unknown as {
+        buildCouponQrPayload(issueId: string): string;
+      };
+      expect(() => qrService.buildCouponQrPayload('issue-no-secret')).toThrow(
+        'COUPON_QR_SECRET is required in production for Booking QR signing.',
+      );
+    } finally {
+      if (originalNodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
+      if (originalSecret === undefined) {
+        delete process.env.COUPON_QR_SECRET;
+      } else {
+        process.env.COUPON_QR_SECRET = originalSecret;
+      }
+    }
   });
 
   it('scans a coupon issue only after store access and without guest phone', async () => {
@@ -3598,7 +4028,13 @@ describe('NightlifeDataService', () => {
     ]);
   });
 
-  it('rejects a guest claim when the usage limit is exhausted', async () => {
+  it('rejects legacy guest claim before usage-limit checks after Booking QR scope change', async () => {
+    await expect(
+      service.claimGuestCoupon('coupon-1', { phone: '+84901234567' }),
+    ).rejects.toThrow('Independent coupon claim is not part of MVP v3.2');
+    expect(prisma.coupon.findFirst).not.toHaveBeenCalled();
+    return;
+
     prisma.coupon.findFirst.mockResolvedValue({
       id: 'coupon-1',
       endsAt: null,
