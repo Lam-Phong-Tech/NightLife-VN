@@ -50,8 +50,10 @@ export default function AdminStoresPage() {
 
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const videoUploadRef = useRef<HTMLInputElement>(null);
+  const menuImageUploadRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingMenuImageId, setUploadingMenuImageId] = useState<string | null>(null);
 
   // UI states
   const [menuManage, setMenuManage] = useState(false);
@@ -197,6 +199,30 @@ export default function AdminStoresPage() {
       showToast('Lỗi tải video: ' + err.message);
     } finally {
       setUploadingVideo(false);
+    }
+  };
+
+  const handleUploadMenuImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingMenuImageId) return;
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'STORE_MENU_ITEM');
+      form.append('access', 'PUBLIC');
+      
+      const res = await apiFormDataClient<any>('/storage/upload', form);
+      if (res && res.url) {
+        updateMenuItem(uploadingMenuImageId, 'thumb', res.url);
+        showToast('Tải ảnh món ăn thành công');
+      }
+    } catch (err: any) {
+      showToast('Lỗi tải ảnh: ' + err.message);
+    } finally {
+      setUploadingMenuImageId(null);
+      if (menuImageUploadRef.current) {
+        menuImageUploadRef.current.value = '';
+      }
     }
   };
 
@@ -505,7 +531,9 @@ export default function AdminStoresPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                 {menuGroups.find(g => g.id === activeMenuGroupId)?.items.map((mi: any) => (
                   <div key={mi.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb ? (mi.thumb.startsWith('linear-gradient') ? mi.thumb : `url(${resolveClientUrl(mi.thumb)}) center/cover no-repeat`) : g1 }}></div>
+                    <div onClick={() => { setUploadingMenuImageId(mi.id); menuImageUploadRef.current?.click(); }} style={{ width: 46, height: 46, flex: 'none', borderRadius: 9, background: mi.thumb ? (mi.thumb.startsWith('linear-gradient') ? mi.thumb : `url(${resolveClientUrl(mi.thumb)}) center/cover no-repeat`) : g1, cursor: 'pointer', position: 'relative', overflow: 'hidden' }} title="Đổi ảnh món ăn">
+                      {uploadingMenuImageId === mi.id && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg></div>}
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                         <input value={mi.name} onChange={e => updateMenuItem(mi.id, 'name', e.target.value)} style={{ background: 'transparent', border: 'none', color: '#e8e4db', fontSize: '12.5px', fontWeight: 600, outline: 'none', width: '100%' }} placeholder="Tên món" />
@@ -528,6 +556,7 @@ export default function AdminStoresPage() {
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm món vào nhóm này
                   </div>
                 )}
+                <input type="file" accept="image/*" hidden ref={menuImageUploadRef} onChange={handleUploadMenuImage} />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
