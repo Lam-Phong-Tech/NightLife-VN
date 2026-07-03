@@ -725,6 +725,57 @@ const reviewedBillExample = {
   rejectedById: null,
 };
 
+const adminRevenueReportExample = {
+  filters: {
+    from: '2026-07-01T00:00:00.000Z',
+    to: '2026-07-31T23:59:59.999Z',
+    dateField: 'usedAt',
+    statusIn: ['VERIFIED', 'PAID'],
+    exportEnabled: false,
+  },
+  totals: {
+    billCount: 3,
+    grossVnd: 6200000,
+    discountVnd: 500000,
+    netVnd: 5700000,
+    commissionVnd: 620000,
+  },
+  days: [
+    {
+      date: '2026-07-02',
+      billCount: 2,
+      grossVnd: 4200000,
+      discountVnd: 300000,
+      netVnd: 3900000,
+      commissionVnd: 420000,
+      stores: [
+        {
+          store: { id: 'store_01', name: 'Neon Club', slug: 'neon-club' },
+          billCount: 2,
+          grossVnd: 4200000,
+          discountVnd: 300000,
+          netVnd: 3900000,
+          commissionVnd: 420000,
+          coupons: [
+            {
+              coupon: {
+                id: 'coupon_01',
+                code: 'MEMBER8',
+                name: 'Member 8',
+              },
+              billCount: 2,
+              grossVnd: 4200000,
+              discountVnd: 300000,
+              netVnd: 3900000,
+              commissionVnd: 420000,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 const partnerRequestExample = {
   id: 'PARTNER-7F3A91BC',
   status: 'PENDING_REVIEW',
@@ -1999,6 +2050,52 @@ export function AdminSensitiveBillsContract() {
       name: 'couponIssueId',
       required: false,
       description: 'Filter by linked coupon issue id.',
+    }),
+  );
+}
+
+export function AdminRevenueReportContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin action: P0 revenue report by date, store, and coupon',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewSensitiveBill). Filters by Bill.usedAt service usage date and returns aggregate-only P0 report grouped by date -> store -> discount code. MVP does not export Excel or PDF.',
+    }),
+    ApiQuery({
+      name: 'from',
+      required: false,
+      description: 'Inclusive service usage date start (Bill.usedAt).',
+      example: '2026-07-01T00:00:00.000Z',
+    }),
+    ApiQuery({
+      name: 'to',
+      required: false,
+      description: 'Inclusive service usage date end (Bill.usedAt).',
+      example: '2026-07-31T23:59:59.999Z',
+    }),
+    ApiQuery({
+      name: 'storeId',
+      required: false,
+      description: 'Optional store filter.',
+    }),
+    ApiQuery({
+      name: 'couponId',
+      required: false,
+      description: 'Optional coupon campaign filter.',
+    }),
+    ApiOkResponse({
+      description:
+        'Revenue report grouped by service usage date, store, and discount code.',
+      schema: { example: adminRevenueReportExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
     }),
   );
 }

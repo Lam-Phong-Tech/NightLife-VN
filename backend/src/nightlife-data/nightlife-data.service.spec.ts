@@ -4701,6 +4701,169 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('returns the P0 revenue report grouped by used date, store, and coupon', async () => {
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-1',
+        usedAt: new Date('2026-07-01T14:00:00.000Z'),
+        subtotalVnd: 2000000,
+        discountVnd: 200000,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: 1800000,
+        paidVnd: 1800000,
+        commissionAmountVnd: 180000,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+        couponIssue: { id: 'issue-1', code: 'MEMBER-code', status: 'USED' },
+      },
+      {
+        id: 'bill-2',
+        usedAt: new Date('2026-07-01T16:00:00.000Z'),
+        subtotalVnd: 1000000,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: 1000000,
+        paidVnd: 1000000,
+        commissionAmountVnd: 100000,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
+        couponIssue: null,
+      },
+      {
+        id: 'bill-3',
+        usedAt: new Date('2026-07-02T13:00:00.000Z'),
+        subtotalVnd: 500000,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: 500000,
+        paidVnd: 500000,
+        commissionAmountVnd: 50000,
+        store: { id: 'store-2', name: 'Velvet Lounge', slug: 'velvet' },
+        coupon: null,
+        couponIssue: null,
+      },
+    ] as never);
+
+    await expect(
+      service.getAdminRevenueReport(
+        { id: 'admin-1', role: 'ADMIN' },
+        {
+          from: '2026-07-01T00:00:00.000Z',
+          to: '2026-07-02T23:59:59.999Z',
+        },
+      ),
+    ).resolves.toEqual({
+      filters: {
+        from: '2026-07-01T00:00:00.000Z',
+        to: '2026-07-02T23:59:59.999Z',
+        dateField: 'usedAt',
+        statusIn: ['VERIFIED', 'PAID'],
+        storeId: null,
+        couponId: null,
+        exportEnabled: false,
+      },
+      totals: {
+        billCount: 3,
+        grossVnd: 3500000,
+        discountVnd: 200000,
+        netVnd: 3300000,
+        commissionVnd: 330000,
+      },
+      days: [
+        {
+          date: '2026-07-01',
+          billCount: 2,
+          grossVnd: 3000000,
+          discountVnd: 200000,
+          netVnd: 2800000,
+          commissionVnd: 280000,
+          stores: [
+            {
+              store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+              billCount: 2,
+              grossVnd: 3000000,
+              discountVnd: 200000,
+              netVnd: 2800000,
+              commissionVnd: 280000,
+              coupons: [
+                {
+                  coupon: {
+                    id: 'coupon-1',
+                    code: 'WELCOME20',
+                    name: 'Welcome 20%',
+                  },
+                  billCount: 2,
+                  grossVnd: 3000000,
+                  discountVnd: 200000,
+                  netVnd: 2800000,
+                  commissionVnd: 280000,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          date: '2026-07-02',
+          billCount: 1,
+          grossVnd: 500000,
+          discountVnd: 0,
+          netVnd: 500000,
+          commissionVnd: 50000,
+          stores: [
+            {
+              store: { id: 'store-2', name: 'Velvet Lounge', slug: 'velvet' },
+              billCount: 1,
+              grossVnd: 500000,
+              discountVnd: 0,
+              netVnd: 500000,
+              commissionVnd: 50000,
+              coupons: [
+                {
+                  coupon: {
+                    id: null,
+                    code: 'NO_COUPON',
+                    name: 'Khong dung ma',
+                  },
+                  billCount: 1,
+                  grossVnd: 500000,
+                  discountVnd: 0,
+                  netVnd: 500000,
+                  commissionVnd: 50000,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: { in: ['VERIFIED', 'PAID'] },
+          usedAt: {
+            gte: new Date('2026-07-01T00:00:00.000Z'),
+            lte: new Date('2026-07-02T23:59:59.999Z'),
+          },
+        }),
+        select: expect.objectContaining({
+          usedAt: true,
+          subtotalVnd: true,
+          discountVnd: true,
+          paidVnd: true,
+          commissionAmountVnd: true,
+          store: { select: { id: true, name: true, slug: true } },
+          coupon: { select: { id: true, code: true, name: true } },
+          couponIssue: { select: { id: true, code: true, status: true } },
+        }),
+      }),
+    );
+  });
+
   it('masks sensitive bill customer fields for operator review queue', async () => {
     prisma.bill.findMany.mockResolvedValue([
       {

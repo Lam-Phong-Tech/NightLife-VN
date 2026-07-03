@@ -22,6 +22,7 @@ import {
   RankingConfigStatus,
   RankingTargetType,
   StoreCategory,
+  UserTier,
 } from '@prisma/client';
 import {
   createHash,
@@ -72,6 +73,7 @@ import {
   AdminSensitiveBillQueryDto,
   CreateBillDto,
 } from './dto/create-bill.dto';
+import { AdminRevenueReportQueryDto } from './dto/admin-revenue-report.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
   AdminPartnerRequestQueryDto,
@@ -154,7 +156,7 @@ type BookingNotificationRecord = {
   subtotalVnd?: number | null;
   discountVnd?: number | null;
   totalVnd?: number | null;
-  discountRuleSnapshot?: Prisma.JsonValue | null;
+  discountSnapshot?: Prisma.JsonValue | null;
   note?: string | null;
   user?: {
     id: string;
@@ -257,6 +259,28 @@ type CouponClaimContext = {
 
 type PartnerDashboardPeriod = 'today' | 'seven' | 'thirty';
 type PartnerCustomerArrivalSource = 'QR_USED' | 'BILL_APPROVED';
+
+type RevenueReportMoneyTotals = {
+  billCount: number;
+  grossVnd: number;
+  discountVnd: number;
+  netVnd: number;
+  commissionVnd: number;
+};
+
+type MutableRevenueReportCouponNode = RevenueReportMoneyTotals & {
+  coupon: { id: string | null; code: string; name: string };
+};
+
+type MutableRevenueReportStoreNode = RevenueReportMoneyTotals & {
+  store: { id: string; name: string; slug: string | null };
+  coupons: Map<string, MutableRevenueReportCouponNode>;
+};
+
+type MutableRevenueReportDayNode = RevenueReportMoneyTotals & {
+  date: string;
+  stores: Map<string, MutableRevenueReportStoreNode>;
+};
 
 type NightlifePrismaClient = PrismaService | Prisma.TransactionClient;
 
@@ -2323,7 +2347,7 @@ export class NightlifeDataService {
       data: {
         displayName: contact.displayName,
         phone: contact.phone || undefined,
-        email: contact.email || undefined,
+        email: contact.email || '',
       },
       select: {
         id: true,
@@ -2363,7 +2387,7 @@ export class NightlifeDataService {
         convertedUserId: user.id,
         displayName: contact.displayName,
         phone: contact.phone || undefined,
-        email: contact.email || undefined,
+        email: contact.email || user.email || '',
       },
       select: {
         id: true,
@@ -3809,6 +3833,7 @@ export class NightlifeDataService {
         storeId: store.id,
         couponId: couponLink.couponId,
         couponIssueId: couponLink.couponIssueId,
+        submitterType: 'MEMBER',
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
         subtotalVnd: dto.totalVnd,
@@ -3947,6 +3972,7 @@ export class NightlifeDataService {
         storeId: store.id,
         couponId: couponLink.couponId,
         couponIssueId: couponLink.couponIssueId,
+        submitterType: 'PARTNER',
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
         subtotalVnd: dto.totalVnd,
@@ -4434,6 +4460,109 @@ export class NightlifeDataService {
     return bills.map((bill) => this.maskSensitiveBillForRole(bill, user));
   }
 
+  async getAdminRevenueReport(
+    user: AuthenticatedUser,
+    query: AdminRevenueReportQueryDto = {},
+  ) {
+    void user;
+    const { from, to } = this.resolveAdminRevenueReportWindow(query);
+    const where: Prisma.BillWhereInput = {
+      deletedAt: null,
+      status: { in: ['VERIFIED', 'PAID'] },
+      usedAt: { gte: from, lte: to },
+    };
+    const storeId = this.cleanText(query.storeId);
+    const couponId = this.cleanText(query.couponId);
+
+    if (storeId) {
+      where.storeId = storeId;
+    }
+
+    if (couponId) {
+      where.couponId = couponId;
+    }
+
+    const bills = await this.prisma.bill.findMany({
+      where,
+      orderBy: [{ usedAt: 'asc' }, { storeId: 'asc' }, { couponId: 'asc' }],
+      select: {
+        id: true,
+        usedAt: true,
+        subtotalVnd: true,
+        discountVnd: true,
+        serviceChargeVnd: true,
+        taxVnd: true,
+        totalVnd: true,
+        paidVnd: true,
+        commissionAmountVnd: true,
+        store: { select: { id: true, name: true, slug: true } },
+        coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
+      },
+    });
+
+    const totals = this.emptyRevenueReportTotals();
+    const days = new Map<string, MutableRevenueReportDayNode>();
+
+    for (const bill of bills) {
+      if (!bill.usedAt) {
+        continue;
+      }
+
+      const money = this.billRevenueReportMoney(bill);
+      this.addRevenueReportTotals(totals, money);
+
+      const day = this.getRevenueReportDay(
+        days,
+        this.toRevenueReportDateKey(bill.usedAt),
+      );
+      this.addRevenueReportTotals(day, money);
+
+      const store = this.getRevenueReportStore(day, bill.store);
+      this.addRevenueReportTotals(store, money);
+
+      const coupon = this.getRevenueReportCoupon(store, bill);
+      this.addRevenueReportTotals(coupon, money);
+    }
+
+    return {
+      filters: {
+        from: from.toISOString(),
+        to: to.toISOString(),
+        dateField: 'usedAt',
+        statusIn: ['VERIFIED', 'PAID'],
+        storeId: storeId || null,
+        couponId: couponId || null,
+        exportEnabled: false,
+      },
+      totals,
+      days: Array.from(days.values()).map((day) => ({
+        date: day.date,
+        billCount: day.billCount,
+        grossVnd: day.grossVnd,
+        discountVnd: day.discountVnd,
+        netVnd: day.netVnd,
+        commissionVnd: day.commissionVnd,
+        stores: Array.from(day.stores.values()).map((store) => ({
+          store: store.store,
+          billCount: store.billCount,
+          grossVnd: store.grossVnd,
+          discountVnd: store.discountVnd,
+          netVnd: store.netVnd,
+          commissionVnd: store.commissionVnd,
+          coupons: Array.from(store.coupons.values()).map((coupon) => ({
+            coupon: coupon.coupon,
+            billCount: coupon.billCount,
+            grossVnd: coupon.grossVnd,
+            discountVnd: coupon.discountVnd,
+            netVnd: coupon.netVnd,
+            commissionVnd: coupon.commissionVnd,
+          })),
+        })),
+      })),
+    };
+  }
+
   async reviewSensitiveBill(
     adminId: string,
     billId: string,
@@ -4546,6 +4675,141 @@ export class NightlifeDataService {
     });
 
     return result;
+  }
+
+  private resolveAdminRevenueReportWindow(
+    query: AdminRevenueReportQueryDto,
+  ) {
+    const to = query.to ? new Date(query.to) : new Date();
+    if (Number.isNaN(to.getTime())) {
+      throw new BadRequestException('to must be a valid ISO date');
+    }
+
+    const from = query.from ? new Date(query.from) : new Date(to);
+    if (!query.from) {
+      from.setDate(from.getDate() - 29);
+    }
+
+    if (Number.isNaN(from.getTime())) {
+      throw new BadRequestException('from must be a valid ISO date');
+    }
+
+    if (from.getTime() > to.getTime()) {
+      throw new BadRequestException('from must be before to');
+    }
+
+    return { from, to };
+  }
+
+  private emptyRevenueReportTotals(): RevenueReportMoneyTotals {
+    return {
+      billCount: 0,
+      grossVnd: 0,
+      discountVnd: 0,
+      netVnd: 0,
+      commissionVnd: 0,
+    };
+  }
+
+  private addRevenueReportTotals(
+    target: RevenueReportMoneyTotals,
+    source: RevenueReportMoneyTotals,
+  ) {
+    target.billCount += source.billCount;
+    target.grossVnd += source.grossVnd;
+    target.discountVnd += source.discountVnd;
+    target.netVnd += source.netVnd;
+    target.commissionVnd += source.commissionVnd;
+  }
+
+  private billRevenueReportMoney(bill: {
+    subtotalVnd: number | null;
+    discountVnd: number | null;
+    serviceChargeVnd: number | null;
+    taxVnd: number | null;
+    totalVnd: number | null;
+    paidVnd: number | null;
+    commissionAmountVnd: number | null;
+  }): RevenueReportMoneyTotals {
+    const discountVnd = Math.max(0, bill.discountVnd ?? 0);
+    const serviceChargeVnd = Math.max(0, bill.serviceChargeVnd ?? 0);
+    const taxVnd = Math.max(0, bill.taxVnd ?? 0);
+    const totalVnd = Math.max(0, bill.totalVnd ?? 0);
+    const grossVnd =
+      Math.max(0, bill.subtotalVnd ?? 0) || totalVnd + discountVnd;
+    const netVnd =
+      Math.max(0, bill.paidVnd ?? 0) ||
+      Math.max(0, grossVnd - discountVnd + serviceChargeVnd + taxVnd) ||
+      totalVnd;
+
+    return {
+      billCount: 1,
+      grossVnd,
+      discountVnd,
+      netVnd,
+      commissionVnd: Math.max(0, bill.commissionAmountVnd ?? 0),
+    };
+  }
+
+  private toRevenueReportDateKey(value: Date | string) {
+    return new Date(value).toISOString().slice(0, 10);
+  }
+
+  private getRevenueReportDay(
+    days: Map<string, MutableRevenueReportDayNode>,
+    date: string,
+  ) {
+    let day = days.get(date);
+    if (!day) {
+      day = {
+        date,
+        ...this.emptyRevenueReportTotals(),
+        stores: new Map(),
+      };
+      days.set(date, day);
+    }
+    return day;
+  }
+
+  private getRevenueReportStore(
+    day: MutableRevenueReportDayNode,
+    store: { id: string; name: string; slug: string | null },
+  ) {
+    let node = day.stores.get(store.id);
+    if (!node) {
+      node = {
+        store: { id: store.id, name: store.name, slug: store.slug ?? null },
+        ...this.emptyRevenueReportTotals(),
+        coupons: new Map(),
+      };
+      day.stores.set(store.id, node);
+    }
+    return node;
+  }
+
+  private getRevenueReportCoupon(
+    store: MutableRevenueReportStoreNode,
+    bill: {
+      coupon: { id: string; code: string; name: string } | null;
+      couponIssue: { id: string; code: string; status: string } | null;
+    },
+  ) {
+    const key = bill.coupon?.id ?? bill.couponIssue?.code ?? 'NO_COUPON';
+    let node = store.coupons.get(key);
+    if (!node) {
+      node = {
+        coupon: {
+          id: bill.coupon?.id ?? null,
+          code: bill.coupon?.code ?? bill.couponIssue?.code ?? 'NO_COUPON',
+          name:
+            bill.coupon?.name ??
+            (bill.couponIssue ? 'Coupon issue' : 'Khong dung ma'),
+        },
+        ...this.emptyRevenueReportTotals(),
+      };
+      store.coupons.set(key, node);
+    }
+    return node;
   }
 
   private async resolveBookingTarget(
@@ -5284,6 +5548,14 @@ export class NightlifeDataService {
         scheduledAt,
         partySize: input.dto.partySize,
         note: input.note,
+        discountSnapshot: {
+          couponId: couponLink.couponId ?? null,
+          couponIssueId: bookingCouponIssueId ?? null,
+        } as Prisma.InputJsonValue,
+        customerType: input.userId ? 'MEMBER' : 'GUEST',
+        customerNameSnapshot: this.cleanText(input.dto.displayName),
+        customerEmailSnapshot:
+          this.cleanEmail(input.dto.email) ?? input.user?.email ?? '',
       },
       select: this.bookingNotificationSelect(),
     });
@@ -6003,7 +6275,7 @@ export class NightlifeDataService {
       subtotalVnd: true,
       discountVnd: true,
       totalVnd: true,
-      discountRuleSnapshot: true,
+      discountSnapshot: true,
       note: true,
       cancelledAt: true,
       createdAt: true,
@@ -8153,7 +8425,7 @@ export class NightlifeDataService {
               displayName,
               phone: request.contactPhone,
               role: 'PARTNER',
-              tier: 'FREE',
+              tier: UserTier.MEMBER,
               status: 'ACTIVE',
             },
             select: { id: true, email: true },

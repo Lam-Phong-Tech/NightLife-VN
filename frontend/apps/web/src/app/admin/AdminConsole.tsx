@@ -11,7 +11,6 @@ import {
   Check,
   ChevronRight,
   Clock3,
-  Download,
   FileText,
   Handshake,
   Home,
@@ -148,6 +147,42 @@ type SensitiveBill = {
   guest?: { email: string | null; displayName: string | null; phone: string | null } | null;
 };
 
+type RevenueReportTotals = {
+  billCount: number;
+  grossVnd: number;
+  discountVnd: number;
+  netVnd: number;
+  commissionVnd: number;
+};
+
+type RevenueReportCoupon = RevenueReportTotals & {
+  coupon: { id: string | null; code: string; name: string };
+};
+
+type RevenueReportStore = RevenueReportTotals & {
+  store: { id: string; name: string; slug: string | null };
+  coupons: RevenueReportCoupon[];
+};
+
+type RevenueReportDay = RevenueReportTotals & {
+  date: string;
+  stores: RevenueReportStore[];
+};
+
+type RevenueReport = {
+  filters: {
+    from: string;
+    to: string;
+    dateField: "usedAt";
+    statusIn: string[];
+    storeId: string | null;
+    couponId: string | null;
+    exportEnabled: boolean;
+  };
+  totals: RevenueReportTotals;
+  days: RevenueReportDay[];
+};
+
 type AdminPartnerRequest = {
   id: string;
   notificationId: string | null;
@@ -273,6 +308,11 @@ type BillFilterState = {
   couponIssueId: string;
 };
 
+type RevenueReportFilterState = {
+  from: string;
+  to: string;
+};
+
 type PartnerRequestFilterState = {
   status: string;
   keyword: string;
@@ -287,22 +327,26 @@ const defaultPartnerRequestFilters: PartnerRequestFilterState = {
   limit: "50",
 };
 
-type ReconciliationExportRow = {
-  couponIssueId: string;
-  couponIssueCode: string;
-  couponIssueStatus: string;
-  couponId: string;
-  couponCode: string;
-  couponName: string;
-  bookingId: string;
-  bookingStatus: string;
-  bookingScheduledAt: string;
-  billId: string;
-  billNumber: string;
-  billStatus: string;
-  billTotalVnd: string;
-  storeName: string;
-  warning: string;
+const emptyRevenueReportTotals: RevenueReportTotals = {
+  billCount: 0,
+  grossVnd: 0,
+  discountVnd: 0,
+  netVnd: 0,
+  commissionVnd: 0,
+};
+
+const emptyRevenueReport: RevenueReport = {
+  filters: {
+    from: "",
+    to: "",
+    dateField: "usedAt",
+    statusIn: ["VERIFIED", "PAID"],
+    storeId: null,
+    couponId: null,
+    exportEnabled: false,
+  },
+  totals: emptyRevenueReportTotals,
+  days: [],
 };
 
 const sectionToView: Record<string, AdminView> = {
@@ -525,6 +569,18 @@ const formatDateInput = (value?: string | null) => {
   return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 16) : "";
 };
 
+const formatDateOnlyInput = (date: Date) => date.toISOString().slice(0, 10);
+
+const defaultRevenueReportFilters = (): RevenueReportFilterState => {
+  const to = new Date();
+  const from = new Date(to);
+  from.setDate(from.getDate() - 29);
+  return {
+    from: formatDateOnlyInput(from),
+    to: formatDateOnlyInput(to),
+  };
+};
+
 const formatMoney = (value?: number | null) => `${(value ?? 0).toLocaleString("vi-VN")}đ`;
 
 const compactMoney = (value?: number | null) => {
@@ -567,14 +623,17 @@ const buildBillFilterParams = (filters: BillFilterState) =>
       .filter(([, value]) => value.length > 0),
   );
 
+const buildRevenueReportParams = (filters: RevenueReportFilterState) => ({
+  from: `${filters.from}T00:00:00.000Z`,
+  to: `${filters.to}T23:59:59.999Z`,
+});
+
 const buildPartnerRequestParams = (filters: PartnerRequestFilterState) =>
   Object.fromEntries(
     Object.entries(filters)
       .map(([key, value]) => [key, value.trim()] as const)
       .filter(([key, value]) => value.length > 0 && !(key === "status" && value === "all")),
   );
-
-const csvCell = (value: string | number | null | undefined) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
 const snapshotNumber = (snapshot: Record<string, unknown> | null | undefined, key: string) => {
   const value = snapshot?.[key];
@@ -1217,6 +1276,13 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
   const [reportBills, setReportBills] = useState<SensitiveBill[]>([]);
+  const [revenueReport, setRevenueReport] = useState<RevenueReport>(emptyRevenueReport);
+  const [revenueReportFilters, setRevenueReportFilters] = useState<RevenueReportFilterState>(() =>
+    defaultRevenueReportFilters(),
+  );
+  const [revenueReportDraft, setRevenueReportDraft] = useState<RevenueReportFilterState>(() =>
+    defaultRevenueReportFilters(),
+  );
   const [billFilters, setBillFilters] = useState<BillFilterState>(initialBillFilters);
   const [billFilterDraft, setBillFilterDraft] = useState<BillFilterState>(initialBillFilters);
   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
@@ -1261,6 +1327,10 @@ export default function AdminConsole({ section }: { section?: string }) {
 
   const billFilterParams = useMemo(() => buildBillFilterParams(billFilters), [billFilters]);
   const hasBillFilters = Object.keys(billFilterParams).length > 0;
+  const revenueReportParams = useMemo(
+    () => buildRevenueReportParams(revenueReportFilters),
+    [revenueReportFilters],
+  );
   const partnerRequestParams = useMemo(
     () => buildPartnerRequestParams(partnerRequestFilters),
     [partnerRequestFilters],
@@ -1274,6 +1344,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         bookingData,
         billData,
         reportBillData,
+        revenueReportData,
         partnerRequestData,
         couponIssueData,
         rankingData,
@@ -1288,6 +1359,9 @@ export default function AdminConsole({ section }: { section?: string }) {
           hasBillFilters ? { params: billFilterParams } : undefined,
         ),
         apiClient<SensitiveBill[]>("/partner/bills").catch(() => []),
+        apiClient<RevenueReport>("/admin/reports/revenue", { params: revenueReportParams }).catch(
+          () => emptyRevenueReport,
+        ),
         apiClient<AdminPartnerRequest[]>(
           "/admin/partner-requests",
           hasPartnerRequestFilters ? { params: partnerRequestParams } : undefined,
@@ -1303,6 +1377,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setBookings(bookingData);
       setSensitiveBills(billData);
       setReportBills(reportBillData);
+      setRevenueReport(revenueReportData);
       setPartnerRequests(partnerRequestData);
       setCouponIssues(couponIssueData);
       setRankings(rankingData);
@@ -1324,7 +1399,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setRankingStatusMessage("Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
       setContentStatusMessage("Chưa tải được content CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
     }
-  }, [billFilterParams, hasBillFilters, hasPartnerRequestFilters, partnerRequestParams]);
+  }, [billFilterParams, hasBillFilters, hasPartnerRequestFilters, partnerRequestParams, revenueReportParams]);
 
   const loadRankingOptions = useCallback(async () => {
     try {
@@ -1465,60 +1540,6 @@ export default function AdminConsole({ section }: { section?: string }) {
 
     return warnings.slice(0, 8);
   }, [couponLinkedBills, issueById]);
-  const reconciliationExportRows = useMemo<ReconciliationExportRow[]>(() => {
-    const billsByIssueId = new Map(
-      reconciliationBills
-        .filter((bill) => bill.couponIssue?.id)
-        .map((bill) => [bill.couponIssue?.id as string, bill]),
-    );
-    const includedBillIds = new Set<string>();
-    const rows = couponIssues.map((issue) => {
-      const bill = billsByIssueId.get(issue.id);
-      if (bill) includedBillIds.add(bill.id);
-      const warning = !bill?.booking && bill?.couponIssue ? "Không có booking" : "";
-
-      return {
-        couponIssueId: issue.id,
-        couponIssueCode: issue.code,
-        couponIssueStatus: issue.status,
-        couponId: issue.coupon.id,
-        couponCode: issue.coupon.code,
-        couponName: issue.coupon.name,
-        bookingId: issue.booking?.id ?? "",
-        bookingStatus: issue.booking?.status ?? "",
-        bookingScheduledAt: issue.booking?.scheduledAt ?? "",
-        billId: bill?.id ?? "",
-        billNumber: bill?.billNumber ?? "",
-        billStatus: bill?.status ?? "",
-        billTotalVnd: String(bill?.totalVnd ?? ""),
-        storeName: bill?.store.name ?? issue.coupon.store?.name ?? "",
-        warning,
-      };
-    });
-
-    reconciliationBills.forEach((bill) => {
-      if (includedBillIds.has(bill.id)) return;
-      rows.push({
-        couponIssueId: bill.couponIssue?.id ?? "",
-        couponIssueCode: bill.couponIssue?.code ?? "",
-        couponIssueStatus: bill.couponIssue?.status ?? "",
-        couponId: bill.coupon?.id ?? "",
-        couponCode: bill.coupon?.code ?? "",
-        couponName: bill.coupon?.name ?? "",
-        bookingId: bill.booking?.id ?? "",
-        bookingStatus: bill.booking?.status ?? "",
-        bookingScheduledAt: bill.booking?.scheduledAt ?? "",
-        billId: bill.id,
-        billNumber: bill.billNumber ?? "",
-        billStatus: bill.status,
-        billTotalVnd: String(bill.totalVnd ?? ""),
-        storeName: bill.store.name,
-        warning: !bill.booking && bill.couponIssue ? "Không có booking" : "",
-      });
-    });
-
-    return rows;
-  }, [couponIssues, reconciliationBills]);
   const totalBillValue = useMemo(
     () => sensitiveBills.reduce((sum, item) => sum + (item.totalVnd ?? 0), 0),
     [sensitiveBills],
@@ -1526,6 +1547,10 @@ export default function AdminConsole({ section }: { section?: string }) {
   const totalCommission = useMemo(
     () => sensitiveBills.reduce((sum, item) => sum + (item.commissionAmountVnd ?? 0), 0),
     [sensitiveBills],
+  );
+  const revenueReportMaxGross = useMemo(
+    () => Math.max(1, ...revenueReport.days.map((day) => day.grossVnd)),
+    [revenueReport.days],
   );
   const counts: AdminCounts = useMemo(
     () => ({
@@ -1647,6 +1672,23 @@ export default function AdminConsole({ section }: { section?: string }) {
     setBillFilters(emptyFilters);
   };
 
+  const updateRevenueReportDraft = (key: keyof RevenueReportFilterState, value: string) => {
+    setRevenueReportDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const applyRevenueReportFilters = () => {
+    setRevenueReportFilters({
+      from: revenueReportDraft.from,
+      to: revenueReportDraft.to,
+    });
+  };
+
+  const clearRevenueReportFilters = () => {
+    const nextFilters = defaultRevenueReportFilters();
+    setRevenueReportDraft(nextFilters);
+    setRevenueReportFilters(nextFilters);
+  };
+
   const updatePartnerRequestFilterDraft = (key: keyof PartnerRequestFilterState, value: string) => {
     setPartnerRequestFilterDraft((current) => ({ ...current, [key]: value }));
   };
@@ -1663,39 +1705,6 @@ export default function AdminConsole({ section }: { section?: string }) {
   const clearPartnerRequestFilters = () => {
     setPartnerRequestFilterDraft(defaultPartnerRequestFilters);
     setPartnerRequestFilters(defaultPartnerRequestFilters);
-  };
-
-  const exportReconciliationReport = () => {
-    const headers: Array<keyof ReconciliationExportRow> = [
-      "couponIssueId",
-      "couponIssueCode",
-      "couponIssueStatus",
-      "couponId",
-      "couponCode",
-      "couponName",
-      "bookingId",
-      "bookingStatus",
-      "bookingScheduledAt",
-      "billId",
-      "billNumber",
-      "billStatus",
-      "billTotalVnd",
-      "storeName",
-      "warning",
-    ];
-    const lines = [
-      headers.map(csvCell).join(","),
-      ...reconciliationExportRows.map((row) => headers.map((key) => csvCell(row[key])).join(",")),
-    ];
-    const blob = new Blob([`\ufeff${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `booking-coupon-bill-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
   };
 
   const reviewBill = async (billId: string, approve: boolean) => {
@@ -3573,20 +3582,196 @@ export default function AdminConsole({ section }: { section?: string }) {
 
   const renderReports = () => (
     <div style={{ display: "grid", gap: 18 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(170px,1fr))", gap: 14 }}>
-        <MetricCard icon={BarChart3} label="Doanh thu gộp" value={compactMoney(totalBillValue)} note="tổng bill" hot />
-        <MetricCard icon={ReceiptText} label="Hoa hồng" value={compactMoney(totalCommission)} note="platform commission" />
-        <MetricCard icon={TicketPercent} label="Coupon issues" value={String(couponIssues.length)} note="ưu đãi đã phát sinh" />
-        <MetricCard icon={XCircle} label="Cancel rate" value={`${cancelAnalytics?.meta.cancelRate ?? 0}%`} note="30 ngày" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 14 }}>
+        <MetricCard
+          icon={BarChart3}
+          label="Gross"
+          value={compactMoney(revenueReport.totals.grossVnd)}
+          note="subtotal trước giảm"
+          hot
+        />
+        <MetricCard
+          icon={ReceiptText}
+          label="Net"
+          value={compactMoney(revenueReport.totals.netVnd)}
+          note="paidVnd sau giảm"
+        />
+        <MetricCard
+          icon={TicketPercent}
+          label="Discount"
+          value={compactMoney(revenueReport.totals.discountVnd)}
+          note="ưu đãi đã trừ"
+        />
+        <MetricCard
+          icon={ShieldCheck}
+          label="Commission"
+          value={compactMoney(revenueReport.totals.commissionVnd)}
+          note={`${revenueReport.totals.billCount} bill`}
+        />
       </div>
-      <Panel style={{ padding: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <SectionTitle title="Funnel đối soát" eyebrow="BOOKING / COUPON / BILL" />
-          <button type="button" onClick={exportReconciliationReport} style={buttonStyle("primary")}>
-            <Download size={14} />
-            Export CSV
-          </button>
+
+      <Panel testId="admin-revenue-report-panel" style={{ padding: 20 }}>
+        <div style={{ display: "grid", gap: 16 }}>
+          <SectionTitle title="Report P0: ngày -> quán -> mã giảm giá" eyebrow="BILL USED AT" />
+          <div style={{ color: colors.text2, fontSize: 13 }}>
+            Lọc theo ngày sử dụng dịch vụ (Bill.usedAt). MVP không export Excel/PDF.
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Từ ngày sử dụng
+              <input
+                aria-label="Revenue report from date"
+                type="date"
+                value={revenueReportDraft.from}
+                onChange={(event) => updateRevenueReportDraft("from", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+              />
+            </label>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Đến ngày sử dụng
+              <input
+                aria-label="Revenue report to date"
+                type="date"
+                value={revenueReportDraft.to}
+                onChange={(event) => updateRevenueReportDraft("to", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+              />
+            </label>
+            <div style={{ display: "flex", alignItems: "end", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                aria-label="Apply revenue report date filters"
+                onClick={applyRevenueReportFilters}
+                style={buttonStyle("primary")}
+              >
+                <Search size={14} />
+                Lọc báo cáo
+              </button>
+              <button
+                type="button"
+                aria-label="Clear revenue report date filters"
+                onClick={clearRevenueReportFilters}
+                style={buttonStyle("secondary")}
+              >
+                <RefreshCcw size={14} />
+                30 ngày
+              </button>
+            </div>
+          </div>
+
+          {revenueReport.days.length ? (
+            <div style={{ display: "grid", gap: 14 }}>
+              {revenueReport.days.map((day) => (
+                <div
+                  key={day.date}
+                  style={{
+                    border: `1px solid ${colors.borderGold22}`,
+                    background: "rgba(255,255,255,.03)",
+                    padding: 14,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div>
+                      <strong style={{ color: colors.text, fontSize: 16 }}>{day.date}</strong>
+                      <div style={{ color: colors.muted, fontSize: 12, marginTop: 3 }}>
+                        {day.stores.length} quán · {day.billCount} bill · {compactMoney(day.grossVnd)} gross
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", color: colors.text2, fontSize: 12 }}>
+                      <span>Net: <b style={{ color: colors.goldBright }}>{formatMoney(day.netVnd)}</b></span>
+                      <span>Discount: <b style={{ color: colors.goldBright }}>{formatMoney(day.discountVnd)}</b></span>
+                      <span>Commission: <b style={{ color: colors.goldBright }}>{formatMoney(day.commissionVnd)}</b></span>
+                    </div>
+                  </div>
+                  <div style={{ height: 6, background: "rgba(255,255,255,.08)" }}>
+                    <div
+                      style={{
+                        width: `${Math.max(5, Math.round((day.grossVnd / revenueReportMaxGross) * 100))}%`,
+                        height: "100%",
+                        background: colors.goldGrad,
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {day.stores.map((store) => (
+                      <div
+                        key={`${day.date}-${store.store.id}`}
+                        style={{
+                          borderTop: `1px solid ${colors.borderSoft}`,
+                          paddingTop: 10,
+                          display: "grid",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                          <strong style={{ color: colors.goldPale }}>{store.store.name}</strong>
+                          <span style={{ color: colors.text2, fontSize: 12 }}>
+                            Gross {formatMoney(store.grossVnd)} · Net {formatMoney(store.netVnd)} · Commission{" "}
+                            {formatMoney(store.commissionVnd)}
+                          </span>
+                        </div>
+                        <div style={{ minWidth: 760, overflowX: "auto" }}>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                              gap: 10,
+                              color: colors.muted,
+                              fontSize: 11,
+                              fontWeight: 900,
+                              textTransform: "uppercase",
+                              padding: "6px 0",
+                            }}
+                          >
+                            <span>Mã giảm giá</span>
+                            <span>Bill</span>
+                            <span>Gross</span>
+                            <span>Discount</span>
+                            <span>Net</span>
+                            <span>Commission</span>
+                          </div>
+                          {store.coupons.map((coupon) => (
+                            <div
+                              key={`${day.date}-${store.store.id}-${coupon.coupon.code}`}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                                gap: 10,
+                                color: colors.text2,
+                                fontSize: 12,
+                                padding: "7px 0",
+                                borderTop: `1px solid ${colors.borderSoft}`,
+                                alignItems: "center",
+                              }}
+                            >
+                              <span>
+                                <b style={{ color: colors.text }}>{coupon.coupon.code}</b>
+                                <span style={{ display: "block", color: colors.muted }}>{coupon.coupon.name}</span>
+                              </span>
+                              <span>{coupon.billCount}</span>
+                              <span>{formatMoney(coupon.grossVnd)}</span>
+                              <span>{formatMoney(coupon.discountVnd)}</span>
+                              <span>{formatMoney(coupon.netVnd)}</span>
+                              <span>{formatMoney(coupon.commissionVnd)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState>Chưa có bill VERIFIED/PAID trong khoảng ngày sử dụng đã chọn.</EmptyState>
+          )}
         </div>
+      </Panel>
+
+      <Panel style={{ padding: 20 }}>
+        <SectionTitle title="Funnel đối soát" eyebrow="BOOKING / COUPON / BILL" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(130px,1fr))", gap: 10, marginTop: 14 }}>
           {reconciliationFunnel.map((step, index) => (
             <div
@@ -3626,35 +3811,6 @@ export default function AdminConsole({ section }: { section?: string }) {
           </div>
         ) : null}
       </Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(360px,.8fr)", gap: 16 }}>
-        <Panel style={{ padding: 20 }}>
-          <SectionTitle title="Doanh thu theo ngày" eyebrow="JUNE 2026" />
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 240 }}>
-            {[42, 36, 58, 48, 68, 74, 52, 84, 62, 96, 78, 88].map((height, index) => (
-              <div key={index} style={{ flex: 1, height: "100%", display: "grid", alignItems: "end" }}>
-                <div
-                  style={{
-                    height: `${height}%`,
-                    borderRadius: "7px 7px 0 0",
-                    background: colors.goldGrad,
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </Panel>
-        <Panel style={{ padding: 20 }}>
-          <SectionTitle title="Theo quán" eyebrow="STORE BREAKDOWN" />
-          <div style={{ display: "grid", gap: 10 }}>
-            {(topStores.length ? topStores : [{ name: "Club Lumiere", count: 14 }, { name: "KTV Hoàng Gia", count: 9 }]).map((store) => (
-              <div key={store.name} style={{ display: "flex", justifyContent: "space-between", color: colors.text2, fontSize: 13 }}>
-                <span>{store.name}</span>
-                <strong style={{ color: colors.goldBright }}>{store.count} HĐ</strong>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
     </div>
   );
 

@@ -170,6 +170,55 @@ const sensitiveBills = [
   },
 ];
 
+const revenueReport = {
+  filters: {
+    from: "2026-07-01T00:00:00.000Z",
+    to: "2026-07-02T23:59:59.999Z",
+    dateField: "usedAt",
+    statusIn: ["VERIFIED", "PAID"],
+    storeId: null,
+    couponId: null,
+    exportEnabled: false,
+  },
+  totals: {
+    billCount: 2,
+    grossVnd: 3000000,
+    discountVnd: 200000,
+    netVnd: 2800000,
+    commissionVnd: 280000,
+  },
+  days: [
+    {
+      date: "2026-07-01",
+      billCount: 2,
+      grossVnd: 3000000,
+      discountVnd: 200000,
+      netVnd: 2800000,
+      commissionVnd: 280000,
+      stores: [
+        {
+          store: { id: "store-1", name: "Neon Club", slug: "neon-club" },
+          billCount: 2,
+          grossVnd: 3000000,
+          discountVnd: 200000,
+          netVnd: 2800000,
+          commissionVnd: 280000,
+          coupons: [
+            {
+              coupon: { id: "coupon-1", code: "WELCOME20", name: "Welcome 20%" },
+              billCount: 2,
+              grossVnd: 3000000,
+              discountVnd: 200000,
+              netVnd: 2800000,
+              commissionVnd: 280000,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 describe("AdminConsole coupon issue panel", () => {
   beforeEach(() => {
     mocks.apiClient.mockImplementation(async (path: string) => {
@@ -177,6 +226,7 @@ describe("AdminConsole coupon issue panel", () => {
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return [];
       if (path === "/partner/bills") return [];
+      if (path === "/admin/reports/revenue") return revenueReport;
       if (path === "/admin/partner-requests") return [];
       if (path === "/admin/coupon-issues") return couponIssues;
       return [];
@@ -211,6 +261,7 @@ describe("AdminConsole coupon issue panel", () => {
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return sensitiveBills;
       if (path === "/partner/bills") return sensitiveBills;
+      if (path === "/admin/reports/revenue") return revenueReport;
       if (path === "/admin/partner-requests") return [];
       if (path === "/admin/coupon-issues") return couponIssues;
       return [];
@@ -280,6 +331,34 @@ describe("AdminConsole coupon issue panel", () => {
       expect(within(panel).getByText("MEMBER-issued")).toBeInTheDocument();
       expect(within(panel).queryByText("MEMBER-used")).not.toBeInTheDocument();
       expect(within(panel).queryByText("MEMBER-expired")).not.toBeInTheDocument();
+    });
+  });
+
+  it("renders the P0 revenue report by used date, store, and coupon", async () => {
+    render(<AdminConsole section="reports" />);
+
+    const panel = await screen.findByTestId("admin-revenue-report-panel");
+    expect(within(panel).getByText("Report P0: ngày -> quán -> mã giảm giá")).toBeInTheDocument();
+    expect(within(panel).getByText("2026-07-01")).toBeInTheDocument();
+    expect(within(panel).getByText("Neon Club")).toBeInTheDocument();
+    expect(within(panel).getByText("WELCOME20")).toBeInTheDocument();
+    expect(within(panel).getByText("Welcome 20%")).toBeInTheDocument();
+    expect(screen.queryByText("Export CSV")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Revenue report from date"), { target: { value: "2026-07-01" } });
+    fireEvent.change(screen.getByLabelText("Revenue report to date"), { target: { value: "2026-07-02" } });
+    fireEvent.click(screen.getByLabelText("Apply revenue report date filters"));
+
+    await waitFor(() => {
+      expect(mocks.apiClient).toHaveBeenCalledWith(
+        "/admin/reports/revenue",
+        expect.objectContaining({
+          params: {
+            from: "2026-07-01T00:00:00.000Z",
+            to: "2026-07-02T23:59:59.999Z",
+          },
+        }),
+      );
     });
   });
 });

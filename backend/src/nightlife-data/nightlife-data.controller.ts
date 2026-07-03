@@ -23,6 +23,7 @@ import {
   AdminCouponIssuesContract,
   AdminDashboardStatsContract,
   AdminPartnerRequestsContract,
+  AdminRevenueReportContract,
   AdminSensitiveBillsContract,
   CancelAdminBookingContract,
   CancelGuestBookingContract,
@@ -105,6 +106,7 @@ import {
   UpdateAdminRankingConfigDto,
 } from './dto/admin-ranking.dto';
 import { AdminBookingQueryDto } from './dto/admin-booking.dto';
+import { AdminRevenueReportQueryDto } from './dto/admin-revenue-report.dto';
 import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
@@ -775,6 +777,21 @@ export class NightlifeDataController {
     @Query() query: AdminSensitiveBillQueryDto,
   ) {
     return this.nightlifeDataService.listSensitiveBillsForAdmin(
+      request.user,
+      query,
+    );
+  }
+
+  @AdminRevenueReportContract()
+  @ActionPolicy('canViewSensitiveBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Get('admin/reports/revenue')
+  getAdminRevenueReport(
+    @Req() request: RequestWithUser,
+    @Query() query: AdminRevenueReportQueryDto,
+  ) {
+    return this.nightlifeDataService.getAdminRevenueReport(
       request.user,
       query,
     );

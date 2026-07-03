@@ -4,9 +4,12 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { UserTier } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from '../common/password.service';
+
+type UserTierInput = UserTier | 'FREE' | 'PREMIUM';
 
 @Injectable()
 export class UsersService {
@@ -41,7 +44,7 @@ export class UsersService {
     displayName?: string;
     phone?: string;
     role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
-    tier?: 'FREE' | 'PREMIUM' | 'VIP';
+    tier?: UserTierInput;
   }) {
     const email = input.email.trim().toLowerCase();
     const displayName = input.displayName?.trim();
@@ -57,7 +60,7 @@ export class UsersService {
         displayName: displayName || undefined,
         phone: input.phone?.trim() || undefined,
         role: input.role ?? 'USER',
-        tier: input.tier ?? 'FREE',
+        tier: this.normalizeTier(input.tier),
       },
     });
   }
@@ -76,7 +79,7 @@ export class UsersService {
         passwordHash: await this.passwordService.hash(`google:${randomUUID()}`),
         displayName: displayName || undefined,
         role: 'USER',
-        tier: 'FREE',
+        tier: UserTier.MEMBER,
       },
     });
   }
@@ -95,9 +98,17 @@ export class UsersService {
         passwordHash: await this.passwordService.hash(`line:${randomUUID()}`),
         displayName: displayName || undefined,
         role: 'USER',
-        tier: 'FREE',
+        tier: UserTier.MEMBER,
       },
     });
+  }
+
+  private normalizeTier(tier?: UserTierInput) {
+    if (tier === UserTier.VIP) {
+      return UserTier.VIP;
+    }
+
+    return UserTier.MEMBER;
   }
 
   async validateCredentials(email: string, password: string) {

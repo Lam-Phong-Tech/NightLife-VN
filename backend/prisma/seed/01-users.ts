@@ -1,11 +1,11 @@
-import { PrismaClient, User, Role } from '@prisma/client';
+import { PrismaClient, User, Role, UserTier } from '@prisma/client';
 
 interface UserSeed {
   email: string;
   displayName: string;
   phone?: string;
   role: 'ADMIN' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'USER';
-  tier: 'FREE' | 'PREMIUM' | 'VIP';
+  tier: UserTier;
   roleKey?: string; // maps to Role.key for UserRoleAssignment
   profile?: {
     fullName: string;
@@ -33,7 +33,7 @@ const USERS: UserSeed[] = [
     displayName: 'Trần Đối Tác',
     phone: '+84901000002',
     role: 'PARTNER',
-    tier: 'PREMIUM',
+    tier: UserTier.MEMBER,
     roleKey: 'partner',
     profile: {
       fullName: 'Trần Văn Đối Tác',
@@ -46,7 +46,7 @@ const USERS: UserSeed[] = [
     displayName: 'Lê Đối Tác',
     phone: '+84901000003',
     role: 'PARTNER',
-    tier: 'PREMIUM',
+    tier: UserTier.MEMBER,
     roleKey: 'partner',
     profile: {
       fullName: 'Lê Thị Đối Tác',
@@ -59,7 +59,7 @@ const USERS: UserSeed[] = [
     displayName: 'Demo Partner',
     phone: '+84901000006',
     role: 'PARTNER',
-    tier: 'PREMIUM',
+    tier: UserTier.MEMBER,
     roleKey: 'partner',
     profile: {
       fullName: 'Demo Partner',
@@ -72,7 +72,7 @@ const USERS: UserSeed[] = [
     displayName: 'NightLife Operator',
     phone: '+84901000007',
     role: 'OPERATOR',
-    tier: 'PREMIUM',
+    tier: UserTier.MEMBER,
     roleKey: 'operator',
     profile: {
       fullName: 'NightLife Operator',
@@ -85,7 +85,7 @@ const USERS: UserSeed[] = [
     displayName: 'NightLife Staff',
     phone: '+84901000008',
     role: 'STAFF',
-    tier: 'FREE',
+    tier: UserTier.MEMBER,
     roleKey: 'staff',
     profile: {
       fullName: 'NightLife Staff',
@@ -98,7 +98,7 @@ const USERS: UserSeed[] = [
     displayName: 'Phạm Thành Viên',
     phone: '+84901000004',
     role: 'USER',
-    tier: 'FREE',
+    tier: UserTier.MEMBER,
     roleKey: 'member',
     profile: {
       fullName: 'Phạm Văn Thành Viên',
@@ -111,7 +111,7 @@ const USERS: UserSeed[] = [
     displayName: 'Hoàng VIP',
     phone: '+84901000005',
     role: 'USER',
-    tier: 'VIP',
+    tier: UserTier.VIP,
     roleKey: 'member',
     profile: {
       fullName: 'Hoàng Thị VIP',

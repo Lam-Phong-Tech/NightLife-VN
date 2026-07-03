@@ -50,10 +50,10 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('🔑 Login credentials:');
   console.log('  All accounts use password: Str0ngPass!');
   console.log('  • admin@nightlife.vn    (ADMIN / VIP)');
-  console.log('  • operator@nightlife.vn (OPERATOR / PREMIUM)');
-  console.log('  • staff@nightlife.vn    (STAFF / FREE)');
-  console.log('  • partner1@nightlife.vn (PARTNER / PREMIUM)');
-  console.log('  • partner2@nightlife.vn (PARTNER / PREMIUM)');
-  console.log('  • member@nightlife.vn   (USER / FREE)');
+  console.log('  • operator@nightlife.vn (OPERATOR / MEMBER)');
+  console.log('  • staff@nightlife.vn    (STAFF / MEMBER)');
+  console.log('  • partner1@nightlife.vn (PARTNER / MEMBER)');
+  console.log('  • partner2@nightlife.vn (PARTNER / MEMBER)');
+  console.log('  • member@nightlife.vn   (USER / MEMBER)');
   console.log('  • vip@nightlife.vn      (USER / VIP)');
 }
