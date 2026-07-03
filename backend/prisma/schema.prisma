@@ -235,6 +235,12 @@ enum NotificationStatus {
   CANCELLED
 }
 
+enum PartnerRequestStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum RankingTargetType {
   STORE
   CAST
@@ -276,6 +282,8 @@ model User {
   media                         Media[]                @relation("MediaOwner")
   contents                      Content[]
   notifications                 NotificationLog[]
+  submittedPartnerRequests      PartnerRequest[]       @relation("PartnerRequestPartnerUser")
+  reviewedPartnerRequests       PartnerRequest[]       @relation("PartnerRequestReviewer")
   bookingChangeRequests         BookingChangeRequest[] @relation("BookingChangeRequester")
   reviewedBookingChangeRequests BookingChangeRequest[] @relation("BookingChangeReviewer")
   bookingChatMessages           BookingChatMessage[]   @relation("BookingChatSender")
@@ -394,22 +402,23 @@ model UserRoleAssignment {
 }
 
 model PartnerAccount {
-  id             String               @id @default(uuid()) @db.Uuid
-  userId         String               @map("user_id") @db.Uuid
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  businessName   String               @map("business_name")
-  legalName      String?              @map("legal_name")
-  taxCode        String?              @map("tax_code")
-  contactName    String?              @map("contact_name")
-  contactPhone   String?              @map("contact_phone")
-  contactEmail   String?              @map("contact_email")
-  bankInfo       Json?                @map("bank_info")
-  contractNumber String?              @map("contract_number")
-  status         PartnerAccountStatus @default(PENDING_REVIEW)
-  stores         Store[]
-  createdAt      DateTime             @default(now()) @map("created_at")
-  updatedAt      DateTime             @updatedAt @map("updated_at")
-  deletedAt      DateTime?            @map("deleted_at")
+  id              String               @id @default(uuid()) @db.Uuid
+  userId          String               @map("user_id") @db.Uuid
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  businessName    String               @map("business_name")
+  legalName       String?              @map("legal_name")
+  taxCode         String?              @map("tax_code")
+  contactName     String?              @map("contact_name")
+  contactPhone    String?              @map("contact_phone")
+  contactEmail    String?              @map("contact_email")
+  bankInfo        Json?                @map("bank_info")
+  contractNumber  String?              @map("contract_number")
+  status          PartnerAccountStatus @default(PENDING_REVIEW)
+  stores          Store[]
+  partnerRequests PartnerRequest[]
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  deletedAt       DateTime?            @map("deleted_at")
 
   @@index([userId])
   @@index([status])
@@ -467,6 +476,7 @@ model Store {
   media                      Media[]
   contents                   Content[]
   notifications              NotificationLog[]
+  partnerRequests            PartnerRequest[]
   bookingChangeRequests      BookingChangeRequest[]
   bookingChatMessages        BookingChatMessage[]
   userPermissions            StorePermission[]
@@ -793,6 +803,7 @@ model PointLedger {
   reversals        PointLedger[]     @relation("PointLedgerReversal")
   type             PointLedgerType
   status           PointLedgerStatus @default(PENDING)
+  amountVnd        Int               @default(0) @map("amount_vnd")
   points           Int
   balanceAfter     Int?              @map("balance_after")
   description      String?
@@ -802,6 +813,7 @@ model PointLedger {
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
+  @@unique([billId, type])
   @@index([userId])
   @@index([bookingId])
   @@index([billId])
@@ -877,26 +889,27 @@ model Content {
 }
 
 model NotificationLog {
-  id          String              @id @default(uuid()) @db.Uuid
-  userId      String?             @map("user_id") @db.Uuid
-  guestId     String?             @map("guest_id") @db.Uuid
-  storeId     String?             @map("store_id") @db.Uuid
-  bookingId   String?             @map("booking_id") @db.Uuid
-  billId      String?             @map("bill_id") @db.Uuid
-  user        User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
-  guest       Guest?              @relation(fields: [guestId], references: [id], onDelete: SetNull)
-  store       Store?              @relation(fields: [storeId], references: [id], onDelete: SetNull)
-  booking     Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  bill        Bill?               @relation(fields: [billId], references: [id], onDelete: SetNull)
-  channel     NotificationChannel
-  status      NotificationStatus  @default(QUEUED)
-  recipient   String
-  templateKey String?             @map("template_key")
-  payload     Json?
-  error       String?
-  sentAt      DateTime?           @map("sent_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
+  id              String              @id @default(uuid()) @db.Uuid
+  userId          String?             @map("user_id") @db.Uuid
+  guestId         String?             @map("guest_id") @db.Uuid
+  storeId         String?             @map("store_id") @db.Uuid
+  bookingId       String?             @map("booking_id") @db.Uuid
+  billId          String?             @map("bill_id") @db.Uuid
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guest           Guest?              @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  store           Store?              @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  booking         Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  bill            Bill?               @relation(fields: [billId], references: [id], onDelete: SetNull)
+  partnerRequests PartnerRequest[]
+  channel         NotificationChannel
+  status          NotificationStatus  @default(QUEUED)
+  recipient       String
+  templateKey     String?             @map("template_key")
+  payload         Json?
+  error           String?
+  sentAt          DateTime?           @map("sent_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
 
   @@index([userId])
   @@index([guestId])
@@ -905,6 +918,54 @@ model NotificationLog {
   @@index([billId])
   @@index([status])
   @@map("notification_logs")
+}
+
+model PartnerRequest {
+  id                String               @id
+  storeId           String               @map("store_id") @db.Uuid
+  partnerUserId     String?              @map("partner_user_id") @db.Uuid
+  partnerAccountId  String?              @map("partner_account_id") @db.Uuid
+  reviewedById      String?              @map("reviewed_by_id") @db.Uuid
+  notificationLogId String?              @map("notification_log_id") @db.Uuid
+  store             Store                @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  partnerUser       User?                @relation("PartnerRequestPartnerUser", fields: [partnerUserId], references: [id], onDelete: SetNull)
+  partnerAccount    PartnerAccount?      @relation(fields: [partnerAccountId], references: [id], onDelete: SetNull)
+  reviewedBy        User?                @relation("PartnerRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  notificationLog   NotificationLog?     @relation(fields: [notificationLogId], references: [id], onDelete: SetNull)
+  status            PartnerRequestStatus @default(PENDING_REVIEW)
+  businessName      String               @map("business_name")
+  businessType      String?              @map("business_type")
+  area              String?
+  contactName       String               @map("contact_name")
+  contactPhone      String               @map("contact_phone")
+  contactEmail      String?              @map("contact_email")
+  note              String?
+  storeDescription  String?              @map("store_description")
+  storeAddress      String?              @map("store_address")
+  storeCity         String?              @map("store_city")
+  storeDistrict     String?              @map("store_district")
+  openingHours      String?              @map("opening_hours")
+  menuSummary       String?              @map("menu_summary")
+  mediaUrls         String[]             @default([]) @map("media_urls")
+  castProfiles      Json?                @map("cast_profiles")
+  draftCastIds      String[]             @default([]) @map("draft_cast_ids") @db.Uuid
+  draftMediaIds     String[]             @default([]) @map("draft_media_ids") @db.Uuid
+  draftContentIds   String[]             @default([]) @map("draft_content_ids") @db.Uuid
+  reviewReason      String?              @map("review_reason")
+  publicState       String               @default("HIDDEN") @map("public_state")
+  submittedAt       DateTime             @default(now()) @map("submitted_at")
+  reviewedAt        DateTime?            @map("reviewed_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  @@index([storeId])
+  @@index([partnerUserId])
+  @@index([partnerAccountId])
+  @@index([reviewedById])
+  @@index([notificationLogId])
+  @@index([status, submittedAt])
+  @@index([contactEmail])
+  @@map("partner_requests")
 }
 
 model AuditLog {

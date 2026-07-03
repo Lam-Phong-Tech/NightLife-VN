@@ -4,6 +4,8 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsDateString,
+  IsIn,
   IsEmail,
   IsInt,
   IsNotEmpty,
@@ -13,6 +15,7 @@ import {
   MaxLength,
   Min,
   ValidateNested,
+  Max,
 } from 'class-validator';
 
 export class PartnerRequestCastDto {
@@ -189,4 +192,45 @@ export class ReviewPartnerRequestDto {
   @IsString()
   @MaxLength(500)
   reason: string;
+}
+
+export class AdminPartnerRequestQueryDto {
+  @ApiPropertyOptional({
+    example: 'PENDING_REVIEW',
+    enum: ['PENDING_REVIEW', 'APPROVED', 'REJECTED'],
+  })
+  @IsOptional()
+  @IsIn(['PENDING_REVIEW', 'APPROVED', 'REJECTED'])
+  status?: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+  @ApiPropertyOptional({ example: 'Neon Club' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  keyword?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-01T00:00:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  submittedFrom?: string;
+
+  @ApiPropertyOptional({ example: '2026-07-03T23:59:59.999Z' })
+  @IsOptional()
+  @IsDateString()
+  submittedTo?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 50, default: 50, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
 }

@@ -150,8 +150,8 @@ type SensitiveBill = {
 
 type AdminPartnerRequest = {
   id: string;
-  notificationId: string;
-  notificationStatus: string;
+  notificationId: string | null;
+  notificationStatus: string | null;
   notificationError: string | null;
   notifiedAt: string | null;
   submittedAt: string;
@@ -159,6 +159,8 @@ type AdminPartnerRequest = {
   reviewReason: string | null;
   reviewedAt: string | null;
   reviewedById: string | null;
+  partnerUserId: string | null;
+  partnerAccountId: string | null;
   publicState: string | null;
   draftStoreId: string | null;
   draftStoreName: string | null;
@@ -269,6 +271,20 @@ type BillFilterState = {
   bookingId: string;
   couponId: string;
   couponIssueId: string;
+};
+
+type PartnerRequestFilterState = {
+  status: string;
+  keyword: string;
+  page: string;
+  limit: string;
+};
+
+const defaultPartnerRequestFilters: PartnerRequestFilterState = {
+  status: "all",
+  keyword: "",
+  page: "1",
+  limit: "50",
 };
 
 type ReconciliationExportRow = {
@@ -549,6 +565,13 @@ const buildBillFilterParams = (filters: BillFilterState) =>
     Object.entries(filters)
       .map(([key, value]) => [key, value.trim()] as const)
       .filter(([, value]) => value.length > 0),
+  );
+
+const buildPartnerRequestParams = (filters: PartnerRequestFilterState) =>
+  Object.fromEntries(
+    Object.entries(filters)
+      .map(([key, value]) => [key, value.trim()] as const)
+      .filter(([key, value]) => value.length > 0 && !(key === "status" && value === "all")),
   );
 
 const csvCell = (value: string | number | null | undefined) => `"${String(value ?? "").replace(/"/g, '""')}"`;
@@ -1197,6 +1220,12 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [billFilters, setBillFilters] = useState<BillFilterState>(initialBillFilters);
   const [billFilterDraft, setBillFilterDraft] = useState<BillFilterState>(initialBillFilters);
   const [partnerRequests, setPartnerRequests] = useState<AdminPartnerRequest[]>([]);
+  const [partnerRequestFilters, setPartnerRequestFilters] = useState<PartnerRequestFilterState>(
+    defaultPartnerRequestFilters,
+  );
+  const [partnerRequestFilterDraft, setPartnerRequestFilterDraft] = useState<PartnerRequestFilterState>(
+    defaultPartnerRequestFilters,
+  );
   const [partnerReviewReasons, setPartnerReviewReasons] = useState<Record<string, string>>({});
   const [reviewingPartnerRequestId, setReviewingPartnerRequestId] = useState<string | null>(null);
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
@@ -1232,6 +1261,11 @@ export default function AdminConsole({ section }: { section?: string }) {
 
   const billFilterParams = useMemo(() => buildBillFilterParams(billFilters), [billFilters]);
   const hasBillFilters = Object.keys(billFilterParams).length > 0;
+  const partnerRequestParams = useMemo(
+    () => buildPartnerRequestParams(partnerRequestFilters),
+    [partnerRequestFilters],
+  );
+  const hasPartnerRequestFilters = Object.keys(partnerRequestParams).length > 0;
 
   const loadAdminData = useCallback(async () => {
     try {
@@ -1254,7 +1288,10 @@ export default function AdminConsole({ section }: { section?: string }) {
           hasBillFilters ? { params: billFilterParams } : undefined,
         ),
         apiClient<SensitiveBill[]>("/partner/bills").catch(() => []),
-        apiClient<AdminPartnerRequest[]>("/admin/partner-requests"),
+        apiClient<AdminPartnerRequest[]>(
+          "/admin/partner-requests",
+          hasPartnerRequestFilters ? { params: partnerRequestParams } : undefined,
+        ),
         apiClient<AdminCouponIssue[]>("/admin/coupon-issues"),
         adminRankingsApi.list(),
         contentApi.adminList({ limit: 100 }),
@@ -1287,7 +1324,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setRankingStatusMessage("Chưa tải được ranking CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
       setContentStatusMessage("Chưa tải được content CMS. Kiểm tra backend/NEXT_PUBLIC_API_URL.");
     }
-  }, [billFilterParams, hasBillFilters]);
+  }, [billFilterParams, hasBillFilters, hasPartnerRequestFilters, partnerRequestParams]);
 
   const loadRankingOptions = useCallback(async () => {
     try {
@@ -1560,7 +1597,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         icon: Handshake,
         label: "Partner request",
         value: String(partnerRequests.length),
-        note: "từ notification log",
+        note: "từ CMS record",
         hot: partnerRequests.length > 0,
       },
       {
@@ -1608,6 +1645,24 @@ export default function AdminConsole({ section }: { section?: string }) {
     const emptyFilters = { bookingId: "", couponId: "", couponIssueId: "" };
     setBillFilterDraft(emptyFilters);
     setBillFilters(emptyFilters);
+  };
+
+  const updatePartnerRequestFilterDraft = (key: keyof PartnerRequestFilterState, value: string) => {
+    setPartnerRequestFilterDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const applyPartnerRequestFilters = () => {
+    setPartnerRequestFilters({
+      status: partnerRequestFilterDraft.status,
+      keyword: partnerRequestFilterDraft.keyword.trim(),
+      page: partnerRequestFilterDraft.page.trim() || "1",
+      limit: partnerRequestFilterDraft.limit.trim() || "50",
+    });
+  };
+
+  const clearPartnerRequestFilters = () => {
+    setPartnerRequestFilterDraft(defaultPartnerRequestFilters);
+    setPartnerRequestFilters(defaultPartnerRequestFilters);
   };
 
   const exportReconciliationReport = () => {
@@ -2146,6 +2201,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         {orderedSensitiveBills.slice(0, activeView === "bill" ? 12 : 6).map((bill) => (
           <div
             key={bill.id}
+            data-testid={`admin-sensitive-bill-row-${bill.id}`}
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr .9fr 1.1fr .8fr 190px",
@@ -2210,6 +2266,82 @@ export default function AdminConsole({ section }: { section?: string }) {
           </div>
         ))}
         {!orderedSensitiveBills.length ? <EmptyState>Chưa có hóa đơn nhạy cảm cần xử lý.</EmptyState> : null}
+      </div>
+    </Panel>
+  );
+
+  const partnerRequestFilterPanel = () => (
+    <Panel>
+      <div style={{ padding: 18, display: "grid", gap: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <SectionTitle title="Lọc hồ sơ" eyebrow="CMS PARTNER REQUESTS" />
+          {hasPartnerRequestFilters ? <Badge tone="PENDING">Đang lọc</Badge> : null}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, alignItems: "end" }}>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Status
+            <select
+              aria-label="Partner request status filter"
+              value={partnerRequestFilterDraft.status}
+              onChange={(event) => updatePartnerRequestFilterDraft("status", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+            >
+              <option value="all">Tất cả</option>
+              <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="REJECTED">REJECTED</option>
+            </select>
+          </label>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Keyword
+            <input
+              aria-label="Partner request keyword filter"
+              value={partnerRequestFilterDraft.keyword}
+              onChange={(event) => updatePartnerRequestFilterDraft("keyword", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+              placeholder="Tên quán, liên hệ, email"
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Page
+            <input
+              aria-label="Partner request page filter"
+              value={partnerRequestFilterDraft.page}
+              onChange={(event) => updatePartnerRequestFilterDraft("page", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+              inputMode="numeric"
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+            Limit
+            <input
+              aria-label="Partner request limit filter"
+              value={partnerRequestFilterDraft.limit}
+              onChange={(event) => updatePartnerRequestFilterDraft("limit", event.target.value)}
+              style={inputStyle({ minHeight: 38 })}
+              inputMode="numeric"
+            />
+          </label>
+          <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              aria-label="Apply partner request filters"
+              onClick={applyPartnerRequestFilters}
+              style={buttonStyle("primary")}
+            >
+              <Search size={14} />
+              Áp dụng
+            </button>
+            <button
+              type="button"
+              aria-label="Clear partner request filters"
+              onClick={clearPartnerRequestFilters}
+              style={buttonStyle("secondary")}
+            >
+              Xóa
+            </button>
+          </span>
+        </div>
       </div>
     </Panel>
   );
@@ -2282,7 +2414,7 @@ export default function AdminConsole({ section }: { section?: string }) {
             </span>
             <span style={{ display: "grid", gap: 6, justifyItems: "start" }}>
               <Badge tone={request.status}>{request.status}</Badge>
-              <Badge tone={request.notificationStatus}>{request.notificationStatus}</Badge>
+              <Badge tone={request.notificationStatus ?? "QUEUED"}>{request.notificationStatus ?? "NO_NOTIFY"}</Badge>
             </span>
             <span style={{ display: "grid", gap: 8 }}>
               <input
@@ -2323,7 +2455,7 @@ export default function AdminConsole({ section }: { section?: string }) {
             </span>
           </div>
         ))}
-        {!partnerRequests.length ? <EmptyState>Chưa có partner request từ Telegram log.</EmptyState> : null}
+        {!partnerRequests.length ? <EmptyState>Chưa có partner request phù hợp bộ lọc.</EmptyState> : null}
       </div>
     </Panel>
   );
@@ -2425,7 +2557,7 @@ export default function AdminConsole({ section }: { section?: string }) {
               <option value="ISSUED">Đã cấp</option>
               <option value="USED">Đã dùng</option>
               <option value="EXPIRED">Hết hạn</option>
-              <option value="CANCELLED">Đã hủy</option>
+              <option value="REVOKED">Đã hủy</option>
             </select>
           }
         />
@@ -2784,11 +2916,12 @@ export default function AdminConsole({ section }: { section?: string }) {
           icon={Bell}
           label="Đã gửi notify"
           value={String(partnerRequests.filter((item) => item.notificationStatus === "SENT").length)}
-          note="Telegram log"
+          note="Telegram delivery"
         />
         <MetricCard icon={Store} label="Cơ sở hiện có" value={String(stores.length)} note="store scope" />
       </div>
       <SectionTitle title="Hồ sơ đối tác" eyebrow="PARTNER REQUESTS" />
+      {partnerRequestFilterPanel()}
       {partnerTable()}
     </div>
   );

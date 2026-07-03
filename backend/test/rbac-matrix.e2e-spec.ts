@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  GoneException,
   INestApplication,
   NotFoundException,
   UnauthorizedException,
@@ -262,7 +263,7 @@ describe('RBAC matrix (e2e)', () => {
     );
   });
 
-  it('captures one-time coupon API evidence from claim through duplicate confirm', async () => {
+  it('captures Booking QR API evidence from legacy claim rejection through duplicate confirm', async () => {
     const issuedIssue = {
       id: 'issue-1',
       code: 'GUEST-code',
@@ -271,10 +272,11 @@ describe('RBAC matrix (e2e)', () => {
       qrPayload: 'GUEST-code',
     };
 
-    nightlifeDataService.claimGuestCoupon.mockResolvedValueOnce({
-      issue: issuedIssue,
-      guest: { id: 'guest-1' },
-    });
+    nightlifeDataService.claimGuestCoupon.mockRejectedValueOnce(
+      new GoneException(
+        'Independent coupon claim is not part of MVP v3.2. Create a booking to receive the Booking QR.',
+      ),
+    );
     nightlifeDataService.scanCouponIssue.mockResolvedValueOnce(issuedIssue);
     nightlifeDataService.confirmCouponIssueCheckIn
       .mockResolvedValueOnce({
@@ -291,8 +293,10 @@ describe('RBAC matrix (e2e)', () => {
     const claimResponse = await request(app.getHttpServer())
       .post('/coupons/coupon-1/guest-claims')
       .send({ phone: '+84901234567' })
-      .expect(201);
-    expect(claimResponse.body.issue.status).toBe('ISSUED');
+      .expect(410);
+    expect(claimResponse.body.message).toContain(
+      'Independent coupon claim is not part of MVP v3.2',
+    );
 
     const scanResponse = await request(app.getHttpServer())
       .post('/partner/coupon-issues/GUEST-code/scan')
@@ -395,14 +399,19 @@ describe('RBAC matrix (e2e)', () => {
     expect(nightlifeDataService.reviewSensitiveBill).not.toHaveBeenCalled();
   });
 
-  it('returns 422 when a public coupon has exhausted its usage limit', async () => {
+  it('returns 410 before legacy public coupon usage-limit checks', async () => {
     nightlifeDataService.claimGuestCoupon.mockRejectedValueOnce(
-      new UnprocessableEntityException('Coupon usage limit has been reached'),
+      new GoneException(
+        'Independent coupon claim is not part of MVP v3.2. Create a booking to receive the Booking QR.',
+      ),
     );
 
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/coupons/coupon-1/guest-claims')
       .send({ phone: '+84901234567' })
-      .expect(422);
+      .expect(410);
+    expect(response.body.message).toContain(
+      'Independent coupon claim is not part of MVP v3.2',
+    );
   });
 });

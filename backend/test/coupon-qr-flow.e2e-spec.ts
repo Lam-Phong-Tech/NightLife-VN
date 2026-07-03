@@ -63,7 +63,7 @@ const storeRecord = {
 };
 
 const couponRecord = {
-  id: 'coupon-1',
+  id: '550e8400-e29b-41d4-a716-446655440002',
   code: 'MEMBER8',
   name: 'Member 8%',
   storeId: storeRecord.id,
@@ -126,6 +126,12 @@ describe('Coupon QR full flow (e2e)', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    store: {
+      findFirst: jest.fn(),
+    },
+    booking: {
+      create: jest.fn(),
+    },
     couponIssue: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -175,6 +181,42 @@ describe('Coupon QR full flow (e2e)', () => {
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     prisma.notificationLog.create.mockResolvedValue({ id: 'notification-1' });
     prisma.notificationLog.findMany.mockResolvedValue([]);
+    prisma.store.findFirst.mockResolvedValue(storeRecord);
+    prisma.booking.create.mockImplementation(
+      async (args: { data: Record<string, unknown> }) => ({
+        id: 'booking-1',
+        storeId: args.data.storeId,
+        userId: args.data.userId ?? null,
+        guestId: args.data.guestId,
+        status: args.data.status,
+        scheduledAt: args.data.scheduledAt,
+        partySize: args.data.partySize,
+        couponId: args.data.couponId ?? null,
+        couponIssueId: args.data.couponIssueId ?? null,
+        guest: {
+          id: args.data.guestId,
+          displayName: 'Member QA',
+          phone: '+84900000001',
+          email: null,
+        },
+        user: {
+          id: args.data.userId,
+          displayName: 'Member QA',
+          tier: 'FREE',
+        },
+        store: storeRecord,
+        coupon: args.data.couponId
+          ? {
+              id: couponRecord.id,
+              code: couponRecord.code,
+              name: couponRecord.name,
+            }
+          : null,
+        couponIssue: issue
+          ? { id: issue.id, code: issue.code, status: issue.status }
+          : null,
+      }),
+    );
     prisma.guest.create.mockImplementation(
       async (args: { data: { phone?: string } }) => {
         lastGuestPhone = args.data.phone ?? null;
@@ -346,91 +388,52 @@ describe('Coupon QR full flow (e2e)', () => {
     await app.close();
   });
 
-  it('claims a guest coupon with 5 percent snapshot and 24 hour expiry', async () => {
-    const claimStartedAt = Date.now();
-
+  it('rejects independent guest coupon claim after Booking QR scope change', async () => {
     const response = await request(app.getHttpServer())
       .post('/coupons/coupon-1/guest-claims')
       .send({ displayName: 'Guest QA', phone: '+84900000001' })
-      .expect(201);
+      .expect(410);
 
-    expect(response.body.issue).toEqual(
-      expect.objectContaining({
-        id: expect.any(String),
-        status: 'ISSUED',
-        userType: 'GUEST',
-        discountPercent: 5,
-        qrPayload: expect.stringContaining('scanToken='),
-        qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
-      }),
+    expect(response.body.message).toContain(
+      'Independent coupon claim is not part of MVP v3.2',
     );
-    expect(response.body.issue.discountRuleSnapshot).toEqual(
-      expect.objectContaining({
-        discountPercent: 5,
-        userType: 'GUEST',
-      }),
-    );
-    expectExpiresWithin(response.body.issue.expiresAt, DAY_MS, claimStartedAt);
   });
 
-  it('claims a VIP member coupon with 10 percent snapshot and 7 day expiry', async () => {
-    const claimStartedAt = Date.now();
-
+  it('rejects independent member coupon claim after Booking QR scope change', async () => {
     const response = await request(app.getHttpServer())
       .post('/coupons/coupon-1/member-claims')
       .set('x-test-role', 'USER')
       .set('x-test-user-id', 'vip-1')
       .set('x-test-tier', 'VIP')
-      .expect(201);
+      .expect(410);
 
-    expect(response.body).toEqual(
-      expect.objectContaining({
-        id: expect.any(String),
-        status: 'ISSUED',
-        userType: 'VIP',
-        discountPercent: 10,
-        qrPayload: expect.stringContaining('scanToken='),
-        qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
-      }),
+    expect(response.body.message).toContain(
+      'Independent coupon claim is not part of MVP v3.2',
     );
-    expect(response.body.discountRuleSnapshot).toEqual(
-      expect.objectContaining({
-        discountPercent: 10,
-        userType: 'VIP',
-      }),
-    );
-    expectExpiresWithin(response.body.expiresAt, 7 * DAY_MS, claimStartedAt);
   });
 
-  it('claims to wallet, scans signed QR, confirms once, and blocks reuse', async () => {
-    const claimStartedAt = Date.now();
+  it('issues Booking QR from booking, scans signed QR, confirms once, and blocks reuse', async () => {
+    const scheduledAt = new Date(Date.now() + 2 * DAY_MS).toISOString();
 
-    const claimResponse = await request(app.getHttpServer())
-      .post('/coupons/coupon-1/member-claims')
+    const bookingResponse = await request(app.getHttpServer())
+      .post('/member/bookings')
       .set('x-test-role', 'USER')
       .set('x-test-user-id', 'member-1')
+      .send({
+        storeSlug: storeRecord.slug,
+        couponId: couponRecord.id,
+        displayName: 'Member QA',
+        phone: '+84900000001',
+        scheduledAt,
+        partySize: 2,
+      })
       .expect(201);
 
-    expect(claimResponse.body).toEqual(
+    expect(bookingResponse.body.couponIssue).toEqual(
       expect.objectContaining({
         id: expect.any(String),
         status: 'ISSUED',
-        userType: 'MEMBER',
-        discountPercent: 8,
-        qrPayload: expect.stringContaining('scanToken='),
-        qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
       }),
-    );
-    expect(claimResponse.body.discountRuleSnapshot).toEqual(
-      expect.objectContaining({
-        discountPercent: 8,
-        userType: 'MEMBER',
-      }),
-    );
-    expectExpiresWithin(
-      claimResponse.body.expiresAt,
-      7 * DAY_MS,
-      claimStartedAt,
     );
 
     const walletResponse = await request(app.getHttpServer())
@@ -441,36 +444,51 @@ describe('Coupon QR full flow (e2e)', () => {
 
     expect(walletResponse.body).toEqual([
       expect.objectContaining({
-        id: claimResponse.body.id,
+        id: bookingResponse.body.couponIssue.id,
         status: 'ISSUED',
-        qrPayload: claimResponse.body.qrPayload,
+        userType: 'MEMBER',
+        discountPercent: 8,
+        qrPayload: expect.stringContaining('scanToken='),
         qrImageDataUrl: expect.stringMatching(/^data:image\/png;base64,/),
       }),
     ]);
+    expect(walletResponse.body[0].discountRuleSnapshot).toEqual(
+      expect.objectContaining({
+        discountPercent: 8,
+        userType: 'MEMBER',
+      }),
+    );
+    expectExpiresWithin(
+      walletResponse.body[0].expiresAt,
+      7 * DAY_MS,
+      new Date(scheduledAt).getTime(),
+    );
 
     const scanResponse = await request(app.getHttpServer())
       .post('/partner/coupon-issues/scan')
       .set('x-test-role', 'PARTNER')
       .set('x-test-user-id', 'partner-1')
-      .send({ payload: claimResponse.body.qrPayload })
+      .send({ payload: walletResponse.body[0].qrPayload })
       .expect(201);
 
     expect(scanResponse.body).toEqual(
       expect.objectContaining({
-        id: claimResponse.body.id,
+        id: bookingResponse.body.couponIssue.id,
         status: 'ISSUED',
       }),
     );
 
     const confirmResponse = await request(app.getHttpServer())
-      .post(`/partner/coupon-issues/${claimResponse.body.id}/confirm-check-in`)
+      .post(
+        `/partner/coupon-issues/${bookingResponse.body.couponIssue.id}/confirm-check-in`,
+      )
       .set('x-test-role', 'PARTNER')
       .set('x-test-user-id', 'partner-1')
       .expect(201);
 
     expect(confirmResponse.body).toEqual(
       expect.objectContaining({
-        id: claimResponse.body.id,
+        id: bookingResponse.body.couponIssue.id,
         status: 'USED',
       }),
     );
@@ -483,14 +501,16 @@ describe('Coupon QR full flow (e2e)', () => {
 
     expect(usedWalletResponse.body).toEqual([
       expect.objectContaining({
-        id: claimResponse.body.id,
+        id: bookingResponse.body.couponIssue.id,
         status: 'USED',
         qrImageDataUrl: null,
       }),
     ]);
 
     const duplicateResponse = await request(app.getHttpServer())
-      .post(`/partner/coupon-issues/${claimResponse.body.id}/confirm-check-in`)
+      .post(
+        `/partner/coupon-issues/${bookingResponse.body.couponIssue.id}/confirm-check-in`,
+      )
       .set('x-test-role', 'PARTNER')
       .set('x-test-user-id', 'partner-1')
       .expect(422);
@@ -502,13 +522,23 @@ describe('Coupon QR full flow (e2e)', () => {
   });
 
   it('expires stale issued coupon issues and hides the wallet QR for EXPIRED', async () => {
-    const claimResponse = await request(app.getHttpServer())
-      .post('/coupons/coupon-1/member-claims')
+    const scheduledAt = new Date(Date.now() + 2 * DAY_MS).toISOString();
+
+    const bookingResponse = await request(app.getHttpServer())
+      .post('/member/bookings')
       .set('x-test-role', 'USER')
       .set('x-test-user-id', 'member-expire-1')
+      .send({
+        storeSlug: storeRecord.slug,
+        couponId: couponRecord.id,
+        displayName: 'Member QA',
+        phone: '+84900000001',
+        scheduledAt,
+        partySize: 2,
+      })
       .expect(201);
 
-    expect(claimResponse.body.status).toBe('ISSUED');
+    expect(bookingResponse.body.couponIssue.status).toBe('ISSUED');
 
     issue = issue
       ? { ...issue, expiresAt: new Date(Date.now() - 60_000) }
@@ -528,7 +558,7 @@ describe('Coupon QR full flow (e2e)', () => {
 
     expect(walletResponse.body).toEqual([
       expect.objectContaining({
-        id: claimResponse.body.id,
+        id: bookingResponse.body.couponIssue.id,
         status: 'EXPIRED',
         qrImageDataUrl: null,
       }),

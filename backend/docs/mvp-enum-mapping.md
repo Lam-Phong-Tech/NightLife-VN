@@ -99,10 +99,12 @@ Coupon inventory uses `Coupon` as the campaign/rule and `CouponIssue` as the iss
 
 For MVP scan evidence, set `CouponIssue.scannedById`, `CouponIssue.usedAt`, and `CouponIssue.status = USED`. Successful redemption also writes `AuditLog.action = COUPON_ISSUE_USED` and queues `NotificationLog.templateKey = coupon.issue.used.v1`.
 
-Guest coupon issues expire at `min(now + 24h, Coupon.endsAt)` when `endsAt`
-exists and snapshot a 5% discount. Member coupon issues expire at
-`min(now + 7 days, Coupon.endsAt)` and snapshot an 8% member discount or 10%
-VIP discount in `CouponIssue.metadata`.
+Booking QR coupon issues expire from the booking time: guest issues expire at
+`min(Booking.scheduledAt + 24h, Coupon.endsAt)` when `endsAt` exists and
+snapshot a 5% discount. Member coupon issues expire at
+`min(Booking.scheduledAt + 7 days, Coupon.endsAt)` and snapshot an 8% member
+discount or 10% VIP discount in `CouponIssue.metadata`. Legacy independent
+coupon claim endpoints return `410 Gone` for MVP v3.2.
 
 Each issued coupon stores the QR payload, campaign/store snapshot, user type,
 and immutable discount percent snapshot in `CouponIssue.metadata`.
@@ -112,10 +114,17 @@ expires stale issued coupon issues globally. Check-in uses a conditional
 `status = ISSUED` write so each coupon issue is one-time only.
 Partner scan/check-in responses return only masked customer summary fields
 (`customer.type`, `customer.label`) and never raw member/guest contact details.
+Admin coupon issue filters use the DB state `REVOKED` for operational cancels;
+`CANCELLED` is reserved for booking/request enums and is not a CouponIssue
+status option.
 
 `Coupon.usageLimit` is the maximum number of successful redemptions. It is
 compared with `Coupon.usedCount`, and `usedCount` increments only after a
 coupon issue is confirmed `USED`; it is not the number of claimed/issued codes.
+Booking QR creation records `coupon.analytics.claimed.v1`, masked
+`coupon.fraud.claim_signal.v1` fingerprints for IP/device/session/user-agent,
+and QR tokens support `COUPON_QR_PREVIOUS_SECRETS` during secret rotation while
+production requires `COUPON_QR_SECRET`.
 
 ## Audit And Session Security
 

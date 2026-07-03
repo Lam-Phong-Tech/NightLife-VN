@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  GoneException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -36,6 +37,7 @@ import {
 } from '../notifications/admin-notification.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { SocketGateway } from '../notifications/socket.gateway';
+import { PasswordService } from '../common/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AdminRankingQueryDto,
@@ -72,6 +74,7 @@ import {
 } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
+  AdminPartnerRequestQueryDto,
   CreatePartnerRequestDto,
   PartnerRequestCastDto,
   ReviewPartnerRequestDto,
@@ -85,6 +88,9 @@ import { ReviewBillDto } from './dto/review-bill.dto';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
 const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
+const BILL_LOYALTY_RULE_VERSION = 'v2.2';
+const BILL_LOYALTY_VND_PER_POINT = 100_000;
+const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
 const BOOKING_DATE_WINDOW_DAYS = 14;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -239,15 +245,52 @@ type CouponClaimContext = {
   ip?: string | null;
   userAgent?: string | null;
   deviceId?: string | null;
+  sessionId?: string | null;
 };
 
-type PartnerRequestNotificationLog = {
+type NightlifePrismaClient = PrismaService | Prisma.TransactionClient;
+
+type PartnerRequestCmsRecord = {
   id: string;
-  status: string;
-  payload: Prisma.JsonValue | null;
-  error: string | null;
-  sentAt: Date | null;
+  status: PartnerRequestReviewStatus;
+  businessName: string;
+  businessType: string | null;
+  area: string | null;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string | null;
+  note: string | null;
+  storeDescription: string | null;
+  storeAddress: string | null;
+  storeCity: string | null;
+  storeDistrict: string | null;
+  openingHours: string | null;
+  menuSummary: string | null;
+  mediaUrls: string[];
+  castProfiles: Prisma.JsonValue | null;
+  draftCastIds: string[];
+  draftMediaIds: string[];
+  draftContentIds: string[];
+  reviewReason: string | null;
+  publicState: string;
+  submittedAt: Date;
+  reviewedAt: Date | null;
+  reviewedById: string | null;
+  partnerUserId: string | null;
+  partnerAccountId: string | null;
   createdAt: Date;
+  store: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+  };
+  notificationLog: {
+    id: string;
+    status: string;
+    error: string | null;
+    sentAt: Date | null;
+  } | null;
 };
 
 type PartnerRequestReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
@@ -259,12 +302,15 @@ const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   MEMBER: 8,
   VIP: 10,
 } as const;
+const COUPON_FRAUD_SIGNAL_TEMPLATE = 'coupon.fraud.claim_signal.v1';
 const COUPON_ISSUE_STATUS_LABELS: Record<string, string> = {
   ISSUED: 'Đang giữ chỗ',
   USED: 'Đã sử dụng',
   EXPIRED: 'Hết hạn',
   REVOKED: 'Đã hủy',
 };
+const INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE =
+  'Independent coupon claim is not part of MVP v3.2. Create a booking to receive the Booking QR.';
 
 type CouponUserType = keyof typeof COUPON_DISCOUNT_PERCENT_BY_USER_TYPE;
 
@@ -594,6 +640,8 @@ export class NightlifeDataService {
     private readonly socketGateway?: SocketGateway,
     @Optional()
     private readonly emailNotificationService?: EmailNotificationService,
+    @Optional()
+    private readonly passwordService?: PasswordService,
   ) {}
 
   async listPublicContents(query: PublicContentQueryDto = {}) {
@@ -1947,134 +1995,10 @@ export class NightlifeDataService {
     dto: ClaimGuestCouponDto,
     context: CouponClaimContext = {},
   ) {
-    const now = new Date();
-    const phone = this.cleanText(dto.phone);
-    this.assertCouponClaimRateLimit(
-      `coupon:claim:guest:${couponId}:${phone}`,
-      'Too many coupon claim attempts. Please try again shortly.',
-    );
-
-    const coupon = await this.prisma.coupon.findFirst({
-      where: {
-        id: couponId,
-        status: 'ACTIVE',
-        deletedAt: null,
-        store: { status: 'ACTIVE', deletedAt: null },
-      },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        storeId: true,
-        discountType: true,
-        discountValue: true,
-        maxDiscountVnd: true,
-        minSpendVnd: true,
-        endsAt: true,
-        usageLimit: true,
-        usedCount: true,
-        store: { select: { id: true, name: true, slug: true } },
-      },
-    });
-
-    if (!coupon || (coupon.endsAt && coupon.endsAt <= now)) {
-      throw new NotFoundException('Coupon not found');
-    }
-
-    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new UnprocessableEntityException(
-        'Coupon usage limit has been reached',
-      );
-    }
-
-    await this.assertNoDuplicateActiveGuestCouponIssue(coupon.id, phone, now);
-
-    const guest = await this.prisma.guest.create({
-      data: {
-        displayName: dto.displayName,
-        phone,
-        email: dto.email?.toLowerCase(),
-      },
-      select: { id: true },
-    });
-    const issueId = randomUUID();
-    const issueCode = `GUEST-${randomUUID()}`;
-    const userType: CouponUserType = 'GUEST';
-    const expiresAt = this.capExpiry(
-      new Date(now.getTime() + DAY_MS),
-      coupon.endsAt,
-    );
-    const qrPayload = this.buildCouponQrPayload(issueId);
-    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
-      coupon,
-      userType,
-    );
-
-    const issue = await this.prisma.couponIssue.create({
-      data: {
-        id: issueId,
-        couponId: coupon.id,
-        guestId: guest.id,
-        code: issueCode,
-        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-        expiresAt,
-        metadata: {
-          recipientType: 'GUEST',
-          userType,
-          validityHours: 24,
-          qrPayload,
-          qrPayloadType: 'SIGNED_DEEP_LINK',
-          statusLabel: this.couponIssueStatusLabel('ISSUED'),
-          discountPercent: discountRuleSnapshot.discountPercent,
-          discountRuleSnapshot,
-          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
-          claimContext: this.buildCouponClaimContextSnapshot(context),
-        },
-      },
-      select: {
-        id: true,
-        couponId: true,
-        code: true,
-        guestId: true,
-        userId: true,
-        status: true,
-        expiresAt: true,
-        createdAt: true,
-        metadata: true,
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            discountType: true,
-            discountValue: true,
-            maxDiscountVnd: true,
-            minSpendVnd: true,
-            store: { select: { id: true, name: true, slug: true } },
-          },
-        },
-      },
-    });
-
-    await this.recordCouponClaimEvent({
-      claimKey: `phone:${phone}`,
-      coupon,
-      issue,
-      context,
-      recipientType: 'GUEST',
-      guestId: guest.id,
-    });
-    await this.detectCouponClaimFraud({
-      claimKey: `phone:${phone}`,
-      coupon,
-      issue,
-      context,
-    });
-
-    return {
-      issue: await this.decorateCouponIssue(issue),
-      guest: { id: guest.id },
-    };
+    void couponId;
+    void dto;
+    void context;
+    throw new GoneException(INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE);
   }
 
   async claimMemberCoupon(
@@ -2082,127 +2006,10 @@ export class NightlifeDataService {
     user: AuthenticatedUser,
     context: CouponClaimContext = {},
   ) {
-    const now = new Date();
-    this.assertCouponClaimRateLimit(
-      `coupon:claim:member:${couponId}:${user.id}`,
-      'Too many coupon claim attempts. Please try again shortly.',
-    );
-
-    const coupon = await this.prisma.coupon.findFirst({
-      where: {
-        id: couponId,
-        status: 'ACTIVE',
-        deletedAt: null,
-        store: { status: 'ACTIVE', deletedAt: null },
-      },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        storeId: true,
-        discountType: true,
-        discountValue: true,
-        maxDiscountVnd: true,
-        minSpendVnd: true,
-        endsAt: true,
-        usageLimit: true,
-        usedCount: true,
-        store: { select: { id: true, name: true, slug: true } },
-      },
-    });
-
-    if (!coupon || (coupon.endsAt && coupon.endsAt <= now)) {
-      throw new NotFoundException('Coupon not found');
-    }
-
-    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-      throw new UnprocessableEntityException(
-        'Coupon usage limit has been reached',
-      );
-    }
-
-    await this.assertNoDuplicateActiveMemberCouponIssue(
-      coupon.id,
-      user.id,
-      now,
-    );
-
-    const issueId = randomUUID();
-    const issueCode = `MEMBER-${randomUUID()}`;
-    const userType = this.resolveCouponUserType(user);
-    const expiresAt = this.capExpiry(
-      new Date(now.getTime() + 7 * DAY_MS),
-      coupon.endsAt,
-    );
-    const qrPayload = this.buildCouponQrPayload(issueId);
-    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
-      coupon,
-      userType,
-      user.tier ?? 'FREE',
-    );
-
-    const issue = await this.prisma.couponIssue.create({
-      data: {
-        id: issueId,
-        couponId: coupon.id,
-        userId: user.id,
-        code: issueCode,
-        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-        expiresAt,
-        metadata: {
-          recipientType: 'MEMBER',
-          userType,
-          tier: user.tier ?? 'FREE',
-          validityDays: 7,
-          qrPayload,
-          qrPayloadType: 'SIGNED_DEEP_LINK',
-          statusLabel: this.couponIssueStatusLabel('ISSUED'),
-          discountPercent: discountRuleSnapshot.discountPercent,
-          discountRuleSnapshot,
-          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
-          claimContext: this.buildCouponClaimContextSnapshot(context),
-        },
-      },
-      select: {
-        id: true,
-        code: true,
-        guestId: true,
-        userId: true,
-        status: true,
-        expiresAt: true,
-        createdAt: true,
-        metadata: true,
-        coupon: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            discountType: true,
-            discountValue: true,
-            maxDiscountVnd: true,
-            minSpendVnd: true,
-            store: { select: { id: true, name: true, slug: true } },
-          },
-        },
-      },
-    });
-
-    await this.recordCouponClaimEvent({
-      claimKey: `user:${user.id}`,
-      coupon,
-      issue,
-      context,
-      recipientType: userType,
-      userId: user.id,
-    });
-    await this.detectCouponClaimFraud({
-      claimKey: `user:${user.id}`,
-      coupon,
-      issue,
-      context,
-    });
-
-    return this.decorateCouponIssue(issue);
+    void couponId;
+    void user;
+    void context;
+    throw new GoneException(INDEPENDENT_COUPON_CLAIM_REMOVED_MESSAGE);
   }
 
   async listPartnerStores(user: AuthenticatedUser) {
@@ -2301,7 +2108,10 @@ export class NightlifeDataService {
     return this.listPartnerBookings(user);
   }
 
-  async createGuestBooking(dto: CreateBookingDto) {
+  async createGuestBooking(
+    dto: CreateBookingDto,
+    context: CouponClaimContext = {},
+  ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
     this.resolveBookingScheduledAt(dto.scheduledAt);
@@ -2327,6 +2137,7 @@ export class NightlifeDataService {
       note: contact.note,
       guestId: guest.id,
       phone: contact.phone,
+      context,
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
@@ -2335,7 +2146,11 @@ export class NightlifeDataService {
     return booking;
   }
 
-  async createMemberBooking(user: AuthenticatedUser, dto: CreateBookingDto) {
+  async createMemberBooking(
+    user: AuthenticatedUser,
+    dto: CreateBookingDto,
+    context: CouponClaimContext = {},
+  ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
     this.resolveBookingScheduledAt(dto.scheduledAt);
@@ -2360,9 +2175,14 @@ export class NightlifeDataService {
       dto,
       target,
       note: contact.note,
+      user,
       userId: user.id,
       guestId: guest.id,
       phone: contact.phone,
+      context: {
+        ...context,
+        sessionId: context.sessionId ?? user.jti ?? null,
+      },
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
@@ -3861,164 +3681,183 @@ export class NightlifeDataService {
     const category = this.normalizePartnerRequestCategory(
       dto.storeCategory ?? dto.businessType,
     );
+    const contactName = this.cleanRequiredText(dto.contactName, 'contactName');
+    const contactPhone = this.cleanRequiredText(
+      dto.contactPhone,
+      'contactPhone',
+    );
+    const contactEmail = this.cleanEmail(dto.contactEmail) || null;
+    const businessType = this.cleanText(dto.businessType) || null;
+    const note = this.cleanText(dto.note) || null;
+    const storeAddress = this.cleanNullableText(dto.storeAddress);
+    const storeCity = this.cleanNullableText(dto.storeCity);
+    const storeDistrict = this.cleanNullableText(dto.storeDistrict);
 
-    const store = await this.prisma.store.create({
-      data: {
-        name: storeName,
-        slug: this.buildPartnerRequestSlug(storeName, requestId),
-        category,
-        description: storeDescription,
-        address: this.cleanNullableText(dto.storeAddress),
-        city:
-          this.cleanNullableText(dto.storeCity) ??
-          this.partnerCityFromArea(area) ??
-          'Ho Chi Minh City',
-        district:
-          this.cleanNullableText(dto.storeDistrict) ??
-          this.partnerDistrictFromArea(area),
-        phone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
-        openingHours: openingHours
-          ? this.toPrismaJson({ summary: openingHours })
-          : undefined,
-        status: 'PENDING_REVIEW',
-      },
-      select: { id: true, name: true, slug: true, status: true },
-    });
-
-    const draftCastIds: string[] = [];
-    const draftMediaIds: string[] = [];
-    const draftContentIds: string[] = [];
-
-    for (const [index, castProfile] of castProfiles.entries()) {
-      const cast = await this.prisma.cast.create({
+    const request = await this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.create({
         data: {
-          storeId: store.id,
-          stageName: castProfile.stageName,
-          slug: this.buildPartnerRequestSlug(
-            castProfile.stageName,
-            requestId,
-            `cast-${index + 1}`,
-          ),
-          bio: castProfile.bio,
-          publicBio: castProfile.bio,
-          tags: castProfile.tags,
-          languages: castProfile.languages,
-          hourlyRateVnd: castProfile.hourlyRateVnd,
-          isPublic: false,
-          status: 'DRAFT',
+          name: storeName,
+          slug: this.buildPartnerRequestSlug(storeName, requestId),
+          category,
+          description: storeDescription,
+          address: storeAddress,
+          city:
+            storeCity ?? this.partnerCityFromArea(area) ?? 'Ho Chi Minh City',
+          district: storeDistrict ?? this.partnerDistrictFromArea(area),
+          phone: contactPhone,
+          openingHours: openingHours
+            ? this.toPrismaJson({ summary: openingHours })
+            : undefined,
+          status: 'PENDING_REVIEW',
         },
-        select: { id: true },
+        select: { id: true, name: true, slug: true, status: true },
       });
-      draftCastIds.push(cast.id);
 
-      for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
-        const media = await this.createPartnerRequestMedia({
-          requestId,
-          url,
-          index: mediaIndex,
-          castId: cast.id,
-          purpose: 'PARTNER_REQUEST_CAST',
+      const draftCastIds: string[] = [];
+      const draftMediaIds: string[] = [];
+      const draftContentIds: string[] = [];
+
+      for (const [index, castProfile] of castProfiles.entries()) {
+        const cast = await tx.cast.create({
+          data: {
+            storeId: store.id,
+            stageName: castProfile.stageName,
+            slug: this.buildPartnerRequestSlug(
+              castProfile.stageName,
+              requestId,
+              `cast-${index + 1}`,
+            ),
+            bio: castProfile.bio,
+            publicBio: castProfile.bio,
+            tags: castProfile.tags,
+            languages: castProfile.languages,
+            hourlyRateVnd: castProfile.hourlyRateVnd,
+            isPublic: false,
+            status: 'DRAFT',
+          },
+          select: { id: true },
         });
+        draftCastIds.push(cast.id);
+
+        for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+          const media = await this.createPartnerRequestMedia(
+            {
+              requestId,
+              url,
+              index: mediaIndex,
+              castId: cast.id,
+              purpose: 'PARTNER_REQUEST_CAST',
+            },
+            tx,
+          );
+          draftMediaIds.push(media.id);
+        }
+      }
+
+      for (const [index, url] of mediaUrls.entries()) {
+        const media = await this.createPartnerRequestMedia(
+          {
+            requestId,
+            url,
+            index,
+            storeId: store.id,
+            purpose: 'PARTNER_REQUEST_STORE',
+          },
+          tx,
+        );
         draftMediaIds.push(media.id);
       }
-    }
 
-    for (const [index, url] of mediaUrls.entries()) {
-      const media = await this.createPartnerRequestMedia({
-        requestId,
-        url,
-        index,
-        storeId: store.id,
-        purpose: 'PARTNER_REQUEST_STORE',
-      });
-      draftMediaIds.push(media.id);
-    }
+      if (menuSummary) {
+        const content = await tx.content.create({
+          data: {
+            storeId: store.id,
+            title: `${storeName} menu draft`,
+            slug: this.buildPartnerRequestSlug(
+              `${storeName} menu`,
+              requestId,
+              'menu',
+            ),
+            type: 'STORE_POST',
+            status: 'DRAFT',
+            excerpt: `Draft menu from ${requestId}`,
+            body: menuSummary,
+            metadata: this.toPrismaJson({ partnerRequestId: requestId }),
+          },
+          select: { id: true },
+        });
+        draftContentIds.push(content.id);
+      }
 
-    if (menuSummary) {
-      const content = await this.prisma.content.create({
+      return tx.partnerRequest.create({
         data: {
+          id: requestId,
           storeId: store.id,
-          title: `${storeName} menu draft`,
-          slug: this.buildPartnerRequestSlug(
-            `${storeName} menu`,
-            requestId,
-            'menu',
-          ),
-          type: 'STORE_POST',
-          status: 'DRAFT',
-          excerpt: `Draft menu from ${requestId}`,
-          body: menuSummary,
-          metadata: this.toPrismaJson({ partnerRequestId: requestId }),
+          status: 'PENDING_REVIEW',
+          businessName,
+          businessType,
+          area,
+          contactName,
+          contactPhone,
+          contactEmail,
+          note,
+          storeDescription,
+          storeAddress,
+          storeCity,
+          storeDistrict,
+          openingHours,
+          menuSummary,
+          mediaUrls,
+          castProfiles: castProfiles.length
+            ? (castProfiles as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          draftCastIds,
+          draftMediaIds,
+          draftContentIds,
+          publicState: 'HIDDEN',
+          submittedAt,
         },
-        select: { id: true },
+        select: this.partnerRequestSelect(),
       });
-      draftContentIds.push(content.id);
-    }
+    });
 
-    const request = {
-      id: requestId,
-      draftStoreId: store.id,
-      draftStoreName: store.name,
-      draftStoreSlug: store.slug,
-      draftCastIds,
-      draftMediaIds,
-      draftContentIds,
-      businessName,
-      businessType: this.cleanText(dto.businessType) || null,
-      area,
-      contactName: this.cleanRequiredText(dto.contactName, 'contactName'),
-      contactPhone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
-      contactEmail: this.cleanText(dto.contactEmail) || null,
-      note: this.cleanText(dto.note) || null,
-      storeDescription,
-      storeAddress: this.cleanNullableText(dto.storeAddress),
-      storeCity: this.cleanNullableText(dto.storeCity),
-      storeDistrict: this.cleanNullableText(dto.storeDistrict),
-      openingHours,
-      menuSummary,
-      mediaUrls,
-      castProfiles,
-      submittedAt,
-    };
-
-    await this.adminNotificationService?.notifyPartnerRequest(request);
+    await this.notifyPartnerRequestDelivery(
+      request as unknown as PartnerRequestCmsRecord,
+    );
 
     return {
       id: request.id,
       status: 'PENDING_REVIEW',
       submittedAt,
       draft: {
-        storeId: store.id,
-        storeName: store.name,
-        storeSlug: store.slug,
-        castCount: draftCastIds.length,
-        mediaCount: draftMediaIds.length,
-        contentCount: draftContentIds.length,
+        storeId: request.store.id,
+        storeName: request.store.name,
+        storeSlug: request.store.slug,
+        castCount: request.draftCastIds.length,
+        mediaCount: request.draftMediaIds.length,
+        contentCount: request.draftContentIds.length,
       },
       message: 'Partner request submitted for admin review',
     };
   }
 
-  async listAdminPartnerRequests() {
-    const logs = await this.prisma.notificationLog.findMany({
-      where: {
-        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
-        channel: 'TELEGRAM',
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: {
-        id: true,
-        status: true,
-        payload: true,
-        error: true,
-        sentAt: true,
-        createdAt: true,
-      },
+  async listAdminPartnerRequests(query: AdminPartnerRequestQueryDto = {}) {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(Math.max(1, query.limit ?? 50), 100);
+    const where = this.buildAdminPartnerRequestWhere(query);
+
+    const requests = await this.prisma.partnerRequest.findMany({
+      where,
+      orderBy: { submittedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: this.partnerRequestSelect(),
     });
 
-    return logs.map((log) =>
-      this.mapPartnerRequestNotification(log as PartnerRequestNotificationLog),
+    return requests.map((request) =>
+      this.mapPartnerRequestRecord(
+        request as unknown as PartnerRequestCmsRecord,
+      ),
     );
   }
 
@@ -4028,134 +3867,167 @@ export class NightlifeDataService {
     dto: ReviewPartnerRequestDto,
   ) {
     const reason = this.cleanRequiredText(dto.reason, 'reason');
-    const log = await this.findPartnerRequestNotificationLog(requestId);
-
-    if (!log) {
-      throw new NotFoundException('Partner request not found');
-    }
-
-    const payload = this.partnerRequestPayload(log);
-    const currentStatus =
-      (this.payloadString(
-        payload.status,
-      ) as PartnerRequestReviewStatus | null) ?? 'PENDING_REVIEW';
-
-    if (currentStatus !== 'PENDING_REVIEW') {
-      throw new UnprocessableEntityException(
-        'Partner request has already been reviewed',
-      );
-    }
-
+    const lookup = this.cleanRequiredText(requestId, 'requestId');
     const now = new Date();
-    const draftStoreId = this.payloadString(payload.draftStoreId);
-    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
-    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
-    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
-
-    if (dto.approve) {
-      if (draftStoreId) {
-        await this.prisma.store.update({
-          where: { id: draftStoreId },
-          data: { status: 'ACTIVE' },
-          select: { id: true },
-        });
-      }
-      if (draftCastIds.length) {
-        await this.prisma.cast.updateMany({
-          where: { id: { in: draftCastIds } },
-          data: { status: 'ACTIVE', isPublic: true },
-        });
-      }
-      if (draftMediaIds.length) {
-        await this.prisma.media.updateMany({
-          where: { id: { in: draftMediaIds } },
-          data: { status: 'READY', access: 'PUBLIC' },
-        });
-      }
-      if (draftContentIds.length) {
-        await this.prisma.content.updateMany({
-          where: { id: { in: draftContentIds } },
-          data: { status: 'PUBLISHED', publishedAt: now },
-        });
-      }
-    } else {
-      if (draftStoreId) {
-        await this.prisma.store.update({
-          where: { id: draftStoreId },
-          data: { status: 'DRAFT' },
-          select: { id: true },
-        });
-      }
-      if (draftCastIds.length) {
-        await this.prisma.cast.updateMany({
-          where: { id: { in: draftCastIds } },
-          data: { status: 'DRAFT', isPublic: false },
-        });
-      }
-      if (draftMediaIds.length) {
-        await this.prisma.media.updateMany({
-          where: { id: { in: draftMediaIds } },
-          data: { status: 'HIDDEN', access: 'PROTECTED' },
-        });
-      }
-      if (draftContentIds.length) {
-        await this.prisma.content.updateMany({
-          where: { id: { in: draftContentIds } },
-          data: { status: 'DRAFT', publishedAt: null },
-        });
-      }
-    }
-
     const nextStatus: PartnerRequestReviewStatus = dto.approve
       ? 'APPROVED'
       : 'REJECTED';
-    const nextPayload = {
-      ...payload,
-      status: nextStatus,
-      reviewReason: reason,
-      reviewedAt: now.toISOString(),
-      reviewedById: adminId,
-      publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
-    } as Prisma.InputJsonObject;
 
-    const updatedLog = await this.prisma.notificationLog.update({
-      where: { id: log.id },
-      data: {
-        payload: nextPayload,
-      },
-      select: {
-        id: true,
-        status: true,
-        payload: true,
-        error: true,
-        sentAt: true,
-        createdAt: true,
-      },
+    const reviewed = await this.prisma.$transaction(async (tx) => {
+      const request = await this.findPartnerRequest(lookup, tx);
+
+      if (!request) {
+        throw new NotFoundException('Partner request not found');
+      }
+
+      const statusUpdate = await tx.partnerRequest.updateMany({
+        where: { id: request.id, status: 'PENDING_REVIEW' },
+        data: {
+          status: nextStatus,
+          reviewReason: reason,
+          reviewedAt: now,
+          reviewedById: adminId,
+          publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+        },
+      });
+
+      if (statusUpdate.count !== 1) {
+        throw new UnprocessableEntityException(
+          'Partner request has already been reviewed',
+        );
+      }
+
+      const onboarding = dto.approve
+        ? await this.ensurePartnerOnboarding(tx, request)
+        : null;
+
+      if (dto.approve) {
+        await tx.store.update({
+          where: { id: request.store.id },
+          data: {
+            status: 'ACTIVE',
+            ownerId: onboarding?.userId,
+            partnerAccountId: onboarding?.partnerAccountId,
+          },
+          select: { id: true },
+        });
+        if (request.draftCastIds.length) {
+          await tx.cast.updateMany({
+            where: { id: { in: request.draftCastIds } },
+            data: { status: 'ACTIVE', isPublic: true },
+          });
+        }
+        if (request.draftMediaIds.length) {
+          await tx.media.updateMany({
+            where: { id: { in: request.draftMediaIds } },
+            data: { status: 'READY', access: 'PUBLIC' },
+          });
+        }
+        if (request.draftContentIds.length) {
+          await tx.content.updateMany({
+            where: { id: { in: request.draftContentIds } },
+            data: { status: 'PUBLISHED', publishedAt: now },
+          });
+        }
+      } else {
+        await tx.store.update({
+          where: { id: request.store.id },
+          data: { status: 'DRAFT' },
+          select: { id: true },
+        });
+        if (request.draftCastIds.length) {
+          await tx.cast.updateMany({
+            where: { id: { in: request.draftCastIds } },
+            data: { status: 'DRAFT', isPublic: false },
+          });
+        }
+        if (request.draftMediaIds.length) {
+          await tx.media.updateMany({
+            where: { id: { in: request.draftMediaIds } },
+            data: { status: 'HIDDEN', access: 'PROTECTED' },
+          });
+        }
+        if (request.draftContentIds.length) {
+          await tx.content.updateMany({
+            where: { id: { in: request.draftContentIds } },
+            data: { status: 'DRAFT', publishedAt: null },
+          });
+        }
+      }
+
+      const afterJson = this.partnerRequestAuditJson({
+        ...request,
+        status: nextStatus,
+        reviewReason: reason,
+        reviewedAt: now,
+        reviewedById: adminId,
+        partnerUserId: onboarding?.userId ?? request.partnerUserId,
+        partnerAccountId:
+          onboarding?.partnerAccountId ?? request.partnerAccountId,
+        publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: dto.approve
+            ? 'PARTNER_REQUEST_APPROVED'
+            : 'PARTNER_REQUEST_REJECTED',
+          targetType: 'PARTNER_REQUEST',
+          targetId: request.id,
+          metadata: this.toPrismaJson({
+            reason,
+            approve: dto.approve,
+            draftStoreId: request.store.id,
+            draftCastIds: request.draftCastIds,
+            draftMediaIds: request.draftMediaIds,
+            draftContentIds: request.draftContentIds,
+            partnerUserId: onboarding?.userId ?? null,
+            partnerAccountId: onboarding?.partnerAccountId ?? null,
+            temporaryPasswordIssued: Boolean(onboarding?.temporaryPassword),
+          }),
+          beforeJson: this.partnerRequestAuditJson(request),
+          afterJson,
+        },
+      });
+
+      if (request.notificationLog) {
+        await tx.notificationLog.update({
+          where: { id: request.notificationLog.id },
+          data: {
+            payload: this.toPrismaJson({
+              ...this.partnerRequestNotificationPayload(request),
+              status: nextStatus,
+              reviewReason: reason,
+              reviewedAt: now.toISOString(),
+              reviewedById: adminId,
+              partnerUserId: onboarding?.userId ?? null,
+              partnerAccountId: onboarding?.partnerAccountId ?? null,
+              publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+            }),
+          },
+        });
+      }
+
+      if (onboarding) {
+        await tx.partnerRequest.update({
+          where: { id: request.id },
+          data: {
+            partnerUserId: onboarding.userId,
+            partnerAccountId: onboarding.partnerAccountId,
+          },
+          select: { id: true },
+        });
+      }
+
+      return tx.partnerRequest.findUniqueOrThrow({
+        where: { id: request.id },
+        select: this.partnerRequestSelect(),
+      });
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: adminId,
-        action: dto.approve
-          ? 'PARTNER_REQUEST_APPROVED'
-          : 'PARTNER_REQUEST_REJECTED',
-        targetType: 'PARTNER_REQUEST',
-        targetId: this.payloadString(payload.requestId) ?? requestId,
-        metadata: this.toPrismaJson({
-          reason,
-          approve: dto.approve,
-          draftStoreId,
-          draftCastIds,
-          draftMediaIds,
-          draftContentIds,
-        }),
-        beforeJson: payload as Prisma.InputJsonObject,
-        afterJson: nextPayload,
-      },
-    });
-
-    return this.mapPartnerRequestNotification(
-      updatedLog as PartnerRequestNotificationLog,
+    return this.mapPartnerRequestRecord(
+      reviewed as unknown as PartnerRequestCmsRecord,
     );
   }
 
@@ -4268,6 +4140,7 @@ export class NightlifeDataService {
         verifiedById: true,
         rejectedById: true,
         rejectReason: true,
+        subtotalVnd: true,
         totalVnd: true,
         commissionAmountVnd: true,
         pointsEarned: true,
@@ -4275,7 +4148,7 @@ export class NightlifeDataService {
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
-        user: { select: { id: true, displayName: true, tier: true } },
+        user: { select: { id: true, displayName: true, role: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
       },
     });
@@ -4289,49 +4162,67 @@ export class NightlifeDataService {
     }
 
     const now = new Date();
+    const loyaltyAward = dto.approve
+      ? this.buildBillLoyaltyAward(bill, now)
+      : null;
 
-    const result = await this.prisma.bill.update({
-      where: { id: billId },
-      data: dto.approve
-        ? {
-            status: 'VERIFIED',
-            verifiedAt: now,
-            reviewedById: adminId,
-            verifiedById: adminId,
-            reviewedAt: now,
-            rejectedAt: null,
-            rejectedById: null,
-            rejectReason: null,
-          }
-        : {
-            status: 'REJECTED',
-            rejectedAt: now,
-            reviewedById: adminId,
-            rejectedById: adminId,
-            reviewedAt: now,
-            verifiedById: null,
-            verifiedAt: null,
-            rejectReason: dto.rejectReason ?? 'Rejected by admin review',
+    const result = await this.prisma.$transaction(async (tx) => {
+      const reviewedBill = await tx.bill.update({
+        where: { id: billId },
+        data: dto.approve
+          ? {
+              status: 'VERIFIED',
+              verifiedAt: now,
+              reviewedById: adminId,
+              verifiedById: adminId,
+              reviewedAt: now,
+              rejectedAt: null,
+              rejectedById: null,
+              rejectReason: null,
+              pointsEarned: loyaltyAward?.points ?? 0,
+              pointRuleSnapshot: loyaltyAward
+                ? this.toPrismaJson(loyaltyAward.ruleSnapshot)
+                : Prisma.JsonNull,
+            }
+          : {
+              status: 'REJECTED',
+              rejectedAt: now,
+              reviewedById: adminId,
+              rejectedById: adminId,
+              reviewedAt: now,
+              verifiedById: null,
+              verifiedAt: null,
+              rejectReason: dto.rejectReason ?? 'Rejected by admin review',
+            },
+        select: this.billNotificationSelect(),
+      });
+
+      if (loyaltyAward) {
+        await this.recordBillLoyaltyLedger(tx, loyaltyAward);
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: dto.approve ? 'bill.review.approve' : 'bill.review.reject',
+          targetType: 'Bill',
+          targetId: billId,
+          beforeJson: this.buildBillReviewAuditSnapshot(bill),
+          afterJson: this.buildBillReviewAuditSnapshot(reviewedBill),
+          metadata: {
+            approve: dto.approve,
+            rejectReason: dto.rejectReason ?? null,
+            previousStatus: bill.status,
+            nextStatus: reviewedBill.status,
+            reviewedAt: now.toISOString(),
+            loyaltyPoints: loyaltyAward?.points ?? 0,
+            loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
+            loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
           },
-      select: this.billNotificationSelect(),
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: adminId,
-        action: dto.approve ? 'bill.review.approve' : 'bill.review.reject',
-        targetType: 'Bill',
-        targetId: billId,
-        beforeJson: this.buildBillReviewAuditSnapshot(bill),
-        afterJson: this.buildBillReviewAuditSnapshot(result),
-        metadata: {
-          approve: dto.approve,
-          rejectReason: dto.rejectReason ?? null,
-          previousStatus: bill.status,
-          nextStatus: result.status,
-          reviewedAt: now.toISOString(),
         },
-      },
+      });
+
+      return reviewedBill;
     });
 
     await this.adminNotificationService?.notifyBillReviewed(result, {
@@ -4888,13 +4779,159 @@ export class NightlifeDataService {
     return `BILL-${dateToken}-${randomToken}`;
   }
 
+  private async issueBookingCouponQr(input: {
+    couponId: string;
+    target: BookingTarget;
+    user?: AuthenticatedUser;
+    guestId: string;
+    phone?: string;
+    scheduledAt: Date;
+    context?: CouponClaimContext;
+  }) {
+    const now = new Date();
+    const coupon = await this.prisma.coupon.findFirst({
+      where: {
+        id: input.couponId,
+        storeId: input.target.store.id,
+        status: 'ACTIVE',
+        deletedAt: null,
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        storeId: true,
+        discountType: true,
+        discountValue: true,
+        maxDiscountVnd: true,
+        minSpendVnd: true,
+        endsAt: true,
+        usageLimit: true,
+        usedCount: true,
+        store: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+      throw new UnprocessableEntityException(
+        'Coupon usage limit has been reached',
+      );
+    }
+
+    const userType = input.user
+      ? this.resolveCouponUserType(input.user)
+      : 'GUEST';
+    const recipientType = input.user ? 'MEMBER' : 'GUEST';
+    const validityMs = userType === 'GUEST' ? DAY_MS : 7 * DAY_MS;
+    const expiresAt = this.capExpiry(
+      new Date(input.scheduledAt.getTime() + validityMs),
+      coupon.endsAt,
+    );
+    const issueId = randomUUID();
+    const issueCode = `${recipientType}-${randomUUID()}`;
+    const qrPayload = this.buildCouponQrPayload(issueId);
+    const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
+      coupon,
+      userType,
+      input.user?.tier ?? null,
+    );
+
+    const issue = await this.prisma.couponIssue.create({
+      data: {
+        id: issueId,
+        couponId: coupon.id,
+        userId: input.user?.id,
+        guestId: input.guestId,
+        code: issueCode,
+        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
+        expiresAt,
+        metadata: {
+          sourceFlow: 'BOOKING_QR',
+          recipientType,
+          userType,
+          tier: input.user?.tier ?? null,
+          ...(userType === 'GUEST'
+            ? { validityHours: 24 }
+            : { validityDays: 7 }),
+          expiresFrom: 'BOOKING_SCHEDULED_AT',
+          bookingScheduledAt: input.scheduledAt.toISOString(),
+          qrPayload,
+          qrPayloadType: 'SIGNED_DEEP_LINK',
+          statusLabel: this.couponIssueStatusLabel('ISSUED'),
+          discountPercent: discountRuleSnapshot.discountPercent,
+          discountRuleSnapshot,
+          campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
+          claimContext: this.buildCouponClaimContextSnapshot(
+            input.context ?? {},
+          ),
+        },
+      },
+      select: {
+        id: true,
+        code: true,
+        couponId: true,
+        status: true,
+        metadata: true,
+        coupon: { select: { storeId: true } },
+      },
+    });
+
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_ISSUE_BOOKING_QR_ISSUED',
+      issue,
+      actorId: input.user?.id,
+      metadata: {
+        sourceFlow: 'BOOKING_QR',
+        customerType: userType,
+        guestId: input.guestId,
+        scheduledAt: input.scheduledAt.toISOString(),
+      },
+      afterJson: {
+        id: issue.id,
+        code: issue.code,
+        couponId: issue.couponId,
+        status: issue.status,
+        sourceFlow: 'BOOKING_QR',
+      },
+    });
+
+    const claimKey = input.user
+      ? `user:${input.user.id}`
+      : `phone:${input.phone ?? input.guestId}`;
+    const context = input.context ?? {};
+    await this.recordCouponClaimEvent({
+      claimKey,
+      coupon,
+      issue,
+      context,
+      recipientType,
+      userId: input.user?.id,
+      guestId: input.guestId,
+    });
+    await this.detectCouponClaimFraud({
+      claimKey,
+      coupon,
+      issue,
+      context,
+    });
+
+    return issue;
+  }
+
   private async createBookingRecord(input: {
     dto: CreateBookingDto;
     target: BookingTarget;
+    user?: AuthenticatedUser;
     userId?: string;
     guestId: string;
     phone?: string;
     note?: string;
+    context?: CouponClaimContext;
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
 
@@ -4904,6 +4941,21 @@ export class NightlifeDataService {
       userId: input.userId,
       phone: input.phone,
     });
+    const bookingCouponIssueId =
+      couponLink.couponIssueId ??
+      (couponLink.couponId
+        ? (
+            await this.issueBookingCouponQr({
+              couponId: couponLink.couponId,
+              target: input.target,
+              user: input.user,
+              guestId: input.guestId,
+              phone: input.phone,
+              scheduledAt,
+              context: input.context,
+            })
+          ).id
+        : undefined);
 
     return this.prisma.booking.create({
       data: {
@@ -4912,7 +4964,7 @@ export class NightlifeDataService {
         storeId: input.target.store.id,
         castId: input.target.cast?.id,
         couponId: couponLink.couponId,
-        couponIssueId: couponLink.couponIssueId,
+        couponIssueId: bookingCouponIssueId,
         status: 'REQUESTED',
         scheduledAt,
         partySize: input.dto.partySize,
@@ -5857,6 +5909,103 @@ export class NightlifeDataService {
 
     const date = value instanceof Date ? value : new Date(value);
     return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+
+  private buildBillLoyaltyAward(
+    bill: {
+      id: string;
+      subtotalVnd?: number | null;
+      totalVnd?: number | null;
+      booking?: { id: string } | null;
+      user?: { id: string; role?: string | null } | null;
+    },
+    postedAt: Date,
+  ) {
+    if (!bill.user?.id || bill.user.role !== 'USER') {
+      return null;
+    }
+
+    const amountVnd = Math.max(
+      0,
+      Math.trunc(
+        typeof bill.subtotalVnd === 'number' && bill.subtotalVnd > 0
+          ? bill.subtotalVnd
+          : (bill.totalVnd ?? 0),
+      ),
+    );
+    const points = Math.floor(amountVnd / BILL_LOYALTY_VND_PER_POINT);
+
+    if (points <= 0) {
+      return null;
+    }
+
+    const expiresAt = new Date(postedAt);
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    return {
+      billId: bill.id,
+      bookingId: bill.booking?.id ?? null,
+      userId: bill.user.id,
+      amountVnd,
+      points,
+      postedAt,
+      expiresAt,
+      ruleSnapshot: {
+        version: BILL_LOYALTY_RULE_VERSION,
+        basis: 'bill_subtotal_vnd',
+        amountVnd,
+        vndPerPoint: BILL_LOYALTY_VND_PER_POINT,
+        pointsPerMillionVnd: BILL_LOYALTY_POINTS_PER_1M_VND,
+        expiresAfterDays: 365,
+      },
+    };
+  }
+
+  private async recordBillLoyaltyLedger(
+    client: NightlifePrismaClient,
+    award: {
+      billId: string;
+      bookingId: string | null;
+      userId: string;
+      amountVnd: number;
+      points: number;
+      postedAt: Date;
+      expiresAt: Date;
+      ruleSnapshot: Record<string, unknown>;
+    },
+  ) {
+    await client.pointLedger.upsert({
+      where: {
+        billId_type: {
+          billId: award.billId,
+          type: 'EARN',
+        },
+      },
+      update: {
+        userId: award.userId,
+        bookingId: award.bookingId,
+        amountVnd: award.amountVnd,
+        points: award.points,
+        status: 'POSTED',
+        description: `Loyalty points from approved bill ${award.billId}`,
+        ruleSnapshot: this.toPrismaJson(award.ruleSnapshot),
+        expiresAt: award.expiresAt,
+        postedAt: award.postedAt,
+      },
+      create: {
+        userId: award.userId,
+        bookingId: award.bookingId,
+        billId: award.billId,
+        type: 'EARN',
+        status: 'POSTED',
+        amountVnd: award.amountVnd,
+        points: award.points,
+        description: `Loyalty points from approved bill ${award.billId}`,
+        ruleSnapshot: this.toPrismaJson(award.ruleSnapshot),
+        expiresAt: award.expiresAt,
+        postedAt: award.postedAt,
+      },
+    });
   }
 
   private buildBillReviewAuditSnapshot(bill: {
@@ -7375,8 +7524,8 @@ export class NightlifeDataService {
     storeId?: string;
     castId?: string;
     purpose: string;
-  }) {
-    return this.prisma.media.create({
+  }, client: NightlifePrismaClient = this.prisma) {
+    return client.media.create({
       data: {
         storeId: input.storeId,
         castId: input.castId,
@@ -7400,6 +7549,470 @@ export class NightlifeDataService {
       },
       select: { id: true },
     });
+  }
+
+  private partnerRequestSelect() {
+    return {
+      id: true,
+      status: true,
+      businessName: true,
+      businessType: true,
+      area: true,
+      contactName: true,
+      contactPhone: true,
+      contactEmail: true,
+      note: true,
+      storeDescription: true,
+      storeAddress: true,
+      storeCity: true,
+      storeDistrict: true,
+      openingHours: true,
+      menuSummary: true,
+      mediaUrls: true,
+      castProfiles: true,
+      draftCastIds: true,
+      draftMediaIds: true,
+      draftContentIds: true,
+      reviewReason: true,
+      publicState: true,
+      submittedAt: true,
+      reviewedAt: true,
+      reviewedById: true,
+      partnerUserId: true,
+      partnerAccountId: true,
+      createdAt: true,
+      store: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+        },
+      },
+      notificationLog: {
+        select: {
+          id: true,
+          status: true,
+          error: true,
+          sentAt: true,
+        },
+      },
+    } satisfies Prisma.PartnerRequestSelect;
+  }
+
+  private buildAdminPartnerRequestWhere(
+    query: AdminPartnerRequestQueryDto,
+  ): Prisma.PartnerRequestWhereInput {
+    const keyword = this.cleanText(query.keyword);
+    const submittedFrom = this.parseOptionalDate(
+      query.submittedFrom,
+      'submittedFrom',
+    );
+    const submittedTo = this.parseOptionalDate(query.submittedTo, 'submittedTo');
+    const submittedAt: Prisma.DateTimeFilter = {};
+
+    if (submittedFrom) {
+      submittedAt.gte = submittedFrom;
+    }
+    if (submittedTo) {
+      submittedAt.lte = submittedTo;
+    }
+
+    return {
+      ...(query.status ? { status: query.status } : {}),
+      ...(Object.keys(submittedAt).length ? { submittedAt } : {}),
+      ...(keyword
+        ? {
+            OR: [
+              { id: { contains: keyword, mode: 'insensitive' } },
+              { businessName: { contains: keyword, mode: 'insensitive' } },
+              { contactName: { contains: keyword, mode: 'insensitive' } },
+              { contactPhone: { contains: keyword, mode: 'insensitive' } },
+              { contactEmail: { contains: keyword, mode: 'insensitive' } },
+              { store: { name: { contains: keyword, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+  }
+
+  private async findPartnerRequest(
+    requestId: string,
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    const lookup = this.cleanRequiredText(requestId, 'requestId');
+    const or: Prisma.PartnerRequestWhereInput[] = [{ id: lookup }];
+
+    if (this.isUuid(lookup)) {
+      or.push({ storeId: lookup }, { notificationLogId: lookup });
+    }
+
+    return (await client.partnerRequest.findFirst({
+      where: { OR: or },
+      select: this.partnerRequestSelect(),
+    })) as unknown as PartnerRequestCmsRecord | null;
+  }
+
+  private async notifyPartnerRequestDelivery(request: PartnerRequestCmsRecord) {
+    try {
+      const notificationId =
+        await this.adminNotificationService?.notifyPartnerRequest(
+          this.partnerRequestNotificationInput(request),
+        );
+
+      if (!notificationId) {
+        return;
+      }
+
+      await this.prisma.partnerRequest.update({
+        where: { id: request.id },
+        data: { notificationLogId: notificationId },
+        select: { id: true },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Partner request Telegram delivery failed: ${this.errorMessage(error)}`,
+      );
+    }
+  }
+
+  private partnerRequestNotificationInput(request: PartnerRequestCmsRecord) {
+    return {
+      id: request.id,
+      draftStoreId: request.store.id,
+      draftStoreName: request.store.name,
+      draftStoreSlug: request.store.slug,
+      draftCastIds: request.draftCastIds,
+      draftMediaIds: request.draftMediaIds,
+      draftContentIds: request.draftContentIds,
+      businessName: request.businessName,
+      businessType: request.businessType,
+      area: request.area,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      contactEmail: request.contactEmail,
+      note: request.note,
+      storeDescription: request.storeDescription,
+      storeAddress: request.storeAddress,
+      storeCity: request.storeCity,
+      storeDistrict: request.storeDistrict,
+      openingHours: request.openingHours,
+      menuSummary: request.menuSummary,
+      mediaUrls: request.mediaUrls,
+      castProfiles: this.partnerRequestCastProfiles(request.castProfiles),
+      submittedAt: request.submittedAt,
+    };
+  }
+
+  private partnerRequestNotificationPayload(request: PartnerRequestCmsRecord) {
+    return {
+      requestId: request.id,
+      status: request.status,
+      reviewReason: request.reviewReason,
+      reviewedAt: this.toIsoDate(request.reviewedAt),
+      reviewedById: request.reviewedById,
+      partnerUserId: request.partnerUserId,
+      partnerAccountId: request.partnerAccountId,
+      draftStoreId: request.store.id,
+      draftStoreName: request.store.name,
+      draftStoreSlug: request.store.slug,
+      draftCastIds: request.draftCastIds,
+      draftMediaIds: request.draftMediaIds,
+      draftContentIds: request.draftContentIds,
+      businessName: request.businessName,
+      businessType: request.businessType,
+      area: request.area,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      contactEmail: request.contactEmail,
+      note: request.note,
+      storeDescription: request.storeDescription,
+      storeAddress: request.storeAddress,
+      storeCity: request.storeCity,
+      storeDistrict: request.storeDistrict,
+      openingHours: request.openingHours,
+      menuSummary: request.menuSummary,
+      mediaUrls: request.mediaUrls,
+      castProfiles: this.partnerRequestCastProfiles(request.castProfiles),
+      submittedAt: this.toIsoDate(request.submittedAt),
+      publicState: request.publicState,
+    };
+  }
+
+  private partnerRequestAuditJson(
+    request: PartnerRequestCmsRecord,
+  ): Prisma.InputJsonObject {
+    return this.partnerRequestNotificationPayload(
+      request,
+    ) as unknown as Prisma.InputJsonObject;
+  }
+
+  private mapPartnerRequestRecord(request: PartnerRequestCmsRecord) {
+    return {
+      id: request.id,
+      notificationId: request.notificationLog?.id ?? null,
+      notificationStatus: request.notificationLog?.status ?? null,
+      notificationError: request.notificationLog?.error ?? null,
+      notifiedAt: request.notificationLog?.sentAt?.toISOString() ?? null,
+      submittedAt: request.submittedAt.toISOString(),
+      status: request.status,
+      reviewReason: request.reviewReason,
+      reviewedAt: request.reviewedAt?.toISOString() ?? null,
+      reviewedById: request.reviewedById,
+      partnerUserId: request.partnerUserId,
+      partnerAccountId: request.partnerAccountId,
+      publicState: request.publicState,
+      draftStoreId: request.store.id,
+      draftStoreName: request.store.name,
+      draftStoreSlug: request.store.slug,
+      draftCastIds: request.draftCastIds,
+      draftMediaIds: request.draftMediaIds,
+      draftContentIds: request.draftContentIds,
+      draftCastCount: request.draftCastIds.length,
+      draftMediaCount: request.draftMediaIds.length,
+      draftContentCount: request.draftContentIds.length,
+      businessName: request.businessName,
+      businessType: request.businessType,
+      area: request.area,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      contactEmail: request.contactEmail,
+      note: request.note,
+      storeDescription: request.storeDescription,
+      storeAddress: request.storeAddress,
+      storeCity: request.storeCity,
+      storeDistrict: request.storeDistrict,
+      openingHours: request.openingHours,
+      menuSummary: request.menuSummary,
+      mediaUrls: request.mediaUrls,
+    };
+  }
+
+  private async ensurePartnerOnboarding(
+    client: NightlifePrismaClient,
+    request: PartnerRequestCmsRecord,
+  ) {
+    const email = this.cleanEmail(request.contactEmail);
+    if (!email) {
+      throw new UnprocessableEntityException(
+        'contactEmail is required to approve and onboard a partner account',
+      );
+    }
+
+    if (!this.passwordService) {
+      throw new UnprocessableEntityException(
+        'Password service is required to onboard a partner account',
+      );
+    }
+
+    const displayName = request.contactName || request.businessName;
+    const existingUser = await client.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    let temporaryPassword: string | null = null;
+    const user = existingUser
+      ? await this.activateExistingPartnerUser(client, existingUser, {
+          displayName,
+          phone: request.contactPhone,
+        })
+      : await (async () => {
+          temporaryPassword = `Partner-${randomUUID()}`;
+          return client.user.create({
+            data: {
+              email,
+              passwordHash: await this.passwordService!.hash(temporaryPassword),
+              displayName,
+              phone: request.contactPhone,
+              role: 'PARTNER',
+              tier: 'FREE',
+              status: 'ACTIVE',
+            },
+            select: { id: true, email: true },
+          });
+        })();
+
+    const existingAccount = await client.partnerAccount.findFirst({
+      where: { userId: user.id, deletedAt: null },
+      select: { id: true },
+    });
+    const partnerAccount = existingAccount
+      ? await client.partnerAccount.update({
+          where: { id: existingAccount.id },
+          data: {
+            businessName: request.businessName,
+            contactName: request.contactName,
+            contactPhone: request.contactPhone,
+            contactEmail: request.contactEmail,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        })
+      : await client.partnerAccount.create({
+          data: {
+            userId: user.id,
+            businessName: request.businessName,
+            contactName: request.contactName,
+            contactPhone: request.contactPhone,
+            contactEmail: request.contactEmail,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+
+    await client.storePermission.upsert({
+      where: {
+        userId_storeId: {
+          userId: user.id,
+          storeId: request.store.id,
+        },
+      },
+      update: {
+        permissions: this.partnerStorePermissionKeys(),
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      create: {
+        userId: user.id,
+        storeId: request.store.id,
+        permissions: this.partnerStorePermissionKeys(),
+        status: 'ACTIVE',
+      },
+    });
+
+    return {
+      userId: user.id,
+      partnerAccountId: partnerAccount.id,
+      temporaryPassword,
+    };
+  }
+
+  private async activateExistingPartnerUser(
+    client: NightlifePrismaClient,
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      status: string;
+      deletedAt: Date | null;
+    },
+    input: { displayName: string; phone: string },
+  ) {
+    if (user.deletedAt || user.status !== 'ACTIVE') {
+      throw new UnprocessableEntityException(
+        'Existing partner email belongs to an inactive account',
+      );
+    }
+
+    if (user.role !== 'USER' && user.role !== 'PARTNER') {
+      throw new UnprocessableEntityException(
+        'Existing partner email belongs to a restricted staff account',
+      );
+    }
+
+    return client.user.update({
+      where: { id: user.id },
+      data: {
+        role: 'PARTNER',
+        displayName: input.displayName,
+        phone: input.phone,
+      },
+      select: { id: true, email: true },
+    });
+  }
+
+  private partnerStorePermissionKeys() {
+    return [
+      'store.partner.view',
+      'booking.partner.view',
+      'bill.partner.view',
+      'coupon.scan',
+    ];
+  }
+
+  private partnerRequestCastProfiles(
+    value: Prisma.JsonValue | null,
+  ): PartnerRequestCastDto[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item): PartnerRequestCastDto | null => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          return null;
+        }
+
+        const record = item as Record<string, unknown>;
+        const stageName =
+          typeof record.stageName === 'string' ? record.stageName.trim() : '';
+
+        if (!stageName) {
+          return null;
+        }
+
+        const profile: PartnerRequestCastDto = { stageName };
+        const tags = this.cleanStringArray(
+          Array.isArray(record.tags) ? (record.tags as string[]) : [],
+          12,
+        );
+        const languages = this.cleanStringArray(
+          Array.isArray(record.languages)
+            ? (record.languages as string[])
+            : [],
+          8,
+        );
+        const mediaUrls = this.cleanStringArray(
+          Array.isArray(record.mediaUrls)
+            ? (record.mediaUrls as string[])
+            : [],
+          8,
+        );
+
+        if (typeof record.bio === 'string' && record.bio.trim()) {
+          profile.bio = record.bio;
+        }
+        if (tags.length) {
+          profile.tags = tags;
+        }
+        if (languages.length) {
+          profile.languages = languages;
+        }
+        if (
+          typeof record.hourlyRateVnd === 'number' &&
+          Number.isFinite(record.hourlyRateVnd)
+        ) {
+          profile.hourlyRateVnd = record.hourlyRateVnd;
+        }
+        if (mediaUrls.length) {
+          profile.mediaUrls = mediaUrls;
+        }
+
+        return profile;
+      })
+      .filter((profile): profile is PartnerRequestCastDto => Boolean(profile));
+  }
+
+  private toIsoDate(value: Date | string | null | undefined) {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+
+  private isUuid(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    );
   }
 
   private cleanText(value?: string | null) {
@@ -7608,106 +8221,6 @@ export class NightlifeDataService {
     const compactLookup = lookupCode.toLowerCase().replace(/-/g, '');
 
     return compactBookingId.startsWith(compactLookup);
-  }
-
-  private async findPartnerRequestNotificationLog(requestId: string) {
-    const lookup = this.cleanRequiredText(requestId, 'requestId');
-    const logs = await this.prisma.notificationLog.findMany({
-      where: {
-        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
-        channel: 'TELEGRAM',
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      select: {
-        id: true,
-        status: true,
-        payload: true,
-        error: true,
-        sentAt: true,
-        createdAt: true,
-      },
-    });
-
-    return (
-      (logs.find((log) => {
-        const payload = this.partnerRequestPayload(
-          log as PartnerRequestNotificationLog,
-        );
-        return (
-          log.id === lookup ||
-          this.payloadString(payload.requestId) === lookup ||
-          this.payloadString(payload.draftStoreId) === lookup
-        );
-      }) as PartnerRequestNotificationLog | undefined) ?? null
-    );
-  }
-
-  private partnerRequestPayload(log: PartnerRequestNotificationLog) {
-    return log.payload &&
-      typeof log.payload === 'object' &&
-      !Array.isArray(log.payload)
-      ? (log.payload as Record<string, unknown>)
-      : {};
-  }
-
-  private mapPartnerRequestNotification(log: PartnerRequestNotificationLog) {
-    const payload = this.partnerRequestPayload(log);
-    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
-    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
-    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
-
-    return {
-      id: this.payloadString(payload.requestId) ?? log.id,
-      notificationId: log.id,
-      notificationStatus: log.status,
-      notificationError: log.error,
-      notifiedAt: log.sentAt?.toISOString() ?? null,
-      submittedAt:
-        this.payloadString(payload.submittedAt) ?? log.createdAt.toISOString(),
-      status: this.payloadString(payload.status) ?? 'PENDING_REVIEW',
-      reviewReason: this.payloadString(payload.reviewReason),
-      reviewedAt: this.payloadString(payload.reviewedAt),
-      reviewedById: this.payloadString(payload.reviewedById),
-      publicState: this.payloadString(payload.publicState) ?? 'HIDDEN',
-      draftStoreId: this.payloadString(payload.draftStoreId),
-      draftStoreName: this.payloadString(payload.draftStoreName),
-      draftStoreSlug: this.payloadString(payload.draftStoreSlug),
-      draftCastIds,
-      draftMediaIds,
-      draftContentIds,
-      draftCastCount: draftCastIds.length,
-      draftMediaCount: draftMediaIds.length,
-      draftContentCount: draftContentIds.length,
-      businessName: this.payloadString(payload.businessName) ?? 'Unknown',
-      businessType: this.payloadString(payload.businessType),
-      area: this.payloadString(payload.area),
-      contactName: this.payloadString(payload.contactName) ?? 'Unknown',
-      contactPhone: this.payloadString(payload.contactPhone) ?? '',
-      contactEmail: this.payloadString(payload.contactEmail),
-      note: this.payloadString(payload.note),
-      storeDescription: this.payloadString(payload.storeDescription),
-      storeAddress: this.payloadString(payload.storeAddress),
-      storeCity: this.payloadString(payload.storeCity),
-      storeDistrict: this.payloadString(payload.storeDistrict),
-      openingHours: this.payloadString(payload.openingHours),
-      menuSummary: this.payloadString(payload.menuSummary),
-      mediaUrls: this.payloadStringArray(payload.mediaUrls),
-    };
-  }
-
-  private payloadString(value: unknown) {
-    return typeof value === 'string' && value.trim() ? value : null;
-  }
-
-  private payloadStringArray(value: unknown) {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-
-    return value
-      .map((item) => (typeof item === 'string' ? item.trim() : ''))
-      .filter((item): item is string => Boolean(item));
   }
 
   private bookingActorTypeFor(user: AuthenticatedUser): BookingStatusActorType {
@@ -8175,8 +8688,11 @@ export class NightlifeDataService {
     return `${encodedPayload}.${signature}`;
   }
 
-  private signCouponQrPayload(encodedPayload: string) {
-    return createHmac('sha256', this.couponQrSecret())
+  private signCouponQrPayload(
+    encodedPayload: string,
+    secret = this.couponQrSecret(),
+  ) {
+    return createHmac('sha256', secret)
       .update(encodedPayload)
       .digest('base64url');
   }
@@ -8187,7 +8703,9 @@ export class NightlifeDataService {
     }
 
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('COUPON_QR_SECRET is required in production');
+      throw new Error(
+        'COUPON_QR_SECRET is required in production for Booking QR signing.',
+      );
     }
 
     return process.env.JWT_SECRET ?? 'nightlife-dev-coupon-qr-secret';
@@ -8200,8 +8718,14 @@ export class NightlifeDataService {
       throw new BadRequestException('Invalid coupon QR payload');
     }
 
-    const expectedSignature = this.signCouponQrPayload(encodedPayload);
-    if (!this.safeCompare(signature, expectedSignature)) {
+    const matchesKnownSecret = this.couponQrVerificationSecrets().some(
+      (secret) =>
+        this.safeCompare(
+          signature,
+          this.signCouponQrPayload(encodedPayload, secret),
+        ),
+    );
+    if (!matchesKnownSecret) {
       throw new BadRequestException('Invalid coupon QR signature');
     }
 
@@ -8236,6 +8760,22 @@ export class NightlifeDataService {
     } catch {
       return value;
     }
+  }
+
+  private couponQrVerificationSecrets() {
+    const secrets = [
+      this.couponQrSecret(),
+      ...this.couponQrPreviousSecrets(),
+    ].filter((secret) => secret.trim());
+
+    return [...new Set(secrets)];
+  }
+
+  private couponQrPreviousSecrets() {
+    return (process.env.COUPON_QR_PREVIOUS_SECRETS ?? '')
+      .split(',')
+      .map((secret) => secret.trim())
+      .filter(Boolean);
   }
 
   private safeCompare(value: string, expected: string) {
@@ -8441,6 +8981,7 @@ export class NightlifeDataService {
       ip: context.ip ?? null,
       userAgent: context.userAgent ?? null,
       deviceId: context.deviceId ?? null,
+      sessionId: context.sessionId ?? null,
     };
   }
 
@@ -8479,6 +9020,7 @@ export class NightlifeDataService {
         },
       },
     });
+    await this.recordCouponFraudSignals(input);
   }
 
   private async detectCouponClaimFraud(input: {
@@ -8488,17 +9030,54 @@ export class NightlifeDataService {
     context: CouponClaimContext;
   }) {
     const since = new Date(Date.now() - COUPON_CLAIM_FRAUD_WINDOW_MS);
-    const recentClaims = await this.prisma.notificationLog.findMany({
-      where: {
-        templateKey: 'coupon.analytics.claimed.v1',
-        recipient: input.claimKey,
-        createdAt: { gte: since },
-      },
-      select: { id: true },
-      take: COUPON_CLAIM_FRAUD_THRESHOLD,
-    });
+    const signalKeys = this.couponFraudSignals(
+      input.claimKey,
+      input.context,
+    ).map((signal) => signal.key);
+    const [recentClaims, recentSignalClaims] = await Promise.all([
+      this.prisma.notificationLog.findMany({
+        where: {
+          templateKey: 'coupon.analytics.claimed.v1',
+          recipient: input.claimKey,
+          createdAt: { gte: since },
+        },
+        select: { id: true },
+        take: COUPON_CLAIM_FRAUD_THRESHOLD,
+      }),
+      signalKeys.length
+        ? this.prisma.notificationLog.findMany({
+            where: {
+              templateKey: COUPON_FRAUD_SIGNAL_TEMPLATE,
+              recipient: { in: signalKeys },
+              createdAt: { gte: since },
+            },
+            select: { id: true, recipient: true },
+            take: signalKeys.length * COUPON_CLAIM_FRAUD_THRESHOLD,
+          })
+        : Promise.resolve([]),
+    ]);
+    const signalCounts = new Map<string, number>();
+    for (const claim of recentSignalClaims) {
+      signalCounts.set(
+        claim.recipient,
+        (signalCounts.get(claim.recipient) ?? 0) + 1,
+      );
+    }
+    const suspiciousSignals = this.couponFraudSignals(
+      input.claimKey,
+      input.context,
+    )
+      .map((signal) => ({
+        kind: signal.kind,
+        fingerprint: signal.fingerprint,
+        count: signalCounts.get(signal.key) ?? 0,
+      }))
+      .filter((signal) => signal.count >= COUPON_CLAIM_FRAUD_THRESHOLD);
 
-    if (recentClaims.length < COUPON_CLAIM_FRAUD_THRESHOLD) {
+    if (
+      recentClaims.length < COUPON_CLAIM_FRAUD_THRESHOLD &&
+      !suspiciousSignals.length
+    ) {
       return;
     }
 
@@ -8511,15 +9090,104 @@ export class NightlifeDataService {
         templateKey: 'coupon.fraud.claim_burst.v1',
         payload: {
           claimKey: input.claimKey,
+          claimKeyFingerprint: this.hashFraudSignal(input.claimKey),
           couponId: input.coupon.id,
           couponCode: input.coupon.code,
           couponIssueId: input.issue.id,
           recentClaimCount: recentClaims.length,
+          suspiciousSignals,
           windowMinutes: Math.round(COUPON_CLAIM_FRAUD_WINDOW_MS / 60000),
-          context: this.buildCouponClaimContextSnapshot(input.context),
+          context: this.buildCouponFraudContextSnapshot(input.context),
         },
       },
     });
+  }
+
+  private async recordCouponFraudSignals(input: {
+    claimKey: string;
+    coupon: { id: string; code: string; storeId: string };
+    issue: { id: string; code: string; status: string };
+    context: CouponClaimContext;
+    recipientType: string;
+    userId?: string | null;
+    guestId?: string | null;
+  }) {
+    const signals = this.couponFraudSignals(input.claimKey, input.context);
+    await Promise.all(
+      signals.map((signal) =>
+        this.prisma.notificationLog.create({
+          data: {
+            userId: input.userId ?? undefined,
+            guestId: input.guestId ?? undefined,
+            storeId: input.coupon.storeId,
+            channel: 'IN_APP',
+            status: 'QUEUED',
+            recipient: signal.key,
+            templateKey: COUPON_FRAUD_SIGNAL_TEMPLATE,
+            payload: {
+              signalKind: signal.kind,
+              signalFingerprint: signal.fingerprint,
+              claimKeyFingerprint: this.hashFraudSignal(input.claimKey),
+              couponId: input.coupon.id,
+              couponCode: input.coupon.code,
+              couponIssueId: input.issue.id,
+              issueCode: input.issue.code,
+              status: input.issue.status,
+              recipientType: input.recipientType,
+            },
+          },
+        }),
+      ),
+    );
+  }
+
+  private couponFraudSignals(claimKey: string, context: CouponClaimContext) {
+    const signals: Array<[string, string | null | undefined]> = [
+      ['CLAIM', claimKey],
+      ['IP', context.ip],
+      ['DEVICE', context.deviceId],
+      ['SESSION', context.sessionId],
+      ['USER_AGENT', context.userAgent],
+    ];
+
+    return signals
+      .map(([kind, value]) => {
+        const text = typeof value === 'string' ? value.trim() : '';
+        if (!text) {
+          return null;
+        }
+        const fingerprint = this.hashFraudSignal(text);
+        return {
+          kind,
+          fingerprint,
+          key: `coupon:fraud:${String(kind).toLowerCase()}:${fingerprint}`,
+        };
+      })
+      .filter(
+        (
+          signal,
+        ): signal is { kind: string; fingerprint: string; key: string } =>
+          Boolean(signal),
+      );
+  }
+
+  private hashFraudSignal(value: string) {
+    return createHash('sha256').update(value).digest('hex').slice(0, 16);
+  }
+
+  private buildCouponFraudContextSnapshot(context: CouponClaimContext) {
+    return {
+      ipFingerprint: context.ip ? this.hashFraudSignal(context.ip) : null,
+      userAgentFingerprint: context.userAgent
+        ? this.hashFraudSignal(context.userAgent)
+        : null,
+      deviceFingerprint: context.deviceId
+        ? this.hashFraudSignal(context.deviceId)
+        : null,
+      sessionFingerprint: context.sessionId
+        ? this.hashFraudSignal(context.sessionId)
+        : null,
+    };
   }
 
   private async writeCouponIssueAudit(input: {
