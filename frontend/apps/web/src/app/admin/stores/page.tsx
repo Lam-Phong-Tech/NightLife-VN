@@ -138,6 +138,7 @@ export default function AdminStoresPage() {
 
   const boxS = { background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', borderRadius: '10px', padding: '12px 13px', fontSize: '13px', color: '#f3f0ea' };
   const inputS = { ...boxS, width: '100%', outline: 'none' };
+  const optS = { background: '#1a191f', color: '#f3f0ea' };
   const seg = (a: boolean) => ({ fontSize: '12px', padding: '9px 15px', borderRadius: '9px', cursor: 'pointer', fontWeight: 600, color: a ? '#241a0a' : '#9b958a', background: a ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)', border: a ? 'none' : '1px solid rgba(255,255,255,.08)' });
   const g1 = 'linear-gradient(135deg,#2a2620,#1a1814)';
 
@@ -238,19 +239,19 @@ export default function AdminStoresPage() {
                   <div>
                     <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Loại hình</div>
                     <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={formData.category} onChange={e => updateForm('category', e.target.value)}>
-                      <option value="CLUB">Club</option>
-                      <option value="LOUNGE">Lounge</option>
-                      <option value="BAR">Bar</option>
-                      <option value="GIRLS_BAR">Girls Bar</option>
-                      <option value="KARAOKE">Karaoke</option>
-                      <option value="MASSAGE_SPA">Massage & Spa</option>
+                      <option value="CLUB" style={optS}>Club</option>
+                      <option value="LOUNGE" style={optS}>Lounge</option>
+                      <option value="BAR" style={optS}>Bar</option>
+                      <option value="GIRLS_BAR" style={optS}>Girls Bar</option>
+                      <option value="KARAOKE" style={optS}>Karaoke</option>
+                      <option value="MASSAGE_SPA" style={optS}>Massage & Spa</option>
                     </select>
                   </div>
                   <div>
                     <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Khu vực</div>
                     <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={formData.city} onChange={e => updateForm('city', e.target.value)}>
-                      <option value="Ho Chi Minh City">Hồ Chí Minh</option>
-                      <option value="Hanoi">Hà Nội</option>
+                      <option value="Ho Chi Minh City" style={optS}>Hồ Chí Minh</option>
+                      <option value="Hanoi" style={optS}>Hà Nội</option>
                     </select>
                   </div>
                 </div>
