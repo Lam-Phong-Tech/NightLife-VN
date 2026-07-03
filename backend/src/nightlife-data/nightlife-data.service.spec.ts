@@ -107,6 +107,9 @@ describe('NightlifeDataService', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    commissionConfig: {
+      findFirst: jest.fn(),
+    },
     auditLog: {
       create: jest.fn(),
       count: jest.fn(),
@@ -223,6 +226,7 @@ describe('NightlifeDataService', () => {
       id: 'point-ledger-1',
     } as never);
     prisma.pointLedger.findMany.mockResolvedValue([] as never);
+    prisma.commissionConfig.findFirst.mockResolvedValue(null as never);
     passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
       .spyOn(QRCode, 'toDataURL')
@@ -1527,6 +1531,7 @@ describe('NightlifeDataService', () => {
         convertedUserId: 'member-1',
         displayName: 'Minh Nguyen',
         phone: '+84907654321',
+        email: '',
       },
       select: { id: true },
     });
@@ -4323,6 +4328,288 @@ describe('NightlifeDataService', () => {
         status: 'VERIFIED',
       }),
       { approve: true, reviewedById: 'admin-1' },
+    );
+  });
+
+  it('calculates revenue, discount, and admin commission from the original bill when approving', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-revenue-1',
+      billNumber: 'BILL-20260703-ABC12345',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 2000000,
+      discountVnd: 0,
+      serviceChargeVnd: 0,
+      taxVnd: 0,
+      totalVnd: 2000000,
+      paidVnd: 2000000,
+      commissionAmountVnd: 0,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: { id: 'booking-1', status: 'CONFIRMED' },
+      coupon: {
+        id: 'coupon-1',
+        code: 'MEMBER8',
+        name: 'Member 8%',
+        discountType: 'PERCENT',
+        discountValue: 8,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+      },
+      couponIssue: {
+        id: 'issue-1',
+        code: 'MEMBER-code',
+        status: 'USED',
+        metadata: {
+          discountPercent: 8,
+          discountRuleSnapshot: {
+            type: 'PERCENT',
+            value: 8,
+            discountPercent: 8,
+            userType: 'MEMBER',
+          },
+        },
+      },
+      user: {
+        id: 'member-1',
+        displayName: 'Minh',
+        role: 'USER',
+        tier: 'MEMBER',
+      },
+      guest: null,
+    } as never);
+    prisma.commissionConfig.findFirst.mockResolvedValue({
+      id: 'commission-1',
+      commissionType: 'PERCENT',
+      commissionValue: 12,
+      minBillVnd: null,
+      ruleSnapshot: {
+        formula:
+          'Admin commission = Original bill x (12% - customer discount %)',
+      },
+      activeFrom: new Date('2026-01-01T00:00:00.000Z'),
+      activeTo: null,
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-revenue-1',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 2000000,
+      discountVnd: 160000,
+      totalVnd: 1840000,
+      paidVnd: 1840000,
+      commissionAmountVnd: 80000,
+      pointsEarned: 20,
+      discountRuleSnapshot: {
+        effectiveDiscountPercent: 8,
+        discountVnd: 160000,
+      },
+      commissionRuleSnapshot: {
+        commissionPercent: 12,
+        discountPercent: 8,
+        commissionVnd: 80000,
+      },
+    } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-revenue-1', {
+      approve: true,
+    });
+
+    expect(prisma.commissionConfig.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          storeId: 'store-1',
+          status: 'ACTIVE',
+          activeFrom: { lte: new Date('2026-07-03T10:00:00.000Z') },
+        }),
+      }),
+    );
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'VERIFIED',
+          subtotalVnd: 2000000,
+          discountVnd: 160000,
+          totalVnd: 1840000,
+          paidVnd: 1840000,
+          commissionAmountVnd: 80000,
+          pointsEarned: 20,
+          discountRuleSnapshot: expect.objectContaining({
+            version: 'ba-v3.2',
+            basis: 'bill_gross_before_discount',
+            source: 'COUPON_ISSUE_SNAPSHOT',
+            grossVnd: 2000000,
+            discountVnd: 160000,
+            effectiveDiscountPercent: 8,
+          }),
+          commissionRuleSnapshot: expect.objectContaining({
+            version: 'ba-v3.2',
+            basis: 'bill_gross_before_discount',
+            formula: 'grossVnd * (commission_rate - discount_rate)',
+            source: 'STORE_COMMISSION_CONFIG',
+            grossVnd: 2000000,
+            discountVnd: 160000,
+            grossCommissionVnd: 240000,
+            commissionVnd: 80000,
+            commissionPercent: 12,
+            discountPercent: 8,
+            requiresPmBaConfirmation: false,
+          }),
+        }),
+      }),
+    );
+    expect(prisma.pointLedger.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          amountVnd: 2000000,
+          points: 20,
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        metadata: expect.objectContaining({
+          revenueSnapshot: expect.objectContaining({
+            grossVnd: 2000000,
+            discountVnd: 160000,
+            netVnd: 1840000,
+            commissionVnd: 80000,
+          }),
+        }),
+      }),
+    });
+  });
+
+  it('flags bill approval when discount makes admin commission negative', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-03T10:00:00.000Z'));
+    prisma.bill.findFirst.mockResolvedValue({
+      id: 'bill-negative-commission',
+      billNumber: 'BILL-20260703-NEGATIVE',
+      status: 'SUBMITTED',
+      reviewedAt: null,
+      verifiedAt: null,
+      rejectedAt: null,
+      reviewedById: null,
+      verifiedById: null,
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1000000,
+      discountVnd: 0,
+      serviceChargeVnd: 0,
+      taxVnd: 0,
+      totalVnd: 1000000,
+      paidVnd: 1000000,
+      commissionAmountVnd: 0,
+      pointsEarned: 0,
+      discountRuleSnapshot: null,
+      commissionRuleSnapshot: null,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      booking: null,
+      coupon: {
+        id: 'coupon-1',
+        code: 'VIP8',
+        name: 'VIP 8%',
+        discountType: 'PERCENT',
+        discountValue: 8,
+        maxDiscountVnd: null,
+        minSpendVnd: null,
+      },
+      couponIssue: {
+        id: 'issue-negative',
+        code: 'VIP-code',
+        status: 'USED',
+        metadata: {
+          discountPercent: 8,
+          discountRuleSnapshot: {
+            type: 'PERCENT',
+            value: 8,
+            discountPercent: 8,
+            userType: 'VIP',
+          },
+        },
+      },
+      user: null,
+      guest: { id: 'guest-1', displayName: 'Walk-in', phone: '+84901234567' },
+    } as never);
+    prisma.commissionConfig.findFirst.mockResolvedValue({
+      id: 'commission-low',
+      commissionType: 'PERCENT',
+      commissionValue: 5,
+      minBillVnd: null,
+      ruleSnapshot: {
+        formula:
+          'Admin commission = Original bill x (5% - customer discount %)',
+      },
+      activeFrom: new Date('2026-01-01T00:00:00.000Z'),
+      activeTo: null,
+    } as never);
+    prisma.bill.update.mockResolvedValue({
+      id: 'bill-negative-commission',
+      status: 'VERIFIED',
+      reviewedAt: new Date('2026-07-03T10:00:00.000Z'),
+      verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+      rejectedAt: null,
+      reviewedById: 'admin-1',
+      verifiedById: 'admin-1',
+      rejectedById: null,
+      rejectReason: null,
+      subtotalVnd: 1000000,
+      discountVnd: 80000,
+      totalVnd: 920000,
+      paidVnd: 920000,
+      commissionAmountVnd: -30000,
+      pointsEarned: 0,
+      discountRuleSnapshot: {
+        effectiveDiscountPercent: 8,
+        discountVnd: 80000,
+      },
+      commissionRuleSnapshot: {
+        commissionPercent: 5,
+        discountPercent: 8,
+        commissionVnd: -30000,
+        requiresPmBaConfirmation: true,
+      },
+    } as never);
+
+    await service.reviewSensitiveBill('admin-1', 'bill-negative-commission', {
+      approve: true,
+    });
+
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          subtotalVnd: 1000000,
+          discountVnd: 80000,
+          totalVnd: 920000,
+          paidVnd: 920000,
+          commissionAmountVnd: -30000,
+          commissionRuleSnapshot: expect.objectContaining({
+            grossCommissionVnd: 50000,
+            commissionVnd: -30000,
+            commissionPercent: 5,
+            discountPercent: 8,
+            requiresPmBaConfirmation: true,
+            pmBaConfirmationReason:
+              'Commission is negative because discount rate is higher than commission rate.',
+            flags: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
+          }),
+        }),
+      }),
     );
   });
 

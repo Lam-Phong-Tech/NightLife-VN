@@ -91,6 +91,7 @@ import { ReviewBillDto } from './dto/review-bill.dto';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
 const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
+const BILL_REVENUE_RULE_VERSION = 'ba-v3.2';
 const BILL_LOYALTY_RULE_VERSION = 'v2.2';
 const BILL_LOYALTY_VND_PER_POINT = 100_000;
 const BILL_LOYALTY_POINTS_PER_1M_VND = 10;
@@ -266,6 +267,15 @@ type RevenueReportMoneyTotals = {
   discountVnd: number;
   netVnd: number;
   commissionVnd: number;
+};
+
+type BillRevenueApprovalSnapshot = {
+  grossVnd: number;
+  discountVnd: number;
+  netVnd: number;
+  commissionVnd: number;
+  discountRuleSnapshot: Record<string, unknown>;
+  commissionRuleSnapshot: Record<string, unknown>;
 };
 
 type MutableRevenueReportCouponNode = RevenueReportMoneyTotals & {
@@ -3399,9 +3409,7 @@ export class NightlifeDataService {
 
   async getMemberPointSummary(userId: string) {
     const now = new Date();
-    const expiringSoonCutoff = new Date(
-      now.getTime() + POINT_EXPIRING_SOON_MS,
-    );
+    const expiringSoonCutoff = new Date(now.getTime() + POINT_EXPIRING_SOON_MS);
     const ledgers = await this.prisma.pointLedger.findMany({
       where: {
         userId,
@@ -3433,7 +3441,8 @@ export class NightlifeDataService {
       const isPositiveLedger =
         ledger.type === 'EARN' || (ledger.type === 'ADJUST' && points > 0);
       const isExpired =
-        isPositiveLedger && Boolean(ledger.expiresAt && ledger.expiresAt <= now);
+        isPositiveLedger &&
+        Boolean(ledger.expiresAt && ledger.expiresAt <= now);
 
       if (isExpired) {
         expiredPoints += Math.max(points, 0);
@@ -4585,14 +4594,34 @@ export class NightlifeDataService {
         rejectedById: true,
         rejectReason: true,
         subtotalVnd: true,
+        discountVnd: true,
+        serviceChargeVnd: true,
+        taxVnd: true,
         totalVnd: true,
+        paidVnd: true,
         commissionAmountVnd: true,
         pointsEarned: true,
+        discountRuleSnapshot: true,
+        commissionRuleSnapshot: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
-        coupon: { select: { id: true, code: true, name: true } },
-        couponIssue: { select: { id: true, code: true, status: true } },
-        user: { select: { id: true, displayName: true, role: true, tier: true } },
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+          },
+        },
+        couponIssue: {
+          select: { id: true, code: true, status: true, metadata: true },
+        },
+        user: {
+          select: { id: true, displayName: true, role: true, tier: true },
+        },
         guest: { select: { id: true, displayName: true, phone: true } },
       },
     });
@@ -4606,8 +4635,20 @@ export class NightlifeDataService {
     }
 
     const now = new Date();
+    const revenueApproval = dto.approve
+      ? await this.buildBillRevenueApprovalSnapshot(bill, now)
+      : null;
     const loyaltyAward = dto.approve
-      ? this.buildBillLoyaltyAward(bill, now)
+      ? this.buildBillLoyaltyAward(
+          revenueApproval
+            ? {
+                ...bill,
+                subtotalVnd: revenueApproval.grossVnd,
+                totalVnd: revenueApproval.netVnd,
+              }
+            : bill,
+          now,
+        )
       : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -4623,6 +4664,18 @@ export class NightlifeDataService {
               rejectedAt: null,
               rejectedById: null,
               rejectReason: null,
+              subtotalVnd: revenueApproval?.grossVnd ?? bill.subtotalVnd,
+              discountVnd: revenueApproval?.discountVnd ?? bill.discountVnd,
+              totalVnd: revenueApproval?.netVnd ?? bill.totalVnd,
+              paidVnd: revenueApproval?.netVnd ?? bill.paidVnd,
+              commissionAmountVnd:
+                revenueApproval?.commissionVnd ?? bill.commissionAmountVnd,
+              discountRuleSnapshot: revenueApproval
+                ? this.toPrismaJson(revenueApproval.discountRuleSnapshot)
+                : Prisma.JsonNull,
+              commissionRuleSnapshot: revenueApproval
+                ? this.toPrismaJson(revenueApproval.commissionRuleSnapshot)
+                : Prisma.JsonNull,
               pointsEarned: loyaltyAward?.points ?? 0,
               pointRuleSnapshot: loyaltyAward
                 ? this.toPrismaJson(loyaltyAward.ruleSnapshot)
@@ -4653,7 +4706,7 @@ export class NightlifeDataService {
           targetId: billId,
           beforeJson: this.buildBillReviewAuditSnapshot(bill),
           afterJson: this.buildBillReviewAuditSnapshot(reviewedBill),
-          metadata: {
+          metadata: this.toPrismaJson({
             approve: dto.approve,
             rejectReason: dto.rejectReason ?? null,
             previousStatus: bill.status,
@@ -4662,7 +4715,18 @@ export class NightlifeDataService {
             loyaltyPoints: loyaltyAward?.points ?? 0,
             loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
             loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
-          },
+            revenueSnapshot: revenueApproval
+              ? {
+                  grossVnd: revenueApproval.grossVnd,
+                  discountVnd: revenueApproval.discountVnd,
+                  netVnd: revenueApproval.netVnd,
+                  commissionVnd: revenueApproval.commissionVnd,
+                  discountRuleSnapshot: revenueApproval.discountRuleSnapshot,
+                  commissionRuleSnapshot:
+                    revenueApproval.commissionRuleSnapshot,
+                }
+              : null,
+          }),
         },
       });
 
@@ -4677,9 +4741,7 @@ export class NightlifeDataService {
     return result;
   }
 
-  private resolveAdminRevenueReportWindow(
-    query: AdminRevenueReportQueryDto,
-  ) {
+  private resolveAdminRevenueReportWindow(query: AdminRevenueReportQueryDto) {
     const to = query.to ? new Date(query.to) : new Date();
     if (Number.isNaN(to.getTime())) {
       throw new BadRequestException('to must be a valid ISO date');
@@ -4747,8 +4809,420 @@ export class NightlifeDataService {
       grossVnd,
       discountVnd,
       netVnd,
-      commissionVnd: Math.max(0, bill.commissionAmountVnd ?? 0),
+      commissionVnd: Math.trunc(bill.commissionAmountVnd ?? 0),
     };
+  }
+
+  private async buildBillRevenueApprovalSnapshot(
+    bill: {
+      id: string;
+      subtotalVnd?: number | null;
+      discountVnd?: number | null;
+      serviceChargeVnd?: number | null;
+      taxVnd?: number | null;
+      totalVnd?: number | null;
+      paidVnd?: number | null;
+      discountRuleSnapshot?: Prisma.JsonValue | null;
+      store?: {
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+      } | null;
+      coupon?: {
+        id: string;
+        code: string;
+        name: string;
+        discountType: string;
+        discountValue: number;
+        maxDiscountVnd: number | null;
+        minSpendVnd: number | null;
+      } | null;
+      couponIssue?: {
+        id: string;
+        code: string;
+        status: string;
+        metadata?: Prisma.JsonValue | null;
+      } | null;
+    },
+    reviewedAt: Date,
+  ): Promise<BillRevenueApprovalSnapshot> {
+    const previousDiscountVnd = this.nonNegativeVnd(bill.discountVnd);
+    const grossVnd =
+      this.nonNegativeVnd(bill.subtotalVnd) ||
+      this.nonNegativeVnd(bill.totalVnd) + previousDiscountVnd ||
+      this.nonNegativeVnd(bill.paidVnd) + previousDiscountVnd;
+    const serviceChargeVnd = this.nonNegativeVnd(bill.serviceChargeVnd);
+    const taxVnd = this.nonNegativeVnd(bill.taxVnd);
+    const discount = this.resolveBillApprovalDiscount(
+      bill,
+      grossVnd,
+      reviewedAt,
+    );
+    const netVnd = Math.max(
+      0,
+      grossVnd - discount.discountVnd + serviceChargeVnd + taxVnd,
+    );
+    const commission = await this.resolveBillApprovalCommission({
+      bill,
+      grossVnd,
+      discountVnd: discount.discountVnd,
+      discountPercent: discount.effectiveDiscountPercent,
+      reviewedAt,
+    });
+
+    return {
+      grossVnd,
+      discountVnd: discount.discountVnd,
+      netVnd,
+      commissionVnd: commission.commissionVnd,
+      discountRuleSnapshot: discount.snapshot,
+      commissionRuleSnapshot: commission.snapshot,
+    };
+  }
+
+  private resolveBillApprovalDiscount(
+    bill: {
+      id: string;
+      discountRuleSnapshot?: Prisma.JsonValue | null;
+      coupon?: {
+        id: string;
+        code: string;
+        name: string;
+        discountType: string;
+        discountValue: number;
+        maxDiscountVnd: number | null;
+        minSpendVnd: number | null;
+      } | null;
+      couponIssue?: {
+        id: string;
+        code: string;
+        status: string;
+        metadata?: Prisma.JsonValue | null;
+      } | null;
+    },
+    grossVnd: number,
+    reviewedAt: Date,
+  ) {
+    const issueMetadata = this.asRecord(bill.couponIssue?.metadata);
+    const issueDiscountRule = this.asRecord(
+      issueMetadata?.discountRuleSnapshot,
+    );
+    const existingDiscountRule = this.asRecord(bill.discountRuleSnapshot);
+    const sourceRule = issueDiscountRule ?? existingDiscountRule;
+    const coupon = bill.coupon ?? null;
+    const sourceDiscountPercent =
+      this.normalizePercent(issueMetadata?.discountPercent) ??
+      this.normalizePercent(sourceRule?.discountPercent) ??
+      this.normalizePercent(sourceRule?.value) ??
+      (coupon?.discountType === 'PERCENT'
+        ? this.normalizePercent(coupon.discountValue)
+        : null);
+    const maxDiscountVnd =
+      this.nullableNonNegativeVnd(sourceRule?.maxDiscountVnd) ??
+      this.nullableNonNegativeVnd(coupon?.maxDiscountVnd);
+    const minSpendVnd =
+      this.nullableNonNegativeVnd(sourceRule?.minSpendVnd) ??
+      this.nullableNonNegativeVnd(coupon?.minSpendVnd);
+    let rawDiscountVnd = 0;
+    let skippedReason: string | null = null;
+
+    if (grossVnd <= 0) {
+      skippedReason = 'ZERO_GROSS_BILL';
+    } else if (minSpendVnd !== null && grossVnd < minSpendVnd) {
+      skippedReason = 'BELOW_MIN_SPEND';
+    } else if (sourceDiscountPercent !== null) {
+      rawDiscountVnd = Math.round(
+        grossVnd * this.percentToRate(sourceDiscountPercent),
+      );
+    } else if (coupon?.discountType === 'FIXED_AMOUNT') {
+      rawDiscountVnd = this.nonNegativeVnd(coupon.discountValue);
+    }
+
+    const cappedDiscountVnd =
+      maxDiscountVnd !== null
+        ? Math.min(rawDiscountVnd, maxDiscountVnd)
+        : rawDiscountVnd;
+    const discountVnd = Math.min(Math.max(0, cappedDiscountVnd), grossVnd);
+    const effectiveDiscountPercent = this.amountToPercent(
+      discountVnd,
+      grossVnd,
+    );
+    const source = issueDiscountRule
+      ? 'COUPON_ISSUE_SNAPSHOT'
+      : existingDiscountRule
+        ? 'BILL_SNAPSHOT'
+        : coupon
+          ? 'COUPON_CAMPAIGN'
+          : 'NONE';
+    const sourceType =
+      typeof sourceRule?.type === 'string'
+        ? sourceRule.type
+        : (coupon?.discountType ?? null);
+    const sourceValue =
+      this.toNumber(sourceRule?.sourceValue) ??
+      this.toNumber(sourceRule?.value) ??
+      this.toNumber(coupon?.discountValue);
+
+    return {
+      discountVnd,
+      effectiveDiscountPercent,
+      snapshot: {
+        version: BILL_REVENUE_RULE_VERSION,
+        snapshotAt: reviewedAt.toISOString(),
+        basis: 'bill_gross_before_discount',
+        source,
+        sourceType,
+        sourceValue,
+        sourceDiscountPercent,
+        effectiveDiscountPercent,
+        discountRate: this.percentToRate(effectiveDiscountPercent),
+        grossVnd,
+        discountVnd,
+        maxDiscountVnd,
+        minSpendVnd,
+        skippedReason,
+        coupon: coupon
+          ? { id: coupon.id, code: coupon.code, name: coupon.name }
+          : null,
+        couponIssue: bill.couponIssue
+          ? {
+              id: bill.couponIssue.id,
+              code: bill.couponIssue.code,
+              status: bill.couponIssue.status,
+            }
+          : null,
+      },
+    };
+  }
+
+  private async resolveBillApprovalCommission(input: {
+    bill: {
+      store?: {
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+      } | null;
+      coupon?: { id: string; code: string; name: string } | null;
+      couponIssue?: { id: string; code: string; status: string } | null;
+    };
+    grossVnd: number;
+    discountVnd: number;
+    discountPercent: number;
+    reviewedAt: Date;
+  }) {
+    const storeId = input.bill.store?.id ?? null;
+    const commissionConfig = storeId
+      ? await this.prisma.commissionConfig.findFirst({
+          where: {
+            storeId,
+            status: 'ACTIVE',
+            activeFrom: { lte: input.reviewedAt },
+            AND: [
+              {
+                OR: [
+                  { activeTo: null },
+                  { activeTo: { gt: input.reviewedAt } },
+                ],
+              },
+              {
+                OR: [
+                  { minBillVnd: null },
+                  { minBillVnd: { lte: input.grossVnd } },
+                ],
+              },
+            ],
+          },
+          orderBy: [{ activeFrom: 'desc' }, { createdAt: 'desc' }],
+          select: {
+            id: true,
+            commissionType: true,
+            commissionValue: true,
+            minBillVnd: true,
+            ruleSnapshot: true,
+            activeFrom: true,
+            activeTo: true,
+          },
+        })
+      : null;
+    const configRuleSnapshot = this.asRecord(commissionConfig?.ruleSnapshot);
+    const campaignOverride = this.resolveCampaignCommissionPercent(
+      configRuleSnapshot,
+      input.bill.coupon,
+    );
+    const sourceCommissionPercent =
+      campaignOverride.percent ??
+      (commissionConfig?.commissionType === 'PERCENT'
+        ? this.normalizePercent(commissionConfig.commissionValue)
+        : null);
+    const grossCommissionVnd =
+      commissionConfig?.commissionType === 'FIXED_AMOUNT'
+        ? this.nonNegativeVnd(commissionConfig.commissionValue)
+        : sourceCommissionPercent !== null
+          ? Math.round(
+              input.grossVnd * this.percentToRate(sourceCommissionPercent),
+            )
+          : 0;
+    const commissionPercent = this.amountToPercent(
+      grossCommissionVnd,
+      input.grossVnd,
+    );
+    const commissionVnd = grossCommissionVnd - input.discountVnd;
+    const requiresPmBaConfirmation = commissionVnd < 0;
+    const flags = [
+      ...(requiresPmBaConfirmation
+        ? ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED']
+        : []),
+      ...(!commissionConfig ? ['MISSING_ACTIVE_COMMISSION_CONFIG'] : []),
+    ];
+
+    return {
+      commissionVnd,
+      snapshot: {
+        version: BILL_REVENUE_RULE_VERSION,
+        snapshotAt: input.reviewedAt.toISOString(),
+        basis: 'bill_gross_before_discount',
+        formula: 'grossVnd * (commission_rate - discount_rate)',
+        source: commissionConfig
+          ? (campaignOverride.source ?? 'STORE_COMMISSION_CONFIG')
+          : 'NO_ACTIVE_COMMISSION_CONFIG',
+        grossVnd: input.grossVnd,
+        discountVnd: input.discountVnd,
+        grossCommissionVnd,
+        commissionVnd,
+        commissionPercent,
+        commissionRate: this.percentToRate(commissionPercent),
+        discountPercent: input.discountPercent,
+        discountRate: this.percentToRate(input.discountPercent),
+        requiresPmBaConfirmation,
+        pmBaConfirmationReason: requiresPmBaConfirmation
+          ? 'Commission is negative because discount rate is higher than commission rate.'
+          : null,
+        flags,
+        store: {
+          id: storeId,
+          name: input.bill.store?.name ?? null,
+          slug: input.bill.store?.slug ?? null,
+        },
+        coupon: input.bill.coupon
+          ? {
+              id: input.bill.coupon.id,
+              code: input.bill.coupon.code,
+              name: input.bill.coupon.name,
+            }
+          : null,
+        couponIssue: input.bill.couponIssue
+          ? {
+              id: input.bill.couponIssue.id,
+              code: input.bill.couponIssue.code,
+              status: input.bill.couponIssue.status,
+            }
+          : null,
+        commissionConfig: commissionConfig
+          ? {
+              id: commissionConfig.id,
+              commissionType: commissionConfig.commissionType,
+              commissionValue: commissionConfig.commissionValue,
+              minBillVnd: commissionConfig.minBillVnd,
+              activeFrom: commissionConfig.activeFrom.toISOString(),
+              activeTo: commissionConfig.activeTo?.toISOString() ?? null,
+              ruleSnapshot: configRuleSnapshot ?? null,
+            }
+          : null,
+      },
+    };
+  }
+
+  private resolveCampaignCommissionPercent(
+    ruleSnapshot: Record<string, unknown> | undefined,
+    coupon?: { id: string; code: string } | null,
+  ) {
+    if (!ruleSnapshot || !coupon) {
+      return { percent: null, source: null };
+    }
+
+    const campaignGroups = [
+      this.asRecord(ruleSnapshot.campaignCommissionRates),
+      this.asRecord(ruleSnapshot.campaignRates),
+      this.asRecord(ruleSnapshot.couponCommissionRates),
+      this.asRecord(ruleSnapshot.couponRates),
+    ].filter((group): group is Record<string, unknown> => Boolean(group));
+    const campaignKeys = [coupon.id, coupon.code].filter(Boolean);
+
+    for (const group of campaignGroups) {
+      for (const key of campaignKeys) {
+        const percent = this.extractCommissionPercent(group[key]);
+        if (percent !== null) {
+          return { percent, source: 'CAMPAIGN_COMMISSION_OVERRIDE' };
+        }
+      }
+    }
+
+    const directCouponId =
+      typeof ruleSnapshot.couponId === 'string' ? ruleSnapshot.couponId : null;
+    const directCouponCode =
+      typeof ruleSnapshot.couponCode === 'string'
+        ? ruleSnapshot.couponCode
+        : null;
+    if (directCouponId === coupon.id || directCouponCode === coupon.code) {
+      const percent = this.extractCommissionPercent(ruleSnapshot);
+      if (percent !== null) {
+        return { percent, source: 'CAMPAIGN_COMMISSION_OVERRIDE' };
+      }
+    }
+
+    return { percent: null, source: null };
+  }
+
+  private extractCommissionPercent(value: unknown) {
+    const record = this.asRecord(value);
+    if (!record) {
+      return this.normalizePercent(value);
+    }
+
+    return (
+      this.normalizePercent(record.commissionPercent) ??
+      this.normalizePercent(record.commissionRatePercent) ??
+      this.normalizePercent(record.ratePercent) ??
+      this.normalizePercent(record.percent) ??
+      this.normalizePercent(record.value) ??
+      this.normalizePercent(record.rate)
+    );
+  }
+
+  private nonNegativeVnd(value: unknown) {
+    const number = this.toNumber(value) ?? 0;
+    return Math.max(0, Math.round(number));
+  }
+
+  private nullableNonNegativeVnd(value: unknown) {
+    const number = this.toNumber(value);
+    return number === null ? null : Math.max(0, Math.round(number));
+  }
+
+  private normalizePercent(value: unknown) {
+    const number = this.toNumber(value);
+    if (number === null || number < 0) {
+      return null;
+    }
+
+    const percent = number > 0 && number <= 1 ? number * 100 : number;
+    return Math.round(percent * 10000) / 10000;
+  }
+
+  private percentToRate(percent: number | null) {
+    if (percent === null || !Number.isFinite(percent)) {
+      return 0;
+    }
+
+    return Math.round((percent / 100) * 1000000) / 1000000;
+  }
+
+  private amountToPercent(amountVnd: number, grossVnd: number) {
+    if (grossVnd <= 0) {
+      return 0;
+    }
+
+    return Math.round((amountVnd / grossVnd) * 1000000) / 10000;
   }
 
   private toRevenueReportDateKey(value: Date | string) {
@@ -6312,6 +6786,9 @@ export class NightlifeDataService {
       paidVnd: true,
       commissionAmountVnd: true,
       pointsEarned: true,
+      discountRuleSnapshot: true,
+      commissionRuleSnapshot: true,
+      pointRuleSnapshot: true,
       submittedAt: true,
       reviewedAt: true,
       verifiedAt: true,
@@ -6605,9 +7082,14 @@ export class NightlifeDataService {
     verifiedById?: string | null;
     rejectedById?: string | null;
     rejectReason?: string | null;
-    totalVnd?: number;
-    commissionAmountVnd?: number;
-    pointsEarned?: number;
+    subtotalVnd?: number | null;
+    discountVnd?: number | null;
+    totalVnd?: number | null;
+    paidVnd?: number | null;
+    commissionAmountVnd?: number | null;
+    pointsEarned?: number | null;
+    discountRuleSnapshot?: Prisma.JsonValue | null;
+    commissionRuleSnapshot?: Prisma.JsonValue | null;
   }) {
     return {
       id: bill.id,
@@ -6619,9 +7101,14 @@ export class NightlifeDataService {
       verifiedById: bill.verifiedById ?? null,
       rejectedById: bill.rejectedById ?? null,
       rejectReason: bill.rejectReason ?? null,
+      subtotalVnd: bill.subtotalVnd ?? null,
+      discountVnd: bill.discountVnd ?? null,
       totalVnd: bill.totalVnd ?? null,
+      paidVnd: bill.paidVnd ?? null,
       commissionAmountVnd: bill.commissionAmountVnd ?? null,
       pointsEarned: bill.pointsEarned ?? null,
+      discountRuleSnapshot: bill.discountRuleSnapshot ?? null,
+      commissionRuleSnapshot: bill.commissionRuleSnapshot ?? null,
     };
   }
 
@@ -10150,11 +10637,11 @@ export class NightlifeDataService {
       throw new UnprocessableEntityException('Coupon issue has expired');
     }
   }
-  
+
   async updateAdminBillStatus(
     id: string,
     dto: import('./dto/update-bill-status.dto').UpdateBillStatusDto,
-    adminUser: import('@prisma/client').User
+    adminUser: import('@prisma/client').User,
   ) {
     const bill = await this.prisma.bill.findUnique({
       where: { id },
@@ -10164,7 +10651,7 @@ export class NightlifeDataService {
         store: true,
         coupon: true,
         couponIssue: true,
-      }
+      },
     });
 
     if (!bill) {
@@ -10188,7 +10675,7 @@ export class NightlifeDataService {
             rejectedById: adminUser.id,
             rejectReason: dto.reason,
           },
-          include: { user: true, store: true, booking: true }
+          include: { user: true, store: true, booking: true },
         });
         return rejected;
       }
@@ -10200,7 +10687,7 @@ export class NightlifeDataService {
             status: 'VERIFIED',
             verifiedById: adminUser.id,
           },
-          include: { user: true, store: true, booking: true }
+          include: { user: true, store: true, booking: true },
         });
 
         // Earn points for user (1 point per 100,000 VND of subtotal)
@@ -10211,13 +10698,13 @@ export class NightlifeDataService {
               data: {
                 userId: verified.userId,
                 billId: verified.id,
-                // Assuming points are tracked somehow. 
+                // Assuming points are tracked somehow.
                 // The schema PointLedger has:
-                // id, userId, bookingId, billId, reversedLedgerId. 
+                // id, userId, bookingId, billId, reversedLedgerId.
                 points: pointsEarned,
                 type: 'EARN',
-                description: 'Duyệt bill'
-              }
+                description: 'Duyệt bill',
+              },
             });
           }
         }
@@ -10227,14 +10714,16 @@ export class NightlifeDataService {
 
     // Send Telegram Notification
     try {
-      if (this.adminNotificationService) { await this.adminNotificationService.notifyBillReviewed(
-        // @ts-ignore - ignoring exact type match for NotificationLog
-        updatedBill, 
-        { 
-          approve: dto.status === 'VERIFIED', 
-          reviewedById: adminUser.id 
-        }
-      ); }
+      if (this.adminNotificationService) {
+        await this.adminNotificationService.notifyBillReviewed(
+          // @ts-ignore - ignoring exact type match for NotificationLog
+          updatedBill,
+          {
+            approve: dto.status === 'VERIFIED',
+            reviewedById: adminUser.id,
+          },
+        );
+      }
     } catch (e) {
       console.error('Failed to send telegram notification for bill review', e);
     }
@@ -10242,7 +10731,10 @@ export class NightlifeDataService {
     return updatedBill;
   }
 
-  async updateAdminBookingStatus(id: string, status: import('@prisma/client').BookingStatus) {
+  async updateAdminBookingStatus(
+    id: string,
+    status: import('@prisma/client').BookingStatus,
+  ) {
     const booking = await this.prisma.booking.update({
       where: { id },
       data: { status },
@@ -10255,7 +10747,9 @@ export class NightlifeDataService {
     return booking;
   }
 
-  async listAdminBills(query: import('./dto/admin-bill.dto').AdminBillQueryDto) {
+  async listAdminBills(
+    query: import('./dto/admin-bill.dto').AdminBillQueryDto,
+  ) {
     const { page = 1, limit = 10, status, storeId } = query;
     const skip = (page - 1) * limit;
 
@@ -10271,37 +10765,42 @@ export class NightlifeDataService {
 
     const orderBy = { createdAt: 'desc' } as any;
 
-    const totalPendingAmountRes = await this.prisma.bill.aggregate({
-      _sum: { totalVnd: true } as any,
-      where: { ...where, status: 'SUBMITTED' }
-    }).catch(() => ({ _sum: { totalVnd: 0 } }));
-    const totalAmountPending = (totalPendingAmountRes._sum as any)?.totalVnd || 0;
+    const totalPendingAmountRes = await this.prisma.bill
+      .aggregate({
+        _sum: { totalVnd: true } as any,
+        where: { ...where, status: 'SUBMITTED' },
+      })
+      .catch(() => ({ _sum: { totalVnd: 0 } }));
+    const totalAmountPending =
+      (totalPendingAmountRes._sum as any)?.totalVnd || 0;
 
-    const [items, total, pendingCount, approvedCount, rejectedCount] = await Promise.all([
-      this.prisma.bill.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: { 
-          store: true, 
-          user: true, 
-          guest: true, 
-          booking: { include: { cast: true } }
-        },
-      }),
-      this.prisma.bill.count({ where }),
-      this.prisma.bill.count({ where: { ...where, status: 'SUBMITTED' } }),
-      this.prisma.bill.count({ where: { ...where, status: 'VERIFIED' } }),
-      this.prisma.bill.count({ where: { ...where, status: 'REJECTED' } }),
-    ]);
+    const [items, total, pendingCount, approvedCount, rejectedCount] =
+      await Promise.all([
+        this.prisma.bill.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            store: true,
+            user: true,
+            guest: true,
+            booking: { include: { cast: true } },
+          },
+        }),
+        this.prisma.bill.count({ where }),
+        this.prisma.bill.count({ where: { ...where, status: 'SUBMITTED' } }),
+        this.prisma.bill.count({ where: { ...where, status: 'VERIFIED' } }),
+        this.prisma.bill.count({ where: { ...where, status: 'REJECTED' } }),
+      ]);
 
     const mappedItems = items.map((bill) => {
       let guestType = 'Khách vãng lai';
-      let sender = bill.user?.displayName || bill.guest?.displayName || 'Unknown';
+      let sender =
+        bill.user?.displayName || bill.guest?.displayName || 'Unknown';
       if (bill.user) guestType = bill.user.tier || 'Member';
       if (bill.booking?.cast) guestType = 'Cast';
-      
+
       return {
         id: bill.id,
         billNumber: bill.billNumber,
@@ -10315,9 +10814,11 @@ export class NightlifeDataService {
         guestType,
         discount: bill.discountVnd || 0,
         discountPercent: 0,
-        commissionPercent: bill.commissionAmountVnd ? Math.round((bill.commissionAmountVnd / (bill.totalVnd || 1)) * 100) : 0,
+        commissionPercent: bill.commissionAmountVnd
+          ? Math.round((bill.commissionAmountVnd / (bill.totalVnd || 1)) * 100)
+          : 0,
         adminCommission: bill.commissionAmountVnd || 0,
-        points: bill.pointsEarned ? `+${bill.pointsEarned} điểm` : '+0 điểm'
+        points: bill.pointsEarned ? `+${bill.pointsEarned} điểm` : '+0 điểm',
       };
     });
 
@@ -10333,8 +10834,8 @@ export class NightlifeDataService {
         pendingCount,
         approvedCount,
         rejectedCount,
-        totalAmountPending
-      }
+        totalAmountPending,
+      },
     };
   }
 
@@ -10346,63 +10847,79 @@ export class NightlifeDataService {
     const totalContents = await this.prisma.content.count();
     const activeStoresHn = 0;
     const activeStoresHcm = 0;
-    
+
     // Using any to bypass strict type checking for statuses we aren't 100% sure about
-    const pendingBills = await this.prisma.bill.count({ where: { status: 'SUBMITTED' as any } }).catch(() => 0);
-    const pendingCasts = await this.prisma.cast.count({ where: { status: 'PENDING' as any } }).catch(() => 0);
-    const pendingPartners = await this.prisma.user.count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } }).catch(() => 0);
+    const pendingBills = await this.prisma.bill
+      .count({ where: { status: 'SUBMITTED' as any } })
+      .catch(() => 0);
+    const pendingCasts = await this.prisma.cast
+      .count({ where: { status: 'PENDING' as any } })
+      .catch(() => 0);
+    const pendingPartners = await this.prisma.user
+      .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
+      .catch(() => 0);
 
     const todaysBookings = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: today } }
+      where: { scheduledAt: { gte: today } },
     });
     const todaysBookingsCompleted = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: today }, status: 'COMPLETED' as any }
+      where: { scheduledAt: { gte: today }, status: 'COMPLETED' as any },
     });
     const todaysBookingsNew = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: today }, status: 'REQUESTED' as any }
+      where: { scheduledAt: { gte: today }, status: 'REQUESTED' as any },
     });
 
-    const monthlyRevenueResult = await this.prisma.bill.aggregate({
-      _sum: { totalVnd: true } as any,
-      where: { status: 'COMPLETED' as any }
-    }).catch(() => ({ _sum: { totalVnd: 0 } }));
+    const monthlyRevenueResult = await this.prisma.bill
+      .aggregate({
+        _sum: { totalVnd: true } as any,
+        where: { status: 'COMPLETED' as any },
+      })
+      .catch(() => ({ _sum: { totalVnd: 0 } }));
     const monthlyRevenue = (monthlyRevenueResult._sum as any)?.totalVnd || 0;
 
     const commissionAmount = 41800000;
 
     const revenue7Days: any[] = [];
     for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        d.setHours(0,0,0,0);
-        const nextD = new Date(d);
-        nextD.setDate(nextD.getDate() + 1);
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const nextD = new Date(d);
+      nextD.setDate(nextD.getDate() + 1);
 
-        const rev = await this.prisma.bill.aggregate({
-            _sum: { totalVnd: true } as any,
-            where: { status: 'COMPLETED' as any, createdAt: { gte: d, lt: nextD } }
-        }).catch(() => ({ _sum: { totalVnd: 0 } }));
+      const rev = await this.prisma.bill
+        .aggregate({
+          _sum: { totalVnd: true } as any,
+          where: {
+            status: 'COMPLETED' as any,
+            createdAt: { gte: d, lt: nextD },
+          },
+        })
+        .catch(() => ({ _sum: { totalVnd: 0 } }));
 
-        revenue7Days.push({
-            date: d.toISOString().split('T')[0],
-            revenue: (rev._sum as any)?.totalVnd || 0
-        });
+      revenue7Days.push({
+        date: d.toISOString().split('T')[0],
+        revenue: (rev._sum as any)?.totalVnd || 0,
+      });
     }
 
-    const recentBookings = await this.prisma.booking.findMany({
-      take: 5,
-      orderBy: { scheduledAt: 'desc' },
-      include: { user: true, guest: true, store: true, cast: true }
-    }).catch(() => []);
+    const recentBookings = await this.prisma.booking
+      .findMany({
+        take: 5,
+        orderBy: { scheduledAt: 'desc' },
+        include: { user: true, guest: true, store: true, cast: true },
+      })
+      .catch(() => []);
 
-    const recentBookingsMapped = recentBookings.map(bk => ({
+    const recentBookingsMapped = recentBookings.map((bk) => ({
       id: bk.id,
-      customerName: bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
+      customerName:
+        bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
       store: bk.store,
       cast: bk.cast,
       partySize: bk.partySize || 1,
       status: bk.status,
-      scheduledAt: bk.scheduledAt
+      scheduledAt: bk.scheduledAt,
     }));
 
     return {
@@ -10420,25 +10937,25 @@ export class NightlifeDataService {
       commissionAmount,
       revenue7Days,
       recentBookings: recentBookingsMapped,
-      telegramLogs: []
+      telegramLogs: [],
     };
   }
 
-  
-  
-  async listAdminStores(query: import('./dto/admin-store.dto').AdminStoreQueryDto) {
+  async listAdminStores(
+    query: import('./dto/admin-store.dto').AdminStoreQueryDto,
+  ) {
     const { page = 1, limit = 10, type, search } = query;
     const skip = (page - 1) * limit;
 
     let prismaCategory: import('@prisma/client').StoreCategory | undefined;
     if (type && type !== 'all') {
       const typeMap: Record<string, import('@prisma/client').StoreCategory> = {
-        'club': 'CLUB',
-        'lounge': 'LOUNGE',
-        'karaoke': 'KARAOKE',
-        'bar': 'BAR',
+        club: 'CLUB',
+        lounge: 'LOUNGE',
+        karaoke: 'KARAOKE',
+        bar: 'BAR',
         'girls-bar': 'GIRLS_BAR',
-        'massage': 'MASSAGE_SPA'
+        massage: 'MASSAGE_SPA',
       };
       prismaCategory = typeMap[type];
     }
@@ -10460,13 +10977,13 @@ export class NightlifeDataService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          _count: { select: { casts: true } }
-        }
+          _count: { select: { casts: true } },
+        },
       }),
-      this.prisma.store.count({ where })
+      this.prisma.store.count({ where }),
     ]);
 
-    const mappedItems = items.map(store => {
+    const mappedItems = items.map((store) => {
       let typeLabel = store.category as string;
       if (store.category === 'GIRLS_BAR') typeLabel = 'Girls bar';
       else if (store.category === 'MASSAGE_SPA') typeLabel = 'Massage';
@@ -10481,9 +10998,14 @@ export class NightlifeDataService {
         area: store.city === 'Ho Chi Minh City' ? 'HCM' : 'HN',
         commission: '15%',
         casts: store._count.casts,
-        status: store.status === 'ACTIVE' ? 'Đang hoạt động' 
-              : store.status === 'DRAFT' ? 'Nháp' 
-              : store.status === 'SUSPENDED' ? 'Đang ẩn' : 'Chờ duyệt'
+        status:
+          store.status === 'ACTIVE'
+            ? 'Đang hoạt động'
+            : store.status === 'DRAFT'
+              ? 'Nháp'
+              : store.status === 'SUSPENDED'
+                ? 'Đang ẩn'
+                : 'Chờ duyệt',
       };
     });
 
@@ -10501,20 +11023,25 @@ export class NightlifeDataService {
   }
 
   private generateSlug(name: string): string {
-    return name.toLowerCase()
+    return name
+      .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
   }
 
-  private async inferAreaFromAddress(address: string, city: string): Promise<string | undefined> {
+  private async inferAreaFromAddress(
+    address: string,
+    city: string,
+  ): Promise<string | undefined> {
     // A simple inference: look for matching district names in the address
     const areas = await this.prisma.area.findMany({
-      where: { city, status: 'ACTIVE' }
+      where: { city, status: 'ACTIVE' },
     });
-    
+
     // Find an area where its district name is mentioned in the address
     // e.g. "Tây Hồ", "Hoàn Kiếm", "Quận 1"
     const lowerAddr = address.toLowerCase();
@@ -10523,13 +11050,15 @@ export class NightlifeDataService {
         return area.id;
       }
     }
-    
+
     // Fallback: just return the first active area in that city
     if (areas.length > 0) return areas[0].id;
     return undefined;
   }
 
-  async createAdminStore(dto: import('./dto/admin-store.dto').CreateAdminStoreDto) {
+  async createAdminStore(
+    dto: import('./dto/admin-store.dto').CreateAdminStoreDto,
+  ) {
     let slug = this.generateSlug(dto.name);
     let counter = 1;
     while (!(await this.checkAdminStoreSlug(slug)).available) {
@@ -10553,18 +11082,23 @@ export class NightlifeDataService {
         pricingInfo: dto.pricingInfo as any,
         status: dto.status || 'ACTIVE',
         areaId,
-        ...(dto.mediaIds && dto.mediaIds.length > 0 ? {
-          media: {
-            connect: dto.mediaIds.map(id => ({ id }))
-          }
-        } : {})
-      }
+        ...(dto.mediaIds && dto.mediaIds.length > 0
+          ? {
+              media: {
+                connect: dto.mediaIds.map((id) => ({ id })),
+              },
+            }
+          : {}),
+      },
     });
 
     return newStore;
   }
 
-  async updateAdminStore(id: string, dto: import('./dto/admin-store.dto').UpdateAdminStoreDto) {
+  async updateAdminStore(
+    id: string,
+    dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
+  ) {
     let areaId: string | undefined;
     if (dto.address && dto.city) {
       areaId = await this.inferAreaFromAddress(dto.address, dto.city);
@@ -10578,22 +11112,30 @@ export class NightlifeDataService {
         ...(dto.city && { city: dto.city }),
         ...(dto.address && { address: dto.address }),
         ...(dto.mapUrl !== undefined && { mapUrl: dto.mapUrl }),
-        ...(dto.openingHours !== undefined && { openingHours: dto.openingHours as any }),
-        ...(dto.pricingInfo !== undefined && { pricingInfo: dto.pricingInfo as any }),
+        ...(dto.openingHours !== undefined && {
+          openingHours: dto.openingHours as any,
+        }),
+        ...(dto.pricingInfo !== undefined && {
+          pricingInfo: dto.pricingInfo as any,
+        }),
         ...(dto.status && { status: dto.status }),
         ...(areaId && { areaId }),
-        ...(dto.mediaIds ? {
-          media: {
-            set: dto.mediaIds.map(mid => ({ id: mid }))
-          }
-        } : {})
-      }
+        ...(dto.mediaIds
+          ? {
+              media: {
+                set: dto.mediaIds.map((mid) => ({ id: mid })),
+              },
+            }
+          : {}),
+      },
     });
 
     return updated;
   }
 
-  async listAdminCoupons(query: import('./dto/admin-coupon.dto').AdminCouponQueryDto) {
+  async listAdminCoupons(
+    query: import('./dto/admin-coupon.dto').AdminCouponQueryDto,
+  ) {
     const { page = 1, limit = 10, status, search } = query;
     const skip = (page - 1) * limit;
 
@@ -10612,43 +11154,51 @@ export class NightlifeDataService {
       }),
     };
 
-    const [items, total, pendingCount, usedCount, expiredCount] = await Promise.all([
-      this.prisma.couponIssue.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          coupon: {
-            include: { store: true }
+    const [items, total, pendingCount, usedCount, expiredCount] =
+      await Promise.all([
+        this.prisma.couponIssue.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            coupon: {
+              include: { store: true },
+            },
+            user: true,
+            guest: true,
           },
-          user: true,
-          guest: true
-        }
-      }),
-      this.prisma.couponIssue.count({ where }),
-      this.prisma.couponIssue.count({ where: { status: 'ISSUED' } }),
-      this.prisma.couponIssue.count({ where: { status: 'USED' } }),
-      this.prisma.couponIssue.count({ where: { status: 'EXPIRED' } })
-    ]);
+        }),
+        this.prisma.couponIssue.count({ where }),
+        this.prisma.couponIssue.count({ where: { status: 'ISSUED' } }),
+        this.prisma.couponIssue.count({ where: { status: 'USED' } }),
+        this.prisma.couponIssue.count({ where: { status: 'EXPIRED' } }),
+      ]);
 
-    const mappedItems = items.map(issue => ({
+    const mappedItems = items.map((issue) => ({
       id: issue.id,
       code: issue.code,
-      discount: issue.coupon.discountType === 'PERCENT' 
-        ? `-${issue.coupon.discountValue}%` 
-        : `-${(issue.coupon.discountValue / 1000)}k`,
+      discount:
+        issue.coupon.discountType === 'PERCENT'
+          ? `-${issue.coupon.discountValue}%`
+          : `-${issue.coupon.discountValue / 1000}k`,
       title: issue.coupon.name,
       store: issue.coupon.store.name,
       tier: 'Member', // Mocked as Coupon does not have tier
       expiry: issue.expiresAt ? new Date(issue.expiresAt).toISOString() : null,
-      status: issue.status === 'ISSUED' ? 'Đang giữ chỗ' 
-            : issue.status === 'USED' ? 'Đã sử dụng' 
-            : issue.status === 'EXPIRED' ? 'Hết hạn' : issue.status,
+      status:
+        issue.status === 'ISSUED'
+          ? 'Đang giữ chỗ'
+          : issue.status === 'USED'
+            ? 'Đã sử dụng'
+            : issue.status === 'EXPIRED'
+              ? 'Hết hạn'
+              : issue.status,
     }));
 
     const totalStats = pendingCount + usedCount + expiredCount;
-    const usageRate = totalStats > 0 ? Math.round((usedCount / totalStats) * 100) : 0;
+    const usageRate =
+      totalStats > 0 ? Math.round((usedCount / totalStats) * 100) : 0;
 
     return {
       data: mappedItems,
@@ -10659,13 +11209,24 @@ export class NightlifeDataService {
         holdingCount: pendingCount,
         usedCount,
         expiredCount,
-        usageRate
-      }
+        usageRate,
+      },
     };
   }
 
-  async listAdminBookings(query: import('./dto/admin-booking.dto').AdminBookingQueryDto) {
-    const { page = 1, limit = 10, status, search, timeframe, storeId, source, sortBy = 'newest' } = query;
+  async listAdminBookings(
+    query: import('./dto/admin-booking.dto').AdminBookingQueryDto,
+  ) {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      search,
+      timeframe,
+      storeId,
+      source,
+      sortBy = 'newest',
+    } = query;
     const skip = (page - 1) * limit;
 
     let prismaStatus: import('@prisma/client').BookingStatus | undefined;
@@ -10702,25 +11263,29 @@ export class NightlifeDataService {
       }),
     };
 
-    const orderBy = { scheduledAt: sortBy === 'oldest' ? 'asc' : 'desc' } as any;
+    const orderBy = {
+      scheduledAt: sortBy === 'oldest' ? 'asc' : 'desc',
+    } as any;
 
-    const [items, total, newCount, completedCount, cancelledCount] = await Promise.all([
-      this.prisma.booking.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        include: { store: true, cast: true, user: true, guest: true },
-      }),
-      this.prisma.booking.count({ where }),
-      this.prisma.booking.count({ where: { ...where, status: 'REQUESTED' } }),
-      this.prisma.booking.count({ where: { ...where, status: 'COMPLETED' } }),
-      this.prisma.booking.count({ where: { ...where, status: 'CANCELLED' } }),
-    ]);
+    const [items, total, newCount, completedCount, cancelledCount] =
+      await Promise.all([
+        this.prisma.booking.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: { store: true, cast: true, user: true, guest: true },
+        }),
+        this.prisma.booking.count({ where }),
+        this.prisma.booking.count({ where: { ...where, status: 'REQUESTED' } }),
+        this.prisma.booking.count({ where: { ...where, status: 'COMPLETED' } }),
+        this.prisma.booking.count({ where: { ...where, status: 'CANCELLED' } }),
+      ]);
 
-    const data = items.map(bk => ({
+    const data = items.map((bk) => ({
       id: bk.id,
-      customerName: bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
+      customerName:
+        bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
       phone: bk.user?.phone || bk.guest?.phone || '',
       store: bk.store.name,
       cast: bk.cast?.stageName ? 'Cast: ' + bk.cast.stageName : 'Không cast',
@@ -10741,7 +11306,7 @@ export class NightlifeDataService {
         completed: completedCount,
         cancelled: cancelledCount,
         all: newCount + completedCount + cancelledCount,
-      }
+      },
     };
   }
 }
