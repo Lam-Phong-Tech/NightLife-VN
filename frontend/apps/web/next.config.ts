@@ -19,14 +19,15 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   async rewrites() {
+    const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     return [
       {
         source: '/api/documentation',
-        destination: 'http://localhost:3001/api/documentation',
+        destination: `${backendUrl}/api/documentation`,
       },
       {
         source: '/api/documentation/:path*',
-        destination: 'http://localhost:3001/api/documentation/:path*',
+        destination: `${backendUrl}/api/documentation/:path*`,
       },
     ];
   },
