@@ -826,6 +826,32 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listAdminCouponIssues(query);
   }
 
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/coupon-issues/:issueId/revoke-qr')
+  revokeAdminCouponIssueQrToken(
+    @Req() request: RequestWithUser,
+    @Param('issueId') issueId: string,
+  ) {
+    return this.nightlifeDataService.revokeAdminCouponIssueQrToken(
+      issueId,
+      request.user,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/coupon-issues/:issueId/rotate-qr')
+  rotateAdminCouponIssueQrToken(
+    @Req() request: RequestWithUser,
+    @Param('issueId') issueId: string,
+  ) {
+    return this.nightlifeDataService.rotateAdminCouponIssueQrToken(
+      issueId,
+      request.user,
+    );
+  }
+
   @CancelAdminBookingContract('admin')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)

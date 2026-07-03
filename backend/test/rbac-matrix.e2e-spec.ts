@@ -54,6 +54,8 @@ describe('RBAC matrix (e2e)', () => {
     confirmCouponIssueCheckIn: jest.fn(),
     listMemberCouponIssues: jest.fn(),
     listAdminCouponIssues: jest.fn(),
+    revokeAdminCouponIssueQrToken: jest.fn(),
+    rotateAdminCouponIssueQrToken: jest.fn(),
     listMemberBookings: jest.fn(),
     listSensitiveBillsForAdmin: jest.fn(),
     reviewSensitiveBill: jest.fn(),
@@ -122,6 +124,15 @@ describe('RBAC matrix (e2e)', () => {
     nightlifeDataService.listAdminCouponIssues.mockResolvedValue([
       { id: 'issue-1', code: 'MEMBER-code', status: 'ISSUED' },
     ]);
+    nightlifeDataService.revokeAdminCouponIssueQrToken.mockResolvedValue({
+      id: 'issue-1',
+      status: 'REVOKED',
+    });
+    nightlifeDataService.rotateAdminCouponIssueQrToken.mockResolvedValue({
+      id: 'issue-1',
+      status: 'ISSUED',
+      qrPayloadHash: 'rotated-hash',
+    });
     nightlifeDataService.reviewSensitiveBill.mockResolvedValue({
       id: 'bill-1',
       status: 'VERIFIED',
@@ -260,6 +271,33 @@ describe('RBAC matrix (e2e)', () => {
     ]);
     expect(nightlifeDataService.listAdminCouponIssues).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'ISSUED' }),
+    );
+  });
+
+  it('exposes admin coupon QR revoke and rotate endpoints', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/coupon-issues/issue-1/revoke-qr')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/admin/coupon-issues/issue-1/rotate-qr')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .expect(201);
+
+    expect(
+      nightlifeDataService.revokeAdminCouponIssueQrToken,
+    ).toHaveBeenCalledWith(
+      'issue-1',
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+    );
+    expect(
+      nightlifeDataService.rotateAdminCouponIssueQrToken,
+    ).toHaveBeenCalledWith(
+      'issue-1',
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
     );
   });
 

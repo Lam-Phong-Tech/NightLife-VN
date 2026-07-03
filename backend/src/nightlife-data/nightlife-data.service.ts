@@ -3126,17 +3126,18 @@ export class NightlifeDataService {
     dto: ScanCouponIssueDto,
     user: AuthenticatedUser,
   ) {
-    const couponIssueId = this.resolveCouponIssueIdFromQrPayload(dto.payload);
-    return this.scanCouponIssueByUnique({ id: couponIssueId }, user, {
+    const token = this.resolveCouponIssueTokenFromQrPayload(dto.payload);
+    return this.scanCouponIssueByUnique({ id: token.issueId }, user, {
       source: 'SIGNED_QR_PAYLOAD',
       offline: Boolean(dto.offline),
+      qrTokenHash: token.tokenHash,
     });
   }
 
   private async scanCouponIssueByUnique(
     where: Prisma.CouponIssueWhereUniqueInput,
     user: AuthenticatedUser,
-    metadata: { source: string; offline?: boolean },
+    metadata: { source: string; offline?: boolean; qrTokenHash?: string },
   ) {
     const issue = await this.prisma.couponIssue.findUnique({
       where,
@@ -3172,6 +3173,7 @@ export class NightlifeDataService {
       issue.coupon.storeId,
       'coupon.scan',
     );
+    this.assertCouponQrTokenUsable(issue.metadata, metadata.qrTokenHash);
     await this.assertIssueCanBeConfirmed(issue);
 
     await this.writeCouponIssueAudit({
@@ -3817,6 +3819,178 @@ export class NightlifeDataService {
         };
       }),
     );
+  }
+
+  async revokeAdminCouponIssueQrToken(
+    issueId: string,
+    user: AuthenticatedUser,
+  ) {
+    const issue = await this.prisma.couponIssue.findUnique({
+      where: { id: issueId },
+      select: {
+        id: true,
+        code: true,
+        couponId: true,
+        qrPayloadHash: true,
+        status: true,
+        expiresAt: true,
+        usedAt: true,
+        metadata: true,
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    if (issue.status !== 'ISSUED') {
+      throw new UnprocessableEntityException(
+        'Only issued coupon QR tokens can be revoked',
+      );
+    }
+
+    const now = new Date();
+    const metadata = this.asRecord(issue.metadata) ?? {};
+    const nextMetadata = {
+      ...metadata,
+      qrRevokedAt: now.toISOString(),
+      qrRevokedBy: user.id,
+      revokedQrTokenHashes: this.mergeRevokedQrTokenHashes(metadata),
+    };
+
+    const updated = await this.prisma.couponIssue.update({
+      where: { id: issue.id },
+      data: {
+        status: 'REVOKED',
+        revokedAt: now,
+        metadata: this.toPrismaJson(nextMetadata),
+      },
+      select: this.adminCouponIssueSelect(),
+    });
+
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_QR_TOKEN_REVOKED',
+      issue: {
+        ...updated,
+        coupon: { storeId: updated.coupon.store?.id ?? null },
+      },
+      actorId: user.id,
+      beforeJson: {
+        id: issue.id,
+        status: issue.status,
+        qrPayloadHash: issue.qrPayloadHash,
+      },
+      afterJson: {
+        id: updated.id,
+        status: updated.status,
+        qrPayloadHash: updated.qrPayloadHash,
+      },
+      metadata: {
+        source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+        revokedAt: now.toISOString(),
+      },
+    });
+
+    await this.recordCouponLifecycleEvent('coupon.issue.qr_revoked.v1', updated, {
+      actorId: user.id,
+      source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+      revokedAt: now.toISOString(),
+    });
+
+    return this.decorateAdminCouponIssue(updated);
+  }
+
+  async rotateAdminCouponIssueQrToken(
+    issueId: string,
+    user: AuthenticatedUser,
+  ) {
+    const issue = await this.prisma.couponIssue.findUnique({
+      where: { id: issueId },
+      select: this.adminCouponIssueSelect(),
+    });
+
+    if (!issue) {
+      throw new NotFoundException('Coupon issue not found');
+    }
+
+    if (issue.status !== 'ISSUED') {
+      throw new UnprocessableEntityException(
+        'Only issued coupon QR tokens can be rotated',
+      );
+    }
+
+    const now = new Date();
+    const metadata = this.asRecord(issue.metadata) ?? {};
+    const qrPayload = this.buildCouponQrPayload(issue.id);
+    const qrTokenHash = this.buildCouponQrTokenHashFromPayload(qrPayload);
+    const rotationCount =
+      typeof metadata.qrRotationCount === 'number'
+        ? metadata.qrRotationCount + 1
+        : 1;
+    const nextMetadata = {
+      ...metadata,
+      qrPayload,
+      qrPayloadType: 'SIGNED_DEEP_LINK',
+      qrTokenHash,
+      qrRotatedAt: now.toISOString(),
+      qrRotatedBy: user.id,
+      qrRotationCount: rotationCount,
+      revokedQrTokenHashes: this.mergeRevokedQrTokenHashes(metadata),
+    };
+
+    const updated = await this.prisma.couponIssue.update({
+      where: { id: issue.id },
+      data: {
+        qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
+        metadata: this.toPrismaJson(nextMetadata),
+      },
+      select: this.adminCouponIssueSelect(),
+    });
+
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_QR_TOKEN_ROTATED',
+      issue: {
+        ...updated,
+        coupon: { storeId: updated.coupon.store?.id ?? null },
+      },
+      actorId: user.id,
+      beforeJson: {
+        id: issue.id,
+        status: issue.status,
+        qrPayloadHash: issue.qrPayloadHash,
+      },
+      afterJson: {
+        id: updated.id,
+        status: updated.status,
+        qrPayloadHash: updated.qrPayloadHash,
+      },
+      metadata: {
+        source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+        rotatedAt: now.toISOString(),
+        rotationCount,
+      },
+    });
+
+    await this.recordCouponLifecycleEvent('coupon.issue.qr_rotated.v1', updated, {
+      actorId: user.id,
+      source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+      rotatedAt: now.toISOString(),
+      rotationCount,
+    });
+
+    return this.decorateAdminCouponIssue(updated);
   }
 
   async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
@@ -5203,49 +5377,54 @@ export class NightlifeDataService {
             ...(areaId ? { areaId } : {}),
           }
         : undefined;
-    const bookingRelationFilter =
-      couponId || castId
-        ? {
-            ...(couponId ? { couponId } : {}),
-            ...(castId ? { castId } : {}),
-          }
-        : undefined;
-
-    const bookingQrBaseWhere: Prisma.BookingQrWhereInput = {
-      ...(storeId ? { storeId } : {}),
-      ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
-      ...(bookingRelationFilter ? { booking: bookingRelationFilter } : {}),
+    const couponIssueBaseWhere: Prisma.CouponIssueWhereInput = {
+      ...(couponId ? { couponId } : {}),
+      coupon: {
+        deletedAt: null,
+        ...(storeId ? { storeId } : {}),
+        ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
+      },
+      ...(castId ? { booking: { castId } } : {}),
     };
-    const [qrIssuedCount, qrUsedCount, billApprovedCount] = await Promise.all([
-      this.prisma.bookingQr.count({
-        where: {
-          ...bookingQrBaseWhere,
-          createdAt: { gte: reportWindow.from, lte: reportWindow.to },
-        },
-      }),
-      this.prisma.bookingQr.count({
-        where: {
-          ...bookingQrBaseWhere,
-          status: 'USED',
-          usedAt: { gte: reportWindow.from, lte: reportWindow.to },
-        },
-      }),
-      this.prisma.bill.count({
-        where: {
-          deletedAt: null,
-          status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
-          usedAt: { gte: reportWindow.from, lte: reportWindow.to },
-          ...(storeId ? { storeId } : {}),
-          ...(couponId ? { couponId } : {}),
-          ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
-          ...(castId ? { booking: { castId } } : {}),
-        },
-      }),
-    ]);
+    const [claimCount, scannedCount, usedCount, billApprovedCount] =
+      await Promise.all([
+        this.prisma.couponIssue.count({
+          where: {
+            ...couponIssueBaseWhere,
+            createdAt: { gte: reportWindow.from, lte: reportWindow.to },
+          },
+        }),
+        this.prisma.couponIssue.count({
+          where: {
+            ...couponIssueBaseWhere,
+            scannedById: { not: null },
+            updatedAt: { gte: reportWindow.from, lte: reportWindow.to },
+          },
+        }),
+        this.prisma.couponIssue.count({
+          where: {
+            ...couponIssueBaseWhere,
+            status: 'USED',
+            usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+          },
+        }),
+        this.prisma.bill.count({
+          where: {
+            deletedAt: null,
+            status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
+            usedAt: { gte: reportWindow.from, lte: reportWindow.to },
+            ...(storeId ? { storeId } : {}),
+            ...(couponId ? { couponId } : {}),
+            ...(storeRelationFilter ? { store: storeRelationFilter } : {}),
+            ...(castId ? { booking: { castId } } : {}),
+          },
+        }),
+      ]);
 
     const steps = [
-      { key: 'booking_qr', label: 'Booking QR', count: qrIssuedCount },
-      { key: 'qr_used', label: 'QR used', count: qrUsedCount },
+      { key: 'claim', label: 'Claim', count: claimCount },
+      { key: 'scan', label: 'Scan', count: scannedCount },
+      { key: 'confirm_used', label: 'Confirm USED', count: usedCount },
       { key: 'bill_approved', label: 'Bill approved', count: billApprovedCount },
       {
         key: 'commission',
@@ -5254,7 +5433,6 @@ export class NightlifeDataService {
         commissionVnd: totals.commissionVnd,
       },
     ];
-
     return steps.map((step, index) => {
       const previous = index > 0 ? steps[index - 1] : null;
       const rateFromPrevious =
@@ -6007,7 +6185,9 @@ export class NightlifeDataService {
     target: BookingTarget;
     userId?: string;
     phone?: string;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const couponId = this.cleanText(input.dto.couponId);
     const couponIssueId = this.cleanText(input.dto.couponIssueId);
 
@@ -6018,7 +6198,7 @@ export class NightlifeDataService {
     const now = new Date();
 
     if (couponIssueId) {
-      const issue = await this.prisma.couponIssue.findFirst({
+      const issue = await prisma.couponIssue.findFirst({
         where: {
           id: couponIssueId,
           coupon: { deletedAt: null },
@@ -6090,7 +6270,7 @@ export class NightlifeDataService {
       }
 
       if (issue.expiresAt && issue.expiresAt <= now) {
-        await this.expireIssuedCouponIssues({ id: issue.id });
+        await this.expireIssuedCouponIssues({ id: issue.id }, prisma);
         throw new UnprocessableEntityException('Coupon issue has expired');
       }
 
@@ -6100,7 +6280,7 @@ export class NightlifeDataService {
       };
     }
 
-    const coupon = await this.prisma.coupon.findFirst({
+    const coupon = await prisma.coupon.findFirst({
       where: {
         id: couponId,
         storeId: input.target.store.id,
@@ -6458,9 +6638,11 @@ export class NightlifeDataService {
     phone?: string;
     scheduledAt: Date;
     context?: CouponClaimContext;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const now = new Date();
-    const coupon = await this.prisma.coupon.findFirst({
+    const coupon = await prisma.coupon.findFirst({
       where: {
         id: input.couponId,
         storeId: input.target.store.id,
@@ -6506,13 +6688,14 @@ export class NightlifeDataService {
     const issueId = randomUUID();
     const issueCode = `${recipientType}-${randomUUID()}`;
     const qrPayload = this.buildCouponQrPayload(issueId);
+    const qrTokenHash = this.buildCouponQrTokenHashFromPayload(qrPayload);
     const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
       coupon,
       userType,
       input.user?.tier ?? null,
     );
 
-    const issue = await this.prisma.couponIssue.create({
+    const issue = await prisma.couponIssue.create({
       data: {
         id: issueId,
         couponId: coupon.id,
@@ -6533,6 +6716,8 @@ export class NightlifeDataService {
           bookingScheduledAt: input.scheduledAt.toISOString(),
           qrPayload,
           qrPayloadType: 'SIGNED_DEEP_LINK',
+          qrTokenHash,
+          revokedQrTokenHashes: [],
           statusLabel: this.couponIssueStatusLabel('ISSUED'),
           discountPercent: discountRuleSnapshot.discountPercent,
           discountRuleSnapshot,
@@ -6569,6 +6754,7 @@ export class NightlifeDataService {
         status: issue.status,
         sourceFlow: 'BOOKING_QR',
       },
+      prisma,
     });
 
     const claimKey = input.user
@@ -6583,12 +6769,14 @@ export class NightlifeDataService {
       recipientType,
       userId: input.user?.id,
       guestId: input.guestId,
+      prisma,
     });
     await this.detectCouponClaimFraud({
       claimKey,
       coupon,
       issue,
       context,
+      prisma,
     });
 
     return issue;
@@ -6606,50 +6794,54 @@ export class NightlifeDataService {
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
 
-    const couponLink = await this.resolveBookingCouponLink({
-      dto: input.dto,
-      target: input.target,
-      userId: input.userId,
-      phone: input.phone,
-    });
-    const bookingCouponIssueId =
-      couponLink.couponIssueId ??
-      (couponLink.couponId
-        ? (
-            await this.issueBookingCouponQr({
-              couponId: couponLink.couponId,
-              target: input.target,
-              user: input.user,
-              guestId: input.guestId,
-              phone: input.phone,
-              scheduledAt,
-              context: input.context,
-            })
-          ).id
-        : undefined);
-
-    return this.prisma.booking.create({
-      data: {
+    return this.prisma.$transaction(async (prisma) => {
+      const couponLink = await this.resolveBookingCouponLink({
+        dto: input.dto,
+        target: input.target,
         userId: input.userId,
-        guestId: input.guestId,
-        storeId: input.target.store.id,
-        castId: input.target.cast?.id,
-        couponId: couponLink.couponId,
-        couponIssueId: bookingCouponIssueId,
-        status: 'REQUESTED',
-        scheduledAt,
-        partySize: input.dto.partySize,
-        note: input.note,
-        discountSnapshot: {
-          couponId: couponLink.couponId ?? null,
-          couponIssueId: bookingCouponIssueId ?? null,
-        } as Prisma.InputJsonValue,
-        customerType: input.userId ? 'MEMBER' : 'GUEST',
-        customerNameSnapshot: this.cleanText(input.dto.displayName),
-        customerEmailSnapshot:
-          this.cleanEmail(input.dto.email) ?? input.user?.email ?? '',
-      },
-      select: this.bookingNotificationSelect(),
+        phone: input.phone,
+        prisma,
+      });
+      const bookingCouponIssueId =
+        couponLink.couponIssueId ??
+        (couponLink.couponId
+          ? (
+              await this.issueBookingCouponQr({
+                couponId: couponLink.couponId,
+                target: input.target,
+                user: input.user,
+                guestId: input.guestId,
+                phone: input.phone,
+                scheduledAt,
+                context: input.context,
+                prisma,
+              })
+            ).id
+          : undefined);
+
+      return prisma.booking.create({
+        data: {
+          userId: input.userId,
+          guestId: input.guestId,
+          storeId: input.target.store.id,
+          castId: input.target.cast?.id,
+          couponId: couponLink.couponId,
+          couponIssueId: bookingCouponIssueId,
+          status: 'REQUESTED',
+          scheduledAt,
+          partySize: input.dto.partySize,
+          note: input.note,
+          discountSnapshot: {
+            couponId: couponLink.couponId ?? null,
+            couponIssueId: bookingCouponIssueId ?? null,
+          } as Prisma.InputJsonValue,
+          customerType: input.userId ? 'MEMBER' : 'GUEST',
+          customerNameSnapshot: this.cleanText(input.dto.displayName),
+          customerEmailSnapshot:
+            this.cleanEmail(input.dto.email) ?? input.user?.email ?? '',
+        },
+        select: this.bookingNotificationSelect(),
+      });
     });
   }
 
@@ -10406,6 +10598,10 @@ export class NightlifeDataService {
   }
 
   private resolveCouponIssueIdFromQrPayload(payload: string) {
+    return this.resolveCouponIssueTokenFromQrPayload(payload).issueId;
+  }
+
+  private resolveCouponIssueTokenFromQrPayload(payload: string) {
     const token = this.extractCouponQrToken(payload);
     const [encodedPayload, signature] = token.split('.');
     if (!encodedPayload || !signature) {
@@ -10432,7 +10628,10 @@ export class NightlifeDataService {
         throw new Error('Invalid QR token payload');
       }
 
-      return parsed.issueId;
+      return {
+        issueId: parsed.issueId,
+        tokenHash: this.buildCouponQrTokenHash(token),
+      };
     } catch {
       throw new BadRequestException('Invalid coupon QR payload');
     }
@@ -10454,6 +10653,14 @@ export class NightlifeDataService {
     } catch {
       return value;
     }
+  }
+
+  private buildCouponQrTokenHash(token: string) {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private buildCouponQrTokenHashFromPayload(payload: string) {
+    return this.buildCouponQrTokenHash(this.extractCouponQrToken(payload));
   }
 
   private couponQrVerificationSecrets() {
@@ -10693,8 +10900,10 @@ export class NightlifeDataService {
     recipientType: string;
     userId?: string | null;
     guestId?: string | null;
+    prisma?: Prisma.TransactionClient;
   }) {
-    await this.prisma.notificationLog.create({
+    const prisma = input.prisma ?? this.prisma;
+    await prisma.notificationLog.create({
       data: {
         userId: input.userId ?? undefined,
         guestId: input.guestId ?? undefined,
@@ -10722,14 +10931,16 @@ export class NightlifeDataService {
     coupon: { id: string; code: string; storeId: string };
     issue: { id: string; code: string };
     context: CouponClaimContext;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const since = new Date(Date.now() - COUPON_CLAIM_FRAUD_WINDOW_MS);
     const signalKeys = this.couponFraudSignals(
       input.claimKey,
       input.context,
     ).map((signal) => signal.key);
     const [recentClaims, recentSignalClaims] = await Promise.all([
-      this.prisma.notificationLog.findMany({
+      prisma.notificationLog.findMany({
         where: {
           templateKey: 'coupon.analytics.claimed.v1',
           recipient: input.claimKey,
@@ -10739,7 +10950,7 @@ export class NightlifeDataService {
         take: COUPON_CLAIM_FRAUD_THRESHOLD,
       }),
       signalKeys.length
-        ? this.prisma.notificationLog.findMany({
+        ? prisma.notificationLog.findMany({
             where: {
               templateKey: COUPON_FRAUD_SIGNAL_TEMPLATE,
               recipient: { in: signalKeys },
@@ -10775,7 +10986,7 @@ export class NightlifeDataService {
       return;
     }
 
-    await this.prisma.notificationLog.create({
+    await prisma.notificationLog.create({
       data: {
         storeId: input.coupon.storeId,
         channel: 'IN_APP',
@@ -10805,11 +11016,13 @@ export class NightlifeDataService {
     recipientType: string;
     userId?: string | null;
     guestId?: string | null;
+    prisma?: Prisma.TransactionClient;
   }) {
+    const prisma = input.prisma ?? this.prisma;
     const signals = this.couponFraudSignals(input.claimKey, input.context);
     await Promise.all(
       signals.map((signal) =>
-        this.prisma.notificationLog.create({
+        prisma.notificationLog.create({
           data: {
             userId: input.userId ?? undefined,
             guestId: input.guestId ?? undefined,
@@ -10897,8 +11110,10 @@ export class NightlifeDataService {
     metadata?: Record<string, unknown>;
     beforeJson?: Record<string, unknown>;
     afterJson?: Record<string, unknown>;
+    prisma?: Prisma.TransactionClient;
   }) {
-    await this.prisma.auditLog.create({
+    const prisma = input.prisma ?? this.prisma;
+    await prisma.auditLog.create({
       data: {
         actorId: input.actorId ?? undefined,
         action: input.action,
@@ -10915,6 +11130,80 @@ export class NightlifeDataService {
         },
       },
     });
+  }
+
+  private adminCouponIssueSelect() {
+    return {
+      id: true,
+      code: true,
+      guestId: true,
+      userId: true,
+      qrPayloadHash: true,
+      status: true,
+      expiresAt: true,
+      usedAt: true,
+      revokedAt: true,
+      createdAt: true,
+      metadata: true,
+      user: { select: { id: true, displayName: true, tier: true } },
+      guest: { select: { id: true, displayName: true } },
+      scannedBy: { select: { id: true, displayName: true } },
+      booking: { select: { id: true, status: true, scheduledAt: true } },
+      bill: {
+        select: {
+          id: true,
+          billNumber: true,
+          status: true,
+          totalVnd: true,
+        },
+      },
+      coupon: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          discountType: true,
+          discountValue: true,
+          maxDiscountVnd: true,
+          minSpendVnd: true,
+          store: { select: { id: true, name: true, slug: true } },
+        },
+      },
+    } satisfies Prisma.CouponIssueSelect;
+  }
+
+  private async decorateAdminCouponIssue<
+    T extends { id: string; code: string; status: string; metadata?: unknown },
+  >(issue: T) {
+    const metadata = this.asRecord(issue.metadata);
+    return {
+      ...(await this.decorateCouponIssue(issue)),
+      campaignSnapshot: this.asRecord(metadata?.campaignSnapshot) ?? null,
+      auditLogs: (await this.listCouponIssueAuditLogs([issue.id])).get(issue.id) ?? [],
+    };
+  }
+
+  private mergeRevokedQrTokenHashes(metadata: Record<string, unknown>) {
+    const hashes = new Set<string>();
+    if (Array.isArray(metadata.revokedQrTokenHashes)) {
+      metadata.revokedQrTokenHashes.forEach((value) => {
+        if (typeof value === 'string' && value.trim()) {
+          hashes.add(value.trim());
+        }
+      });
+    }
+
+    const currentHash =
+      typeof metadata.qrTokenHash === 'string'
+        ? metadata.qrTokenHash
+        : typeof metadata.qrPayload === 'string'
+          ? this.buildCouponQrTokenHashFromPayload(metadata.qrPayload)
+          : null;
+    if (currentHash) {
+      hashes.add(currentHash);
+    }
+
+    return Array.from(hashes);
   }
 
   private async listCouponIssueAuditLogs(issueIds: string[]) {
@@ -11021,8 +11310,9 @@ export class NightlifeDataService {
   private async recordCouponExpireEvent(
     count: number,
     where: Prisma.CouponIssueWhereInput,
+    prisma: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
-    await this.prisma.notificationLog.create({
+    await prisma.notificationLog.create({
       data: {
         channel: 'IN_APP',
         status: 'QUEUED',
@@ -11036,8 +11326,11 @@ export class NightlifeDataService {
     });
   }
 
-  private async expireIssuedCouponIssues(where: Prisma.CouponIssueWhereInput) {
-    const result = await this.prisma.couponIssue.updateMany({
+  private async expireIssuedCouponIssues(
+    where: Prisma.CouponIssueWhereInput,
+    prisma: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const result = await prisma.couponIssue.updateMany({
       where: {
         ...where,
         status: 'ISSUED',
@@ -11047,7 +11340,7 @@ export class NightlifeDataService {
     });
 
     if (result.count > 0) {
-      await this.recordCouponExpireEvent(result.count, where);
+      await this.recordCouponExpireEvent(result.count, where, prisma);
     }
     return result;
   }
@@ -11253,6 +11546,33 @@ export class NightlifeDataService {
     if (issue.expiresAt && issue.expiresAt <= new Date()) {
       await this.expireIssuedCouponIssues({ id: issue.id });
       throw new UnprocessableEntityException('Coupon issue has expired');
+    }
+  }
+
+  private assertCouponQrTokenUsable(
+    metadata: unknown,
+    qrTokenHash?: string,
+  ) {
+    if (!qrTokenHash) {
+      return;
+    }
+
+    const record = this.asRecord(metadata);
+    const currentTokenHash =
+      typeof record?.qrTokenHash === 'string' ? record.qrTokenHash : null;
+    const revokedTokenHashes = Array.isArray(record?.revokedQrTokenHashes)
+      ? record.revokedQrTokenHashes.filter(
+          (value): value is string => typeof value === 'string',
+        )
+      : [];
+
+    if (
+      revokedTokenHashes.includes(qrTokenHash) ||
+      (currentTokenHash && currentTokenHash !== qrTokenHash)
+    ) {
+      throw new UnprocessableEntityException(
+        'Coupon QR token has been revoked or rotated',
+      );
     }
   }
 
