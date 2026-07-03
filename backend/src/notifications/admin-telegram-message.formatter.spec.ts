@@ -20,8 +20,6 @@ describe('admin telegram message formatter', () => {
         '📞 Số điện thoại: 0868786867',
         '⏰ Thời gian: 21:00:00 30/6/2026',
         '👥 Số khách: 4 pax',
-        '',
-        'Vui lòng kiểm tra yêu cầu này trong Admin.',
       ].join('\n'),
     );
   });

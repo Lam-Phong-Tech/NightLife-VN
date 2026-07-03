@@ -53,8 +53,6 @@ export function formatBookingRequestTelegramMessage(
     `👥 Số khách: ${formatPartySize(input.partySize)}`,
     input.castName ? `💃 Cast: ${input.castName}` : null,
     input.note ? `📝 Ghi chú: ${input.note}` : null,
-    '',
-    'Vui lòng kiểm tra yêu cầu này trong Admin.',
   ]);
 }
 
@@ -107,8 +105,6 @@ export function formatPartnerRequestTelegramMessage(
     input.contactEmail ? `✉️ Email: ${input.contactEmail}` : null,
     `⏰ Gửi lúc: ${formatTelegramDateTime(input.submittedAt, input.timeZone)}`,
     input.note ? `📝 Ghi chú: ${input.note}` : null,
-    '',
-    'Vui lòng kiểm tra và duyệt yêu cầu trong Admin.',
   ]);
 }
 
