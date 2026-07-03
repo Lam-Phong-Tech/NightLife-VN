@@ -37,6 +37,7 @@ import {
 } from '../notifications/admin-notification.service';
 import { EmailNotificationService } from '../notifications/email-notification.service';
 import { SocketGateway } from '../notifications/socket.gateway';
+import { PasswordService } from '../common/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AdminRankingQueryDto,
@@ -73,6 +74,7 @@ import {
 } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
+  AdminPartnerRequestQueryDto,
   CreatePartnerRequestDto,
   PartnerRequestCastDto,
   ReviewPartnerRequestDto,
@@ -243,13 +245,49 @@ type CouponClaimContext = {
   sessionId?: string | null;
 };
 
-type PartnerRequestNotificationLog = {
+type NightlifePrismaClient = PrismaService | Prisma.TransactionClient;
+
+type PartnerRequestCmsRecord = {
   id: string;
-  status: string;
-  payload: Prisma.JsonValue | null;
-  error: string | null;
-  sentAt: Date | null;
+  status: PartnerRequestReviewStatus;
+  businessName: string;
+  businessType: string | null;
+  area: string | null;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string | null;
+  note: string | null;
+  storeDescription: string | null;
+  storeAddress: string | null;
+  storeCity: string | null;
+  storeDistrict: string | null;
+  openingHours: string | null;
+  menuSummary: string | null;
+  mediaUrls: string[];
+  castProfiles: Prisma.JsonValue | null;
+  draftCastIds: string[];
+  draftMediaIds: string[];
+  draftContentIds: string[];
+  reviewReason: string | null;
+  publicState: string;
+  submittedAt: Date;
+  reviewedAt: Date | null;
+  reviewedById: string | null;
+  partnerUserId: string | null;
+  partnerAccountId: string | null;
   createdAt: Date;
+  store: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+  };
+  notificationLog: {
+    id: string;
+    status: string;
+    error: string | null;
+    sentAt: Date | null;
+  } | null;
 };
 
 type PartnerRequestReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
@@ -599,6 +637,8 @@ export class NightlifeDataService {
     private readonly socketGateway?: SocketGateway,
     @Optional()
     private readonly emailNotificationService?: EmailNotificationService,
+    @Optional()
+    private readonly passwordService?: PasswordService,
   ) {}
 
   async listPublicContents(query: PublicContentQueryDto = {}) {
@@ -3638,164 +3678,183 @@ export class NightlifeDataService {
     const category = this.normalizePartnerRequestCategory(
       dto.storeCategory ?? dto.businessType,
     );
+    const contactName = this.cleanRequiredText(dto.contactName, 'contactName');
+    const contactPhone = this.cleanRequiredText(
+      dto.contactPhone,
+      'contactPhone',
+    );
+    const contactEmail = this.cleanEmail(dto.contactEmail) || null;
+    const businessType = this.cleanText(dto.businessType) || null;
+    const note = this.cleanText(dto.note) || null;
+    const storeAddress = this.cleanNullableText(dto.storeAddress);
+    const storeCity = this.cleanNullableText(dto.storeCity);
+    const storeDistrict = this.cleanNullableText(dto.storeDistrict);
 
-    const store = await this.prisma.store.create({
-      data: {
-        name: storeName,
-        slug: this.buildPartnerRequestSlug(storeName, requestId),
-        category,
-        description: storeDescription,
-        address: this.cleanNullableText(dto.storeAddress),
-        city:
-          this.cleanNullableText(dto.storeCity) ??
-          this.partnerCityFromArea(area) ??
-          'Ho Chi Minh City',
-        district:
-          this.cleanNullableText(dto.storeDistrict) ??
-          this.partnerDistrictFromArea(area),
-        phone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
-        openingHours: openingHours
-          ? this.toPrismaJson({ summary: openingHours })
-          : undefined,
-        status: 'PENDING_REVIEW',
-      },
-      select: { id: true, name: true, slug: true, status: true },
-    });
-
-    const draftCastIds: string[] = [];
-    const draftMediaIds: string[] = [];
-    const draftContentIds: string[] = [];
-
-    for (const [index, castProfile] of castProfiles.entries()) {
-      const cast = await this.prisma.cast.create({
+    const request = await this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.create({
         data: {
-          storeId: store.id,
-          stageName: castProfile.stageName,
-          slug: this.buildPartnerRequestSlug(
-            castProfile.stageName,
-            requestId,
-            `cast-${index + 1}`,
-          ),
-          bio: castProfile.bio,
-          publicBio: castProfile.bio,
-          tags: castProfile.tags,
-          languages: castProfile.languages,
-          hourlyRateVnd: castProfile.hourlyRateVnd,
-          isPublic: false,
-          status: 'DRAFT',
+          name: storeName,
+          slug: this.buildPartnerRequestSlug(storeName, requestId),
+          category,
+          description: storeDescription,
+          address: storeAddress,
+          city:
+            storeCity ?? this.partnerCityFromArea(area) ?? 'Ho Chi Minh City',
+          district: storeDistrict ?? this.partnerDistrictFromArea(area),
+          phone: contactPhone,
+          openingHours: openingHours
+            ? this.toPrismaJson({ summary: openingHours })
+            : undefined,
+          status: 'PENDING_REVIEW',
         },
-        select: { id: true },
+        select: { id: true, name: true, slug: true, status: true },
       });
-      draftCastIds.push(cast.id);
 
-      for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
-        const media = await this.createPartnerRequestMedia({
-          requestId,
-          url,
-          index: mediaIndex,
-          castId: cast.id,
-          purpose: 'PARTNER_REQUEST_CAST',
+      const draftCastIds: string[] = [];
+      const draftMediaIds: string[] = [];
+      const draftContentIds: string[] = [];
+
+      for (const [index, castProfile] of castProfiles.entries()) {
+        const cast = await tx.cast.create({
+          data: {
+            storeId: store.id,
+            stageName: castProfile.stageName,
+            slug: this.buildPartnerRequestSlug(
+              castProfile.stageName,
+              requestId,
+              `cast-${index + 1}`,
+            ),
+            bio: castProfile.bio,
+            publicBio: castProfile.bio,
+            tags: castProfile.tags,
+            languages: castProfile.languages,
+            hourlyRateVnd: castProfile.hourlyRateVnd,
+            isPublic: false,
+            status: 'DRAFT',
+          },
+          select: { id: true },
         });
+        draftCastIds.push(cast.id);
+
+        for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+          const media = await this.createPartnerRequestMedia(
+            {
+              requestId,
+              url,
+              index: mediaIndex,
+              castId: cast.id,
+              purpose: 'PARTNER_REQUEST_CAST',
+            },
+            tx,
+          );
+          draftMediaIds.push(media.id);
+        }
+      }
+
+      for (const [index, url] of mediaUrls.entries()) {
+        const media = await this.createPartnerRequestMedia(
+          {
+            requestId,
+            url,
+            index,
+            storeId: store.id,
+            purpose: 'PARTNER_REQUEST_STORE',
+          },
+          tx,
+        );
         draftMediaIds.push(media.id);
       }
-    }
 
-    for (const [index, url] of mediaUrls.entries()) {
-      const media = await this.createPartnerRequestMedia({
-        requestId,
-        url,
-        index,
-        storeId: store.id,
-        purpose: 'PARTNER_REQUEST_STORE',
-      });
-      draftMediaIds.push(media.id);
-    }
+      if (menuSummary) {
+        const content = await tx.content.create({
+          data: {
+            storeId: store.id,
+            title: `${storeName} menu draft`,
+            slug: this.buildPartnerRequestSlug(
+              `${storeName} menu`,
+              requestId,
+              'menu',
+            ),
+            type: 'STORE_POST',
+            status: 'DRAFT',
+            excerpt: `Draft menu from ${requestId}`,
+            body: menuSummary,
+            metadata: this.toPrismaJson({ partnerRequestId: requestId }),
+          },
+          select: { id: true },
+        });
+        draftContentIds.push(content.id);
+      }
 
-    if (menuSummary) {
-      const content = await this.prisma.content.create({
+      return tx.partnerRequest.create({
         data: {
+          id: requestId,
           storeId: store.id,
-          title: `${storeName} menu draft`,
-          slug: this.buildPartnerRequestSlug(
-            `${storeName} menu`,
-            requestId,
-            'menu',
-          ),
-          type: 'STORE_POST',
-          status: 'DRAFT',
-          excerpt: `Draft menu from ${requestId}`,
-          body: menuSummary,
-          metadata: this.toPrismaJson({ partnerRequestId: requestId }),
+          status: 'PENDING_REVIEW',
+          businessName,
+          businessType,
+          area,
+          contactName,
+          contactPhone,
+          contactEmail,
+          note,
+          storeDescription,
+          storeAddress,
+          storeCity,
+          storeDistrict,
+          openingHours,
+          menuSummary,
+          mediaUrls,
+          castProfiles: castProfiles.length
+            ? (castProfiles as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          draftCastIds,
+          draftMediaIds,
+          draftContentIds,
+          publicState: 'HIDDEN',
+          submittedAt,
         },
-        select: { id: true },
+        select: this.partnerRequestSelect(),
       });
-      draftContentIds.push(content.id);
-    }
+    });
 
-    const request = {
-      id: requestId,
-      draftStoreId: store.id,
-      draftStoreName: store.name,
-      draftStoreSlug: store.slug,
-      draftCastIds,
-      draftMediaIds,
-      draftContentIds,
-      businessName,
-      businessType: this.cleanText(dto.businessType) || null,
-      area,
-      contactName: this.cleanRequiredText(dto.contactName, 'contactName'),
-      contactPhone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
-      contactEmail: this.cleanText(dto.contactEmail) || null,
-      note: this.cleanText(dto.note) || null,
-      storeDescription,
-      storeAddress: this.cleanNullableText(dto.storeAddress),
-      storeCity: this.cleanNullableText(dto.storeCity),
-      storeDistrict: this.cleanNullableText(dto.storeDistrict),
-      openingHours,
-      menuSummary,
-      mediaUrls,
-      castProfiles,
-      submittedAt,
-    };
-
-    await this.adminNotificationService?.notifyPartnerRequest(request);
+    await this.notifyPartnerRequestDelivery(
+      request as unknown as PartnerRequestCmsRecord,
+    );
 
     return {
       id: request.id,
       status: 'PENDING_REVIEW',
       submittedAt,
       draft: {
-        storeId: store.id,
-        storeName: store.name,
-        storeSlug: store.slug,
-        castCount: draftCastIds.length,
-        mediaCount: draftMediaIds.length,
-        contentCount: draftContentIds.length,
+        storeId: request.store.id,
+        storeName: request.store.name,
+        storeSlug: request.store.slug,
+        castCount: request.draftCastIds.length,
+        mediaCount: request.draftMediaIds.length,
+        contentCount: request.draftContentIds.length,
       },
       message: 'Partner request submitted for admin review',
     };
   }
 
-  async listAdminPartnerRequests() {
-    const logs = await this.prisma.notificationLog.findMany({
-      where: {
-        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
-        channel: 'TELEGRAM',
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: {
-        id: true,
-        status: true,
-        payload: true,
-        error: true,
-        sentAt: true,
-        createdAt: true,
-      },
+  async listAdminPartnerRequests(query: AdminPartnerRequestQueryDto = {}) {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(Math.max(1, query.limit ?? 50), 100);
+    const where = this.buildAdminPartnerRequestWhere(query);
+
+    const requests = await this.prisma.partnerRequest.findMany({
+      where,
+      orderBy: { submittedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: this.partnerRequestSelect(),
     });
 
-    return logs.map((log) =>
-      this.mapPartnerRequestNotification(log as PartnerRequestNotificationLog),
+    return requests.map((request) =>
+      this.mapPartnerRequestRecord(
+        request as unknown as PartnerRequestCmsRecord,
+      ),
     );
   }
 
@@ -3805,134 +3864,167 @@ export class NightlifeDataService {
     dto: ReviewPartnerRequestDto,
   ) {
     const reason = this.cleanRequiredText(dto.reason, 'reason');
-    const log = await this.findPartnerRequestNotificationLog(requestId);
-
-    if (!log) {
-      throw new NotFoundException('Partner request not found');
-    }
-
-    const payload = this.partnerRequestPayload(log);
-    const currentStatus =
-      (this.payloadString(
-        payload.status,
-      ) as PartnerRequestReviewStatus | null) ?? 'PENDING_REVIEW';
-
-    if (currentStatus !== 'PENDING_REVIEW') {
-      throw new UnprocessableEntityException(
-        'Partner request has already been reviewed',
-      );
-    }
-
+    const lookup = this.cleanRequiredText(requestId, 'requestId');
     const now = new Date();
-    const draftStoreId = this.payloadString(payload.draftStoreId);
-    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
-    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
-    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
-
-    if (dto.approve) {
-      if (draftStoreId) {
-        await this.prisma.store.update({
-          where: { id: draftStoreId },
-          data: { status: 'ACTIVE' },
-          select: { id: true },
-        });
-      }
-      if (draftCastIds.length) {
-        await this.prisma.cast.updateMany({
-          where: { id: { in: draftCastIds } },
-          data: { status: 'ACTIVE', isPublic: true },
-        });
-      }
-      if (draftMediaIds.length) {
-        await this.prisma.media.updateMany({
-          where: { id: { in: draftMediaIds } },
-          data: { status: 'READY', access: 'PUBLIC' },
-        });
-      }
-      if (draftContentIds.length) {
-        await this.prisma.content.updateMany({
-          where: { id: { in: draftContentIds } },
-          data: { status: 'PUBLISHED', publishedAt: now },
-        });
-      }
-    } else {
-      if (draftStoreId) {
-        await this.prisma.store.update({
-          where: { id: draftStoreId },
-          data: { status: 'DRAFT' },
-          select: { id: true },
-        });
-      }
-      if (draftCastIds.length) {
-        await this.prisma.cast.updateMany({
-          where: { id: { in: draftCastIds } },
-          data: { status: 'DRAFT', isPublic: false },
-        });
-      }
-      if (draftMediaIds.length) {
-        await this.prisma.media.updateMany({
-          where: { id: { in: draftMediaIds } },
-          data: { status: 'HIDDEN', access: 'PROTECTED' },
-        });
-      }
-      if (draftContentIds.length) {
-        await this.prisma.content.updateMany({
-          where: { id: { in: draftContentIds } },
-          data: { status: 'DRAFT', publishedAt: null },
-        });
-      }
-    }
-
     const nextStatus: PartnerRequestReviewStatus = dto.approve
       ? 'APPROVED'
       : 'REJECTED';
-    const nextPayload = {
-      ...payload,
-      status: nextStatus,
-      reviewReason: reason,
-      reviewedAt: now.toISOString(),
-      reviewedById: adminId,
-      publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
-    } as Prisma.InputJsonObject;
 
-    const updatedLog = await this.prisma.notificationLog.update({
-      where: { id: log.id },
-      data: {
-        payload: nextPayload,
-      },
-      select: {
-        id: true,
-        status: true,
-        payload: true,
-        error: true,
-        sentAt: true,
-        createdAt: true,
-      },
+    const reviewed = await this.prisma.$transaction(async (tx) => {
+      const request = await this.findPartnerRequest(lookup, tx);
+
+      if (!request) {
+        throw new NotFoundException('Partner request not found');
+      }
+
+      const statusUpdate = await tx.partnerRequest.updateMany({
+        where: { id: request.id, status: 'PENDING_REVIEW' },
+        data: {
+          status: nextStatus,
+          reviewReason: reason,
+          reviewedAt: now,
+          reviewedById: adminId,
+          publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+        },
+      });
+
+      if (statusUpdate.count !== 1) {
+        throw new UnprocessableEntityException(
+          'Partner request has already been reviewed',
+        );
+      }
+
+      const onboarding = dto.approve
+        ? await this.ensurePartnerOnboarding(tx, request)
+        : null;
+
+      if (dto.approve) {
+        await tx.store.update({
+          where: { id: request.store.id },
+          data: {
+            status: 'ACTIVE',
+            ownerId: onboarding?.userId,
+            partnerAccountId: onboarding?.partnerAccountId,
+          },
+          select: { id: true },
+        });
+        if (request.draftCastIds.length) {
+          await tx.cast.updateMany({
+            where: { id: { in: request.draftCastIds } },
+            data: { status: 'ACTIVE', isPublic: true },
+          });
+        }
+        if (request.draftMediaIds.length) {
+          await tx.media.updateMany({
+            where: { id: { in: request.draftMediaIds } },
+            data: { status: 'READY', access: 'PUBLIC' },
+          });
+        }
+        if (request.draftContentIds.length) {
+          await tx.content.updateMany({
+            where: { id: { in: request.draftContentIds } },
+            data: { status: 'PUBLISHED', publishedAt: now },
+          });
+        }
+      } else {
+        await tx.store.update({
+          where: { id: request.store.id },
+          data: { status: 'DRAFT' },
+          select: { id: true },
+        });
+        if (request.draftCastIds.length) {
+          await tx.cast.updateMany({
+            where: { id: { in: request.draftCastIds } },
+            data: { status: 'DRAFT', isPublic: false },
+          });
+        }
+        if (request.draftMediaIds.length) {
+          await tx.media.updateMany({
+            where: { id: { in: request.draftMediaIds } },
+            data: { status: 'HIDDEN', access: 'PROTECTED' },
+          });
+        }
+        if (request.draftContentIds.length) {
+          await tx.content.updateMany({
+            where: { id: { in: request.draftContentIds } },
+            data: { status: 'DRAFT', publishedAt: null },
+          });
+        }
+      }
+
+      const afterJson = this.partnerRequestAuditJson({
+        ...request,
+        status: nextStatus,
+        reviewReason: reason,
+        reviewedAt: now,
+        reviewedById: adminId,
+        partnerUserId: onboarding?.userId ?? request.partnerUserId,
+        partnerAccountId:
+          onboarding?.partnerAccountId ?? request.partnerAccountId,
+        publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: dto.approve
+            ? 'PARTNER_REQUEST_APPROVED'
+            : 'PARTNER_REQUEST_REJECTED',
+          targetType: 'PARTNER_REQUEST',
+          targetId: request.id,
+          metadata: this.toPrismaJson({
+            reason,
+            approve: dto.approve,
+            draftStoreId: request.store.id,
+            draftCastIds: request.draftCastIds,
+            draftMediaIds: request.draftMediaIds,
+            draftContentIds: request.draftContentIds,
+            partnerUserId: onboarding?.userId ?? null,
+            partnerAccountId: onboarding?.partnerAccountId ?? null,
+            temporaryPasswordIssued: Boolean(onboarding?.temporaryPassword),
+          }),
+          beforeJson: this.partnerRequestAuditJson(request),
+          afterJson,
+        },
+      });
+
+      if (request.notificationLog) {
+        await tx.notificationLog.update({
+          where: { id: request.notificationLog.id },
+          data: {
+            payload: this.toPrismaJson({
+              ...this.partnerRequestNotificationPayload(request),
+              status: nextStatus,
+              reviewReason: reason,
+              reviewedAt: now.toISOString(),
+              reviewedById: adminId,
+              partnerUserId: onboarding?.userId ?? null,
+              partnerAccountId: onboarding?.partnerAccountId ?? null,
+              publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+            }),
+          },
+        });
+      }
+
+      if (onboarding) {
+        await tx.partnerRequest.update({
+          where: { id: request.id },
+          data: {
+            partnerUserId: onboarding.userId,
+            partnerAccountId: onboarding.partnerAccountId,
+          },
+          select: { id: true },
+        });
+      }
+
+      return tx.partnerRequest.findUniqueOrThrow({
+        where: { id: request.id },
+        select: this.partnerRequestSelect(),
+      });
     });
 
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: adminId,
-        action: dto.approve
-          ? 'PARTNER_REQUEST_APPROVED'
-          : 'PARTNER_REQUEST_REJECTED',
-        targetType: 'PARTNER_REQUEST',
-        targetId: this.payloadString(payload.requestId) ?? requestId,
-        metadata: this.toPrismaJson({
-          reason,
-          approve: dto.approve,
-          draftStoreId,
-          draftCastIds,
-          draftMediaIds,
-          draftContentIds,
-        }),
-        beforeJson: payload as Prisma.InputJsonObject,
-        afterJson: nextPayload,
-      },
-    });
-
-    return this.mapPartnerRequestNotification(
-      updatedLog as PartnerRequestNotificationLog,
+    return this.mapPartnerRequestRecord(
+      reviewed as unknown as PartnerRequestCmsRecord,
     );
   }
 
@@ -7313,8 +7405,8 @@ export class NightlifeDataService {
     storeId?: string;
     castId?: string;
     purpose: string;
-  }) {
-    return this.prisma.media.create({
+  }, client: NightlifePrismaClient = this.prisma) {
+    return client.media.create({
       data: {
         storeId: input.storeId,
         castId: input.castId,
@@ -7338,6 +7430,470 @@ export class NightlifeDataService {
       },
       select: { id: true },
     });
+  }
+
+  private partnerRequestSelect() {
+    return {
+      id: true,
+      status: true,
+      businessName: true,
+      businessType: true,
+      area: true,
+      contactName: true,
+      contactPhone: true,
+      contactEmail: true,
+      note: true,
+      storeDescription: true,
+      storeAddress: true,
+      storeCity: true,
+      storeDistrict: true,
+      openingHours: true,
+      menuSummary: true,
+      mediaUrls: true,
+      castProfiles: true,
+      draftCastIds: true,
+      draftMediaIds: true,
+      draftContentIds: true,
+      reviewReason: true,
+      publicState: true,
+      submittedAt: true,
+      reviewedAt: true,
+      reviewedById: true,
+      partnerUserId: true,
+      partnerAccountId: true,
+      createdAt: true,
+      store: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+        },
+      },
+      notificationLog: {
+        select: {
+          id: true,
+          status: true,
+          error: true,
+          sentAt: true,
+        },
+      },
+    } satisfies Prisma.PartnerRequestSelect;
+  }
+
+  private buildAdminPartnerRequestWhere(
+    query: AdminPartnerRequestQueryDto,
+  ): Prisma.PartnerRequestWhereInput {
+    const keyword = this.cleanText(query.keyword);
+    const submittedFrom = this.parseOptionalDate(
+      query.submittedFrom,
+      'submittedFrom',
+    );
+    const submittedTo = this.parseOptionalDate(query.submittedTo, 'submittedTo');
+    const submittedAt: Prisma.DateTimeFilter = {};
+
+    if (submittedFrom) {
+      submittedAt.gte = submittedFrom;
+    }
+    if (submittedTo) {
+      submittedAt.lte = submittedTo;
+    }
+
+    return {
+      ...(query.status ? { status: query.status } : {}),
+      ...(Object.keys(submittedAt).length ? { submittedAt } : {}),
+      ...(keyword
+        ? {
+            OR: [
+              { id: { contains: keyword, mode: 'insensitive' } },
+              { businessName: { contains: keyword, mode: 'insensitive' } },
+              { contactName: { contains: keyword, mode: 'insensitive' } },
+              { contactPhone: { contains: keyword, mode: 'insensitive' } },
+              { contactEmail: { contains: keyword, mode: 'insensitive' } },
+              { store: { name: { contains: keyword, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+  }
+
+  private async findPartnerRequest(
+    requestId: string,
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    const lookup = this.cleanRequiredText(requestId, 'requestId');
+    const or: Prisma.PartnerRequestWhereInput[] = [{ id: lookup }];
+
+    if (this.isUuid(lookup)) {
+      or.push({ storeId: lookup }, { notificationLogId: lookup });
+    }
+
+    return (await client.partnerRequest.findFirst({
+      where: { OR: or },
+      select: this.partnerRequestSelect(),
+    })) as unknown as PartnerRequestCmsRecord | null;
+  }
+
+  private async notifyPartnerRequestDelivery(request: PartnerRequestCmsRecord) {
+    try {
+      const notificationId =
+        await this.adminNotificationService?.notifyPartnerRequest(
+          this.partnerRequestNotificationInput(request),
+        );
+
+      if (!notificationId) {
+        return;
+      }
+
+      await this.prisma.partnerRequest.update({
+        where: { id: request.id },
+        data: { notificationLogId: notificationId },
+        select: { id: true },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Partner request Telegram delivery failed: ${this.errorMessage(error)}`,
+      );
+    }
+  }
+
+  private partnerRequestNotificationInput(request: PartnerRequestCmsRecord) {
+    return {
+      id: request.id,
+      draftStoreId: request.store.id,
+      draftStoreName: request.store.name,
+      draftStoreSlug: request.store.slug,
+      draftCastIds: request.draftCastIds,
+      draftMediaIds: request.draftMediaIds,
+      draftContentIds: request.draftContentIds,
+      businessName: request.businessName,
+      businessType: request.businessType,
+      area: request.area,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      contactEmail: request.contactEmail,
+      note: request.note,
+      storeDescription: request.storeDescription,
+      storeAddress: request.storeAddress,
+      storeCity: request.storeCity,
+      storeDistrict: request.storeDistrict,
+      openingHours: request.openingHours,
+      menuSummary: request.menuSummary,
+      mediaUrls: request.mediaUrls,
+      castProfiles: this.partnerRequestCastProfiles(request.castProfiles),
+      submittedAt: request.submittedAt,
+    };
+  }
+
+  private partnerRequestNotificationPayload(request: PartnerRequestCmsRecord) {
+    return {
+      requestId: request.id,
+      status: request.status,
+      reviewReason: request.reviewReason,
+      reviewedAt: this.toIsoDate(request.reviewedAt),
+      reviewedById: request.reviewedById,
+      partnerUserId: request.partnerUserId,
+      partnerAccountId: request.partnerAccountId,
+      draftStoreId: request.store.id,
+      draftStoreName: request.store.name,
+      draftStoreSlug: request.store.slug,
+      draftCastIds: request.draftCastIds,
+      draftMediaIds: request.draftMediaIds,
+      draftContentIds: request.draftContentIds,
+      businessName: request.businessName,
+      businessType: request.businessType,
+      area: request.area,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      contactEmail: request.contactEmail,
+      note: request.note,
+      storeDescription: request.storeDescription,
+      storeAddress: request.storeAddress,
+      storeCity: request.storeCity,
+      storeDistrict: request.storeDistrict,
+      openingHours: request.openingHours,
+      menuSummary: request.menuSummary,
+      mediaUrls: request.mediaUrls,
+      castProfiles: this.partnerRequestCastProfiles(request.castProfiles),
+      submittedAt: this.toIsoDate(request.submittedAt),
+      publicState: request.publicState,
+    };
+  }
+
+  private partnerRequestAuditJson(
+    request: PartnerRequestCmsRecord,
+  ): Prisma.InputJsonObject {
+    return this.partnerRequestNotificationPayload(
+      request,
+    ) as unknown as Prisma.InputJsonObject;
+  }
+
+  private mapPartnerRequestRecord(request: PartnerRequestCmsRecord) {
+    return {
+      id: request.id,
+      notificationId: request.notificationLog?.id ?? null,
+      notificationStatus: request.notificationLog?.status ?? null,
+      notificationError: request.notificationLog?.error ?? null,
+      notifiedAt: request.notificationLog?.sentAt?.toISOString() ?? null,
+      submittedAt: request.submittedAt.toISOString(),
+      status: request.status,
+      reviewReason: request.reviewReason,
+      reviewedAt: request.reviewedAt?.toISOString() ?? null,
+      reviewedById: request.reviewedById,
+      partnerUserId: request.partnerUserId,
+      partnerAccountId: request.partnerAccountId,
+      publicState: request.publicState,
+      draftStoreId: request.store.id,
+      draftStoreName: request.store.name,
+      draftStoreSlug: request.store.slug,
+      draftCastIds: request.draftCastIds,
+      draftMediaIds: request.draftMediaIds,
+      draftContentIds: request.draftContentIds,
+      draftCastCount: request.draftCastIds.length,
+      draftMediaCount: request.draftMediaIds.length,
+      draftContentCount: request.draftContentIds.length,
+      businessName: request.businessName,
+      businessType: request.businessType,
+      area: request.area,
+      contactName: request.contactName,
+      contactPhone: request.contactPhone,
+      contactEmail: request.contactEmail,
+      note: request.note,
+      storeDescription: request.storeDescription,
+      storeAddress: request.storeAddress,
+      storeCity: request.storeCity,
+      storeDistrict: request.storeDistrict,
+      openingHours: request.openingHours,
+      menuSummary: request.menuSummary,
+      mediaUrls: request.mediaUrls,
+    };
+  }
+
+  private async ensurePartnerOnboarding(
+    client: NightlifePrismaClient,
+    request: PartnerRequestCmsRecord,
+  ) {
+    const email = this.cleanEmail(request.contactEmail);
+    if (!email) {
+      throw new UnprocessableEntityException(
+        'contactEmail is required to approve and onboard a partner account',
+      );
+    }
+
+    if (!this.passwordService) {
+      throw new UnprocessableEntityException(
+        'Password service is required to onboard a partner account',
+      );
+    }
+
+    const displayName = request.contactName || request.businessName;
+    const existingUser = await client.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    let temporaryPassword: string | null = null;
+    const user = existingUser
+      ? await this.activateExistingPartnerUser(client, existingUser, {
+          displayName,
+          phone: request.contactPhone,
+        })
+      : await (async () => {
+          temporaryPassword = `Partner-${randomUUID()}`;
+          return client.user.create({
+            data: {
+              email,
+              passwordHash: await this.passwordService!.hash(temporaryPassword),
+              displayName,
+              phone: request.contactPhone,
+              role: 'PARTNER',
+              tier: 'FREE',
+              status: 'ACTIVE',
+            },
+            select: { id: true, email: true },
+          });
+        })();
+
+    const existingAccount = await client.partnerAccount.findFirst({
+      where: { userId: user.id, deletedAt: null },
+      select: { id: true },
+    });
+    const partnerAccount = existingAccount
+      ? await client.partnerAccount.update({
+          where: { id: existingAccount.id },
+          data: {
+            businessName: request.businessName,
+            contactName: request.contactName,
+            contactPhone: request.contactPhone,
+            contactEmail: request.contactEmail,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        })
+      : await client.partnerAccount.create({
+          data: {
+            userId: user.id,
+            businessName: request.businessName,
+            contactName: request.contactName,
+            contactPhone: request.contactPhone,
+            contactEmail: request.contactEmail,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+
+    await client.storePermission.upsert({
+      where: {
+        userId_storeId: {
+          userId: user.id,
+          storeId: request.store.id,
+        },
+      },
+      update: {
+        permissions: this.partnerStorePermissionKeys(),
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      create: {
+        userId: user.id,
+        storeId: request.store.id,
+        permissions: this.partnerStorePermissionKeys(),
+        status: 'ACTIVE',
+      },
+    });
+
+    return {
+      userId: user.id,
+      partnerAccountId: partnerAccount.id,
+      temporaryPassword,
+    };
+  }
+
+  private async activateExistingPartnerUser(
+    client: NightlifePrismaClient,
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      status: string;
+      deletedAt: Date | null;
+    },
+    input: { displayName: string; phone: string },
+  ) {
+    if (user.deletedAt || user.status !== 'ACTIVE') {
+      throw new UnprocessableEntityException(
+        'Existing partner email belongs to an inactive account',
+      );
+    }
+
+    if (user.role !== 'USER' && user.role !== 'PARTNER') {
+      throw new UnprocessableEntityException(
+        'Existing partner email belongs to a restricted staff account',
+      );
+    }
+
+    return client.user.update({
+      where: { id: user.id },
+      data: {
+        role: 'PARTNER',
+        displayName: input.displayName,
+        phone: input.phone,
+      },
+      select: { id: true, email: true },
+    });
+  }
+
+  private partnerStorePermissionKeys() {
+    return [
+      'store.partner.view',
+      'booking.partner.view',
+      'bill.partner.view',
+      'coupon.scan',
+    ];
+  }
+
+  private partnerRequestCastProfiles(
+    value: Prisma.JsonValue | null,
+  ): PartnerRequestCastDto[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item): PartnerRequestCastDto | null => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          return null;
+        }
+
+        const record = item as Record<string, unknown>;
+        const stageName =
+          typeof record.stageName === 'string' ? record.stageName.trim() : '';
+
+        if (!stageName) {
+          return null;
+        }
+
+        const profile: PartnerRequestCastDto = { stageName };
+        const tags = this.cleanStringArray(
+          Array.isArray(record.tags) ? (record.tags as string[]) : [],
+          12,
+        );
+        const languages = this.cleanStringArray(
+          Array.isArray(record.languages)
+            ? (record.languages as string[])
+            : [],
+          8,
+        );
+        const mediaUrls = this.cleanStringArray(
+          Array.isArray(record.mediaUrls)
+            ? (record.mediaUrls as string[])
+            : [],
+          8,
+        );
+
+        if (typeof record.bio === 'string' && record.bio.trim()) {
+          profile.bio = record.bio;
+        }
+        if (tags.length) {
+          profile.tags = tags;
+        }
+        if (languages.length) {
+          profile.languages = languages;
+        }
+        if (
+          typeof record.hourlyRateVnd === 'number' &&
+          Number.isFinite(record.hourlyRateVnd)
+        ) {
+          profile.hourlyRateVnd = record.hourlyRateVnd;
+        }
+        if (mediaUrls.length) {
+          profile.mediaUrls = mediaUrls;
+        }
+
+        return profile;
+      })
+      .filter((profile): profile is PartnerRequestCastDto => Boolean(profile));
+  }
+
+  private toIsoDate(value: Date | string | null | undefined) {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+
+  private isUuid(value: string) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    );
   }
 
   private cleanText(value?: string | null) {
@@ -7546,106 +8102,6 @@ export class NightlifeDataService {
     const compactLookup = lookupCode.toLowerCase().replace(/-/g, '');
 
     return compactBookingId.startsWith(compactLookup);
-  }
-
-  private async findPartnerRequestNotificationLog(requestId: string) {
-    const lookup = this.cleanRequiredText(requestId, 'requestId');
-    const logs = await this.prisma.notificationLog.findMany({
-      where: {
-        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
-        channel: 'TELEGRAM',
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      select: {
-        id: true,
-        status: true,
-        payload: true,
-        error: true,
-        sentAt: true,
-        createdAt: true,
-      },
-    });
-
-    return (
-      (logs.find((log) => {
-        const payload = this.partnerRequestPayload(
-          log as PartnerRequestNotificationLog,
-        );
-        return (
-          log.id === lookup ||
-          this.payloadString(payload.requestId) === lookup ||
-          this.payloadString(payload.draftStoreId) === lookup
-        );
-      }) as PartnerRequestNotificationLog | undefined) ?? null
-    );
-  }
-
-  private partnerRequestPayload(log: PartnerRequestNotificationLog) {
-    return log.payload &&
-      typeof log.payload === 'object' &&
-      !Array.isArray(log.payload)
-      ? (log.payload as Record<string, unknown>)
-      : {};
-  }
-
-  private mapPartnerRequestNotification(log: PartnerRequestNotificationLog) {
-    const payload = this.partnerRequestPayload(log);
-    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
-    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
-    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
-
-    return {
-      id: this.payloadString(payload.requestId) ?? log.id,
-      notificationId: log.id,
-      notificationStatus: log.status,
-      notificationError: log.error,
-      notifiedAt: log.sentAt?.toISOString() ?? null,
-      submittedAt:
-        this.payloadString(payload.submittedAt) ?? log.createdAt.toISOString(),
-      status: this.payloadString(payload.status) ?? 'PENDING_REVIEW',
-      reviewReason: this.payloadString(payload.reviewReason),
-      reviewedAt: this.payloadString(payload.reviewedAt),
-      reviewedById: this.payloadString(payload.reviewedById),
-      publicState: this.payloadString(payload.publicState) ?? 'HIDDEN',
-      draftStoreId: this.payloadString(payload.draftStoreId),
-      draftStoreName: this.payloadString(payload.draftStoreName),
-      draftStoreSlug: this.payloadString(payload.draftStoreSlug),
-      draftCastIds,
-      draftMediaIds,
-      draftContentIds,
-      draftCastCount: draftCastIds.length,
-      draftMediaCount: draftMediaIds.length,
-      draftContentCount: draftContentIds.length,
-      businessName: this.payloadString(payload.businessName) ?? 'Unknown',
-      businessType: this.payloadString(payload.businessType),
-      area: this.payloadString(payload.area),
-      contactName: this.payloadString(payload.contactName) ?? 'Unknown',
-      contactPhone: this.payloadString(payload.contactPhone) ?? '',
-      contactEmail: this.payloadString(payload.contactEmail),
-      note: this.payloadString(payload.note),
-      storeDescription: this.payloadString(payload.storeDescription),
-      storeAddress: this.payloadString(payload.storeAddress),
-      storeCity: this.payloadString(payload.storeCity),
-      storeDistrict: this.payloadString(payload.storeDistrict),
-      openingHours: this.payloadString(payload.openingHours),
-      menuSummary: this.payloadString(payload.menuSummary),
-      mediaUrls: this.payloadStringArray(payload.mediaUrls),
-    };
-  }
-
-  private payloadString(value: unknown) {
-    return typeof value === 'string' && value.trim() ? value : null;
-  }
-
-  private payloadStringArray(value: unknown) {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-
-    return value
-      .map((item) => (typeof item === 'string' ? item.trim() : ''))
-      .filter((item): item is string => Boolean(item));
   }
 
   private bookingActorTypeFor(user: AuthenticatedUser): BookingStatusActorType {

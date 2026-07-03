@@ -689,6 +689,8 @@ const adminPartnerRequestExample = {
   draftCastCount: 2,
   draftMediaCount: 4,
   draftContentCount: 1,
+  partnerUserId: null,
+  partnerAccountId: null,
   businessName: 'Neon Club',
   businessType: 'Club / Lounge',
   area: 'Ha Noi - Tay Ho',
@@ -781,10 +783,43 @@ export function AdminContentsContract() {
 }
 
 export function AdminPartnerRequestsContract() {
-  return guardedListContract(
-    'Admin partner: list partner requests from Telegram notification logs',
-    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists partner request payloads persisted in NotificationLog. Submitted store/cast/media/menu drafts remain hidden until the admin review endpoint approves them.',
-    adminPartnerRequestExample,
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin partner: list partner requests from CMS records',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists durable PartnerRequest CMS records with optional status, keyword, and submitted date filters. Telegram is only a delivery channel; submitted store/cast/media/menu drafts remain hidden until the admin review endpoint approves them.',
+    }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: ['PENDING_REVIEW', 'APPROVED', 'REJECTED'],
+    }),
+    ApiQuery({ name: 'keyword', required: false, example: 'Neon Club' }),
+    ApiQuery({
+      name: 'submittedFrom',
+      required: false,
+      example: '2026-07-01T00:00:00.000Z',
+    }),
+    ApiQuery({
+      name: 'submittedTo',
+      required: false,
+      example: '2026-07-03T23:59:59.999Z',
+    }),
+    ApiQuery({ name: 'page', required: false, example: 1 }),
+    ApiQuery({ name: 'limit', required: false, example: 50 }),
+    ApiOkResponse({
+      description: 'Partner request list.',
+      schema: { example: [adminPartnerRequestExample] },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid access token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Admin role is required.',
+      schema: { example: forbiddenExample },
+    }),
   );
 }
 
@@ -794,7 +829,7 @@ export function ReviewPartnerRequestContract() {
     ApiOperation({
       summary: 'Admin partner: approve or reject a partner request',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Approves a partner request by publishing the submitted draft store/cast/media/menu, or rejects it while keeping those records non-public. A reason is required for the CMS audit trail.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Transactionally approves a pending partner request by publishing the submitted draft store/cast/media/menu and onboarding the partner account, or rejects it while keeping those records non-public. The request row is updated conditionally from PENDING_REVIEW to prevent double review, and a reason is required for the CMS audit trail.',
     }),
     ApiParam({ name: 'requestId', example: 'PARTNER-7F3A91BC' }),
     ApiBody({ type: ReviewPartnerRequestDto }),

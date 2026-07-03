@@ -379,7 +379,7 @@ export class AdminNotificationService {
       });
 
       if (!configured) {
-        return;
+        return log.id;
       }
 
       await this.sendTelegramMessage(token as string, chatId as string, text);
@@ -391,6 +391,7 @@ export class AdminNotificationService {
           error: null,
         },
       });
+      return log.id;
     } catch (error) {
       this.logger.warn(
         `Admin Telegram notification failed: ${this.errorMessage(error)}`,
@@ -399,6 +400,7 @@ export class AdminNotificationService {
       if (configured) {
         await this.markLastAttemptFailed(input, payload, chatId, error);
       }
+      return null;
     }
   }
 

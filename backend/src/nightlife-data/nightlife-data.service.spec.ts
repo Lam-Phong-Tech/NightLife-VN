@@ -12,6 +12,28 @@ import { NightlifeDataService } from './nightlife-data.service';
 
 describe('NightlifeDataService', () => {
   const prisma = {
+    $transaction: jest.fn(),
+    user: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    partnerAccount: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    storePermission: {
+      upsert: jest.fn(),
+    },
+    partnerRequest: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      update: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+    },
     coupon: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -105,11 +127,91 @@ describe('NightlifeDataService', () => {
   const emailNotificationService = {
     sendBookingQrEmail: jest.fn(),
   };
+  const passwordService = {
+    hash: jest.fn(),
+  };
+
+  const partnerRequestRecord = (
+    overrides: Record<string, unknown> = {},
+  ): Record<string, unknown> => {
+    const store = {
+      id: 'store-draft-1',
+      name: 'Neon Club Tay Ho',
+      slug: 'neon-club-tay-ho-partner-abc12345',
+      status: 'PENDING_REVIEW',
+      ...((overrides.store as Record<string, unknown> | undefined) ?? {}),
+    };
+
+    return {
+      id: 'PARTNER-ABC12345',
+      status: 'PENDING_REVIEW',
+      businessName: 'Neon Club',
+      businessType: 'Club',
+      area: 'Ha Noi',
+      contactName: 'Owner',
+      contactPhone: '+84901234567',
+      contactEmail: 'owner@example.com',
+      note: 'Please call after 6PM',
+      storeDescription: 'Live DJ and private table service',
+      storeAddress: '12 Dang Thai Mai',
+      storeCity: 'Ha Noi',
+      storeDistrict: 'Tay Ho',
+      openingHours: '18:00 - 02:00',
+      menuSummary: 'Bottle service from 2,500,000 VND',
+      mediaUrls: ['https://cdn.example.com/store.jpg'],
+      castProfiles: [],
+      draftCastIds: ['cast-draft-1'],
+      draftMediaIds: ['media-draft-1'],
+      draftContentIds: ['content-draft-1'],
+      reviewReason: null,
+      publicState: 'HIDDEN',
+      submittedAt: new Date('2026-06-30T10:00:00.000Z'),
+      reviewedAt: null,
+      reviewedById: null,
+      partnerUserId: null,
+      partnerAccountId: null,
+      createdAt: new Date('2026-06-30T10:00:00.000Z'),
+      store,
+      notificationLog: {
+        id: 'notification-1',
+        status: 'SENT',
+        error: null,
+        sentAt: new Date('2026-06-30T10:00:01.000Z'),
+      },
+      ...overrides,
+      store,
+    };
+  };
 
   let service: NightlifeDataService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    prisma.user.findUnique.mockResolvedValue(null as never);
+    prisma.user.create.mockResolvedValue({
+      id: 'partner-user-1',
+      email: 'owner@example.com',
+    } as never);
+    prisma.user.update.mockResolvedValue({
+      id: 'partner-user-1',
+      email: 'owner@example.com',
+    } as never);
+    prisma.partnerAccount.findFirst.mockResolvedValue(null as never);
+    prisma.partnerAccount.create.mockResolvedValue({
+      id: 'partner-account-1',
+    } as never);
+    prisma.partnerAccount.update.mockResolvedValue({
+      id: 'partner-account-1',
+    } as never);
+    prisma.storePermission.upsert.mockResolvedValue({
+      id: 'store-permission-1',
+    } as never);
+    prisma.partnerRequest.updateMany.mockResolvedValue({ count: 1 } as never);
+    prisma.partnerRequest.update.mockResolvedValue({
+      id: 'PARTNER-ABC12345',
+    } as never);
+    passwordService.hash.mockResolvedValue('scrypt:test:hash');
     jest
       .spyOn(QRCode, 'toDataURL')
       .mockResolvedValue('data:image/png;base64,test-booking-qr');
@@ -144,6 +246,9 @@ describe('NightlifeDataService', () => {
       sentAt: null,
       createdAt: new Date('2026-06-30T10:00:00.000Z'),
     } as never);
+    adminNotificationService.notifyPartnerRequest.mockResolvedValue(
+      'notification-1',
+    );
     prisma.notificationLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.findMany.mockResolvedValue([] as never);
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
@@ -155,6 +260,7 @@ describe('NightlifeDataService', () => {
       adminNotificationService as never,
       undefined,
       emailNotificationService as never,
+      passwordService as never,
     );
   });
 
@@ -3455,7 +3561,7 @@ describe('NightlifeDataService', () => {
     );
   });
 
-  it('submits a partner request and sends the admin alert', async () => {
+  it('submits a partner request atomically, creates the CMS record, and sends the admin alert', async () => {
     prisma.store.create.mockResolvedValueOnce({
       id: 'store-draft-1',
       name: 'Neon Club Tay Ho',
@@ -3469,6 +3575,32 @@ describe('NightlifeDataService', () => {
     prisma.content.create.mockResolvedValueOnce({
       id: 'content-draft-1',
     } as never);
+    prisma.partnerRequest.create.mockImplementation((args) =>
+      Promise.resolve(
+        partnerRequestRecord({
+          id: args.data?.id,
+          status: args.data?.status,
+          businessName: args.data?.businessName,
+          businessType: args.data?.businessType,
+          area: args.data?.area,
+          contactName: args.data?.contactName,
+          contactPhone: args.data?.contactPhone,
+          contactEmail: args.data?.contactEmail,
+          note: args.data?.note,
+          storeDescription: args.data?.storeDescription,
+          storeAddress: args.data?.storeAddress,
+          storeCity: args.data?.storeCity,
+          storeDistrict: args.data?.storeDistrict,
+          openingHours: args.data?.openingHours,
+          menuSummary: args.data?.menuSummary,
+          mediaUrls: args.data?.mediaUrls,
+          draftCastIds: args.data?.draftCastIds,
+          draftMediaIds: args.data?.draftMediaIds,
+          draftContentIds: args.data?.draftContentIds,
+          submittedAt: args.data?.submittedAt,
+        }),
+      ) as never,
+    );
 
     const result = await service.createPartnerRequest({
       businessName: 'Neon Club',
@@ -3514,6 +3646,7 @@ describe('NightlifeDataService', () => {
         message: 'Partner request submitted for admin review',
       }),
     );
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.store.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -3567,6 +3700,21 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(prisma.partnerRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          id: result.id,
+          storeId: 'store-draft-1',
+          status: 'PENDING_REVIEW',
+          businessName: 'Neon Club',
+          contactEmail: 'owner@example.com',
+          draftCastIds: ['cast-draft-1'],
+          draftMediaIds: ['cast-media-1', 'store-media-1'],
+          draftContentIds: ['content-draft-1'],
+          publicState: 'HIDDEN',
+        }),
+      }),
+    );
     expect(adminNotificationService.notifyPartnerRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         id: result.id,
@@ -3585,40 +3733,77 @@ describe('NightlifeDataService', () => {
         menuSummary: 'Bottle service from 2,500,000 VND',
       }),
     );
+    expect(prisma.partnerRequest.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: result.id },
+        data: { notificationLogId: 'notification-1' },
+      }),
+    );
+    expect(
+      prisma.partnerRequest.create.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      adminNotificationService.notifyPartnerRequest.mock.invocationCallOrder[0],
+    );
   });
 
-  it('lists partner requests from admin Telegram notification logs', async () => {
-    prisma.notificationLog.findMany.mockResolvedValue([
-      {
-        id: 'notification-1',
-        status: 'SENT',
-        payload: {
-          requestId: 'PARTNER-ABC12345',
-          businessName: 'Neon Club',
-          businessType: 'Club',
-          area: 'Ha Noi',
-          contactName: 'Owner',
-          contactPhone: '+84901234567',
-          contactEmail: 'owner@example.com',
-          note: 'Please call after 6PM',
-          status: 'PENDING_REVIEW',
-          draftStoreId: 'store-draft-1',
-          draftStoreName: 'Neon Club Tay Ho',
-          draftStoreSlug: 'neon-club-tay-ho-partner-abc12345',
-          draftCastIds: ['cast-draft-1'],
-          draftMediaIds: ['store-media-1'],
-          draftContentIds: ['content-draft-1'],
-          storeDescription: 'Live DJ and private table service',
-          menuSummary: 'Bottle service from 2,500,000 VND',
-          submittedAt: '2026-06-30T10:00:00.000Z',
-        },
-        error: null,
-        sentAt: new Date('2026-06-30T10:00:01.000Z'),
-        createdAt: new Date('2026-06-30T10:00:00.000Z'),
-      },
+  it('keeps the CMS partner request when Telegram delivery fails', async () => {
+    prisma.store.create.mockResolvedValueOnce({
+      id: 'store-draft-1',
+      name: 'Neon Club Tay Ho',
+      slug: 'neon-club-tay-ho-partner-abc12345',
+      status: 'PENDING_REVIEW',
+    } as never);
+    prisma.partnerRequest.create.mockImplementation((args) =>
+      Promise.resolve(
+        partnerRequestRecord({
+          id: args.data?.id,
+          draftCastIds: [],
+          draftMediaIds: [],
+          draftContentIds: [],
+          submittedAt: args.data?.submittedAt,
+        }),
+      ) as never,
+    );
+    adminNotificationService.notifyPartnerRequest.mockRejectedValueOnce(
+      new Error('Telegram down'),
+    );
+
+    await expect(
+      service.createPartnerRequest({
+        businessName: 'Neon Club',
+        businessType: 'Club',
+        area: 'Ha Noi',
+        storeName: 'Neon Club Tay Ho',
+        contactName: 'Owner',
+        contactPhone: '+84901234567',
+        contactEmail: 'owner@example.com',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'PENDING_REVIEW',
+        message: 'Partner request submitted for admin review',
+      }),
+    );
+
+    expect(prisma.partnerRequest.create).toHaveBeenCalled();
+    expect(prisma.partnerRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('lists partner requests from durable CMS records with filters', async () => {
+    prisma.partnerRequest.findMany.mockResolvedValue([
+      partnerRequestRecord(),
     ] as never);
 
-    await expect(service.listAdminPartnerRequests()).resolves.toEqual([
+    await expect(
+      service.listAdminPartnerRequests({
+        status: 'PENDING_REVIEW',
+        keyword: 'Neon',
+        submittedFrom: '2026-06-30T00:00:00.000Z',
+        submittedTo: '2026-07-01T00:00:00.000Z',
+        page: 2,
+        limit: 10,
+      }),
+    ).resolves.toEqual([
       expect.objectContaining({
         id: 'PARTNER-ABC12345',
         notificationId: 'notification-1',
@@ -3634,48 +3819,37 @@ describe('NightlifeDataService', () => {
         menuSummary: 'Bottle service from 2,500,000 VND',
       }),
     ]);
-    expect(prisma.notificationLog.findMany).toHaveBeenCalledWith(
+    expect(prisma.partnerRequest.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          templateKey: 'telegram.admin.partner.requested.v1',
-          channel: 'TELEGRAM',
+          status: 'PENDING_REVIEW',
+          submittedAt: expect.objectContaining({
+            gte: new Date('2026-06-30T00:00:00.000Z'),
+            lte: new Date('2026-07-01T00:00:00.000Z'),
+          }),
+          OR: expect.any(Array),
         }),
+        skip: 10,
+        take: 10,
       }),
     );
   });
 
-  it('approves a partner request and publishes submitted drafts', async () => {
-    prisma.notificationLog.findMany.mockResolvedValue([
-      {
-        id: 'notification-1',
-        status: 'SENT',
-        payload: {
-          requestId: 'PARTNER-ABC12345',
-          status: 'PENDING_REVIEW',
-          businessName: 'Neon Club',
-          contactName: 'Owner',
-          contactPhone: '+84901234567',
-          draftStoreId: 'store-draft-1',
-          draftStoreName: 'Neon Club Tay Ho',
-          draftCastIds: ['cast-draft-1'],
-          draftMediaIds: ['media-draft-1'],
-          draftContentIds: ['content-draft-1'],
-          submittedAt: '2026-06-30T10:00:00.000Z',
-        },
-        error: null,
-        sentAt: new Date('2026-06-30T10:00:01.000Z'),
-        createdAt: new Date('2026-06-30T10:00:00.000Z'),
-      },
-    ] as never);
-    prisma.notificationLog.update.mockImplementation((args) =>
-      Promise.resolve({
-        id: 'notification-1',
-        status: 'SENT',
-        payload: args.data?.payload,
-        error: null,
-        sentAt: new Date('2026-06-30T10:00:01.000Z'),
-        createdAt: new Date('2026-06-30T10:00:00.000Z'),
-      } as never),
+  it('approves a partner request transactionally, publishes drafts, and onboards the partner account', async () => {
+    prisma.partnerRequest.findFirst.mockResolvedValue(
+      partnerRequestRecord() as never,
+    );
+    prisma.partnerRequest.findUniqueOrThrow.mockResolvedValue(
+      partnerRequestRecord({
+        status: 'APPROVED',
+        reviewReason: 'Thong tin hop le',
+        reviewedAt: new Date('2026-06-30T10:05:00.000Z'),
+        reviewedById: 'admin-1',
+        publicState: 'PUBLIC',
+        partnerUserId: 'partner-user-1',
+        partnerAccountId: 'partner-account-1',
+        store: { status: 'ACTIVE' },
+      }) as never,
     );
 
     const result = await service.reviewPartnerRequest(
@@ -3687,10 +3861,63 @@ describe('NightlifeDataService', () => {
       },
     );
 
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.partnerRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'PARTNER-ABC12345', status: 'PENDING_REVIEW' },
+      data: expect.objectContaining({
+        status: 'APPROVED',
+        reviewReason: 'Thong tin hop le',
+        reviewedById: 'admin-1',
+        publicState: 'PUBLIC',
+      }),
+    });
+    expect(passwordService.hash).toHaveBeenCalledWith(
+      expect.stringMatching(/^Partner-/),
+    );
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          email: 'owner@example.com',
+          role: 'PARTNER',
+          passwordHash: 'scrypt:test:hash',
+        }),
+      }),
+    );
+    expect(prisma.partnerAccount.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'partner-user-1',
+          businessName: 'Neon Club',
+          status: 'ACTIVE',
+        }),
+      }),
+    );
+    expect(prisma.storePermission.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_storeId: {
+            userId: 'partner-user-1',
+            storeId: 'store-draft-1',
+          },
+        },
+        create: expect.objectContaining({
+          permissions: [
+            'store.partner.view',
+            'booking.partner.view',
+            'bill.partner.view',
+            'coupon.scan',
+          ],
+        }),
+      }),
+    );
     expect(prisma.store.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'store-draft-1' },
-        data: { status: 'ACTIVE' },
+        data: {
+          status: 'ACTIVE',
+          ownerId: 'partner-user-1',
+          partnerAccountId: 'partner-account-1',
+        },
       }),
     );
     expect(prisma.cast.updateMany).toHaveBeenCalledWith({
@@ -3707,16 +3934,12 @@ describe('NightlifeDataService', () => {
         data: expect.objectContaining({ status: 'PUBLISHED' }),
       }),
     );
-    expect(prisma.notificationLog.update).toHaveBeenCalledWith(
+    expect(prisma.partnerRequest.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'notification-1' },
+        where: { id: 'PARTNER-ABC12345' },
         data: expect.objectContaining({
-          payload: expect.objectContaining({
-            status: 'APPROVED',
-            reviewReason: 'Thong tin hop le',
-            reviewedById: 'admin-1',
-            publicState: 'PUBLIC',
-          }),
+          partnerUserId: 'partner-user-1',
+          partnerAccountId: 'partner-account-1',
         }),
       }),
     );
@@ -3737,41 +3960,24 @@ describe('NightlifeDataService', () => {
         reviewReason: 'Thong tin hop le',
         reviewedById: 'admin-1',
         publicState: 'PUBLIC',
+        partnerUserId: 'partner-user-1',
+        partnerAccountId: 'partner-account-1',
       }),
     );
   });
 
   it('rejects a partner request with a reason and keeps drafts non-public', async () => {
-    prisma.notificationLog.findMany.mockResolvedValue([
-      {
-        id: 'notification-1',
-        status: 'SENT',
-        payload: {
-          requestId: 'PARTNER-ABC12345',
-          status: 'PENDING_REVIEW',
-          businessName: 'Neon Club',
-          contactName: 'Owner',
-          contactPhone: '+84901234567',
-          draftStoreId: 'store-draft-1',
-          draftCastIds: ['cast-draft-1'],
-          draftMediaIds: ['media-draft-1'],
-          draftContentIds: ['content-draft-1'],
-          submittedAt: '2026-06-30T10:00:00.000Z',
-        },
-        error: null,
-        sentAt: new Date('2026-06-30T10:00:01.000Z'),
-        createdAt: new Date('2026-06-30T10:00:00.000Z'),
-      },
-    ] as never);
-    prisma.notificationLog.update.mockImplementation((args) =>
-      Promise.resolve({
-        id: 'notification-1',
-        status: 'SENT',
-        payload: args.data?.payload,
-        error: null,
-        sentAt: new Date('2026-06-30T10:00:01.000Z'),
-        createdAt: new Date('2026-06-30T10:00:00.000Z'),
-      } as never),
+    prisma.partnerRequest.findFirst.mockResolvedValue(
+      partnerRequestRecord() as never,
+    );
+    prisma.partnerRequest.findUniqueOrThrow.mockResolvedValue(
+      partnerRequestRecord({
+        status: 'REJECTED',
+        reviewReason: 'Thieu giay to va anh ro net',
+        reviewedAt: new Date('2026-06-30T10:05:00.000Z'),
+        reviewedById: 'admin-1',
+        publicState: 'HIDDEN',
+      }) as never,
     );
 
     const result = await service.reviewPartnerRequest(
@@ -3812,6 +4018,8 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.partnerAccount.create).not.toHaveBeenCalled();
     expect(result).toEqual(
       expect.objectContaining({
         status: 'REJECTED',
@@ -3819,6 +4027,42 @@ describe('NightlifeDataService', () => {
         publicState: 'HIDDEN',
       }),
     );
+  });
+
+  it('blocks concurrent double review before publishing any draft content', async () => {
+    prisma.partnerRequest.findFirst.mockResolvedValue(
+      partnerRequestRecord() as never,
+    );
+    prisma.partnerRequest.updateMany.mockResolvedValueOnce({ count: 0 } as never);
+
+    await expect(
+      service.reviewPartnerRequest('admin-1', 'PARTNER-ABC12345', {
+        approve: true,
+        reason: 'Already handled elsewhere',
+      }),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    expect(prisma.store.update).not.toHaveBeenCalled();
+    expect(prisma.cast.updateMany).not.toHaveBeenCalled();
+    expect(prisma.media.updateMany).not.toHaveBeenCalled();
+    expect(prisma.content.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('requires contact email before approve can onboard a partner account', async () => {
+    prisma.partnerRequest.findFirst.mockResolvedValue(
+      partnerRequestRecord({ contactEmail: null }) as never,
+    );
+
+    await expect(
+      service.reviewPartnerRequest('admin-1', 'PARTNER-ABC12345', {
+        approve: true,
+        reason: 'Thong tin hop le',
+      }),
+    ).rejects.toThrow(UnprocessableEntityException);
+
+    expect(prisma.store.update).not.toHaveBeenCalled();
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.partnerAccount.create).not.toHaveBeenCalled();
   });
 
   it('stores the admin reviewer when reviewing a sensitive bill', async () => {

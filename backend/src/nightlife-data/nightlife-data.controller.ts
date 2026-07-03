@@ -89,6 +89,7 @@ import {
 } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import {
+  AdminPartnerRequestQueryDto,
   CreatePartnerRequestDto,
   ReviewPartnerRequestDto,
 } from './dto/create-partner-request.dto';
@@ -747,8 +748,8 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/partner-requests')
-  listAdminPartnerRequests() {
-    return this.nightlifeDataService.listAdminPartnerRequests();
+  listAdminPartnerRequests(@Query() query: AdminPartnerRequestQueryDto) {
+    return this.nightlifeDataService.listAdminPartnerRequests(query);
   }
 
   @ReviewPartnerRequestContract()
