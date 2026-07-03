@@ -783,7 +783,7 @@ export class NightlifeDataController {
   }
 
   @AdminRevenueReportContract()
-  @ActionPolicy('canViewSensitiveBill')
+  @ActionPolicy('canViewRevenueReport')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/reports/revenue')
@@ -791,10 +791,7 @@ export class NightlifeDataController {
     @Req() request: RequestWithUser,
     @Query() query: AdminRevenueReportQueryDto,
   ) {
-    return this.nightlifeDataService.getAdminRevenueReport(
-      request.user,
-      query,
-    );
+    return this.nightlifeDataService.getAdminRevenueReport(request.user, query);
   }
 
   @AdminPartnerRequestsContract()
@@ -946,7 +943,9 @@ export class NightlifeDataController {
     );
   }
 
-  @ApiOperation({ summary: 'Admin action: List bookings with filters and pagination' })
+  @ApiOperation({
+    summary: 'Admin action: List bookings with filters and pagination',
+  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/bookings')
@@ -954,11 +953,15 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listAdminBookings(query);
   }
 
-  @ApiOperation({ summary: 'Admin action: List bills with filters and pagination' })
+  @ApiOperation({
+    summary: 'Admin action: List bills with filters and pagination',
+  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/bills')
-  listAdminBills(@Query() query: import('./dto/admin-bill.dto').AdminBillQueryDto) {
+  listAdminBills(
+    @Query() query: import('./dto/admin-bill.dto').AdminBillQueryDto,
+  ) {
     return this.nightlifeDataService.listAdminBills(query);
   }
 
@@ -970,22 +973,33 @@ export class NightlifeDataController {
     @Param('bookingId') bookingId: string,
     @Body() dto: import('./dto/admin-booking.dto').UpdateAdminBookingStatusDto,
   ) {
-    return this.nightlifeDataService.updateAdminBookingStatus(bookingId, dto.status);
+    return this.nightlifeDataService.updateAdminBookingStatus(
+      bookingId,
+      dto.status,
+    );
   }
 
-  @ApiOperation({ summary: 'Admin action: List coupons with filters and pagination' })
+  @ApiOperation({
+    summary: 'Admin action: List coupons with filters and pagination',
+  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/coupons')
-  listAdminCoupons(@Query() query: import('./dto/admin-coupon.dto').AdminCouponQueryDto) {
+  listAdminCoupons(
+    @Query() query: import('./dto/admin-coupon.dto').AdminCouponQueryDto,
+  ) {
     return this.nightlifeDataService.listAdminCoupons(query);
   }
 
-  @ApiOperation({ summary: 'Admin action: List stores with filters and pagination' })
+  @ApiOperation({
+    summary: 'Admin action: List stores with filters and pagination',
+  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/stores')
-  listAdminStores(@Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto) {
+  listAdminStores(
+    @Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto,
+  ) {
     return this.nightlifeDataService.listAdminStores(query);
   }
 
@@ -1001,7 +1015,9 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/stores')
-  createAdminStore(@Body() dto: import('./dto/admin-store.dto').CreateAdminStoreDto) {
+  createAdminStore(
+    @Body() dto: import('./dto/admin-store.dto').CreateAdminStoreDto,
+  ) {
     return this.nightlifeDataService.createAdminStore(dto);
   }
 
@@ -1011,7 +1027,7 @@ export class NightlifeDataController {
   @Patch('admin/stores/:id')
   updateAdminStore(
     @Param('id') id: string,
-    @Body() dto: import('./dto/admin-store.dto').UpdateAdminStoreDto
+    @Body() dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
   ) {
     return this.nightlifeDataService.updateAdminStore(id, dto);
   }
@@ -1025,7 +1041,11 @@ export class NightlifeDataController {
     @Param('id') id: string,
     @Body() dto: import('./dto/update-bill-status.dto').UpdateBillStatusDto,
   ) {
-    return this.nightlifeDataService.updateAdminBillStatus(id, dto, request.user as any);
+    return this.nightlifeDataService.updateAdminBillStatus(
+      id,
+      dto,
+      request.user as any,
+    );
   }
 
   @AdminDashboardStatsContract()

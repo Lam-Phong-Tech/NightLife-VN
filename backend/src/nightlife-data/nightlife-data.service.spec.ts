@@ -100,6 +100,9 @@ describe('NightlifeDataService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    bookingQr: {
+      count: jest.fn(),
+    },
     bill: {
       create: jest.fn(),
       count: jest.fn(),
@@ -270,6 +273,7 @@ describe('NightlifeDataService', () => {
     prisma.auditLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.count.mockResolvedValue(0 as never);
     prisma.booking.count.mockResolvedValue(0 as never);
+    prisma.bookingQr.count.mockResolvedValue(0 as never);
     prisma.bill.count.mockResolvedValue(0 as never);
     emailNotificationService.sendBookingQrEmail.mockResolvedValue({
       messageId: 'smtp-message-1',
@@ -4992,6 +4996,8 @@ describe('NightlifeDataService', () => {
     prisma.bill.findMany.mockResolvedValue([
       {
         id: 'bill-1',
+        billNumber: 'BILL-20260701-ABC12345',
+        status: 'VERIFIED',
         usedAt: new Date('2026-07-01T14:00:00.000Z'),
         subtotalVnd: 2000000,
         discountVnd: 200000,
@@ -5000,12 +5006,37 @@ describe('NightlifeDataService', () => {
         totalVnd: 1800000,
         paidVnd: 1800000,
         commissionAmountVnd: 180000,
-        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        store: {
+          id: 'store-1',
+          name: 'Neon Club',
+          slug: 'neon-club',
+          city: 'Ho Chi Minh City',
+          district: 'District 1',
+          partnerAccount: {
+            id: 'partner-1',
+            businessName: 'Neon Partner',
+            status: 'ACTIVE',
+          },
+          area: {
+            id: 'area-1',
+            code: 'D1',
+            name: 'District 1',
+            city: 'Ho Chi Minh City',
+            district: 'District 1',
+          },
+        },
         coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
         couponIssue: { id: 'issue-1', code: 'MEMBER-code', status: 'USED' },
+        booking: {
+          id: 'booking-1',
+          bookingCode: 'BOOK-1',
+          cast: { id: 'cast-1', stageName: 'Mika', slug: 'mika' },
+        },
       },
       {
         id: 'bill-2',
+        billNumber: 'BILL-20260701-DEF67890',
+        status: 'PAID',
         usedAt: new Date('2026-07-01T16:00:00.000Z'),
         subtotalVnd: 1000000,
         discountVnd: 0,
@@ -5014,12 +5045,33 @@ describe('NightlifeDataService', () => {
         totalVnd: 1000000,
         paidVnd: 1000000,
         commissionAmountVnd: 100000,
-        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        store: {
+          id: 'store-1',
+          name: 'Neon Club',
+          slug: 'neon-club',
+          city: 'Ho Chi Minh City',
+          district: 'District 1',
+          partnerAccount: {
+            id: 'partner-1',
+            businessName: 'Neon Partner',
+            status: 'ACTIVE',
+          },
+          area: {
+            id: 'area-1',
+            code: 'D1',
+            name: 'District 1',
+            city: 'Ho Chi Minh City',
+            district: 'District 1',
+          },
+        },
         coupon: { id: 'coupon-1', code: 'WELCOME20', name: 'Welcome 20%' },
         couponIssue: null,
+        booking: null,
       },
       {
         id: 'bill-3',
+        billNumber: 'BILL-20260702-GHI13579',
+        status: 'VERIFIED',
         usedAt: new Date('2026-07-02T13:00:00.000Z'),
         subtotalVnd: 500000,
         discountVnd: 0,
@@ -5031,6 +5083,7 @@ describe('NightlifeDataService', () => {
         store: { id: 'store-2', name: 'Velvet Lounge', slug: 'velvet' },
         coupon: null,
         couponIssue: null,
+        booking: null,
       },
     ] as never);
 
@@ -5040,18 +5093,40 @@ describe('NightlifeDataService', () => {
         {
           from: '2026-07-01T00:00:00.000Z',
           to: '2026-07-02T23:59:59.999Z',
+          timezone: 'UTC',
         },
       ),
     ).resolves.toEqual({
       filters: {
         from: '2026-07-01T00:00:00.000Z',
         to: '2026-07-02T23:59:59.999Z',
+        fromDate: '2026-07-01',
+        toDate: '2026-07-02',
+        timezone: 'UTC',
         dateField: 'usedAt',
         statusIn: ['VERIFIED', 'PAID'],
+        billStatusIncluded: ['VERIFIED', 'PAID'],
         storeId: null,
         couponId: null,
-        exportEnabled: false,
+        partnerAccountId: null,
+        areaId: null,
+        castId: null,
+        exportEnabled: true,
+        exportFormats: ['excel', 'pdf'],
       },
+      meta: expect.objectContaining({
+        billStatusIncluded: ['VERIFIED', 'PAID'],
+        timezone: 'UTC',
+        generatedAt: expect.any(String),
+        exportEnabled: true,
+        exportFormats: ['excel', 'pdf'],
+        formula: {
+          grossVnd: 'subtotalVnd',
+          discountVnd: 'discountVnd',
+          netVnd: 'paidVnd || subtotalVnd - discountVnd',
+          commissionVnd: 'commissionAmountVnd',
+        },
+      }),
       totals: {
         billCount: 3,
         grossVnd: 3500000,
@@ -5087,6 +5162,30 @@ describe('NightlifeDataService', () => {
                   discountVnd: 200000,
                   netVnd: 2800000,
                   commissionVnd: 280000,
+                  bills: [
+                    expect.objectContaining({
+                      id: 'bill-1',
+                      billNumber: 'BILL-20260701-ABC12345',
+                      status: 'VERIFIED',
+                      usedAt: '2026-07-01T14:00:00.000Z',
+                      billCount: 1,
+                      grossVnd: 2000000,
+                      discountVnd: 200000,
+                      netVnd: 1800000,
+                      commissionVnd: 180000,
+                    }),
+                    expect.objectContaining({
+                      id: 'bill-2',
+                      billNumber: 'BILL-20260701-DEF67890',
+                      status: 'PAID',
+                      usedAt: '2026-07-01T16:00:00.000Z',
+                      billCount: 1,
+                      grossVnd: 1000000,
+                      discountVnd: 0,
+                      netVnd: 1000000,
+                      commissionVnd: 100000,
+                    }),
+                  ],
                 },
               ],
             },
@@ -5119,12 +5218,125 @@ describe('NightlifeDataService', () => {
                   discountVnd: 0,
                   netVnd: 500000,
                   commissionVnd: 50000,
+                  bills: [
+                    expect.objectContaining({
+                      id: 'bill-3',
+                      billNumber: 'BILL-20260702-GHI13579',
+                      status: 'VERIFIED',
+                      usedAt: '2026-07-02T13:00:00.000Z',
+                      billCount: 1,
+                      grossVnd: 500000,
+                      discountVnd: 0,
+                      netVnd: 500000,
+                      commissionVnd: 50000,
+                    }),
+                  ],
                 },
               ],
             },
           ],
         },
       ],
+      breakdowns: {
+        partners: [
+          expect.objectContaining({
+            id: 'partner-1',
+            code: 'ACTIVE',
+            name: 'Neon Partner',
+            billCount: 2,
+            commissionVnd: 280000,
+          }),
+          expect.objectContaining({
+            id: null,
+            code: 'NO_PARTNER',
+            billCount: 1,
+            commissionVnd: 50000,
+          }),
+        ],
+        campaigns: [
+          expect.objectContaining({
+            id: 'coupon-1',
+            code: 'WELCOME20',
+            billCount: 2,
+          }),
+          expect.objectContaining({
+            id: null,
+            code: 'NO_COUPON',
+            billCount: 1,
+          }),
+        ],
+        areas: [
+          expect.objectContaining({
+            id: 'area-1',
+            code: 'D1',
+            name: 'District 1',
+            billCount: 2,
+          }),
+          expect.objectContaining({
+            id: null,
+            code: 'NO_AREA',
+            billCount: 1,
+          }),
+        ],
+        casts: [
+          expect.objectContaining({
+            id: 'cast-1',
+            code: 'mika',
+            name: 'Mika',
+            billCount: 1,
+          }),
+          expect.objectContaining({
+            id: null,
+            code: 'NO_CAST',
+            billCount: 2,
+          }),
+        ],
+      },
+      funnel: [
+        expect.objectContaining({ key: 'booking_qr', count: 0 }),
+        expect.objectContaining({ key: 'qr_used', count: 0 }),
+        expect.objectContaining({ key: 'bill_approved', count: 0 }),
+        expect.objectContaining({
+          key: 'commission',
+          count: 330000,
+          commissionVnd: 330000,
+        }),
+      ],
+      comparison: {
+        previousPeriod: {
+          from: '2026-06-29T00:00:00.000Z',
+          to: '2026-06-30T23:59:59.999Z',
+          fromDate: '2026-06-29',
+          toDate: '2026-06-30',
+        },
+        totals: {
+          billCount: { current: 3, previous: 3, delta: 0, deltaPercent: 0 },
+          grossVnd: {
+            current: 3500000,
+            previous: 3500000,
+            delta: 0,
+            deltaPercent: 0,
+          },
+          discountVnd: {
+            current: 200000,
+            previous: 200000,
+            delta: 0,
+            deltaPercent: 0,
+          },
+          netVnd: {
+            current: 3300000,
+            previous: 3300000,
+            delta: 0,
+            deltaPercent: 0,
+          },
+          commissionVnd: {
+            current: 330000,
+            previous: 330000,
+            delta: 0,
+            deltaPercent: 0,
+          },
+        },
+      },
     });
 
     expect(prisma.bill.findMany).toHaveBeenCalledWith(
@@ -5138,17 +5350,132 @@ describe('NightlifeDataService', () => {
           },
         }),
         select: expect.objectContaining({
+          billNumber: true,
+          status: true,
           usedAt: true,
           subtotalVnd: true,
           discountVnd: true,
           paidVnd: true,
           commissionAmountVnd: true,
-          store: { select: { id: true, name: true, slug: true } },
+          store: {
+            select: expect.objectContaining({
+              id: true,
+              name: true,
+              slug: true,
+            }),
+          },
           coupon: { select: { id: true, code: true, name: true } },
           couponIssue: { select: { id: true, code: true, status: true } },
+          booking: {
+            select: expect.objectContaining({
+              id: true,
+              bookingCode: true,
+            }),
+          },
         }),
       }),
     );
+  });
+
+  it('uses Asia/Ho_Chi_Minh date boundaries for service usage dates', async () => {
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-vn-0030',
+        billNumber: 'BILL-VN-0030',
+        status: 'VERIFIED',
+        usedAt: new Date('2026-06-30T17:30:00.000Z'),
+        subtotalVnd: 2000000,
+        discountVnd: 160000,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: 1840000,
+        paidVnd: 1840000,
+        commissionAmountVnd: 80000,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        coupon: { id: 'coupon-1', code: 'MEMBER8', name: 'Member 8%' },
+        couponIssue: { id: 'issue-1', code: 'MEMBER-code', status: 'USED' },
+      },
+      {
+        id: 'bill-vn-2330',
+        billNumber: 'BILL-VN-2330',
+        status: 'PAID',
+        usedAt: new Date('2026-07-01T16:30:00.000Z'),
+        subtotalVnd: 1000000,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: 1000000,
+        paidVnd: 1000000,
+        commissionAmountVnd: 100000,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        coupon: null,
+        couponIssue: null,
+      },
+    ] as never);
+
+    const report = await service.getAdminRevenueReport(
+      { id: 'admin-1', role: 'ADMIN' },
+      {
+        fromDate: '2026-07-01',
+        toDate: '2026-07-01',
+        timezone: 'Asia/Ho_Chi_Minh',
+      },
+    );
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: { in: ['VERIFIED', 'PAID'] },
+          usedAt: {
+            gte: new Date('2026-06-30T17:00:00.000Z'),
+            lte: new Date('2026-07-01T16:59:59.999Z'),
+          },
+        }),
+      }),
+    );
+    expect(report.filters).toEqual(
+      expect.objectContaining({
+        from: '2026-06-30T17:00:00.000Z',
+        to: '2026-07-01T16:59:59.999Z',
+        fromDate: '2026-07-01',
+        toDate: '2026-07-01',
+        timezone: 'Asia/Ho_Chi_Minh',
+        billStatusIncluded: ['VERIFIED', 'PAID'],
+        exportEnabled: true,
+        exportFormats: ['excel', 'pdf'],
+      }),
+    );
+    expect(report.meta).toEqual(
+      expect.objectContaining({
+        billStatusIncluded: ['VERIFIED', 'PAID'],
+        timezone: 'Asia/Ho_Chi_Minh',
+        generatedAt: expect.any(String),
+      }),
+    );
+    expect(report.days).toHaveLength(1);
+    expect(report.days[0]).toEqual(
+      expect.objectContaining({
+        date: '2026-07-01',
+        billCount: 2,
+        grossVnd: 3000000,
+        discountVnd: 160000,
+        netVnd: 2840000,
+        commissionVnd: 180000,
+      }),
+    );
+    expect(report.days[0].stores[0].coupons).toEqual([
+      expect.objectContaining({
+        coupon: { id: 'coupon-1', code: 'MEMBER8', name: 'Member 8%' },
+        billCount: 1,
+        bills: [expect.objectContaining({ id: 'bill-vn-0030' })],
+      }),
+      expect.objectContaining({
+        coupon: { id: null, code: 'NO_COUPON', name: 'Khong dung ma' },
+        billCount: 1,
+        bills: [expect.objectContaining({ id: 'bill-vn-2330' })],
+      }),
+    ]);
   });
 
   it('masks sensitive bill customer fields for operator review queue', async () => {

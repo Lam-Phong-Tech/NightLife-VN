@@ -157,6 +157,14 @@ type RevenueReportTotals = {
 
 type RevenueReportCoupon = RevenueReportTotals & {
   coupon: { id: string | null; code: string; name: string };
+  bills?: RevenueReportBill[];
+};
+
+type RevenueReportBill = RevenueReportTotals & {
+  id: string;
+  billNumber: string | null;
+  status: string;
+  usedAt: string;
 };
 
 type RevenueReportStore = RevenueReportTotals & {
@@ -169,18 +177,72 @@ type RevenueReportDay = RevenueReportTotals & {
   stores: RevenueReportStore[];
 };
 
+type RevenueReportDimension = RevenueReportTotals & {
+  id: string | null;
+  code: string;
+  name: string;
+  secondary: string | null;
+};
+
+type RevenueReportFunnelStep = {
+  key: string;
+  label: string;
+  count: number;
+  rateFromPrevious: number | null;
+  commissionVnd?: number;
+};
+
+type RevenueReportComparisonMetric = {
+  current: number;
+  previous: number;
+  delta: number;
+  deltaPercent: number | null;
+};
+
 type RevenueReport = {
   filters: {
     from: string;
     to: string;
+    fromDate?: string;
+    toDate?: string;
+    timezone?: string;
     dateField: "usedAt";
     statusIn: string[];
+    billStatusIncluded?: string[];
     storeId: string | null;
     couponId: string | null;
+    partnerAccountId?: string | null;
+    areaId?: string | null;
+    castId?: string | null;
     exportEnabled: boolean;
+    exportFormats?: string[];
+  };
+  meta?: {
+    billStatusIncluded: string[];
+    timezone: string;
+    generatedAt: string;
+    exportEnabled: boolean;
+    exportFormats: string[];
+    formula?: {
+      grossVnd: string;
+      discountVnd: string;
+      netVnd: string;
+      commissionVnd: string;
+    };
   };
   totals: RevenueReportTotals;
   days: RevenueReportDay[];
+  breakdowns?: {
+    partners: RevenueReportDimension[];
+    campaigns: RevenueReportDimension[];
+    areas: RevenueReportDimension[];
+    casts: RevenueReportDimension[];
+  };
+  funnel?: RevenueReportFunnelStep[];
+  comparison?: {
+    previousPeriod: { from: string; to: string; fromDate: string; toDate: string };
+    totals: Record<keyof RevenueReportTotals, RevenueReportComparisonMetric>;
+  };
 };
 
 type AdminPartnerRequest = {
@@ -311,6 +373,9 @@ type BillFilterState = {
 type RevenueReportFilterState = {
   from: string;
   to: string;
+  storeId: string;
+  couponId: string;
+  quickRange: "today" | "seven" | "thirty" | "month" | "custom";
 };
 
 type PartnerRequestFilterState = {
@@ -339,14 +404,70 @@ const emptyRevenueReport: RevenueReport = {
   filters: {
     from: "",
     to: "",
+    fromDate: "",
+    toDate: "",
+    timezone: "Asia/Ho_Chi_Minh",
     dateField: "usedAt",
     statusIn: ["VERIFIED", "PAID"],
+    billStatusIncluded: ["VERIFIED", "PAID"],
     storeId: null,
     couponId: null,
-    exportEnabled: false,
+    partnerAccountId: null,
+    areaId: null,
+    castId: null,
+    exportEnabled: true,
+    exportFormats: ["excel", "pdf"],
+  },
+  meta: {
+    billStatusIncluded: ["VERIFIED", "PAID"],
+    timezone: "Asia/Ho_Chi_Minh",
+    generatedAt: "",
+    exportEnabled: true,
+    exportFormats: ["excel", "pdf"],
+    formula: {
+      grossVnd: "subtotalVnd",
+      discountVnd: "discountVnd",
+      netVnd: "paidVnd || subtotalVnd - discountVnd",
+      commissionVnd: "commissionAmountVnd",
+    },
   },
   totals: emptyRevenueReportTotals,
   days: [],
+  breakdowns: {
+    partners: [],
+    campaigns: [],
+    areas: [],
+    casts: [],
+  },
+  funnel: [],
+  comparison: undefined,
+};
+
+const normalizeRevenueReport = (value: unknown): RevenueReport => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return emptyRevenueReport;
+  const report = value as Partial<RevenueReport>;
+
+  return {
+    filters: { ...emptyRevenueReport.filters, ...(report.filters ?? {}) },
+    meta: {
+      billStatusIncluded: report.meta?.billStatusIncluded ?? emptyRevenueReport.meta!.billStatusIncluded,
+      timezone: report.meta?.timezone ?? emptyRevenueReport.meta!.timezone,
+      generatedAt: report.meta?.generatedAt ?? emptyRevenueReport.meta!.generatedAt,
+      exportEnabled: report.meta?.exportEnabled ?? emptyRevenueReport.meta!.exportEnabled,
+      exportFormats: report.meta?.exportFormats ?? emptyRevenueReport.meta!.exportFormats,
+      formula: report.meta?.formula ?? emptyRevenueReport.meta!.formula,
+    },
+    totals: { ...emptyRevenueReportTotals, ...(report.totals ?? {}) },
+    days: Array.isArray(report.days) ? report.days : [],
+    breakdowns: {
+      partners: Array.isArray(report.breakdowns?.partners) ? report.breakdowns.partners : [],
+      campaigns: Array.isArray(report.breakdowns?.campaigns) ? report.breakdowns.campaigns : [],
+      areas: Array.isArray(report.breakdowns?.areas) ? report.breakdowns.areas : [],
+      casts: Array.isArray(report.breakdowns?.casts) ? report.breakdowns.casts : [],
+    },
+    funnel: Array.isArray(report.funnel) ? report.funnel : [],
+    comparison: report.comparison,
+  };
 };
 
 const sectionToView: Record<string, AdminView> = {
@@ -569,15 +690,28 @@ const formatDateInput = (value?: string | null) => {
   return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 16) : "";
 };
 
-const formatDateOnlyInput = (date: Date) => date.toISOString().slice(0, 10);
+const revenueReportTimezone = "Asia/Ho_Chi_Minh";
+const vietnamOffsetMs = 7 * 60 * 60 * 1000;
+const dateKeyInVietnam = (date = new Date()) =>
+  new Date(date.getTime() + vietnamOffsetMs).toISOString().slice(0, 10);
+
+const shiftDateKey = (dateKey: string, days: number) => {
+  const [year = 1970, month = 1, day = 1] = dateKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+const monthStartDateKey = (dateKey: string) => `${dateKey.slice(0, 8)}01`;
 
 const defaultRevenueReportFilters = (): RevenueReportFilterState => {
-  const to = new Date();
-  const from = new Date(to);
-  from.setDate(from.getDate() - 29);
+  const to = dateKeyInVietnam();
   return {
-    from: formatDateOnlyInput(from),
-    to: formatDateOnlyInput(to),
+    from: shiftDateKey(to, -29),
+    to,
+    storeId: "",
+    couponId: "",
+    quickRange: "thirty",
   };
 };
 
@@ -623,10 +757,172 @@ const buildBillFilterParams = (filters: BillFilterState) =>
       .filter(([, value]) => value.length > 0),
   );
 
-const buildRevenueReportParams = (filters: RevenueReportFilterState) => ({
-  from: `${filters.from}T00:00:00.000Z`,
-  to: `${filters.to}T23:59:59.999Z`,
-});
+const buildRevenueReportParams = (filters: RevenueReportFilterState) =>
+  Object.fromEntries(
+    Object.entries({
+      fromDate: filters.from,
+      toDate: filters.to,
+      timezone: revenueReportTimezone,
+      storeId: filters.storeId.trim(),
+      couponId: filters.couponId.trim(),
+    }).filter(([, value]) => value.length > 0),
+  );
+
+const revenueReportFileStem = (report: RevenueReport) =>
+  `nightlife-revenue-${report.filters.fromDate || "from"}-${report.filters.toDate || "to"}`;
+
+const revenueReportExportRows = (report: RevenueReport): Array<Array<string | number>> => {
+  const rows: Array<Array<string | number>> = [
+    ["Date", "Store", "Coupon", "Bill", "Gross", "Discount", "Net", "Commission"],
+  ];
+
+  report.days.forEach((day) =>
+    day.stores.forEach((store) =>
+      store.coupons.forEach((coupon) => {
+        if (coupon.bills?.length) {
+          coupon.bills.forEach((bill) => {
+            rows.push([
+              day.date,
+              store.store.name,
+              `${coupon.coupon.code} - ${coupon.coupon.name}`,
+              bill.billNumber ?? shortCode(bill.id),
+              bill.grossVnd,
+              bill.discountVnd,
+              bill.netVnd,
+              bill.commissionVnd,
+            ]);
+          });
+          return;
+        }
+
+        rows.push([
+          day.date,
+          store.store.name,
+          `${coupon.coupon.code} - ${coupon.coupon.name}`,
+          coupon.billCount,
+          coupon.grossVnd,
+          coupon.discountVnd,
+          coupon.netVnd,
+          coupon.commissionVnd,
+        ]);
+      }),
+    ),
+  );
+
+  return rows;
+};
+
+const escapeXmlCell = (value: string | number) =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const buildRevenueReportExcelBlob = (report: RevenueReport) => {
+  const rows = revenueReportExportRows(report)
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((cell) => `<td>${escapeXmlCell(cell)}</td>`)
+          .join("")}</tr>`,
+    )
+    .join("");
+  const html = `<!doctype html><html><head><meta charset="utf-8" /></head><body><table>${rows}</table></body></html>`;
+  return new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+};
+
+const asciiPdfText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]/g, " ")
+    .slice(0, 110);
+
+const escapePdfText = (value: string) =>
+  asciiPdfText(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+
+const buildPdfContentStream = (lines: string[]) =>
+  lines
+    .map((line, index) => `BT /F1 10 Tf 44 ${792 - index * 16} Td (${escapePdfText(line)}) Tj ET`)
+    .join("\n");
+
+const buildRevenueReportPdfBlob = (report: RevenueReport) => {
+  const lines = [
+    "NightLife revenue report",
+    `Period: ${report.filters.fromDate ?? report.filters.from} -> ${report.filters.toDate ?? report.filters.to}`,
+    `Timezone: ${report.meta?.timezone ?? report.filters.timezone ?? revenueReportTimezone}`,
+    `Gross: ${formatMoney(report.totals.grossVnd)} | Net: ${formatMoney(report.totals.netVnd)} | Commission: ${formatMoney(
+      report.totals.commissionVnd,
+    )}`,
+    "",
+    "Funnel",
+    ...(report.funnel ?? []).map((step) => `${step.label}: ${step.commissionVnd ? formatMoney(step.commissionVnd) : step.count}`),
+    "",
+    "Breakdowns",
+    ...(["partners", "campaigns", "areas", "casts"] as const).flatMap((key) =>
+      (report.breakdowns?.[key] ?? [])
+        .slice(0, 8)
+        .map((item) => `${key}: ${item.code} ${item.name} | Net ${formatMoney(item.netVnd)} | Commission ${formatMoney(item.commissionVnd)}`),
+    ),
+    "",
+    "Rows",
+    ...revenueReportExportRows(report)
+      .slice(1, 70)
+      .map((row) => row.join(" | ")),
+  ];
+  const pages = Array.from({ length: Math.max(1, Math.ceil(lines.length / 46)) }, (_, index) =>
+    lines.slice(index * 46, index * 46 + 46),
+  );
+  const objects: string[] = [];
+  const pageIds: number[] = [];
+  let nextId = 3;
+
+  objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  pages.forEach((page) => {
+    const content = buildPdfContentStream(page);
+    const contentId = nextId++;
+    const pageId = nextId++;
+    objects[contentId] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
+    objects[pageId] =
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] ` +
+      `/Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> ` +
+      `/Contents ${contentId} 0 R >>`;
+    pageIds.push(pageId);
+  });
+  objects[2] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
+
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [0];
+  for (let id = 1; id < objects.length; id += 1) {
+    if (!objects[id]) continue;
+    offsets[id] = pdf.length;
+    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+  }
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let id = 1; id < objects.length; id += 1) {
+    pdf += `${String(offsets[id] ?? 0).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return new Blob([pdf], { type: "application/pdf" });
+};
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  if (typeof document === "undefined" || typeof URL === "undefined" || !URL.createObjectURL) return;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
 
 const buildPartnerRequestParams = (filters: PartnerRequestFilterState) =>
   Object.fromEntries(
@@ -1297,6 +1593,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
   const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
   const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
+  const [expandedRevenueCouponKey, setExpandedRevenueCouponKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [cancelBookingTarget, setCancelBookingTarget] = useState<AdminBooking | null>(null);
@@ -1377,7 +1674,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       setBookings(bookingData);
       setSensitiveBills(billData);
       setReportBills(reportBillData);
-      setRevenueReport(revenueReportData);
+      setRevenueReport(normalizeRevenueReport(revenueReportData));
       setPartnerRequests(partnerRequestData);
       setCouponIssues(couponIssueData);
       setRankings(rankingData);
@@ -1552,6 +1849,41 @@ export default function AdminConsole({ section }: { section?: string }) {
     () => Math.max(1, ...revenueReport.days.map((day) => day.grossVnd)),
     [revenueReport.days],
   );
+  const revenueReportCouponOptions = useMemo(() => {
+    const options = new Map<string, { id: string; code: string; name: string }>();
+    couponIssues.forEach((issue) => {
+      if (issue.coupon?.id) options.set(issue.coupon.id, issue.coupon);
+    });
+    revenueReport.days.forEach((day) =>
+      day.stores.forEach((store) =>
+        store.coupons.forEach((coupon) => {
+          if (coupon.coupon.id) options.set(coupon.coupon.id, coupon.coupon);
+        }),
+      ),
+    );
+    return Array.from(options.values()).sort((left, right) => left.code.localeCompare(right.code));
+  }, [couponIssues, revenueReport.days]);
+  const revenueReportBreakdownSections = useMemo(
+    () => [
+      { key: "partners", title: "Partner", items: revenueReport.breakdowns?.partners ?? [] },
+      { key: "campaigns", title: "Campaign", items: revenueReport.breakdowns?.campaigns ?? [] },
+      { key: "areas", title: "Khu vuc", items: revenueReport.breakdowns?.areas ?? [] },
+      { key: "casts", title: "Cast mong muon", items: revenueReport.breakdowns?.casts ?? [] },
+    ],
+    [revenueReport.breakdowns],
+  );
+  const revenueReportComparisonCards = useMemo(() => {
+    const totals = revenueReport.comparison?.totals;
+    if (!totals) return [];
+
+    return [
+      { label: "Gross", metric: totals.grossVnd, money: true },
+      { label: "Net", metric: totals.netVnd, money: true },
+      { label: "Discount", metric: totals.discountVnd, money: true },
+      { label: "Commission", metric: totals.commissionVnd, money: true },
+      { label: "Bill", metric: totals.billCount, money: false },
+    ];
+  }, [revenueReport.comparison]);
   const counts: AdminCounts = useMemo(
     () => ({
       booking: bookings.filter((item) => item.status !== "CANCELLED").length,
@@ -1672,19 +2004,54 @@ export default function AdminConsole({ section }: { section?: string }) {
     setBillFilters(emptyFilters);
   };
 
-  const updateRevenueReportDraft = (key: keyof RevenueReportFilterState, value: string) => {
-    setRevenueReportDraft((current) => ({ ...current, [key]: value }));
+  const updateRevenueReportDraft = (
+    key: Exclude<keyof RevenueReportFilterState, "quickRange">,
+    value: string,
+  ) => {
+    setRevenueReportDraft((current) => ({ ...current, [key]: value, quickRange: "custom" }));
   };
 
   const applyRevenueReportFilters = () => {
     setRevenueReportFilters({
       from: revenueReportDraft.from,
       to: revenueReportDraft.to,
+      storeId: revenueReportDraft.storeId.trim(),
+      couponId: revenueReportDraft.couponId.trim(),
+      quickRange: "custom",
     });
   };
 
   const clearRevenueReportFilters = () => {
     const nextFilters = defaultRevenueReportFilters();
+    setRevenueReportDraft(nextFilters);
+    setRevenueReportFilters(nextFilters);
+  };
+
+  const exportRevenueReportExcel = () => {
+    downloadBlob(buildRevenueReportExcelBlob(revenueReport), `${revenueReportFileStem(revenueReport)}.xls`);
+  };
+
+  const exportRevenueReportPdf = () => {
+    downloadBlob(buildRevenueReportPdfBlob(revenueReport), `${revenueReportFileStem(revenueReport)}.pdf`);
+  };
+
+  const applyRevenueQuickRange = (range: RevenueReportFilterState["quickRange"]) => {
+    const today = dateKeyInVietnam();
+    const nextFilters: RevenueReportFilterState = {
+      from:
+        range === "today"
+          ? today
+          : range === "seven"
+            ? shiftDateKey(today, -6)
+            : range === "month"
+              ? monthStartDateKey(today)
+              : shiftDateKey(today, -29),
+      to: today,
+      storeId: revenueReportDraft.storeId.trim(),
+      couponId: revenueReportDraft.couponId.trim(),
+      quickRange: range,
+    };
+
     setRevenueReportDraft(nextFilters);
     setRevenueReportFilters(nextFilters);
   };
@@ -3613,8 +3980,52 @@ export default function AdminConsole({ section }: { section?: string }) {
       <Panel testId="admin-revenue-report-panel" style={{ padding: 20 }}>
         <div style={{ display: "grid", gap: 16 }}>
           <SectionTitle title="Report P0: ngày -> quán -> mã giảm giá" eyebrow="BILL USED AT" />
-          <div style={{ color: colors.text2, fontSize: 13 }}>
-            Lọc theo ngày sử dụng dịch vụ (Bill.usedAt). MVP không export Excel/PDF.
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ color: colors.text2, fontSize: 13 }}>
+              Loc theo ngay su dung dich vu (Bill.usedAt). P2 da co export Excel/PDF va BI breakdown.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                aria-label="Export revenue report Excel"
+                onClick={exportRevenueReportExcel}
+                style={buttonStyle("secondary")}
+              >
+                <FileText size={14} />
+                Export Excel
+              </button>
+              <button
+                type="button"
+                aria-label="Export revenue report PDF"
+                onClick={exportRevenueReportPdf}
+                style={buttonStyle("secondary")}
+              >
+                <ReceiptText size={14} />
+                Export PDF
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              ["today", "Hôm nay"],
+              ["seven", "7 ngày"],
+              ["thirty", "30 ngày"],
+              ["month", "Tháng này"],
+            ].map(([range, label]) => (
+              <button
+                key={range}
+                type="button"
+                aria-label={`Revenue quick range ${range}`}
+                onClick={() => applyRevenueQuickRange(range as RevenueReportFilterState["quickRange"])}
+                style={{
+                  ...buttonStyle(revenueReportDraft.quickRange === range ? "primary" : "secondary"),
+                  minHeight: 34,
+                }}
+              >
+                <CalendarCheck size={14} />
+                {label}
+              </button>
+            ))}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12 }}>
             <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
@@ -3637,6 +4048,38 @@ export default function AdminConsole({ section }: { section?: string }) {
                 style={inputStyle({ minHeight: 38 })}
               />
             </label>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Quán
+              <select
+                aria-label="Revenue report store filter"
+                value={revenueReportDraft.storeId}
+                onChange={(event) => updateRevenueReportDraft("storeId", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+              >
+                <option value="">Tất cả quán</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Mã giảm giá
+              <select
+                aria-label="Revenue report coupon filter"
+                value={revenueReportDraft.couponId}
+                onChange={(event) => updateRevenueReportDraft("couponId", event.target.value)}
+                style={inputStyle({ minHeight: 38 })}
+              >
+                <option value="">Tất cả mã</option>
+                {revenueReportCouponOptions.map((coupon) => (
+                  <option key={coupon.id} value={coupon.id}>
+                    {coupon.code} - {coupon.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div style={{ display: "flex", alignItems: "end", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -3656,6 +4099,106 @@ export default function AdminConsole({ section }: { section?: string }) {
                 <RefreshCcw size={14} />
                 30 ngày
               </button>
+            </div>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))",
+              gap: 8,
+              color: colors.text2,
+              fontSize: 12,
+            }}
+          >
+            <span>grossVnd = subtotalVnd / bill gốc</span>
+            <span>discountVnd = discountVnd</span>
+            <span>netVnd = paidVnd hoặc subtotal - discount</span>
+            <span>commissionVnd = commissionAmountVnd</span>
+          </div>
+
+          <div data-testid="admin-revenue-p2-dashboard" style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+              {(revenueReport.funnel ?? []).map((step) => (
+                <div
+                  key={step.key}
+                  style={{
+                    border: `1px solid ${colors.borderGold22}`,
+                    background: "rgba(255,255,255,.035)",
+                    padding: 12,
+                    minHeight: 88,
+                    display: "grid",
+                    gap: 4,
+                  }}
+                >
+                  <span style={{ color: colors.muted, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>
+                    {step.label}
+                  </span>
+                  <strong style={{ color: colors.text, fontSize: 22 }}>
+                    {step.commissionVnd !== undefined ? compactMoney(step.commissionVnd) : step.count.toLocaleString("vi-VN")}
+                  </strong>
+                  <span style={{ color: colors.text2, fontSize: 12 }}>
+                    {step.rateFromPrevious === null ? "base" : `${step.rateFromPrevious}% tu buoc truoc`}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {revenueReportComparisonCards.length ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+                {revenueReportComparisonCards.map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      border: `1px solid ${item.metric.delta >= 0 ? "rgba(127,211,160,.22)" : "rgba(224,114,158,.28)"}`,
+                      background: item.metric.delta >= 0 ? "rgba(127,211,160,.06)" : "rgba(224,114,158,.07)",
+                      padding: 12,
+                      display: "grid",
+                      gap: 4,
+                    }}
+                  >
+                    <span style={{ color: colors.muted, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>
+                      {item.label} vs ky truoc
+                    </span>
+                    <strong style={{ color: colors.text }}>
+                      {item.money ? formatMoney(item.metric.current) : item.metric.current.toLocaleString("vi-VN")}
+                    </strong>
+                    <span style={{ color: item.metric.delta >= 0 ? colors.green : colors.red, fontSize: 12 }}>
+                      {item.metric.delta >= 0 ? "+" : ""}
+                      {item.money ? formatMoney(item.metric.delta) : item.metric.delta.toLocaleString("vi-VN")}
+                      {item.metric.deltaPercent === null ? "" : ` (${item.metric.deltaPercent}%)`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 10 }}>
+              {revenueReportBreakdownSections.map((section) => (
+                <div
+                  key={section.key}
+                  style={{
+                    border: `1px solid ${colors.borderSoft}`,
+                    background: "rgba(255,255,255,.028)",
+                    padding: 12,
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <strong style={{ color: colors.goldPale, fontSize: 13 }}>{section.title}</strong>
+                  {section.items.length ? (
+                    section.items.slice(0, 4).map((item) => (
+                      <div key={`${section.key}-${item.id ?? item.code}`} style={{ display: "grid", gap: 3 }}>
+                        <span style={{ color: colors.text, fontSize: 12, fontWeight: 800 }}>
+                          {item.code} - {item.name}
+                        </span>
+                        <span style={{ color: colors.muted, fontSize: 11 }}>
+                          {item.billCount} bill · Net {formatMoney(item.netVnd)} · Commission {formatMoney(item.commissionVnd)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span style={{ color: colors.muted, fontSize: 12 }}>Chua co du lieu</span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -3732,31 +4275,80 @@ export default function AdminConsole({ section }: { section?: string }) {
                             <span>Net</span>
                             <span>Commission</span>
                           </div>
-                          {store.coupons.map((coupon) => (
-                            <div
-                              key={`${day.date}-${store.store.id}-${coupon.coupon.code}`}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
-                                gap: 10,
-                                color: colors.text2,
-                                fontSize: 12,
-                                padding: "7px 0",
-                                borderTop: `1px solid ${colors.borderSoft}`,
-                                alignItems: "center",
-                              }}
-                            >
-                              <span>
-                                <b style={{ color: colors.text }}>{coupon.coupon.code}</b>
-                                <span style={{ display: "block", color: colors.muted }}>{coupon.coupon.name}</span>
-                              </span>
-                              <span>{coupon.billCount}</span>
-                              <span>{formatMoney(coupon.grossVnd)}</span>
-                              <span>{formatMoney(coupon.discountVnd)}</span>
-                              <span>{formatMoney(coupon.netVnd)}</span>
-                              <span>{formatMoney(coupon.commissionVnd)}</span>
-                            </div>
-                          ))}
+                          {store.coupons.map((coupon) => {
+                            const couponKey = `${day.date}-${store.store.id}-${coupon.coupon.id ?? coupon.coupon.code}`;
+                            const isExpanded = expandedRevenueCouponKey === couponKey;
+
+                            return (
+                              <React.Fragment key={couponKey}>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1.3fr .55fr .85fr .85fr .85fr .85fr",
+                                    gap: 10,
+                                    color: colors.text2,
+                                    fontSize: 12,
+                                    padding: "7px 0",
+                                    borderTop: `1px solid ${colors.borderSoft}`,
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                    <button
+                                      type="button"
+                                      aria-label={`Revenue coupon drilldown ${coupon.coupon.code}`}
+                                      onClick={() => setExpandedRevenueCouponKey(isExpanded ? null : couponKey)}
+                                      style={{ ...buttonStyle("secondary"), minHeight: 30, width: 34, padding: 0 }}
+                                    >
+                                      <ChevronRight
+                                        size={14}
+                                        style={{ transform: isExpanded ? "rotate(90deg)" : "none" }}
+                                      />
+                                    </button>
+                                    <span>
+                                      <b style={{ color: colors.text }}>{coupon.coupon.code}</b>
+                                      <span style={{ display: "block", color: colors.muted }}>{coupon.coupon.name}</span>
+                                    </span>
+                                  </span>
+                                  <span>{coupon.billCount}</span>
+                                  <span>{formatMoney(coupon.grossVnd)}</span>
+                                  <span>{formatMoney(coupon.discountVnd)}</span>
+                                  <span>{formatMoney(coupon.netVnd)}</span>
+                                  <span>{formatMoney(coupon.commissionVnd)}</span>
+                                </div>
+                                {isExpanded && coupon.bills?.length ? (
+                                  <div
+                                    style={{
+                                      borderTop: `1px solid ${colors.borderSoft}`,
+                                      background: "rgba(255,255,255,.025)",
+                                      padding: "8px 10px",
+                                      display: "grid",
+                                      gap: 6,
+                                    }}
+                                  >
+                                    {coupon.bills.map((bill) => (
+                                      <div
+                                        key={bill.id}
+                                        style={{
+                                          display: "grid",
+                                          gridTemplateColumns: "1.25fr .8fr .8fr .8fr .8fr",
+                                          gap: 10,
+                                          color: colors.text2,
+                                          fontSize: 12,
+                                        }}
+                                      >
+                                        <span style={{ color: colors.text }}>{bill.billNumber ?? shortCode(bill.id)}</span>
+                                        <span>{new Date(bill.usedAt).toLocaleString("vi-VN")}</span>
+                                        <span>{bill.status}</span>
+                                        <span>{formatMoney(bill.netVnd)}</span>
+                                        <span>{formatMoney(bill.commissionVnd)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </React.Fragment>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}

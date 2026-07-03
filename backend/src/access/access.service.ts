@@ -59,6 +59,10 @@ export class AccessService {
     return this.hasRolePermission(user, 'bill.sensitive.view');
   }
 
+  canViewRevenueReport(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'report.revenue.view');
+  }
+
   canViewMemberBooking(user: AuthenticatedUser) {
     return this.hasRolePermission(user, 'booking.member.view');
   }

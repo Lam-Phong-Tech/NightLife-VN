@@ -11,6 +11,7 @@ export type ActionPolicy =
   | 'canViewPartnerBooking'
   | 'canViewPartnerBill'
   | 'canViewSensitiveBill'
+  | 'canViewRevenueReport'
   | 'canViewMemberBooking'
   | 'canViewMemberCoupon'
   | 'canClaimMemberCoupon';

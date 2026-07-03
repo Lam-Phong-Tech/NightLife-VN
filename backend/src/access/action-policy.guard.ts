@@ -67,6 +67,10 @@ export class ActionPolicyGuard implements CanActivate {
       return this.accessService.canViewSensitiveBill(user);
     }
 
+    if (policy === 'canViewRevenueReport') {
+      return this.accessService.canViewRevenueReport(user);
+    }
+
     if (policy === 'canViewMemberBooking') {
       return this.accessService.canViewMemberBooking(user);
     }
