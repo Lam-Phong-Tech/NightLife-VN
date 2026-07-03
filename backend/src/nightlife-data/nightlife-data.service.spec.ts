@@ -1348,6 +1348,13 @@ describe('NightlifeDataService', () => {
           status: 'REQUESTED',
           partySize: 4,
           note: 'VIP room',
+          discountSnapshot: {
+            couponId: null,
+            couponIssueId: null,
+          },
+          customerType: 'GUEST',
+          customerNameSnapshot: 'Guest Name',
+          customerEmailSnapshot: 'guest@example.com',
         }),
       }),
     );
@@ -1492,6 +1499,10 @@ describe('NightlifeDataService', () => {
           storeId: 'store-1',
           couponId: 'coupon-1',
           couponIssueId: 'issue-1',
+          discountSnapshot: {
+            couponId: 'coupon-1',
+            couponIssueId: 'issue-1',
+          },
         }),
       }),
     );
@@ -1555,6 +1566,12 @@ describe('NightlifeDataService', () => {
           castId: 'cast-1',
           status: 'REQUESTED',
           partySize: 2,
+          discountSnapshot: {
+            couponId: null,
+            couponIssueId: null,
+          },
+          customerType: 'MEMBER',
+          customerNameSnapshot: 'Minh Nguyen',
         }),
       }),
     );
