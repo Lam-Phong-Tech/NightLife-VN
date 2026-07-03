@@ -74,17 +74,18 @@ export default function LineEmailConsentPage() {
           className="nl-line-consent-layout"
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) minmax(320px,.74fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
             gap: 20,
             alignItems: "stretch",
           }}
         >
           <section
+            className="nl-line-consent-hero"
             style={{
-              minHeight: 560,
+              minHeight: 480,
               border: `1px solid ${colors.border}`,
               borderRadius: 22,
-              padding: 28,
+              padding: 26,
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -111,10 +112,19 @@ export default function LineEmailConsentPage() {
                 <Mail size={15} />
                 LINE Login email permission
               </span>
-              <h1 style={{ marginTop: 20, maxWidth: 640, fontSize: 46, lineHeight: 1.04, fontWeight: 950 }}>
-                Vietyoru cần email của bạn để tạo và bảo vệ tài khoản hội viên.
+              <h1
+                className="nl-line-consent-hero-title"
+                style={{
+                  marginTop: 18,
+                  maxWidth: 600,
+                  fontSize: "clamp(30px, 5.2vw, 42px)",
+                  lineHeight: 1.06,
+                  fontWeight: 950,
+                }}
+              >
+                Vietyoru cần email để tạo và bảo vệ tài khoản hội viên.
               </h1>
-              <p style={{ marginTop: 16, maxWidth: 560, color: colors.muted, fontSize: 15, lineHeight: 1.8 }}>
+              <p className="nl-line-consent-hero-copy" style={{ marginTop: 14, maxWidth: 560, color: colors.muted, fontSize: 15, lineHeight: 1.68 }}>
                 Chúng tôi chỉ yêu cầu LINE chia sẻ email sau khi bạn đồng ý rõ ràng. Email được dùng để đăng nhập, nhận diện tài khoản,
                 lưu lịch đặt chỗ, quản lý ưu đãi và gửi thông báo quan trọng liên quan đến dịch vụ.
               </p>
@@ -145,6 +155,7 @@ export default function LineEmailConsentPage() {
           </section>
 
           <section
+            className="nl-line-consent-card"
             style={{
               border: `1px solid ${colors.borderStrong}`,
               borderRadius: 22,
@@ -155,29 +166,40 @@ export default function LineEmailConsentPage() {
             }}
           >
             <div
+              className="nl-line-consent-card-head"
               style={{
-                width: 54,
-                height: 54,
-                display: "grid",
-                placeItems: "center",
-                borderRadius: 18,
-                background: colors.goldGrad,
-                color: colors.onGold,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
               }}
             >
-              <ShieldCheck size={27} />
+              <div
+                className="nl-line-consent-card-icon"
+                style={{
+                  width: 52,
+                  height: 52,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 17,
+                  background: colors.goldGrad,
+                  color: colors.onGold,
+                  flex: "none",
+                }}
+              >
+                <ShieldCheck size={26} />
+              </div>
+              <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1.12, fontWeight: 950 }}>
+                Đồng ý chia sẻ email qua LINE
+              </h2>
             </div>
-            <h2 style={{ marginTop: 18, fontSize: 25, lineHeight: 1.15, fontWeight: 950 }}>
-              Đồng ý chia sẻ email qua LINE
-            </h2>
-            <p style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.7 }}>
+            <p style={{ marginTop: 12, color: colors.muted, fontSize: 13.5, lineHeight: 1.7 }}>
               Bằng cách tiếp tục, bạn cho phép Vietyoru nhận địa chỉ email từ LINE để tạo hoặc đăng nhập tài khoản hội viên.
             </p>
 
             <label
               style={{
-                marginTop: 18,
                 display: "grid",
+                marginTop: 18,
                 gridTemplateColumns: "22px minmax(0,1fr)",
                 gap: 11,
                 alignItems: "flex-start",
@@ -235,6 +257,43 @@ export default function LineEmailConsentPage() {
         @media (max-width: 767px) {
           .nl-line-consent-layout {
             grid-template-columns: 1fr !important;
+          }
+
+          .nl-line-consent-hero {
+            min-height: auto !important;
+            padding: 24px !important;
+            gap: 22px !important;
+          }
+
+          .nl-line-consent-hero-title {
+            max-width: 100% !important;
+            font-size: clamp(30px, 9vw, 36px) !important;
+            line-height: 1.08 !important;
+          }
+
+          .nl-line-consent-hero-copy {
+            font-size: 14px !important;
+            line-height: 1.62 !important;
+          }
+
+          .nl-line-consent-card {
+            padding: 22px !important;
+          }
+
+          .nl-line-consent-card-head {
+            align-items: center !important;
+            gap: 11px !important;
+          }
+
+          .nl-line-consent-card-icon {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 16px !important;
+          }
+
+          .nl-line-consent-card-head h2 {
+            font-size: 22px !important;
+            line-height: 1.12 !important;
           }
         }
       `}</style>
