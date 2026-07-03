@@ -11,7 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import type * as express from 'express';
 import { ActionPolicy } from '../access/action-policy.decorator';
 import { ActionPolicyGuard } from '../access/action-policy.guard';
@@ -1004,6 +1004,13 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({ summary: 'Admin action: Check if a store slug is available' })
+  @ApiOkResponse({ 
+    schema: { 
+      type: 'object', 
+      properties: { available: { type: 'boolean' } },
+      example: { available: true }
+    } 
+  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/stores/check-slug')
