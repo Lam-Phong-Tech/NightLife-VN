@@ -5057,7 +5057,6 @@ export class NightlifeDataService {
         booking: {
           select: {
             id: true,
-            bookingCode: true,
             cast: { select: { id: true, stageName: true, slug: true } },
           },
         },
@@ -8169,10 +8168,6 @@ export class NightlifeDataService {
             couponId: couponLink.couponId ?? null,
             couponIssueId: bookingCouponIssueId ?? null,
           } as Prisma.InputJsonValue,
-          customerType: input.userId ? 'MEMBER' : 'GUEST',
-          customerNameSnapshot: this.cleanText(input.dto.displayName),
-          customerEmailSnapshot:
-            this.cleanEmail(input.dto.email) ?? input.user?.email ?? '',
         },
         select: this.bookingNotificationSelect(),
       });

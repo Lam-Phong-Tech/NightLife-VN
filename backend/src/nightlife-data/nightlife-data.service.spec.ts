@@ -1358,9 +1358,6 @@ describe('NightlifeDataService', () => {
             couponId: null,
             couponIssueId: null,
           },
-          customerType: 'GUEST',
-          customerNameSnapshot: 'Guest Name',
-          customerEmailSnapshot: 'guest@example.com',
         }),
       }),
     );
@@ -1576,8 +1573,6 @@ describe('NightlifeDataService', () => {
             couponId: null,
             couponIssueId: null,
           },
-          customerType: 'MEMBER',
-          customerNameSnapshot: 'Minh Nguyen',
         }),
       }),
     );
@@ -6206,7 +6201,6 @@ describe('NightlifeDataService', () => {
           booking: {
             select: expect.objectContaining({
               id: true,
-              bookingCode: true,
             }),
           },
         }),
