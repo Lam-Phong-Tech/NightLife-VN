@@ -33,7 +33,7 @@ const USERS: UserSeed[] = [
     displayName: 'Trần Đối Tác',
     phone: '+84901000002',
     role: 'PARTNER',
-    tier: UserTier.MEMBER,
+    tier: UserTier.FREE,
     roleKey: 'partner',
     profile: {
       fullName: 'Trần Văn Đối Tác',
@@ -46,7 +46,7 @@ const USERS: UserSeed[] = [
     displayName: 'Lê Đối Tác',
     phone: '+84901000003',
     role: 'PARTNER',
-    tier: UserTier.MEMBER,
+    tier: UserTier.FREE,
     roleKey: 'partner',
     profile: {
       fullName: 'Lê Thị Đối Tác',
@@ -59,7 +59,7 @@ const USERS: UserSeed[] = [
     displayName: 'Demo Partner',
     phone: '+84901000006',
     role: 'PARTNER',
-    tier: UserTier.MEMBER,
+    tier: UserTier.FREE,
     roleKey: 'partner',
     profile: {
       fullName: 'Demo Partner',
@@ -72,7 +72,7 @@ const USERS: UserSeed[] = [
     displayName: 'NightLife Operator',
     phone: '+84901000007',
     role: 'OPERATOR',
-    tier: UserTier.MEMBER,
+    tier: UserTier.FREE,
     roleKey: 'operator',
     profile: {
       fullName: 'NightLife Operator',
@@ -85,7 +85,7 @@ const USERS: UserSeed[] = [
     displayName: 'NightLife Staff',
     phone: '+84901000008',
     role: 'STAFF',
-    tier: UserTier.MEMBER,
+    tier: UserTier.FREE,
     roleKey: 'staff',
     profile: {
       fullName: 'NightLife Staff',
@@ -98,7 +98,7 @@ const USERS: UserSeed[] = [
     displayName: 'Phạm Thành Viên',
     phone: '+84901000004',
     role: 'USER',
-    tier: UserTier.MEMBER,
+    tier: UserTier.FREE,
     roleKey: 'member',
     profile: {
       fullName: 'Phạm Văn Thành Viên',

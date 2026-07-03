@@ -19,6 +19,7 @@ describe('UsersService', () => {
 
   const prisma = {
     user: {
+      create: jest.fn(),
       findUnique: jest.fn(),
     },
   } as unknown as jest.Mocked<PrismaService>;
@@ -51,5 +52,31 @@ describe('UsersService', () => {
     await expect(
       service.validateCredentials(activeUser.email, "' OR 1=1 --"),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('creates regular member accounts with the legacy FREE tier', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    passwordService.hash.mockResolvedValue('hashed-password');
+    prisma.user.create.mockResolvedValue({
+      ...activeUser,
+      email: 'new-member@nightlife.vn',
+      tier: 'FREE',
+    } as never);
+
+    await service.createUser({
+      email: ' New-Member@Nightlife.vn ',
+      password: 'Str0ngPass1',
+      displayName: ' New Member ',
+    });
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: 'new-member@nightlife.vn',
+        displayName: 'New Member',
+        passwordHash: 'hashed-password',
+        role: 'USER',
+        tier: 'FREE',
+      }),
+    });
   });
 });

@@ -10505,7 +10505,7 @@ export class NightlifeDataService {
               displayName,
               phone: request.contactPhone,
               role: 'PARTNER',
-              tier: UserTier.MEMBER,
+              tier: UserTier.FREE,
               status: 'ACTIVE',
             },
             select: { id: true, email: true },

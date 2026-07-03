@@ -79,7 +79,7 @@ export class UsersService {
         passwordHash: await this.passwordService.hash(`google:${randomUUID()}`),
         displayName: displayName || undefined,
         role: 'USER',
-        tier: UserTier.MEMBER,
+        tier: UserTier.FREE,
       },
     });
   }
@@ -98,7 +98,7 @@ export class UsersService {
         passwordHash: await this.passwordService.hash(`line:${randomUUID()}`),
         displayName: displayName || undefined,
         role: 'USER',
-        tier: UserTier.MEMBER,
+        tier: UserTier.FREE,
       },
     });
   }
@@ -108,7 +108,11 @@ export class UsersService {
       return UserTier.VIP;
     }
 
-    return UserTier.MEMBER;
+    if (tier === UserTier.PREMIUM) {
+      return UserTier.PREMIUM;
+    }
+
+    return UserTier.FREE;
   }
 
   async validateCredentials(email: string, password: string) {

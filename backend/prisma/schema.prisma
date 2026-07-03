@@ -270,7 +270,7 @@ model User {
   displayName                   String?                @map("display_name")
   phone                         String?
   role                          UserRole               @default(USER)
-  tier                          UserTier               @default(MEMBER)
+  tier                          UserTier               @default(FREE)
   status                        UserStatus             @default(ACTIVE)
   profile                       Profile?
   roleAssignments               UserRoleAssignment[]
