@@ -169,6 +169,7 @@ export default function AdminStoresPage() {
       const form = new FormData();
       form.append('file', file);
       form.append('purpose', 'STORE_VIDEO');
+      form.append('access', 'PUBLIC');
       if (venueSel && venueSel !== 'new') {
         form.append('storeId', venueSel);
       }
@@ -196,6 +197,7 @@ export default function AdminStoresPage() {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'STORE_GALLERY');
+        form.append('access', 'PUBLIC');
         if (venueSel && venueSel !== 'new') {
           form.append('storeId', venueSel);
         }
