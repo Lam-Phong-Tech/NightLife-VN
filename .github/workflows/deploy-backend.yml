@@ -15,8 +15,26 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: nightlife
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nightlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID || vars.GOOGLE_CLIENT_ID || secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID || vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nightlife?schema=public
+      NIGHTLIFE_RUN_DB_E2E: 'true'
+      COUPON_QR_SECRET: ${{ secrets.COUPON_QR_SECRET }}
+      COUPON_QR_PARTNER_URL: ${{ vars.COUPON_QR_PARTNER_URL || secrets.COUPON_QR_PARTNER_URL }}
     defaults:
       run:
         working-directory: ./backend
@@ -38,6 +56,38 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Validate QR runtime env evidence
+        run: |
+          set -euo pipefail
+          if [ -z "${COUPON_QR_SECRET:-}" ]; then
+            echo "::error::Missing COUPON_QR_SECRET for Booking QR signing."
+            exit 1
+          fi
+          if [ "$COUPON_QR_SECRET" = "nightlife-dev-coupon-qr-secret" ]; then
+            echo "::error::COUPON_QR_SECRET must not use the development fallback."
+            exit 1
+          fi
+          if [ -z "${COUPON_QR_PARTNER_URL:-}" ]; then
+            echo "::error::Missing COUPON_QR_PARTNER_URL for production QR payloads."
+            exit 1
+          fi
+          case "$COUPON_QR_PARTNER_URL" in
+            http://*|https://*) ;;
+            *) echo "::error::COUPON_QR_PARTNER_URL must be an absolute URL."; exit 1 ;;
+          esac
+          echo "::add-mask::$COUPON_QR_SECRET"
+          echo "::add-mask::$COUPON_QR_PARTNER_URL"
+          echo "QR runtime evidence: COUPON_QR_SECRET=*** length=${#COUPON_QR_SECRET}; COUPON_QR_PARTNER_URL=*** configured."
+
+      - name: Prepare test database
+        run: pnpm exec prisma migrate deploy
+
+      - name: Unit Tests
+        run: pnpm test
+
+      - name: E2E Tests
+        run: pnpm test:e2e
 
       - name: Check Google OAuth client ID
         run: |
@@ -80,11 +130,16 @@ jobs:
 
       - name: Restart PM2 & Update DB
         uses: appleboy/ssh-action@master
+        env:
+          GOOGLE_CLIENT_ID: ${{ env.GOOGLE_CLIENT_ID }}
+          COUPON_QR_SECRET: ${{ secrets.COUPON_QR_SECRET }}
+          COUPON_QR_PARTNER_URL: ${{ env.COUPON_QR_PARTNER_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           port: ${{ secrets.VPS_SSH_PORT || '22' }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GOOGLE_CLIENT_ID,COUPON_QR_SECRET,COUPON_QR_PARTNER_URL
           script: |
             cd /var/www/api.demonightlight.test9.io.vn
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
@@ -92,8 +147,14 @@ jobs:
             npx prisma generate
             npx prisma db push --accept-data-loss
             export PORT=3012
-            if [ -n "${{ env.GOOGLE_CLIENT_ID }}" ]; then
-              export GOOGLE_CLIENT_ID="${{ env.GOOGLE_CLIENT_ID }}"
+            if [ -n "${GOOGLE_CLIENT_ID:-}" ]; then
+              export GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+            fi
+            if [ -n "${COUPON_QR_SECRET:-}" ]; then
+              export COUPON_QR_SECRET="$COUPON_QR_SECRET"
+            fi
+            if [ -n "${COUPON_QR_PARTNER_URL:-}" ]; then
+              export COUPON_QR_PARTNER_URL="$COUPON_QR_PARTNER_URL"
             fi
             pm2 restart app-api.demonightlight.test9.io.vn --update-env 2>/dev/null || pm2 start dist/src/main.js --name "app-api.demonightlight.test9.io.vn" --update-env
             pm2 save

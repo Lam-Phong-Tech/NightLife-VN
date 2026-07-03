@@ -302,6 +302,7 @@ type AdminCouponIssue = {
   auditLogs?: AdminCouponIssueAuditLog[];
   expiresAt?: string | null;
   usedAt?: string | null;
+  revokedAt?: string | null;
   createdAt?: string | null;
   userType?: string | null;
   user?: { id: string; displayName?: string | null; tier?: string | null } | null;
@@ -845,6 +846,17 @@ const escapeXmlCell = (value: string | number) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+
+const escapeCsvCell = (value: unknown) => {
+  const text = value === null || value === undefined ? "" : String(value);
+  if (!/[",\r\n]/.test(text)) return text;
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const buildCsvBlob = (rows: unknown[][]) =>
+  new Blob([rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n")], {
+    type: "text/csv;charset=utf-8",
+  });
 
 const buildRevenueReportExcelBlob = (report: RevenueReport) => {
   const rows = revenueReportExportRows(report)
@@ -1630,6 +1642,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [couponIssues, setCouponIssues] = useState<AdminCouponIssue[]>([]);
   const [couponIssueStatusFilter, setCouponIssueStatusFilter] = useState("all");
   const [expandedCouponIssueId, setExpandedCouponIssueId] = useState<string | null>(null);
+  const [couponIssueActionId, setCouponIssueActionId] = useState<string | null>(null);
   const [expandedRevenueCouponKey, setExpandedRevenueCouponKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -1825,6 +1838,25 @@ export default function AdminConsole({ section }: { section?: string }) {
     ],
     [couponIssues, couponLinkedBills],
   );
+  const couponLifecycleMetrics = useMemo(() => {
+    const scannedCount = couponIssues.filter(
+      (issue) =>
+        issue.scannedBy ||
+        issue.usedAt ||
+        issue.auditLogs?.some((log) => ["COUPON_ISSUE_SCANNED", "COUPON_ISSUE_USED"].includes(log.action)),
+    ).length;
+    const confirmedCount = couponIssues.filter((issue) => issue.status === "USED" || issue.usedAt).length;
+    const billedCount = couponLinkedBills.filter((bill) => bill.couponIssue).length;
+    const revokedCount = couponIssues.filter((issue) => issue.status === "REVOKED").length;
+
+    return [
+      { label: "Claim", value: couponIssues.length, note: "issue created" },
+      { label: "Scan", value: scannedCount, note: "partner scan" },
+      { label: "Confirm USED", value: confirmedCount, note: "one-time update" },
+      { label: "Bill", value: billedCount, note: "bill linked" },
+      { label: "Fraud review", value: revokedCount, note: "revoked tokens" },
+    ];
+  }, [couponIssues, couponLinkedBills]);
   const reconciliationWarnings = useMemo(() => {
     const warnings: Array<{ id: string; title: string; detail: string }> = [];
     const oneDayMs = 24 * 60 * 60 * 1000;
@@ -1894,7 +1926,13 @@ export default function AdminConsole({ section }: { section?: string }) {
     revenueReport.days.forEach((day) =>
       day.stores.forEach((store) =>
         store.coupons.forEach((coupon) => {
-          if (coupon.coupon.id) options.set(coupon.coupon.id, coupon.coupon);
+          if (coupon.coupon.id) {
+            options.set(coupon.coupon.id, {
+              id: coupon.coupon.id,
+              code: coupon.coupon.code,
+              name: coupon.coupon.name,
+            });
+          }
         }),
       ),
     );
@@ -2071,6 +2109,86 @@ export default function AdminConsole({ section }: { section?: string }) {
 
   const exportRevenueReportPdf = () => {
     downloadBlob(buildRevenueReportPdfBlob(revenueReport), `${revenueReportFileStem(revenueReport)}.pdf`);
+  };
+
+  const updateCouponIssueInState = (nextIssue: AdminCouponIssue) => {
+    setCouponIssues((current) =>
+      current.map((issue) => (issue.id === nextIssue.id ? { ...issue, ...nextIssue } : issue)),
+    );
+  };
+
+  const revokeCouponIssueQr = async (issue: AdminCouponIssue) => {
+    if (issue.status !== "ISSUED") return;
+
+    setCouponIssueActionId(issue.id);
+    try {
+      const nextIssue = await apiClient<AdminCouponIssue>(`/admin/coupon-issues/${issue.id}/revoke-qr`, {
+        method: "PATCH",
+      });
+      updateCouponIssueInState(nextIssue);
+      setStatusMessage(`Da revoke QR token cho ${issue.code}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong revoke duoc QR token.");
+    } finally {
+      setCouponIssueActionId(null);
+    }
+  };
+
+  const rotateCouponIssueQr = async (issue: AdminCouponIssue) => {
+    if (issue.status !== "ISSUED") return;
+
+    setCouponIssueActionId(issue.id);
+    try {
+      const nextIssue = await apiClient<AdminCouponIssue>(`/admin/coupon-issues/${issue.id}/rotate-qr`, {
+        method: "POST",
+      });
+      updateCouponIssueInState(nextIssue);
+      setStatusMessage(`Da rotate QR token cho ${issue.code}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong rotate duoc QR token.");
+    } finally {
+      setCouponIssueActionId(null);
+    }
+  };
+
+  const exportCouponLifecycleCsv = () => {
+    const rows: unknown[][] = [
+      [
+        "Issue ID",
+        "Issue code",
+        "Coupon",
+        "Store",
+        "Status",
+        "Created at",
+        "Scanned at",
+        "Used at",
+        "Revoked at",
+        "Booking",
+        "Bill",
+        "QR payload hash",
+      ],
+    ];
+
+    visibleCouponIssues.forEach((issue) => {
+      const linkedBill = couponLinkedBills.find((bill) => bill.couponIssue?.id === issue.id);
+      const scannedAt = issue.auditLogs?.find((log) => log.action === "COUPON_ISSUE_SCANNED")?.createdAt;
+      rows.push([
+        issue.id,
+        issue.code,
+        issue.coupon.code,
+        issue.coupon.store?.name ?? "",
+        issue.status,
+        issue.createdAt ?? "",
+        scannedAt ?? "",
+        issue.usedAt ?? "",
+        issue.revokedAt ?? "",
+        issue.booking?.id ?? "",
+        linkedBill?.billNumber ?? linkedBill?.id ?? issue.bill?.billNumber ?? issue.bill?.id ?? "",
+        issue.qrPayloadHash ?? "",
+      ]);
+    });
+
+    downloadBlob(buildCsvBlob(rows), `nightlife-coupon-qr-lifecycle-${dateKeyInVietnam()}.csv`);
   };
 
   const applyRevenueQuickRange = (range: RevenueReportFilterState["quickRange"]) => {
@@ -2898,6 +3016,8 @@ export default function AdminConsole({ section }: { section?: string }) {
   const couponIssueDetail = (issue: AdminCouponIssue) => {
     const campaignSnapshot = issue.campaignSnapshot ?? null;
     const auditLogs = issue.auditLogs ?? [];
+    const isQrActionRunning = couponIssueActionId === issue.id;
+    const canManageQrToken = issue.status === "ISSUED" && !isQrActionRunning;
 
     return (
       <div
@@ -2931,6 +3051,28 @@ export default function AdminConsole({ section }: { section?: string }) {
           </code>
           <span style={{ color: colors.muted }}>
             {issue.discountRuleSnapshot ? `Discount: ${compactJson(issue.discountRuleSnapshot)}` : "Discount snapshot: -"}
+          </span>
+          <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              aria-label={`Revoke QR token ${issue.code}`}
+              disabled={!canManageQrToken}
+              onClick={() => void revokeCouponIssueQr(issue)}
+              style={{ ...buttonStyle("danger"), opacity: canManageQrToken ? 1 : 0.55 }}
+            >
+              <XCircle size={14} />
+              Revoke
+            </button>
+            <button
+              type="button"
+              aria-label={`Rotate QR token ${issue.code}`}
+              disabled={!canManageQrToken}
+              onClick={() => void rotateCouponIssueQr(issue)}
+              style={{ ...buttonStyle("secondary"), opacity: canManageQrToken ? 1 : 0.55 }}
+            >
+              <RefreshCcw size={14} />
+              Rotate
+            </button>
           </span>
         </div>
 
@@ -2983,19 +3125,53 @@ export default function AdminConsole({ section }: { section?: string }) {
           title="Coupon issue"
           eyebrow="COUPON LIFECYCLE"
           action={
-            <select
-              value={couponIssueStatusFilter}
-              onChange={(event) => setCouponIssueStatusFilter(event.target.value)}
-              style={inputStyle({ width: 170, minHeight: 38 })}
-            >
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                aria-label="Export coupon QR lifecycle report"
+                onClick={exportCouponLifecycleCsv}
+                style={buttonStyle("secondary")}
+              >
+                <FileText size={14} />
+                Export CSV
+              </button>
+              <select
+                value={couponIssueStatusFilter}
+                onChange={(event) => setCouponIssueStatusFilter(event.target.value)}
+                style={inputStyle({ width: 170, minHeight: 38 })}
+              >
               <option value="all">Tất cả</option>
               <option value="ISSUED">Đã cấp</option>
               <option value="USED">Đã dùng</option>
               <option value="EXPIRED">Hết hạn</option>
               <option value="REVOKED">Đã hủy</option>
-            </select>
+              </select>
+            </span>
           }
         />
+        <div
+          data-testid="admin-coupon-lifecycle-metrics"
+          style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(120px,1fr))", gap: 10, marginTop: 14 }}
+        >
+          {couponLifecycleMetrics.map((metric) => (
+            <span
+              key={metric.label}
+              style={{
+                border: `1px solid ${colors.borderHair}`,
+                background: "rgba(255,255,255,.032)",
+                padding: "10px 12px",
+                display: "grid",
+                gap: 3,
+              }}
+            >
+              <span style={{ color: colors.muted, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>
+                {metric.label}
+              </span>
+              <strong style={{ color: colors.text, fontSize: 20 }}>{metric.value}</strong>
+              <span style={{ color: colors.text2, fontSize: 11 }}>{metric.note}</span>
+            </span>
+          ))}
+        </div>
       </div>
       <div style={{ minWidth: 980, overflowX: "auto" }}>
         <div
