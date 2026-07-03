@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminConsole from "./AdminConsole";
@@ -220,11 +220,12 @@ describe("AdminConsole coupon issue panel", () => {
 
     const panel = await screen.findByTestId("admin-sensitive-bills-panel");
     await within(panel).findByText("BILL-20260701-ABC12345");
+    expect(within(panel).getByText(/booking/i)).toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText("Booking ID filter"), "booking-1");
-    await userEvent.type(screen.getByLabelText("Coupon ID filter"), "coupon-1");
-    await userEvent.type(screen.getByLabelText("Coupon issue ID filter"), "issue-used");
-    await userEvent.click(screen.getByLabelText("Apply bill relation filters"));
+    fireEvent.change(screen.getByLabelText("Booking ID filter"), { target: { value: "booking-1" } });
+    fireEvent.change(screen.getByLabelText("Coupon ID filter"), { target: { value: "coupon-1" } });
+    fireEvent.change(screen.getByLabelText("Coupon issue ID filter"), { target: { value: "issue-used" } });
+    fireEvent.click(screen.getByLabelText("Apply bill relation filters"));
 
     await waitFor(() => {
       expect(mocks.apiClient).toHaveBeenCalledWith(
@@ -247,6 +248,9 @@ describe("AdminConsole coupon issue panel", () => {
     await within(panel).findByText("MEMBER-issued");
 
     const statusFilter = within(panel).getByRole("combobox");
+    const statusValues = Array.from(statusFilter.querySelectorAll("option")).map((option) => option.value);
+    expect(statusValues).toContain("REVOKED");
+    expect(statusValues).not.toContain("CANCELLED");
 
     await userEvent.click(within(panel).getByLabelText("Chi tiết coupon issue MEMBER-issued"));
     const detail = within(panel).getByTestId("admin-coupon-issue-detail-issue-issued");

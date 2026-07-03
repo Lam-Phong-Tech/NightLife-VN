@@ -2146,6 +2146,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         {orderedSensitiveBills.slice(0, activeView === "bill" ? 12 : 6).map((bill) => (
           <div
             key={bill.id}
+            data-testid={`admin-sensitive-bill-row-${bill.id}`}
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr .9fr 1.1fr .8fr 190px",
@@ -2425,7 +2426,7 @@ export default function AdminConsole({ section }: { section?: string }) {
               <option value="ISSUED">Đã cấp</option>
               <option value="USED">Đã dùng</option>
               <option value="EXPIRED">Hết hạn</option>
-              <option value="CANCELLED">Đã hủy</option>
+              <option value="REVOKED">Đã hủy</option>
             </select>
           }
         />

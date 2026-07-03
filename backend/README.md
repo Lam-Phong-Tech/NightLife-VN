@@ -142,6 +142,9 @@ Seed credentials:
 
 ## Verification
 
+Concrete P0 evidence from the 2026-07-03 PM review pass is recorded in
+`docs/p0-evidence-2026-07-03.md`.
+
 Useful checks before handoff:
 
 ```bash
