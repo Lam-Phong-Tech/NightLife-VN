@@ -1,5 +1,3 @@
-"use client";
-
 import { Download, Building2, CalendarCheck, ReceiptText, Handshake, UsersRound, MessageCircle, TicketPercent } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';

@@ -21,6 +21,13 @@ describe('VenueCard', () => {
     expect(screen.getByText('Hoàn Kiếm - Bar')).toBeInTheDocument();
   });
 
+  it('renders the price as a cost tier', () => {
+    render(<VenueCard venue={mockVenue} />);
+
+    expect(screen.getByText('$$$')).toBeInTheDocument();
+    expect(screen.queryByText('1.2tr')).not.toBeInTheDocument();
+  });
+
   it('renders badge if hasBadge is true', () => {
     const venueWithBadge = { ...mockVenue, hasBadge: true, badgeText: 'Mới' };
     render(<VenueCard venue={venueWithBadge} />);

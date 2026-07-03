@@ -1,10 +1,11 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useState } from "react";
+import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   BookOpen,
   CalendarDays,
+  ChevronDown,
   ChevronRight,
   Crown,
   Heart,
@@ -62,6 +63,12 @@ const serviceTabs = [
   { id: "spa", label: "Spa" },
 ];
 
+const serviceRegionTabs = [
+  { id: "hanoi", label: "Hà Nội" },
+  { id: "hcm", label: "Hồ Chí Minh" },
+  { id: "all", label: "Tổng hợp" },
+] as const;
+
 const rankTabs = [
   { id: "cast", label: "Cast" },
   { id: "quan", label: "Quán" },
@@ -98,6 +105,117 @@ type RankedItem = {
   href?: string;
 };
 
+type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
+type ServiceItem = (typeof svcData)[number];
+type VideoItem = (typeof hotVideos)[number];
+
+function normalizeArea(value = "") {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getAreaRegion(areaValue = ""): Exclude<ServiceRegion, "all"> {
+  const area = normalizeArea(areaValue);
+  return area.includes("quan 1") || area.includes("hcm") || area.includes("ho chi minh")
+    ? "hcm"
+    : "hanoi";
+}
+
+function getServiceRegion(item: ServiceItem): Exclude<ServiceRegion, "all"> {
+  return getAreaRegion(item.area);
+}
+
+function filterServicesByRegion(items: ServiceItem[], region: ServiceRegion) {
+  if (region === "all") return items;
+  return items.filter((item) => getServiceRegion(item) === region);
+}
+
+function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
+  const filteredItems = region === "all" ? items : items.filter((item) => getAreaRegion(item.area) === region);
+  return filteredItems.slice(0, 5).map((item, index) => ({ ...item, rank: index + 1 }));
+}
+
+function filterVideosByRegion(items: VideoItem[], region: ServiceRegion) {
+  if (region === "all") return items;
+  return items.filter((item) => getAreaRegion(item.name) === region);
+}
+
+function useBannerSwipe(
+  bannerCount: number,
+  setActiveBanner: React.Dispatch<React.SetStateAction<number>>,
+) {
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef(0);
+  const suppressClickRef = useRef(false);
+
+  const moveBanner = (direction: 1 | -1) => {
+    if (bannerCount < 2) return;
+    setActiveBanner((current) => (current + direction + bannerCount) % bannerCount);
+  };
+
+  const beginSwipe = (clientX: number) => {
+    touchStartXRef.current = clientX;
+    touchDeltaXRef.current = 0;
+    suppressClickRef.current = false;
+  };
+
+  const updateSwipe = (clientX: number) => {
+    if (touchStartXRef.current === null) return;
+    touchDeltaXRef.current = clientX - touchStartXRef.current;
+    if (Math.abs(touchDeltaXRef.current) > 8) {
+      suppressClickRef.current = true;
+    }
+  };
+
+  const endSwipe = () => {
+    const deltaX = touchDeltaXRef.current;
+    const shouldSuppressClick = Math.abs(deltaX) > 8;
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
+
+    if (Math.abs(deltaX) >= 46) {
+      moveBanner(deltaX < 0 ? 1 : -1);
+    }
+
+    if (shouldSuppressClick) {
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 220);
+    } else {
+      suppressClickRef.current = false;
+    }
+  };
+
+  return {
+    onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (suppressClickRef.current) {
+        event.preventDefault();
+        suppressClickRef.current = false;
+      }
+    },
+    onTouchCancel: () => {
+      touchStartXRef.current = null;
+      touchDeltaXRef.current = 0;
+      suppressClickRef.current = false;
+    },
+    onTouchEnd: (event: React.TouchEvent<HTMLAnchorElement>) => {
+      const touch = event.changedTouches[0];
+      if (touch) updateSwipe(touch.clientX);
+      endSwipe();
+    },
+    onTouchMove: (event: React.TouchEvent<HTMLAnchorElement>) => {
+      const touch = event.touches[0];
+      if (touch) updateSwipe(touch.clientX);
+    },
+    onTouchStart: (event: React.TouchEvent<HTMLAnchorElement>) => {
+      const touch = event.touches[0];
+      if (touch) beginSwipe(touch.clientX);
+    },
+  };
+}
+
 const shellStyle: CSSProperties = {
   minHeight: "100vh",
   background: colors.shell,
@@ -130,11 +248,6 @@ const pillStyle: CSSProperties = {
   fontWeight: 700,
 };
 
-function formatRankingPeriod() {
-  const period = new Intl.DateTimeFormat("vi-VN", { month: "long", year: "numeric" }).format(new Date());
-  return period.charAt(0).toUpperCase() + period.slice(1);
-}
-
 function HeaderBar({ desktop = false }: { desktop?: boolean }) {
   void desktop;
   return null;
@@ -144,6 +257,7 @@ function SearchPanel() {
   return (
     <Link
       href="/danh-sach-quan"
+      data-testid="home-search-panel"
       style={{
         display: "flex",
         alignItems: "center",
@@ -215,6 +329,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
   };
   const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+  const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
     if (banners.length < 2) return;
@@ -229,6 +344,8 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
   return (
     <Link
       href="/stores/neon-club"
+      data-testid="home-ad-banner"
+      {...swipeHandlers}
       style={{
         minHeight: desktop ? "310px" : "208px",
         borderRadius: desktop ? "26px" : "18px",
@@ -240,6 +357,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
         padding: desktop ? "34px" : "18px 18px 42px",
         color: "#fff",
         boxShadow: "0 22px 42px rgba(0,0,0,.36)",
+        touchAction: "pan-y",
       }}
     >
       <PlaceholderMedia
@@ -348,6 +466,165 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
   );
 }
 
+function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
+  const [activeBanner, setActiveBanner] = useState(0);
+  const fallbackBanner = {
+    title: "Ưu đãi đêm nay",
+    desc: "Lướt để xem thêm ưu đãi và sự kiện nổi bật.",
+    btnText: "Xem ngay",
+    img: "linear-gradient(135deg,#15151a,#2a2112)",
+  };
+  const banners = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+  const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
+
+  useEffect(() => {
+    if (banners.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveBanner((current) => (current + 1) % banners.length);
+    }, 5200);
+
+    return () => window.clearInterval(timer);
+  }, [banners.length]);
+
+  return (
+    <Link
+      href="/uu-dai"
+      data-testid="home-mid-banner"
+      {...swipeHandlers}
+      style={{
+        minHeight: desktop ? "210px" : "132px",
+        borderRadius: desktop ? "22px" : "18px",
+        overflow: "hidden",
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        padding: desktop ? "26px 28px 42px" : "14px 14px 32px",
+        color: "#fff",
+        border: `1px solid ${colors.line}`,
+        boxShadow: "0 18px 36px rgba(0,0,0,.28)",
+        touchAction: "pan-y",
+      }}
+    >
+      <PlaceholderMedia
+        src={event.img}
+        alt={event.title}
+        label="Ảnh ưu đãi"
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "inherit",
+          transform: "scale(1.03)",
+          transition: "opacity 420ms ease, transform 520ms ease",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.5) 54%,rgba(8,8,11,.18)), linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.7))",
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px" }}>
+        <div
+          style={{
+            color: colors.goldSoft,
+            fontSize: desktop ? "11px" : "9px",
+            fontWeight: 900,
+            letterSpacing: ".18em",
+            textTransform: "uppercase",
+          }}
+        >
+          Banner nổi bật
+        </div>
+        <h3
+          style={{
+            marginTop: desktop ? "10px" : "6px",
+            fontSize: desktop ? "30px" : "18px",
+            lineHeight: 1.08,
+            fontWeight: 900,
+          }}
+        >
+          {event.title}
+        </h3>
+        <div
+          style={{
+            marginTop: desktop ? "12px" : "8px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            color: colors.text,
+            fontSize: desktop ? "13px" : "11px",
+            lineHeight: 1.35,
+          }}
+        >
+          <span style={{ minWidth: 0 }}>{event.desc}</span>
+          <span
+            style={{
+              flex: "none",
+              borderRadius: "999px",
+              background: `linear-gradient(135deg,${colors.goldSoft},${colors.gold})`,
+              color: "#241a0a",
+              padding: desktop ? "9px 15px" : "7px 11px",
+              fontSize: desktop ? "12px" : "10px",
+              fontWeight: 900,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {event.btnText}
+          </span>
+        </div>
+      </div>
+      <div
+        aria-label="Chọn banner nổi bật"
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: desktop ? "17px" : "14px",
+          zIndex: 2,
+          display: "flex",
+          gap: "6px",
+          transform: "translateX(-50%)",
+        }}
+      >
+        {banners.map((banner, index) => (
+          <span
+            key={banner.title}
+            role="button"
+            tabIndex={0}
+            aria-label={`Banner nổi bật ${index + 1}`}
+            onClick={(event) => {
+              event.preventDefault();
+              setActiveBanner(index);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setActiveBanner(index);
+              }
+            }}
+            style={{
+              display: "block",
+              flex: "0 0 auto",
+              width: activeBanner === index ? 22 : 5,
+              height: 5,
+              border: 0,
+              borderRadius: 99,
+              padding: 0,
+              background: activeBanner === index ? colors.gold : "rgba(255,255,255,.3)",
+              cursor: "pointer",
+              transition: "width 220ms ease, background 220ms ease",
+            }}
+          />
+        ))}
+      </div>
+    </Link>
+  );
+}
+
 function SectionHeading({ title, action }: { title: string; action?: string }) {
   return (
     <div style={sectionTitleStyle}>
@@ -386,10 +663,6 @@ function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number];
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>
           {item.area} · {item.catLabel}
         </div>
-        <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", color: colors.gold, fontSize: "12px", fontWeight: 800 }}>
-          <span>★ {item.rating}</span>
-          <span style={{ color: colors.text }}>{item.price}</span>
-        </div>
       </div>
     </Link>
   );
@@ -422,7 +695,7 @@ function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; 
         <div style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.place}</div>
       </div>
-      <span style={{ color: colors.gold, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".08em" }}>LẤY MÃ</span>
+      <span style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".08em" }}>LẤY MÃ</span>
     </Link>
   );
 }
@@ -528,7 +801,6 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
-        <div style={{ marginTop: "9px", color: colors.goldSoft, fontSize: "13px", fontWeight: 800 }}>{item.price}</div>
       </div>
     </Link>
   );
@@ -636,16 +908,202 @@ function TabSwitch({
   );
 }
 
+function RankingRegionDropdown({
+  active,
+  onChange,
+  ariaLabel = "Chọn khu vực xếp hạng",
+}: {
+  active: ServiceRegion;
+  onChange: (value: ServiceRegion) => void;
+  ariaLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = serviceRegionTabs.find((item) => item.id === active) ?? serviceRegionTabs[0];
+
+  return (
+    <div
+      style={{ position: "relative", flex: "none" }}
+      onBlur={(event) => {
+        const nextTarget = event.relatedTarget as Node | null;
+        if (!nextTarget || !event.currentTarget.contains(nextTarget)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        style={{
+          minHeight: 38,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "7px",
+          border: `1px solid ${colors.line}`,
+          borderRadius: "999px",
+          background: "rgba(255,255,255,.04)",
+          color: colors.goldSoft,
+          padding: "0 13px 0 15px",
+          fontSize: "12px",
+          fontWeight: 850,
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+          boxShadow: open ? "0 12px 28px rgba(0,0,0,.28)" : "none",
+        }}
+      >
+        {selected.label}
+        <ChevronDown
+          size={14}
+          style={{
+            flex: "none",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 160ms ease",
+          }}
+        />
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-label={ariaLabel}
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            right: 0,
+            zIndex: 30,
+            minWidth: "152px",
+            padding: "6px",
+            borderRadius: "16px",
+            border: `1px solid ${colors.line}`,
+            background: "linear-gradient(180deg, rgba(28,28,32,.98), rgba(14,14,17,.98))",
+            boxShadow: "0 20px 42px rgba(0,0,0,.45)",
+            backdropFilter: "blur(16px)",
+          }}
+        >
+          {serviceRegionTabs.map((item) => {
+            const selectedOption = active === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="option"
+                aria-selected={selectedOption}
+                onClick={() => {
+                  onChange(item.id);
+                  setOpen(false);
+                }}
+                style={{
+                  width: "100%",
+                  minHeight: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  border: 0,
+                  borderRadius: "12px",
+                  background: selectedOption ? "rgba(212,178,106,.18)" : "transparent",
+                  color: selectedOption ? colors.goldSoft : colors.muted,
+                  padding: "0 10px",
+                  fontSize: "12px",
+                  fontWeight: 820,
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                <span>{item.label}</span>
+                {selectedOption ? (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "999px",
+                      background: colors.gold,
+                      boxShadow: "0 0 0 4px rgba(212,178,106,.12)",
+                    }}
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ServiceFilterControls({
+  activeTab,
+  onTabChange,
+  activeRegion,
+  onRegionChange,
+}: {
+  activeTab: string;
+  onTabChange: (value: string) => void;
+  activeRegion: ServiceRegion;
+  onRegionChange: (value: ServiceRegion) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        margin: "10px 0 13px",
+      }}
+    >
+      <TabSwitch items={serviceTabs} active={activeTab} onChange={onTabChange} />
+      <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} ariaLabel="Chọn khu vực dịch vụ" />
+    </div>
+  );
+}
+
+function RankingSectionHeader({
+  activeTab,
+  onTabChange,
+  activeRegion,
+  onRegionChange,
+}: {
+  activeTab: string;
+  onTabChange: (value: string) => void;
+  activeRegion: ServiceRegion;
+  onRegionChange: (value: ServiceRegion) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: "12px", marginBottom: "13px" }}>
+      <div style={{ display: "flex", alignItems: "end", gap: "13px" }}>
+        <div style={{ minWidth: 0, flex: "none" }}>
+          <h2 style={{ fontSize: "24px", lineHeight: 1.08, fontWeight: 950 }}>Bảng xếp hạng</h2>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <TabSwitch items={rankTabs} active={activeTab} onChange={onTabChange} />
+        <RankingRegionDropdown active={activeRegion} onChange={onRegionChange} />
+      </div>
+    </div>
+  );
+}
+
 function BottomNav() {
   return null;
 }
 
 export default function Page() {
   const [activeRankTab, setActiveRankTab] = useState("cast");
+  const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
-  const rankList = (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[];
-  const rankingPeriod = formatRankingPeriod();
-  const svc = activeSvcTab === "nhahang" ? svcData : spaData;
+  const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
+  const [activeVideoRegion, setActiveVideoRegion] = useState<ServiceRegion>("hanoi");
+  const rankList = filterRankingsByRegion(
+    (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[],
+    activeRankRegion,
+  );
+  const svc = filterServicesByRegion(activeSvcTab === "nhahang" ? svcData : spaData, activeServiceRegion);
+  const videoList = filterVideosByRegion(hotVideos, activeVideoRegion);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -663,12 +1121,12 @@ export default function Page() {
       <div className="block md:hidden" style={shellStyle}>
         <div style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
           <HeaderBar />
-          <main style={{ padding: "8px 18px 0" }}>
-            <div style={{ marginTop: "22px" }}>
-              <EventHero />
+          <main style={{ padding: "0 18px 0" }}>
+            <div style={{ marginTop: "12px" }}>
+              <SearchPanel />
             </div>
             <div style={{ marginTop: "18px" }}>
-              <SearchPanel />
+              <EventHero />
             </div>
             <div style={{ marginTop: "22px" }}>
               <CategoryGrid />
@@ -689,29 +1147,31 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "22px" }}>
-              <div style={sectionTitleStyle}>
-                <div style={{ minWidth: 0 }}>
-                  <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
-                  <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>
-                    {rankingPeriod}
-                  </div>
-                </div>
-                <TabSwitch items={rankTabs} active={activeRankTab} onChange={setActiveRankTab} />
-              </div>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-                <span style={{ ...pillStyle, background: colors.gold, color: "#241a0a" }}>Hà Nội</span>
-                <span style={pillStyle}>TP.HCM</span>
-              </div>
+              <RankingSectionHeader
+                activeTab={activeRankTab}
+                onTabChange={setActiveRankTab}
+                activeRegion={activeRankRegion}
+                onRegionChange={setActiveRankRegion}
+              />
               <div style={{ display: "grid", gap: "10px" }}>
                 {rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)}
               </div>
             </section>
 
+            <div style={{ marginTop: "20px" }}>
+              <MidPageBanner />
+            </div>
+
             <section style={{ marginTop: "22px" }}>
-              <div style={sectionTitleStyle}>
+              <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Dịch vụ nổi bật</h2>
-                <TabSwitch items={serviceTabs} active={activeSvcTab} onChange={setActiveSvcTab} />
               </div>
+              <ServiceFilterControls
+                activeTab={activeSvcTab}
+                onTabChange={setActiveSvcTab}
+                activeRegion={activeServiceRegion}
+                onRegionChange={setActiveServiceRegion}
+              />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
                 {svc.slice(0, 2).map((item) => <ServiceCard key={item.name} item={item} compact />)}
               </div>
@@ -725,9 +1185,16 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "22px", paddingBottom: "22px" }}>
-              <SectionHeading title="Video Hot" />
+              <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
+                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Video Hot</h2>
+                <RankingRegionDropdown
+                  active={activeVideoRegion}
+                  onChange={setActiveVideoRegion}
+                  ariaLabel="Chọn khu vực video"
+                />
+              </div>
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
-                {hotVideos.slice(0, 3).map((item) => <VideoCard key={item.name} item={item} compact />)}
+                {videoList.slice(0, 3).map((item) => <VideoCard key={item.name} item={item} compact />)}
               </div>
             </section>
           </main>
@@ -740,9 +1207,11 @@ export default function Page() {
           <HeaderBar desktop />
           <main style={{ padding: "10px 50px 44px" }}>
             <div>
-              <EventHero desktop />
-              <div style={{ marginTop: "18px" }}>
+              <div>
                 <SearchPanel />
+              </div>
+              <div style={{ marginTop: "18px" }}>
+                <EventHero desktop />
               </div>
             </div>
 
@@ -765,29 +1234,35 @@ export default function Page() {
                 </div>
               </div>
               <div style={{ marginTop: "34px" }}>
-                <div style={sectionTitleStyle}>
-                  <div style={{ minWidth: 0 }}>
-                    <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Bảng xếp hạng</h2>
-                    <div style={{ marginTop: "5px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>
-                      {rankingPeriod}
-                    </div>
-                  </div>
-                  <TabSwitch items={rankTabs} active={activeRankTab} onChange={setActiveRankTab} />
-                </div>
+                <RankingSectionHeader
+                  activeTab={activeRankTab}
+                  onTabChange={setActiveRankTab}
+                  activeRegion={activeRankRegion}
+                  onRegionChange={setActiveRankRegion}
+                />
                 <div style={{ display: "grid", gap: "12px" }}>
                   {rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)}
                 </div>
               </div>
             </section>
 
+            <div style={{ marginTop: "34px" }}>
+              <MidPageBanner desktop />
+            </div>
+
             <section style={{ marginTop: "34px" }}>
-              <div style={sectionTitleStyle}>
+              <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>
                   <Trophy size={24} color={colors.gold} />
                   Dịch vụ nổi bật
                 </h2>
-                <TabSwitch items={serviceTabs} active={activeSvcTab} onChange={setActiveSvcTab} />
               </div>
+              <ServiceFilterControls
+                activeTab={activeSvcTab}
+                onTabChange={setActiveSvcTab}
+                activeRegion={activeServiceRegion}
+                onRegionChange={setActiveServiceRegion}
+              />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {svc.map((item) => <ServiceCard key={item.name} item={item} />)}
               </div>
@@ -801,9 +1276,16 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "34px" }}>
-              <SectionHeading title="Video Hot" />
+              <div style={{ ...sectionTitleStyle, marginBottom: "14px" }}>
+                <h2 style={{ fontSize: "24px", lineHeight: 1.1, fontWeight: 900 }}>Video Hot</h2>
+                <RankingRegionDropdown
+                  active={activeVideoRegion}
+                  onChange={setActiveVideoRegion}
+                  ariaLabel="Chọn khu vực video"
+                />
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {hotVideos.map((item) => <VideoCard key={item.name} item={item} />)}
+                {videoList.map((item) => <VideoCard key={item.name} item={item} />)}
               </div>
             </section>
 

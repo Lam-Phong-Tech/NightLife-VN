@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ChevronLeft, Heart, MapPin, Play, Star } from "lucide-react";
-import { formatVnd, mediaBg } from "./cast-profile.helpers";
+import { ChevronLeft, ChevronRight, Heart, MapPin, Play, Star } from "lucide-react";
+import { mediaBg } from "./cast-profile.helpers";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 type CastHeroProps = {
@@ -10,6 +10,9 @@ type CastHeroProps = {
   isFavorite: boolean;
   onToggleFavorite: () => void;
   onOpenGallery: () => void;
+  onPreviousMedia: () => void;
+  onNextMedia: () => void;
+  showMediaNavigation: boolean;
 };
 
 const profileSummary = (profile: CastProfile) =>
@@ -28,6 +31,9 @@ export function CastHero({
   isFavorite,
   onToggleFavorite,
   onOpenGallery,
+  onPreviousMedia,
+  onNextMedia,
+  showMediaNavigation,
 }: CastHeroProps) {
   const summary = profileSummary(profile);
   const storeHref = `/stores/${profile.store.slug}`;
@@ -61,6 +67,17 @@ export function CastHero({
         </button>
       ) : null}
 
+      {showMediaNavigation ? (
+        <div className="cast-hero-media-nav" aria-label="Chuyển ảnh cast">
+          <button type="button" className="previous" onClick={onPreviousMedia} aria-label="Ảnh trước">
+            <ChevronLeft size={22} strokeWidth={2.2} />
+          </button>
+          <button type="button" className="next" onClick={onNextMedia} aria-label="Ảnh tiếp theo">
+            <ChevronRight size={22} strokeWidth={2.2} />
+          </button>
+        </div>
+      ) : null}
+
       <div className="cast-hero-copy">
         <div className="cast-badge-row">
           <span className="cast-rank-badge">
@@ -84,7 +101,6 @@ export function CastHero({
           {area ? <span>· {area}</span> : null}
         </Link>
 
-        <div className="cast-hero-price">Từ {formatVnd(profile.hourlyRateVnd)} / 60 phút</div>
       </div>
     </section>
   );

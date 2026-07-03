@@ -32,16 +32,32 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('join_room')
   handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { userId: string },
+    @MessageBody() payload: { userId?: string; bookingId?: string },
   ) {
     if (payload.userId) {
       client.join(`user_${payload.userId}`);
       this.logger.log(`Client ${client.id} joined room user_${payload.userId}`);
+    }
+
+    if (payload.bookingId) {
+      client.join(`booking_${payload.bookingId}`);
+      this.logger.log(
+        `Client ${client.id} joined room booking_${payload.bookingId}`,
+      );
     }
   }
 
   notifyBookingStatusUpdate(userId: string, booking: any) {
     this.server.to(`user_${userId}`).emit('booking_status_updated', booking);
     this.logger.log(`Emitted booking_status_updated to user_${userId} for booking ${booking.id}`);
+  }
+
+  notifyBookingChatMessage(bookingId: string, message: any) {
+    this.server
+      .to(`booking_${bookingId}`)
+      .emit('booking_chat_message_created', message);
+    this.logger.log(
+      `Emitted booking_chat_message_created to booking_${bookingId}`,
+    );
   }
 }

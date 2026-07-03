@@ -49,7 +49,10 @@ describe('RBAC matrix (e2e)', () => {
     listPartnerStores: jest.fn(),
     listOperatorBills: jest.fn(),
     scanCouponIssue: jest.fn(),
+    scanCouponIssuePayload: jest.fn(),
     confirmCouponIssueCheckIn: jest.fn(),
+    listMemberCouponIssues: jest.fn(),
+    listAdminCouponIssues: jest.fn(),
     listMemberBookings: jest.fn(),
     listSensitiveBillsForAdmin: jest.fn(),
     reviewSensitiveBill: jest.fn(),
@@ -84,12 +87,40 @@ describe('RBAC matrix (e2e)', () => {
       id: 'issue-1',
       status: 'ISSUED',
     });
+    nightlifeDataService.scanCouponIssuePayload.mockResolvedValue({
+      id: 'issue-1',
+      status: 'ISSUED',
+    });
     nightlifeDataService.confirmCouponIssueCheckIn.mockResolvedValue({
       id: 'issue-1',
       status: 'USED',
     });
+    nightlifeDataService.listMemberCouponIssues.mockResolvedValue([
+      {
+        id: 'issue-issued',
+        code: 'MEMBER-issued',
+        status: 'ISSUED',
+        statusLabel: 'Đang giữ chỗ',
+        qrPayload: 'MEMBER-issued',
+      },
+      {
+        id: 'issue-used',
+        code: 'MEMBER-used',
+        status: 'USED',
+        statusLabel: 'Đã sử dụng',
+      },
+      {
+        id: 'issue-expired',
+        code: 'MEMBER-expired',
+        status: 'EXPIRED',
+        statusLabel: 'Hết hạn',
+      },
+    ]);
     nightlifeDataService.listMemberBookings.mockResolvedValue([]);
     nightlifeDataService.listSensitiveBillsForAdmin.mockResolvedValue([]);
+    nightlifeDataService.listAdminCouponIssues.mockResolvedValue([
+      { id: 'issue-1', code: 'MEMBER-code', status: 'ISSUED' },
+    ]);
     nightlifeDataService.reviewSensitiveBill.mockResolvedValue({
       id: 'bill-1',
       status: 'VERIFIED',
@@ -192,6 +223,125 @@ describe('RBAC matrix (e2e)', () => {
     expect(nightlifeDataService.confirmCouponIssueCheckIn).toHaveBeenCalledWith(
       'issue-1',
       expect.objectContaining({ id: 'partner-a', role: 'PARTNER' }),
+    );
+  });
+
+  it('exposes signed coupon QR scan without leaking raw issue code in the route', async () => {
+    await request(app.getHttpServer())
+      .post('/partner/coupon-issues/scan')
+      .set('x-test-role', 'PARTNER')
+      .set('x-test-user-id', 'partner-a')
+      .send({
+        payload:
+          'https://nightlife.vn/partner?scanToken=opaque-token.signature',
+      })
+      .expect(201);
+
+    expect(accessService.canScanCoupon).not.toHaveBeenCalled();
+    expect(nightlifeDataService.scanCouponIssuePayload).toHaveBeenCalledWith(
+      {
+        payload:
+          'https://nightlife.vn/partner?scanToken=opaque-token.signature',
+      },
+      expect.objectContaining({ id: 'partner-a', role: 'PARTNER' }),
+    );
+  });
+
+  it('exposes admin coupon issue CMS listing', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/admin/coupon-issues?status=ISSUED')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .expect(200);
+
+    expect(response.body).toEqual([
+      expect.objectContaining({ id: 'issue-1', status: 'ISSUED' }),
+    ]);
+    expect(nightlifeDataService.listAdminCouponIssues).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'ISSUED' }),
+    );
+  });
+
+  it('captures one-time coupon API evidence from claim through duplicate confirm', async () => {
+    const issuedIssue = {
+      id: 'issue-1',
+      code: 'GUEST-code',
+      status: 'ISSUED',
+      statusLabel: 'Đang giữ chỗ',
+      qrPayload: 'GUEST-code',
+    };
+
+    nightlifeDataService.claimGuestCoupon.mockResolvedValueOnce({
+      issue: issuedIssue,
+      guest: { id: 'guest-1' },
+    });
+    nightlifeDataService.scanCouponIssue.mockResolvedValueOnce(issuedIssue);
+    nightlifeDataService.confirmCouponIssueCheckIn
+      .mockResolvedValueOnce({
+        ...issuedIssue,
+        status: 'USED',
+        statusLabel: 'Đã sử dụng',
+      })
+      .mockRejectedValueOnce(
+        new UnprocessableEntityException(
+          'Coupon issue has already been used',
+        ),
+      );
+
+    const claimResponse = await request(app.getHttpServer())
+      .post('/coupons/coupon-1/guest-claims')
+      .send({ phone: '+84901234567' })
+      .expect(201);
+    expect(claimResponse.body.issue.status).toBe('ISSUED');
+
+    const scanResponse = await request(app.getHttpServer())
+      .post('/partner/coupon-issues/GUEST-code/scan')
+      .set('x-test-role', 'PARTNER')
+      .set('x-test-user-id', 'partner-a')
+      .expect(201);
+    expect(scanResponse.body.status).toBe('ISSUED');
+
+    const confirmResponse = await request(app.getHttpServer())
+      .post('/partner/coupon-issues/issue-1/confirm-check-in')
+      .set('x-test-role', 'PARTNER')
+      .set('x-test-user-id', 'partner-a')
+      .expect(201);
+    expect(confirmResponse.body.status).toBe('USED');
+
+    const duplicateResponse = await request(app.getHttpServer())
+      .post('/partner/coupon-issues/issue-1/confirm-check-in')
+      .set('x-test-role', 'PARTNER')
+      .set('x-test-user-id', 'partner-a')
+      .expect(422);
+    expect(duplicateResponse.body.message).toBe(
+      'Coupon issue has already been used',
+    );
+  });
+
+  it('returns member coupon wallet states for issued, used, and expired issues', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/member/coupon-issues')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'member-1')
+      .expect(200);
+
+    expect(response.body).toEqual([
+      expect.objectContaining({
+        status: 'ISSUED',
+        statusLabel: 'Đang giữ chỗ',
+        qrPayload: 'MEMBER-issued',
+      }),
+      expect.objectContaining({
+        status: 'USED',
+        statusLabel: 'Đã sử dụng',
+      }),
+      expect.objectContaining({
+        status: 'EXPIRED',
+        statusLabel: 'Hết hạn',
+      }),
+    ]);
+    expect(nightlifeDataService.listMemberCouponIssues).toHaveBeenCalledWith(
+      'member-1',
     );
   });
 

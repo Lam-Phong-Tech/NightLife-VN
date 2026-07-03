@@ -2,6 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  formatBillTelegramMessage,
+  formatBookingCancelledTelegramMessage,
+  formatBookingRequestTelegramMessage,
+  formatPartnerRequestTelegramMessage,
+} from './admin-telegram-message.formatter';
 
 export const ADMIN_TELEGRAM_TEMPLATES = {
   bookingCreated: 'telegram.admin.booking.created.v1',
@@ -29,6 +35,7 @@ type AdminTelegramNotification = AdminNotificationRelations & {
   lines: Array<[label: string, value: unknown]>;
   cmsPath: string;
   webPath?: string;
+  message?: string;
   payload?: Record<string, unknown>;
 };
 
@@ -37,10 +44,12 @@ export type BookingAdminNotification = {
   status: string;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
+  discountRuleSnapshot?: unknown;
   note?: string | null;
   storeId?: string | null;
   user?: {
     id: string;
+    email?: string | null;
     displayName?: string | null;
     tier?: string | null;
   } | null;
@@ -48,6 +57,7 @@ export type BookingAdminNotification = {
     id: string;
     displayName?: string | null;
     phone?: string | null;
+    email?: string | null;
   } | null;
   store?: { id: string; name: string; slug: string } | null;
   cast?: {
@@ -91,6 +101,12 @@ export type BillAdminNotification = {
 
 export type PartnerRequestAdminNotification = {
   id: string;
+  draftStoreId?: string | null;
+  draftStoreName?: string | null;
+  draftStoreSlug?: string | null;
+  draftCastIds?: string[];
+  draftMediaIds?: string[];
+  draftContentIds?: string[];
   businessName: string;
   businessType?: string | null;
   area?: string | null;
@@ -98,6 +114,21 @@ export type PartnerRequestAdminNotification = {
   contactPhone: string;
   contactEmail?: string | null;
   note?: string | null;
+  storeDescription?: string | null;
+  storeAddress?: string | null;
+  storeCity?: string | null;
+  storeDistrict?: string | null;
+  openingHours?: string | null;
+  menuSummary?: string | null;
+  mediaUrls?: string[];
+  castProfiles?: Array<{
+    stageName: string;
+    bio?: string | null;
+    tags?: string[];
+    languages?: string[];
+    hourlyRateVnd?: number | null;
+    mediaUrls?: string[];
+  }>;
   submittedAt: Date | string;
 };
 
@@ -113,7 +144,7 @@ export class AdminNotificationService {
   notifyBookingCreated(booking: BookingAdminNotification) {
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.bookingCreated,
-      title: 'Booking moi',
+      title: 'Yêu cầu đặt bàn mới',
       userId: booking.user?.id,
       guestId: booking.guest?.id,
       storeId: booking.store?.id ?? booking.storeId,
@@ -122,14 +153,20 @@ export class AdminNotificationService {
       webPath: booking.store?.slug
         ? `/stores/${booking.store.slug}`
         : undefined,
+      message: formatBookingRequestTelegramMessage(
+        this.bookingMessageInput(booking),
+      ),
       lines: [
-        ['Booking', booking.id],
-        ['Quan', booking.store?.name],
-        ['Khach', this.customerLabel(booking)],
-        ['Thoi gian', this.formatDateTime(booking.scheduledAt)],
-        ['So khach', booking.partySize],
+        ['Booking', this.bookingPublicCode(booking.id)],
+        ['Quán', booking.store?.name],
+        ['Khách hàng', this.customerName(booking)],
+        ['Email', this.customerEmail(booking)],
+        ['Loại khách', this.customerType(booking)],
+        ['Mức giảm', this.bookingDiscountLabel(booking)],
+        ['Thời gian', this.formatDateTime(booking.scheduledAt)],
+        ['Số khách', booking.partySize],
         ['Cast', this.castLabel(booking.cast)],
-        ['Ghi chu', booking.note],
+        ['Ghi chú', booking.note],
       ],
       payload: this.bookingPayload(booking),
     });
@@ -141,7 +178,7 @@ export class AdminNotificationService {
   ) {
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.bookingCancelled,
-      title: 'Booking bi huy',
+      title: 'Booking đã hủy',
       userId: booking.user?.id,
       guestId: booking.guest?.id,
       storeId: booking.store?.id ?? booking.storeId,
@@ -150,13 +187,18 @@ export class AdminNotificationService {
       webPath: booking.store?.slug
         ? `/stores/${booking.store.slug}`
         : undefined,
+      message: formatBookingCancelledTelegramMessage({
+        ...this.bookingMessageInput(booking),
+        reason: options.reason,
+      }),
       lines: [
         ['Booking', booking.id],
-        ['Quan', booking.store?.name],
-        ['Khach', this.customerLabel(booking)],
-        ['Thoi gian', this.formatDateTime(booking.scheduledAt)],
-        ['Trang thai', booking.status],
-        ['Ly do', options.reason],
+        ['Quán', booking.store?.name],
+        ['Khách hàng', this.customerName(booking)],
+        ['Số điện thoại', this.customerContact(booking)],
+        ['Thời gian', this.formatDateTime(booking.scheduledAt)],
+        ['Trạng thái', booking.status],
+        ['Lý do', options.reason],
       ],
       payload: {
         ...this.bookingPayload(booking),
@@ -168,7 +210,7 @@ export class AdminNotificationService {
   notifyBillSubmitted(bill: BillAdminNotification) {
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.billSubmitted,
-      title: 'Bill moi cho duyet',
+      title: 'Hóa đơn mới chờ duyệt',
       userId: bill.user?.id,
       guestId: bill.guest?.id,
       storeId: bill.store?.id,
@@ -176,13 +218,16 @@ export class AdminNotificationService {
       billId: bill.id,
       cmsPath: `/admin?tab=bills&billId=${encodeURIComponent(bill.id)}`,
       webPath: bill.store?.slug ? `/stores/${bill.store.slug}` : '/gui-hoa-don',
+      message: formatBillTelegramMessage(
+        this.billMessageInput(bill, 'Hóa đơn mới chờ duyệt'),
+      ),
       lines: [
         ['Bill', bill.billNumber ?? bill.id],
-        ['Quan', bill.store?.name],
-        ['Khach', this.customerLabel(bill)],
-        ['Tong tien', this.formatMoney(bill.totalVnd)],
+        ['Quán', bill.store?.name],
+        ['Khách hàng', this.customerName(bill)],
+        ['Tổng tiền', this.formatMoney(bill.totalVnd)],
         ['Booking', bill.booking?.id],
-        ['Gui luc', this.formatDateTime(bill.submittedAt)],
+        ['Gửi lúc', this.formatDateTime(bill.submittedAt)],
       ],
       payload: this.billPayload(bill),
     });
@@ -196,7 +241,7 @@ export class AdminNotificationService {
       templateKey: options.approve
         ? ADMIN_TELEGRAM_TEMPLATES.billVerified
         : ADMIN_TELEGRAM_TEMPLATES.billRejected,
-      title: options.approve ? 'Bill da duyet' : 'Bill bi tu choi',
+      title: options.approve ? 'Hóa đơn đã duyệt' : 'Hóa đơn bị từ chối',
       userId: bill.user?.id,
       guestId: bill.guest?.id,
       storeId: bill.store?.id,
@@ -204,14 +249,20 @@ export class AdminNotificationService {
       billId: bill.id,
       cmsPath: `/admin?tab=bills&billId=${encodeURIComponent(bill.id)}`,
       webPath: bill.store?.slug ? `/stores/${bill.store.slug}` : '/gui-hoa-don',
+      message: formatBillTelegramMessage(
+        this.billMessageInput(
+          bill,
+          options.approve ? 'Hóa đơn đã duyệt' : 'Hóa đơn bị từ chối',
+        ),
+      ),
       lines: [
         ['Bill', bill.billNumber ?? bill.id],
-        ['Trang thai', bill.status],
-        ['Quan', bill.store?.name],
-        ['Khach', this.customerLabel(bill)],
-        ['Tong tien', this.formatMoney(bill.totalVnd)],
-        ['Review luc', this.formatDateTime(bill.reviewedAt)],
-        ['Ly do tu choi', bill.rejectReason],
+        ['Trạng thái', bill.status],
+        ['Quán', bill.store?.name],
+        ['Khách hàng', this.customerName(bill)],
+        ['Tổng tiền', this.formatMoney(bill.totalVnd)],
+        ['Review lúc', this.formatDateTime(bill.reviewedAt)],
+        ['Lý do từ chối', bill.rejectReason],
       ],
       payload: {
         ...this.billPayload(bill),
@@ -224,21 +275,46 @@ export class AdminNotificationService {
   notifyPartnerRequest(request: PartnerRequestAdminNotification) {
     return this.notifyAdmin({
       templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
-      title: 'Partner request moi',
+      title: 'Yêu cầu đối tác mới',
+      storeId: request.draftStoreId ?? undefined,
       cmsPath: `/admin?tab=partners&requestId=${encodeURIComponent(request.id)}`,
       webPath: '/dang-ky-doi-tac',
+      message: formatPartnerRequestTelegramMessage({
+        businessName: request.draftStoreName ?? request.businessName,
+        businessType: request.businessType,
+        area: request.area,
+        contactName: request.contactName,
+        contactPhone: request.contactPhone,
+        contactEmail: request.contactEmail,
+        submittedAt: request.submittedAt,
+        note: request.note,
+        timeZone: this.telegramNotificationTimeZone(),
+      }),
       lines: [
         ['Request', request.id],
-        ['Quan / co so', request.businessName],
-        ['Loai hinh', request.businessType],
-        ['Khu vuc', request.area],
-        ['Lien he', `${request.contactName} - ${request.contactPhone}`],
+        ['Quán / cơ sở', request.draftStoreName ?? request.businessName],
+        ['Loại hình', request.businessType],
+        ['Khu vực', request.area],
+        ['Liên hệ', `${request.contactName} - ${request.contactPhone}`],
         ['Email', request.contactEmail],
-        ['Gui luc', this.formatDateTime(request.submittedAt)],
-        ['Ghi chu', request.note],
+        ['Draft store', request.draftStoreId],
+        ['Cast draft', request.draftCastIds?.length],
+        ['Media draft', request.draftMediaIds?.length],
+        ['Gửi lúc', this.formatDateTime(request.submittedAt)],
+        ['Ghi chú', request.note],
       ],
       payload: {
         requestId: request.id,
+        status: 'PENDING_REVIEW',
+        reviewReason: null,
+        reviewedAt: null,
+        reviewedById: null,
+        draftStoreId: request.draftStoreId ?? null,
+        draftStoreName: request.draftStoreName ?? request.businessName,
+        draftStoreSlug: request.draftStoreSlug ?? null,
+        draftCastIds: request.draftCastIds ?? [],
+        draftMediaIds: request.draftMediaIds ?? [],
+        draftContentIds: request.draftContentIds ?? [],
         businessName: request.businessName,
         businessType: request.businessType ?? null,
         area: request.area ?? null,
@@ -246,6 +322,14 @@ export class AdminNotificationService {
         contactPhone: request.contactPhone,
         contactEmail: request.contactEmail ?? null,
         note: request.note ?? null,
+        storeDescription: request.storeDescription ?? null,
+        storeAddress: request.storeAddress ?? null,
+        storeCity: request.storeCity ?? null,
+        storeDistrict: request.storeDistrict ?? null,
+        openingHours: request.openingHours ?? null,
+        menuSummary: request.menuSummary ?? null,
+        mediaUrls: request.mediaUrls ?? [],
+        castProfiles: request.castProfiles ?? [],
         submittedAt: this.toIso(request.submittedAt),
       },
     });
@@ -253,9 +337,7 @@ export class AdminNotificationService {
 
   private async notifyAdmin(input: AdminTelegramNotification) {
     const token = this.configService.get<string>('TELEGRAM_BOT_TOKEN')?.trim();
-    const chatId = this.configService
-      .get<string>('TELEGRAM_ADMIN_CHAT_ID')
-      ?.trim();
+    const chatId = this.telegramAdminChatId();
     const text = this.buildMessage(input);
     const actionUrl = this.absoluteUrl(
       this.configService.get<string>('CMS_BASE_URL', 'http://localhost:3000'),
@@ -277,7 +359,7 @@ export class AdminNotificationService {
     const configured = Boolean(token && chatId);
     const missingConfigError = configured
       ? undefined
-      : 'TELEGRAM_BOT_TOKEN and TELEGRAM_ADMIN_CHAT_ID are required';
+      : 'TELEGRAM_BOT_TOKEN and an admin chat id are required';
 
     try {
       const log = await this.prisma.notificationLog.create({
@@ -384,7 +466,19 @@ export class AdminNotificationService {
     }
   }
 
+  private telegramAdminChatId() {
+    return (
+      this.configService.get<string>('TELEGRAM_ADMIN_CHAT_ID')?.trim() ||
+      this.configService.get<string>('TELEGRAM_CHAT_ID')?.trim() ||
+      this.configService.get<string>('TELEGRAM_OPS_CHAT_ID')?.trim()
+    );
+  }
+
   private buildMessage(input: AdminTelegramNotification) {
+    if (input.message) {
+      return input.message;
+    }
+
     const actionUrl = this.absoluteUrl(
       this.configService.get<string>('CMS_BASE_URL', 'http://localhost:3000'),
       input.cmsPath,
@@ -409,9 +503,14 @@ export class AdminNotificationService {
   private bookingPayload(booking: BookingAdminNotification) {
     return {
       bookingId: booking.id,
+      bookingCode: this.bookingPublicCode(booking.id),
       status: booking.status,
+      statusLabel: this.bookingStatusLabel(booking.status),
       scheduledAt: this.toIso(booking.scheduledAt),
       partySize: booking.partySize ?? null,
+      customerType: this.customerType(booking),
+      discountLabel: this.bookingDiscountLabel(booking),
+      qrStatus: this.bookingQrStatus(),
       store: booking.store
         ? {
             id: booking.store.id,
@@ -467,6 +566,7 @@ export class AdminNotificationService {
       id: string;
       displayName?: string | null;
       phone?: string | null;
+      email?: string | null;
     } | null;
   }) {
     return {
@@ -476,19 +576,139 @@ export class AdminNotificationService {
         input.user?.displayName ?? input.guest?.displayName ?? 'Khach moi',
       tier: input.user?.tier ?? null,
       phone: input.guest?.phone ?? null,
+      email: input.guest?.email ?? null,
     };
+  }
+
+  private bookingMessageInput(booking: BookingAdminNotification) {
+    return {
+      bookingCode: this.bookingPublicCode(booking.id),
+      storeName: booking.store?.name,
+      customerName: this.customerName(booking),
+      customerEmail: this.customerEmail(booking),
+      customerType: this.customerType(booking),
+      discountLabel: this.bookingDiscountLabel(booking),
+      contact: this.customerContact(booking),
+      scheduledAt: booking.scheduledAt,
+      partySize: booking.partySize,
+      castName: this.castLabel(booking.cast),
+      note: booking.note,
+      status: booking.status,
+      qrStatus: this.bookingQrStatus(),
+      bookingStatusLabel: this.bookingStatusLabel(booking.status),
+      timeZone: this.telegramNotificationTimeZone(),
+    };
+  }
+
+  private billMessageInput(bill: BillAdminNotification, title: string) {
+    return {
+      title,
+      storeName: bill.store?.name,
+      customerName: this.customerName(bill),
+      total: this.formatMoney(bill.totalVnd),
+      bookingId: bill.booking?.id,
+      couponName: bill.coupon?.name ?? bill.coupon?.code,
+      submittedAt: bill.submittedAt,
+      reviewedAt: bill.reviewedAt,
+      rejectReason: bill.rejectReason,
+      timeZone: this.telegramNotificationTimeZone(),
+    };
+  }
+
+  private customerName(input: {
+    user?: { displayName?: string | null } | null;
+    guest?: { displayName?: string | null } | null;
+  }) {
+    return input.user?.displayName ?? input.guest?.displayName ?? 'Khách mới';
+  }
+
+  private customerEmail(input: {
+    user?: { email?: string | null } | null;
+    guest?: { email?: string | null } | null;
+  }) {
+    return input.guest?.email ?? input.user?.email ?? null;
+  }
+
+  private customerType(input: { user?: { tier?: string | null } | null }) {
+    if (!input.user) {
+      return 'Guest';
+    }
+
+    return input.user.tier === 'VIP' ? 'VIP' : 'Member';
+  }
+
+  private bookingDiscountLabel(input: {
+    user?: { tier?: string | null } | null;
+    discountRuleSnapshot?: unknown;
+  }) {
+    const discountPercent = this.discountPercentFromSnapshot(
+      input.discountRuleSnapshot,
+    );
+
+    if (typeof discountPercent === 'number' && discountPercent > 0) {
+      return `${discountPercent}%`;
+    }
+
+    const customerType = this.customerType(input);
+
+    if (customerType === 'VIP') {
+      return '10%';
+    }
+
+    return customerType === 'Member' ? '8%' : '5%';
+  }
+
+  private discountPercentFromSnapshot(snapshot: unknown) {
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      return null;
+    }
+
+    const record = snapshot as Record<string, unknown>;
+    const value = record.discountPercent ?? record.value;
+
+    return typeof value === 'number' ? value : null;
+  }
+
+  private bookingQrStatus() {
+    return 'Đã cấp - Còn hiệu lực';
+  }
+
+  private bookingStatusLabel(status?: string | null) {
+    if (status === 'COMPLETED' || status === 'CHECKED_IN') {
+      return 'Hoàn tất';
+    }
+
+    if (status === 'CANCELLED' || status === 'NO_SHOW') {
+      return 'Đã hủy';
+    }
+
+    return 'Mới';
+  }
+
+  private bookingPublicCode(bookingId: string) {
+    return `BK-${bookingId.slice(0, 8).toUpperCase()}`;
+  }
+
+  private customerContact(input: {
+    guest?: { phone?: string | null; email?: string | null } | null;
+  }) {
+    return input.guest?.phone ?? input.guest?.email ?? null;
   }
 
   private customerLabel(input: {
     user?: { displayName?: string | null; tier?: string | null } | null;
-    guest?: { displayName?: string | null; phone?: string | null } | null;
+    guest?: {
+      displayName?: string | null;
+      phone?: string | null;
+      email?: string | null;
+    } | null;
   }) {
     const name =
       input.user?.displayName ?? input.guest?.displayName ?? 'Khach moi';
     const tier = input.user?.tier ? ` (${input.user.tier})` : '';
-    const phone = input.guest?.phone ? ` - ${input.guest.phone}` : '';
+    const contact = input.guest?.phone ?? input.guest?.email;
 
-    return `${name}${tier}${phone}`;
+    return `${name}${tier}${contact ? ` - ${contact}` : ''}`;
   }
 
   private castLabel(
@@ -537,6 +757,13 @@ export class AdminNotificationService {
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(date);
+  }
+
+  private telegramNotificationTimeZone() {
+    return this.configService.get<string>(
+      'TELEGRAM_NOTIFICATION_TIME_ZONE',
+      'Asia/Bangkok',
+    );
   }
 
   private formatMoney(value?: number | null) {

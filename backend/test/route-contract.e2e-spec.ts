@@ -34,10 +34,12 @@ describe('Route/action contract coverage (e2e)', () => {
     expect(contractRoutes).toEqual(
       expect.arrayContaining([
         { method: 'POST', route: '/partner/coupon-issues/:code/scan' },
+        { method: 'POST', route: '/partner/coupon-issues/scan' },
         {
           method: 'POST',
           route: '/partner/coupon-issues/:id/confirm-check-in',
         },
+        { method: 'GET', route: '/admin/coupon-issues' },
         { method: 'GET', route: '/operator/bills' },
       ]),
     );

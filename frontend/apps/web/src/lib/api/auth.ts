@@ -20,6 +20,10 @@ export type GoogleLoginConfig = {
   clientId: string | null;
 };
 
+export type OAuthLoginConfig = {
+  configured: boolean;
+};
+
 type DemoAccount = {
   id: string;
   email: string;
@@ -160,6 +164,10 @@ export const loginGoogleMember = (payload: GoogleLoginPayload) => {
 
 export const getGoogleLoginConfig = () => {
   return apiClient<GoogleLoginConfig>("/auth/google/config");
+};
+
+export const getLineLoginConfig = () => {
+  return apiClient<OAuthLoginConfig>("/auth/line/config");
 };
 
 export const registerMember = (payload: RegisterPayload) => {

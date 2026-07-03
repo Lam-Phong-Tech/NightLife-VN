@@ -7,11 +7,19 @@
   font-family: var(--nl-font-sans);
 }
 
+.bookingFormPage {
+  min-height: auto;
+}
+
 .bookingViewport {
   width: min(100%, 1120px);
   margin: 0 auto;
   padding: 32px 24px calc(108px + env(safe-area-inset-bottom));
   display: block;
+}
+
+.bookingFormViewport {
+  padding-bottom: 24px;
 }
 
 .historyViewport {
@@ -152,7 +160,6 @@
   margin-top: 2px;
 }
 
-.changeLink,
 .textLink {
   flex: none;
   color: #e3c27e;
@@ -248,6 +255,7 @@
 }
 
 .inputWrap svg,
+.phoneInput svg,
 .dateInput svg {
   flex: none;
   color: #d4b26a;
@@ -276,6 +284,7 @@
 }
 
 .phoneInput {
+  gap: 9px;
   padding: 0 14px;
 }
 
@@ -323,6 +332,11 @@
 .stepButtonActive {
   background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
   color: #241a0a;
+}
+
+.stepButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .stepValue {
@@ -731,22 +745,24 @@
 }
 
 .qrPanel {
-  margin: 18px 18px 0;
+  margin: 20px 18px 0;
   border: 1px solid rgba(212, 178, 106, 0.22);
   border-radius: 16px;
-  background: rgba(212, 178, 106, 0.08);
-  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(212, 178, 106, 0.12), rgba(255, 255, 255, 0.035)),
+    rgba(212, 178, 106, 0.08);
+  padding: 16px;
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 172px minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
 }
 
 .qrBox {
-  width: 132px;
-  height: 132px;
+  width: 172px;
+  height: 172px;
   border: 1px solid rgba(212, 178, 106, 0.36);
-  border-radius: 14px;
+  border-radius: 16px;
   background: #fff;
   display: grid;
   place-items: center;
@@ -754,15 +770,34 @@
 
 .qrCopy strong {
   color: #f0dda8;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.35;
 }
 
 .qrCopy p {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   color: #b6b1a6;
   font-size: 12px;
   line-height: 1.55;
+}
+
+.qrDownloadButton {
+  min-height: 40px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
+  color: #241a0a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .historyIntro {
@@ -844,15 +879,28 @@
 }
 
 .historyActions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
 
 .historyActions > * {
-  flex: 1 1 98px;
   min-width: 0;
+}
+
+.historyActions .secondaryCta,
+.historyActions .ghostCta,
+.historyActions .dangerCta {
+  min-height: 36px;
+  border-radius: 11px;
+  padding: 8px 10px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.historyActions .dangerCta {
+  grid-column: 1 / -1;
 }
 
 .historyFooter {
@@ -900,6 +948,106 @@
   color: #b6b1a6;
   font-size: 13.5px;
   line-height: 1.6;
+}
+
+.dialogField {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.dialogField span {
+  color: #e9ddbd;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.dialogTextArea {
+  width: 100%;
+  min-height: 104px;
+  resize: vertical;
+  border: 1px solid rgba(212, 178, 106, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #f5efe4;
+  padding: 12px;
+  font: inherit;
+  line-height: 1.45;
+  outline: none;
+}
+
+.dialogInput {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(212, 178, 106, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #f5efe4;
+  padding: 0 12px;
+  font: inherit;
+  outline: none;
+}
+
+.dialogTextArea:focus {
+  border-color: rgba(212, 178, 106, 0.74);
+  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+}
+
+.dialogInput:focus {
+  border-color: rgba(212, 178, 106, 0.74);
+  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+}
+
+.dialogTextArea::placeholder {
+  color: #8d887d;
+}
+
+.chatList {
+  max-height: 280px;
+  margin-top: 14px;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.chatEmpty {
+  color: #8d887d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.chatBubble {
+  width: min(88%, 280px);
+  justify-self: start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.chatBubbleMine {
+  justify-self: end;
+  border-color: rgba(212, 178, 106, 0.32);
+  background: rgba(212, 178, 106, 0.12);
+}
+
+.chatBubble span {
+  color: #d4b26a;
+  font-size: 10px;
+  font-weight: 820;
+}
+
+.chatBubble p {
+  margin: 4px 0 0;
+  color: #f5efe4;
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 
 .dialogActions {
@@ -1046,6 +1194,18 @@
     padding-bottom: 86px;
   }
 
+  .bookingFormViewport {
+    padding-bottom: 0;
+  }
+
+  .bookingFormPage .bookingFrame {
+    min-height: auto;
+  }
+
+  .bookingFormPage .bookingBody {
+    padding-bottom: 0;
+  }
+
   .bookingStickyCta {
     position: fixed;
     right: 0;
@@ -1054,6 +1214,16 @@
     z-index: 40;
     margin-top: 0;
     box-shadow: 0 -18px 36px -26px rgba(0, 0, 0, 0.86);
+  }
+
+  .bookingFormPage .bookingStickyCta {
+    position: static;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: auto;
+    margin-top: 8px;
+    box-shadow: none;
   }
 
   .bottomActions {
@@ -1072,14 +1242,19 @@
 
   .qrPanel {
     grid-template-columns: 1fr;
+    text-align: center;
   }
 
   .qrBox {
     margin: 0 auto;
   }
 
+  .qrDownloadButton {
+    width: 100%;
+  }
+
   .historyActions {
-    flex-direction: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .loginNudge,

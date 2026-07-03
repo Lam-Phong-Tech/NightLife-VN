@@ -56,14 +56,16 @@ const navLinks = [
   { href: "/danh-sach-quan", label: "Tìm quán" },
   { href: "/danh-sach-cast", label: "Cast" },
   { href: "/xep-hang", label: "Bảng xếp hạng" },
-  { href: "/tour", label: "Tour" },
+  { href: "/tour", label: "Tour", hideOnDesktop: true },
   { href: "/uu-dai", label: "Ưu đãi" },
   { href: "/blog", label: "Blog" },
 ];
 
+const desktopNavLinks = navLinks.filter((link) => !link.hideOnDesktop);
+
 const bottomNav = [
   { href: "/", label: "Trang chủ", icon: Home },
-  { href: "/danh-sach-quan", label: "Tìm quán", icon: Search },
+  { href: "/danh-sach-cast", label: "Tìm Cast", icon: Search },
   { href: "/uu-dai", label: "Ưu đãi", icon: Ticket },
   { href: "/lich-su-dat-cho", label: "Đơn đặt", icon: CalendarDays },
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
@@ -95,6 +97,13 @@ const footerGroups = [
       { href: "/legal/chinh-sach-hoat-dong", label: "Chính sách hoạt động" },
     ],
   },
+];
+
+const mobileFooterLinks = [
+  { href: "/danh-sach-quan", label: "Tìm quán" },
+  { href: "/uu-dai", label: "Ưu đãi" },
+  { href: "/blog", label: "Blog" },
+  { href: "/legal/chinh-sach-bao-mat", label: "Chính sách" },
 ];
 
 type NoticeTone = "gold" | "green" | "amber" | "vip";
@@ -203,10 +212,6 @@ const revealTargetSelector = [
   ".nl-page-content section",
   ".nl-page-content article",
   ".nl-page-content [data-scroll-reveal]",
-  ".nl-page-content [class*='card']",
-  ".nl-page-content [class*='panel']",
-  ".nl-page-content [class*='grid'] > *",
-  ".nl-page-content [class*='list'] > *",
 ].join(",");
 
 function isActive(pathname: string, href: string) {
@@ -694,6 +699,79 @@ function NotificationOverlay({ isMobile, onClose }: { isMobile: boolean; onClose
 }
 
 function SiteFooter({ isMobile }: { isMobile: boolean }) {
+  if (isMobile) {
+    return (
+      <footer
+        className="nl-site-footer"
+        style={{
+          borderTop: `1px solid ${colors.borderGold12}`,
+          background: colors.bg,
+          color: colors.muted,
+          padding: "18px 20px calc(92px + env(safe-area-inset-bottom))",
+          fontSize: "11.5px",
+        }}
+      >
+        <div style={{ display: "grid", gap: "12px" }}>
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              width: "fit-content",
+              color: colors.goldPale,
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>Vietyoru</span>
+            <span style={{ marginTop: "5px", color: colors.goldPale, opacity: 0.64, fontSize: "9px", letterSpacing: "2px" }}>
+              VIETNAM NIGHTLIFE GUIDE
+            </span>
+          </Link>
+
+          <p style={{ margin: 0, color: colors.text2, fontSize: "12px", lineHeight: 1.55 }}>
+            Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.
+          </p>
+
+          <nav
+            aria-label="Footer mobile"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px 14px",
+            }}
+          >
+            {mobileFooterLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                style={{
+                  color: colors.goldPale,
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  textDecoration: "none",
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div
+            style={{
+              borderTop: `1px solid ${colors.borderGold12}`,
+              paddingTop: "10px",
+              color: "#8c8679",
+              fontSize: "10.5px",
+              lineHeight: 1.55,
+            }}
+          >
+            © 2026 Vietyoru. 18+ · Giá và tình trạng đặt chỗ được admin xác nhận.
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer
       className="nl-site-footer"
@@ -961,31 +1039,58 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     let scanTimer: number | undefined;
     let lastScrollY = window.scrollY;
     let scrollDirection: "up" | "down" = "down";
+    let observer: IntersectionObserver | null = null;
+
+    const revealElement = (element: HTMLElement, instant = false) => {
+      if (element.classList.contains("is-revealed")) return;
+
+      if (instant) {
+        element.dataset.revealInstant = "true";
+      } else {
+        delete element.dataset.revealInstant;
+      }
+
+      element.dataset.revealDir = "down";
+      element.classList.add("is-revealed");
+      observer?.unobserve(element);
+    };
 
     const updateScrollDirection = () => {
       const nextY = window.scrollY;
-      scrollDirection = nextY < lastScrollY ? "up" : "down";
+      const delta = nextY - lastScrollY;
+      if (Math.abs(delta) < 2) return;
+
+      scrollDirection = delta < 0 ? "up" : "down";
       lastScrollY = nextY;
       root.dataset.scrollDirection = scrollDirection;
 
       observed.forEach((element) => {
-        if (!element.classList.contains("is-revealed")) {
-          element.dataset.revealDir = scrollDirection;
+        if (element.classList.contains("is-revealed")) return;
+
+        if (scrollDirection === "up") {
+          const rect = element.getBoundingClientRect();
+          if (rect.top < window.innerHeight + 96) {
+            revealElement(element, true);
+          }
+          return;
         }
+
+        element.dataset.revealDir = "down";
       });
     };
 
-    const observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
           const element = entry.target as HTMLElement;
-          element.dataset.revealDir = scrollDirection;
-          element.classList.toggle("is-revealed", entry.isIntersecting);
+          revealElement(element, scrollDirection === "up");
         });
       },
       {
-        rootMargin: "-6% 0px -8% 0px",
-        threshold: 0.12,
+        rootMargin: "0px 0px -12% 0px",
+        threshold: 0.08,
       },
     );
 
@@ -993,10 +1098,20 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       if (observed.has(element) || !isRevealTarget(element)) return;
 
       element.classList.add("nl-scroll-reveal");
-      element.dataset.revealDir = scrollDirection;
+      element.dataset.revealDir = "down";
       element.style.setProperty("--nl-reveal-delay", `${Math.min(observed.size % 7, 6) * 38}ms`);
-      observer.observe(element);
       observed.add(element);
+
+      const rect = element.getBoundingClientRect();
+      const shouldRevealImmediately =
+        scrollDirection === "up" || rect.bottom <= 0 || rect.top < window.innerHeight * 0.86;
+
+      if (shouldRevealImmediately) {
+        revealElement(element, true);
+        return;
+      }
+
+      observer?.observe(element);
     };
 
     const scan = () => {
@@ -1026,12 +1141,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       delete root.dataset.scrollDirection;
       if (scanTimer) window.clearTimeout(scanTimer);
       mutationObserver.disconnect();
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener("scroll", updateScrollDirection);
       observed.forEach((element) => {
         element.classList.remove("nl-scroll-reveal", "is-revealed");
         element.style.removeProperty("--nl-reveal-delay");
         delete element.dataset.revealDir;
+        delete element.dataset.revealInstant;
       });
     };
   }, [enableScrollReveal]);
@@ -1127,7 +1243,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 fontWeight: 500,
               }}
             >
-              {navLinks.map((link) => (
+              {desktopNavLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

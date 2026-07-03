@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { CalendarDays, Ticket } from "lucide-react";
 import type { StoreActiveCoupon } from "@/lib/api/store-detail";
-import { formatDiscount, formatVnd } from "./store-detail.helpers";
+import { formatPriceTier } from "@/lib/price-tier";
+import { formatDiscount } from "./store-detail.helpers";
 
 type DateOption = {
   label: string;
@@ -45,7 +46,7 @@ export function StoreDetailBookingPanel({
     <aside className="booking-panel">
       <div className="booking-title">
         <span>Đặt chỗ từ</span>
-        <strong>{formatVnd(startingFromVnd)}</strong>
+        <strong>{formatPriceTier(startingFromVnd)}</strong>
       </div>
       <label>Chọn ngày</label>
       <div className="slot-row">
@@ -193,7 +194,7 @@ export function StoreDetailMobileCta({
     <div className="mobile-cta">
       <div className="mobile-cta-summary">
         <span>Đặt bàn từ</span>
-        <strong>{formatVnd(startingFromVnd)}</strong>
+        <strong>{formatPriceTier(startingFromVnd)}</strong>
       </div>
       <div className="mobile-cta-actions">
         <Link

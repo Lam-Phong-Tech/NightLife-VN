@@ -28,9 +28,17 @@ STORAGE_LOCAL_DIR="uploads"
 PUBLIC_BASE_URL="http://localhost:3001"
 WEB_BASE_URL="http://localhost:3000"
 CMS_BASE_URL="http://localhost:3000"
+COUPON_QR_SECRET="replace-with-32-byte-random-secret"
+COUPON_QR_PARTNER_URL="http://localhost:3000/partner"
 TELEGRAM_BOT_TOKEN=""
 TELEGRAM_ADMIN_CHAT_ID=""
 ```
+
+Coupon QR production settings:
+
+- `COUPON_QR_SECRET` is required when `NODE_ENV=production`; use a strong random secret of at least 32 characters.
+- `COUPON_QR_PARTNER_URL` is required when `NODE_ENV=production` and must be an absolute HTTPS URL such as `https://domain/partner`.
+- Local development can use fallback values, but production startup validation blocks the dev fallback `nightlife-dev-coupon-qr-secret`.
 
 ## Database
 
@@ -115,7 +123,7 @@ MVP enum mapping is documented in `docs/mvp-enum-mapping.md`.
 ## Admin Telegram Notifications
 
 P0 admin notifications are documented in `docs/admin-telegram-notifications.md`.
-Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_ID` to send messages to the admin group.
+Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_ID` to send messages to the admin group. Existing `TELEGRAM_CHAT_ID` or `TELEGRAM_OPS_CHAT_ID` values are accepted as compatibility fallbacks.
 When Telegram is not configured, the API still completes the business action and records a failed `NotificationLog` for follow-up.
 
 ## Seed

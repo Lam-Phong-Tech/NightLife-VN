@@ -83,27 +83,21 @@ export function CastGallery({
             <small>{gallery.length} ảnh</small>
           </div>
           <div className="cast-mobile-gallery-grid">
-            {gallery.slice(0, 6).map((media, index) => {
-              const remaining = gallery.length - 6;
-              const showMore = index === 5 && remaining > 0;
-
-              return (
-                <button
-                  type="button"
-                  key={media.id}
-                  onClick={() => {
-                    onSelect(index, "select");
-                    onOpenLightbox(index);
-                  }}
-                  aria-label={media.alt}
-                  className="cast-gallery-tile"
-                  style={{ background: mediaBg(media.url) }}
-                >
-                  {media.type === "VIDEO" ? renderPlayIcon() : null}
-                  {showMore ? <span className="cast-gallery-more">+{remaining}</span> : null}
-                </button>
-              );
-            })}
+            {gallery.map((media, index) => (
+              <button
+                type="button"
+                key={media.id}
+                onClick={() => {
+                  onSelect(index, "select");
+                  onOpenLightbox(index);
+                }}
+                aria-label={media.alt}
+                className="cast-gallery-tile"
+                style={{ background: mediaBg(media.url) }}
+              >
+                {media.type === "VIDEO" ? renderPlayIcon() : null}
+              </button>
+            ))}
           </div>
         </section>
         {lightbox}

@@ -18,9 +18,13 @@ import {
   CancelGuestBookingDto,
 } from './dto/cancel-booking.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import { ScanCouponIssueDto } from './dto/coupon-issue.dto';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
+import {
+  CreatePartnerRequestDto,
+  ReviewPartnerRequestDto,
+} from './dto/create-partner-request.dto';
 import {
   MemberFavoriteCastDto,
   PublicCastFavoriteStateDto,
@@ -370,7 +374,9 @@ const guestClaimExample = {
     code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
     status: 'ISSUED',
     statusLabel: 'Đang giữ chỗ',
-    qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+    qrPayload:
+      'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+    qrImageDataUrl: 'data:image/png;base64,...',
     userType: 'GUEST',
     discountPercent: 5,
     discountRuleSnapshot: {
@@ -403,7 +409,9 @@ const memberClaimExample = {
   code: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
   status: 'ISSUED',
   statusLabel: 'Đang giữ chỗ',
-  qrPayload: 'MEMBER-550e8400-e29b-41d4-a716-446655440000',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'VIP',
   discountPercent: 10,
   discountRuleSnapshot: {
@@ -495,15 +503,15 @@ const scannedCouponIssueExample = {
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
   status: 'ISSUED',
   statusLabel: 'Đang giữ chỗ',
-  qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'GUEST',
+  customer: { type: 'GUEST', label: 'Khách vãng lai' },
   discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
   usedAt: null,
-  user: null,
-  guest: { id: 'guest_01', displayName: 'Guest Name' },
   booking: {
-    id: 'booking_01',
     status: 'CONFIRMED',
     scheduledAt: '2026-06-30T13:00:00.000Z',
   },
@@ -520,12 +528,15 @@ const confirmedCheckInExample = {
   code: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
   status: 'USED',
   statusLabel: 'Đã sử dụng',
-  qrPayload: 'GUEST-550e8400-e29b-41d4-a716-446655440000',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: null,
   userType: 'GUEST',
   discountPercent: 5,
   expiresAt: '2026-06-27T10:00:00.000Z',
   usedAt: '2026-06-26T10:15:00.000Z',
   scannedById: 'partner_01',
+  customer: { type: 'GUEST', label: 'Khách vãng lai' },
   coupon: {
     id: 'coupon_01',
     code: 'GUEST5',
@@ -539,10 +550,11 @@ const billExample = {
   storeId: 'store_01',
   billNumber: 'BILL-2026-0001',
   status: 'SUBMITTED',
-  subtotalVnd: 2000000,
-  discountVnd: 200000,
+  subtotalVnd: 1800000,
+  discountVnd: 0,
   totalVnd: 1800000,
-  submittedAt: '2026-06-26T10:00:00.000Z',
+  usedAt: '2026-06-30T14:00:00.000Z',
+  submittedAt: '2026-07-01T10:00:00.000Z',
   reviewedAt: null,
   verifiedAt: null,
   rejectedAt: null,
@@ -564,7 +576,9 @@ const memberCouponIssueExample = {
   code: 'MEMBER-2026-0001',
   status: 'ISSUED',
   statusLabel: 'Đang giữ chỗ',
-  qrPayload: 'MEMBER-2026-0001',
+  qrPayload:
+    'https://nightlife.vn/partner/scan?scanToken=opaque-token.signature',
+  qrImageDataUrl: 'data:image/png;base64,...',
   userType: 'VIP',
   discountPercent: 10,
   expiresAt: '2026-07-01T00:00:00.000Z',
@@ -575,6 +589,32 @@ const memberCouponIssueExample = {
     name: 'Welcome 20%',
     store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
   },
+};
+
+const adminCouponIssueExample = {
+  ...memberCouponIssueExample,
+  qrPayloadHash: '5f70bf18a086007016b3f5200f5ec3c9c1ed4f0d...',
+  campaignSnapshot: {
+    id: 'coupon_01',
+    code: 'WELCOME20',
+    name: 'Welcome 20%',
+    storeId: 'store_01',
+    store: { id: 'store_01', name: 'Luna Lounge', slug: 'luna-lounge' },
+  },
+  auditLogs: [
+    {
+      id: 'audit_01',
+      action: 'COUPON_ISSUE_SCANNED',
+      actorId: 'partner_01',
+      targetId: 'issue_01',
+      metadata: { source: 'signed_qr' },
+      createdAt: '2026-06-26T10:12:00.000Z',
+    },
+  ],
+  user: { id: 'user_01', displayName: 'Minh Nguyen', tier: 'VIP' },
+  guest: null,
+  scannedBy: { id: 'partner_01', displayName: 'Partner Staff' },
+  createdAt: '2026-06-26T10:00:00.000Z',
 };
 
 const sensitiveBillExample = {
@@ -623,7 +663,41 @@ const partnerRequestExample = {
   id: 'PARTNER-7F3A91BC',
   status: 'PENDING_REVIEW',
   submittedAt: '2026-06-26T10:20:00.000Z',
+  draft: {
+    storeId: 'store_draft_01',
+    storeName: 'Neon Club Tay Ho',
+    storeSlug: 'neon-club-tay-ho-partner-7f3a91bc',
+    castCount: 2,
+    mediaCount: 4,
+    contentCount: 1,
+  },
   message: 'Partner request submitted for admin review',
+};
+
+const adminPartnerRequestExample = {
+  id: 'PARTNER-7F3A91BC',
+  notificationId: 'notification_01',
+  notificationStatus: 'SENT',
+  submittedAt: '2026-06-26T10:20:00.000Z',
+  status: 'PENDING_REVIEW',
+  reviewReason: null,
+  reviewedAt: null,
+  publicState: 'HIDDEN',
+  draftStoreId: 'store_draft_01',
+  draftStoreName: 'Neon Club Tay Ho',
+  draftStoreSlug: 'neon-club-tay-ho-partner-7f3a91bc',
+  draftCastCount: 2,
+  draftMediaCount: 4,
+  draftContentCount: 1,
+  businessName: 'Neon Club',
+  businessType: 'Club / Lounge',
+  area: 'Ha Noi - Tay Ho',
+  contactName: 'Nguyen Van A',
+  contactPhone: '+84901234567',
+  contactEmail: 'owner@example.com',
+  note: 'We want to join the booking and coupon program.',
+  storeDescription: 'Premium lounge with live DJ and private tables.',
+  menuSummary: 'Bottle service and cocktail menu submitted by partner.',
 };
 
 const contentExample = {
@@ -632,7 +706,8 @@ const contentExample = {
   slug: 'tay-ho-night-guide',
   type: 'BLOG',
   status: 'PUBLISHED',
-  excerpt: 'Lộ trình gợi ý cho khách muốn đi lounge, club và ăn khuya ở Tây Hồ.',
+  excerpt:
+    'Lộ trình gợi ý cho khách muốn đi lounge, club và ăn khuya ở Tây Hồ.',
   body: null,
   metadata: {
     category: 'Cẩm nang khu vực',
@@ -705,7 +780,71 @@ export function AdminContentsContract() {
   );
 }
 
-export function AdminContentMutationContract(action: 'create' | 'update' | 'delete') {
+export function AdminPartnerRequestsContract() {
+  return guardedListContract(
+    'Admin partner: list partner requests from Telegram notification logs',
+    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Lists partner request payloads persisted in NotificationLog. Submitted store/cast/media/menu drafts remain hidden until the admin review endpoint approves them.',
+    adminPartnerRequestExample,
+  );
+}
+
+export function ReviewPartnerRequestContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin partner: approve or reject a partner request',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). Approves a partner request by publishing the submitted draft store/cast/media/menu, or rejects it while keeping those records non-public. A reason is required for the CMS audit trail.',
+    }),
+    ApiParam({ name: 'requestId', example: 'PARTNER-7F3A91BC' }),
+    ApiBody({ type: ReviewPartnerRequestDto }),
+    ApiOkResponse({
+      description: 'Partner request reviewed.',
+      schema: {
+        example: {
+          ...adminPartnerRequestExample,
+          status: 'APPROVED',
+          reviewReason: 'Thong tin hop le, duyet public.',
+          reviewedAt: '2026-06-26T10:40:00.000Z',
+          reviewedById: 'admin_01',
+          publicState: 'PUBLIC',
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid review body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid admin token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Partner request not found.',
+      schema: {
+        example: { ...notFoundExample, message: 'Partner request not found' },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Partner request has already been reviewed.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Partner request has already been reviewed',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
+export function AdminContentMutationContract(
+  action: 'create' | 'update' | 'delete',
+) {
   const summaries = {
     create: 'Admin content: create blog or policy record',
     update: 'Admin content: update blog or policy record',
@@ -1091,6 +1230,41 @@ export function CancelGuestBookingContract() {
   );
 }
 
+export function GuestBookingLookupContract() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Booking action: guest looks up a booking by code and phone',
+      description:
+        'Auth guard: none. Resolves #BK-style booking codes or id prefixes for guest bookings only when the submitted phone matches the guest contact snapshot.',
+    }),
+    ApiParam({ name: 'bookingCode', example: 'BK-550E8400' }),
+    ApiQuery({
+      name: 'phone',
+      required: true,
+      example: '+84901234567',
+      description: 'Phone number submitted with the guest booking.',
+    }),
+    ApiOkResponse({
+      description: 'Guest booking found.',
+      schema: { example: createBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid lookup request.',
+      schema: { example: badRequestExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking code does not exist or phone does not match.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Booking not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+  );
+}
+
 export function CreatePartnerRequestContract() {
   return applyDecorators(
     ApiOperation({
@@ -1231,6 +1405,60 @@ export function CancelMemberBookingContract() {
   );
 }
 
+export function CancelAdminBookingContract(scope: 'admin' | 'operator') {
+  const isAdmin = scope === 'admin';
+
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: `Booking action: ${isAdmin ? 'admin' : 'operator'} cancels a customer booking`,
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN/OPERATOR). Cancels a customer booking on behalf of the customer with a reason, bypasses the self-service 1 hour cutoff, writes AuditLog action BOOKING_CANCELLED with beforeStatus/afterStatus/reason/actorId, queues a customer notification log, then sends P0 Telegram admin notification.',
+    }),
+    ApiParam({ name: 'bookingId', example: 'booking_01' }),
+    ApiBody({ type: CancelBookingDto }),
+    ApiOkResponse({
+      description: 'Booking cancelled by staff.',
+      schema: { example: cancelledBookingExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid cancel request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: isAdmin
+        ? 'Authenticated user is not an admin.'
+        : 'Authenticated user is not an operator/admin or lacks store access.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking does not exist.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Booking not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Booking has already ended, checked in, no-show, or cancelled.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Booking cannot be cancelled in its current state',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
 export function MemberClaimCouponContract() {
   return applyDecorators(
     ApiBearerAuth(),
@@ -1274,7 +1502,7 @@ export function PartnerStoresContract() {
 export function PartnerCouponsContract() {
   return guardedListContract(
     'Partner action: list own coupons',
-    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN) + ActionPolicy(canViewPartnerCoupon).',
+    'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN) + ActionPolicy(canViewPartnerCoupon). usageLimit is the successful USED redemption cap, not the number of issued codes.',
     partnerCouponExample,
   );
 }
@@ -1335,13 +1563,62 @@ export function PartnerScanCouponContract() {
   );
 }
 
+export function PartnerScanCouponPayloadContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Partner action: scan a signed coupon QR payload',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR). ActionPolicyGuard is intentionally not used here because the request contains only an opaque signed token; the service resolves the coupon issue and enforces store access with ensureStoreAccess before returning scan evidence. Supports offline queued scan replay, records audit/analytics events, and returns only masked customer summary data.',
+    }),
+    ApiBody({ type: ScanCouponIssueDto }),
+    ApiOkResponse({
+      description: 'Coupon issue scan result.',
+      schema: { example: scannedCouponIssueExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid signed QR payload.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user cannot access the coupon store.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Coupon issue does not exist.',
+      schema: {
+        example: {
+          statusCode: 404,
+          message: 'Coupon issue not found',
+          error: 'Not Found',
+        },
+      },
+    }),
+    ApiUnprocessableEntityResponse({
+      description:
+        'Coupon issue is expired, used, revoked, or otherwise not valid.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Coupon issue has expired',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
+  );
+}
+
 export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
   return applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
       summary: 'Partner action: confirm customer check-in',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canConfirmCheckIn). Atomically marks the one-time coupon issue USED and linked booking checked in.',
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN, OPERATOR) + ActionPolicy(canConfirmCheckIn). Atomically marks the one-time coupon issue USED, writes coupon usage audit/log events, and updates the linked booking checked in.',
     }),
     ApiParam({ name: paramName, example: 'issue_01' }),
     ApiOkResponse({
@@ -1372,7 +1649,7 @@ export function PartnerConfirmCheckInContract(paramName = 'couponIssueId') {
       schema: {
         example: {
           statusCode: 422,
-          message: 'Coupon issue is not claimable',
+          message: 'Coupon issue has already been used',
           error: 'Unprocessable Entity',
         },
       },
@@ -1385,6 +1662,48 @@ export function PartnerBillsContract() {
     'Bill action: partner lists bills',
     'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN/OPERATOR depending on route) + ActionPolicy(canViewPartnerBill).',
     billExample,
+  );
+}
+
+export function CreatePartnerBillContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Bill action: partner submits a bill',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(PARTNER, ADMIN). Creates a SUBMITTED bill within the actor store scope. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected.',
+    }),
+    ApiBody({ type: CreateBillDto }),
+    ApiCreatedResponse({
+      description: 'Bill submitted for admin review.',
+      schema: { example: billExample },
+    }),
+    ApiBadRequestResponse({
+      description: 'Invalid bill request body.',
+      schema: { example: badRequestExample },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated partner cannot submit for this store.',
+      schema: { example: forbiddenExample },
+    }),
+    ApiNotFoundResponse({
+      description: 'Booking or store does not exist.',
+      schema: { example: notFoundExample },
+    }),
+    ApiUnprocessableEntityResponse({
+      description: 'Bill is outside the accepted submission window.',
+      schema: {
+        example: {
+          statusCode: 422,
+          message: 'Bill can only be submitted within 10 days of usage time',
+          error: 'Unprocessable Entity',
+        },
+      },
+    }),
   );
 }
 
@@ -1409,13 +1728,44 @@ export function MemberCouponIssuesContract() {
   );
 }
 
+export function AdminCouponIssuesContract() {
+  return applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({
+      summary: 'Admin action: list coupon issues by store, coupon, and status',
+      description:
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN). CMS view for issued coupon wallet/history across stores and campaigns; stale ISSUED codes are marked EXPIRED before returning. Includes admin detail fields for QR payload hash, campaign snapshot, and related CouponIssue audit logs.',
+    }),
+    ApiQuery({ name: 'storeId', required: false }),
+    ApiQuery({ name: 'couponId', required: false }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: ['ISSUED', 'USED', 'EXPIRED', 'REVOKED'],
+    }),
+    ApiQuery({ name: 'limit', required: false, example: 50 }),
+    ApiOkResponse({
+      description: 'Coupon issues for admin CMS.',
+      schema: { example: [adminCouponIssueExample] },
+    }),
+    ApiUnauthorizedResponse({
+      description: 'Missing or invalid bearer token.',
+      schema: { example: unauthorizedExample },
+    }),
+    ApiForbiddenResponse({
+      description: 'Authenticated user is not an admin.',
+      schema: { example: forbiddenExample },
+    }),
+  );
+}
+
 export function CreateMemberBillContract() {
   return applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
       summary: 'Bill action: member submits a bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills.',
+        'Auth guard: JwtAuthGuard + RolesGuard(USER). Creates a SUBMITTED bill, optionally links it to an own booking, and sends P0 Telegram admin notification using template telegram.admin.bill.submitted.v1. CMS link: /admin?tab=bills. Request body accepts only store/booking reference, original bill total, and service usage time; item or service details are not accepted. Evidence files are encouraged but optional and can be uploaded to /storage/upload with billId after creation. Bills older than 10 days are rejected.',
     }),
     ApiBody({ type: CreateBillDto }),
     ApiCreatedResponse({
@@ -1439,11 +1789,12 @@ export function CreateMemberBillContract() {
       schema: { example: notFoundExample },
     }),
     ApiUnprocessableEntityResponse({
-      description: 'Bill cannot be submitted for the requested booking.',
+      description:
+        'Bill cannot be submitted for the requested booking or usage date.',
       schema: {
         example: {
           statusCode: 422,
-          message: 'Booking already has a submitted bill',
+          message: 'Bill can only be submitted within 10 days of usage time',
           error: 'Unprocessable Entity',
         },
       },
@@ -1452,10 +1803,27 @@ export function CreateMemberBillContract() {
 }
 
 export function AdminSensitiveBillsContract() {
-  return guardedListContract(
-    'Admin action: list sensitive bill reviews',
-    'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewSensitiveBill).',
-    sensitiveBillExample,
+  return applyDecorators(
+    guardedListContract(
+      'Admin action: list sensitive bill reviews',
+      'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewSensitiveBill). Supports bookingId, couponId, and couponIssueId filters for reconciliation.',
+      sensitiveBillExample,
+    ),
+    ApiQuery({
+      name: 'bookingId',
+      required: false,
+      description: 'Filter by linked booking id.',
+    }),
+    ApiQuery({
+      name: 'couponId',
+      required: false,
+      description: 'Filter by linked coupon campaign id.',
+    }),
+    ApiQuery({
+      name: 'couponIssueId',
+      required: false,
+      description: 'Filter by linked coupon issue id.',
+    }),
   );
 }
 

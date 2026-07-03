@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -17,7 +19,8 @@ import {
   TicketCheck,
   UsersRound,
 } from 'lucide-react';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { ApiError, apiClient } from '@/lib/api/client';
 
 const colors = {
   bg: '#0c0c0f',
@@ -41,6 +44,7 @@ const colors = {
   goldBright: '#e3c27e',
   goldPale: '#f0dda8',
   neonPink: '#e0729e',
+  red: '#e68798',
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
 };
 
@@ -72,6 +76,7 @@ const portalItems = [
   { icon: Camera, label: 'Đăng thông tin', detail: 'Chờ Admin duyệt trước khi công khai' },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const fields = [
   { label: 'Tên quán / cơ sở', value: 'VD: Club Lumiere', wide: true },
   { label: 'Loại hình', value: 'Bar / Lounge', select: true },
@@ -80,6 +85,59 @@ const fields = [
   { label: 'SĐT / Telegram', value: '0912 345 678' },
   { label: 'Giới thiệu ngắn', value: 'Mô tả quán, dịch vụ nổi bật, khung giờ đông khách...', wide: true, tall: true },
 ];
+
+type PartnerFormState = {
+  businessName: string;
+  businessType: string;
+  area: string;
+  storeName: string;
+  storeCategory: string;
+  storeDescription: string;
+  storeAddress: string;
+  storeCity: string;
+  storeDistrict: string;
+  openingHours: string;
+  menuSummary: string;
+  mediaUrls: string;
+  castProfiles: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  note: string;
+};
+
+type PartnerRequestResponse = {
+  id: string;
+  status: string;
+  draft?: {
+    storeId: string;
+    storeName: string;
+    storeSlug: string;
+    castCount: number;
+    mediaCount: number;
+    contentCount: number;
+  };
+};
+
+const initialPartnerForm: PartnerFormState = {
+  businessName: '',
+  businessType: 'Club / Lounge',
+  area: 'Ha Noi - Tay Ho',
+  storeName: '',
+  storeCategory: 'LOUNGE',
+  storeDescription: '',
+  storeAddress: '',
+  storeCity: 'Ha Noi',
+  storeDistrict: '',
+  openingHours: '',
+  menuSummary: '',
+  mediaUrls: '',
+  castProfiles: '',
+  contactName: '',
+  contactPhone: '',
+  contactEmail: '',
+  note: '',
+};
 
 const bottomNav = [
   { href: '/', label: 'Trang chủ', icon: Home },
@@ -127,6 +185,7 @@ function SectionTitle({ title, en }: { title: string; en: string }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function Field({
   label,
   value,
@@ -165,8 +224,197 @@ function Field({
   );
 }
 
+function splitLines(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function splitComma(value?: string) {
+  return (value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function optionalText(value: string) {
+  const text = value.trim();
+  return text || undefined;
+}
+
+function parseMoney(value?: string) {
+  const normalized = (value ?? '').replace(/[^\d]/g, '');
+  if (!normalized) return undefined;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? amount : undefined;
+}
+
+function parseCastProfiles(value: string) {
+  return splitLines(value)
+    .map((line) => {
+      const [stageName, bio, tags, languages, hourlyRateVnd, mediaUrls] = line
+        .split('|')
+        .map((part) => part.trim());
+
+      return {
+        stageName,
+        bio: optionalText(bio ?? ''),
+        tags: splitComma(tags),
+        languages: splitComma(languages),
+        hourlyRateVnd: parseMoney(hourlyRateVnd),
+        mediaUrls: splitComma(mediaUrls),
+      };
+    })
+    .filter((profile) => profile.stageName);
+}
+
+function buildPartnerRequestPayload(form: PartnerFormState) {
+  return {
+    businessName: form.businessName.trim(),
+    businessType: optionalText(form.businessType),
+    area: optionalText(form.area),
+    storeName: optionalText(form.storeName),
+    storeCategory: optionalText(form.storeCategory),
+    storeDescription: optionalText(form.storeDescription),
+    storeAddress: optionalText(form.storeAddress),
+    storeCity: optionalText(form.storeCity),
+    storeDistrict: optionalText(form.storeDistrict),
+    openingHours: optionalText(form.openingHours),
+    menuSummary: optionalText(form.menuSummary),
+    mediaUrls: splitLines(form.mediaUrls),
+    castProfiles: parseCastProfiles(form.castProfiles),
+    contactName: form.contactName.trim(),
+    contactPhone: form.contactPhone.trim(),
+    contactEmail: optionalText(form.contactEmail),
+    note: optionalText(form.note),
+  };
+}
+
+function inputStyle(tall = false): React.CSSProperties {
+  return {
+    width: '100%',
+    minHeight: tall ? '86px' : '44px',
+    border: `1px solid ${colors.borderGold22}`,
+    borderRadius: '11px',
+    padding: '12px 13px',
+    color: colors.text,
+    background: colors.surface2,
+    fontSize: '13px',
+    lineHeight: 1.45,
+    outline: 'none',
+    resize: tall ? 'vertical' : undefined,
+  };
+}
+
+function FormControl({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+  wide,
+  tall,
+  type = 'text',
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  wide?: boolean;
+  tall?: boolean;
+  type?: string;
+}) {
+  const id = label.replace(/\s+/g, '-').toLowerCase();
+  const sharedProps = {
+    id,
+    value,
+    onChange: (
+      event:
+        | React.ChangeEvent<HTMLInputElement>
+        | React.ChangeEvent<HTMLTextAreaElement>,
+    ) => onChange(event.target.value),
+    placeholder,
+    required,
+    style: inputStyle(tall),
+  };
+
+  return (
+    <div style={{ gridColumn: wide ? 'span 2' : undefined }}>
+      <label
+        htmlFor={id}
+        style={{
+          display: 'block',
+          fontSize: '11.5px',
+          fontWeight: 600,
+          color: colors.text2,
+          marginBottom: '6px',
+        }}
+      >
+        {label}
+      </label>
+      {tall ? (
+        <textarea {...sharedProps} rows={4} />
+      ) : (
+        <input {...sharedProps} type={type} />
+      )}
+    </div>
+  );
+}
+
 function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
   const isMobile = mode === 'mobile';
+  const [form, setForm] = useState<PartnerFormState>(initialPartnerForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<{
+    tone: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const canSubmit = useMemo(
+    () =>
+      Boolean(
+        form.businessName.trim() &&
+          form.contactName.trim() &&
+          form.contactPhone.trim(),
+      ),
+    [form.businessName, form.contactName, form.contactPhone],
+  );
+  const updateForm = (field: keyof PartnerFormState, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+  const submitPartnerRequest = async () => {
+    if (!canSubmit || submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitResult(null);
+
+    try {
+      const result = await apiClient<PartnerRequestResponse>(
+        '/partner-requests',
+        {
+          data: buildPartnerRequestPayload(form),
+        },
+      );
+      setSubmitResult({
+        tone: 'success',
+        message: `Da gui ho so ${result.id}. Admin se thay trong CMS va duyet truoc khi public.`,
+      });
+      setForm(initialPartnerForm);
+    } catch (error) {
+      setSubmitResult({
+        tone: 'error',
+        message:
+          error instanceof ApiError
+            ? String(error.message)
+            : 'Chua gui duoc ho so. Vui long thu lai.',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <main
@@ -426,11 +674,126 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   gap: '13px',
                 }}
               >
-                {fields.map((field) => (
-                  <div key={field.label} style={{ gridColumn: !isMobile && field.wide ? 'span 2' : undefined }}>
-                    <Field label={field.label} value={field.value} select={field.select} tall={field.tall} />
-                  </div>
-                ))}
+                <FormControl
+                  label="Ten quan / co so"
+                  value={form.businessName}
+                  onChange={(value) => updateForm('businessName', value)}
+                  placeholder="VD: Club Lumiere"
+                  required
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Ten hien thi public"
+                  value={form.storeName}
+                  onChange={(value) => updateForm('storeName', value)}
+                  placeholder="Neu khac ten phap ly"
+                />
+                <FormControl
+                  label="Loai hinh"
+                  value={form.businessType}
+                  onChange={(value) => updateForm('businessType', value)}
+                  placeholder="Bar / Lounge / KTV"
+                />
+                <FormControl
+                  label="Category CMS"
+                  value={form.storeCategory}
+                  onChange={(value) => updateForm('storeCategory', value)}
+                  placeholder="BAR, CLUB, LOUNGE..."
+                />
+                <FormControl
+                  label="Khu vuc"
+                  value={form.area}
+                  onChange={(value) => updateForm('area', value)}
+                  placeholder="Ha Noi - Tay Ho"
+                />
+                <FormControl
+                  label="Thanh pho"
+                  value={form.storeCity}
+                  onChange={(value) => updateForm('storeCity', value)}
+                  placeholder="Ha Noi"
+                />
+                <FormControl
+                  label="Dia chi"
+                  value={form.storeAddress}
+                  onChange={(value) => updateForm('storeAddress', value)}
+                  placeholder="So nha, ten duong"
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Quan / huyen"
+                  value={form.storeDistrict}
+                  onChange={(value) => updateForm('storeDistrict', value)}
+                  placeholder="Tay Ho"
+                />
+                <FormControl
+                  label="Gio mo cua"
+                  value={form.openingHours}
+                  onChange={(value) => updateForm('openingHours', value)}
+                  placeholder="18:00 - 02:00"
+                />
+                <FormControl
+                  label="Nguoi lien he"
+                  value={form.contactName}
+                  onChange={(value) => updateForm('contactName', value)}
+                  placeholder="Ho ten"
+                  required
+                />
+                <FormControl
+                  label="SDT / Telegram"
+                  value={form.contactPhone}
+                  onChange={(value) => updateForm('contactPhone', value)}
+                  placeholder="0912 345 678"
+                  required
+                />
+                <FormControl
+                  label="Email"
+                  value={form.contactEmail}
+                  onChange={(value) => updateForm('contactEmail', value)}
+                  placeholder="owner@example.com"
+                  type="email"
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Mo ta quan"
+                  value={form.storeDescription}
+                  onChange={(value) => updateForm('storeDescription', value)}
+                  placeholder="Khong gian, dich vu noi bat, khung gio dong khach..."
+                  tall
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Menu / bang gia"
+                  value={form.menuSummary}
+                  onChange={(value) => updateForm('menuSummary', value)}
+                  placeholder="Moi goi, combo hoac bang gia mot dong."
+                  tall
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Cast gui kem"
+                  value={form.castProfiles}
+                  onChange={(value) => updateForm('castProfiles', value)}
+                  placeholder="Moi dong: Ten | Bio | tags | ngon ngu | gia/gio | link1, link2"
+                  tall
+                  wide={!isMobile}
+                />
+                <FormControl
+                  label="Ghi chu cho Admin"
+                  value={form.note}
+                  onChange={(value) => updateForm('note', value)}
+                  placeholder="Thoi gian goi lai, yeu cau rieng..."
+                  tall
+                  wide={!isMobile}
+                />
+
+                <FormControl
+                  label="Link anh / video quan"
+                  value={form.mediaUrls}
+                  onChange={(value) => updateForm('mediaUrls', value)}
+                  placeholder="Moi link mot dong: https://..."
+                  tall
+                  wide={!isMobile}
+                />
 
                 <div style={{ gridColumn: !isMobile ? 'span 2' : undefined }}>
                   <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: colors.text2, marginBottom: '6px' }}>
@@ -476,15 +839,39 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                 Không yêu cầu giấy phép kinh doanh khi gửi đăng ký. Nội dung chỉ hiển thị công khai sau khi Admin duyệt.
               </div>
 
+              {submitResult ? (
+                <div
+                  style={{
+                    marginTop: '12px',
+                    border: `1px solid ${submitResult.tone === 'success' ? 'rgba(127,211,160,.36)' : 'rgba(230,135,152,.4)'}`,
+                    borderRadius: '12px',
+                    background:
+                      submitResult.tone === 'success'
+                        ? 'rgba(127,211,160,.12)'
+                        : 'rgba(230,135,152,.1)',
+                    color: submitResult.tone === 'success' ? '#a9e7be' : colors.red,
+                    padding: '11px 13px',
+                    fontSize: '12px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {submitResult.message}
+                </div>
+              ) : null}
+
               <button
                 type="button"
+                disabled={!canSubmit || submitting}
+                onClick={() => {
+                  void submitPartnerRequest();
+                }}
                 style={{
                   width: '100%',
                   minHeight: '44px',
                   marginTop: '14px',
                   border: 0,
                   borderRadius: '11px',
-                  background: colors.goldGrad,
+                  background: !canSubmit || submitting ? 'rgba(212,178,106,.34)' : colors.goldGrad,
                   color: colors.onGold,
                   fontSize: '14px',
                   fontWeight: 800,
@@ -492,7 +879,7 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  cursor: 'pointer',
+                  cursor: !canSubmit || submitting ? 'not-allowed' : 'pointer',
                 }}
               >
                 <Send size={16} />

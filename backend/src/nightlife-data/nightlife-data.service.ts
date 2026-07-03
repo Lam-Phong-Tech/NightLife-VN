@@ -1,21 +1,41 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import {
+  BookingStatus,
+  BookingChangeRequestStatus,
+  BookingChatSenderType,
+  BookingChatTopic,
   ContentStatus,
   ContentType,
+  CouponIssueStatus,
   Prisma,
   RankingConfigStatus,
   RankingTargetType,
   StoreCategory,
 } from '@prisma/client';
-import { createHash, randomUUID } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  timingSafeEqual,
+  randomUUID,
+} from 'node:crypto';
+import QRCode from 'qrcode';
 import { AccessService, AuthenticatedUser } from '../access/access.service';
-import { AdminNotificationService } from '../notifications/admin-notification.service';
+import {
+  ADMIN_TELEGRAM_TEMPLATES,
+  AdminNotificationService,
+} from '../notifications/admin-notification.service';
+import { EmailNotificationService } from '../notifications/email-notification.service';
+import { SocketGateway } from '../notifications/socket.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AdminRankingQueryDto,
@@ -27,25 +47,55 @@ import {
   CancelBookingDto,
   CancelGuestBookingDto,
 } from './dto/cancel-booking.dto';
+import {
+  BookingChatMessageDto,
+  GuestBookingChatMessageDto,
+  GuestBookingRescheduleDto,
+  RequestBookingRescheduleDto,
+  ReviewBookingChangeRequestDto,
+  UpdateStoreBookingPolicyDto,
+} from './dto/booking-p2.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import {
+  AdminCouponIssueQueryDto,
+  ScanCouponIssueDto,
+} from './dto/coupon-issue.dto';
 import {
   AdminContentQueryDto,
   CreateAdminContentDto,
   PublicContentQueryDto,
   UpdateAdminContentDto,
 } from './dto/content.dto';
-import { CreateBillDto } from './dto/create-bill.dto';
+import {
+  AdminSensitiveBillQueryDto,
+  CreateBillDto,
+} from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
+import {
+  CreatePartnerRequestDto,
+  PartnerRequestCastDto,
+  ReviewPartnerRequestDto,
+} from './dto/create-partner-request.dto';
 import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
 import { ReviewBillDto } from './dto/review-bill.dto';
-import { TelegramService } from '../telegram/telegram.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const BILL_SUBMISSION_DEADLINE_DAYS = 10;
+const BILL_SUBMISSION_DEADLINE_MS = BILL_SUBMISSION_DEADLINE_DAYS * DAY_MS;
 const BOOKING_CANCEL_CUTOFF_MS = 60 * 60 * 1000;
+const BOOKING_DATE_WINDOW_DAYS = 14;
+const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const BOOKING_CREATE_RATE_LIMIT = 5;
+const BOOKING_CANCEL_RATE_LIMIT = 5;
+const COUPON_CLAIM_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const COUPON_CLAIM_RATE_LIMIT = 5;
+const COUPON_CLAIM_FRAUD_WINDOW_MS = 60 * 60 * 1000;
+const COUPON_CLAIM_FRAUD_THRESHOLD = 5;
+const BOOKING_POLICY_CUTOFF_MINUTES = [30, 60, 120] as const;
+const DEFAULT_BOOKING_CUTOFF_MINUTES = 60;
 const DEFAULT_PUBLIC_LIMIT = 24;
 const DEFAULT_RANKING_LIMIT = 5;
 const MAX_RANKING_LIMIT = 20;
@@ -55,18 +105,155 @@ const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
 const MVP_CITY_CODES = ['hn', 'hcm'] as const;
 
-type BookingCancelActorType = 'MEMBER' | 'GUEST';
+type BookingStatusActorType =
+  | 'MEMBER'
+  | 'GUEST'
+  | 'ADMIN'
+  | 'OPERATOR'
+  | 'PARTNER'
+  | 'SYSTEM';
 
 type BookingCancelTarget = {
   id: string;
+  storeId?: string | null;
+  castId?: string | null;
   userId?: string | null;
   guestId?: string | null;
   user?: { id: string } | null;
   guest?: { id: string } | null;
+  store?: {
+    id?: string;
+    name?: string | null;
+    slug?: string | null;
+    bookingCancelCutoffMinutes?: number | null;
+  } | null;
   status: string;
   scheduledAt?: Date | string | null;
   cancelledAt?: Date | string | null;
 };
+
+type BookingNotificationRecord = {
+  id: string;
+  storeId?: string | null;
+  status: string;
+  scheduledAt?: Date | string | null;
+  partySize?: number | null;
+  subtotalVnd?: number | null;
+  discountVnd?: number | null;
+  totalVnd?: number | null;
+  discountRuleSnapshot?: Prisma.JsonValue | null;
+  note?: string | null;
+  user?: {
+    id: string;
+    email: string | null;
+    displayName: string | null;
+    tier: string | null;
+  } | null;
+  guest?: {
+    id: string;
+    displayName: string | null;
+    phone: string | null;
+    email: string | null;
+  } | null;
+  store?: {
+    id: string;
+    name?: string | null;
+    slug?: string | null;
+    bookingCancelCutoffMinutes?: number | null;
+  } | null;
+  cast?: {
+    id: string;
+    slug: string;
+    stageName: string;
+    publicAlias?: string | null;
+  } | null;
+  coupon?: { id: string; code: string; name: string } | null;
+  couponIssue?: { id: string; code: string; status: string } | null;
+};
+
+type BookingChangeRequestRecord = {
+  id: string;
+  bookingId: string;
+  storeId: string;
+  castId: string | null;
+  requestedById: string | null;
+  guestId: string | null;
+  reviewedById: string | null;
+  type: string;
+  status: string;
+  currentScheduledAt: Date | string;
+  requestedScheduledAt: Date | string | null;
+  reason: string | null;
+  adminNote: string | null;
+  reviewedAt: Date | string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  booking?: BookingNotificationRecord | null;
+  store?: { id: string; name: string; slug: string } | null;
+  cast?: {
+    id: string;
+    slug: string;
+    stageName: string;
+    publicAlias: string | null;
+  } | null;
+  requestedBy?: { id: string; displayName: string | null } | null;
+  guest?: {
+    id: string;
+    displayName: string | null;
+    phone: string | null;
+  } | null;
+  reviewedBy?: { id: string; displayName: string | null } | null;
+};
+
+type BookingChatMessageRecord = {
+  id: string;
+  bookingId: string;
+  changeRequestId: string | null;
+  storeId: string;
+  senderUserId: string | null;
+  guestId: string | null;
+  senderType: string;
+  topic: string;
+  body: string;
+  createdAt: Date | string;
+  senderUser?: { id: string; displayName: string | null; role: string } | null;
+  guest?: {
+    id: string;
+    displayName: string | null;
+    phone: string | null;
+  } | null;
+};
+
+type CancelAnalyticsMetric = Record<string, unknown> & {
+  totalBookings: number;
+  cancelledBookings: number;
+  cancelRate: number;
+};
+
+type BookingRateLimitBucket = {
+  count: number;
+  resetAt: number;
+};
+
+type CouponClaimContext = {
+  ip?: string | null;
+  userAgent?: string | null;
+  deviceId?: string | null;
+};
+
+type PartnerRequestNotificationLog = {
+  id: string;
+  status: string;
+  payload: Prisma.JsonValue | null;
+  error: string | null;
+  sentAt: Date | null;
+  createdAt: Date;
+};
+
+type PartnerRequestReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
+const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
 const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   GUEST: 5,
   MEMBER: 8,
@@ -80,6 +267,29 @@ const COUPON_ISSUE_STATUS_LABELS: Record<string, string> = {
 };
 
 type CouponUserType = keyof typeof COUPON_DISCOUNT_PERCENT_BY_USER_TYPE;
+
+type PartnerCouponIssueRecord = {
+  id: string;
+  code: string;
+  status: string;
+  expiresAt?: Date | string | null;
+  usedAt?: Date | string | null;
+  scannedById?: string | null;
+  userId?: string | null;
+  guestId?: string | null;
+  metadata?: unknown;
+  booking?: { status: string; scheduledAt?: Date | string | null } | null;
+  coupon?: {
+    id?: string;
+    code?: string;
+    name?: string;
+    discountType?: string;
+    discountValue?: number;
+    maxDiscountVnd?: number | null;
+    minSpendVnd?: number | null;
+    store?: { id?: string; name?: string; slug?: string } | null;
+  } | null;
+};
 
 const CITY_ALIASES: Record<string, string> = {
   all: 'all',
@@ -359,15 +569,31 @@ type BookingTarget = {
   };
 };
 
+type StoreSummary = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type CouponSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
 @Injectable()
 export class NightlifeDataService {
+  private readonly logger = new Logger(NightlifeDataService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessService: AccessService,
     @Optional()
     private readonly adminNotificationService?: AdminNotificationService,
     @Optional()
-    private readonly telegramService?: TelegramService,
+    private readonly socketGateway?: SocketGateway,
+    @Optional()
+    private readonly emailNotificationService?: EmailNotificationService,
   ) {}
 
   async listPublicContents(query: PublicContentQueryDto = {}) {
@@ -454,7 +680,10 @@ export class NightlifeDataService {
     return contents.map((content) => this.mapContent(content));
   }
 
-  async createAdminContent(user: AuthenticatedUser, dto: CreateAdminContentDto) {
+  async createAdminContent(
+    user: AuthenticatedUser,
+    dto: CreateAdminContentDto,
+  ) {
     const type = this.resolveContentType(dto.type, { strict: true })!;
     const status = this.resolveContentStatus(dto.status ?? 'DRAFT', {
       strict: true,
@@ -1713,8 +1942,18 @@ export class NightlifeDataService {
     });
   }
 
-  async claimGuestCoupon(couponId: string, dto: ClaimGuestCouponDto) {
+  async claimGuestCoupon(
+    couponId: string,
+    dto: ClaimGuestCouponDto,
+    context: CouponClaimContext = {},
+  ) {
     const now = new Date();
+    const phone = this.cleanText(dto.phone);
+    this.assertCouponClaimRateLimit(
+      `coupon:claim:guest:${couponId}:${phone}`,
+      'Too many coupon claim attempts. Please try again shortly.',
+    );
+
     const coupon = await this.prisma.coupon.findFirst({
       where: {
         id: couponId,
@@ -1748,17 +1987,24 @@ export class NightlifeDataService {
       );
     }
 
+    await this.assertNoDuplicateActiveGuestCouponIssue(coupon.id, phone, now);
+
     const guest = await this.prisma.guest.create({
       data: {
         displayName: dto.displayName,
-        phone: dto.phone,
+        phone,
         email: dto.email?.toLowerCase(),
       },
       select: { id: true },
     });
+    const issueId = randomUUID();
     const issueCode = `GUEST-${randomUUID()}`;
     const userType: CouponUserType = 'GUEST';
-    const qrPayload = this.buildCouponQrPayload(issueCode);
+    const expiresAt = this.capExpiry(
+      new Date(now.getTime() + DAY_MS),
+      coupon.endsAt,
+    );
+    const qrPayload = this.buildCouponQrPayload(issueId);
     const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
       coupon,
       userType,
@@ -1766,28 +2012,31 @@ export class NightlifeDataService {
 
     const issue = await this.prisma.couponIssue.create({
       data: {
+        id: issueId,
         couponId: coupon.id,
         guestId: guest.id,
         code: issueCode,
         qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-        expiresAt: this.capExpiry(
-          new Date(now.getTime() + DAY_MS),
-          coupon.endsAt,
-        ),
+        expiresAt,
         metadata: {
           recipientType: 'GUEST',
           userType,
           validityHours: 24,
           qrPayload,
+          qrPayloadType: 'SIGNED_DEEP_LINK',
           statusLabel: this.couponIssueStatusLabel('ISSUED'),
           discountPercent: discountRuleSnapshot.discountPercent,
           discountRuleSnapshot,
           campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
+          claimContext: this.buildCouponClaimContextSnapshot(context),
         },
       },
       select: {
         id: true,
+        couponId: true,
         code: true,
+        guestId: true,
+        userId: true,
         status: true,
         expiresAt: true,
         createdAt: true,
@@ -1807,14 +2056,38 @@ export class NightlifeDataService {
       },
     });
 
+    await this.recordCouponClaimEvent({
+      claimKey: `phone:${phone}`,
+      coupon,
+      issue,
+      context,
+      recipientType: 'GUEST',
+      guestId: guest.id,
+    });
+    await this.detectCouponClaimFraud({
+      claimKey: `phone:${phone}`,
+      coupon,
+      issue,
+      context,
+    });
+
     return {
-      issue: this.decorateCouponIssue(issue),
+      issue: await this.decorateCouponIssue(issue),
       guest: { id: guest.id },
     };
   }
 
-  async claimMemberCoupon(couponId: string, user: AuthenticatedUser) {
+  async claimMemberCoupon(
+    couponId: string,
+    user: AuthenticatedUser,
+    context: CouponClaimContext = {},
+  ) {
     const now = new Date();
+    this.assertCouponClaimRateLimit(
+      `coupon:claim:member:${couponId}:${user.id}`,
+      'Too many coupon claim attempts. Please try again shortly.',
+    );
+
     const coupon = await this.prisma.coupon.findFirst({
       where: {
         id: couponId,
@@ -1848,9 +2121,20 @@ export class NightlifeDataService {
       );
     }
 
+    await this.assertNoDuplicateActiveMemberCouponIssue(
+      coupon.id,
+      user.id,
+      now,
+    );
+
+    const issueId = randomUUID();
     const issueCode = `MEMBER-${randomUUID()}`;
     const userType = this.resolveCouponUserType(user);
-    const qrPayload = this.buildCouponQrPayload(issueCode);
+    const expiresAt = this.capExpiry(
+      new Date(now.getTime() + 7 * DAY_MS),
+      coupon.endsAt,
+    );
+    const qrPayload = this.buildCouponQrPayload(issueId);
     const discountRuleSnapshot = this.buildCouponDiscountRuleSnapshot(
       coupon,
       userType,
@@ -1859,29 +2143,31 @@ export class NightlifeDataService {
 
     const issue = await this.prisma.couponIssue.create({
       data: {
+        id: issueId,
         couponId: coupon.id,
         userId: user.id,
         code: issueCode,
         qrPayloadHash: this.buildCouponQrPayloadHash(qrPayload),
-        expiresAt: this.capExpiry(
-          new Date(now.getTime() + 7 * DAY_MS),
-          coupon.endsAt,
-        ),
+        expiresAt,
         metadata: {
           recipientType: 'MEMBER',
           userType,
           tier: user.tier ?? 'FREE',
           validityDays: 7,
           qrPayload,
+          qrPayloadType: 'SIGNED_DEEP_LINK',
           statusLabel: this.couponIssueStatusLabel('ISSUED'),
           discountPercent: discountRuleSnapshot.discountPercent,
           discountRuleSnapshot,
           campaignSnapshot: this.buildCouponCampaignSnapshot(coupon),
+          claimContext: this.buildCouponClaimContextSnapshot(context),
         },
       },
       select: {
         id: true,
         code: true,
+        guestId: true,
+        userId: true,
         status: true,
         expiresAt: true,
         createdAt: true,
@@ -1899,6 +2185,21 @@ export class NightlifeDataService {
           },
         },
       },
+    });
+
+    await this.recordCouponClaimEvent({
+      claimKey: `user:${user.id}`,
+      coupon,
+      issue,
+      context,
+      recipientType: userType,
+      userId: user.id,
+    });
+    await this.detectCouponClaimFraud({
+      claimKey: `user:${user.id}`,
+      coupon,
+      issue,
+      context,
     });
 
     return this.decorateCouponIssue(issue);
@@ -1987,6 +2288,7 @@ export class NightlifeDataService {
           },
         },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true } },
         note: true,
@@ -2002,10 +2304,17 @@ export class NightlifeDataService {
   async createGuestBooking(dto: CreateBookingDto) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
+    this.resolveBookingScheduledAt(dto.scheduledAt);
+    this.assertBookingRateLimit(
+      `booking:create:guest:${contact.email ?? contact.phone}`,
+      BOOKING_CREATE_RATE_LIMIT,
+      'Too many booking requests. Please try again shortly.',
+    );
     const guest = await this.prisma.guest.create({
       data: {
         displayName: contact.displayName,
-        phone: contact.phone,
+        phone: contact.phone || undefined,
+        email: contact.email || undefined,
       },
       select: {
         id: true,
@@ -2017,12 +2326,11 @@ export class NightlifeDataService {
       target,
       note: contact.note,
       guestId: guest.id,
+      phone: contact.phone,
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
-    if (this.telegramService) {
-      await this.telegramService.notifyNewBooking(booking);
-    }
+    await this.notifyGuestBookingQrEmail(booking);
 
     return booking;
   }
@@ -2030,11 +2338,18 @@ export class NightlifeDataService {
   async createMemberBooking(user: AuthenticatedUser, dto: CreateBookingDto) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
+    this.resolveBookingScheduledAt(dto.scheduledAt);
+    this.assertBookingRateLimit(
+      `booking:create:member:${user.id}`,
+      BOOKING_CREATE_RATE_LIMIT,
+      'Too many booking requests. Please try again shortly.',
+    );
     const guest = await this.prisma.guest.create({
       data: {
         convertedUserId: user.id,
         displayName: contact.displayName,
-        phone: contact.phone,
+        phone: contact.phone || undefined,
+        email: contact.email || undefined,
       },
       select: {
         id: true,
@@ -2047,12 +2362,10 @@ export class NightlifeDataService {
       note: contact.note,
       userId: user.id,
       guestId: guest.id,
+      phone: contact.phone,
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
-    if (this.telegramService) {
-      await this.telegramService.notifyNewBooking(booking);
-    }
 
     return booking;
   }
@@ -2062,6 +2375,11 @@ export class NightlifeDataService {
     bookingId: string,
     dto: CancelBookingDto = {},
   ) {
+    this.assertBookingRateLimit(
+      `booking:cancel:member:${user.id}`,
+      BOOKING_CANCEL_RATE_LIMIT,
+      'Too many cancellation requests. Please try again shortly.',
+    );
     const booking = await this.prisma.booking.findFirst({
       where: {
         id: bookingId,
@@ -2070,11 +2388,13 @@ export class NightlifeDataService {
       },
       select: {
         id: true,
+        storeId: true,
         userId: true,
         guestId: true,
         status: true,
         scheduledAt: true,
         cancelledAt: true,
+        store: { select: { bookingCancelCutoffMinutes: true } },
       },
     });
 
@@ -2087,10 +2407,114 @@ export class NightlifeDataService {
       actorId: user.id,
       actorType: 'MEMBER',
       reason: dto.reason,
+      enforceCutoff: true,
     });
   }
 
   async cancelGuestBooking(bookingId: string, dto: CancelGuestBookingDto) {
+    const phone = this.cleanText(dto.phone);
+    if (!phone) {
+      throw new BadRequestException('phone is required');
+    }
+    this.assertBookingRateLimit(
+      `booking:cancel:guest:${phone}`,
+      BOOKING_CANCEL_RATE_LIMIT,
+      'Too many cancellation requests. Please try again shortly.',
+    );
+
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId: null,
+        deletedAt: null,
+        guest: {
+          is: {
+            phone,
+          },
+        },
+      },
+      select: {
+        id: true,
+        storeId: true,
+        userId: true,
+        guestId: true,
+        status: true,
+        scheduledAt: true,
+        cancelledAt: true,
+        store: { select: { bookingCancelCutoffMinutes: true } },
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return this.cancelBookingRecord({
+      booking,
+      actorType: 'GUEST',
+      reason: dto.reason,
+      enforceCutoff: true,
+    });
+  }
+
+  async getGuestBookingByCode(bookingCode: string, phone: string) {
+    const cleanedPhone = this.cleanText(phone);
+    if (!cleanedPhone) {
+      throw new BadRequestException('phone is required');
+    }
+
+    const lookupCode = this.normalizeBookingLookupCode(bookingCode);
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        userId: null,
+        deletedAt: null,
+        guest: { is: { phone: cleanedPhone } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: this.bookingNotificationSelect(),
+    });
+    const booking = bookings.find((item) =>
+      this.bookingMatchesLookupCode(item.id, lookupCode),
+    );
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return booking;
+  }
+
+  async requestMemberBookingReschedule(
+    user: AuthenticatedUser,
+    bookingId: string,
+    dto: RequestBookingRescheduleDto,
+  ) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId: user.id,
+        deletedAt: null,
+      },
+      select: this.bookingChangeTargetSelect(),
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return this.createBookingRescheduleRequest({
+      booking,
+      actorId: user.id,
+      actorType: 'MEMBER',
+      dto,
+    });
+  }
+
+  async requestGuestBookingReschedule(
+    bookingId: string,
+    dto: GuestBookingRescheduleDto,
+  ) {
     const phone = this.cleanText(dto.phone);
     if (!phone) {
       throw new BadRequestException('phone is required');
@@ -2107,13 +2531,433 @@ export class NightlifeDataService {
           },
         },
       },
+      select: this.bookingChangeTargetSelect(),
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return this.createBookingRescheduleRequest({
+      booking,
+      actorType: 'GUEST',
+      dto,
+    });
+  }
+
+  async listAdminBookingChangeRequests(
+    user: AuthenticatedUser,
+    query: { status?: string; storeId?: string } = {},
+  ) {
+    const storeIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'booking.change.review',
+    );
+    const requestedStatus = this.cleanText(query.status).toUpperCase();
+    const storeId = this.cleanText(query.storeId);
+
+    return this.prisma.bookingChangeRequest.findMany({
+      where: {
+        ...(requestedStatus
+          ? { status: requestedStatus as BookingChangeRequestStatus }
+          : {}),
+        ...(storeId ? { storeId } : {}),
+        ...(storeIds ? { storeId: { in: storeIds } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: this.bookingChangeRequestSelect(),
+    });
+  }
+
+  async reviewBookingChangeRequest(
+    user: AuthenticatedUser,
+    requestId: string,
+    dto: ReviewBookingChangeRequestDto,
+  ) {
+    const changeRequest = await this.prisma.bookingChangeRequest.findUnique({
+      where: { id: requestId },
+      select: this.bookingChangeRequestSelect(),
+    });
+
+    if (!changeRequest) {
+      throw new NotFoundException('Booking change request not found');
+    }
+
+    await this.accessService.ensureStoreAccess(
+      user,
+      changeRequest.storeId,
+      'booking.change.review',
+    );
+
+    if (changeRequest.status !== 'REQUESTED') {
+      throw new UnprocessableEntityException(
+        'Booking change request has already been reviewed',
+      );
+    }
+
+    const now = new Date();
+    const note = this.cleanText(dto.note);
+
+    if (!dto.approve) {
+      const rejected = await this.prisma.bookingChangeRequest.update({
+        where: { id: changeRequest.id },
+        data: {
+          status: 'REJECTED',
+          reviewedById: user.id,
+          reviewedAt: now,
+          adminNote: note || null,
+        },
+        select: this.bookingChangeRequestSelect(),
+      });
+
+      await this.createBookingChangeAudit({
+        actorId: user.id,
+        action: 'BOOKING_RESCHEDULE_REJECTED',
+        before: changeRequest,
+        after: rejected,
+        metadata: { note: note || null },
+      });
+      await this.notifyBookingCustomerTemplate(
+        rejected.booking,
+        'customer.booking.reschedule_rejected.v1',
+        {
+          requestId: rejected.id,
+          note: note || null,
+        },
+      );
+
+      return rejected;
+    }
+
+    if (!changeRequest.requestedScheduledAt) {
+      throw new UnprocessableEntityException(
+        'Reschedule request is missing requestedScheduledAt',
+      );
+    }
+
+    const requestedScheduledAt = new Date(changeRequest.requestedScheduledAt);
+    if (!Number.isFinite(requestedScheduledAt.getTime())) {
+      throw new BadRequestException(
+        'requestedScheduledAt must be a valid ISO date',
+      );
+    }
+
+    const updatedBooking = await this.prisma.booking.update({
+      where: { id: changeRequest.bookingId },
+      data: { scheduledAt: requestedScheduledAt },
+      select: this.bookingNotificationSelect(),
+    });
+    const approved = await this.prisma.bookingChangeRequest.update({
+      where: { id: changeRequest.id },
+      data: {
+        status: 'APPROVED',
+        reviewedById: user.id,
+        reviewedAt: now,
+        adminNote: note || null,
+      },
+      select: this.bookingChangeRequestSelect(),
+    });
+
+    await this.createBookingChangeAudit({
+      actorId: user.id,
+      action: 'BOOKING_RESCHEDULE_APPROVED',
+      before: changeRequest,
+      after: approved,
+      metadata: {
+        note: note || null,
+        previousScheduledAt: this.toAuditIso(changeRequest.currentScheduledAt),
+        nextScheduledAt: requestedScheduledAt.toISOString(),
+      },
+    });
+    await this.notifyBookingCustomerTemplate(
+      updatedBooking,
+      'customer.booking.rescheduled.v1',
+      {
+        requestId: approved.id,
+        previousScheduledAt: this.toAuditIso(changeRequest.currentScheduledAt),
+        scheduledAt: requestedScheduledAt.toISOString(),
+        note: note || null,
+      },
+    );
+
+    if (updatedBooking.user?.id) {
+      this.socketGateway?.notifyBookingStatusUpdate(
+        updatedBooking.user.id,
+        updatedBooking,
+      );
+    }
+
+    return approved;
+  }
+
+  async updateStoreBookingPolicy(
+    user: AuthenticatedUser,
+    storeId: string,
+    dto: UpdateStoreBookingPolicyDto,
+  ) {
+    const cutoff = Number(dto.cancelCutoffMinutes);
+    if (
+      !BOOKING_POLICY_CUTOFF_MINUTES.includes(
+        cutoff as (typeof BOOKING_POLICY_CUTOFF_MINUTES)[number],
+      )
+    ) {
+      throw new BadRequestException(
+        'cancelCutoffMinutes must be 30, 60, or 120',
+      );
+    }
+
+    const store = await this.prisma.store.findFirst({
+      where: { id: storeId, deletedAt: null },
       select: {
         id: true,
+        name: true,
+        slug: true,
+        bookingCancelCutoffMinutes: true,
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    await this.accessService.ensureStoreAccess(
+      user,
+      store.id,
+      'booking.policy.update',
+    );
+
+    const updated = await this.prisma.store.update({
+      where: { id: store.id },
+      data: { bookingCancelCutoffMinutes: cutoff },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        bookingCancelCutoffMinutes: true,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: 'BOOKING_POLICY_UPDATED',
+        targetType: 'Store',
+        targetId: store.id,
+        beforeJson: {
+          id: store.id,
+          bookingCancelCutoffMinutes: store.bookingCancelCutoffMinutes,
+        },
+        afterJson: {
+          id: updated.id,
+          bookingCancelCutoffMinutes: updated.bookingCancelCutoffMinutes,
+        },
+        metadata: {
+          actorType: this.bookingActorTypeFor(user),
+          cutoffMinutes: cutoff,
+        },
+      },
+    });
+
+    return updated;
+  }
+
+  async listMemberBookingMessages(user: AuthenticatedUser, bookingId: string) {
+    const booking = await this.findMemberBookingChatTarget(user, bookingId);
+    return this.listBookingChatMessages(booking.id);
+  }
+
+  async createMemberBookingMessage(
+    user: AuthenticatedUser,
+    bookingId: string,
+    dto: BookingChatMessageDto,
+  ) {
+    const booking = await this.findMemberBookingChatTarget(user, bookingId);
+    return this.createBookingChatMessage({
+      booking,
+      dto,
+      senderType: 'MEMBER',
+      senderUserId: user.id,
+      guestId: booking.guestId,
+    });
+  }
+
+  async listGuestBookingMessages(bookingId: string, phone: string) {
+    const booking = await this.findGuestBookingChatTarget(bookingId, phone);
+    return this.listBookingChatMessages(booking.id);
+  }
+
+  async createGuestBookingMessage(
+    bookingId: string,
+    dto: GuestBookingChatMessageDto,
+  ) {
+    const booking = await this.findGuestBookingChatTarget(bookingId, dto.phone);
+    return this.createBookingChatMessage({
+      booking,
+      dto,
+      senderType: 'GUEST',
+      guestId: booking.guestId,
+    });
+  }
+
+  async listAdminBookingMessages(user: AuthenticatedUser, bookingId: string) {
+    const booking = await this.findAdminBookingChatTarget(user, bookingId);
+    return this.listBookingChatMessages(booking.id);
+  }
+
+  async createAdminBookingMessage(
+    user: AuthenticatedUser,
+    bookingId: string,
+    dto: BookingChatMessageDto,
+  ) {
+    const booking = await this.findAdminBookingChatTarget(user, bookingId);
+    return this.createBookingChatMessage({
+      booking,
+      dto,
+      senderType: this.resolveBookingChatSenderType(user),
+      senderUserId: user.id,
+      guestId: booking.guestId,
+    });
+  }
+
+  async getAdminBookingCancelAnalytics(
+    user: AuthenticatedUser,
+    query: { days?: string | number } = {},
+  ) {
+    const storeIds = await this.accessService.getAccessibleStoreIds(
+      user,
+      'booking.analytics.view',
+    );
+    const days = this.resolveAnalyticsDays(query.days);
+    const to = new Date();
+    const from = new Date(to.getTime() - days * DAY_MS);
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        deletedAt: null,
+        createdAt: { gte: from, lte: to },
+        ...(storeIds ? { storeId: { in: storeIds } } : {}),
+      },
+      select: {
+        id: true,
+        status: true,
+        storeId: true,
+        castId: true,
+        userId: true,
+        guestId: true,
+        createdAt: true,
+        cancelledAt: true,
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            bookingCancelCutoffMinutes: true,
+          },
+        },
+        cast: {
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+          },
+        },
+      },
+    });
+
+    const byStore = new Map<string, CancelAnalyticsMetric>();
+    const byCast = new Map<string, CancelAnalyticsMetric>();
+    const byChannel = new Map<string, CancelAnalyticsMetric>();
+
+    for (const booking of bookings) {
+      const cancelled = booking.status === 'CANCELLED';
+      this.addCancelAnalyticsMetric(
+        byStore,
+        booking.storeId,
+        {
+          storeId: booking.storeId,
+          storeName: booking.store.name,
+          storeSlug: booking.store.slug,
+          cancelCutoffMinutes: booking.store.bookingCancelCutoffMinutes,
+        },
+        cancelled,
+      );
+
+      if (booking.cast) {
+        this.addCancelAnalyticsMetric(
+          byCast,
+          booking.cast.id,
+          {
+            castId: booking.cast.id,
+            castName: booking.cast.publicAlias ?? booking.cast.stageName,
+            castSlug: booking.cast.slug,
+            storeId: booking.storeId,
+          },
+          cancelled,
+        );
+      } else {
+        this.addCancelAnalyticsMetric(
+          byCast,
+          'none',
+          {
+            castId: null,
+            castName: 'No cast selected',
+            castSlug: null,
+            storeId: null,
+          },
+          cancelled,
+        );
+      }
+
+      const channel = booking.userId ? 'MEMBER' : 'GUEST';
+      this.addCancelAnalyticsMetric(byChannel, channel, { channel }, cancelled);
+    }
+
+    const totalBookings = bookings.length;
+    const cancelledBookings = bookings.filter(
+      (booking) => booking.status === 'CANCELLED',
+    ).length;
+
+    return {
+      meta: {
+        from: from.toISOString(),
+        to: to.toISOString(),
+        days,
+        totalBookings,
+        cancelledBookings,
+        cancelRate: this.calculateCancelRate(cancelledBookings, totalBookings),
+      },
+      byStore: this.sortCancelAnalyticsMetrics(byStore),
+      byCast: this.sortCancelAnalyticsMetrics(byCast),
+      byChannel: this.sortCancelAnalyticsMetrics(byChannel),
+    };
+  }
+
+  async cancelAdminBooking(
+    user: AuthenticatedUser,
+    bookingId: string,
+    dto: CancelBookingDto = {},
+  ) {
+    this.assertBookingRateLimit(
+      `booking:cancel:staff:${user.id}`,
+      BOOKING_CANCEL_RATE_LIMIT,
+      'Too many cancellation requests. Please try again shortly.',
+    );
+
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        storeId: true,
         userId: true,
         guestId: true,
         status: true,
         scheduledAt: true,
         cancelledAt: true,
+        store: { select: { bookingCancelCutoffMinutes: true } },
       },
     });
 
@@ -2121,49 +2965,43 @@ export class NightlifeDataService {
       throw new NotFoundException('Booking not found');
     }
 
+    await this.accessService.ensureStoreAccess(
+      user,
+      booking.storeId,
+      'booking.cancel',
+    );
+
     return this.cancelBookingRecord({
       booking,
-      actorType: 'GUEST',
+      actorId: user.id,
+      actorType: this.bookingActorTypeFor(user),
       reason: dto.reason,
+      enforceCutoff: false,
     });
   }
 
   private async cancelBookingRecord(input: {
     booking: BookingCancelTarget;
     actorId?: string | null;
-    actorType: BookingCancelActorType;
+    actorType: BookingStatusActorType;
     reason?: string | null;
+    enforceCutoff?: boolean;
   }) {
-    this.assertBookingCanBeCancelled(input.booking);
+    this.assertBookingCanBeCancelled(input.booking, {
+      enforceCutoff: input.enforceCutoff ?? true,
+    });
 
     const now = new Date();
     const reason = this.cleanText(input.reason);
-    const result = await this.prisma.booking.update({
-      where: { id: input.booking.id },
-      data: {
-        status: 'CANCELLED',
-        cancelledAt: now,
-      },
-      select: this.bookingNotificationSelect(),
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorId: input.actorId ?? undefined,
-        action: 'BOOKING_CANCELLED',
-        targetType: 'Booking',
-        targetId: input.booking.id,
-        beforeJson: this.buildBookingCancelAuditSnapshot(input.booking),
-        afterJson: this.buildBookingCancelAuditSnapshot(result),
-        metadata: {
-          actorType: input.actorType,
-          actorId: input.actorId ?? null,
-          reason: reason ?? null,
-          beforeStatus: input.booking.status,
-          afterStatus: result.status,
-          cancelledAt: now.toISOString(),
-        },
-      },
+    const result = await this.updateBookingStatusWithAudit({
+      booking: input.booking,
+      nextStatus: 'CANCELLED',
+      actorId: input.actorId,
+      actorType: input.actorType,
+      action: 'BOOKING_CANCELLED',
+      reason,
+      now,
+      data: { cancelledAt: now },
     });
 
     await this.adminNotificationService?.notifyBookingCancelled(result, {
@@ -2174,17 +3012,39 @@ export class NightlifeDataService {
   }
 
   async scanCouponIssue(code: string, user: AuthenticatedUser) {
+    return this.scanCouponIssueByUnique({ code }, user, {
+      source: 'LEGACY_CODE',
+    });
+  }
+
+  async scanCouponIssuePayload(
+    dto: ScanCouponIssueDto,
+    user: AuthenticatedUser,
+  ) {
+    const couponIssueId = this.resolveCouponIssueIdFromQrPayload(dto.payload);
+    return this.scanCouponIssueByUnique({ id: couponIssueId }, user, {
+      source: 'SIGNED_QR_PAYLOAD',
+      offline: Boolean(dto.offline),
+    });
+  }
+
+  private async scanCouponIssueByUnique(
+    where: Prisma.CouponIssueWhereUniqueInput,
+    user: AuthenticatedUser,
+    metadata: { source: string; offline?: boolean },
+  ) {
     const issue = await this.prisma.couponIssue.findUnique({
-      where: { code },
+      where,
       select: {
         id: true,
+        couponId: true,
         code: true,
+        guestId: true,
+        userId: true,
         status: true,
         expiresAt: true,
         usedAt: true,
         metadata: true,
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: {
           select: {
@@ -2209,18 +3069,31 @@ export class NightlifeDataService {
     );
     await this.assertIssueCanBeConfirmed(issue);
 
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_ISSUE_SCANNED',
+      issue,
+      actorId: user.id,
+      metadata: {
+        source: metadata.source,
+        offline: Boolean(metadata.offline),
+        couponId: issue.couponId,
+        status: issue.status,
+      },
+    });
+
     const scannedIssue = await this.prisma.couponIssue.update({
       where: { id: issue.id },
       data: { scannedById: user.id },
       select: {
         id: true,
+        couponId: true,
         code: true,
+        guestId: true,
+        userId: true,
         status: true,
         expiresAt: true,
         usedAt: true,
         metadata: true,
-        user: { select: { id: true, displayName: true, tier: true } },
-        guest: { select: { id: true, displayName: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: {
           select: {
@@ -2237,7 +3110,17 @@ export class NightlifeDataService {
       },
     });
 
-    return this.decorateCouponIssue(scannedIssue);
+    await this.recordCouponLifecycleEvent(
+      'coupon.issue.scanned.v1',
+      scannedIssue,
+      {
+        actorId: user.id,
+        source: metadata.source,
+        offline: Boolean(metadata.offline),
+      },
+    );
+
+    return this.decoratePartnerCouponIssue(scannedIssue);
   }
 
   async confirmCouponIssueCheckIn(
@@ -2248,11 +3131,26 @@ export class NightlifeDataService {
       where: { id: couponIssueId },
       select: {
         id: true,
+        code: true,
         couponId: true,
+        guestId: true,
+        userId: true,
         status: true,
         expiresAt: true,
+        usedAt: true,
+        scannedById: true,
+        metadata: true,
         coupon: { select: { storeId: true } },
-        booking: { select: { id: true, status: true } },
+        booking: {
+          select: {
+            id: true,
+            userId: true,
+            guestId: true,
+            status: true,
+            scheduledAt: true,
+            cancelledAt: true,
+          },
+        },
       },
     });
 
@@ -2292,7 +3190,10 @@ export class NightlifeDataService {
       where: { id: issue.id },
       select: {
         id: true,
+        couponId: true,
         code: true,
+        guestId: true,
+        userId: true,
         status: true,
         expiresAt: true,
         usedAt: true,
@@ -2317,19 +3218,56 @@ export class NightlifeDataService {
       throw new NotFoundException('Coupon issue not found');
     }
 
+    await this.writeCouponIssueAudit({
+      action: 'COUPON_ISSUE_USED',
+      issue: {
+        ...issue,
+        code: updatedIssue.code,
+        couponId: issue.couponId,
+        coupon: {
+          storeId: issue.coupon.storeId,
+        },
+      },
+      actorId: user.id,
+      beforeJson: this.buildCouponIssueUsageAuditSnapshot(issue),
+      afterJson: this.buildCouponIssueUsageAuditSnapshot(updatedIssue),
+      metadata: {
+        source: 'PARTNER_CONFIRM_CHECK_IN',
+        couponId: issue.couponId,
+        previousStatus: issue.status,
+        nextStatus: 'USED',
+        usedAt: now.toISOString(),
+      },
+    });
+
+    await this.recordCouponLifecycleEvent(
+      'coupon.issue.used.v1',
+      updatedIssue,
+      {
+        actorId: user.id,
+        source: 'PARTNER_CONFIRM_CHECK_IN',
+        previousStatus: issue.status,
+        usedAt: now.toISOString(),
+      },
+    );
+
     await this.prisma.coupon.update({
       where: { id: issue.couponId },
       data: { usedCount: { increment: 1 } },
     });
 
     if (issue.booking) {
-      await this.prisma.booking.update({
-        where: { id: issue.booking.id },
-        data: { status: 'CHECKED_IN' },
+      await this.updateBookingStatusWithAudit({
+        booking: issue.booking,
+        nextStatus: 'CHECKED_IN',
+        actorId: user.id,
+        actorType: this.bookingActorTypeFor(user),
+        action: 'BOOKING_STATUS_CHANGED',
+        reason: 'Coupon check-in confirmed',
       });
     }
 
-    return this.decorateCouponIssue(updatedIssue);
+    return this.decoratePartnerCouponIssue(updatedIssue);
   }
 
   async listPartnerBills(user: AuthenticatedUser) {
@@ -2360,9 +3298,21 @@ export class NightlifeDataService {
         verifiedById: true,
         rejectedById: true,
         rejectReason: true,
+        usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
+        media: {
+          select: {
+            id: true,
+            storageKey: true,
+            originalName: true,
+            mimeType: true,
+            access: true,
+            url: true,
+          },
+        },
       },
     });
   }
@@ -2396,6 +3346,7 @@ export class NightlifeDataService {
           },
         },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
         note: true,
         createdAt: true,
@@ -2538,6 +3489,17 @@ export class NightlifeDataService {
     };
   }
 
+  @Cron('*/5 * * * *')
+  async expireCouponIssuesEveryFiveMinutes() {
+    const result = await this.expireIssuedCouponIssues({});
+    if (result.count > 0) {
+      this.logger.log(
+        `Expired ${result.count} coupon issue(s) from scheduled maintenance.`,
+      );
+    }
+    return result;
+  }
+
   async listMemberCouponIssues(userId: string) {
     await this.expireIssuedCouponIssues({ userId });
 
@@ -2568,7 +3530,75 @@ export class NightlifeDataService {
       },
     });
 
-    return issues.map((issue) => this.decorateCouponIssue(issue));
+    return Promise.all(issues.map((issue) => this.decorateCouponIssue(issue)));
+  }
+
+  async listAdminCouponIssues(query: AdminCouponIssueQueryDto = {}) {
+    await this.expireIssuedCouponIssues({});
+
+    const issues = await this.prisma.couponIssue.findMany({
+      where: {
+        ...(query.couponId ? { couponId: query.couponId } : {}),
+        ...(query.status ? { status: query.status as CouponIssueStatus } : {}),
+        coupon: {
+          deletedAt: null,
+          ...(query.storeId ? { storeId: query.storeId } : {}),
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(query.limit ?? 50, 100),
+      select: {
+        id: true,
+        code: true,
+        guestId: true,
+        userId: true,
+        qrPayloadHash: true,
+        status: true,
+        expiresAt: true,
+        usedAt: true,
+        createdAt: true,
+        metadata: true,
+        user: { select: { id: true, displayName: true, tier: true } },
+        guest: { select: { id: true, displayName: true } },
+        scannedBy: { select: { id: true, displayName: true } },
+        booking: { select: { id: true, status: true, scheduledAt: true } },
+        bill: {
+          select: {
+            id: true,
+            billNumber: true,
+            status: true,
+            totalVnd: true,
+          },
+        },
+        coupon: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+            maxDiscountVnd: true,
+            minSpendVnd: true,
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+
+    const auditLogsByIssueId = await this.listCouponIssueAuditLogs(
+      issues.map((issue) => issue.id),
+    );
+
+    return Promise.all(
+      issues.map(async (issue) => {
+        const metadata = this.asRecord(issue.metadata);
+        return {
+          ...(await this.decorateCouponIssue(issue)),
+          campaignSnapshot: this.asRecord(metadata?.campaignSnapshot) ?? null,
+          auditLogs: auditLogsByIssueId.get(issue.id) ?? [],
+        };
+      }),
+    );
   }
 
   async submitMemberBill(user: AuthenticatedUser, dto: CreateBillDto) {
@@ -2582,6 +3612,7 @@ export class NightlifeDataService {
           select: {
             id: true,
             status: true,
+            userId: true,
             storeId: true,
             guestId: true,
             couponId: true,
@@ -2590,6 +3621,7 @@ export class NightlifeDataService {
             store: { select: { id: true, name: true, slug: true } },
             guest: { select: { id: true, displayName: true, phone: true } },
             coupon: { select: { id: true, code: true, name: true } },
+            couponIssue: { select: { id: true, code: true, status: true } },
           },
         })
       : null;
@@ -2607,8 +3639,13 @@ export class NightlifeDataService {
     if (booking?.id) {
       const existingBill = await this.prisma.bill.findFirst({
         where: {
-          bookingId: booking.id,
           deletedAt: null,
+          OR: [
+            { bookingId: booking.id },
+            ...(booking.couponIssueId
+              ? [{ couponIssueId: booking.couponIssueId }]
+              : []),
+          ],
         },
         select: { id: true },
       });
@@ -2621,44 +3658,326 @@ export class NightlifeDataService {
     }
 
     const store = booking?.store ?? (await this.resolveBillStore(dto));
+    const couponLink = await this.resolveBillCouponLink({
+      dto,
+      booking,
+      store,
+      user,
+    });
     const now = new Date();
+    const usedAt = this.resolveBillUsedAt(dto);
+    this.assertBillSubmissionWindow(usedAt, now);
+
     const bill = await this.prisma.bill.create({
       data: {
-        bookingId: booking?.id,
+        bookingId: booking?.id ?? null,
         userId: user.id,
-        guestId: booking?.guestId,
+        guestId: booking?.guestId ?? null,
         storeId: store.id,
-        couponId: booking?.couponId,
-        couponIssueId: booking?.couponIssueId,
+        couponId: couponLink.couponId,
+        couponIssueId: couponLink.couponIssueId,
         status: 'SUBMITTED',
         billNumber: this.buildBillNumber(now),
-        subtotalVnd: dto.subtotalVnd ?? dto.totalVnd,
-        discountVnd: dto.discountVnd ?? 0,
-        serviceChargeVnd: dto.serviceChargeVnd ?? 0,
-        taxVnd: dto.taxVnd ?? 0,
+        subtotalVnd: dto.totalVnd,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
         totalVnd: dto.totalVnd,
-        paidVnd: dto.paidVnd ?? dto.totalVnd,
+        paidVnd: dto.totalVnd,
+        usedAt,
         submittedAt: now,
       },
       select: this.billNotificationSelect(),
     });
 
+    await this.recordBillCouponLinkAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      billId: bill.id,
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      couponId: couponLink.couponId ?? null,
+      couponIssueId: couponLink.couponIssueId ?? null,
+      couponIssueStatus: couponLink.couponIssueStatus ?? null,
+      source: booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
+    });
     await this.adminNotificationService?.notifyBillSubmitted(bill);
+    if (couponLink.couponIssueId) {
+      await this.recordCouponLifecycleEvent(
+        'coupon.analytics.bill_submitted.v1',
+        {
+          id: couponLink.couponIssueId,
+          code: couponLink.couponIssueCode ?? couponLink.couponIssueId,
+          status: couponLink.couponIssueStatus ?? 'USED',
+          userId: user.id,
+          guestId: booking?.guestId,
+          coupon: {
+            id: couponLink.couponId ?? couponLink.couponIssueId,
+            code: couponLink.coupon?.code ?? '',
+            name: couponLink.coupon?.name ?? 'Coupon',
+            store: {
+              id: store.id,
+              name: store.name,
+              slug: store.slug,
+            },
+          },
+        },
+        {
+          billId: bill.id,
+          totalVnd: bill.totalVnd,
+          bookingId: booking?.id ?? null,
+        },
+      );
+    }
 
+    return bill;
+  }
+
+  async submitPartnerBill(user: AuthenticatedUser, dto: CreateBillDto) {
+    const booking = dto.bookingId
+      ? await this.prisma.booking.findFirst({
+          where: {
+            id: dto.bookingId,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            status: true,
+            userId: true,
+            storeId: true,
+            guestId: true,
+            couponId: true,
+            couponIssueId: true,
+            scheduledAt: true,
+            store: { select: { id: true, name: true, slug: true } },
+            guest: { select: { id: true, displayName: true, phone: true } },
+            coupon: { select: { id: true, code: true, name: true } },
+            couponIssue: { select: { id: true, code: true, status: true } },
+          },
+        })
+      : null;
+
+    if (dto.bookingId && !booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking?.status === 'CANCELLED') {
+      throw new UnprocessableEntityException(
+        'Cancelled booking cannot submit a bill',
+      );
+    }
+
+    if (booking?.id) {
+      const existingBill = await this.prisma.bill.findFirst({
+        where: {
+          deletedAt: null,
+          OR: [
+            { bookingId: booking.id },
+            ...(booking.couponIssueId
+              ? [{ couponIssueId: booking.couponIssueId }]
+              : []),
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (existingBill) {
+        throw new UnprocessableEntityException(
+          'Booking already has a submitted bill',
+        );
+      }
+    }
+
+    const store = booking?.store ?? (await this.resolveBillStore(dto));
+    await this.accessService.ensureStoreAccess(
+      user,
+      store.id,
+      'bill.partner.view',
+    );
+    const couponLink = await this.resolveBillCouponLink({
+      dto,
+      booking,
+      store,
+      user,
+    });
+
+    const now = new Date();
+    const usedAt = this.resolveBillUsedAt(dto);
+    this.assertBillSubmissionWindow(usedAt, now);
+
+    const bill = await this.prisma.bill.create({
+      data: {
+        bookingId: booking?.id ?? null,
+        userId: booking?.userId ?? couponLink.userId ?? null,
+        guestId: booking?.guestId ?? couponLink.guestId ?? null,
+        storeId: store.id,
+        couponId: couponLink.couponId,
+        couponIssueId: couponLink.couponIssueId,
+        status: 'SUBMITTED',
+        billNumber: this.buildBillNumber(now),
+        subtotalVnd: dto.totalVnd,
+        discountVnd: 0,
+        serviceChargeVnd: 0,
+        taxVnd: 0,
+        totalVnd: dto.totalVnd,
+        paidVnd: dto.totalVnd,
+        usedAt,
+        submittedAt: now,
+      },
+      select: this.billNotificationSelect(),
+    });
+
+    await this.recordBillCouponLinkAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      billId: bill.id,
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      couponId: couponLink.couponId ?? null,
+      couponIssueId: couponLink.couponIssueId ?? null,
+      couponIssueStatus: couponLink.couponIssueStatus ?? null,
+      source: booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
+    });
+    await this.adminNotificationService?.notifyBillSubmitted(bill);
     return bill;
   }
 
   async createPartnerRequest(dto: CreatePartnerRequestDto) {
     const submittedAt = new Date();
+    const requestId = `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const businessName = this.cleanRequiredText(
+      dto.businessName,
+      'businessName',
+    );
+    const area = this.cleanNullableText(dto.area);
+    const storeName = this.cleanNullableText(dto.storeName) ?? businessName;
+    const storeDescription =
+      this.cleanNullableText(dto.storeDescription) ??
+      this.cleanNullableText(dto.note);
+    const openingHours = this.cleanNullableText(dto.openingHours);
+    const menuSummary = this.cleanNullableText(dto.menuSummary);
+    const mediaUrls = this.cleanStringArray(dto.mediaUrls, 12);
+    const castProfiles = this.normalizePartnerRequestCasts(dto.castProfiles);
+    const category = this.normalizePartnerRequestCategory(
+      dto.storeCategory ?? dto.businessType,
+    );
+
+    const store = await this.prisma.store.create({
+      data: {
+        name: storeName,
+        slug: this.buildPartnerRequestSlug(storeName, requestId),
+        category,
+        description: storeDescription,
+        address: this.cleanNullableText(dto.storeAddress),
+        city:
+          this.cleanNullableText(dto.storeCity) ??
+          this.partnerCityFromArea(area) ??
+          'Ho Chi Minh City',
+        district:
+          this.cleanNullableText(dto.storeDistrict) ??
+          this.partnerDistrictFromArea(area),
+        phone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
+        openingHours: openingHours
+          ? this.toPrismaJson({ summary: openingHours })
+          : undefined,
+        status: 'PENDING_REVIEW',
+      },
+      select: { id: true, name: true, slug: true, status: true },
+    });
+
+    const draftCastIds: string[] = [];
+    const draftMediaIds: string[] = [];
+    const draftContentIds: string[] = [];
+
+    for (const [index, castProfile] of castProfiles.entries()) {
+      const cast = await this.prisma.cast.create({
+        data: {
+          storeId: store.id,
+          stageName: castProfile.stageName,
+          slug: this.buildPartnerRequestSlug(
+            castProfile.stageName,
+            requestId,
+            `cast-${index + 1}`,
+          ),
+          bio: castProfile.bio,
+          publicBio: castProfile.bio,
+          tags: castProfile.tags,
+          languages: castProfile.languages,
+          hourlyRateVnd: castProfile.hourlyRateVnd,
+          isPublic: false,
+          status: 'DRAFT',
+        },
+        select: { id: true },
+      });
+      draftCastIds.push(cast.id);
+
+      for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+        const media = await this.createPartnerRequestMedia({
+          requestId,
+          url,
+          index: mediaIndex,
+          castId: cast.id,
+          purpose: 'PARTNER_REQUEST_CAST',
+        });
+        draftMediaIds.push(media.id);
+      }
+    }
+
+    for (const [index, url] of mediaUrls.entries()) {
+      const media = await this.createPartnerRequestMedia({
+        requestId,
+        url,
+        index,
+        storeId: store.id,
+        purpose: 'PARTNER_REQUEST_STORE',
+      });
+      draftMediaIds.push(media.id);
+    }
+
+    if (menuSummary) {
+      const content = await this.prisma.content.create({
+        data: {
+          storeId: store.id,
+          title: `${storeName} menu draft`,
+          slug: this.buildPartnerRequestSlug(
+            `${storeName} menu`,
+            requestId,
+            'menu',
+          ),
+          type: 'STORE_POST',
+          status: 'DRAFT',
+          excerpt: `Draft menu from ${requestId}`,
+          body: menuSummary,
+          metadata: this.toPrismaJson({ partnerRequestId: requestId }),
+        },
+        select: { id: true },
+      });
+      draftContentIds.push(content.id);
+    }
+
     const request = {
-      id: `PARTNER-${randomUUID().slice(0, 8).toUpperCase()}`,
-      businessName: this.cleanText(dto.businessName),
+      id: requestId,
+      draftStoreId: store.id,
+      draftStoreName: store.name,
+      draftStoreSlug: store.slug,
+      draftCastIds,
+      draftMediaIds,
+      draftContentIds,
+      businessName,
       businessType: this.cleanText(dto.businessType) || null,
-      area: this.cleanText(dto.area) || null,
-      contactName: this.cleanText(dto.contactName),
-      contactPhone: this.cleanText(dto.contactPhone),
+      area,
+      contactName: this.cleanRequiredText(dto.contactName, 'contactName'),
+      contactPhone: this.cleanRequiredText(dto.contactPhone, 'contactPhone'),
       contactEmail: this.cleanText(dto.contactEmail) || null,
       note: this.cleanText(dto.note) || null,
+      storeDescription,
+      storeAddress: this.cleanNullableText(dto.storeAddress),
+      storeCity: this.cleanNullableText(dto.storeCity),
+      storeDistrict: this.cleanNullableText(dto.storeDistrict),
+      openingHours,
+      menuSummary,
+      mediaUrls,
+      castProfiles,
       submittedAt,
     };
 
@@ -2668,16 +3987,204 @@ export class NightlifeDataService {
       id: request.id,
       status: 'PENDING_REVIEW',
       submittedAt,
+      draft: {
+        storeId: store.id,
+        storeName: store.name,
+        storeSlug: store.slug,
+        castCount: draftCastIds.length,
+        mediaCount: draftMediaIds.length,
+        contentCount: draftContentIds.length,
+      },
       message: 'Partner request submitted for admin review',
     };
   }
 
-  async listSensitiveBillsForAdmin(user: AuthenticatedUser) {
-    const bills = await this.prisma.bill.findMany({
+  async listAdminPartnerRequests() {
+    const logs = await this.prisma.notificationLog.findMany({
       where: {
-        deletedAt: null,
-        status: { in: ['SUBMITTED', 'REJECTED'] },
+        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
+        channel: 'TELEGRAM',
       },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        status: true,
+        payload: true,
+        error: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    return logs.map((log) =>
+      this.mapPartnerRequestNotification(log as PartnerRequestNotificationLog),
+    );
+  }
+
+  async reviewPartnerRequest(
+    adminId: string,
+    requestId: string,
+    dto: ReviewPartnerRequestDto,
+  ) {
+    const reason = this.cleanRequiredText(dto.reason, 'reason');
+    const log = await this.findPartnerRequestNotificationLog(requestId);
+
+    if (!log) {
+      throw new NotFoundException('Partner request not found');
+    }
+
+    const payload = this.partnerRequestPayload(log);
+    const currentStatus =
+      (this.payloadString(
+        payload.status,
+      ) as PartnerRequestReviewStatus | null) ?? 'PENDING_REVIEW';
+
+    if (currentStatus !== 'PENDING_REVIEW') {
+      throw new UnprocessableEntityException(
+        'Partner request has already been reviewed',
+      );
+    }
+
+    const now = new Date();
+    const draftStoreId = this.payloadString(payload.draftStoreId);
+    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
+    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
+    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
+
+    if (dto.approve) {
+      if (draftStoreId) {
+        await this.prisma.store.update({
+          where: { id: draftStoreId },
+          data: { status: 'ACTIVE' },
+          select: { id: true },
+        });
+      }
+      if (draftCastIds.length) {
+        await this.prisma.cast.updateMany({
+          where: { id: { in: draftCastIds } },
+          data: { status: 'ACTIVE', isPublic: true },
+        });
+      }
+      if (draftMediaIds.length) {
+        await this.prisma.media.updateMany({
+          where: { id: { in: draftMediaIds } },
+          data: { status: 'READY', access: 'PUBLIC' },
+        });
+      }
+      if (draftContentIds.length) {
+        await this.prisma.content.updateMany({
+          where: { id: { in: draftContentIds } },
+          data: { status: 'PUBLISHED', publishedAt: now },
+        });
+      }
+    } else {
+      if (draftStoreId) {
+        await this.prisma.store.update({
+          where: { id: draftStoreId },
+          data: { status: 'DRAFT' },
+          select: { id: true },
+        });
+      }
+      if (draftCastIds.length) {
+        await this.prisma.cast.updateMany({
+          where: { id: { in: draftCastIds } },
+          data: { status: 'DRAFT', isPublic: false },
+        });
+      }
+      if (draftMediaIds.length) {
+        await this.prisma.media.updateMany({
+          where: { id: { in: draftMediaIds } },
+          data: { status: 'HIDDEN', access: 'PROTECTED' },
+        });
+      }
+      if (draftContentIds.length) {
+        await this.prisma.content.updateMany({
+          where: { id: { in: draftContentIds } },
+          data: { status: 'DRAFT', publishedAt: null },
+        });
+      }
+    }
+
+    const nextStatus: PartnerRequestReviewStatus = dto.approve
+      ? 'APPROVED'
+      : 'REJECTED';
+    const nextPayload = {
+      ...payload,
+      status: nextStatus,
+      reviewReason: reason,
+      reviewedAt: now.toISOString(),
+      reviewedById: adminId,
+      publicState: dto.approve ? 'PUBLIC' : 'HIDDEN',
+    } as Prisma.InputJsonObject;
+
+    const updatedLog = await this.prisma.notificationLog.update({
+      where: { id: log.id },
+      data: {
+        payload: nextPayload,
+      },
+      select: {
+        id: true,
+        status: true,
+        payload: true,
+        error: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: dto.approve
+          ? 'PARTNER_REQUEST_APPROVED'
+          : 'PARTNER_REQUEST_REJECTED',
+        targetType: 'PARTNER_REQUEST',
+        targetId: this.payloadString(payload.requestId) ?? requestId,
+        metadata: this.toPrismaJson({
+          reason,
+          approve: dto.approve,
+          draftStoreId,
+          draftCastIds,
+          draftMediaIds,
+          draftContentIds,
+        }),
+        beforeJson: payload as Prisma.InputJsonObject,
+        afterJson: nextPayload,
+      },
+    });
+
+    return this.mapPartnerRequestNotification(
+      updatedLog as PartnerRequestNotificationLog,
+    );
+  }
+
+  async listSensitiveBillsForAdmin(
+    user: AuthenticatedUser,
+    query: AdminSensitiveBillQueryDto = {},
+  ) {
+    const where: Prisma.BillWhereInput = {
+      deletedAt: null,
+      status: { in: ['SUBMITTED', 'REJECTED'] },
+    };
+    const bookingId = this.cleanText(query.bookingId);
+    const couponId = this.cleanText(query.couponId);
+    const couponIssueId = this.cleanText(query.couponIssueId);
+
+    if (bookingId) {
+      where.bookingId = bookingId;
+    }
+
+    if (couponId) {
+      where.couponId = couponId;
+    }
+
+    if (couponIssueId) {
+      where.couponIssueId = couponIssueId;
+    }
+
+    const bills = await this.prisma.bill.findMany({
+      where,
       orderBy: { submittedAt: 'desc' },
       select: {
         id: true,
@@ -2702,9 +4209,11 @@ export class NightlifeDataService {
         verifiedById: true,
         rejectedById: true,
         rejectReason: true,
+        usedAt: true,
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         user: {
           select: {
             id: true,
@@ -2765,6 +4274,7 @@ export class NightlifeDataService {
         store: { select: { id: true, name: true, slug: true } },
         booking: { select: { id: true, status: true, scheduledAt: true } },
         coupon: { select: { id: true, code: true, name: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
         user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
       },
@@ -2916,25 +4426,438 @@ export class NightlifeDataService {
   private sanitizeBookingContact(dto: CreateBookingDto) {
     const displayName = this.cleanText(dto.displayName);
     const phone = this.cleanText(dto.phone);
+    const email = this.cleanEmail(dto.email);
 
-    if (!displayName || !phone) {
-      throw new BadRequestException('displayName and phone are required');
+    if (!displayName || (!email && !phone)) {
+      throw new BadRequestException('displayName and email are required');
     }
 
     return {
       displayName,
       phone,
+      email,
       note: this.cleanText(dto.note),
+    };
+  }
+
+  private async resolveBookingCouponLink(input: {
+    dto: CreateBookingDto;
+    target: BookingTarget;
+    userId?: string;
+    phone?: string;
+  }) {
+    const couponId = this.cleanText(input.dto.couponId);
+    const couponIssueId = this.cleanText(input.dto.couponIssueId);
+
+    if (!couponId && !couponIssueId) {
+      return {};
+    }
+
+    const now = new Date();
+
+    if (couponIssueId) {
+      const issue = await this.prisma.couponIssue.findFirst({
+        where: {
+          id: couponIssueId,
+          coupon: { deletedAt: null },
+        },
+        select: {
+          id: true,
+          couponId: true,
+          userId: true,
+          status: true,
+          expiresAt: true,
+          guest: { select: { phone: true } },
+          booking: { select: { id: true } },
+          coupon: {
+            select: {
+              id: true,
+              storeId: true,
+            },
+          },
+        },
+      });
+
+      if (!issue) {
+        throw new NotFoundException('Coupon issue not found');
+      }
+
+      if (couponId && couponId !== issue.couponId) {
+        throw new BadRequestException(
+          'couponId must match couponIssue.couponId',
+        );
+      }
+
+      if (issue.coupon.storeId !== input.target.store.id) {
+        throw new UnprocessableEntityException(
+          'Coupon issue does not belong to the booking store',
+        );
+      }
+
+      if (issue.booking) {
+        throw new UnprocessableEntityException(
+          'Coupon issue is already linked to a booking',
+        );
+      }
+
+      if (input.userId) {
+        if (issue.userId && issue.userId !== input.userId) {
+          throw new UnprocessableEntityException(
+            'Coupon issue does not belong to this member',
+          );
+        }
+      } else if (issue.userId) {
+        throw new UnprocessableEntityException(
+          'Member coupon issue cannot be linked to a guest booking',
+        );
+      }
+
+      if (
+        issue.guest?.phone &&
+        (!input.phone || issue.guest.phone !== input.phone)
+      ) {
+        throw new UnprocessableEntityException(
+          'Coupon issue phone does not match booking phone',
+        );
+      }
+
+      if (issue.status !== 'ISSUED') {
+        throw new UnprocessableEntityException(
+          'Coupon issue is not available for booking',
+        );
+      }
+
+      if (issue.expiresAt && issue.expiresAt <= now) {
+        await this.expireIssuedCouponIssues({ id: issue.id });
+        throw new UnprocessableEntityException('Coupon issue has expired');
+      }
+
+      return {
+        couponId: issue.couponId,
+        couponIssueId: issue.id,
+      };
+    }
+
+    const coupon = await this.prisma.coupon.findFirst({
+      where: {
+        id: couponId,
+        storeId: input.target.store.id,
+        status: 'ACTIVE',
+        deletedAt: null,
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
+      select: { id: true },
+    });
+
+    if (!coupon) {
+      throw new NotFoundException('Coupon not found');
+    }
+
+    return { couponId: coupon.id };
+  }
+
+  private resolveBillUsedAt(dto: CreateBillDto) {
+    const usedAt = new Date(dto.usedAt);
+    if (Number.isNaN(usedAt.getTime())) {
+      throw new BadRequestException('usedAt must be a valid ISO date');
+    }
+
+    return usedAt;
+  }
+
+  private assertBillSubmissionWindow(usedAt: Date, now: Date) {
+    const usageAgeMs = now.getTime() - usedAt.getTime();
+    if (usageAgeMs < 0) {
+      throw new BadRequestException('usedAt cannot be in the future');
+    }
+
+    if (usageAgeMs > BILL_SUBMISSION_DEADLINE_MS) {
+      throw new UnprocessableEntityException(
+        `Bill can only be submitted within ${BILL_SUBMISSION_DEADLINE_DAYS} days of usage time`,
+      );
+    }
+  }
+
+  private async recordBillCouponLinkAudit(input: {
+    actorId?: string | null;
+    actorRole?: string | null;
+    billId: string;
+    storeId: string;
+    bookingId?: string | null;
+    couponId?: string | null;
+    couponIssueId?: string | null;
+    couponIssueStatus?: string | null;
+    source: 'booking' | 'direct';
+  }) {
+    if (!input.couponId && !input.couponIssueId) {
+      return;
+    }
+
+    const snapshot = {
+      source: input.source,
+      actorRole: input.actorRole ?? null,
+      storeId: input.storeId,
+      bookingId: input.bookingId ?? null,
+      couponId: input.couponId ?? null,
+      couponIssueId: input.couponIssueId ?? null,
+      couponIssueStatus: input.couponIssueStatus ?? null,
+    };
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: 'bill.coupon.link',
+        targetType: 'Bill',
+        targetId: input.billId,
+        metadata: this.toPrismaJson(snapshot),
+        afterJson: this.toPrismaJson(snapshot),
+      },
+    });
+  }
+
+  private async resolveBillCouponLink(input: {
+    dto: CreateBillDto;
+    booking?: {
+      id: string;
+      guestId: string | null;
+      couponId: string | null;
+      couponIssueId: string | null;
+      coupon?: CouponSummary | null;
+      couponIssue?: { id: string; code: string; status: string } | null;
+    } | null;
+    store: StoreSummary;
+    user?: AuthenticatedUser;
+  }) {
+    const requestedCouponId = this.cleanText(input.dto.couponId);
+    const requestedCouponIssueId = this.cleanText(input.dto.couponIssueId);
+    let couponId = input.booking?.couponId ?? undefined;
+    let couponIssueId = input.booking?.couponIssueId ?? undefined;
+    let couponIssueCode = input.booking?.couponIssue?.code;
+    let couponIssueStatus = input.booking?.couponIssue?.status;
+    let coupon = input.booking?.coupon ?? null;
+    let userId: string | null | undefined;
+    let guestId: string | null | undefined;
+
+    if (
+      requestedCouponIssueId &&
+      input.booking?.couponIssueId &&
+      requestedCouponIssueId !== input.booking.couponIssueId
+    ) {
+      throw new BadRequestException(
+        'couponIssueId must match the booking couponIssueId',
+      );
+    }
+
+    if (
+      requestedCouponId &&
+      input.booking?.couponId &&
+      requestedCouponId !== input.booking.couponId
+    ) {
+      throw new BadRequestException('couponId must match the booking couponId');
+    }
+
+    if (requestedCouponIssueId) {
+      const issue = await this.prisma.couponIssue.findFirst({
+        where: {
+          id: requestedCouponIssueId,
+          coupon: { deletedAt: null },
+        },
+        select: {
+          id: true,
+          code: true,
+          couponId: true,
+          userId: true,
+          guestId: true,
+          status: true,
+          expiresAt: true,
+          bill: { select: { id: true } },
+          coupon: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              storeId: true,
+            },
+          },
+        },
+      });
+
+      if (!issue) {
+        throw new NotFoundException('Coupon issue not found');
+      }
+
+      if (issue.coupon.storeId !== input.store.id) {
+        throw new UnprocessableEntityException(
+          'Coupon issue does not belong to the bill store',
+        );
+      }
+
+      if (issue.bill) {
+        throw new UnprocessableEntityException(
+          'Coupon issue is already linked to a bill',
+        );
+      }
+
+      if (input.user?.role === 'USER') {
+        if (issue.userId && issue.userId !== input.user.id) {
+          throw new UnprocessableEntityException(
+            'Coupon issue does not belong to this member',
+          );
+        }
+
+        if (!issue.userId && !input.booking) {
+          throw new UnprocessableEntityException(
+            'Guest coupon issue requires a linked booking for member bill submission',
+          );
+        }
+
+        if (
+          !issue.userId &&
+          input.booking?.guestId &&
+          issue.guestId !== input.booking.guestId
+        ) {
+          throw new UnprocessableEntityException(
+            'Coupon issue does not belong to the bill booking guest',
+          );
+        }
+      }
+
+      if (!['ISSUED', 'USED'].includes(issue.status)) {
+        throw new UnprocessableEntityException(
+          'Coupon issue is not available for bill reconciliation',
+        );
+      }
+
+      if (
+        issue.status === 'ISSUED' &&
+        issue.expiresAt &&
+        issue.expiresAt <= new Date()
+      ) {
+        await this.expireIssuedCouponIssues({ id: issue.id });
+        throw new UnprocessableEntityException('Coupon issue has expired');
+      }
+
+      couponId = issue.couponId;
+      couponIssueId = issue.id;
+      couponIssueCode = issue.code;
+      couponIssueStatus = issue.status;
+      userId = issue.userId;
+      guestId = issue.guestId;
+      coupon = {
+        id: issue.coupon.id,
+        code: issue.coupon.code,
+        name: issue.coupon.name,
+      };
+    }
+
+    if (requestedCouponId) {
+      if (couponId && requestedCouponId !== couponId) {
+        throw new BadRequestException(
+          'couponId must match couponIssue.couponId',
+        );
+      }
+
+      if (!couponId || !coupon) {
+        const requiresActiveCampaign =
+          !requestedCouponIssueId &&
+          !input.booking?.couponId &&
+          !input.booking?.couponIssueId;
+        const requestedCoupon = await this.prisma.coupon.findFirst({
+          where: {
+            id: requestedCouponId,
+            storeId: input.store.id,
+            deletedAt: null,
+            ...(requiresActiveCampaign
+              ? {
+                  status: 'ACTIVE',
+                  OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }],
+                }
+              : {}),
+          },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        });
+
+        if (!requestedCoupon) {
+          throw new NotFoundException(
+            requiresActiveCampaign
+              ? 'Active coupon not found'
+              : 'Coupon not found',
+          );
+        }
+
+        couponId = requestedCoupon.id;
+        coupon = requestedCoupon;
+      }
+    }
+
+    return {
+      couponId,
+      couponIssueId,
+      couponIssueCode,
+      couponIssueStatus,
+      coupon,
+      userId,
+      guestId,
     };
   }
 
   private async resolveBillStore(dto: CreateBillDto) {
     const storeId = this.cleanText(dto.storeId);
     const storeSlug = this.cleanText(dto.storeSlug);
+    const couponId = this.cleanText(dto.couponId);
+    const couponIssueId = this.cleanText(dto.couponIssueId);
 
     if (!storeId && !storeSlug) {
+      if (couponIssueId) {
+        const issue = await this.prisma.couponIssue.findFirst({
+          where: {
+            id: couponIssueId,
+            coupon: {
+              deletedAt: null,
+              store: { deletedAt: null, status: 'ACTIVE' },
+            },
+          },
+          select: {
+            coupon: {
+              select: {
+                store: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+        });
+
+        if (!issue) {
+          throw new NotFoundException('Coupon issue not found');
+        }
+
+        return issue.coupon.store;
+      }
+
+      if (couponId) {
+        const coupon = await this.prisma.coupon.findFirst({
+          where: {
+            id: couponId,
+            deletedAt: null,
+            store: { deletedAt: null, status: 'ACTIVE' },
+          },
+          select: {
+            store: { select: { id: true, name: true, slug: true } },
+          },
+        });
+
+        if (!coupon) {
+          throw new NotFoundException('Coupon not found');
+        }
+
+        return coupon.store;
+      }
+
       throw new BadRequestException(
-        'bookingId, storeId, or storeSlug is required',
+        'bookingId, storeId, storeSlug, couponId, or couponIssueId is required',
       );
     }
 
@@ -2965,17 +4888,22 @@ export class NightlifeDataService {
     return `BILL-${dateToken}-${randomToken}`;
   }
 
-  private createBookingRecord(input: {
+  private async createBookingRecord(input: {
     dto: CreateBookingDto;
     target: BookingTarget;
     userId?: string;
     guestId: string;
+    phone?: string;
     note?: string;
   }) {
-    const scheduledAt = new Date(input.dto.scheduledAt);
-    if (Number.isNaN(scheduledAt.getTime())) {
-      throw new BadRequestException('scheduledAt must be a valid ISO date');
-    }
+    const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
+
+    const couponLink = await this.resolveBookingCouponLink({
+      dto: input.dto,
+      target: input.target,
+      userId: input.userId,
+      phone: input.phone,
+    });
 
     return this.prisma.booking.create({
       data: {
@@ -2983,6 +4911,8 @@ export class NightlifeDataService {
         guestId: input.guestId,
         storeId: input.target.store.id,
         castId: input.target.cast?.id,
+        couponId: couponLink.couponId,
+        couponIssueId: couponLink.couponIssueId,
         status: 'REQUESTED',
         scheduledAt,
         partySize: input.dto.partySize,
@@ -2990,6 +4920,709 @@ export class NightlifeDataService {
       },
       select: this.bookingNotificationSelect(),
     });
+  }
+
+  private resolveBookingScheduledAt(value: string) {
+    const scheduledAt = new Date(value);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+    this.assertBookingDateWindow(scheduledAt);
+
+    return scheduledAt;
+  }
+
+  private bookingChangeTargetSelect() {
+    return {
+      id: true,
+      storeId: true,
+      castId: true,
+      userId: true,
+      guestId: true,
+      status: true,
+      scheduledAt: true,
+      cancelledAt: true,
+      store: { select: { bookingCancelCutoffMinutes: true } },
+    } satisfies Prisma.BookingSelect;
+  }
+
+  private bookingChangeRequestSelect() {
+    return {
+      id: true,
+      bookingId: true,
+      storeId: true,
+      castId: true,
+      requestedById: true,
+      guestId: true,
+      reviewedById: true,
+      type: true,
+      status: true,
+      currentScheduledAt: true,
+      requestedScheduledAt: true,
+      reason: true,
+      adminNote: true,
+      reviewedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      booking: { select: this.bookingNotificationSelect() },
+      store: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          bookingCancelCutoffMinutes: true,
+        },
+      },
+      cast: {
+        select: {
+          id: true,
+          slug: true,
+          stageName: true,
+          publicAlias: true,
+        },
+      },
+      requestedBy: { select: { id: true, displayName: true } },
+      guest: { select: { id: true, displayName: true, phone: true } },
+      reviewedBy: { select: { id: true, displayName: true } },
+    } satisfies Prisma.BookingChangeRequestSelect;
+  }
+
+  private bookingChatMessageSelect() {
+    return {
+      id: true,
+      bookingId: true,
+      changeRequestId: true,
+      storeId: true,
+      senderUserId: true,
+      guestId: true,
+      senderType: true,
+      topic: true,
+      body: true,
+      createdAt: true,
+      senderUser: { select: { id: true, displayName: true, role: true } },
+      guest: { select: { id: true, displayName: true, phone: true } },
+    } satisfies Prisma.BookingChatMessageSelect;
+  }
+
+  private async createBookingRescheduleRequest(input: {
+    booking: BookingCancelTarget;
+    actorId?: string | null;
+    actorType: BookingStatusActorType;
+    dto: RequestBookingRescheduleDto;
+  }) {
+    this.assertBookingCanRequestReschedule(input.booking);
+
+    const requestedScheduledAt = this.parseRequestedSchedule(
+      input.dto.scheduledAt,
+    );
+    const currentScheduledAt = new Date(input.booking.scheduledAt ?? '');
+    if (!Number.isFinite(currentScheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    if (requestedScheduledAt.getTime() <= Date.now()) {
+      throw new UnprocessableEntityException(
+        'New booking time must be in the future',
+      );
+    }
+
+    const activeRequest = await this.prisma.bookingChangeRequest.findFirst({
+      where: {
+        bookingId: input.booking.id,
+        type: 'RESCHEDULE',
+        status: 'REQUESTED',
+      },
+      select: { id: true },
+    });
+
+    if (activeRequest) {
+      throw new UnprocessableEntityException(
+        'Booking already has a pending reschedule request',
+      );
+    }
+
+    const reason = this.cleanText(input.dto.reason);
+    const created = await this.prisma.bookingChangeRequest.create({
+      data: {
+        bookingId: input.booking.id,
+        storeId: input.booking.storeId ?? '',
+        castId: input.booking.castId ?? undefined,
+        requestedById: input.actorId ?? undefined,
+        guestId: input.booking.guestId ?? undefined,
+        type: 'RESCHEDULE',
+        status: 'REQUESTED',
+        currentScheduledAt,
+        requestedScheduledAt,
+        reason: reason || null,
+      },
+      select: this.bookingChangeRequestSelect(),
+    });
+
+    await this.createBookingChangeAudit({
+      actorId: input.actorId,
+      action: 'BOOKING_RESCHEDULE_REQUESTED',
+      before: null,
+      after: created,
+      metadata: {
+        actorType: input.actorType,
+        reason: reason || null,
+        requestedScheduledAt: requestedScheduledAt.toISOString(),
+      },
+    });
+    await this.createAdminBookingWorkflowNotification(
+      created,
+      'admin.booking.reschedule_requested.v1',
+    );
+
+    return created;
+  }
+
+  private assertBookingCanRequestReschedule(booking: BookingCancelTarget) {
+    if (booking.status === 'CANCELLED') {
+      throw new UnprocessableEntityException(
+        'Cancelled booking cannot be rescheduled',
+      );
+    }
+
+    if (['CHECKED_IN', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
+      throw new UnprocessableEntityException(
+        'Booking cannot be rescheduled in its current state',
+      );
+    }
+
+    const cutoffMinutes = this.resolveBookingCutoffMinutes(booking);
+    const msUntilBooking =
+      new Date(booking.scheduledAt ?? '').getTime() - Date.now();
+    if (!Number.isFinite(msUntilBooking)) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    if (msUntilBooking < cutoffMinutes * 60 * 1000) {
+      throw new UnprocessableEntityException(
+        cutoffMinutes === DEFAULT_BOOKING_CUTOFF_MINUTES
+          ? 'Booking can only be rescheduled at least 1 hour before scheduled time'
+          : `Booking can only be rescheduled at least ${cutoffMinutes} minutes before scheduled time`,
+      );
+    }
+  }
+
+  private parseRequestedSchedule(value: string) {
+    const requestedScheduledAt = new Date(value);
+    if (!Number.isFinite(requestedScheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    return requestedScheduledAt;
+  }
+
+  private async createBookingChangeAudit(input: {
+    actorId?: string | null;
+    action: string;
+    before: BookingChangeRequestRecord | null;
+    after: BookingChangeRequestRecord;
+    metadata?: Record<string, unknown>;
+  }) {
+    const beforeJson = this.buildBookingChangeRequestAuditSnapshot(
+      input.before,
+    );
+    const afterJson = this.buildBookingChangeRequestAuditSnapshot(input.after);
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: input.action,
+        targetType: 'BookingChangeRequest',
+        targetId: input.after.id,
+        beforeJson: this.toPrismaJson(beforeJson),
+        afterJson: this.toPrismaJson(afterJson),
+        metadata: {
+          ...(input.metadata ?? {}),
+          beforeStatus: input.before?.status ?? null,
+          afterStatus: input.after.status,
+        },
+      },
+    });
+  }
+
+  private buildBookingChangeRequestAuditSnapshot(
+    request: BookingChangeRequestRecord | null,
+  ) {
+    if (!request) {
+      return null;
+    }
+
+    return {
+      id: request.id,
+      bookingId: request.bookingId,
+      storeId: request.storeId,
+      castId: request.castId,
+      requestedById: request.requestedById,
+      guestId: request.guestId,
+      reviewedById: request.reviewedById,
+      type: request.type,
+      status: request.status,
+      currentScheduledAt: this.toAuditIso(request.currentScheduledAt),
+      requestedScheduledAt: this.toAuditIso(request.requestedScheduledAt),
+      reason: request.reason,
+      adminNote: request.adminNote,
+      reviewedAt: this.toAuditIso(request.reviewedAt),
+    };
+  }
+
+  private async createAdminBookingWorkflowNotification(
+    request: BookingChangeRequestRecord,
+    templateKey: string,
+  ) {
+    await this.prisma.notificationLog.create({
+      data: {
+        storeId: request.storeId,
+        bookingId: request.bookingId,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'ADMIN',
+        templateKey,
+        payload: {
+          requestId: request.id,
+          bookingId: request.bookingId,
+          status: request.status,
+          reason: request.reason,
+          requestedScheduledAt: this.toAuditIso(request.requestedScheduledAt),
+          currentScheduledAt: this.toAuditIso(request.currentScheduledAt),
+        },
+      },
+    });
+  }
+
+  private async notifyBookingCustomerTemplate(
+    booking: BookingNotificationRecord | null | undefined,
+    templateKey: string,
+    payload: Record<string, unknown>,
+  ) {
+    if (!booking) {
+      return;
+    }
+
+    const guestEmail = this.cleanEmail(booking.guest?.email);
+    const recipient =
+      booking.user?.id ??
+      guestEmail ??
+      booking.guest?.phone ??
+      booking.guest?.id;
+    if (!recipient) {
+      return;
+    }
+
+    const channel = booking.user?.id ? 'IN_APP' : guestEmail ? 'EMAIL' : 'LINE';
+
+    await this.prisma.notificationLog.create({
+      data: {
+        userId: booking.user?.id,
+        guestId: booking.guest?.id,
+        storeId: booking.storeId ?? booking.store?.id ?? undefined,
+        bookingId: booking.id,
+        channel,
+        status: 'QUEUED',
+        recipient,
+        templateKey,
+        payload: {
+          bookingId: booking.id,
+          status: booking.status,
+          ...payload,
+        },
+      },
+    });
+  }
+
+  private assertBookingDateWindow(scheduledAt: Date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + BOOKING_DATE_WINDOW_DAYS);
+    maxDate.setHours(23, 59, 59, 999);
+
+    if (scheduledAt < today) {
+      throw new BadRequestException('scheduledAt cannot be in the past');
+    }
+
+    if (scheduledAt > maxDate) {
+      throw new BadRequestException(
+        `scheduledAt can only be within ${BOOKING_DATE_WINDOW_DAYS} days`,
+      );
+    }
+  }
+
+  private async notifyGuestBookingQrEmail(booking: BookingNotificationRecord) {
+    const email = this.cleanEmail(booking.guest?.email);
+
+    if (!email) {
+      return;
+    }
+
+    const bookingCode = this.bookingPublicCode(booking.id);
+    const qrPayload = this.bookingQrPayload(booking);
+    const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
+    const amountLabel = this.bookingAmountLabel(booking);
+    const payload = {
+      bookingId: booking.id,
+      bookingCode,
+      status: booking.status,
+      scheduledAt: this.toAuditIso(booking.scheduledAt),
+      partySize: booking.partySize ?? null,
+      storeName: booking.store?.name ?? null,
+      storeSlug: booking.store?.slug ?? null,
+      castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+      guestName: booking.guest?.displayName ?? null,
+      amountLabel,
+      couponCode: booking.coupon?.code ?? null,
+      couponIssueCode: booking.couponIssue?.code ?? null,
+      qrPayload,
+      qrImageUrl,
+    } satisfies Prisma.InputJsonObject;
+
+    let log: { id: string };
+    try {
+      log = await this.prisma.notificationLog.create({
+        data: {
+          guestId: booking.guest?.id,
+          storeId: booking.storeId ?? booking.store?.id ?? undefined,
+          bookingId: booking.id,
+          channel: 'EMAIL',
+          status: 'QUEUED',
+          recipient: email,
+          templateKey: 'customer.booking.qr_email.v1',
+          payload,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to queue booking QR email notification: ${this.errorMessage(error)}`,
+      );
+      return;
+    }
+
+    try {
+      if (!this.emailNotificationService) {
+        throw new Error('EmailNotificationService is not available');
+      }
+
+      const result = await this.emailNotificationService.sendBookingQrEmail({
+        to: email,
+        guestName: booking.guest?.displayName,
+        bookingId: booking.id,
+        bookingCode,
+        status: booking.status,
+        storeName: booking.store?.name,
+        storeSlug: booking.store?.slug,
+        castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+        scheduledAt: booking.scheduledAt,
+        partySize: booking.partySize,
+        amountLabel,
+        note: booking.note,
+        qrPayload,
+        qrImageUrl,
+        qrImageDataUrl,
+      });
+
+      await this.prisma.notificationLog.update({
+        where: { id: log.id },
+        data: {
+          status: 'SENT',
+          sentAt: new Date(),
+          error: null,
+          payload: {
+            ...payload,
+            providerMessageId: result.messageId ?? null,
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Booking QR email failed: ${this.errorMessage(error)}`);
+      await this.prisma.notificationLog
+        .update({
+          where: { id: log.id },
+          data: {
+            status: 'FAILED',
+            error: this.errorMessage(error),
+          },
+        })
+        .catch((logError) => {
+          this.logger.warn(
+            `Failed to update booking QR email notification log: ${this.errorMessage(logError)}`,
+          );
+        });
+    }
+  }
+
+  private bookingPublicCode(bookingId: string) {
+    return `BK-${bookingId.slice(0, 8).toUpperCase()}`;
+  }
+
+  private bookingQrPayload(booking: BookingNotificationRecord) {
+    return [
+      'NLBOOKING',
+      booking.id,
+      this.bookingPublicCode(booking.id),
+      booking.store?.slug ?? 'nightlife',
+      this.toAuditIso(booking.scheduledAt) ?? '',
+    ].join('|');
+  }
+
+  private async buildBookingQrImageDataUrl(payload: string) {
+    return QRCode.toDataURL(payload, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 220,
+    });
+  }
+
+  private bookingAmountLabel(booking: BookingNotificationRecord) {
+    if (typeof booking.totalVnd === 'number' && booking.totalVnd > 0) {
+      return this.formatVnd(booking.totalVnd);
+    }
+
+    return 'Miễn phí - không thu cọc';
+  }
+
+  private formatVnd(value: number) {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  private async findMemberBookingChatTarget(
+    user: AuthenticatedUser,
+    bookingId: string,
+  ) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId: user.id,
+        deletedAt: null,
+      },
+      select: this.bookingChangeTargetSelect(),
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return booking;
+  }
+
+  private async findGuestBookingChatTarget(bookingId: string, phone: string) {
+    const cleanedPhone = this.cleanText(phone);
+    if (!cleanedPhone) {
+      throw new BadRequestException('phone is required');
+    }
+
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        userId: null,
+        deletedAt: null,
+        guest: {
+          is: {
+            phone: cleanedPhone,
+          },
+        },
+      },
+      select: this.bookingChangeTargetSelect(),
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return booking;
+  }
+
+  private async findAdminBookingChatTarget(
+    user: AuthenticatedUser,
+    bookingId: string,
+  ) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        deletedAt: null,
+      },
+      select: this.bookingChangeTargetSelect(),
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    await this.accessService.ensureStoreAccess(
+      user,
+      booking.storeId,
+      'booking.chat',
+    );
+
+    return booking;
+  }
+
+  private listBookingChatMessages(bookingId: string) {
+    return this.prisma.bookingChatMessage.findMany({
+      where: { bookingId },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+      select: this.bookingChatMessageSelect(),
+    });
+  }
+
+  private async createBookingChatMessage(input: {
+    booking: BookingCancelTarget;
+    dto: BookingChatMessageDto;
+    senderType: BookingChatSenderType;
+    senderUserId?: string | null;
+    guestId?: string | null;
+  }) {
+    const body = this.cleanText(input.dto.message);
+    if (!body) {
+      throw new BadRequestException('message is required');
+    }
+
+    if (input.dto.changeRequestId) {
+      await this.assertChangeRequestBelongsToBooking(
+        input.dto.changeRequestId,
+        input.booking.id,
+      );
+    }
+
+    const topic = (input.dto.topic ?? 'GENERAL') as BookingChatTopic;
+    const message = await this.prisma.bookingChatMessage.create({
+      data: {
+        bookingId: input.booking.id,
+        changeRequestId: input.dto.changeRequestId,
+        storeId: input.booking.storeId ?? '',
+        senderUserId: input.senderUserId ?? undefined,
+        guestId: input.guestId ?? undefined,
+        senderType: input.senderType,
+        topic,
+        body,
+      },
+      select: this.bookingChatMessageSelect(),
+    });
+
+    this.socketGateway?.notifyBookingChatMessage(input.booking.id, message);
+    await this.createBookingChatNotification(message);
+
+    return message;
+  }
+
+  private async assertChangeRequestBelongsToBooking(
+    changeRequestId: string,
+    bookingId: string,
+  ) {
+    const changeRequest = await this.prisma.bookingChangeRequest.findFirst({
+      where: { id: changeRequestId, bookingId },
+      select: { id: true },
+    });
+
+    if (!changeRequest) {
+      throw new BadRequestException(
+        'changeRequestId does not belong to this booking',
+      );
+    }
+  }
+
+  private async createBookingChatNotification(
+    message: BookingChatMessageRecord,
+  ) {
+    const isStaffMessage = ['ADMIN', 'OPERATOR'].includes(message.senderType);
+    await this.prisma.notificationLog.create({
+      data: {
+        userId: isStaffMessage
+          ? undefined
+          : (message.senderUserId ?? undefined),
+        guestId: message.guestId ?? undefined,
+        storeId: message.storeId,
+        bookingId: message.bookingId,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: isStaffMessage
+          ? (message.guest?.phone ?? message.guestId ?? message.bookingId)
+          : 'ADMIN',
+        templateKey: isStaffMessage
+          ? 'customer.booking.chat_message.v1'
+          : 'admin.booking.chat_message.v1',
+        payload: {
+          messageId: message.id,
+          bookingId: message.bookingId,
+          changeRequestId: message.changeRequestId,
+          senderType: message.senderType,
+          topic: message.topic,
+        },
+      },
+    });
+  }
+
+  private resolveBookingChatSenderType(user: AuthenticatedUser) {
+    return user.role === 'OPERATOR' || user.role === 'STAFF'
+      ? 'OPERATOR'
+      : 'ADMIN';
+  }
+
+  private resolveAnalyticsDays(value?: string | number) {
+    const days = Number(value ?? 30);
+    if (!Number.isInteger(days) || days < 1 || days > 365) {
+      throw new BadRequestException('days must be an integer from 1 to 365');
+    }
+
+    return days;
+  }
+
+  private addCancelAnalyticsMetric(
+    metrics: Map<string, CancelAnalyticsMetric>,
+    key: string,
+    base: Record<string, unknown>,
+    cancelled: boolean,
+  ) {
+    const current =
+      metrics.get(key) ??
+      ({
+        ...base,
+        totalBookings: 0,
+        cancelledBookings: 0,
+        cancelRate: 0,
+      } as CancelAnalyticsMetric);
+
+    current.totalBookings += 1;
+    if (cancelled) {
+      current.cancelledBookings += 1;
+    }
+    current.cancelRate = this.calculateCancelRate(
+      current.cancelledBookings,
+      current.totalBookings,
+    );
+    metrics.set(key, current);
+  }
+
+  private sortCancelAnalyticsMetrics(
+    metrics: Map<string, CancelAnalyticsMetric>,
+  ) {
+    return Array.from(metrics.values()).sort((first, second) => {
+      if (second.cancelledBookings !== first.cancelledBookings) {
+        return second.cancelledBookings - first.cancelledBookings;
+      }
+
+      return second.totalBookings - first.totalBookings;
+    });
+  }
+
+  private calculateCancelRate(
+    cancelledBookings: number,
+    totalBookings: number,
+  ) {
+    if (!totalBookings) {
+      return 0;
+    }
+
+    return Math.round((cancelledBookings / totalBookings) * 10000) / 100;
   }
 
   private bookingNotificationSelect() {
@@ -3003,6 +5636,7 @@ export class NightlifeDataService {
       subtotalVnd: true,
       discountVnd: true,
       totalVnd: true,
+      discountRuleSnapshot: true,
       note: true,
       cancelledAt: true,
       createdAt: true,
@@ -3015,8 +5649,14 @@ export class NightlifeDataService {
           publicAlias: true,
         },
       },
-      user: { select: { id: true, displayName: true, tier: true } },
-      guest: { select: { id: true, displayName: true, phone: true } },
+      user: {
+        select: { id: true, email: true, displayName: true, tier: true },
+      },
+      guest: {
+        select: { id: true, displayName: true, phone: true, email: true },
+      },
+      coupon: { select: { id: true, code: true, name: true } },
+      couponIssue: { select: { id: true, code: true, status: true } },
     } satisfies Prisma.BookingSelect;
   }
 
@@ -3041,16 +5681,119 @@ export class NightlifeDataService {
       verifiedById: true,
       rejectedById: true,
       rejectReason: true,
+      usedAt: true,
       updatedAt: true,
       store: { select: { id: true, name: true, slug: true } },
       booking: { select: { id: true, status: true, scheduledAt: true } },
       coupon: { select: { id: true, code: true, name: true } },
+      couponIssue: { select: { id: true, code: true, status: true } },
       user: { select: { id: true, displayName: true, tier: true } },
       guest: { select: { id: true, displayName: true, phone: true } },
     } satisfies Prisma.BillSelect;
   }
 
-  private assertBookingCanBeCancelled(booking: BookingCancelTarget) {
+  private async updateBookingStatusWithAudit(input: {
+    booking: BookingCancelTarget;
+    nextStatus: BookingStatus;
+    actorId?: string | null;
+    actorType: BookingStatusActorType;
+    action: string;
+    reason?: string | null;
+    now?: Date;
+    data?: Prisma.BookingUpdateInput;
+  }) {
+    const now = input.now ?? new Date();
+    const result = await this.prisma.booking.update({
+      where: { id: input.booking.id },
+      data: {
+        status: input.nextStatus,
+        ...(input.data ?? {}),
+      },
+      select: this.bookingNotificationSelect(),
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: input.action,
+        targetType: 'Booking',
+        targetId: input.booking.id,
+        beforeJson: this.buildBookingCancelAuditSnapshot(input.booking),
+        afterJson: this.buildBookingCancelAuditSnapshot(result),
+        metadata: {
+          actorType: input.actorType,
+          actorId: input.actorId ?? null,
+          reason: input.reason ?? null,
+          beforeStatus: input.booking.status,
+          afterStatus: result.status,
+          changedAt: now.toISOString(),
+        },
+      },
+    });
+
+    await this.notifyBookingCustomerStatusChange(result, {
+      reason: input.reason,
+      actorType: input.actorType,
+    });
+
+    return result;
+  }
+
+  private async notifyBookingCustomerStatusChange(
+    booking: BookingNotificationRecord,
+    options: { reason?: string | null; actorType: BookingStatusActorType },
+  ) {
+    const templateKey = this.customerBookingTemplateKey(booking.status);
+    if (!templateKey) {
+      return;
+    }
+
+    const recipient =
+      booking.user?.id ?? booking.guest?.phone ?? booking.guest?.id;
+    if (!recipient) {
+      return;
+    }
+
+    await this.prisma.notificationLog.create({
+      data: {
+        userId: booking.user?.id,
+        guestId: booking.guest?.id,
+        storeId: booking.storeId ?? booking.store?.id ?? undefined,
+        bookingId: booking.id,
+        channel: booking.user?.id ? 'IN_APP' : 'LINE',
+        status: 'QUEUED',
+        recipient,
+        templateKey,
+        payload: {
+          bookingId: booking.id,
+          status: booking.status,
+          reason: options.reason ?? null,
+          actorType: options.actorType,
+        },
+      },
+    });
+  }
+
+  private customerBookingTemplateKey(status: string) {
+    if (status === 'CANCELLED') {
+      return 'customer.booking.cancelled.v1';
+    }
+
+    if (status === 'COMPLETED') {
+      return 'customer.booking.completed.v1';
+    }
+
+    if (status === 'CHECKED_IN') {
+      return 'customer.booking.checked_in.v1';
+    }
+
+    return null;
+  }
+
+  private assertBookingCanBeCancelled(
+    booking: BookingCancelTarget,
+    options: { enforceCutoff?: boolean } = {},
+  ) {
     if (booking.status === 'CANCELLED') {
       throw new UnprocessableEntityException(
         'Booking has already been cancelled',
@@ -3063,17 +5806,37 @@ export class NightlifeDataService {
       );
     }
 
-    const msUntilBooking =
-      new Date(booking.scheduledAt ?? '').getTime() - Date.now();
-    if (!Number.isFinite(msUntilBooking)) {
-      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    if (options.enforceCutoff ?? true) {
+      const cutoffMinutes = this.resolveBookingCutoffMinutes(booking);
+      const cutoffMs = cutoffMinutes * 60 * 1000;
+      const msUntilBooking =
+        new Date(booking.scheduledAt ?? '').getTime() - Date.now();
+      if (!Number.isFinite(msUntilBooking)) {
+        throw new BadRequestException('scheduledAt must be a valid ISO date');
+      }
+
+      if (msUntilBooking < cutoffMs) {
+        throw new UnprocessableEntityException(
+          cutoffMinutes === DEFAULT_BOOKING_CUTOFF_MINUTES
+            ? 'Booking can only be cancelled at least 1 hour before scheduled time'
+            : `Booking can only be cancelled at least ${cutoffMinutes} minutes before scheduled time`,
+        );
+      }
+    }
+  }
+
+  private resolveBookingCutoffMinutes(booking: BookingCancelTarget) {
+    const cutoff = booking.store?.bookingCancelCutoffMinutes;
+    if (
+      typeof cutoff === 'number' &&
+      BOOKING_POLICY_CUTOFF_MINUTES.includes(
+        cutoff as (typeof BOOKING_POLICY_CUTOFF_MINUTES)[number],
+      )
+    ) {
+      return cutoff;
     }
 
-    if (msUntilBooking < BOOKING_CANCEL_CUTOFF_MS) {
-      throw new UnprocessableEntityException(
-        'Booking can only be cancelled at least 1 hour before scheduled time',
-      );
-    }
+    return DEFAULT_BOOKING_CUTOFF_MINUTES;
   }
 
   private buildBookingCancelAuditSnapshot(booking: BookingCancelTarget) {
@@ -4479,16 +7242,11 @@ export class NightlifeDataService {
   ) {
     return (
       media[0]?.url ??
-      (demoStoreImageSlugs.has(slug)
-        ? `/media/demo/stores/${slug}.jpg`
-        : null)
+      (demoStoreImageSlugs.has(slug) ? `/media/demo/stores/${slug}.jpg` : null)
     );
   }
 
-  private resolveRankingCastImage(
-    slug: string,
-    media: Array<{ url: string }>,
-  ) {
+  private resolveRankingCastImage(slug: string, media: Array<{ url: string }>) {
     return (
       media[0]?.url ??
       (demoCastImageSlugs.has(slug) ? `/media/demo/casts/${slug}.jpg` : null)
@@ -4610,8 +7368,391 @@ export class NightlifeDataService {
     });
   }
 
+  private async createPartnerRequestMedia(input: {
+    requestId: string;
+    url: string;
+    index: number;
+    storeId?: string;
+    castId?: string;
+    purpose: string;
+  }) {
+    return this.prisma.media.create({
+      data: {
+        storeId: input.storeId,
+        castId: input.castId,
+        storageKey: this.partnerRequestMediaStorageKey(
+          input.requestId,
+          input.url,
+          input.index,
+        ),
+        originalName: this.partnerRequestMediaName(input.url),
+        mimeType: this.partnerRequestMimeType(input.url),
+        sizeBytes: 0,
+        url: input.url,
+        purpose: input.purpose,
+        type: this.partnerRequestMediaType(input.url),
+        access: 'PROTECTED',
+        status: 'HIDDEN',
+        metadata: this.toPrismaJson({
+          partnerRequestId: input.requestId,
+          source: 'PARTNER_REQUEST',
+        }),
+      },
+      select: { id: true },
+    });
+  }
+
   private cleanText(value?: string | null) {
     return value?.trim() ?? '';
+  }
+
+  private cleanEmail(value?: string | null) {
+    return this.cleanText(value).toLowerCase();
+  }
+
+  private errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  private cleanStringArray(values?: string[] | null, limit = 12) {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+
+    return values
+      .map((value) => this.cleanText(value))
+      .filter((value): value is string => Boolean(value))
+      .slice(0, limit);
+  }
+
+  private normalizePartnerRequestCasts(
+    castProfiles?: PartnerRequestCastDto[] | null,
+  ) {
+    if (!Array.isArray(castProfiles)) {
+      return [];
+    }
+
+    return castProfiles
+      .map((profile) => {
+        const stageName = this.cleanText(profile.stageName);
+        const hourlyRateVnd =
+          typeof profile.hourlyRateVnd === 'number' &&
+          Number.isFinite(profile.hourlyRateVnd) &&
+          profile.hourlyRateVnd >= 0
+            ? Math.trunc(profile.hourlyRateVnd)
+            : undefined;
+
+        return {
+          stageName,
+          bio: this.cleanNullableText(profile.bio),
+          tags: this.cleanStringArray(profile.tags, 12),
+          languages: this.cleanStringArray(profile.languages, 8),
+          hourlyRateVnd,
+          mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
+        };
+      })
+      .filter((profile) => profile.stageName);
+  }
+
+  private normalizePartnerRequestCategory(
+    value?: string | null,
+  ): StoreCategory {
+    const category = this.normalizeCategory(value);
+    if (category) {
+      return category;
+    }
+
+    const token = this.normalizeToken(value);
+    if (token.includes('karaoke') || token.includes('ktv')) {
+      return 'KARAOKE';
+    }
+    if (token.includes('club')) {
+      return 'CLUB';
+    }
+    if (token.includes('bar')) {
+      return 'BAR';
+    }
+    if (token.includes('spa') || token.includes('massage')) {
+      return 'MASSAGE_SPA';
+    }
+    if (token.includes('restaurant') || token.includes('nha-hang')) {
+      return 'RESTAURANT';
+    }
+    if (token.includes('casino')) {
+      return 'CASINO';
+    }
+
+    return 'LOUNGE';
+  }
+
+  private partnerCityFromArea(area?: string | null) {
+    const text = this.cleanText(area);
+    const token = this.normalizeToken(text);
+    if (!text) {
+      return null;
+    }
+
+    if (token.includes('ha-noi') || token.includes('hanoi')) {
+      return 'Ha Noi';
+    }
+
+    if (
+      token.includes('hcm') ||
+      token.includes('sai-gon') ||
+      token.includes('saigon') ||
+      token.includes('ho-chi-minh')
+    ) {
+      return 'Ho Chi Minh City';
+    }
+
+    return text.split(/[-,]/)[0]?.trim() || null;
+  }
+
+  private partnerDistrictFromArea(area?: string | null) {
+    const text = this.cleanText(area);
+    const [, district] = text.split(/[-,]/).map((part) => part.trim());
+    return district || null;
+  }
+
+  private buildPartnerRequestSlug(
+    value: string,
+    requestId: string,
+    suffix?: string,
+  ) {
+    const base = this.normalizeToken(value) || 'partner';
+    const requestToken = this.normalizeToken(requestId) || randomUUID();
+    return [base, requestToken, suffix].filter(Boolean).join('-').slice(0, 190);
+  }
+
+  private partnerRequestMediaStorageKey(
+    requestId: string,
+    url: string,
+    index: number,
+  ) {
+    const hash = createHash('sha1').update(url).digest('hex').slice(0, 12);
+    const extension = this.partnerRequestMediaExtension(url);
+    return `partner-requests/${this.normalizeToken(requestId)}/${index + 1}-${hash}.${extension}`;
+  }
+
+  private partnerRequestMediaName(url: string) {
+    try {
+      const pathname = new URL(url).pathname;
+      const fileName = pathname.split('/').filter(Boolean).pop();
+      return fileName || 'partner-media';
+    } catch {
+      return 'partner-media';
+    }
+  }
+
+  private partnerRequestMediaExtension(url: string) {
+    const name = this.partnerRequestMediaName(url).toLowerCase();
+    const extension = name.includes('.') ? name.split('.').pop() : null;
+    return extension && /^[a-z0-9]{2,5}$/.test(extension) ? extension : 'bin';
+  }
+
+  private partnerRequestMimeType(url: string) {
+    const extension = this.partnerRequestMediaExtension(url);
+    const mimeByExtension: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      gif: 'image/gif',
+      mp4: 'video/mp4',
+      mov: 'video/quicktime',
+      webm: 'video/webm',
+      pdf: 'application/pdf',
+    };
+
+    return mimeByExtension[extension] ?? 'application/octet-stream';
+  }
+
+  private partnerRequestMediaType(url: string) {
+    const mimeType = this.partnerRequestMimeType(url);
+    const token = url.toLowerCase();
+
+    if (
+      mimeType.startsWith('video/') ||
+      token.includes('youtube.com') ||
+      token.includes('youtu.be') ||
+      token.includes('vimeo.com')
+    ) {
+      return 'VIDEO';
+    }
+
+    if (mimeType.startsWith('image/')) {
+      return 'IMAGE';
+    }
+
+    if (mimeType === 'application/pdf') {
+      return 'DOCUMENT';
+    }
+
+    return 'OTHER';
+  }
+
+  private normalizeBookingLookupCode(value?: string | null) {
+    const token = this.cleanText(value)
+      .replace(/^#?BK[-_]?/i, '')
+      .toLowerCase();
+
+    if (!/^[a-f0-9-]{8,36}$/.test(token)) {
+      throw new BadRequestException('bookingCode must be a valid booking code');
+    }
+
+    return token;
+  }
+
+  private bookingMatchesLookupCode(bookingId: string, lookupCode: string) {
+    const compactBookingId = bookingId.toLowerCase().replace(/-/g, '');
+    const compactLookup = lookupCode.toLowerCase().replace(/-/g, '');
+
+    return compactBookingId.startsWith(compactLookup);
+  }
+
+  private async findPartnerRequestNotificationLog(requestId: string) {
+    const lookup = this.cleanRequiredText(requestId, 'requestId');
+    const logs = await this.prisma.notificationLog.findMany({
+      where: {
+        templateKey: ADMIN_TELEGRAM_TEMPLATES.partnerRequested,
+        channel: 'TELEGRAM',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        status: true,
+        payload: true,
+        error: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    return (
+      (logs.find((log) => {
+        const payload = this.partnerRequestPayload(
+          log as PartnerRequestNotificationLog,
+        );
+        return (
+          log.id === lookup ||
+          this.payloadString(payload.requestId) === lookup ||
+          this.payloadString(payload.draftStoreId) === lookup
+        );
+      }) as PartnerRequestNotificationLog | undefined) ?? null
+    );
+  }
+
+  private partnerRequestPayload(log: PartnerRequestNotificationLog) {
+    return log.payload &&
+      typeof log.payload === 'object' &&
+      !Array.isArray(log.payload)
+      ? (log.payload as Record<string, unknown>)
+      : {};
+  }
+
+  private mapPartnerRequestNotification(log: PartnerRequestNotificationLog) {
+    const payload = this.partnerRequestPayload(log);
+    const draftCastIds = this.payloadStringArray(payload.draftCastIds);
+    const draftMediaIds = this.payloadStringArray(payload.draftMediaIds);
+    const draftContentIds = this.payloadStringArray(payload.draftContentIds);
+
+    return {
+      id: this.payloadString(payload.requestId) ?? log.id,
+      notificationId: log.id,
+      notificationStatus: log.status,
+      notificationError: log.error,
+      notifiedAt: log.sentAt?.toISOString() ?? null,
+      submittedAt:
+        this.payloadString(payload.submittedAt) ?? log.createdAt.toISOString(),
+      status: this.payloadString(payload.status) ?? 'PENDING_REVIEW',
+      reviewReason: this.payloadString(payload.reviewReason),
+      reviewedAt: this.payloadString(payload.reviewedAt),
+      reviewedById: this.payloadString(payload.reviewedById),
+      publicState: this.payloadString(payload.publicState) ?? 'HIDDEN',
+      draftStoreId: this.payloadString(payload.draftStoreId),
+      draftStoreName: this.payloadString(payload.draftStoreName),
+      draftStoreSlug: this.payloadString(payload.draftStoreSlug),
+      draftCastIds,
+      draftMediaIds,
+      draftContentIds,
+      draftCastCount: draftCastIds.length,
+      draftMediaCount: draftMediaIds.length,
+      draftContentCount: draftContentIds.length,
+      businessName: this.payloadString(payload.businessName) ?? 'Unknown',
+      businessType: this.payloadString(payload.businessType),
+      area: this.payloadString(payload.area),
+      contactName: this.payloadString(payload.contactName) ?? 'Unknown',
+      contactPhone: this.payloadString(payload.contactPhone) ?? '',
+      contactEmail: this.payloadString(payload.contactEmail),
+      note: this.payloadString(payload.note),
+      storeDescription: this.payloadString(payload.storeDescription),
+      storeAddress: this.payloadString(payload.storeAddress),
+      storeCity: this.payloadString(payload.storeCity),
+      storeDistrict: this.payloadString(payload.storeDistrict),
+      openingHours: this.payloadString(payload.openingHours),
+      menuSummary: this.payloadString(payload.menuSummary),
+      mediaUrls: this.payloadStringArray(payload.mediaUrls),
+    };
+  }
+
+  private payloadString(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value : null;
+  }
+
+  private payloadStringArray(value: unknown) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item): item is string => Boolean(item));
+  }
+
+  private bookingActorTypeFor(user: AuthenticatedUser): BookingStatusActorType {
+    if (user.role === 'ADMIN') {
+      return 'ADMIN';
+    }
+
+    if (user.role === 'OPERATOR' || user.role === 'STAFF') {
+      return 'OPERATOR';
+    }
+
+    if (user.role === 'PARTNER') {
+      return 'PARTNER';
+    }
+
+    if (user.role === 'USER') {
+      return 'MEMBER';
+    }
+
+    return 'SYSTEM';
+  }
+
+  private assertBookingRateLimit(key: string, limit: number, message: string) {
+    const now = Date.now();
+
+    for (const [bucketKey, bucket] of bookingRateLimits) {
+      if (bucket.resetAt <= now) {
+        bookingRateLimits.delete(bucketKey);
+      }
+    }
+
+    const bucket = bookingRateLimits.get(key);
+    if (!bucket || bucket.resetAt <= now) {
+      bookingRateLimits.set(key, {
+        count: 1,
+        resetAt: now + BOOKING_RATE_LIMIT_WINDOW_MS,
+      });
+      return;
+    }
+
+    if (bucket.count >= limit) {
+      throw new HttpException(message, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    bucket.count += 1;
   }
 
   private normalizeCityCode(
@@ -4983,31 +8124,212 @@ export class NightlifeDataService {
     };
   }
 
-  private buildCouponQrPayload(code: string) {
-    return code;
+  private buildCouponQrPayload(issueId: string) {
+    const token = this.buildSignedCouponQrToken(issueId);
+    const baseUrl = this.couponQrPartnerUrl();
+    const url = new URL(baseUrl);
+    url.searchParams.set('scanToken', token);
+    return url.toString();
+  }
+
+  private couponQrPartnerUrl() {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const configuredUrl =
+      process.env.COUPON_QR_PARTNER_URL ??
+      (appUrl ? `${appUrl.replace(/\/$/, '')}/partner` : undefined);
+
+    if (configuredUrl) {
+      return configuredUrl;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('COUPON_QR_PARTNER_URL is required in production');
+    }
+
+    return 'https://nightlife.vn/partner';
   }
 
   private buildCouponQrPayloadHash(payload: string) {
     return createHash('sha256').update(payload).digest('hex');
   }
 
+  private async buildCouponQrImageDataUrl(payload: string) {
+    return QRCode.toDataURL(payload, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 220,
+    });
+  }
+
+  private buildSignedCouponQrToken(issueId: string) {
+    const encodedPayload = Buffer.from(
+      JSON.stringify({
+        v: 1,
+        type: 'coupon_issue',
+        issueId,
+        nonce: randomUUID(),
+        iat: Date.now(),
+      }),
+    ).toString('base64url');
+    const signature = this.signCouponQrPayload(encodedPayload);
+    return `${encodedPayload}.${signature}`;
+  }
+
+  private signCouponQrPayload(encodedPayload: string) {
+    return createHmac('sha256', this.couponQrSecret())
+      .update(encodedPayload)
+      .digest('base64url');
+  }
+
+  private couponQrSecret() {
+    if (process.env.COUPON_QR_SECRET) {
+      return process.env.COUPON_QR_SECRET;
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('COUPON_QR_SECRET is required in production');
+    }
+
+    return process.env.JWT_SECRET ?? 'nightlife-dev-coupon-qr-secret';
+  }
+
+  private resolveCouponIssueIdFromQrPayload(payload: string) {
+    const token = this.extractCouponQrToken(payload);
+    const [encodedPayload, signature] = token.split('.');
+    if (!encodedPayload || !signature) {
+      throw new BadRequestException('Invalid coupon QR payload');
+    }
+
+    const expectedSignature = this.signCouponQrPayload(encodedPayload);
+    if (!this.safeCompare(signature, expectedSignature)) {
+      throw new BadRequestException('Invalid coupon QR signature');
+    }
+
+    try {
+      const parsed = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as { type?: string; issueId?: string };
+
+      if (parsed.type !== 'coupon_issue' || !parsed.issueId) {
+        throw new Error('Invalid QR token payload');
+      }
+
+      return parsed.issueId;
+    } catch {
+      throw new BadRequestException('Invalid coupon QR payload');
+    }
+  }
+
+  private extractCouponQrToken(payload: string) {
+    const value = this.cleanText(payload);
+    if (!value) {
+      throw new BadRequestException('payload is required');
+    }
+
+    try {
+      const url = new URL(value);
+      return (
+        url.searchParams.get('scanToken') ??
+        url.searchParams.get('token') ??
+        value
+      );
+    } catch {
+      return value;
+    }
+  }
+
+  private safeCompare(value: string, expected: string) {
+    const valueBuffer = Buffer.from(value);
+    const expectedBuffer = Buffer.from(expected);
+    return (
+      valueBuffer.length === expectedBuffer.length &&
+      timingSafeEqual(valueBuffer, expectedBuffer)
+    );
+  }
+
   private couponIssueStatusLabel(status: string) {
     return COUPON_ISSUE_STATUS_LABELS[status] ?? status;
   }
 
-  private decorateCouponIssue<
-    T extends { code: string; status: string; metadata?: unknown },
+  private decoratePartnerCouponIssue(issue: PartnerCouponIssueRecord) {
+    const metadata = this.asRecord(issue.metadata);
+    const discountRuleSnapshot = this.asRecord(metadata?.discountRuleSnapshot);
+    const userType = this.partnerCouponUserType(issue, metadata);
+    const discountPercent =
+      this.toNumber(metadata?.discountPercent) ??
+      this.toNumber(discountRuleSnapshot?.discountPercent) ??
+      this.toNumber(discountRuleSnapshot?.value);
+
+    return {
+      id: issue.id,
+      code: issue.code,
+      status: issue.status,
+      statusLabel: this.couponIssueStatusLabel(issue.status),
+      expiresAt: issue.expiresAt ?? null,
+      usedAt: issue.usedAt ?? null,
+      scannedById: issue.scannedById ?? null,
+      userType,
+      customer: this.partnerCouponCustomerSummary(userType),
+      discountPercent,
+      discountRuleSnapshot: discountRuleSnapshot ?? null,
+      booking: issue.booking
+        ? {
+            status: issue.booking.status,
+            scheduledAt: issue.booking.scheduledAt ?? null,
+          }
+        : null,
+      coupon: issue.coupon ?? null,
+    };
+  }
+
+  private partnerCouponUserType(
+    issue: Pick<PartnerCouponIssueRecord, 'userId'>,
+    metadata?: Record<string, unknown>,
+  ) {
+    const metadataUserType = metadata?.userType ?? metadata?.recipientType;
+    if (typeof metadataUserType === 'string' && metadataUserType.trim()) {
+      return metadataUserType.trim().toUpperCase();
+    }
+
+    return issue.userId ? 'MEMBER' : 'GUEST';
+  }
+
+  private partnerCouponCustomerSummary(userType: string) {
+    if (userType === 'VIP') {
+      return { type: userType, label: 'Hội viên VIP' };
+    }
+
+    if (userType === 'MEMBER') {
+      return { type: userType, label: 'Hội viên' };
+    }
+
+    if (userType === 'GUEST') {
+      return { type: userType, label: 'Khách vãng lai' };
+    }
+
+    return { type: userType, label: 'Khách hàng' };
+  }
+
+  private async decorateCouponIssue<
+    T extends { id?: string; code: string; status: string; metadata?: unknown },
   >(issue: T) {
     const metadata = this.asRecord(issue.metadata);
     const discountRuleSnapshot = this.asRecord(metadata?.discountRuleSnapshot);
     const discountPercent = this.toNumber(metadata?.discountPercent);
+    const qrPayload =
+      typeof metadata?.qrPayload === 'string'
+        ? metadata.qrPayload
+        : typeof issue.id === 'string'
+          ? this.buildCouponQrPayload(issue.id)
+          : issue.code;
 
     return {
       ...issue,
-      qrPayload:
-        typeof metadata?.qrPayload === 'string'
-          ? metadata.qrPayload
-          : this.buildCouponQrPayload(issue.code),
+      qrPayload,
+      qrImageDataUrl:
+        issue.status === 'ISSUED'
+          ? await this.buildCouponQrImageDataUrl(qrPayload)
+          : null,
       statusLabel: this.couponIssueStatusLabel(issue.status),
       userType:
         typeof metadata?.userType === 'string'
@@ -5029,8 +8351,331 @@ export class NightlifeDataService {
     return value as Record<string, unknown>;
   }
 
+  private assertCouponClaimRateLimit(key: string, message: string) {
+    this.assertRateLimit(
+      couponClaimRateLimits,
+      key,
+      COUPON_CLAIM_RATE_LIMIT,
+      COUPON_CLAIM_RATE_LIMIT_WINDOW_MS,
+      message,
+    );
+  }
+
+  private assertRateLimit(
+    buckets: Map<string, BookingRateLimitBucket>,
+    key: string,
+    limit: number,
+    windowMs: number,
+    message: string,
+  ) {
+    const now = Date.now();
+
+    for (const [bucketKey, bucket] of buckets) {
+      if (bucket.resetAt <= now) {
+        buckets.delete(bucketKey);
+      }
+    }
+
+    const bucket = buckets.get(key);
+    if (!bucket || bucket.resetAt <= now) {
+      buckets.set(key, {
+        count: 1,
+        resetAt: now + windowMs,
+      });
+      return;
+    }
+
+    if (bucket.count >= limit) {
+      throw new HttpException(message, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    bucket.count += 1;
+  }
+
+  private async assertNoDuplicateActiveGuestCouponIssue(
+    couponId: string,
+    phone: string,
+    now: Date,
+  ) {
+    const existingIssue = await this.prisma.couponIssue.findFirst({
+      where: {
+        couponId,
+        status: 'ISSUED',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        guest: { is: { phone } },
+      },
+      select: { id: true },
+    });
+
+    if (existingIssue) {
+      throw new UnprocessableEntityException(
+        'Active coupon issue already exists for this phone',
+      );
+    }
+  }
+
+  private async assertNoDuplicateActiveMemberCouponIssue(
+    couponId: string,
+    userId: string,
+    now: Date,
+  ) {
+    const existingIssue = await this.prisma.couponIssue.findFirst({
+      where: {
+        couponId,
+        userId,
+        status: 'ISSUED',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+      select: { id: true },
+    });
+
+    if (existingIssue) {
+      throw new UnprocessableEntityException(
+        'Active coupon issue already exists for this member',
+      );
+    }
+  }
+
+  private buildCouponClaimContextSnapshot(context: CouponClaimContext) {
+    return {
+      ip: context.ip ?? null,
+      userAgent: context.userAgent ?? null,
+      deviceId: context.deviceId ?? null,
+    };
+  }
+
+  private async recordCouponClaimEvent(input: {
+    claimKey: string;
+    coupon: {
+      id: string;
+      code: string;
+      storeId: string;
+      usageLimit: number | null;
+      usedCount: number;
+    };
+    issue: { id: string; code: string; status: string };
+    context: CouponClaimContext;
+    recipientType: string;
+    userId?: string | null;
+    guestId?: string | null;
+  }) {
+    await this.prisma.notificationLog.create({
+      data: {
+        userId: input.userId ?? undefined,
+        guestId: input.guestId ?? undefined,
+        storeId: input.coupon.storeId,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: input.claimKey,
+        templateKey: 'coupon.analytics.claimed.v1',
+        payload: {
+          couponId: input.coupon.id,
+          couponCode: input.coupon.code,
+          couponIssueId: input.issue.id,
+          issueCode: input.issue.code,
+          status: input.issue.status,
+          recipientType: input.recipientType,
+          context: this.buildCouponClaimContextSnapshot(input.context),
+        },
+      },
+    });
+  }
+
+  private async detectCouponClaimFraud(input: {
+    claimKey: string;
+    coupon: { id: string; code: string; storeId: string };
+    issue: { id: string; code: string };
+    context: CouponClaimContext;
+  }) {
+    const since = new Date(Date.now() - COUPON_CLAIM_FRAUD_WINDOW_MS);
+    const recentClaims = await this.prisma.notificationLog.findMany({
+      where: {
+        templateKey: 'coupon.analytics.claimed.v1',
+        recipient: input.claimKey,
+        createdAt: { gte: since },
+      },
+      select: { id: true },
+      take: COUPON_CLAIM_FRAUD_THRESHOLD,
+    });
+
+    if (recentClaims.length < COUPON_CLAIM_FRAUD_THRESHOLD) {
+      return;
+    }
+
+    await this.prisma.notificationLog.create({
+      data: {
+        storeId: input.coupon.storeId,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'admin',
+        templateKey: 'coupon.fraud.claim_burst.v1',
+        payload: {
+          claimKey: input.claimKey,
+          couponId: input.coupon.id,
+          couponCode: input.coupon.code,
+          couponIssueId: input.issue.id,
+          recentClaimCount: recentClaims.length,
+          windowMinutes: Math.round(COUPON_CLAIM_FRAUD_WINDOW_MS / 60000),
+          context: this.buildCouponClaimContextSnapshot(input.context),
+        },
+      },
+    });
+  }
+
+  private async writeCouponIssueAudit(input: {
+    action: string;
+    issue: {
+      id: string;
+      code?: string;
+      couponId?: string | null;
+      status: string;
+      coupon?: { storeId?: string | null } | null;
+    };
+    actorId?: string | null;
+    metadata?: Record<string, unknown>;
+    beforeJson?: Record<string, unknown>;
+    afterJson?: Record<string, unknown>;
+  }) {
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: input.action,
+        targetType: 'CouponIssue',
+        targetId: input.issue.id,
+        beforeJson: this.toPrismaJson(input.beforeJson),
+        afterJson: this.toPrismaJson(input.afterJson),
+        metadata: {
+          issueCode: input.issue.code ?? null,
+          couponId: input.issue.couponId ?? null,
+          storeId: input.issue.coupon?.storeId ?? null,
+          status: input.issue.status,
+          ...(input.metadata ?? {}),
+        },
+      },
+    });
+  }
+
+  private async listCouponIssueAuditLogs(issueIds: string[]) {
+    const uniqueIssueIds = [...new Set(issueIds)].filter(Boolean);
+    const logsByIssueId = new Map<string, unknown[]>();
+
+    if (!uniqueIssueIds.length) {
+      return logsByIssueId;
+    }
+
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        targetType: 'CouponIssue',
+        targetId: { in: uniqueIssueIds },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(uniqueIssueIds.length * 5, 100),
+      select: {
+        id: true,
+        action: true,
+        actorId: true,
+        targetId: true,
+        metadata: true,
+        beforeJson: true,
+        afterJson: true,
+        createdAt: true,
+        actor: { select: { id: true, displayName: true, role: true } },
+      },
+    });
+
+    for (const log of logs) {
+      const currentLogs = logsByIssueId.get(log.targetId) ?? [];
+      if (currentLogs.length < 5) {
+        currentLogs.push(log);
+        logsByIssueId.set(log.targetId, currentLogs);
+      }
+    }
+
+    return logsByIssueId;
+  }
+
+  private buildCouponIssueUsageAuditSnapshot(issue: {
+    id: string;
+    code?: string | null;
+    couponId?: string | null;
+    status: string;
+    usedAt?: Date | string | null;
+    scannedById?: string | null;
+  }) {
+    return {
+      id: issue.id,
+      code: issue.code ?? null,
+      couponId: issue.couponId ?? null,
+      status: issue.status,
+      usedAt: this.toAuditIso(issue.usedAt),
+      scannedById: issue.scannedById ?? null,
+    };
+  }
+
+  private async recordCouponLifecycleEvent(
+    templateKey: string,
+    issue: {
+      id: string;
+      code: string;
+      status: string;
+      userId?: string | null;
+      guestId?: string | null;
+      coupon?: {
+        id?: string;
+        code?: string;
+        name?: string;
+        store?: { id?: string; name?: string; slug?: string } | null;
+      } | null;
+    },
+    payload: Record<string, unknown> = {},
+  ) {
+    await this.prisma.notificationLog.create({
+      data: {
+        userId: issue.userId ?? undefined,
+        guestId: issue.guestId ?? undefined,
+        storeId: issue.coupon?.store?.id,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: `couponIssue:${issue.id}`,
+        templateKey,
+        payload: {
+          couponIssueId: issue.id,
+          issueCode: issue.code,
+          status: issue.status,
+          coupon: issue.coupon
+            ? {
+                id: issue.coupon.id,
+                code: issue.coupon.code,
+                name: issue.coupon.name,
+                store: issue.coupon.store,
+              }
+            : null,
+          ...payload,
+        },
+      },
+    });
+  }
+
+  private async recordCouponExpireEvent(
+    count: number,
+    where: Prisma.CouponIssueWhereInput,
+  ) {
+    await this.prisma.notificationLog.create({
+      data: {
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'system',
+        templateKey: 'coupon.issue.expired.v1',
+        payload: {
+          expiredCount: count,
+          scope: JSON.parse(JSON.stringify(where)) as Prisma.InputJsonValue,
+        } as Prisma.InputJsonValue,
+      },
+    });
+  }
+
   private async expireIssuedCouponIssues(where: Prisma.CouponIssueWhereInput) {
-    return this.prisma.couponIssue.updateMany({
+    const result = await this.prisma.couponIssue.updateMany({
       where: {
         ...where,
         status: 'ISSUED',
@@ -5038,6 +8683,11 @@ export class NightlifeDataService {
       },
       data: { status: 'EXPIRED' },
     });
+
+    if (result.count > 0) {
+      await this.recordCouponExpireEvent(result.count, where);
+    }
+    return result;
   }
 
   private maskSensitiveBillForRole<T extends { user: unknown; guest: unknown }>(

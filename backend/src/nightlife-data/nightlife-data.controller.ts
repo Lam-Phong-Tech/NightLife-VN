@@ -20,8 +20,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
+  AdminCouponIssuesContract,
   AdminDashboardStatsContract,
+  AdminPartnerRequestsContract,
   AdminSensitiveBillsContract,
+  CancelAdminBookingContract,
   CancelGuestBookingContract,
   CancelMemberBookingContract,
   AdminContentMutationContract,
@@ -30,7 +33,9 @@ import {
   CreateGuestBookingContract,
   CreateMemberBillContract,
   CreateMemberBookingContract,
+  CreatePartnerBillContract,
   CreatePartnerRequestContract,
+  GuestBookingLookupContract,
   MemberBookingsContract,
   MemberCastFavoriteStateContract,
   MemberClaimCouponContract,
@@ -42,6 +47,7 @@ import {
   PartnerBookingsContract,
   PartnerConfirmCheckInContract,
   PartnerCouponsContract,
+  PartnerScanCouponPayloadContract,
   PartnerScanCouponContract,
   PartnerStoresContract,
   PublicCastDetailContract,
@@ -53,22 +59,41 @@ import {
   PublicRankingsContract,
   PublicStoreDetailContract,
   PublicStoresContract,
+  ReviewPartnerRequestContract,
   ReviewSensitiveBillContract,
 } from './nightlife-data.contract';
 import {
   CancelBookingDto,
   CancelGuestBookingDto,
 } from './dto/cancel-booking.dto';
+import {
+  BookingChatMessageDto,
+  GuestBookingChatMessageDto,
+  GuestBookingRescheduleDto,
+  RequestBookingRescheduleDto,
+  ReviewBookingChangeRequestDto,
+  UpdateStoreBookingPolicyDto,
+} from './dto/booking-p2.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
+import {
+  AdminCouponIssueQueryDto,
+  ScanCouponIssueDto,
+} from './dto/coupon-issue.dto';
 import {
   AdminContentQueryDto,
   CreateAdminContentDto,
   PublicContentQueryDto,
   UpdateAdminContentDto,
 } from './dto/content.dto';
-import { CreateBillDto } from './dto/create-bill.dto';
+import {
+  AdminSensitiveBillQueryDto,
+  CreateBillDto,
+} from './dto/create-bill.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { CreatePartnerRequestDto } from './dto/create-partner-request.dto';
+import {
+  CreatePartnerRequestDto,
+  ReviewPartnerRequestDto,
+} from './dto/create-partner-request.dto';
 import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
@@ -245,6 +270,42 @@ export class NightlifeDataController {
     return this.nightlifeDataService.cancelGuestBooking(bookingId, dto);
   }
 
+  @Post('bookings/:bookingId/reschedule')
+  requestGuestBookingReschedule(
+    @Param('bookingId') bookingId: string,
+    @Body() dto: GuestBookingRescheduleDto,
+  ) {
+    return this.nightlifeDataService.requestGuestBookingReschedule(
+      bookingId,
+      dto,
+    );
+  }
+
+  @Get('bookings/:bookingId/messages')
+  listGuestBookingMessages(
+    @Param('bookingId') bookingId: string,
+    @Query('phone') phone: string,
+  ) {
+    return this.nightlifeDataService.listGuestBookingMessages(bookingId, phone);
+  }
+
+  @Post('bookings/:bookingId/messages')
+  createGuestBookingMessage(
+    @Param('bookingId') bookingId: string,
+    @Body() dto: GuestBookingChatMessageDto,
+  ) {
+    return this.nightlifeDataService.createGuestBookingMessage(bookingId, dto);
+  }
+
+  @GuestBookingLookupContract()
+  @Get('bookings/:bookingCode')
+  getGuestBookingByCode(
+    @Param('bookingCode') bookingCode: string,
+    @Query('phone') phone: string,
+  ) {
+    return this.nightlifeDataService.getGuestBookingByCode(bookingCode, phone);
+  }
+
   @CreatePartnerRequestContract()
   @Post('partner-requests')
   createPartnerRequest(@Body() dto: CreatePartnerRequestDto) {
@@ -254,10 +315,15 @@ export class NightlifeDataController {
   @ClaimGuestCouponContract()
   @Post('coupons/:couponId/guest-claims')
   claimGuestCoupon(
+    @Req() request: express.Request,
     @Param('couponId') couponId: string,
     @Body() dto: ClaimGuestCouponDto,
   ) {
-    return this.nightlifeDataService.claimGuestCoupon(couponId, dto);
+    return this.nightlifeDataService.claimGuestCoupon(
+      couponId,
+      dto,
+      this.couponRequestContext(request),
+    );
   }
 
   @MemberClaimCouponContract()
@@ -269,7 +335,11 @@ export class NightlifeDataController {
     @Req() request: RequestWithUser,
     @Param('couponId') couponId: string,
   ) {
-    return this.nightlifeDataService.claimMemberCoupon(couponId, request.user);
+    return this.nightlifeDataService.claimMemberCoupon(
+      couponId,
+      request.user,
+      this.couponRequestContext(request),
+    );
   }
 
   @PartnerStoresContract()
@@ -297,6 +367,17 @@ export class NightlifeDataController {
   @Get('partner/bookings')
   listPartnerBookings(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerBookings(request.user);
+  }
+
+  @PartnerScanCouponPayloadContract()
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/coupon-issues/scan')
+  scanCouponIssuePayload(
+    @Req() request: RequestWithUser,
+    @Body() dto: ScanCouponIssueDto,
+  ) {
+    return this.nightlifeDataService.scanCouponIssuePayload(dto, request.user);
   }
 
   @PartnerScanCouponContract()
@@ -350,6 +431,17 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listPartnerBills(request.user);
   }
 
+  @CreatePartnerBillContract()
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/bills')
+  submitPartnerBill(
+    @Req() request: RequestWithUser,
+    @Body() dto: CreateBillDto,
+  ) {
+    return this.nightlifeDataService.submitPartnerBill(request.user, dto);
+  }
+
   @PartnerBookingsContract()
   @ActionPolicy('canViewPartnerBooking')
   @Roles('OPERATOR', 'ADMIN')
@@ -357,6 +449,106 @@ export class NightlifeDataController {
   @Get('operator/bookings')
   listOperatorBookings(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listOperatorBookings(request.user);
+  }
+
+  @CancelAdminBookingContract('operator')
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('operator/bookings/:bookingId/cancel')
+  cancelBookingAsOperator(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: CancelBookingDto,
+  ) {
+    return this.nightlifeDataService.cancelAdminBooking(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('operator/booking-change-requests')
+  listOperatorBookingChangeRequests(
+    @Req() request: RequestWithUser,
+    @Query() query: { status?: string; storeId?: string },
+  ) {
+    return this.nightlifeDataService.listAdminBookingChangeRequests(
+      request.user,
+      query,
+    );
+  }
+
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('operator/booking-change-requests/:requestId/review')
+  reviewBookingChangeRequestAsOperator(
+    @Req() request: RequestWithUser,
+    @Param('requestId') requestId: string,
+    @Body() dto: ReviewBookingChangeRequestDto,
+  ) {
+    return this.nightlifeDataService.reviewBookingChangeRequest(
+      request.user,
+      requestId,
+      dto,
+    );
+  }
+
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('operator/bookings/:bookingId/messages')
+  listOperatorBookingMessages(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+  ) {
+    return this.nightlifeDataService.listAdminBookingMessages(
+      request.user,
+      bookingId,
+    );
+  }
+
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('operator/bookings/:bookingId/messages')
+  createOperatorBookingMessage(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: BookingChatMessageDto,
+  ) {
+    return this.nightlifeDataService.createAdminBookingMessage(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('operator/bookings/cancel-analytics')
+  getOperatorBookingCancelAnalytics(
+    @Req() request: RequestWithUser,
+    @Query() query: { days?: string | number },
+  ) {
+    return this.nightlifeDataService.getAdminBookingCancelAnalytics(
+      request.user,
+      query,
+    );
+  }
+
+  @Roles('OPERATOR', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('operator/stores/:storeId/booking-policy')
+  updateOperatorStoreBookingPolicy(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Body() dto: UpdateStoreBookingPolicyDto,
+  ) {
+    return this.nightlifeDataService.updateStoreBookingPolicy(
+      request.user,
+      storeId,
+      dto,
+    );
   }
 
   @PartnerBillsContract()
@@ -407,6 +599,49 @@ export class NightlifeDataController {
     @Body() dto: CancelBookingDto,
   ) {
     return this.nightlifeDataService.cancelMemberBooking(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/bookings/:bookingId/reschedule')
+  requestMemberBookingReschedule(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: RequestBookingRescheduleDto,
+  ) {
+    return this.nightlifeDataService.requestMemberBookingReschedule(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/bookings/:bookingId/messages')
+  listMemberBookingMessages(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+  ) {
+    return this.nightlifeDataService.listMemberBookingMessages(
+      request.user,
+      bookingId,
+    );
+  }
+
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('member/bookings/:bookingId/messages')
+  createMemberBookingMessage(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: BookingChatMessageDto,
+  ) {
+    return this.nightlifeDataService.createMemberBookingMessage(
       request.user,
       bookingId,
       dto,
@@ -491,8 +726,146 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/sensitive-bills')
-  listSensitiveBillsForAdmin(@Req() request: RequestWithUser) {
-    return this.nightlifeDataService.listSensitiveBillsForAdmin(request.user);
+  listSensitiveBillsForAdmin(
+    @Req() request: RequestWithUser,
+    @Query() query: AdminSensitiveBillQueryDto,
+  ) {
+    return this.nightlifeDataService.listSensitiveBillsForAdmin(
+      request.user,
+      query,
+    );
+  }
+
+  @AdminPartnerRequestsContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/partner-requests')
+  listAdminPartnerRequests() {
+    return this.nightlifeDataService.listAdminPartnerRequests();
+  }
+
+  @ReviewPartnerRequestContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/partner-requests/:requestId/review')
+  reviewPartnerRequest(
+    @Req() request: RequestWithUser,
+    @Param('requestId') requestId: string,
+    @Body() dto: ReviewPartnerRequestDto,
+  ) {
+    return this.nightlifeDataService.reviewPartnerRequest(
+      request.user.id,
+      requestId,
+      dto,
+    );
+  }
+
+  @AdminCouponIssuesContract()
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/coupon-issues')
+  listAdminCouponIssues(@Query() query: AdminCouponIssueQueryDto) {
+    return this.nightlifeDataService.listAdminCouponIssues(query);
+  }
+
+  @CancelAdminBookingContract('admin')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/bookings/:bookingId/cancel')
+  cancelBookingAsAdmin(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: CancelBookingDto,
+  ) {
+    return this.nightlifeDataService.cancelAdminBooking(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/booking-change-requests')
+  listAdminBookingChangeRequests(
+    @Req() request: RequestWithUser,
+    @Query() query: { status?: string; storeId?: string },
+  ) {
+    return this.nightlifeDataService.listAdminBookingChangeRequests(
+      request.user,
+      query,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/booking-change-requests/:requestId/review')
+  reviewBookingChangeRequest(
+    @Req() request: RequestWithUser,
+    @Param('requestId') requestId: string,
+    @Body() dto: ReviewBookingChangeRequestDto,
+  ) {
+    return this.nightlifeDataService.reviewBookingChangeRequest(
+      request.user,
+      requestId,
+      dto,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/bookings/:bookingId/messages')
+  listAdminBookingMessages(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+  ) {
+    return this.nightlifeDataService.listAdminBookingMessages(
+      request.user,
+      bookingId,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/bookings/:bookingId/messages')
+  createAdminBookingMessage(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: BookingChatMessageDto,
+  ) {
+    return this.nightlifeDataService.createAdminBookingMessage(
+      request.user,
+      bookingId,
+      dto,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/bookings/cancel-analytics')
+  getAdminBookingCancelAnalytics(
+    @Req() request: RequestWithUser,
+    @Query() query: { days?: string | number },
+  ) {
+    return this.nightlifeDataService.getAdminBookingCancelAnalytics(
+      request.user,
+      query,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/stores/:storeId/booking-policy')
+  updateAdminStoreBookingPolicy(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Body() dto: UpdateStoreBookingPolicyDto,
+  ) {
+    return this.nightlifeDataService.updateStoreBookingPolicy(
+      request.user,
+      storeId,
+      dto,
+    );
   }
 
   @ReviewSensitiveBillContract()
@@ -512,6 +885,7 @@ export class NightlifeDataController {
     );
   }
 
+<<<<<<< HEAD
   @ApiOperation({ summary: 'Admin action: List bookings with filters and pagination' })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -573,5 +947,24 @@ export class NightlifeDataController {
   @Get('admin/dashboard/stats')
   async getAdminDashboardStats(@Query('timeframe') timeframe?: string) {
     return this.nightlifeDataService.getAdminDashboardStats(timeframe);
+=======
+  private couponRequestContext(request: express.Request) {
+    const forwardedFor = request.headers['x-forwarded-for'];
+    const deviceId = request.headers['x-device-id'];
+    const userAgent = request.headers['user-agent'];
+    const forwardedIp = Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : forwardedFor;
+
+    return {
+      ip:
+        forwardedIp?.split(',')[0]?.trim() ||
+        request.ip ||
+        request.socket.remoteAddress ||
+        null,
+      userAgent: Array.isArray(userAgent) ? userAgent[0] : (userAgent ?? null),
+      deviceId: Array.isArray(deviceId) ? deviceId[0] : (deviceId ?? null),
+    };
+>>>>>>> origin/main
   }
 }

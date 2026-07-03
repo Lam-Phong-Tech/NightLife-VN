@@ -16,8 +16,10 @@ export class UsersService {
   ) {}
 
   findByEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+
     return this.prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     });
   }
 
@@ -41,7 +43,8 @@ export class UsersService {
     role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
     tier?: 'FREE' | 'PREMIUM' | 'VIP';
   }) {
-    const email = input.email.toLowerCase();
+    const email = input.email.trim().toLowerCase();
+    const displayName = input.displayName?.trim();
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email is already registered');
@@ -51,8 +54,8 @@ export class UsersService {
       data: {
         email,
         passwordHash: await this.passwordService.hash(input.password),
-        displayName: input.displayName,
-        phone: input.phone,
+        displayName: displayName || undefined,
+        phone: input.phone?.trim() || undefined,
         role: input.role ?? 'USER',
         tier: input.tier ?? 'FREE',
       },
@@ -60,7 +63,8 @@ export class UsersService {
   }
 
   async createGoogleMember(input: { email: string; displayName?: string }) {
-    const email = input.email.toLowerCase();
+    const email = input.email.trim().toLowerCase();
+    const displayName = input.displayName?.trim();
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email is already registered');
@@ -70,7 +74,7 @@ export class UsersService {
       data: {
         email,
         passwordHash: await this.passwordService.hash(`google:${randomUUID()}`),
-        displayName: input.displayName,
+        displayName: displayName || undefined,
         role: 'USER',
         tier: 'FREE',
       },
@@ -78,7 +82,8 @@ export class UsersService {
   }
 
   async createLineMember(input: { email: string; displayName?: string }) {
-    const email = input.email.toLowerCase();
+    const email = input.email.trim().toLowerCase();
+    const displayName = input.displayName?.trim();
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email is already registered');
@@ -88,7 +93,7 @@ export class UsersService {
       data: {
         email,
         passwordHash: await this.passwordService.hash(`line:${randomUUID()}`),
-        displayName: input.displayName,
+        displayName: displayName || undefined,
         role: 'USER',
         tier: 'FREE',
       },

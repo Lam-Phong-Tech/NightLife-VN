@@ -217,6 +217,10 @@ html.nl-scroll-effects-ready .nl-scroll-reveal[data-reveal-dir="up"]:not(.is-rev
   transform: translate3d(0, -24px, 0);
 }
 
+html.nl-scroll-effects-ready .nl-scroll-reveal[data-reveal-instant="true"] {
+  transition: none;
+}
+
 html.nl-scroll-effects-ready .nl-scroll-reveal.is-revealed {
   opacity: 1;
   transform: translate3d(0, 0, 0);
@@ -736,8 +740,8 @@ textarea::placeholder {
   }
 
   .nl-page-content {
-    padding-bottom: calc(112px + env(safe-area-inset-bottom)) !important;
-    scroll-padding-bottom: calc(112px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: calc(86px + env(safe-area-inset-bottom)) !important;
   }
 
   .nl-page-content .btn {

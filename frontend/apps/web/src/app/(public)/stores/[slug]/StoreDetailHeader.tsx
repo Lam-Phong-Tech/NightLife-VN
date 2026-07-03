@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock3, Heart, ImageIcon, MapPin, Phone, Play, Tag, Users, WalletCards } from "lucide-react";
 import type { PublicStoreDetail, StoreGalleryItem } from "@/lib/api/store-detail";
+import { formatPriceTier } from "@/lib/price-tier";
 import { categoryLabels } from "./store-detail.helpers";
 
 const readableName = (name: string) => {
@@ -15,14 +16,6 @@ const getInitials = (name: string) =>
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
-
-const formatVnd = (value?: number | null) => {
-  if (!value) {
-    return "Liên hệ";
-  }
-
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
-};
 
 const mediaBackground = (media?: StoreGalleryItem | null) =>
   media?.type === "IMAGE" && media.url
@@ -61,7 +54,7 @@ export function StoreDetailHeader({
   onTrackCall,
 }: StoreDetailHeaderProps) {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
-  const startingPrice = formatVnd(store.priceReference.startingFromVnd);
+  const startingPrice = formatPriceTier(store.priceReference.startingFromVnd);
   const closingTime = todayOpening.includes(" - ") ? todayOpening.split(" - ")[1] : "";
   const rawSummaryTags = [
     { key: "category", label: categoryLabel, icon: Tag, tone: "featured" },

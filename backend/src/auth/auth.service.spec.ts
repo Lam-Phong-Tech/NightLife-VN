@@ -72,47 +72,51 @@ describe('AuthService', () => {
   };
 
   const useDefaultConfig = () => {
-    configService.get.mockImplementation((key: string, defaultValue?: string) => {
-      if (key === 'GOOGLE_CLIENT_ID') {
-        return 'google-client-id';
-      }
+    configService.get.mockImplementation(
+      (key: string, defaultValue?: string) => {
+        if (key === 'GOOGLE_CLIENT_ID') {
+          return 'google-client-id';
+        }
 
-      if (key === 'JWT_EXPIRES_IN') {
-        return defaultValue ?? '1d';
-      }
+        if (key === 'JWT_EXPIRES_IN') {
+          return defaultValue ?? '1d';
+        }
 
-      return defaultValue;
-    });
+        return defaultValue;
+      },
+    );
   };
 
   const useLineConfig = () => {
-    configService.get.mockImplementation((key: string, defaultValue?: string) => {
-      if (key === 'LINE_CHANNEL_ID') {
-        return '2010552841';
-      }
+    configService.get.mockImplementation(
+      (key: string, defaultValue?: string) => {
+        if (key === 'LINE_CHANNEL_ID') {
+          return '2010552841';
+        }
 
-      if (key === 'LINE_CHANNEL_SECRET') {
-        return 'line-channel-secret';
-      }
+        if (key === 'LINE_CHANNEL_SECRET') {
+          return 'line-channel-secret';
+        }
 
-      if (key === 'LINE_CALLBACK_URL') {
-        return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
-      }
+        if (key === 'LINE_CALLBACK_URL') {
+          return 'https://demonightlight.test9.io.vn/api/backend/auth/line/callback';
+        }
 
-      if (key === 'WEB_BASE_URL') {
-        return 'https://demonightlight.test9.io.vn';
-      }
+        if (key === 'WEB_BASE_URL') {
+          return 'https://demonightlight.test9.io.vn';
+        }
 
-      if (key === 'GOOGLE_CLIENT_ID') {
-        return 'google-client-id';
-      }
+        if (key === 'GOOGLE_CLIENT_ID') {
+          return 'google-client-id';
+        }
 
-      if (key === 'JWT_EXPIRES_IN') {
-        return defaultValue ?? '1d';
-      }
+        if (key === 'JWT_EXPIRES_IN') {
+          return defaultValue ?? '1d';
+        }
 
-      return defaultValue;
-    });
+        return defaultValue;
+      },
+    );
   };
 
   beforeEach(() => {
@@ -368,6 +372,18 @@ describe('AuthService', () => {
     expect(service.googleLoginConfig()).toEqual({
       configured: true,
       clientId: 'google-client-id',
+    });
+  });
+
+  it('exposes LINE login configuration readiness', () => {
+    expect(service.lineLoginConfig()).toEqual({
+      configured: false,
+    });
+
+    useLineConfig();
+
+    expect(service.lineLoginConfig()).toEqual({
+      configured: true,
     });
   });
 

@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
-import { Telegraf, Markup } from 'telegraf';
+import { Telegraf } from 'telegraf';
+import { formatBookingRequestTelegramMessage } from '../notifications/admin-telegram-message.formatter';
 
 @Injectable()
 export class TelegramService {
@@ -12,7 +13,10 @@ export class TelegramService {
     @InjectBot() private bot: Telegraf,
     private configService: ConfigService,
   ) {
-    this.chatId = this.configService.get<string>('TELEGRAM_CHAT_ID') || this.configService.get<string>('TELEGRAM_OPS_CHAT_ID') || '';
+    this.chatId =
+      this.configService.get<string>('TELEGRAM_CHAT_ID') ||
+      this.configService.get<string>('TELEGRAM_OPS_CHAT_ID') ||
+      '';
   }
 
   async notifyNewBooking(booking: any) {
@@ -22,29 +26,38 @@ export class TelegramService {
     }
 
     try {
-      const storeName = booking.store?.name || 'Unknown Store';
-      const customerName = booking.user?.displayName || booking.guest?.displayName || 'Unknown Customer';
-      const phone = booking.user?.phone || booking.guest?.phone || 'No phone';
-      const time = new Date(booking.scheduledAt).toLocaleString('vi-VN');
-      const partySize = booking.partySize;
-
-      const message = `🔔 *Yêu cầu đặt bàn mới*\n\n` +
-        `🏪 *Quán:* ${storeName}\n` +
-        `👤 *Khách hàng:* ${customerName}\n` +
-        `📞 *Số điện thoại:* ${phone}\n` +
-        `⏰ *Thời gian:* ${time}\n` +
-        `👥 *Số lượng khách:* ${partySize} người\n\n` +
-        `Vui lòng xác nhận yêu cầu đặt bàn này.`;
-
-      await this.bot.telegram.sendMessage(this.chatId, message, {
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          Markup.button.callback('✅ Xác nhận', `accept_booking_${booking.id}`),
-        ]),
+      const message = formatBookingRequestTelegramMessage({
+        bookingCode: this.bookingPublicCode(booking.id),
+        storeName: booking.store?.name,
+        customerName: booking.user?.displayName ?? booking.guest?.displayName,
+        customerEmail: booking.guest?.email ?? booking.user?.email,
+        customerType: booking.user
+          ? booking.user?.tier === 'VIP'
+            ? 'VIP'
+            : 'Member'
+          : 'Guest',
+        contact: booking.user?.phone ?? booking.guest?.phone,
+        scheduledAt: booking.scheduledAt,
+        partySize: booking.partySize,
+        castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+        note: booking.note,
+        status: booking.status,
+        timeZone:
+          this.configService.get<string>('TELEGRAM_NOTIFICATION_TIME_ZONE') ??
+          'Asia/Bangkok',
       });
+
+      await this.bot.telegram.sendMessage(this.chatId, message);
       this.logger.log(`Booking ${booking.id} notification sent to Telegram.`);
     } catch (error) {
-      this.logger.error(`Failed to send Telegram notification: ${(error as any).message}`, (error as any).stack);
+      this.logger.error(
+        `Failed to send Telegram notification: ${(error as any).message}`,
+        (error as any).stack,
+      );
     }
+  }
+
+  private bookingPublicCode(bookingId?: string | null) {
+    return bookingId ? `BK-${bookingId.slice(0, 8).toUpperCase()}` : null;
   }
 }
