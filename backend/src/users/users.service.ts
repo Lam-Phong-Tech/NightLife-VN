@@ -113,12 +113,24 @@ export class UsersService {
 
   async validateCredentials(email: string, password: string) {
     const user = await this.findByEmail(email);
+    let passwordMatches = false;
+
+    if (user && !user.deletedAt && user.status === 'ACTIVE') {
+      try {
+        passwordMatches = await this.passwordService.verify(
+          password,
+          user.passwordHash,
+        );
+      } catch {
+        passwordMatches = false;
+      }
+    }
 
     if (
       !user ||
       user.deletedAt ||
       user.status !== 'ACTIVE' ||
-      !(await this.passwordService.verify(password, user.passwordHash))
+      !passwordMatches
     ) {
       throw new UnauthorizedException('Invalid email or password');
     }
