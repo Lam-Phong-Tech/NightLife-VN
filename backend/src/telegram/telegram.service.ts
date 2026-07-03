@@ -27,13 +27,21 @@ export class TelegramService {
 
     try {
       const message = formatBookingRequestTelegramMessage({
+        bookingCode: this.bookingPublicCode(booking.id),
         storeName: booking.store?.name,
         customerName: booking.user?.displayName ?? booking.guest?.displayName,
+        customerEmail: booking.guest?.email ?? booking.user?.email,
+        customerType: booking.user
+          ? booking.user?.tier === 'VIP'
+            ? 'VIP'
+            : 'Member'
+          : 'Guest',
         contact: booking.user?.phone ?? booking.guest?.phone,
         scheduledAt: booking.scheduledAt,
         partySize: booking.partySize,
         castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
         note: booking.note,
+        status: booking.status,
         timeZone:
           this.configService.get<string>('TELEGRAM_NOTIFICATION_TIME_ZONE') ??
           'Asia/Bangkok',
@@ -47,5 +55,9 @@ export class TelegramService {
         (error as any).stack,
       );
     }
+  }
+
+  private bookingPublicCode(bookingId?: string | null) {
+    return bookingId ? `BK-${bookingId.slice(0, 8).toUpperCase()}` : null;
   }
 }

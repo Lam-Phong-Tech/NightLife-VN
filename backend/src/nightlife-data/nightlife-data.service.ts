@@ -141,8 +141,14 @@ type BookingNotificationRecord = {
   subtotalVnd?: number | null;
   discountVnd?: number | null;
   totalVnd?: number | null;
+  discountRuleSnapshot?: Prisma.JsonValue | null;
   note?: string | null;
-  user?: { id: string; displayName: string | null; tier: string | null } | null;
+  user?: {
+    id: string;
+    email: string | null;
+    displayName: string | null;
+    tier: string | null;
+  } | null;
   guest?: {
     id: string;
     displayName: string | null;
@@ -5630,6 +5636,7 @@ export class NightlifeDataService {
       subtotalVnd: true,
       discountVnd: true,
       totalVnd: true,
+      discountRuleSnapshot: true,
       note: true,
       cancelledAt: true,
       createdAt: true,
@@ -5642,7 +5649,9 @@ export class NightlifeDataService {
           publicAlias: true,
         },
       },
-      user: { select: { id: true, displayName: true, tier: true } },
+      user: {
+        select: { id: true, email: true, displayName: true, tier: true },
+      },
       guest: {
         select: { id: true, displayName: true, phone: true, email: true },
       },

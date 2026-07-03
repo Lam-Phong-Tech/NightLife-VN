@@ -44,10 +44,12 @@ export type BookingAdminNotification = {
   status: string;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
+  discountRuleSnapshot?: unknown;
   note?: string | null;
   storeId?: string | null;
   user?: {
     id: string;
+    email?: string | null;
     displayName?: string | null;
     tier?: string | null;
   } | null;
@@ -155,10 +157,12 @@ export class AdminNotificationService {
         this.bookingMessageInput(booking),
       ),
       lines: [
-        ['Booking', booking.id],
+        ['Booking', this.bookingPublicCode(booking.id)],
         ['Quán', booking.store?.name],
         ['Khách hàng', this.customerName(booking)],
-        ['Số điện thoại', this.customerContact(booking)],
+        ['Email', this.customerEmail(booking)],
+        ['Loại khách', this.customerType(booking)],
+        ['Mức giảm', this.bookingDiscountLabel(booking)],
         ['Thời gian', this.formatDateTime(booking.scheduledAt)],
         ['Số khách', booking.partySize],
         ['Cast', this.castLabel(booking.cast)],
@@ -499,9 +503,14 @@ export class AdminNotificationService {
   private bookingPayload(booking: BookingAdminNotification) {
     return {
       bookingId: booking.id,
+      bookingCode: this.bookingPublicCode(booking.id),
       status: booking.status,
+      statusLabel: this.bookingStatusLabel(booking.status),
       scheduledAt: this.toIso(booking.scheduledAt),
       partySize: booking.partySize ?? null,
+      customerType: this.customerType(booking),
+      discountLabel: this.bookingDiscountLabel(booking),
+      qrStatus: this.bookingQrStatus(),
       store: booking.store
         ? {
             id: booking.store.id,
@@ -573,14 +582,20 @@ export class AdminNotificationService {
 
   private bookingMessageInput(booking: BookingAdminNotification) {
     return {
+      bookingCode: this.bookingPublicCode(booking.id),
       storeName: booking.store?.name,
       customerName: this.customerName(booking),
+      customerEmail: this.customerEmail(booking),
+      customerType: this.customerType(booking),
+      discountLabel: this.bookingDiscountLabel(booking),
       contact: this.customerContact(booking),
       scheduledAt: booking.scheduledAt,
       partySize: booking.partySize,
       castName: this.castLabel(booking.cast),
       note: booking.note,
       status: booking.status,
+      qrStatus: this.bookingQrStatus(),
+      bookingStatusLabel: this.bookingStatusLabel(booking.status),
       timeZone: this.telegramNotificationTimeZone(),
     };
   }
@@ -605,6 +620,73 @@ export class AdminNotificationService {
     guest?: { displayName?: string | null } | null;
   }) {
     return input.user?.displayName ?? input.guest?.displayName ?? 'Khách mới';
+  }
+
+  private customerEmail(input: {
+    user?: { email?: string | null } | null;
+    guest?: { email?: string | null } | null;
+  }) {
+    return input.guest?.email ?? input.user?.email ?? null;
+  }
+
+  private customerType(input: { user?: { tier?: string | null } | null }) {
+    if (!input.user) {
+      return 'Guest';
+    }
+
+    return input.user.tier === 'VIP' ? 'VIP' : 'Member';
+  }
+
+  private bookingDiscountLabel(input: {
+    user?: { tier?: string | null } | null;
+    discountRuleSnapshot?: unknown;
+  }) {
+    const discountPercent = this.discountPercentFromSnapshot(
+      input.discountRuleSnapshot,
+    );
+
+    if (typeof discountPercent === 'number' && discountPercent > 0) {
+      return `${discountPercent}%`;
+    }
+
+    const customerType = this.customerType(input);
+
+    if (customerType === 'VIP') {
+      return '10%';
+    }
+
+    return customerType === 'Member' ? '8%' : '5%';
+  }
+
+  private discountPercentFromSnapshot(snapshot: unknown) {
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      return null;
+    }
+
+    const record = snapshot as Record<string, unknown>;
+    const value = record.discountPercent ?? record.value;
+
+    return typeof value === 'number' ? value : null;
+  }
+
+  private bookingQrStatus() {
+    return 'Đã cấp - Còn hiệu lực';
+  }
+
+  private bookingStatusLabel(status?: string | null) {
+    if (status === 'COMPLETED' || status === 'CHECKED_IN') {
+      return 'Hoàn tất';
+    }
+
+    if (status === 'CANCELLED' || status === 'NO_SHOW') {
+      return 'Đã hủy';
+    }
+
+    return 'Mới';
+  }
+
+  private bookingPublicCode(bookingId: string) {
+    return `BK-${bookingId.slice(0, 8).toUpperCase()}`;
   }
 
   private customerContact(input: {
