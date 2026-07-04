@@ -331,6 +331,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                   >
                     <span
                       aria-hidden="true"
+                      data-no-translate="true"
                       style={{
                         width: isMobile ? "40px" : "42px",
                         height: isMobile ? "40px" : "42px",
