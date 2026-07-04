@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState } from 'react';
 import { clearAuthSession } from '@/lib/auth/session';
 
@@ -111,6 +111,34 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
   },
 ];
 
+function TopRegionFilter() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const city = searchParams.get('city') || '';
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <select
+        value={city}
+        onChange={(e) => {
+          const params = new URLSearchParams(searchParams.toString());
+          if (e.target.value) params.set('city', e.target.value);
+          else params.delete('city');
+          router.push(pathname + '?' + params.toString());
+        }}
+        style={{ appearance: 'none', background: 'transparent', border: '1px solid rgba(212,178,106,.28)', color: '#c5c0b6', fontSize: '12.5px', borderRadius: '11px', padding: '8px 24px 8px 32px', fontWeight: 500, cursor: 'pointer', outline: 'none' }}
+      >
+        <option value="" style={{ background: '#1a191f' }}>Tất cả KV</option>
+        <option value="Hanoi" style={{ background: '#1a191f' }}>HN</option>
+        <option value="Ho Chi Minh City" style={{ background: '#1a191f' }}>HCM</option>
+      </select>
+      <svg style={{ position: 'absolute', left: '10px', top: '9px', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+      <svg style={{ position: 'absolute', right: '10px', top: '11px', pointerEvents: 'none' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c5c0b6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
@@ -218,11 +246,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px', marginTop: '2px' }}>{title}</div>
           </div>
           <div style={{ flex: 1 }}></div>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: '#c5c0b6', border: '1px solid rgba(212,178,106,.28)', borderRadius: '11px', padding: '8px 13px', fontWeight: 500, cursor: 'pointer' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
-            HN
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-          </span>
+          <React.Suspense fallback={<div />}>
+            <TopRegionFilter />
+          </React.Suspense>
           <span style={{ position: 'relative', width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer' }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
             <span style={{ position: 'absolute', top: '8px', right: '9px', width: '7px', height: '7px', borderRadius: '50%', background: '#e0729e', border: '1.5px solid #0c0c0f' }}></span>
