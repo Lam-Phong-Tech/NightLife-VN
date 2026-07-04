@@ -13419,12 +13419,8 @@ export class NightlifeDataService {
   }
 
   async checkAdminStoreSlug(slug: string) {
-    try {
-      const existing = await this.prisma.store.findUnique({ where: { slug } });
-      return { available: !existing };
-    } catch (e: any) {
-      return { available: false, error: e.message, stack: e.stack };
-    }
+    const existing = await this.prisma.store.findUnique({ where: { slug } });
+    return { available: !existing };
   }
 
   private generateSlug(name: string): string {
