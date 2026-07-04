@@ -57,6 +57,9 @@ describe('Bill approval API (e2e)', () => {
     auditLog: {
       create: jest.fn(),
     },
+    notificationLog: {
+      create: jest.fn(),
+    },
     pointLedger: {
       upsert: jest.fn(),
     },
