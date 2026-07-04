@@ -300,8 +300,23 @@ export const getFeaturedBlogPost = async () => {
   return posts.find((post) => post.featured && !post.noindex) ?? posts.find((post) => !post.noindex) ?? posts[0]!;
 };
 
-export const getBlogPost = async (slug: string) =>
-  (await getPublishedBlogPosts()).find((post) => post.slug === slug);
+export const getBlogPost = async (slug: string) => {
+  const posts = await getPublishedBlogPosts();
+  const found = posts.find((post) => post.slug === slug);
+  if (found) return found;
+
+  try {
+    const response = await contentApi.get(slug);
+    if (response) {
+      const mapped = mapCmsContentToBlogPost(response);
+      if (mapped) return mapped;
+    }
+  } catch (error) {
+    // Ignored, fallback to undefined
+  }
+
+  return undefined;
+};
 
 export const getBlogCategories = (posts: BlogPost[]) =>
   Array.from(new Set(posts.filter((post) => !post.noindex).map((post) => post.category)));

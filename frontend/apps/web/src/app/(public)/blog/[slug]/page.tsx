@@ -11,7 +11,7 @@ type PageProps = {
 };
 
 export const revalidate = 300;
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("vi-VN", {
