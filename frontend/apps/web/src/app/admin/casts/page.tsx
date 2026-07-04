@@ -64,8 +64,11 @@ export default function AdminCastsPage() {
   const fetchStores = async () => {
     try {
       const res = await apiClient<any>('/admin/stores', { params: { limit: 100 } });
-      if (res && res.data) {
-        setStores(Array.isArray(res.data) ? res.data : res.data.data || []);
+      if (res) {
+        if (Array.isArray(res)) setStores(res);
+        else if (res.data && Array.isArray(res.data)) setStores(res.data);
+        else if (res.data && res.data.data && Array.isArray(res.data.data)) setStores(res.data.data);
+        else setStores([]);
       }
     } catch (e) {
       console.error(e);
