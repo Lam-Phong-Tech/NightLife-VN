@@ -13923,8 +13923,10 @@ export class NightlifeDataService {
   async listAdminStores(
     query: import('./dto/admin-store.dto').AdminStoreQueryDto,
   ) {
-    const { page = 1, limit = 10, type, search } = query;
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Number(query.limit) || 10);
     const skip = (page - 1) * limit;
+    const { type, search } = query;
 
     let prismaCategory: import('@prisma/client').StoreCategory | undefined;
     if (type && type !== 'all') {
