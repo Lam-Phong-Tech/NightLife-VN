@@ -41,9 +41,14 @@ const mockBlogs = [
   { id: '4', title: 'Cách chọn Cast phù hợp cho buổi tối của bạn', cat: 'Cẩm nang', date: '--', views: '--', status: 'Nháp', color: '#321921' },
 ];
 
+const mockFeatured = [
+  { id: '1', img: '#2c1e16', badge: 'HOT', name: 'Combo Sinh Nhật VIP', sub: 'Opera Spa Hải Phòng', labels: ['Đặt bàn nhanh', 'Mới'] },
+  { id: '2', img: '#1a1d24', name: 'Gói Private Party', sub: 'Club Lumière', labels: ['Không nhãn'] },
+];
+
 export default function AdminContentPage() {
-  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'blog'>('campaign');
-  const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'blog' | null>(null);
+  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
+  const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog' | null>(null);
 
   const getCampaignStatusStyle = (status: string) => {
     if (status === 'Đang chạy') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
@@ -198,6 +203,30 @@ export default function AdminContentPage() {
             Banner
           </button>
           <button 
+            onClick={() => setActiveTab('featured')}
+            style={{
+              padding: '8px 24px', borderRadius: '6px', border: 'none', 
+              background: activeTab === 'featured' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'featured' ? colors.onGold : colors.muted,
+              fontWeight: activeTab === 'featured' ? 700 : 500,
+              fontSize: '13px', cursor: 'pointer'
+            }}
+          >
+            Dịch vụ nổi bật
+          </button>
+          <button 
+            onClick={() => setActiveTab('video')}
+            style={{
+              padding: '8px 24px', borderRadius: '6px', border: 'none', 
+              background: activeTab === 'video' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'video' ? colors.onGold : colors.muted,
+              fontWeight: activeTab === 'video' ? 700 : 500,
+              fontSize: '13px', cursor: 'pointer'
+            }}
+          >
+            Video Hot
+          </button>
+          <button 
             onClick={() => setActiveTab('blog')}
             style={{
               padding: '8px 24px', borderRadius: '6px', border: 'none', 
@@ -220,7 +249,7 @@ export default function AdminContentPage() {
           }}
         >
           <Plus size={18} strokeWidth={3} />
-          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : 'Viết bài'}
+          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video' : 'Viết bài'}
         </button>
       </div>
 
@@ -330,6 +359,57 @@ export default function AdminContentPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* FEATURED CONTENT */}
+      {activeTab === 'featured' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {mockFeatured.map((f, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: '16px', background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '16px' }}>
+              <div style={{ width: 100, height: 80, flex: 'none', borderRadius: '12px', background: f.img, position: 'relative' }}>
+                {f.badge && <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '10px', fontWeight: 700, color: colors.text, background: 'rgba(12,12,15,.7)', border: `1px solid rgba(255,255,255,.2)`, padding: '2px 8px', borderRadius: '6px' }}>{f.badge}</span>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: colors.text }}>{f.name}</div>
+                <div style={{ fontSize: '13px', color: colors.muted, marginTop: '4px' }}>{f.sub}</div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
+                  {f.labels.map(l => (
+                    <span key={l} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${colors.borderSoft}`, color: colors.text2 }}>{l}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+          <div style={{ background: 'rgba(212,178,106,.05)', border: `1px solid rgba(212,178,106,.26)`, borderRadius: '16px', padding: '20px', marginTop: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(12,12,15,.5)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: '12px', padding: '12px 16px' }}>
+              <Search size={18} color={colors.muted} />
+              <input placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIDEO HOT CONTENT */}
+      {activeTab === 'video' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '12px', padding: '16px', background: 'rgba(212,178,106,.05)', border: `1px solid rgba(212,178,106,.2)`, borderRadius: '16px', alignItems: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(212,178,106,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.gold, flex: 'none' }}>
+              ℹ️
+            </div>
+            <span style={{ fontSize: '13px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>"Video Hot"</b> trên trang chủ — chọn từ <b style={{ color: '#f0dda8' }}>thư viện video của các quán</b> (mục Quán → Video quán), sắp thứ tự theo khu vực.</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
+              <span style={{ padding: '6px 20px', borderRadius: '8px', background: colors.goldGrad, color: colors.onGold, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Hà Nội</span>
+              <span style={{ padding: '6px 20px', borderRadius: '8px', color: colors.muted, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>TP. Hồ Chí Minh</span>
+            </div>
+            <div style={{ flex: 1 }}></div>
+            <span style={{ fontSize: '13px', color: colors.muted }}>0 video đang hiển thị trên trang chủ</span>
+          </div>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: colors.muted, fontSize: '14px', border: `1px dashed ${colors.borderSoft}`, borderRadius: '16px', marginTop: '16px' }}>
+            Chưa có video nào. Hãy thêm video từ mục Quản lý Quán.
+          </div>
         </div>
       )}
 
