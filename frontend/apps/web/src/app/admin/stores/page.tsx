@@ -263,12 +263,25 @@ export default function AdminStoresPage() {
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    if (files.length > 10) {
+      showToast('Bạn chỉ được tải lên tối đa 10 ảnh cùng lúc');
+      if (imageUploadRef.current) imageUploadRef.current.value = '';
+      return;
+    }
+
     try {
       setUploadingImage(true);
       const uploaded: any[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file) continue;
+
+        if (file.size > 15 * 1024 * 1024) {
+          showToast(`Ảnh "${file.name}" vượt quá dung lượng 15MB`);
+          continue;
+        }
+
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'STORE_GALLERY');
@@ -333,6 +346,12 @@ export default function AdminStoresPage() {
 
   const updateForm = (key: string, val: string) => setFormData(p => ({ ...p, [key]: val }));
   const updateHour = (day: string, key: string, val: any) => setHoursForm((p: any) => ({ ...p, [day]: { ...p[day], [key]: val } }));
+
+  const getYoutubeThumb = (url: string) => {
+    if (!url) return '';
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})/);
+    return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : url;
+  };
 
   return (
     <div data-screen-label="Admin · Venues" style={{ padding: '22px 26px 44px', minHeight: '100vh', background: '#0c0c0f' }}>
@@ -502,7 +521,7 @@ export default function AdminStoresPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                 {videos.map((vd: any) => (
                   <div key={vd.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb ? (vd.thumb.startsWith('linear-gradient') ? vd.thumb : `url(${resolveClientUrl(vd.thumb)}) center/cover no-repeat`) : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb ? (vd.thumb.startsWith('linear-gradient') ? vd.thumb : `url(${resolveClientUrl(getYoutubeThumb(vd.thumb))}) center/cover no-repeat`) : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg>
                       </span>
