@@ -80,29 +80,46 @@ export default function AdminDashboardPage() {
   };
 
   // Convert stats to fallbacks
-  const pendingBills = stats?.pendingBills ?? 5;
-  const pendingPartners = stats?.pendingPartners ?? 3;
-  const activeStores = stats?.activeStores ?? 24;
-  const totalCasts = stats?.totalCasts ?? 86;
-  const pendingCasts = stats?.pendingCasts ?? 4;
-  const todaysBookings = stats?.todaysBookings ?? 12;
-  const todaysBookingsCompleted = stats?.todaysBookingsCompleted ?? 9;
-  const todaysBookingsNew = stats?.todaysBookingsNew ?? 3;
-  const pendingBillsAmount = stats?.pendingBillsAmount ?? 48200000;
-  const monthlyRevenue = stats?.monthlyRevenue ?? 312000000;
-  const commissionAmount = stats?.commissionAmount ?? 41800000;
+  const pendingBills = stats?.pendingBills ?? 0;
+  const pendingPartners = stats?.pendingPartners ?? 0;
+  const activeStores = stats?.activeStores ?? 0;
+  const totalCasts = stats?.totalCasts ?? 0;
+  const pendingCasts = stats?.pendingCasts ?? 0;
+  const todaysBookings = stats?.todaysBookings ?? 0;
+  const todaysBookingsCompleted = stats?.todaysBookingsCompleted ?? 0;
+  const todaysBookingsNew = stats?.todaysBookingsNew ?? 0;
+  const pendingBillsAmount = stats?.pendingBillsAmount ?? 0;
+  const monthlyRevenue = stats?.monthlyRevenue ?? 0;
+  const commissionAmount = stats?.commissionAmount ?? 0;
 
   // Chart
-  const chartData = stats?.revenue7Days || [
-    { date: 'T2', revenue: 160 },
-    { date: 'T3', revenue: 210 },
-    { date: 'T4', revenue: 135 },
-    { date: 'T5', revenue: 250 },
-    { date: 'T6', revenue: 198 },
-    { date: 'T7', revenue: 312 },
-    { date: 'CN', revenue: 274 },
-  ];
-  const maxRev = Math.max(...chartData.map(d => d.revenue), 1);
+  const chartData = stats?.revenue7Days || [];
+  const maxRev = chartData.length > 0 ? Math.max(...chartData.map(d => d.revenue), 1) : 1;
+
+  const handleExport = async () => {
+    try {
+      const { getAuthToken, buildApiUrl } = await import('@/lib/api/client');
+      const tf = ['today', 'week', 'month'][activeFilter];
+      const token = getAuthToken();
+      const url = buildApiUrl(`/admin/dashboard/export?timeframe=${tf}`);
+      
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `bao_cao_${tf}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Không thể tải báo cáo. Vui lòng thử lại.');
+    }
+  };
 
   return (
     <div data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
@@ -137,7 +154,10 @@ export default function AdminDashboardPage() {
               );
             })}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer' }}>
+          <span 
+            onClick={handleExport}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '9px 16px', borderRadius: '10px', cursor: 'pointer' }}
+          >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Xuất báo cáo
           </span>
         </div>
@@ -149,7 +169,7 @@ export default function AdminDashboardPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+2</span></div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{activeStores}</div>
           <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Quán hoạt động</div>
-          <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>HN {stats?.activeStoresHn ?? 15} · HCM {stats?.activeStoresHcm ?? 9}</div>
+          <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>HN {stats?.activeStoresHn ?? 0} · HCM {stats?.activeStoresHcm ?? 0}</div>
         </div>
         <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6a3 3 0 0 1 0 6"/></svg></span><span style={{ fontSize: '11px', color: '#e7b869', fontWeight: 600 }}>{pendingCasts} chờ</span></div>
@@ -160,7 +180,7 @@ export default function AdminDashboardPage() {
         <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(111,159,216,.12)', border: '1px solid rgba(111,159,216,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8fb6e4' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+{todaysBookingsNew} mới</span></div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{todaysBookings}</div>
-          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Booking hôm nay</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Booking {['hôm nay', 'tuần này', 'tháng này'][activeFilter]}</div>
           <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>{todaysBookingsCompleted} hoàn tất · {todaysBookingsNew} mới</div>
         </div>
         <div style={{ background: 'rgba(224,164,78,.07)', border: '1px solid rgba(224,164,78,.28)', borderRadius: '16px', padding: '16px' }}>
@@ -175,7 +195,7 @@ export default function AdminDashboardPage() {
             {formatVnd(monthlyRevenue).replace('M₫', '')}
             <span style={{ fontSize: '15px', fontWeight: 700 }}>M₫</span>
           </div>
-          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Doanh thu tháng 6</div>
+          <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Tổng doanh thu</div>
           <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>Hoa hồng {formatVnd(commissionAmount)}</div>
         </div>
         <div style={{ background: 'rgba(224,114,158,.06)', border: '1px solid rgba(224,114,158,.24)', borderRadius: '16px', padding: '16px' }}>

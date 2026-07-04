@@ -9,6 +9,7 @@ import {
   Put,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
@@ -1367,6 +1368,26 @@ export class NightlifeDataController {
   @Get('admin/dashboard/stats')
   async getAdminDashboardStats(@Query('timeframe') timeframe?: string) {
     return this.nightlifeDataService.getAdminDashboardStats(timeframe);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/layout/badges')
+  async getAdminLayoutBadges() {
+    return this.nightlifeDataService.getAdminLayoutBadges();
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/dashboard/export')
+  async getAdminDashboardExport(@Query('timeframe') timeframe: string, @Res() res: express.Response) {
+    const buffer = await this.nightlifeDataService.getAdminDashboardExport(timeframe);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename=bao_cao.xlsx',
+      'Content-Length': buffer.byteLength,
+    });
+    res.send(buffer);
   }
 
   private couponRequestContext(request: express.Request) {

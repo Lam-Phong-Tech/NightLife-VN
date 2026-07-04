@@ -385,17 +385,22 @@ const getBaseUrl = () => {
   return "http://localhost:3001";
 };
 
-const getAuthToken = () => {
-  // Can be implemented to extract token from cookie in SSR, or localStorage/cookie in CSR
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(new RegExp("(^| )auth_token=([^;]+)"));
-    if (match) return match[2];
+export const getAuthToken = () => {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )nlvn_session=([^;]+)"));
+  if (match) {
+    try {
+      const payload = JSON.parse(decodeURIComponent(match[2]));
+      return payload.accessToken as string;
+    } catch {
+      return null;
+    }
   }
   return null;
 };
 
-const buildApiUrl = (endpoint: string, params?: RequestOptions["params"]) => {
-  let url = `${getBaseUrl()}/${endpoint.replace(/^\//, "")}`;
+export const buildApiUrl = (endpoint: string, params?: RequestOptions["params"]) => {
+  let url = endpoint.startsWith("http") ? endpoint : `${getBaseUrl()}/${endpoint.replace(/^\//, "")}`;
 
   if (params) {
     const cleanParams = Object.fromEntries(

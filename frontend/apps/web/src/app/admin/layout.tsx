@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { clearAuthSession } from '@/lib/auth/session';
+import { apiClient } from '@/lib/api/client';
 
 type AdminNavItem = {
   icon: React.ReactNode;
@@ -166,6 +167,20 @@ function TopRegionFilter() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [badges, setBadges] = useState({ pendingBills: 0, pendingCasts: 0, pendingPartners: 0 });
+
+  useEffect(() => {
+    if (pathname === '/admin/dang-nhap') return;
+    const fetchBadges = async () => {
+      try {
+        const data = await apiClient<any>('/admin/layout/badges');
+        if (data) setBadges(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    void fetchBadges();
+  }, [pathname]);
 
   if (pathname === '/admin/dang-nhap') {
     return <>{children}</>;
@@ -212,6 +227,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {group.items.map(item => {
                 const isActive = pathname === item.href;
                 const isHovered = hoveredLink === item.href;
+                let overrideCount = item.count;
+                if (item.href === '/admin/bills') overrideCount = badges.pendingBills || undefined;
+                if (item.href === '/admin/casts') overrideCount = badges.pendingCasts || undefined;
+                if (item.href === '/admin/partners') overrideCount = badges.pendingPartners || undefined;
+                
                 return (
                   <Link
                     key={item.href}
@@ -236,9 +256,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       color: isActive ? '#d4b26a' : 'currentColor',
                     })}
                     <span style={{ flex: 1 }}>{item.label}</span>
-                    {item.count ? (
+                    {overrideCount ? (
                       <span style={{ fontSize: '10px', fontWeight: 700, color: item.countColor, background: item.countBg, borderRadius: '9px', minWidth: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>
-                        {item.count}
+                        {overrideCount}
                       </span>
                     ) : null}
                   </Link>

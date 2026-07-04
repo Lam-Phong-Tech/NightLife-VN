@@ -14000,16 +14000,7 @@ export class NightlifeDataService {
     };
   }
 
-  async getAdminDashboardStats(timeframe?: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const activeStores = await this.prisma.store.count();
-    const totalContents = await this.prisma.content.count();
-    const activeStoresHn = 0;
-    const activeStoresHcm = 0;
-
-    // Using any to bypass strict type checking for statuses we aren't 100% sure about
+  async getAdminLayoutBadges() {
     const pendingBills = await this.prisma.bill
       .count({ where: { status: 'SUBMITTED' as any } })
       .catch(() => 0);
@@ -14020,27 +14011,101 @@ export class NightlifeDataService {
       .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
       .catch(() => 0);
 
+    return {
+      pendingBills,
+      pendingCasts,
+      pendingPartners,
+    };
+  }
+
+  async getAdminDashboardExport(timeframe?: string) {
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Bao_Cao');
+    
+    sheet.columns = [
+      { header: 'Mã Booking', key: 'id', width: 20 },
+      { header: 'Số Khách', key: 'partySize', width: 15 },
+      { header: 'Trạng Thái', key: 'status', width: 20 },
+      { header: 'Thời Gian', key: 'time', width: 25 },
+    ];
+    
+    const recentBookings = await this.prisma.booking.findMany({ take: 100, orderBy: { scheduledAt: 'desc' } }).catch(() => []);
+    for (const b of recentBookings) {
+      sheet.addRow({ id: b.id.substring(0, 8), partySize: b.partySize || 1, status: b.status, time: b.scheduledAt });
+    }
+    
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer;
+  }
+
+  async getAdminDashboardStats(timeframe?: string) {
+    let startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+
+    if (timeframe === 'week') {
+      startDate.setDate(startDate.getDate() - 7);
+    } else if (timeframe === 'month') {
+      startDate.setDate(1);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const activeStores = await this.prisma.store.count();
+    const activeStoresHn = await this.prisma.store.count({ where: { city: { in: ['Hanoi', 'Hà Nội', 'HN'] } } }).catch(() => 0);
+    const activeStoresHcm = await this.prisma.store.count({ where: { city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM'] } } }).catch(() => 0);
+    const totalContents = await this.prisma.content.count();
+    const totalCasts = await this.prisma.cast.count().catch(() => 0);
+
+    // Using any to bypass strict type checking for statuses we aren't 100% sure about
+    const pendingBills = await this.prisma.bill
+      .count({ where: { status: 'SUBMITTED' as any } })
+      .catch(() => 0);
+      
+    const pendingBillsResult = await this.prisma.bill
+      .aggregate({
+        _sum: { totalVnd: true } as any,
+        where: { status: 'SUBMITTED' as any },
+      })
+      .catch(() => ({ _sum: { totalVnd: 0 } }));
+    const pendingBillsAmount = (pendingBillsResult._sum as any)?.totalVnd || 0;
+
+    const pendingCasts = await this.prisma.cast
+      .count({ where: { status: 'PENDING' as any } })
+      .catch(() => 0);
+    const pendingPartners = await this.prisma.user
+      .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
+      .catch(() => 0);
+
     const todaysBookings = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: today } },
+      where: { scheduledAt: { gte: startDate } },
     });
     const todaysBookingsCompleted = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: today }, status: 'COMPLETED' as any },
+      where: { scheduledAt: { gte: startDate }, status: 'COMPLETED' as any },
     });
     const todaysBookingsNew = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: today }, status: 'REQUESTED' as any },
+      where: { scheduledAt: { gte: startDate }, status: 'REQUESTED' as any },
     });
 
     const monthlyRevenueResult = await this.prisma.bill
       .aggregate({
         _sum: { totalVnd: true } as any,
-        where: { status: 'COMPLETED' as any },
+        where: { status: 'COMPLETED' as any, createdAt: { gte: startDate } },
       })
       .catch(() => ({ _sum: { totalVnd: 0 } }));
     const monthlyRevenue = (monthlyRevenueResult._sum as any)?.totalVnd || 0;
 
-    const commissionAmount = 41800000;
+    const commissionResult = await this.prisma.bill
+      .aggregate({
+        _sum: { commissionAmountVnd: true } as any,
+        where: { status: 'COMPLETED' as any, createdAt: { gte: startDate } },
+      })
+      .catch(() => ({ _sum: { commissionAmountVnd: 0 } }));
+    const commissionAmount = (commissionResult._sum as any)?.commissionAmountVnd || 0;
 
     const revenue7Days: any[] = [];
+    const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -14059,7 +14124,7 @@ export class NightlifeDataService {
         .catch(() => ({ _sum: { totalVnd: 0 } }));
 
       revenue7Days.push({
-        date: d.toISOString().split('T')[0],
+        date: daysOfWeek[d.getDay()], // format T2, T3...
         revenue: (rev._sum as any)?.totalVnd || 0,
       });
     }
@@ -14088,11 +14153,13 @@ export class NightlifeDataService {
       activeStoresHn,
       activeStoresHcm,
       pendingBills,
+      pendingBillsAmount,
       pendingCasts,
       pendingPartners,
       todaysBookings,
       todaysBookingsCompleted,
       todaysBookingsNew,
+      totalCasts,
       totalContents,
       monthlyRevenue,
       commissionAmount,
