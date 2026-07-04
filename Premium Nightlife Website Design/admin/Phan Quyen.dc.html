@@ -81,6 +81,50 @@
     </div>
   </div>
 
+  <sc-if value="{{ afOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ afClose }}" style="position:fixed;inset:0;z-index:80;background:rgba(6,6,9,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ afStop }}" style="width:540px;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;background:#141319;border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.07);flex:none;">
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Phân quyền · Tài khoản</div>
+            <div style="font-size:17px;font-weight:700;color:#f3f0ea;margin-top:3px;">Thêm tài khoản</div>
+          </div>
+          <span onClick="{{ afClose }}" style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div class="scw" style="flex:1;overflow-y:auto;padding:20px 24px 24px;display:flex;flex-direction:column;gap:18px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tên hiển thị</div>
+            <input value="{{ afName }}" onInput="{{ afNameSet }}" placeholder="VD: Lê Vận Hành" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:14px;font-weight:600;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Email đăng nhập</div>
+            <input value="{{ afEmail }}" onInput="{{ afEmailSet }}" placeholder="ten@vietyoru.vn" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Vai trò</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ afKinds }}" as="k" hint-placeholder-count="3"><span onClick="{{ k.pick }}" style="{{ k.style }}">{{ k.label }}</span></sc-for></div>
+            <div style="font-size:11px;color:#57534b;margin-top:8px;line-height:1.5;">{{ afRoleHint }}</div>
+          </div>
+          <sc-if value="{{ afIsPartner }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Quán liên kết</div>
+              <input value="{{ afVenue }}" onInput="{{ afVenueSet }}" placeholder="VD: Club Lumière" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+            </div>
+          </sc-if>
+          <div style="display:flex;gap:9px;padding:11px 14px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 8h8M8 11h5"/></svg>
+            <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Hệ thống sẽ gửi <b style="color:#f0dda8;">email mời kích hoạt</b> — tài khoản ở trạng thái "Chờ kích hoạt" đến khi đặt mật khẩu.</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);flex:none;background:rgba(12,12,15,.35);">
+          <span style="flex:1;"></span>
+          <span onClick="{{ afClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ afSave }}" style="{{ afSaveStyle }}">Tạo &amp; gửi lời mời</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
@@ -97,15 +141,15 @@ class Component extends DCLogic {
 
   renderVals(){
     const S=this.state, o={ toast:S.toast };
-    o.rlAdd=()=>this.showToast('Mở form thêm tài khoản');
+    o.rlAdd=()=>this.setState({af:{name:'',email:'',kind:'partner',venue:''}});
     const rst=(kind)=>this.chip(kind==='admin'?'gold':kind==='operator'?'info':'muted')+'font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:7px;display:inline-flex;';
-    o.rlAccounts=[
+    o.rlAccounts=(S.accExtra||[]).concat([
       {ini:'A',name:'Nguyễn Admin',email:'admin@vietyoru.vn',role:'Super Admin',kind:'admin',last:'● Đang online',avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
       {ini:'O',name:'Trần Vận Hành',email:'operator@vietyoru.vn',role:'Operator',kind:'operator',last:'2 giờ trước',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
       {ini:'CL',name:'Club Lumière',email:'partner.lumiere@vietyoru.vn',role:'Đối tác',kind:'partner',last:'15 phút trước',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
       {ini:'SL',name:'Sakura Lounge',email:'partner.sakura@vietyoru.vn',role:'Đối tác',kind:'partner',last:'1 ngày trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
       {ini:'KH',name:'KTV Hoàng Gia',email:'partner.hoanggia@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-    ].map(a=>({...a,roleStyle:rst(a.kind)}));
+    ]).map(a=>({...a,roleStyle:rst(a.kind)}));
     const yes='#e3c27e', no='#413d36', mark=(v)=>v?'✓':'—';
     const CAPS=[
       ['Đăng nhập hệ thống',1,1,1],
@@ -120,6 +164,30 @@ class Component extends DCLogic {
       ['Phân quyền tài khoản',1,0,0],
     ];
     o.rlCaps=CAPS.map(c=>({name:c[0], aTxt:mark(c[1]), aCol:c[1]?yes:no, oTxt:mark(c[2]), oCol:c[2]?yes:no, pTxt:mark(c[3]), pCol:c[3]?yes:no}));
+    const cchip=(a)=>'font-size:11.5px;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer;white-space:nowrap;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);');
+    const af=S.af;
+    o.afOpen=!!af;
+    if(af){
+      const aupd=(p)=>this.setState({af:{...this.state.af,...p}});
+      o.afStop=(e)=>e.stopPropagation(); o.afClose=()=>this.setState({af:null});
+      o.afName=af.name; o.afNameSet=(e)=>aupd({name:e.target.value});
+      o.afEmail=af.email; o.afEmailSet=(e)=>aupd({email:e.target.value});
+      o.afKinds=[['admin','Super Admin'],['operator','Operator'],['partner','Đối tác quán']].map(k=>({label:k[1],style:cchip(af.kind===k[0]),pick:()=>aupd({kind:k[0]})}));
+      o.afIsPartner=af.kind==='partner';
+      o.afVenue=af.venue; o.afVenueSet=(e)=>aupd({venue:e.target.value});
+      o.afRoleHint=af.kind==='admin'?'Toàn quyền hệ thống — cân nhắc kỹ khi cấp quyền này.':af.kind==='operator'?'Vận hành nội dung, booking & ranking (mở rộng ở P1).':'Chỉ đăng nhập, quét QR của khách & xác nhận check-in tại quán.';
+      const ok=!!(af.name&&af.name.trim()&&af.email&&af.email.indexOf('@')>0);
+      o.afSaveStyle='display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 19px;border-radius:10px;cursor:pointer;'+(ok?'':'opacity:.45;');
+      o.afSave=()=>{
+        if(!ok){ this.showToast(!af.name||!af.name.trim()?'Nhập tên hiển thị':'Nhập email hợp lệ'); return; }
+        const kmap={admin:['Super Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)']};
+        const nm=(af.kind==='partner'&&af.venue&&af.venue.trim())?af.venue.trim():af.name.trim();
+        const ini=nm.split(' ').filter(Boolean).map(w=>w.charAt(0)).join('').slice(-2).toUpperCase();
+        const rec={ini,name:nm,email:af.email.trim(),role:'Chờ kích hoạt',kind:'muted',realRole:kmap[af.kind][0],last:'Vừa tạo · đã gửi lời mời',avaBg:kmap[af.kind][1]};
+        this.setState({accExtra:[rec].concat(S.accExtra||[]),af:null});
+        this.showToast('Đã tạo tài khoản '+kmap[af.kind][0]+' & gửi email mời');
+      };
+    }
     return o;
   }
 }

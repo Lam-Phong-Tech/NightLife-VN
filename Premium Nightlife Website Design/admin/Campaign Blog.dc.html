@@ -50,7 +50,7 @@
             <span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style="text-align:right;">Trạng thái</span>
           </div>
           <sc-for list="{{ cnCamps }}" as="c" hint-placeholder-count="5">
-            <div style="display:grid;grid-template-columns:1.6fr 1.4fr 1.2fr 130px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;" style-hover="background:rgba(212,178,106,.04);">
+            <div onClick="{{ c.edit }}" title="Bấm để chỉnh sửa campaign" style="display:grid;grid-template-columns:1.6fr 1.4fr 1.2fr 130px;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;cursor:pointer;" style-hover="background:rgba(212,178,106,.04);">
               <div style="display:flex;align-items:center;gap:11px;"><span style="font-size:15px;font-weight:800;color:#e3c27e;min-width:52px;">{{ c.deal }}</span><span style="color:#f3f0ea;font-weight:500;">{{ c.name }}</span></div>
               <span style="color:#c5c0b6;">{{ c.scope }}</span>
               <span style="color:#8c8679;font-size:12px;">{{ c.period }}</span>
@@ -63,14 +63,14 @@
         <sc-if value="{{ cnIsBan }}" hint-placeholder-val="{{ false }}">
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
           <sc-for list="{{ cnBanners }}" as="b" hint-placeholder-count="4">
-            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+            <div onClick="{{ b.edit }}" title="Bấm để chỉnh sửa banner" style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.25);">
               <div style="height:150px;background:{{ b.img }};position:relative;">
                 <span style="position:absolute;top:12px;left:12px;font-size:9px;font-weight:700;letter-spacing:1px;color:#e3c27e;background:rgba(12,12,15,.5);border:1px solid rgba(212,178,106,.4);backdrop-filter:blur(3px);padding:5px 10px;border-radius:8px;text-transform:uppercase;">{{ b.slot }}</span>
                 <div style="position:absolute;left:16px;bottom:14px;right:16px;"><div style="font-size:16px;font-weight:700;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);">{{ b.title }}</div></div>
               </div>
               <div style="padding:13px 15px;display:flex;align-items:center;justify-content:space-between;">
                 <span style="font-size:11.5px;color:#8c8679;">Vị trí: {{ b.pos }}</span>
-                <span style="{{ b.tgl }}">{{ b.tglLabel }}</span>
+                <span onClick="{{ b.toggle }}" style="{{ b.tgl }}">{{ b.tglLabel }}</span>
               </div>
             </div>
           </sc-for>
@@ -205,7 +205,7 @@
         <sc-if value="{{ cnIsBlog }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:12px;">
           <sc-for list="{{ cnBlogs }}" as="p" hint-placeholder-count="4">
-            <div style="display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;" style-hover="border-color:rgba(212,178,106,.25);">
+            <div onClick="{{ p.edit }}" title="Bấm để chỉnh sửa bài viết" style="display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.25);">
               <span style="width:96px;height:62px;flex:none;border-radius:10px;background:{{ p.img }};"></span>
               <div style="flex:1;min-width:0;"><div style="font-size:14.5px;font-weight:600;color:#f3f0ea;">{{ p.title }}</div><div style="font-size:11.5px;color:#8c8679;margin-top:4px;">{{ p.cat }} · {{ p.date }}</div></div>
               <span style="font-size:11.5px;color:#8c8679;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>{{ p.views }}</span>
@@ -217,6 +217,196 @@
       </div>
     </div>
   </div>
+
+  <sc-if value="{{ bfOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ bfClose }}" style="position:fixed;inset:0;z-index:80;background:rgba(6,6,9,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ bfStop }}" style="width:750px;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;background:#141319;border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.07);flex:none;">
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Blog &amp; cẩm nang · Trang chủ</div>
+            <div style="font-size:17px;font-weight:700;color:#f3f0ea;margin-top:3px;">{{ bfHead }}</div>
+          </div>
+          <span onClick="{{ bfClose }}" style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div class="scw" style="flex:1;overflow-y:auto;padding:20px 24px 24px;display:flex;flex-direction:column;gap:18px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tiêu đề bài viết</div>
+            <input value="{{ bfTitle }}" onInput="{{ bfTitleSet }}" placeholder="VD: Top 10 lounge lãng mạn cho buổi hẹn tại Hà Nội" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:15px;font-weight:600;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+            <div style="font-size:11px;color:#57534b;margin-top:7px;">vietyoru.vn/blog/<span style="color:#b99a55;">{{ bfSlug }}</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Chuyên mục</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ bfCats }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Ngôn ngữ hiển thị</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ bfLangs }}" as="l" hint-placeholder-count="3"><span onClick="{{ l.pick }}" style="{{ l.style }}">{{ l.label }}</span></sc-for></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Ảnh bìa</div>
+            <div style="position:relative;height:150px;border-radius:13px;overflow:hidden;border:1px dashed rgba(212,178,106,.4);background:{{ bfImgBg }};">
+              <sc-if value="{{ bfNoImg }}" hint-placeholder-val="{{ true }}">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b99a55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+                  <span style="font-size:12.5px;font-weight:600;color:#cbb884;">Bấm để tải ảnh bìa</span>
+                  <span style="font-size:10.5px;color:#57534b;">PNG / JPG · tỉ lệ 16:9 · hiển thị trên trang chủ</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ bfHasImg }}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute;right:11px;bottom:11px;font-size:10.5px;font-weight:700;color:#f3f0ea;background:rgba(12,12,15,.66);border:1px solid rgba(255,255,255,.22);padding:5px 11px;border-radius:8px;">Đổi ảnh</span>
+              </sc-if>
+              <input type="file" accept="image/*" onChange="{{ bfUpload }}" title="Tải ảnh bìa" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;margin-bottom:8px;"><span style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;">Mô tả ngắn</span><span style="flex:1;"></span><span style="font-size:10.5px;color:#57534b;">{{ bfSumCount }}</span></div>
+            <textarea value="{{ bfSum }}" onInput="{{ bfSumSet }}" rows="2" placeholder="1–2 câu tóm tắt — hiển thị dưới tiêu đề trên trang chủ và kết quả tìm kiếm…" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 15px;color:#f3f0ea;font-size:13px;line-height:1.55;font-family:inherit;outline:none;resize:vertical;" style-focus="border-color:rgba(212,178,106,.55);"></textarea>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px;">
+              <span style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;">Nội dung</span>
+              <span style="flex:1;"></span>
+              <span onClick="{{ bfInsB }}" title="In đậm" style="width:30px;height:27px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;font-size:12px;font-weight:800;" style-hover="background:rgba(212,178,106,.14);color:#f0dda8;">B</span>
+              <span onClick="{{ bfInsI }}" title="In nghiêng" style="width:30px;height:27px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;font-size:12.5px;font-style:italic;font-family:Georgia,serif;" style-hover="background:rgba(212,178,106,.14);color:#f0dda8;">I</span>
+              <span onClick="{{ bfInsH }}" title="Tiêu đề mục" style="width:30px;height:27px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;font-size:10px;font-weight:800;" style-hover="background:rgba(212,178,106,.14);color:#f0dda8;">H2</span>
+              <span onClick="{{ bfInsL }}" title="Danh sách" style="width:30px;height:27px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.14);color:#f0dda8;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></span>
+              <span onClick="{{ bfInsLink }}" title="Chèn liên kết" style="width:30px;height:27px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.14);color:#f0dda8;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/></svg></span>
+              <span onClick="{{ bfInsImg }}" title="Chèn ảnh" style="width:30px;height:27px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;" style-hover="background:rgba(212,178,106,.14);color:#f0dda8;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+            </div>
+            <textarea value="{{ bfBody }}" onInput="{{ bfBodySet }}" rows="9" placeholder="Viết nội dung bài…" style="width:100%;min-height:190px;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:13px 15px;color:#f3f0ea;font-size:13px;line-height:1.65;font-family:inherit;outline:none;resize:vertical;" style-focus="border-color:rgba(212,178,106,.55);"></textarea>
+            <div style="display:flex;margin-top:6px;"><span style="font-size:10.5px;color:#57534b;">Hỗ trợ Markdown — ## mục, **đậm**, - danh sách, [link](url)</span><span style="flex:1;"></span><span style="font-size:10.5px;color:#57534b;">{{ bfWords }}</span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);flex:none;background:rgba(12,12,15,.35);">
+          <sc-if value="{{ bfIsEdit }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ bfDelete }}" style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#d98a80;border:1px solid rgba(224,122,110,.3);padding:9px 14px;border-radius:10px;cursor:pointer;" style-hover="background:rgba(224,122,110,.08);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>Xóa bài</span>
+          </sc-if>
+          <span style="flex:1;"></span>
+          <span onClick="{{ bfClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ bfDraft }}" style="font-size:12.5px;font-weight:700;color:#e3c27e;background:rgba(212,178,106,.08);border:1px solid rgba(212,178,106,.38);padding:10px 17px;border-radius:10px;cursor:pointer;" style-hover="background:rgba(212,178,106,.15);">Lưu nháp</span>
+          <span onClick="{{ bfPublish }}" style="{{ bfPubStyle }}">{{ bfPubLabel }}</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ bnOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ bnClose }}" style="position:fixed;inset:0;z-index:80;background:rgba(6,6,9,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ bnStop }}" style="width:620px;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;background:#141319;border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.07);flex:none;">
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Banner · Trang chủ &amp; landing</div>
+            <div style="font-size:17px;font-weight:700;color:#f3f0ea;margin-top:3px;">{{ bnHead }}</div>
+          </div>
+          <span onClick="{{ bnClose }}" style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div class="scw" style="flex:1;overflow-y:auto;padding:20px 24px 24px;display:flex;flex-direction:column;gap:18px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tiêu đề banner</div>
+            <input value="{{ bnTitle }}" onInput="{{ bnTitleSet }}" placeholder="VD: Đêm nhạc acoustic · Akari Lounge" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:15px;font-weight:600;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Ảnh banner</div>
+            <div style="position:relative;height:160px;border-radius:13px;overflow:hidden;border:1px dashed rgba(212,178,106,.4);background:{{ bnImgBg }};">
+              <sc-if value="{{ bnNoImg }}" hint-placeholder-val="{{ true }}">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b99a55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+                  <span style="font-size:12.5px;font-weight:600;color:#cbb884;">Bấm để tải ảnh banner</span>
+                  <span style="font-size:10.5px;color:#57534b;">PNG / JPG · khuyến nghị 1920×720</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ bnHasImg }}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute;right:11px;bottom:11px;font-size:10.5px;font-weight:700;color:#f3f0ea;background:rgba(12,12,15,.66);border:1px solid rgba(255,255,255,.22);padding:5px 11px;border-radius:8px;">Đổi ảnh</span>
+              </sc-if>
+              <input type="file" accept="image/*" onChange="{{ bnUpload }}" title="Tải ảnh banner" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Nhãn slot</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ bnSlots }}" as="s" hint-placeholder-count="4"><span onClick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</span></sc-for></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Vị trí hiển thị</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ bnPositions }}" as="ps" hint-placeholder-count="4"><span onClick="{{ ps.pick }}" style="{{ ps.style }}">{{ ps.label }}</span></sc-for></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Liên kết khi bấm</div>
+            <input value="{{ bnLink }}" onInput="{{ bnLinkSet }}" placeholder="https://… hoặc /uu-dai/happy-hour" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Trạng thái</div>
+            <div style="display:flex;gap:6px;"><span onClick="{{ bnOn }}" style="{{ bnOnStyle }}">● Đang hiển thị</span><span onClick="{{ bnOff }}" style="{{ bnOffStyle }}">○ Ẩn</span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);flex:none;background:rgba(12,12,15,.35);">
+          <sc-if value="{{ bnIsEdit }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ bnDelete }}" style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#d98a80;border:1px solid rgba(224,122,110,.3);padding:9px 14px;border-radius:10px;cursor:pointer;" style-hover="background:rgba(224,122,110,.08);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>Xóa banner</span>
+          </sc-if>
+          <span style="flex:1;"></span>
+          <span onClick="{{ bnClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ bnSave }}" style="{{ bnSaveStyle }}">{{ bnSaveLabel }}</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ cmOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cmClose }}" style="position:fixed;inset:0;z-index:80;background:rgba(6,6,9,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ cmStop }}" style="width:620px;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;background:#141319;border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.07);flex:none;">
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Campaign &amp; Discount</div>
+            <div style="font-size:17px;font-weight:700;color:#f3f0ea;margin-top:3px;">{{ cmHead }}</div>
+          </div>
+          <span onClick="{{ cmClose }}" style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div class="scw" style="flex:1;overflow-y:auto;padding:20px 24px 24px;display:flex;flex-direction:column;gap:18px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tên chương trình</div>
+            <input value="{{ cmName }}" onInput="{{ cmNameSet }}" placeholder="VD: Happy Hour cuối tuần" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:15px;font-weight:600;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <div style="display:grid;grid-template-columns:150px 1fr;gap:16px;">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Mức ưu đãi</div>
+              <input value="{{ cmDeal }}" onInput="{{ cmDealSet }}" placeholder="−30% / 2+1" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 10px;color:#e3c27e;font-size:15px;font-weight:800;text-align:center;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Trạng thái</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ cmSts }}" as="st" hint-placeholder-count="3"><span onClick="{{ st.pick }}" style="{{ st.style }}">{{ st.label }}</span></sc-for></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Áp dụng cho</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;"><span onClick="{{ cmScopeAll }}" style="{{ cmScopeAllS }}">Toàn hệ thống</span><span onClick="{{ cmScopeVen }}" style="{{ cmScopeVenS }}">Quán cụ thể</span></div>
+            <sc-if value="{{ cmIsVenue }}" hint-placeholder-val="{{ false }}">
+              <input value="{{ cmVenue }}" onInput="{{ cmVenueSet }}" placeholder="Nhập tên quán — VD: Club Lumière" style="width:100%;margin-top:9px;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+            </sc-if>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Thời gian chạy</div>
+            <div style="display:flex;align-items:center;gap:9px;">
+              <input value="{{ cmFrom }}" onInput="{{ cmFromSet }}" placeholder="01/07" style="width:110px;text-align:center;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 10px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+              <span style="color:#57534b;">–</span>
+              <input value="{{ cmTo }}" onInput="{{ cmToSet }}" placeholder="31/07" style="width:110px;text-align:center;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 10px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+              <span style="font-size:11px;color:#57534b;">Để trống cả hai = Luôn áp dụng</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);flex:none;background:rgba(12,12,15,.35);">
+          <sc-if value="{{ cmIsEdit }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ cmDelete }}" style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#d98a80;border:1px solid rgba(224,122,110,.3);padding:9px 14px;border-radius:10px;cursor:pointer;" style-hover="background:rgba(224,122,110,.08);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>Xóa campaign</span>
+          </sc-if>
+          <span style="flex:1;"></span>
+          <span onClick="{{ cmClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ cmSave }}" style="{{ cmSaveStyle }}">{{ cmSaveLabel }}</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 
   <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
@@ -233,6 +423,63 @@ class Component extends DCLogic {
   chip(kind){ const m={success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],warn:['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],error:['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],pink:['rgba(224,114,158,.1)','rgba(224,114,158,.28)','#e79ab8'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
   pill(kind){ return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; }
 
+  GRADS=['linear-gradient(135deg,#3a2f22,#1a1510)','linear-gradient(135deg,#2a2233,#161020)','linear-gradient(135deg,#22282e,#12181e)','linear-gradient(135deg,#2e2226,#180f14)','linear-gradient(135deg,#26302a,#141a16)'];
+  DEFBLOGS=[
+    {title:'Top 5 club sôi động nhất Hà Nội 2026',cat:'Cẩm nang',date:'28/06/2026',views:'2.4k',status:'published',img:'linear-gradient(135deg,#3a2f22,#1a1510)',sum:'Tổng hợp 5 club được đặt bàn nhiều nhất nửa đầu 2026 — không gian, nhạc và mức giá tham khảo.',body:'## Vì sao là 5 cái tên này\nXếp hạng dựa trên lượt đặt bàn và đánh giá thực tế trên Vietyoru.\n\n- Club Lumière — Tây Hồ\n- Akari Lounge — Ba Đình',langs:['VI','JA']},
+    {title:'Hướng dẫn khách Nhật đặt bàn nightlife an toàn',cat:'Hướng dẫn',date:'25/06/2026',views:'1.8k',status:'published',img:'linear-gradient(135deg,#2a2233,#161020)',sum:'Quy trình đặt bàn minh bạch giá, có hóa đơn và hỗ trợ tiếng Nhật 24/7.',body:'## Đặt bàn qua Vietyoru\nGiá niêm yết rõ ràng, không phụ thu ẩn, hoàn tiền khi quán sai cam kết.',langs:['JA','VI']},
+    {title:'Văn hóa Karaoke & KTV tại Việt Nam',cat:'Blog',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#22282e,#12181e)',sum:'',body:'',langs:['VI']},
+    {title:'Cách chọn Cast phù hợp cho buổi tối của bạn',cat:'Cẩm nang',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#2e2226,#180f14)',sum:'',body:'',langs:['VI']},
+  ];
+  DEFBANNERS=[
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#3a2f22,#1a1510)',slot:'Hero chính',title:'Đêm nhạc DJ SODA · Club Lumière',pos:'Trang chủ #1',link:'/su-kien/dj-soda-club-lumiere',on:true},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2a2233,#161020)',slot:'Hero phụ',title:'Sakura Lounge · Ưu đãi thành viên',pos:'Trang chủ #2',link:'/quan/sakura-lounge',on:true},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#22282e,#12181e)',slot:'Ưu đãi',title:'Happy Hour −30% cuối tuần',pos:'Trang Ưu đãi',link:'/uu-dai/happy-hour',on:false},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2e2226,#180f14)',slot:'Sự kiện',title:'Countdown Party 2027',pos:'Nháp',link:'',on:false},
+  ];
+  DEFCAMPS=[
+    {deal:'−30%',name:'Happy Hour',scope:'Club Lumière',period:'01/06 – 07/07',status:'active'},
+    {deal:'−10%',name:'VIP độc quyền',scope:'Akari Lounge',period:'15/06 – 15/07',status:'active'},
+    {deal:'−5%',name:'Ưu đãi khách mới',scope:'Toàn hệ thống',period:'Luôn áp dụng',status:'active'},
+    {deal:'2+1',name:'Combo phòng VIP',scope:'KTV Hoàng Gia',period:'01/07 – 31/07',status:'scheduled'},
+    {deal:'−20%',name:'Tết Trung Thu',scope:'Toàn hệ thống',period:'01/09 – 17/09',status:'ended'},
+  ];
+  campList(){ return this.state.camps || this.DEFCAMPS; }
+  saveCamp(){
+    const cm=this.state.cm; if(!cm) return;
+    if(!cm.name||!cm.name.trim()){ this.showToast('Nhập tên chương trình'); return; }
+    const a=this.campList().slice();
+    const period=(cm.from&&cm.to)?(cm.from+' – '+cm.to):(cm.from?('Từ '+cm.from):'Luôn áp dụng');
+    const rec={ name:cm.name.trim(), deal:cm.deal||'—', scope:cm.scopeMode==='all'?'Toàn hệ thống':(cm.venue||'Chọn quán'), period, status:cm.status||'active' };
+    if(cm.id!=null) a[cm.id]=rec; else a.unshift(rec);
+    this.setState({camps:a,cm:null});
+    this.showToast(cm.id!=null?'Đã cập nhật campaign':'Đã tạo campaign mới');
+  }
+  slugify(t){ return (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+  blogList(){ return this.state.blogPosts || this.DEFBLOGS; }
+  bannerList(){ return this.state.banners || this.DEFBANNERS; }
+  saveBlog(status){
+    const bf=this.state.bf; if(!bf) return;
+    if(!bf.title||!bf.title.trim()){ this.showToast('Nhập tiêu đề trước khi lưu'); return; }
+    const posts=this.blogList().slice();
+    const keepDate=bf.date&&bf.date!=='—';
+    const rec={ title:bf.title.trim(), cat:bf.cat||'Blog', sum:bf.sum||'', body:bf.body||'', langs:bf.langs||['VI'],
+      img:bf.img||this.GRADS[posts.length%this.GRADS.length], status,
+      date:status==='published'?(keepDate?bf.date:'04/07/2026'):'—',
+      views:status==='published'?(bf.views&&bf.views!=='—'?bf.views:'0'):'—' };
+    if(bf.id!=null) posts[bf.id]=rec; else posts.unshift(rec);
+    this.setState({blogPosts:posts,bf:null});
+    this.showToast(status==='published'?(bf.id!=null?'Đã cập nhật bài viết':'Đã đăng bài lên trang chủ'):'Đã lưu nháp');
+  }
+  saveBanner(){
+    const bn=this.state.bn; if(!bn) return;
+    if(!bn.title||!bn.title.trim()){ this.showToast('Nhập tiêu đề banner'); return; }
+    const a=this.bannerList().slice();
+    const rec={ title:bn.title.trim(), slot:bn.slot||'Hero chính', pos:bn.pos||'Nháp', link:bn.link||'', on:!!bn.on,
+      img:bn.img||('linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),'+this.GRADS[a.length%this.GRADS.length]) };
+    if(bn.id!=null) a[bn.id]=rec; else a.unshift(rec);
+    this.setState({banners:a,bn:null});
+    this.showToast(bn.id!=null?'Đã cập nhật banner':'Đã thêm banner mới');
+  }
   renderVals(){
     const S=this.state, o={ toast:S.toast };
     const ct=S.contentTab||'campaign';
@@ -241,31 +488,18 @@ class Component extends DCLogic {
     o.cnCampaign=()=>this.setState({contentTab:'campaign'}); o.cnBanner=()=>this.setState({contentTab:'banner'}); o.cnFeat=()=>this.setState({contentTab:'feat'}); o.cnVideo=()=>this.setState({contentTab:'video'}); o.cnBlog=()=>this.setState({contentTab:'blog'});
     o.cnIsCamp=ct==='campaign'; o.cnIsBan=ct==='banner'; o.cnIsFeat=ct==='feat'; o.cnIsVideo=ct==='video'; o.cnIsBlog=ct==='blog';
     o.cnAddLabel = ct==='banner'?'Thêm banner' : ct==='blog'?'Viết bài' : ct==='feat'?'Thêm quán nổi bật' : ct==='video'?'Thêm video hot' : 'Thêm campaign';
-    o.cnAdd=()=>this.showToast(ct==='feat'||ct==='video'?'Dùng ô tìm kiếm phía dưới để thêm':'Mở form: '+o.cnAddLabel);
+    o.cnAdd=()=>{ if(ct==='blog'){ this.setState({bf:{id:null,status:'draft',title:'',cat:'Cẩm nang',sum:'',body:'',img:'',langs:['VI']}}); } else if(ct==='banner'){ this.setState({bn:{id:null,title:'',slot:'Hero chính',pos:'Trang chủ #1',link:'',img:'',on:true}}); } else if(ct==='campaign'){ this.setState({cm:{id:null,name:'',deal:'',scopeMode:'all',venue:'',from:'',to:'',status:'active'}}); } else { this.showToast('Dùng ô tìm kiếm phía dưới để thêm'); } };
 
     const cmeta2={active:['Đang chạy','success'],scheduled:['Đã lên lịch','info'],ended:['Đã kết thúc','muted']};
-    const CAMP=[
-      {deal:'−30%',name:'Happy Hour',scope:'Club Lumière',period:'01/06 – 07/07',status:'active'},
-      {deal:'−10%',name:'VIP độc quyền',scope:'Akari Lounge',period:'15/06 – 15/07',status:'active'},
-      {deal:'−5%',name:'Ưu đãi khách mới',scope:'Toàn hệ thống',period:'Luôn áp dụng',status:'active'},
-      {deal:'2+1',name:'Combo phòng VIP',scope:'KTV Hoàng Gia',period:'01/07 – 31/07',status:'scheduled'},
-      {deal:'−20%',name:'Tết Trung Thu',scope:'Toàn hệ thống',period:'01/09 – 17/09',status:'ended'},
-    ];
-    o.cnCamps=CAMP.map(c=>({...c,stStyle:this.pill(cmeta2[c.status][1]),stLabel:cmeta2[c.status][0]}));
+    o.cnCamps=this.campList().map((c,i)=>({...c,stStyle:this.pill(cmeta2[c.status][1]),stLabel:cmeta2[c.status][0],
+      edit:()=>{ const hasRange=c.period.indexOf(' – ')>-1; this.setState({cm:{id:i,name:c.name,deal:c.deal,scopeMode:c.scope==='Toàn hệ thống'?'all':'venue',venue:c.scope==='Toàn hệ thống'?'':c.scope,from:hasRange?c.period.split(' – ')[0]:'',to:hasRange?c.period.split(' – ')[1]:'',status:c.status}}); }}));
     const tgl=(on)=>on?'font-size:10.5px;font-weight:600;color:#7fd3a2;background:rgba(95,191,134,.12);border:1px solid rgba(95,191,134,.3);padding:4px 11px;border-radius:16px;cursor:pointer;':'font-size:10.5px;font-weight:600;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:4px 11px;border-radius:16px;cursor:pointer;';
-    o.cnBanners=[
-      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#3a2f22,#1a1510)',slot:'Hero chính',title:'Đêm nhạc DJ SODA · Club Lumière',pos:'Trang chủ #1',on:true},
-      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2a2233,#161020)',slot:'Hero phụ',title:'Sakura Lounge · Ưu đãi thành viên',pos:'Trang chủ #2',on:true},
-      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#22282e,#12181e)',slot:'Ưu đãi',title:'Happy Hour −30% cuối tuần',pos:'Trang Ưu đãi',on:false},
-      {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2e2226,#180f14)',slot:'Sự kiện',title:'Countdown Party 2027',pos:'Nháp',on:false},
-    ].map(b=>({...b,tgl:tgl(b.on),tglLabel:b.on?'● Đang hiển thị':'○ Ẩn'}));
+    o.cnBanners=this.bannerList().map((b,i)=>({...b,tgl:tgl(b.on),tglLabel:b.on?'● Đang hiển thị':'○ Ẩn',
+      toggle:(e)=>{ e.stopPropagation(); const a=this.bannerList().slice(); a[i]={...a[i],on:!a[i].on}; this.setState({banners:a}); this.showToast(a[i].on?'Banner đang hiển thị trên trang chủ':'Đã ẩn banner'); },
+      edit:()=>this.setState({bn:{id:i,title:b.title,slot:b.slot,pos:b.pos,link:b.link||'',img:b.img,on:b.on}})}));
     const bmeta3={published:['Đã đăng','success'],draft:['Nháp','warn']};
-    o.cnBlogs=[
-      {title:'Top 5 club sôi động nhất Hà Nội 2026',cat:'Cẩm nang',date:'28/06/2026',views:'2.4k',status:'published',img:'linear-gradient(135deg,#3a2f22,#1a1510)'},
-      {title:'Hướng dẫn khách Nhật đặt bàn nightlife an toàn',cat:'Hướng dẫn',date:'25/06/2026',views:'1.8k',status:'published',img:'linear-gradient(135deg,#2a2233,#161020)'},
-      {title:'Văn hóa Karaoke & KTV tại Việt Nam',cat:'Blog',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#22282e,#12181e)'},
-      {title:'Cách chọn Cast phù hợp cho buổi tối của bạn',cat:'Cẩm nang',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#2e2226,#180f14)'},
-    ].map(p=>({...p,stStyle:this.pill(bmeta3[p.status][1]),stLabel:bmeta3[p.status][0]}));
+    o.cnBlogs=this.blogList().map((p,i)=>({...p,stStyle:this.pill(bmeta3[p.status][1]),stLabel:bmeta3[p.status][0],
+      edit:()=>this.setState({bf:{id:i,status:p.status,title:p.title,cat:p.cat,sum:p.sum||'',body:p.body||'',img:p.img,langs:p.langs||['VI'],views:p.views,date:p.date}})}));
 
     const seg=(a)=>'font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);font-weight:600;':'color:#9b958a;');
     const reorder=(key,ids,i,dir)=>{ const j=i+dir; if(j<0||j>=ids.length) return; const a=ids.slice(); const t=a[i]; a[i]=a[j]; a[j]=t; this.setState({[key]:a}); };
@@ -334,6 +568,76 @@ class Component extends DCLogic {
     o.vhResults=vpool.filter(x=>!vids.includes(x.id)).filter(x=>!vq||x.venue.toLowerCase().includes(vq)||x.title.toLowerCase().includes(vq)).map(x=>({...x,add:()=>{ this.setState({[vkey]:vids.concat([x.id])}); this.showToast('Đã thêm video của '+x.venue+' vào Video Hot'); }}));
     o.vhNoResults=o.vhResults.length===0;
 
+    // ===== FORM VIẾT BÀI + FORM BANNER =====
+    const cchip=(a)=>'font-size:11.5px;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer;white-space:nowrap;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);');
+    const GOLDBTN='display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 19px;border-radius:10px;cursor:pointer;';
+    const bf=S.bf;
+    o.bfOpen=!!bf;
+    if(bf){
+      const upd=(p)=>this.setState({bf:{...this.state.bf,...p}});
+      o.bfStop=(e)=>e.stopPropagation();
+      o.bfClose=()=>this.setState({bf:null});
+      o.bfIsEdit=bf.id!=null;
+      o.bfHead=bf.id!=null?'Chỉnh sửa bài viết':'Viết bài mới';
+      o.bfTitle=bf.title; o.bfTitleSet=(e)=>upd({title:e.target.value});
+      o.bfSlug=this.slugify(bf.title)||'tieu-de-bai-viet';
+      o.bfCats=['Cẩm nang','Hướng dẫn','Blog','Tin tức'].map(c=>({label:c,style:cchip(bf.cat===c),pick:()=>upd({cat:c})}));
+      o.bfLangs=[['VI','Tiếng Việt'],['EN','English'],['JA','日本語']].map(l=>{ const on=(bf.langs||[]).includes(l[0]); return {label:l[1],style:cchip(on),pick:()=>{ const ls=bf.langs||[]; upd({langs:on?(ls.length>1?ls.filter(x=>x!==l[0]):ls):ls.concat([l[0]])}); }}; });
+      o.bfHasImg=!!bf.img; o.bfNoImg=!bf.img; o.bfImgBg=bf.img||'rgba(12,12,15,.5)';
+      o.bfUpload=(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>this.setState({bf:{...this.state.bf,img:'url('+r.result+') center/cover no-repeat'}}); r.readAsDataURL(f); };
+      o.bfSum=bf.sum; o.bfSumSet=(e)=>upd({sum:e.target.value.slice(0,160)});
+      o.bfSumCount=(bf.sum||'').length+' / 160';
+      o.bfBody=bf.body; o.bfBodySet=(e)=>upd({body:e.target.value});
+      const bw=(bf.body||'').trim(); o.bfWords=(bw?bw.split(/\s+/).length:0)+' từ';
+      const ins=(t)=>upd({body:(bf.body||'')+t});
+      o.bfInsB=()=>ins('**chữ đậm**'); o.bfInsI=()=>ins('*chữ nghiêng*'); o.bfInsH=()=>ins('\n## Tiêu đề mục\n'); o.bfInsL=()=>ins('\n- Gạch đầu dòng'); o.bfInsLink=()=>ins('[văn bản](https://)'); o.bfInsImg=()=>ins('\n![mô tả ảnh](link-ảnh)\n');
+      o.bfPubLabel=(bf.id!=null&&bf.status==='published')?'Cập nhật':'Đăng bài';
+      o.bfPubStyle=GOLDBTN+((bf.title&&bf.title.trim())?'':'opacity:.45;');
+      o.bfDraft=()=>this.saveBlog('draft');
+      o.bfPublish=()=>this.saveBlog('published');
+      o.bfDelete=()=>{ const a=this.blogList().slice(); a.splice(bf.id,1); this.setState({blogPosts:a,bf:null}); this.showToast('Đã xóa bài viết'); };
+    }
+    const bn=S.bn;
+    o.bnOpen=!!bn;
+    if(bn){
+      const bupd=(p)=>this.setState({bn:{...this.state.bn,...p}});
+      o.bnStop=(e)=>e.stopPropagation();
+      o.bnClose=()=>this.setState({bn:null});
+      o.bnIsEdit=bn.id!=null;
+      o.bnHead=bn.id!=null?'Chỉnh sửa banner':'Thêm banner';
+      o.bnTitle=bn.title; o.bnTitleSet=(e)=>bupd({title:e.target.value});
+      o.bnLink=bn.link; o.bnLinkSet=(e)=>bupd({link:e.target.value});
+      o.bnSlots=['Hero chính','Hero phụ','Ưu đãi','Sự kiện'].map(s=>({label:s,style:cchip(bn.slot===s),pick:()=>bupd({slot:s})}));
+      o.bnPositions=['Trang chủ #1','Trang chủ #2','Trang Ưu đãi','Nháp'].map(s=>({label:s,style:cchip(bn.pos===s),pick:()=>bupd({pos:s})}));
+      o.bnOnStyle=cchip(!!bn.on); o.bnOffStyle=cchip(!bn.on);
+      o.bnOn=()=>bupd({on:true}); o.bnOff=()=>bupd({on:false});
+      o.bnHasImg=!!bn.img; o.bnNoImg=!bn.img; o.bnImgBg=bn.img||'rgba(12,12,15,.5)';
+      o.bnUpload=(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>this.setState({bn:{...this.state.bn,img:'linear-gradient(135deg,rgba(12,12,15,.15),rgba(12,12,15,.6)),url('+r.result+') center/cover no-repeat'}}); r.readAsDataURL(f); };
+      o.bnSaveStyle=GOLDBTN+((bn.title&&bn.title.trim())?'':'opacity:.45;');
+      o.bnSaveLabel=bn.id!=null?'Lưu thay đổi':'Thêm banner';
+      o.bnSave=()=>this.saveBanner();
+      o.bnDelete=()=>{ const a=this.bannerList().slice(); a.splice(bn.id,1); this.setState({banners:a,bn:null}); this.showToast('Đã xóa banner'); };
+    }
+    const cm=S.cm;
+    o.cmOpen=!!cm;
+    if(cm){
+      const cupd=(p)=>this.setState({cm:{...this.state.cm,...p}});
+      o.cmStop=(e)=>e.stopPropagation(); o.cmClose=()=>this.setState({cm:null});
+      o.cmIsEdit=cm.id!=null; o.cmHead=cm.id!=null?'Chỉnh sửa campaign':'Thêm campaign';
+      o.cmName=cm.name; o.cmNameSet=(e)=>cupd({name:e.target.value});
+      o.cmDeal=cm.deal; o.cmDealSet=(e)=>cupd({deal:e.target.value});
+      o.cmScopeAllS=cchip(cm.scopeMode==='all'); o.cmScopeVenS=cchip(cm.scopeMode==='venue');
+      o.cmScopeAll=()=>cupd({scopeMode:'all'}); o.cmScopeVen=()=>cupd({scopeMode:'venue'});
+      o.cmIsVenue=cm.scopeMode==='venue';
+      o.cmVenue=cm.venue; o.cmVenueSet=(e)=>cupd({venue:e.target.value});
+      o.cmFrom=cm.from; o.cmFromSet=(e)=>cupd({from:e.target.value});
+      o.cmTo=cm.to; o.cmToSet=(e)=>cupd({to:e.target.value});
+      o.cmSts=[['active','Đang chạy'],['scheduled','Đã lên lịch'],['ended','Đã kết thúc']].map(s=>({label:s[1],style:cchip(cm.status===s[0]),pick:()=>cupd({status:s[0]})}));
+      o.cmSaveStyle=GOLDBTN+((cm.name&&cm.name.trim())?'':'opacity:.45;');
+      o.cmSaveLabel=cm.id!=null?'Lưu thay đổi':'Tạo campaign';
+      o.cmSave=()=>this.saveCamp();
+      o.cmDelete=()=>{ const a=this.campList().slice(); a.splice(cm.id,1); this.setState({camps:a,cm:null}); this.showToast('Đã xóa campaign'); };
+    }
     return o;
   }
 }
