@@ -23,7 +23,18 @@ const bookingCode = (booking: BookingRecord) => `#BK-${booking.id.slice(0, 8).to
 const bookingQrFileName = (booking: BookingRecord) =>
   `nightlife-booking-${booking.id.slice(0, 8).toLowerCase()}-qr.png`;
 
+const couponIssueQrPayload = (booking: BookingRecord) => {
+  const issue = booking.couponIssue;
+  if (!issue) return "";
+
+  const metadataPayload =
+    issue.metadata && typeof issue.metadata.qrPayload === "string" ? issue.metadata.qrPayload.trim() : "";
+
+  return issue.qrPayload?.trim() || metadataPayload || issue.code?.trim() || "";
+};
+
 const bookingQrPayload = (booking: BookingRecord) =>
+  couponIssueQrPayload(booking) ||
   [
     "NLBOOKING",
     booking.id,
@@ -32,10 +43,14 @@ const bookingQrPayload = (booking: BookingRecord) =>
     booking.scheduledAt,
   ].join("|");
 
-const bookingQrImageUrl = (booking: BookingRecord) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
+const bookingQrImageUrl = (booking: BookingRecord) => {
+  const issueQrImage = booking.couponIssue?.qrImageDataUrl || booking.couponIssue?.qrImageUrl;
+  if (issueQrImage) return issueQrImage;
+
+  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(
     bookingQrPayload(booking),
   )}`;
+};
 
 const bookingTitle = (booking: BookingRecord | null) => {
   if (!booking) return "Booking NightLife";
@@ -62,8 +77,9 @@ export default function Page() {
 
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
-  const canShowQr = booking ? !isCancelled : false;
-  const qrImageUrl = booking ? bookingQrImageUrl(booking) : "";
+  const hasCouponQr = booking ? Boolean(couponIssueQrPayload(booking)) : false;
+  const canShowQr = booking ? !isCancelled && hasCouponQr : false;
+  const qrImageUrl = booking && hasCouponQr ? bookingQrImageUrl(booking) : "";
   const title = bookingTitle(booking);
   const heroTitle = !booking
     ? "Chưa tìm thấy booking"
@@ -77,15 +93,23 @@ export default function Page() {
     : isCancelled
       ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
       : isConfirmed
-        ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
-        : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.";
+        ? hasCouponQr
+          ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
+          : "Admin đã xác nhận với quán. Booking này không kèm mã giảm giá để quét tại quán."
+        : hasCouponQr
+          ? "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi."
+          : "Yêu cầu đã gửi thành công. Booking này không kèm mã giảm giá để quét tại quán.";
   const statusText = !booking
     ? "Không có dữ liệu"
     : isCancelled
       ? "Đã hủy"
       : isConfirmed
-        ? "Đã xác nhận · QR đã cấp"
-        : "Mới · QR đã cấp";
+        ? hasCouponQr
+          ? "Đã xác nhận · QR đã cấp"
+          : "Đã xác nhận"
+        : hasCouponQr
+          ? "Mới · QR đã cấp"
+          : "Mới";
 
   const saveQrImage = async () => {
     if (!booking || !qrImageUrl) {
@@ -146,6 +170,12 @@ export default function Page() {
               <SummaryRow label="Thời gian" value={formatDateTime(booking.scheduledAt)} />
               <SummaryRow label="Số người" value={`${booking.partySize} người`} />
               <SummaryRow label="Người đặt" value={guestLabel(booking)} />
+              {booking.couponIssue ? (
+                <SummaryRow
+                  label="Mã ưu đãi"
+                  value={<span className={styles.bookingCode}>{booking.couponIssue.code}</span>}
+                />
+              ) : null}
             </section>
           ) : (
             <div className={styles.emptyCard}>Chưa tìm thấy booking vừa tạo trong phiên này.</div>
@@ -181,7 +211,7 @@ export default function Page() {
             <span>
               {canShowQr
                 ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
-                : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ."}
+                : "Không thu cọc. Nếu booking không kèm mã ưu đãi, nhân viên quán sẽ không cần quét QR giảm giá."}
             </span>
           </div>
 

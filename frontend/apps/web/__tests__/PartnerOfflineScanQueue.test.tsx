@@ -113,7 +113,7 @@ describe("Partner offline scan queue", () => {
   it("queues signed QR payloads while offline and replays them with the offline flag", async () => {
     render(<PartnerPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: /MVP P0 Scan/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Quét mã QR/i }));
 
     const scanInput = screen.getByPlaceholderText(/scanToken/i);
     setOnline(false);

@@ -355,12 +355,12 @@ const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'media', label: 'Ảnh / Video' },
 ];
 
-const navItems: { key: PanelKey; label: string; sub: string; icon: LucideIcon }[] = [
-  { key: 'scan', label: 'MVP P0 Scan', sub: 'Check-in coupon', icon: QrCode },
-  { key: 'overview', label: 'Tổng quan', sub: 'P1 Dashboard', icon: Home },
-  { key: 'settlement', label: 'Đối soát', sub: 'P1 Usage log', icon: FileClock },
-  { key: 'listing', label: 'Đăng thông tin', sub: 'P1 Store CMS', icon: Camera },
-  { key: 'settings', label: 'Cài đặt', sub: 'P1 Access', icon: Settings },
+const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
+  { key: 'scan', label: 'Quét mã QR', icon: QrCode },
+  { key: 'overview', label: 'Tổng quan', icon: Home },
+  { key: 'settlement', label: 'Đối soát', icon: FileClock },
+  { key: 'listing', label: 'Đăng thông tin', icon: Camera },
+  { key: 'settings', label: 'Cài đặt', icon: Settings },
 ];
 
 const periodItems: { key: PeriodKey; label: string }[] = [
@@ -370,11 +370,11 @@ const periodItems: { key: PeriodKey; label: string }[] = [
 ];
 
 const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
-  overview: { eyebrow: 'P1 PARTNER DASHBOARD', title: 'Tổng quan đối tác' },
-  scan: { eyebrow: 'MVP P0 SCAN/CHECK-IN', title: 'Quét mã giảm giá' },
-  settlement: { eyebrow: 'P1 COUPON USAGE LOG', title: 'Đối soát coupon' },
-  listing: { eyebrow: 'P1 STORE CONTENT', title: 'Đăng thông tin quán' },
-  settings: { eyebrow: 'P1 ACCESS CONTROL', title: 'Cài đặt đối tác' },
+  overview: { eyebrow: 'PARTNER DASHBOARD', title: 'Tổng quan đối tác' },
+  scan: { eyebrow: 'SCAN/CHECK-IN', title: 'Quét mã giảm giá' },
+  settlement: { eyebrow: 'COUPON USAGE LOG', title: 'Đối soát coupon' },
+  listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
+  settings: { eyebrow: 'ACCESS CONTROL', title: 'Cài đặt đối tác' },
 };
 
 const cardStyle: React.CSSProperties = {
@@ -1273,7 +1273,7 @@ export default function PartnerPage() {
     <div className="partner-scan-grid">
       <PanelCard>
         <SectionHeading
-          eyebrow="MVP P0 SCAN ONLY"
+          eyebrow="SCAN COUPON"
           title="Quét / nhập mã QR"
           action={
             <StatusPill tone={offlineScanQueue.length ? 'gold' : 'neutral'}>
@@ -1368,7 +1368,7 @@ export default function PartnerPage() {
         </div>
 
         <div style={{ marginTop: '8px', color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-          Flow demo P0 chỉ gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
+          Luồng quét gồm scan, kiểm tra đúng quán/còn hạn/chưa USED, rồi xác nhận check-in.
           Hàng đợi offline tự xoá sau 24h hoặc sau 3 lần gửi lỗi.
         </div>
 
@@ -2131,16 +2131,6 @@ export default function PartnerPage() {
                   <Icon size={18} strokeWidth={1.7} />
                   <span style={{ minWidth: 0 }}>
                     <span style={{ display: 'block' }}>{item.label}</span>
-                    <span
-                      style={{
-                        display: 'block',
-                        marginTop: '2px',
-                        color: active ? 'rgba(36,26,10,.72)' : colors.muted,
-                        fontSize: '10.5px',
-                      }}
-                    >
-                      {item.sub}
-                    </span>
                   </span>
                 </button>
               );
@@ -2338,8 +2328,7 @@ export default function PartnerPage() {
                     {storeName}
                   </div>
                   <div style={{ marginTop: '5px', color: colors.text2, fontSize: '12px' }}>
-                    MVP demo mở thẳng tab Scan/check-in P0; dashboard, đối soát và đăng tin là nhóm
-                    P1.
+                    Mở nhanh tab quét QR, theo dõi tổng quan, đối soát và đăng tin trong portal đối tác.
                   </div>
                 </div>
                 <GhostButton onClick={() => setActivePanel('scan')}>

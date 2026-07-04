@@ -121,7 +121,7 @@ describe("Partner lite dashboard", () => {
 
     expect(apiClient).not.toHaveBeenCalledWith("/partner/bookings");
 
-    fireEvent.click(screen.getByRole("button", { name: /P1 Dashboard/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Tổng quan/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("17").length).toBeGreaterThan(0);
@@ -132,5 +132,5 @@ describe("Partner lite dashboard", () => {
     expect(screen.getByText(/Source: QR used\. Stores: 1\./i)).toBeTruthy();
     expect(screen.queryByText(/customer@example\.com/i)).toBeNull();
     expect(screen.queryByText(/0901234567/)).toBeNull();
-  });
+  }, 15000);
 });

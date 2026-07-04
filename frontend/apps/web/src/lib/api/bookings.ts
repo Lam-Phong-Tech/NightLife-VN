@@ -55,6 +55,12 @@ export type BookingRecord = {
     id: string;
     code: string;
     status: string;
+    qrPayload?: string | null;
+    qrImageUrl?: string | null;
+    qrImageDataUrl?: string | null;
+    metadata?: {
+      qrPayload?: string | null;
+    } | null;
   } | null;
 };
 
