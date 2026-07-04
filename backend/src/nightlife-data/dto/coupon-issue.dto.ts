@@ -30,6 +30,24 @@ export class ScanCouponIssueDto {
   offline?: boolean;
 }
 
+export class ScanBookingQrDto {
+  @ApiProperty({
+    example:
+      'NLBOOKING|550e8400-e29b-41d4-a716-446655440000|BK-550E8400|neon-club|2026-07-04T14:00:00.000Z',
+    description:
+      'Booking QR payload generated for the member/guest booking confirmation screen.',
+  })
+  @IsString()
+  @MaxLength(1024)
+  payload!: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  offline?: boolean;
+}
+
 export class AdminCouponIssueQueryDto {
   @ApiPropertyOptional({ example: '550e8400-e29b-41d4-a716-446655440000' })
   @IsOptional()

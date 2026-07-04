@@ -41,6 +41,7 @@ vi.mock("../src/lib/api/client", () => {
     apiClient: vi.fn((endpoint: string) => {
       if (endpoint === "/partner/coupon-issues/scan") {
         return Promise.resolve({
+          scanType: "COUPON_ISSUE",
           id: "issue-queued",
           code: "BOOKING-QR-OFFLINE",
           status: "ISSUED",
@@ -49,6 +50,26 @@ vi.mock("../src/lib/api/client", () => {
             id: "coupon-1",
             code: "WELCOME5",
             name: "Welcome 5",
+            store: { id: "store-1", name: "Moonlight Bar", slug: "moonlight-bar" },
+          },
+        });
+      }
+      if (endpoint === "/partner/booking-qrs/scan") {
+        return Promise.resolve({
+          scanType: "BOOKING_QR",
+          id: "booking-1",
+          code: "BK-BOOKING",
+          status: "ISSUED",
+          statusLabel: "Booking hợp lệ",
+          booking: {
+            id: "booking-1",
+            status: "REQUESTED",
+            scheduledAt: "2026-07-04T14:00:00.000Z",
+          },
+          coupon: {
+            id: "booking-1",
+            code: "BOOKING",
+            name: "Booking đặt chỗ",
             store: { id: "store-1", name: "Moonlight Bar", slug: "moonlight-bar" },
           },
         });
@@ -144,6 +165,27 @@ describe("Partner offline scan queue", () => {
     });
     await waitFor(() => {
       expect(readQueue()).toEqual([]);
+    });
+  }, 15000);
+
+  it("routes booking QR payloads to the partner booking QR scanner", async () => {
+    render(<PartnerPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Quét mã QR/i }));
+
+    const bookingPayload =
+      "NLBOOKING|550e8400-e29b-41d4-a716-446655440000|BK-550E8400|moonlight-bar|2026-07-04T14:00:00.000Z";
+    const scanInput = screen.getByPlaceholderText(/QR đặt chỗ/i);
+    fireEvent.change(scanInput, { target: { value: bookingPayload } });
+    fireEvent.submit(scanInput.closest("form")!);
+
+    await waitFor(() => {
+      expect(apiClient).toHaveBeenCalledWith("/partner/booking-qrs/scan", {
+        data: {
+          payload: bookingPayload,
+          offline: false,
+        },
+      });
     });
   }, 15000);
 });

@@ -83,6 +83,7 @@ import { BillOcrPreviewDto, ReverseBillDto } from './dto/bill-p2.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import {
   AdminCouponIssueQueryDto,
+  ScanBookingQrDto,
   ScanCouponIssueDto,
 } from './dto/coupon-issue.dto';
 import {
@@ -435,6 +436,29 @@ export class NightlifeDataController {
     @Param('code') code: string,
   ) {
     return this.nightlifeDataService.scanCouponIssue(code, request.user);
+  }
+
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/booking-qrs/scan')
+  scanPartnerBookingQr(
+    @Req() request: RequestWithUser,
+    @Body() dto: ScanBookingQrDto,
+  ) {
+    return this.nightlifeDataService.scanPartnerBookingQr(dto, request.user);
+  }
+
+  @Roles('PARTNER', 'ADMIN', 'OPERATOR')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/booking-qrs/:bookingId/confirm-check-in')
+  confirmPartnerBookingQrCheckIn(
+    @Req() request: RequestWithUser,
+    @Param('bookingId') bookingId: string,
+  ) {
+    return this.nightlifeDataService.confirmPartnerBookingQrCheckIn(
+      bookingId,
+      request.user,
+    );
   }
 
   @PartnerConfirmCheckInContract('id')

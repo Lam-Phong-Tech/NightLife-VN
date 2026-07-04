@@ -114,6 +114,7 @@ type PartnerLiteDashboard = {
 };
 
 type PartnerScanIssue = {
+  scanType?: 'COUPON_ISSUE' | 'BOOKING_QR';
   id: string;
   code: string;
   status: string;
@@ -130,6 +131,7 @@ type PartnerScanIssue = {
     name: string;
     store?: { id: string; name: string; slug: string } | null;
   } | null;
+  couponIssue?: { id: string; code: string; status: string } | null;
 };
 
 type BarcodeDetectorResult = { rawValue?: string };
@@ -166,6 +168,9 @@ const isSignedQrPayload = (value: string) => {
     return false;
   }
 };
+
+const isBookingQrPayload = (value: string) =>
+  value.trim().toUpperCase().startsWith('NLBOOKING|');
 
 const readQrFromVideoFrame = async (
   video: HTMLVideoElement,
@@ -642,7 +647,7 @@ export default function PartnerPage() {
     async (payload: string, options: { fromQueue?: boolean } = {}) => {
       const trimmedPayload = payload.trim();
       if (!trimmedPayload) {
-        setScanMessage('Cần scanToken, link QR hoặc mã coupon để kiểm tra.');
+        setScanMessage('Cần QR đặt chỗ, scanToken, link QR hoặc mã coupon để kiểm tra.');
         return false;
       }
 
@@ -661,17 +666,24 @@ export default function PartnerPage() {
       );
 
       try {
-        const issue = isSignedQrPayload(trimmedPayload)
-          ? await apiClient<PartnerScanIssue>('/partner/coupon-issues/scan', {
+        const issue = isBookingQrPayload(trimmedPayload)
+          ? await apiClient<PartnerScanIssue>('/partner/booking-qrs/scan', {
               data: {
                 payload: trimmedPayload,
                 offline: Boolean(options.fromQueue),
               },
             })
-          : await apiClient<PartnerScanIssue>(
-              `/partner/coupon-issues/${encodeURIComponent(trimmedPayload)}/scan`,
-              { data: {} },
-            );
+          : isSignedQrPayload(trimmedPayload)
+            ? await apiClient<PartnerScanIssue>('/partner/coupon-issues/scan', {
+                data: {
+                  payload: trimmedPayload,
+                  offline: Boolean(options.fromQueue),
+                },
+              })
+            : await apiClient<PartnerScanIssue>(
+                `/partner/coupon-issues/${encodeURIComponent(trimmedPayload)}/scan`,
+                { data: {} },
+              );
 
         setScanIssue(issue);
         setScanMessage(
@@ -816,14 +828,27 @@ export default function PartnerPage() {
     }
 
     setIsConfirmingScan(true);
-    setScanMessage('Đang xác nhận sử dụng coupon...');
+    setScanMessage(
+      scanIssue.scanType === 'BOOKING_QR'
+        ? 'Đang xác nhận khách đã đến...'
+        : 'Đang xác nhận sử dụng coupon...',
+    );
     try {
+      const confirmEndpoint =
+        scanIssue.scanType === 'BOOKING_QR'
+          ? `/partner/booking-qrs/${encodeURIComponent(scanIssue.id)}/confirm-check-in`
+          : `/partner/coupon-issues/${encodeURIComponent(scanIssue.id)}/confirm-check-in`;
       const nextIssue = await apiClient<PartnerScanIssue>(
-        `/partner/coupon-issues/${encodeURIComponent(scanIssue.id)}/confirm-check-in`,
+        confirmEndpoint,
         { data: {} },
       );
       setScanIssue(nextIssue);
-      if (scanIssue.status !== 'USED' && nextIssue.status === 'USED' && nextIssue.coupon?.id) {
+      if (
+        scanIssue.scanType !== 'BOOKING_QR' &&
+        scanIssue.status !== 'USED' &&
+        nextIssue.status === 'USED' &&
+        nextIssue.coupon?.id
+      ) {
         setCoupons((current) =>
           current.map((coupon) =>
             coupon.id === nextIssue.coupon?.id
@@ -855,7 +880,7 @@ export default function PartnerPage() {
       }
       setScanMessage(`${nextIssue.statusLabel ?? nextIssue.status} - mã này không thể dùng lại.`);
     } catch (error) {
-      setScanMessage(error instanceof ApiError ? error.message : 'Không xác nhận được coupon.');
+      setScanMessage(error instanceof ApiError ? error.message : 'Không xác nhận được mã.');
     } finally {
       setIsConfirmingScan(false);
     }
@@ -1403,7 +1428,7 @@ export default function PartnerPage() {
           <input
             value={scanPayload}
             onChange={(event) => setScanPayload(event.target.value)}
-            placeholder="Dán scanToken / link QR hoặc nhập mã coupon"
+            placeholder="Dán QR đặt chỗ, scanToken, link QR hoặc mã coupon"
             style={inputStyle}
           />
           <PrimaryButton disabled={isScanning} type="submit">
@@ -1485,10 +1510,14 @@ export default function PartnerPage() {
               >
                 <CheckCircle2 size={16} />
                 {scanIssue.status === 'USED'
-                  ? 'Đã sử dụng'
+                  ? scanIssue.scanType === 'BOOKING_QR'
+                    ? 'Đã check-in'
+                    : 'Đã sử dụng'
                   : isConfirmingScan
                     ? 'Đang xác nhận'
-                    : 'Xác nhận USED'}
+                    : scanIssue.scanType === 'BOOKING_QR'
+                      ? 'Xác nhận check-in'
+                      : 'Xác nhận USED'}
               </PrimaryButton>
               <GhostButton onClick={rejectScanResult}>
                 <XCircle size={16} />

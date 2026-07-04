@@ -61,6 +61,7 @@ import {
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import {
   AdminCouponIssueQueryDto,
+  ScanBookingQrDto,
   ScanCouponIssueDto,
 } from './dto/coupon-issue.dto';
 import {
@@ -3149,6 +3150,222 @@ export class NightlifeDataService {
       offline: Boolean(dto.offline),
       qrTokenHash: token.tokenHash,
     });
+  }
+
+  async scanPartnerBookingQr(dto: ScanBookingQrDto, user: AuthenticatedUser) {
+    const parsedPayload = this.parseBookingQrPayload(dto.payload);
+    const booking = await this.findBookingFromQrPayload(parsedPayload);
+
+    await this.accessService.ensureStoreAccess(
+      user,
+      booking.storeId,
+      'booking.partner.view',
+    );
+    this.assertBookingQrCanBeScanned(booking);
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: 'BOOKING_QR_SCANNED',
+        targetType: 'Booking',
+        targetId: booking.id,
+        metadata: this.toPrismaJson({
+          source: 'PARTNER_BOOKING_QR_SCAN',
+          offline: Boolean(dto.offline),
+          storeId: booking.storeId,
+          payloadStoreSlug: parsedPayload.storeSlug ?? null,
+          payloadScheduledAt: parsedPayload.scheduledAt ?? null,
+        }),
+      },
+    });
+
+    return this.decoratePartnerBookingQr(booking);
+  }
+
+  async confirmPartnerBookingQrCheckIn(
+    bookingId: string,
+    user: AuthenticatedUser,
+  ) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: this.partnerBookingQrSelect(),
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    await this.accessService.ensureStoreAccess(
+      user,
+      booking.storeId,
+      'checkin.confirm',
+    );
+    this.assertBookingQrCanBeScanned(booking);
+
+    if (!['CHECKED_IN', 'COMPLETED'].includes(booking.status)) {
+      const now = new Date();
+
+      await this.prisma.bookingQr.updateMany({
+        where: { bookingId: booking.id, status: 'ACTIVE' },
+        data: { status: 'USED', usedAt: now },
+      });
+
+      await this.updateBookingStatusWithAudit({
+        booking,
+        nextStatus: 'CHECKED_IN',
+        actorId: user.id,
+        actorType: this.bookingActorTypeFor(user),
+        action: 'BOOKING_STATUS_CHANGED',
+        reason: 'Booking QR check-in confirmed',
+        now,
+      });
+    }
+
+    const updatedBooking = await this.prisma.booking.findUnique({
+      where: { id: booking.id },
+      select: this.partnerBookingQrSelect(),
+    });
+
+    if (!updatedBooking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return this.decoratePartnerBookingQr(updatedBooking);
+  }
+
+  private parseBookingQrPayload(payload: string) {
+    const value = this.cleanText(payload);
+    if (!value) {
+      throw new BadRequestException('payload is required');
+    }
+
+    const parts = value.split('|').map((part) => part.trim());
+    if (parts[0] !== 'NLBOOKING') {
+      throw new BadRequestException('Invalid booking QR payload');
+    }
+
+    return {
+      bookingId: parts[1] ?? '',
+      bookingCode: parts[2] ?? '',
+      storeSlug: parts[3] ?? '',
+      scheduledAt: parts[4] ?? '',
+    };
+  }
+
+  private async findBookingFromQrPayload(input: {
+    bookingId?: string;
+    bookingCode?: string;
+    storeSlug?: string;
+    scheduledAt?: string;
+  }) {
+    const select = this.partnerBookingQrSelect();
+    const bookingId = this.cleanText(input.bookingId);
+    if (bookingId && this.isUuid(bookingId)) {
+      const booking = await this.prisma.booking.findFirst({
+        where: { id: bookingId, deletedAt: null },
+        select,
+      });
+      if (booking) {
+        return booking;
+      }
+    }
+
+    const lookupCodeSource = this.cleanText(input.bookingCode) || bookingId;
+    const lookupCode = this.normalizeBookingLookupCode(lookupCodeSource);
+    const storeSlug = this.cleanText(input.storeSlug);
+    const candidates = await this.prisma.booking.findMany({
+      where: {
+        deletedAt: null,
+        ...(storeSlug ? { store: { slug: storeSlug } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select,
+    });
+    const booking = candidates.find((item) =>
+      this.bookingMatchesLookupCode(item.id, lookupCode),
+    );
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return booking;
+  }
+
+  private assertBookingQrCanBeScanned(booking: {
+    status: string;
+    qr?: { status: string; expiresAt: Date | string | null } | null;
+  }) {
+    if (['CANCELLED', 'NO_SHOW'].includes(booking.status)) {
+      throw new UnprocessableEntityException('Booking is not available for check-in');
+    }
+
+    if (booking.qr?.status === 'REVOKED') {
+      throw new UnprocessableEntityException('Booking QR has been revoked');
+    }
+
+    if (booking.qr?.status === 'EXPIRED') {
+      throw new UnprocessableEntityException('Booking QR has expired');
+    }
+
+    if (booking.qr?.expiresAt && new Date(booking.qr.expiresAt) <= new Date()) {
+      throw new UnprocessableEntityException('Booking QR has expired');
+    }
+  }
+
+  private decoratePartnerBookingQr(booking: {
+    id: string;
+    storeId: string;
+    status: string;
+    scheduledAt: Date | string;
+    cancelledAt?: Date | string | null;
+    userId?: string | null;
+    guestId?: string | null;
+    store: { id: string; name: string; slug: string };
+    coupon?: { id: string; code: string; name: string } | null;
+    couponIssue?: { id: string; code: string; status: string } | null;
+    user?: { id: string; displayName: string | null; tier: string | null } | null;
+    guest?: { id: string; displayName: string | null; phone?: string | null } | null;
+    qr?: {
+      id: string;
+      code: string;
+      status: string;
+      expiresAt: Date | string;
+      usedAt: Date | string | null;
+    } | null;
+  }) {
+    const isUsed =
+      ['CHECKED_IN', 'COMPLETED'].includes(booking.status) ||
+      booking.qr?.status === 'USED';
+    const status = isUsed ? 'USED' : 'ISSUED';
+    const customerType = booking.userId ? 'MEMBER' : 'GUEST';
+
+    return {
+      scanType: 'BOOKING_QR',
+      id: booking.id,
+      code: booking.qr?.code ?? this.bookingPublicCode(booking.id),
+      status,
+      statusLabel: isUsed ? 'Đã check-in' : 'Booking hợp lệ',
+      expiresAt: this.toAuditIso(booking.qr?.expiresAt),
+      usedAt: this.toAuditIso(booking.qr?.usedAt),
+      customer: {
+        type: customerType,
+        label: booking.userId ? 'Hội viên' : 'Khách vãng lai',
+      },
+      booking: {
+        id: booking.id,
+        status: booking.status,
+        scheduledAt: this.toAuditIso(booking.scheduledAt),
+      },
+      coupon: {
+        id: booking.coupon?.id ?? booking.id,
+        code: booking.coupon?.code ?? 'BOOKING',
+        name: booking.coupon?.name ?? 'Booking đặt chỗ',
+        store: booking.store,
+      },
+      couponIssue: booking.couponIssue,
+    };
   }
 
   private async scanCouponIssueByUnique(
@@ -8910,6 +9127,32 @@ export class NightlifeDataService {
       },
       coupon: { select: { id: true, code: true, name: true } },
       couponIssue: { select: { id: true, code: true, status: true } },
+    } satisfies Prisma.BookingSelect;
+  }
+
+  private partnerBookingQrSelect() {
+    return {
+      id: true,
+      storeId: true,
+      userId: true,
+      guestId: true,
+      status: true,
+      scheduledAt: true,
+      cancelledAt: true,
+      store: { select: { id: true, name: true, slug: true } },
+      coupon: { select: { id: true, code: true, name: true } },
+      couponIssue: { select: { id: true, code: true, status: true } },
+      user: { select: { id: true, displayName: true, tier: true } },
+      guest: { select: { id: true, displayName: true, phone: true } },
+      qr: {
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          expiresAt: true,
+          usedAt: true,
+        },
+      },
     } satisfies Prisma.BookingSelect;
   }
 
