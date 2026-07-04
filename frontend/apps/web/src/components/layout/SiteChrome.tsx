@@ -44,6 +44,8 @@ const colors = {
 
 const hiddenChromePaths = [
   "/dang-nhap",
+  "/quen-mat-khau",
+  "/dat-lai-mat-khau",
   "/dang-nhap-doi-tac",
   "/dang-ky-doi-tac",
   "/partner",

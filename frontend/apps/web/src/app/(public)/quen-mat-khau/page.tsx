@@ -118,13 +118,14 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+    <main style={{ minHeight: "100dvh", background: colors.bg, color: colors.text }}>
       <section
         style={{
-          minHeight: "100vh",
-          display: "grid",
-          placeItems: "center",
-          padding: "28px 18px",
+          minHeight: "100dvh",
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          padding: "clamp(46px, 7dvh, 68px) 16px clamp(34px, 5dvh, 52px)",
           background:
             "linear-gradient(180deg,rgba(12,12,15,.65),rgba(12,12,15,.96)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1400&q=80') center/cover",
         }}
@@ -139,7 +140,7 @@ export default function ForgotPasswordPage() {
               color: colors.goldPale,
               fontSize: 13,
               fontWeight: 850,
-              marginBottom: 18,
+              marginBottom: 12,
               textDecoration: "none",
             }}
           >
@@ -152,35 +153,40 @@ export default function ForgotPasswordPage() {
               border: `1px solid ${colors.border}`,
               background: colors.panel,
               borderRadius: 18,
-              padding: 22,
+              padding: 20,
+              minHeight: "min(500px, calc(100dvh - 124px))",
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
               boxShadow: "0 22px 60px rgba(0,0,0,.32)",
             }}
           >
             <div
               style={{
-                width: 54,
-                height: 54,
+                width: 50,
+                height: 50,
                 borderRadius: 16,
                 display: "grid",
                 placeItems: "center",
                 background: colors.goldGrad,
                 color: colors.onGold,
-                marginBottom: 18,
+                marginBottom: 14,
               }}
             >
               <ShieldCheck size={25} />
             </div>
 
-            <h1 style={{ margin: 0, fontSize: 27, lineHeight: 1.12, fontWeight: 950 }}>
+            <h1 style={{ margin: 0, fontSize: 25, lineHeight: 1.12, fontWeight: 950 }}>
               {step === "email" ? "Quên mật khẩu" : "Nhập mã xác nhận"}
             </h1>
-            <p style={{ margin: "8px 0 0", color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
+            <p style={{ margin: "7px 0 0", color: colors.muted, fontSize: 13.2, lineHeight: 1.5 }}>
               {step === "email"
                 ? "Nhập email tài khoản, Vietyoru sẽ gửi mã gồm 6 chữ số có hiệu lực trong 15 phút."
                 : `Mã đã được gửi tới ${normalizedEmail}. Nếu quá ${expiresInMinutes} phút chưa nhập, hãy yêu cầu mã mới.`}
             </p>
 
-            <form onSubmit={step === "email" ? requestCode : verifyCode} style={{ display: "grid", gap: 14, marginTop: 22 }}>
+            <form onSubmit={step === "email" ? requestCode : verifyCode} style={{ display: "grid", gap: 12, marginTop: 18 }}>
               <Field
                 icon={<Mail size={16} />}
                 label="Email"
