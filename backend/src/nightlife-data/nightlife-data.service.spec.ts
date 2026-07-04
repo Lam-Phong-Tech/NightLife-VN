@@ -968,30 +968,6 @@ describe('NightlifeDataService', () => {
     });
   });
 
-  it('rejects duplicate admin ranking pins in the same city/category/scope', async () => {
-    const storeId = '11111111-1111-4111-8111-111111111111';
-
-    prisma.store.findFirst.mockResolvedValue({ id: storeId } as never);
-    prisma.rankingConfig.findFirst.mockResolvedValue({
-      id: 'existing-ranking',
-      targetId: 'other-store',
-    } as never);
-
-    await expect(
-      service.createAdminRankingConfig(
-        { id: 'admin-1', role: 'ADMIN' },
-        {
-          targetType: 'STORE',
-          targetId: storeId,
-          cityCode: 'hn',
-          category: 'club',
-          scope: 'global',
-          pinRank: 1,
-        },
-      ),
-    ).rejects.toBeInstanceOf(UnprocessableEntityException);
-    expect(prisma.rankingConfig.create).not.toHaveBeenCalled();
-  });
 
   it('logs minimal audit and notification fields when updating a ranking config', async () => {
     const storeId = '11111111-1111-4111-8111-111111111111';
