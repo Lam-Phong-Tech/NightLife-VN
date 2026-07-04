@@ -2578,6 +2578,524 @@ const entries: TranslationEntry[] = [
     ko: "오늘 밤",
     zh: "今晚",
   },
+  {
+    vi: "Áp dụng",
+    en: "Apply",
+    ja: "適用",
+    ko: "적용",
+    zh: "应用",
+  },
+  {
+    vi: "Quên mật khẩu?",
+    en: "Forgot password?",
+    ja: "パスワードをお忘れですか？",
+    ko: "비밀번호를 잊으셨나요?",
+    zh: "忘记密码？",
+  },
+  {
+    vi: "Quên mật khẩu",
+    en: "Forgot password",
+    ja: "パスワードを忘れた場合",
+    ko: "비밀번호 찾기",
+    zh: "忘记密码",
+  },
+  {
+    vi: "Quay lại đăng nhập",
+    en: "Back to login",
+    ja: "ログインに戻る",
+    ko: "로그인으로 돌아가기",
+    zh: "返回登录",
+  },
+  {
+    vi: "Nhập mã xác nhận",
+    en: "Enter verification code",
+    ja: "確認コードを入力",
+    ko: "인증 코드를 입력하세요",
+    zh: "输入验证码",
+  },
+  {
+    vi: "Nhập email tài khoản, Vietyoru sẽ gửi mã gồm 6 chữ số có hiệu lực trong 15 phút.",
+    en: "Enter your account email. Vietyoru will send a 6-digit code valid for 15 minutes.",
+    ja: "アカウントのメールアドレスを入力してください。Vietyoruから15分間有効な6桁コードを送信します。",
+    ko: "계정 이메일을 입력하면 Vietyoru가 15분 동안 유효한 6자리 코드를 보냅니다.",
+    zh: "请输入账户邮箱，Vietyoru 将发送有效期 15 分钟的 6 位验证码。",
+  },
+  {
+    vi: "Mã xác nhận",
+    en: "Verification code",
+    ja: "確認コード",
+    ko: "인증 코드",
+    zh: "验证码",
+  },
+  {
+    vi: "Nhập mã 6 số",
+    en: "Enter 6-digit code",
+    ja: "6桁のコードを入力",
+    ko: "6자리 코드를 입력하세요",
+    zh: "输入6位数字码",
+  },
+  {
+    vi: "Gửi mã xác nhận",
+    en: "Send verification code",
+    ja: "確認コードを送信",
+    ko: "인증 코드 보내기",
+    zh: "发送验证码",
+  },
+  {
+    vi: "Xác nhận mã",
+    en: "Verify code",
+    ja: "コードを確認",
+    ko: "코드 확인",
+    zh: "验证代码",
+  },
+  {
+    vi: "Đang xử lý...",
+    en: "Processing...",
+    ja: "処理中...",
+    ko: "처리 중...",
+    zh: "处理中...",
+  },
+  {
+    vi: "Nhập email khác hoặc gửi mã mới",
+    en: "Use another email or send a new code",
+    ja: "別のメールを入力、または新しいコードを送信",
+    ko: "다른 이메일 입력 또는 새 코드 보내기",
+    zh: "输入其他邮箱或发送新代码",
+  },
+  {
+    vi: "Tạo mật khẩu mới",
+    en: "Create a new password",
+    ja: "新しいパスワードを作成",
+    ko: "새 비밀번호 만들기",
+    zh: "创建新密码",
+  },
+  {
+    vi: "Vui lòng xác thực mã email trước khi đặt mật khẩu mới.",
+    en: "Please verify the email code before setting a new password.",
+    ja: "新しいパスワードを設定する前に、メールコードを確認してください。",
+    ko: "새 비밀번호를 설정하기 전에 이메일 코드를 인증해 주세요.",
+    zh: "设置新密码前，请先验证邮箱验证码。",
+  },
+  {
+    vi: "Mật khẩu mới",
+    en: "New password",
+    ja: "新しいパスワード",
+    ko: "새 비밀번호",
+    zh: "新密码",
+  },
+  {
+    vi: "Vui lòng nhập mật khẩu mới",
+    en: "Please enter a new password",
+    ja: "新しいパスワードを入力してください",
+    ko: "새 비밀번호를 입력해 주세요",
+    zh: "请输入新密码",
+  },
+  {
+    vi: "Nhập lại mật khẩu mới",
+    en: "Confirm new password",
+    ja: "新しいパスワードを再入力",
+    ko: "새 비밀번호 확인",
+    zh: "再次输入新密码",
+  },
+  {
+    vi: "Vui lòng nhập lại mật khẩu mới",
+    en: "Please confirm the new password",
+    ja: "新しいパスワードをもう一度入力してください",
+    ko: "새 비밀번호를 다시 입력해 주세요",
+    zh: "请再次输入新密码",
+  },
+  {
+    vi: "Đang cập nhật...",
+    en: "Updating...",
+    ja: "更新中...",
+    ko: "업데이트 중...",
+    zh: "正在更新...",
+  },
+  {
+    vi: "Đổi mật khẩu",
+    en: "Change password",
+    ja: "パスワードを変更",
+    ko: "비밀번호 변경",
+    zh: "更改密码",
+  },
+  {
+    vi: "Xem danh sách quán",
+    en: "View venue list",
+    ja: "店舗一覧を見る",
+    ko: "매장 목록 보기",
+    zh: "查看店铺列表",
+  },
+  {
+    vi: "Coupon & khuyến mãi từ các quán đối tác · Hà Nội",
+    en: "Coupons and promotions from partner venues · Hanoi",
+    ja: "提携店舗のクーポン・キャンペーン · ハノイ",
+    ko: "제휴 매장의 쿠폰 및 프로모션 · 하노이",
+    zh: "合作店铺优惠券和活动 · 河内",
+  },
+  {
+    vi: "Tìm ưu đãi",
+    en: "Search deals",
+    ja: "特典を検索",
+    ko: "혜택 검색",
+    zh: "搜索优惠",
+  },
+  {
+    vi: "Đang tải ưu đãi",
+    en: "Loading deals",
+    ja: "特典を読み込み中",
+    ko: "혜택 불러오는 중",
+    zh: "正在加载优惠",
+  },
+  {
+    vi: "Danh sách coupon đang có",
+    en: "Available coupon list",
+    ja: "利用可能なクーポン一覧",
+    ko: "사용 가능한 쿠폰 목록",
+    zh: "可用优惠券列表",
+  },
+  {
+    vi: "Chưa có coupon đang mở",
+    en: "No active coupons yet",
+    ja: "現在利用可能なクーポンはありません",
+    ko: "현재 이용 가능한 쿠폰이 없습니다",
+    zh: "暂无可用优惠券",
+  },
+  {
+    vi: "Hiện chưa có ưu đãi phù hợp. Bạn quay lại sau một chút nhé.",
+    en: "There are no matching deals right now. Please check back shortly.",
+    ja: "現在、条件に合う特典はありません。しばらくしてから再度ご確認ください。",
+    ko: "현재 조건에 맞는 혜택이 없습니다. 잠시 후 다시 확인해 주세요.",
+    zh: "目前没有匹配的优惠，请稍后再查看。",
+  },
+  {
+    vi: "Tìm quán khác",
+    en: "Find another venue",
+    ja: "別の店舗を探す",
+    ko: "다른 매장 찾기",
+    zh: "查找其他店铺",
+  },
+  {
+    vi: "Guest Discount 5%",
+    en: "Guest Discount 5%",
+    ja: "ゲスト割引 5%",
+    ko: "게스트 할인 5%",
+    zh: "游客优惠 5%",
+  },
+  {
+    vi: "Member Discount",
+    en: "Member Discount",
+    ja: "会員割引",
+    ko: "회원 할인",
+    zh: "会员优惠",
+  },
+  {
+    vi: "VIP Discount 10%",
+    en: "VIP Discount 10%",
+    ja: "VIP割引 10%",
+    ko: "VIP 할인 10%",
+    zh: "VIP 优惠 10%",
+  },
+  {
+    vi: "Welcome 100K",
+    en: "Welcome 100K",
+    ja: "ウェルカム 100K",
+    ko: "웰컴 100K",
+    zh: "欢迎优惠 100K",
+  },
+  {
+    vi: "Thư viện ảnh",
+    en: "Photo gallery",
+    ja: "フォトギャラリー",
+    ko: "사진 갤러리",
+    zh: "照片库",
+  },
+  {
+    vi: "Thư viện ảnh của quán",
+    en: "Venue photo gallery",
+    ja: "店舗フォトギャラリー",
+    ko: "매장 사진 갤러리",
+    zh: "店铺照片库",
+  },
+  {
+    vi: "Mở nội dung",
+    en: "Open content",
+    ja: "コンテンツを開く",
+    ko: "콘텐츠 열기",
+    zh: "打开内容",
+  },
+  {
+    vi: "Giờ mở cửa",
+    en: "Opening hours",
+    ja: "営業時間",
+    ko: "영업시간",
+    zh: "营业时间",
+  },
+  {
+    vi: "Khoảng giá",
+    en: "Price range",
+    ja: "価格帯",
+    ko: "가격대",
+    zh: "价格区间",
+  },
+  {
+    vi: "Đang phục vụ",
+    en: "Serving now",
+    ja: "対応中",
+    ko: "현재 근무 중",
+    zh: "正在服务",
+  },
+  {
+    vi: "Đang mở",
+    en: "Open now",
+    ja: "営業中",
+    ko: "영업 중",
+    zh: "营业中",
+  },
+  {
+    vi: "Đang nghỉ",
+    en: "Closed",
+    ja: "休業中",
+    ko: "영업 종료",
+    zh: "休息中",
+  },
+  {
+    vi: "Chỉ đường",
+    en: "Directions",
+    ja: "道順",
+    ko: "길찾기",
+    zh: "路线",
+  },
+  {
+    vi: "Gọi điện",
+    en: "Call",
+    ja: "電話",
+    ko: "전화",
+    zh: "电话",
+  },
+  {
+    vi: "Thực đơn",
+    en: "Menu",
+    ja: "メニュー",
+    ko: "메뉴",
+    zh: "菜单",
+  },
+  {
+    vi: "Video quán",
+    en: "Venue videos",
+    ja: "店舗動画",
+    ko: "매장 영상",
+    zh: "店铺视频",
+  },
+  {
+    vi: "Không gian quán",
+    en: "Venue space",
+    ja: "店舗空間",
+    ko: "매장 공간",
+    zh: "店铺空间",
+  },
+  {
+    vi: "Vị trí",
+    en: "Location",
+    ja: "所在地",
+    ko: "위치",
+    zh: "位置",
+  },
+  {
+    vi: "Giới thiệu",
+    en: "Introduction",
+    ja: "紹介",
+    ko: "소개",
+    zh: "介绍",
+  },
+  {
+    vi: "Chưa có mô tả quán.",
+    en: "Venue description is not available yet.",
+    ja: "店舗紹介はまだありません。",
+    ko: "매장 설명이 아직 없습니다.",
+    zh: "暂无店铺介绍。",
+  },
+  {
+    vi: "Cast đang làm",
+    en: "Cast on duty",
+    ja: "在籍キャスト",
+    ko: "근무 중인 캐스트",
+    zh: "在岗 Cast",
+  },
+  {
+    vi: "Đặt bàn ngay",
+    en: "Book a table now",
+    ja: "今すぐ席を予約",
+    ko: "지금 테이블 예약",
+    zh: "立即预订桌位",
+  },
+  {
+    vi: "Gửi yêu cầu · không thu cọc",
+    en: "Send request · no deposit",
+    ja: "リクエスト送信・デポジット不要",
+    ko: "요청 보내기 · 보증금 없음",
+    zh: "发送请求 · 无需订金",
+  },
+  {
+    vi: "Nói tiếng Anh",
+    en: "Speaks English",
+    ja: "英語対応",
+    ko: "영어 가능",
+    zh: "会说英语",
+  },
+  {
+    vi: "Quốc tịch cast",
+    en: "Cast nationality",
+    ja: "キャスト国籍",
+    ko: "캐스트 국적",
+    zh: "Cast 国籍",
+  },
+  {
+    vi: "Nhật Bản · Việt Nam",
+    en: "Japan · Vietnam",
+    ja: "日本 · ベトナム",
+    ko: "일본 · 베트남",
+    zh: "日本 · 越南",
+  },
+  {
+    vi: "Quán đang thuộc về",
+    en: "Current venue",
+    ja: "所属店舗",
+    ko: "소속 매장",
+    zh: "所属店铺",
+  },
+  {
+    vi: "Cast tương tự",
+    en: "Similar Cast",
+    ja: "似ているキャスト",
+    ko: "비슷한 캐스트",
+    zh: "相似 Cast",
+  },
+  {
+    vi: "Xem quán",
+    en: "View venue",
+    ja: "店舗を見る",
+    ko: "매장 보기",
+    zh: "查看店铺",
+  },
+  {
+    vi: "Đặt cast này",
+    en: "Book this Cast",
+    ja: "このキャストを予約",
+    ko: "이 캐스트 예약",
+    zh: "预约此 Cast",
+  },
+  {
+    vi: "Sở thích",
+    en: "Interests",
+    ja: "趣味",
+    ko: "취미",
+    zh: "兴趣",
+  },
+  {
+    vi: "Phong cách",
+    en: "Style",
+    ja: "スタイル",
+    ko: "스타일",
+    zh: "风格",
+  },
+  {
+    vi: "Chưa cập nhật",
+    en: "Not updated",
+    ja: "未更新",
+    ko: "아직 업데이트되지 않음",
+    zh: "尚未更新",
+  },
+  {
+    vi: "Thanh lịch · Ấm áp",
+    en: "Elegant · Warm",
+    ja: "上品 · 温かい",
+    ko: "우아함 · 따뜻함",
+    zh: "优雅 · 温暖",
+  },
+  {
+    vi: "Tháng sinh",
+    en: "Birth month",
+    ja: "誕生月",
+    ko: "태어난 달",
+    zh: "出生月份",
+  },
+  {
+    vi: "Cung",
+    en: "Zodiac",
+    ja: "星座",
+    ko: "별자리",
+    zh: "星座",
+  },
+  {
+    vi: "Đang nhận đặt tối nay",
+    en: "Accepting bookings tonight",
+    ja: "今夜予約受付中",
+    ko: "오늘 밤 예약 접수 중",
+    zh: "今晚可预约",
+  },
+  {
+    vi: "Ranking tháng này",
+    en: "This month's ranking",
+    ja: "今月のランキング",
+    ko: "이번 달 랭킹",
+    zh: "本月排行",
+  },
+  {
+    vi: "Ranking tháng 6",
+    en: "June ranking",
+    ja: "6月ランキング",
+    ko: "6월 랭킹",
+    zh: "6月排行",
+  },
+  {
+    vi: "Mở gallery cast",
+    en: "Open Cast gallery",
+    ja: "キャストギャラリーを開く",
+    ko: "캐스트 갤러리 열기",
+    zh: "打开 Cast 相册",
+  },
+  {
+    vi: "Mở video SNS",
+    en: "Open SNS video",
+    ja: "SNS動画を開く",
+    ko: "SNS 영상 열기",
+    zh: "打开 SNS 视频",
+  },
+  {
+    vi: "Xác nhận trong 5 phút · Miễn phí huỷ trước 2 giờ",
+    en: "Confirmed within 5 minutes · Free cancellation up to 2 hours before",
+    ja: "5分以内に確認 · 2時間前まで無料キャンセル",
+    ko: "5분 이내 확인 · 2시간 전까지 무료 취소",
+    zh: "5分钟内确认 · 提前2小时可免费取消",
+  },
+  {
+    vi: "Admin đang điều phối đặt chỗ",
+    en: "Admin is coordinating the reservation",
+    ja: "管理者が予約を調整中",
+    ko: "관리자가 예약을 조율 중",
+    zh: "管理员正在协调预约",
+  },
+  {
+    vi: "Mail Admin",
+    en: "Email admin",
+    ja: "管理者へメール",
+    ko: "관리자에게 메일",
+    zh: "邮件联系管理员",
+  },
+  {
+    vi: "LINE OA",
+    en: "LINE OA",
+    ja: "LINE公式",
+    ko: "LINE 공식",
+    zh: "LINE 官方账号",
+  },
+  {
+    vi: "Admin đang điều phối.",
+    en: "Admin is coordinating.",
+    ja: "管理者が調整中です。",
+    ko: "관리자가 조율 중입니다.",
+    zh: "管理员正在协调。",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -2950,6 +3468,349 @@ const termEntries: TranslationEntry[] = [
     ko: "프리미엄",
     zh: "高级",
   },
+  {
+    vi: "Club Lumiere",
+    en: "Club Lumiere",
+    ja: "クラブ・リュミエール",
+    ko: "클럽 뤼미에르",
+    zh: "Lumiere 俱乐部",
+  },
+  {
+    vi: "Velvet Club",
+    en: "Velvet Club",
+    ja: "ベルベットクラブ",
+    ko: "벨벳 클럽",
+    zh: "Velvet 俱乐部",
+  },
+  {
+    vi: "Velvet Bar",
+    en: "Velvet Bar",
+    ja: "ベルベットバー",
+    ko: "벨벳 바",
+    zh: "Velvet 酒吧",
+  },
+  {
+    vi: "Moonlight Bar",
+    en: "Moonlight Bar",
+    ja: "ムーンライトバー",
+    ko: "문라이트 바",
+    zh: "月光酒吧",
+  },
+  {
+    vi: "Crimson Bar Hoan Kiem",
+    en: "Crimson Bar Hoan Kiem",
+    ja: "クリムゾンバー・ホアンキエム",
+    ko: "크림슨 바 호안끼엠",
+    zh: "还剑绯红酒吧",
+  },
+  {
+    vi: "Sakura Lounge Quan 3",
+    en: "Sakura Lounge District 3",
+    ja: "サクララウンジ3区",
+    ko: "사쿠라 라운지 3군",
+    zh: "第3郡樱花酒廊",
+  },
+  {
+    vi: "Golden Voice KTV Quan 7",
+    en: "Golden Voice KTV District 7",
+    ja: "ゴールデンボイスKTV 7区",
+    ko: "골든 보이스 KTV 7군",
+    zh: "第7郡金嗓KTV",
+  },
+  {
+    vi: "Việt Nam",
+    en: "Vietnam",
+    ja: "ベトナム",
+    ko: "베트남",
+    zh: "越南",
+  },
+  {
+    vi: "Nhật Bản",
+    en: "Japan",
+    ja: "日本",
+    ko: "일본",
+    zh: "日本",
+  },
+  {
+    vi: "Hàn Quốc",
+    en: "Korea",
+    ja: "韓国",
+    ko: "한국",
+    zh: "韩国",
+  },
+  {
+    vi: "Trung Quốc",
+    en: "China",
+    ja: "中国",
+    ko: "중국",
+    zh: "中国",
+  },
+  {
+    vi: "Tiếng Việt",
+    en: "Vietnamese",
+    ja: "ベトナム語",
+    ko: "베트남어",
+    zh: "越南语",
+  },
+  {
+    vi: "Tiếng Anh",
+    en: "English",
+    ja: "英語",
+    ko: "영어",
+    zh: "英语",
+  },
+  {
+    vi: "Tiếng Nhật",
+    en: "Japanese",
+    ja: "日本語",
+    ko: "일본어",
+    zh: "日语",
+  },
+  {
+    vi: "Tiếng Hàn",
+    en: "Korean",
+    ja: "韓国語",
+    ko: "한국어",
+    zh: "韩语",
+  },
+  {
+    vi: "Tiếng Trung",
+    en: "Chinese",
+    ja: "中国語",
+    ko: "중국어",
+    zh: "中文",
+  },
+  {
+    vi: "VN",
+    en: "Vietnamese",
+    ja: "ベトナム語",
+    ko: "베트남어",
+    zh: "越南语",
+  },
+  {
+    vi: "EN",
+    en: "English",
+    ja: "英語",
+    ko: "영어",
+    zh: "英语",
+  },
+  {
+    vi: "JP",
+    en: "Japanese",
+    ja: "日本語",
+    ko: "일본어",
+    zh: "日语",
+  },
+  {
+    vi: "JA",
+    en: "Japanese",
+    ja: "日本語",
+    ko: "일본어",
+    zh: "日语",
+  },
+  {
+    vi: "KO",
+    en: "Korean",
+    ja: "韓国語",
+    ko: "한국어",
+    zh: "韩语",
+  },
+  {
+    vi: "ZH",
+    en: "Chinese",
+    ja: "中国語",
+    ko: "중국어",
+    zh: "中文",
+  },
+  {
+    vi: "Guest Discount",
+    en: "Guest Discount",
+    ja: "ゲスト割引",
+    ko: "게스트 할인",
+    zh: "游客优惠",
+  },
+  {
+    vi: "Member Discount",
+    en: "Member Discount",
+    ja: "会員割引",
+    ko: "회원 할인",
+    zh: "会员优惠",
+  },
+  {
+    vi: "VIP Discount",
+    en: "VIP Discount",
+    ja: "VIP割引",
+    ko: "VIP 할인",
+    zh: "VIP 优惠",
+  },
+  {
+    vi: "Welcome",
+    en: "Welcome",
+    ja: "ウェルカム",
+    ko: "웰컴",
+    zh: "欢迎优惠",
+  },
+  {
+    vi: "Happy Hour",
+    en: "Happy Hour",
+    ja: "ハッピーアワー",
+    ko: "해피아워",
+    zh: "欢乐时光",
+  },
+  {
+    vi: "cuối tuần",
+    en: "weekend",
+    ja: "週末",
+    ko: "주말",
+    zh: "周末",
+  },
+  {
+    vi: "VIP Room",
+    en: "VIP Room",
+    ja: "VIPルーム",
+    ko: "VIP 룸",
+    zh: "VIP 包房",
+  },
+  {
+    vi: "Phòng riêng",
+    en: "Private room",
+    ja: "個室",
+    ko: "프라이빗 룸",
+    zh: "包间",
+  },
+  {
+    vi: "Âm thanh hay",
+    en: "Great sound",
+    ja: "音響が良い",
+    ko: "음향이 좋음",
+    zh: "音响出色",
+  },
+  {
+    vi: "Combo nhóm",
+    en: "Group combo",
+    ja: "グループコンボ",
+    ko: "단체 콤보",
+    zh: "团体套餐",
+  },
+  {
+    vi: "2+1 Combo phòng",
+    en: "2+1 room combo",
+    ja: "ルーム 2+1 コンボ",
+    ko: "룸 2+1 콤보",
+    zh: "包房 2+1 套餐",
+  },
+  {
+    vi: "Bar · Lounge",
+    en: "Bar · Lounge",
+    ja: "バー · ラウンジ",
+    ko: "바 · 라운지",
+    zh: "酒吧 · 酒廊",
+  },
+  {
+    vi: "Bar · ホアンキエム",
+    en: "Bar · Hoan Kiem",
+    ja: "バー · ホアンキエム",
+    ko: "바 · 호안끼엠",
+    zh: "酒吧 · 还剑",
+  },
+  {
+    vi: "Nhà hàng",
+    en: "Restaurant",
+    ja: "レストラン",
+    ko: "레스토랑",
+    zh: "餐厅",
+  },
+  {
+    vi: "KTV",
+    en: "KTV",
+    ja: "KTV",
+    ko: "KTV",
+    zh: "KTV",
+  },
+  {
+    vi: "Spa",
+    en: "Spa",
+    ja: "スパ",
+    ko: "스파",
+    zh: "水疗",
+  },
+  {
+    vi: "Massage",
+    en: "Massage",
+    ja: "マッサージ",
+    ko: "마사지",
+    zh: "按摩",
+  },
+  {
+    vi: "Admin đang điều phối",
+    en: "Admin is coordinating",
+    ja: "管理者が調整中",
+    ko: "관리자가 조율 중",
+    zh: "管理员正在协调",
+  },
+  {
+    vi: "QR đã cấp",
+    en: "QR issued",
+    ja: "QR発行済み",
+    ko: "QR 발급됨",
+    zh: "二维码已发放",
+  },
+  {
+    vi: "Mới",
+    en: "New",
+    ja: "新規",
+    ko: "신규",
+    zh: "新建",
+  },
+  {
+    vi: "Hoàn tất",
+    en: "Completed",
+    ja: "完了",
+    ko: "완료",
+    zh: "已完成",
+  },
+  {
+    vi: "Đã hủy",
+    en: "Cancelled",
+    ja: "キャンセル済み",
+    ko: "취소됨",
+    zh: "已取消",
+  },
+  {
+    vi: "Chi tiết",
+    en: "Details",
+    ja: "詳細",
+    ko: "상세",
+    zh: "详情",
+  },
+  {
+    vi: "Chat Admin",
+    en: "Chat with admin",
+    ja: "管理者にチャット",
+    ko: "관리자 채팅",
+    zh: "联系管理员",
+  },
+  {
+    vi: "Đổi lịch",
+    en: "Reschedule",
+    ja: "日程変更",
+    ko: "일정 변경",
+    zh: "改期",
+  },
+  {
+    vi: "Hủy đặt chỗ",
+    en: "Cancel reservation",
+    ja: "予約をキャンセル",
+    ko: "예약 취소",
+    zh: "取消预约",
+  },
+  {
+    vi: "Xác nhận trong 5 phút · Miễn phí huỷ trước 2 giờ",
+    en: "Confirmed within 5 minutes · Free cancellation up to 2 hours before",
+    ja: "5分以内に確認 · 2時間前まで無料キャンセル",
+    ko: "5분 이내 확인 · 2시간 전까지 무료 취소",
+    zh: "5分钟内确认 · 提前2小时可免费取消",
+  },
 ];
 
 const termTranslations = [...termEntries].sort((left, right) => right.vi.length - left.vi.length);
@@ -3009,6 +3870,127 @@ function translatePattern(
     }[language];
   }
 
+  const applyLanguageMatch = normalized.match(/^Áp dụng\s+(VI|EN|JA|KO|ZH)$/i);
+  if (applyLanguageMatch) {
+    const code = (applyLanguageMatch[1] ?? "").toUpperCase();
+    return {
+      en: `Apply ${code}`,
+      ja: `${code}を適用`,
+      ko: `${code} 적용`,
+      zh: `应用 ${code}`,
+    }[language];
+  }
+
+  const openNowMatch = normalized.match(/^Đang mở\s+·\s+(.+)$/i);
+  if (openNowMatch) {
+    const time = openNowMatch[1] ?? "";
+    return {
+      en: `Open now · ${time}`,
+      ja: `営業中 · ${time}`,
+      ko: `영업 중 · ${time}`,
+      zh: `营业中 · ${time}`,
+    }[language];
+  }
+
+  const contentCountMatch = normalized.match(/^(\d+)\s+nội dung$/i);
+  if (contentCountMatch) {
+    const count = contentCountMatch[1] ?? "";
+    return {
+      en: `${count} items`,
+      ja: `${count}件`,
+      ko: `${count}개 콘텐츠`,
+      zh: `${count} 个内容`,
+    }[language];
+  }
+
+  const photoCountMatch = normalized.match(/^(\d+)\s+ảnh$/i);
+  if (photoCountMatch) {
+    const count = photoCountMatch[1] ?? "";
+    return {
+      en: `${count} photos`,
+      ja: `${count}枚の写真`,
+      ko: `사진 ${count}장`,
+      zh: `${count} 张照片`,
+    }[language];
+  }
+
+  const openContentMatch = normalized.match(/^Mở nội dung\s+(\d+)$/i);
+  if (openContentMatch) {
+    const index = openContentMatch[1] ?? "";
+    return {
+      en: `Open content ${index}`,
+      ja: `コンテンツ ${index} を開く`,
+      ko: `콘텐츠 ${index} 열기`,
+      zh: `打开内容 ${index}`,
+    }[language];
+  }
+
+  const sentCodeMatch = normalized.match(
+    /^Mã đã được gửi tới\s+(.+?)\.\s+Nếu quá\s+(.+?)\s+phút chưa nhập,\s+hãy yêu cầu mã mới\.$/i,
+  );
+  if (sentCodeMatch) {
+    const email = sentCodeMatch[1] ?? "";
+    const minutes = sentCodeMatch[2] ?? "";
+    return {
+      en: `A code has been sent to ${email}. If you do not enter it within ${minutes} minutes, request a new code.`,
+      ja: `${email} にコードを送信しました。${minutes}分以内に入力できない場合は、新しいコードをリクエストしてください。`,
+      ko: `${email}(으)로 코드가 전송되었습니다. ${minutes}분 안에 입력하지 못하면 새 코드를 요청해 주세요.`,
+      zh: `验证码已发送至 ${email}。如果超过 ${minutes} 分钟未输入，请重新获取验证码。`,
+    }[language];
+  }
+
+  const resetSessionMatch = normalized.match(
+    /^Đang đặt lại mật khẩu cho\s+(.+?)(?:,\s+phiên hết hạn lúc\s+(.+))?\.$/i,
+  );
+  if (resetSessionMatch) {
+    const email = resetSessionMatch[1] ?? "";
+    const expiresAt = resetSessionMatch[2] ?? "";
+    if (expiresAt) {
+      return {
+        en: `Resetting password for ${email}; the session expires at ${expiresAt}.`,
+        ja: `${email} のパスワードを再設定中です。セッション期限は ${expiresAt} です。`,
+        ko: `${email}의 비밀번호를 재설정 중입니다. 세션은 ${expiresAt}에 만료됩니다.`,
+        zh: `正在为 ${email} 重置密码，会话将于 ${expiresAt} 过期。`,
+      }[language];
+    }
+
+    return {
+      en: `Resetting password for ${email}.`,
+      ja: `${email} のパスワードを再設定中です。`,
+      ko: `${email}의 비밀번호를 재설정 중입니다.`,
+      zh: `正在为 ${email} 重置密码。`,
+    }[language];
+  }
+
+  const castRankingMonthMatch = normalized.match(/^#(\d+)\s+Ranking tháng\s+(.+)$/i);
+  if (castRankingMonthMatch) {
+    const rank = castRankingMonthMatch[1] ?? "";
+    const month = normalizeText(castRankingMonthMatch[2] ?? "").toLowerCase();
+    if (month === "này") {
+      return {
+        en: `#${rank} this month's ranking`,
+        ja: `今月のランキング #${rank}`,
+        ko: `이번 달 랭킹 #${rank}`,
+        zh: `本月排行 #${rank}`,
+      }[language];
+    }
+
+    const monthText = /^\d+$/.test(month)
+      ? {
+          en: `month ${month}`,
+          ja: `${month}月`,
+          ko: `${month}월`,
+          zh: `${month}月`,
+        }[language]
+      : replaceTerms(castRankingMonthMatch[2] ?? "", language);
+    return {
+      en: `#${rank} ${monthText} ranking`,
+      ja: `${monthText}ランキング #${rank}`,
+      ko: `${monthText} 랭킹 #${rank}`,
+      zh: `${monthText}排行 #${rank}`,
+    }[language];
+  }
+
   const guestMatch = normalized.match(/^(\d+)\s+người$/i);
   if (guestMatch) {
     const count = guestMatch[1] ?? "";
@@ -3017,6 +3999,17 @@ function translatePattern(
       ja: `${count}名`,
       ko: `${count}명`,
       zh: `${count}人`,
+    }[language];
+  }
+
+  const guestPaxMatch = normalized.match(/^(\d+)\s+người\s+cast$/i);
+  if (guestPaxMatch) {
+    const count = guestPaxMatch[1] ?? "";
+    return {
+      en: `${count} Cast members`,
+      ja: `${count}人のキャスト`,
+      ko: `캐스트 ${count}명`,
+      zh: `${count} 位 Cast`,
     }[language];
   }
 

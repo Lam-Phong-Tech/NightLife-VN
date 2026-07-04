@@ -464,7 +464,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
                   fontFamily: "var(--nl-font-sans)",
                 }}
               >
-                Áp dụng {draftLanguage.badge}
+                {`Áp dụng ${draftLanguage.badge}`}
               </button>
             </div>
           </section>
