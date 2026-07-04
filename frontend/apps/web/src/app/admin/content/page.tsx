@@ -37,13 +37,6 @@ const mockCampaigns = [
   { id: '5', discount: '-20%', name: 'Tết Trung Thu', apply: 'Toàn hệ thống', time: '01/09 - 17/09', status: 'Đã kết thúc' },
 ];
 
-const mockBanners = [
-  { id: '1', tag: 'HERO CHÍNH', title: 'Đêm nhạc DJ SODA · Club Lumière', pos: 'Trang chủ #1', status: 'Đang hiển thị' },
-  { id: '2', tag: 'HERO PHỤ', title: 'Sakura Lounge · Ưu đãi thành viên', pos: 'Trang chủ #2', status: 'Đang hiển thị' },
-  { id: '3', tag: 'ƯU ĐÃI', title: 'Happy Hour -30% cuối tuần', pos: 'Trang Ưu đãi', status: 'Ẩn' },
-  { id: '4', tag: 'SỰ KIỆN', title: 'Countdown Party 2027', pos: 'Nháp', status: 'Ẩn' },
-];
-
 const mockBlogs = [
   { id: '1', title: 'Top 5 club sôi động nhất Hà Nội 2026', cat: 'Cẩm nang', date: '28/06/2026', views: '2.4k', status: 'Đã đăng', color: '#33261a' },
   { id: '2', title: 'Hướng dẫn khách Nhật đặt bàn nightlife an toàn', cat: 'Hướng dẫn', date: '25/08/2026', views: '1.8k', status: 'Đã đăng', color: '#271932' },
@@ -81,6 +74,7 @@ export default function AdminContentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [blogs, setBlogs] = useState<CmsContentItem[]>([]);
+  const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
@@ -105,6 +99,7 @@ export default function AdminContentPage() {
   useEffect(() => {
     fetchCategories();
     fetchBlogs();
+    fetchBanners();
   }, []);
 
   useEffect(() => {
@@ -188,6 +183,15 @@ export default function AdminContentPage() {
       if (data) setBlogs(data);
     } catch (error) {
       console.error('Failed to fetch blogs:', error);
+    }
+  };
+
+  const fetchBanners = async () => {
+    try {
+      const data = await contentApi.adminList({ type: 'BANNER' });
+      if (data) setBanners(data);
+    } catch (error) {
+      console.error('Failed to fetch banners:', error);
     }
   };
 
@@ -506,10 +510,15 @@ export default function AdminContentPage() {
       {/* BANNER CONTENT */}
       {activeTab === 'banner' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          {mockBanners.map((banner, idx) => (
-            <div key={idx} style={{ 
+          {banners.map((banner) => {
+            const metadata = (banner.metadata as any) || {};
+            const displayStatus = banner.status === 'PUBLISHED' ? 'Đang hiển thị' : banner.status === 'DRAFT' ? 'Nháp' : 'Ẩn';
+            const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${metadata.imageUrl})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
+            
+            return (
+            <div key={banner.id} style={{ 
               height: '220px', borderRadius: '16px', border: `1px solid ${colors.borderSoft}`, 
-              background: 'linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26', 
+              background: bgImage, backgroundSize: 'cover', backgroundPosition: 'center',
               padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               position: 'relative'
             }}>
@@ -517,29 +526,30 @@ export default function AdminContentPage() {
                 <span style={{ 
                   display: 'inline-block', padding: '4px 12px', borderRadius: '16px', 
                   border: `1px solid ${colors.borderGold22}`, color: colors.gold, 
-                  fontSize: '11px', fontWeight: 800, letterSpacing: '1px' 
+                  fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase'
                 }}>
-                  {banner.tag}
+                  {metadata.tag || 'Banner'}
                 </span>
               </div>
               <div>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.text, margin: '0 0 16px 0' }}>{banner.title}</h3>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: '13px', color: colors.muted }}>Vị trí: <span style={{ color: colors.text2 }}>{banner.pos}</span></div>
+                  <div style={{ fontSize: '13px', color: colors.muted }}>Vị trí: <span style={{ color: colors.text2 }}>{metadata.position || 'Không xác định'}</span></div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {banner.status === 'Đang hiển thị' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.green }} />}
+                    {displayStatus === 'Đang hiển thị' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.green }} />}
                     <span style={{ 
-                      color: getBannerStatusStyle(banner.status).color, 
+                      color: getBannerStatusStyle(displayStatus).color, 
                       padding: '2px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
-                      border: getBannerStatusStyle(banner.status).border
+                      border: getBannerStatusStyle(displayStatus).border
                     }}>
-                      {banner.status}
+                      {displayStatus}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
