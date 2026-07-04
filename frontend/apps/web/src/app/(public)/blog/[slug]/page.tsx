@@ -132,20 +132,38 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
         </nav>
 
         <header>
-          <span
-            style={{
-              display: "inline-flex",
-              borderRadius: "999px",
-              padding: "6px 11px",
-              background: "rgba(212,178,106,.14)",
-              border: "1px solid rgba(212,178,106,.32)",
-              color: "#f0dda8",
-              fontSize: "11px",
-              fontWeight: 900,
-            }}
-          >
-            {post.category}
-          </span>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                borderRadius: "999px",
+                padding: "6px 11px",
+                background: "rgba(212,178,106,.14)",
+                border: "1px solid rgba(212,178,106,.32)",
+                color: "#f0dda8",
+                fontSize: "11px",
+                fontWeight: 900,
+              }}
+            >
+              {post.category}
+            </span>
+            {post.status === "DRAFT" && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  borderRadius: "999px",
+                  padding: "6px 11px",
+                  background: "rgba(239, 68, 68, 0.15)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  color: "#fca5a5",
+                  fontSize: "11px",
+                  fontWeight: 900,
+                }}
+              >
+                Nháp
+              </span>
+            )}
+          </div>
           <h1
             style={{
               maxWidth: "860px",

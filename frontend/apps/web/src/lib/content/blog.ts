@@ -237,7 +237,7 @@ const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = fal
     date: publishedAt,
     publishedAt,
     updatedAt: content.updatedAt.slice(0, 10),
-    status: "PUBLISHED",
+    status: content.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT",
     noindex: content.noindex === true || metadata.noindex === true,
     readTime: typeof metadata.readTime === "string" ? metadata.readTime : "5 phút đọc",
     author:
