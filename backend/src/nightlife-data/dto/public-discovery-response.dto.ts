@@ -366,6 +366,21 @@ export class PublicStoreDetailPriceItemDto {
 
   @ApiPropertyOptional({ example: 'Confirmed by admin', nullable: true })
   note?: string | null;
+
+  @ApiPropertyOptional({ example: 'Set menu', nullable: true })
+  group?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/menu/vip.jpg', nullable: true })
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 3, nullable: true })
+  tier?: number | null;
+
+  @ApiPropertyOptional({ example: true })
+  hot?: boolean;
+
+  @ApiPropertyOptional({ example: '$$$', nullable: true })
+  displayPrice?: string | null;
 }
 
 export class PublicStoreDetailPriceReferenceDto {
