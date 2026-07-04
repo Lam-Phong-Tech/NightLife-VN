@@ -1,4 +1,5 @@
 import AdminConsole from "../AdminConsole";
+import { notFound } from "next/navigation";
 
 export default async function AdminSectionPage({
   params,
@@ -6,6 +7,10 @@ export default async function AdminSectionPage({
   params: Promise<{ section: string }>;
 }) {
   const { section } = await params;
+
+  if (section.toLowerCase() === "media") {
+    notFound();
+  }
 
   return <AdminConsole section={section} />;
 }

@@ -15,8 +15,15 @@ interface CastSeed {
   publicHeadline: string;
   publicBio: string;
   tags: string[];
+  styleTags: string[];
   languages: string[];
   hourlyRateVnd: number;
+  heightCm?: number;
+  birthMonth?: number;
+  zodiacSign?: string;
+  measurements?: string;
+  hobbies: string[];
+  youtubeLinks: string[];
 }
 
 const CASTS: CastSeed[] = [
@@ -33,8 +40,15 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Skilled at crafting cocktails. I deliver the best nights for our guests. Hobbies: dance & movies.\n' +
       '🇻🇳 Giỏi pha chế cocktail. Mang đến đêm tuyệt vời nhất cho khách. Sở thích: nhảy và xem phim.',
     tags: ['cute', 'bilingual', 'cocktail-expert', '20s'],
+    styleTags: ['cute', 'elegant', 'natural'],
     languages: ['ja', 'vi', 'en'],
     hourlyRateVnd: 500000,
+    heightCm: 162,
+    birthMonth: 3,
+    zodiacSign: 'Pisces',
+    measurements: 'B83-W58-H85',
+    hobbies: ['dance', 'movies', 'cocktail-making'],
+    youtubeLinks: ['https://www.youtube.com/embed/KRvv0QdruMQ'],
   },
   {
     slug: 'miyuki-moonlight',
@@ -48,8 +62,14 @@ const CASTS: CastSeed[] = [
       "🇬🇧 I love chatting! I speak Japanese and English. Let's have a great time together!\n" +
       '🇻🇳 Tôi thích trò chuyện! Nói được tiếng Nhật và tiếng Anh. Hãy cùng nhau tận hưởng!',
     tags: ['elegant', 'conversationalist', 'tall', '20s'],
+    styleTags: ['elegant', 'mature', 'classic'],
     languages: ['ja', 'en'],
     hourlyRateVnd: 450000,
+    heightCm: 168,
+    birthMonth: 7,
+    zodiacSign: 'Cancer',
+    hobbies: ['reading', 'cooking', 'travel'],
+    youtubeLinks: ['https://www.youtube.com/embed/KRvv0QdruMQ'],
   },
 
   // ── Velvet Club (HCM Q1) ──
@@ -65,8 +85,15 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I love dancing and DJing! I make the club atmosphere electric.\n' +
       '🇻🇳 Yêu nhảy và DJ! Tạo không khí club sôi động nhất.',
     tags: ['energetic', 'dancer', 'DJ', '20s'],
+    styleTags: ['energetic', 'sexy', 'modern'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 600000,
+    heightCm: 165,
+    birthMonth: 11,
+    zodiacSign: 'Scorpio',
+    measurements: 'B86-W60-H88',
+    hobbies: ['dancing', 'DJing', 'fitness'],
+    youtubeLinks: ['https://www.youtube.com/embed/x0yNaLNI4c4'],
   },
   {
     slug: 'aya-velvet',
@@ -80,8 +107,15 @@ const CASTS: CastSeed[] = [
       '🇬🇧 VIP table specialist. Knowledgeable about wine and champagne.\n' +
       '🇻🇳 Chuyên gia phục vụ bàn VIP. Am hiểu về rượu vang và champagne.',
     tags: ['glamorous', 'VIP-specialist', 'wine-expert', '20s'],
+    styleTags: ['glamorous', 'luxury', 'mature'],
     languages: ['ja', 'en', 'vi'],
     hourlyRateVnd: 700000,
+    heightCm: 170,
+    birthMonth: 5,
+    zodiacSign: 'Taurus',
+    measurements: 'B88-W62-H90',
+    hobbies: ['wine-tasting', 'shopping', 'golf'],
+    youtubeLinks: ['https://www.youtube.com/embed/x0yNaLNI4c4'],
   },
 
   // ── Sakura Lounge (HCM Q3) ──
@@ -97,8 +131,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Certified sake sommelier. The finest hospitality in a tranquil setting.\n' +
       '🇻🇳 Chứng chỉ sommelier sake. Phục vụ tận tâm nhất trong không gian yên tĩnh.',
     tags: ['refined', 'sake-expert', 'calm', '20s'],
+    styleTags: ['refined', 'traditional', 'elegant'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 550000,
+    heightCm: 160,
+    birthMonth: 1,
+    zodiacSign: 'Aquarius',
+    hobbies: ['sake-tasting', 'calligraphy', 'flower-arrangement'],
+    youtubeLinks: ['https://www.youtube.com/embed/L_jWHffIx5E'],
   },
   {
     slug: 'hana-sakura-lounge',
@@ -112,8 +152,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 A smile is the best hospitality. Hobbies: cooking & gardening.\n' +
       '🇻🇳 Nụ cười là sự phục vụ tốt nhất. Sở thích: nấu ăn & làm vườn.',
     tags: ['sweet', 'attentive', 'petite', '20s'],
+    styleTags: ['sweet', 'cute', 'friendly'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 500000,
+    heightCm: 155,
+    birthMonth: 4,
+    zodiacSign: 'Aries',
+    hobbies: ['cooking', 'gardening', 'baking'],
+    youtubeLinks: ['https://www.youtube.com/embed/L_jWHffIx5E'],
   },
 
   // ── Golden Voice KTV (HCM Q7) ──
@@ -129,8 +175,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I sing everything from J-POP to anime songs! Professional at making karaoke fun.\n' +
       '🇻🇳 Hát mọi thể loại từ J-POP đến nhạc anime! Chuyên gia tạo không khí karaoke.',
     tags: ['singer', 'J-POP', 'energetic', '20s'],
+    styleTags: ['energetic', 'pop', 'trendy'],
     languages: ['ja', 'vi', 'en'],
     hourlyRateVnd: 400000,
+    heightCm: 163,
+    birthMonth: 8,
+    zodiacSign: 'Leo',
+    hobbies: ['singing', 'anime', 'concerts'],
+    youtubeLinks: ['https://www.youtube.com/embed/HQmmM_qwG4k'],
   },
   {
     slug: 'nana-golden',
@@ -144,8 +196,14 @@ const CASTS: CastSeed[] = [
       "🇬🇧 Let's have fun together! Great at Vietnamese-Japanese duets.\n" +
       '🇻🇳 Hãy cùng vui! Giỏi song ca Việt-Nhật.',
     tags: ['fun', 'duet-specialist', 'cheerful', '20s'],
+    styleTags: ['cheerful', 'casual', 'friendly'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 400000,
+    heightCm: 158,
+    birthMonth: 2,
+    zodiacSign: 'Pisces',
+    hobbies: ['karaoke', 'shopping', 'cafes'],
+    youtubeLinks: ['https://www.youtube.com/embed/HQmmM_qwG4k'],
   },
   {
     slug: 'mika-golden-ktv',
@@ -158,8 +216,14 @@ const CASTS: CastSeed[] = [
       'EN Cheerful KTV host for group parties, song picking, and duet support.\n' +
       'VI Biet khuay dong phong karaoke, chon bai va song ca cung khach.',
     tags: ['ktv', 'karaoke', 'group', '20s'],
+    styleTags: ['casual', 'cheerful', 'party'],
     languages: ['vi', 'ja'],
     hourlyRateVnd: 820000,
+    heightCm: 160,
+    birthMonth: 9,
+    zodiacSign: 'Virgo',
+    hobbies: ['music', 'party-planning', 'socializing'],
+    youtubeLinks: ['https://www.youtube.com/embed/HQmmM_qwG4k'],
   },
 
   // ── Hanami Dining (HCM Q3) ──
@@ -175,8 +239,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Rich knowledge of Japanese cuisine. I suggest perfect drink pairings for your dishes.\n' +
       '🇻🇳 Am hiểu về ẩm thực Nhật. Gợi ý kết hợp đồ uống hoàn hảo cho món ăn.',
     tags: ['elegant', 'food-expert', 'mature', '30s'],
+    styleTags: ['elegant', 'traditional', 'sophisticated'],
     languages: ['ja', 'en'],
     hourlyRateVnd: 500000,
+    heightCm: 166,
+    birthMonth: 10,
+    zodiacSign: 'Libra',
+    hobbies: ['cooking', 'wine-pairing', 'fine-dining'],
+    youtubeLinks: ['https://www.youtube.com/embed/iik25wqIuFo'],
   },
   {
     slug: 'kaori-hanami',
@@ -190,8 +260,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Expert at business entertainment support. I understand Japanese business etiquette.\n' +
       '🇻🇳 Giỏi hỗ trợ tiếp khách doanh nghiệp. Hiểu phong cách doanh nhân Nhật Bản.',
     tags: ['graceful', 'business', 'bilingual', '20s'],
+    styleTags: ['graceful', 'professional', 'elegant'],
     languages: ['ja', 'en', 'vi'],
     hourlyRateVnd: 550000,
+    heightCm: 164,
+    birthMonth: 12,
+    zodiacSign: 'Sagittarius',
+    hobbies: ['tea-ceremony', 'reading', 'travel'],
+    youtubeLinks: ['https://www.youtube.com/embed/iik25wqIuFo'],
   },
 
   // ── Crimson Bar (HN Hoàn Kiếm) ──
@@ -207,8 +283,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Living in Hanoi for 3 years. I know all the hidden gems in the Old Quarter!\n' +
       '🇻🇳 Sống ở Hà Nội 3 năm. Biết hết các địa điểm ẩn trong phố cổ!',
     tags: ['lively', 'local-guide', 'friendly', '20s'],
+    styleTags: ['casual', 'lively', 'friendly'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 450000,
+    heightCm: 159,
+    birthMonth: 6,
+    zodiacSign: 'Gemini',
+    hobbies: ['exploring', 'photography', 'street-food'],
+    youtubeLinks: ['https://www.youtube.com/embed/pRpeEdMmmQ0'],
   },
   {
     slug: 'rei-crimson',
@@ -222,8 +304,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I love whisky and jazz. Perfect for those who enjoy quiet conversations.\n' +
       '🇻🇳 Yêu whisky và jazz. Hoàn hảo cho những ai thích trò chuyện yên tĩnh.',
     tags: ['mysterious', 'whisky-lover', 'jazz', '20s'],
+    styleTags: ['mysterious', 'elegant', 'chic'],
     languages: ['ja', 'en'],
     hourlyRateVnd: 500000,
+    heightCm: 167,
+    birthMonth: 10,
+    zodiacSign: 'Scorpio',
+    hobbies: ['jazz-music', 'whisky-tasting', 'reading'],
+    youtubeLinks: ['https://www.youtube.com/embed/pRpeEdMmmQ0'],
   },
   {
     slug: 'linh-crimson-bar',
@@ -236,8 +324,14 @@ const CASTS: CastSeed[] = [
       'EN Friendly cocktail companion for private tables and quiet conversations in Hoan Kiem.\n' +
       'VI Phu hop khach thich cocktail, tro chuyen nhe nhang va khong gian bar tai Hoan Kiem.',
     tags: ['bar', 'cocktail', 'chill', '20s'],
+    styleTags: ['chill', 'friendly', 'casual'],
     languages: ['vi', 'en'],
     hourlyRateVnd: 780000,
+    heightCm: 161,
+    birthMonth: 4,
+    zodiacSign: 'Taurus',
+    hobbies: ['mixology', 'music', 'art'],
+    youtubeLinks: ['https://www.youtube.com/embed/pRpeEdMmmQ0'],
   },
 
   // ── Neon Club (HN Tây Hồ) ──
@@ -253,8 +347,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 The party queen! From tequila shots to champagne towers, leave it to me.\n' +
       '🇻🇳 Nữ hoàng tiệc tùng! Từ shot tequila đến tháp champagne, hãy để tôi lo.',
     tags: ['party', 'energetic', 'showgirl', '20s'],
+    styleTags: ['glamorous', 'sexy', 'party'],
     languages: ['ja', 'vi', 'en'],
     hourlyRateVnd: 600000,
+    heightCm: 169,
+    birthMonth: 8,
+    zodiacSign: 'Leo',
+    hobbies: ['clubbing', 'fashion', 'dancing'],
+    youtubeLinks: ['https://www.youtube.com/embed/ApXoWvfEYVU'],
   },
   {
     slug: 'sora-neon',
@@ -268,8 +368,14 @@ const CASTS: CastSeed[] = [
       "🇬🇧 Music is everything. EDM, House, Techno. Let's ride the beat together!\n" +
       '🇻🇳 Âm nhạc là tất cả. EDM, House, Techno. Hòa mình vào nhịp beat cùng nhau!',
     tags: ['cool', 'DJ', 'music-lover', '20s'],
+    styleTags: ['cool', 'edgy', 'streetwear'],
     languages: ['ja', 'en'],
     hourlyRateVnd: 550000,
+    heightCm: 165,
+    birthMonth: 1,
+    zodiacSign: 'Capricorn',
+    hobbies: ['DJing', 'music-production', 'skateboarding'],
+    youtubeLinks: ['https://www.youtube.com/embed/ApXoWvfEYVU'],
   },
 
   // ── Jade Lounge (HN Hoàn Kiếm) ──
@@ -285,8 +391,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Experienced sommelier. Leave wine and cheese pairings to me.\n' +
       '🇻🇳 Có kinh nghiệm sommelier. Hãy để tôi lo việc kết hợp rượu vang và phô mai.',
     tags: ['sophisticated', 'sommelier', 'elegant', '20s'],
+    styleTags: ['sophisticated', 'elegant', 'luxury'],
     languages: ['ja', 'en', 'vi'],
     hourlyRateVnd: 600000,
+    heightCm: 168,
+    birthMonth: 9,
+    zodiacSign: 'Virgo',
+    hobbies: ['wine-tasting', 'gourmet-food', 'travel'],
+    youtubeLinks: ['https://www.youtube.com/embed/L_jWHffIx5E'],
   },
   {
     slug: 'hikaru-jade',
@@ -300,8 +412,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I wholeheartedly help you enjoy a relaxed and comfortable time.\n' +
       '🇻🇳 Tận tâm giúp bạn tận hưởng thời gian thư giãn và thoải mái.',
     tags: ['warm', 'caring', 'relaxing', '20s'],
+    styleTags: ['warm', 'friendly', 'comforting'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 450000,
+    heightCm: 160,
+    birthMonth: 3,
+    zodiacSign: 'Pisces',
+    hobbies: ['baking', 'reading', 'movies'],
+    youtubeLinks: ['https://www.youtube.com/embed/L_jWHffIx5E'],
   },
 
   // ── Star KTV (HN Cầu Giấy) ──
@@ -317,8 +435,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Music academy graduate. Wide repertoire from classical to pop.\n' +
       '🇻🇳 Tốt nghiệp nhạc viện. Repertoire rộng từ cổ điển đến pop.',
     tags: ['vocalist', 'trained', 'versatile', '20s'],
+    styleTags: ['elegant', 'artistic', 'classic'],
     languages: ['ja', 'en'],
     hourlyRateVnd: 500000,
+    heightCm: 164,
+    birthMonth: 11,
+    zodiacSign: 'Sagittarius',
+    hobbies: ['singing', 'piano', 'concerts'],
+    youtubeLinks: ['https://www.youtube.com/embed/nfWlot6h_JM'],
   },
   {
     slug: 'tsubasa-star',
@@ -332,8 +456,14 @@ const CASTS: CastSeed[] = [
       "🇬🇧 My bright personality is my best trait! Let's sing, laugh, and have the best time.\n" +
       '🇻🇳 Tính cách vui vẻ là điểm mạnh! Hãy cùng hát, cười và có khoảng thời gian tuyệt vời.',
     tags: ['cheerful', 'bright', 'anime-songs', '20s'],
+    styleTags: ['cheerful', 'cute', 'casual'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 400000,
+    heightCm: 157,
+    birthMonth: 5,
+    zodiacSign: 'Gemini',
+    hobbies: ['anime', 'karaoke', 'gaming'],
+    youtubeLinks: ['https://www.youtube.com/embed/nfWlot6h_JM'],
   },
 
   // ── Tokyo Kitchen (HN Tây Hồ) ──
@@ -349,8 +479,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 5 years of restaurant experience in Japan. I guide you through authentic Japanese dining.\n' +
       '🇻🇳 5 năm kinh nghiệm nhà hàng tại Nhật. Hướng dẫn bạn thưởng thức ẩm thực Nhật chính thống.',
     tags: ['knowledgeable', 'experienced', 'food-lover', '30s'],
+    styleTags: ['traditional', 'professional', 'elegant'],
     languages: ['ja', 'en', 'vi'],
     hourlyRateVnd: 500000,
+    heightCm: 162,
+    birthMonth: 9,
+    zodiacSign: 'Virgo',
+    hobbies: ['cooking', 'food-tours', 'tea-ceremony'],
+    youtubeLinks: ['https://www.youtube.com/embed/M7lc1UVf-VE'],
   },
   {
     slug: 'aoi-tokyo',
@@ -364,8 +500,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I serve with heart to make every guest smile. I love tea and sweets.\n' +
       '🇻🇳 Phục vụ bằng cả tấm lòng để mỗi khách đều mỉm cười. Yêu trà và bánh ngọt.',
     tags: ['gentle', 'caring', 'tea-lover', '20s'],
+    styleTags: ['gentle', 'cute', 'traditional'],
     languages: ['ja', 'vi'],
     hourlyRateVnd: 450000,
+    heightCm: 158,
+    birthMonth: 2,
+    zodiacSign: 'Aquarius',
+    hobbies: ['baking', 'cafe-hopping', 'reading'],
+    youtubeLinks: ['https://www.youtube.com/embed/M7lc1UVf-VE'],
   },
 
   // ── Dragon Rooftop Da Nang (DN Hai Chau) ──
@@ -380,8 +522,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I host birthday groups and VIP tables with a bright, energetic style.\n' +
       '🇻🇳 Đồng hành bàn VIP, sinh nhật và nhóm bạn tại rooftop Đà Nẵng.',
     tags: ['party', 'rooftop', 'vip-table', '20s'],
+    styleTags: ['party', 'glamorous', 'energetic'],
     languages: ['vi', 'en', 'ja'],
     hourlyRateVnd: 520000,
+    heightCm: 166,
+    birthMonth: 7,
+    zodiacSign: 'Cancer',
+    hobbies: ['partying', 'fashion', 'beach'],
+    youtubeLinks: ['https://www.youtube.com/embed/XqZsoesa55w'],
   },
   {
     slug: 'mai-dragon-rooftop',
@@ -394,8 +542,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 EDM nights, dance floors, and lively group hosting are my favorite.\n' +
       '🇻🇳 Hợp nhóm thích EDM, nhảy và không khí club sôi động.',
     tags: ['dancer', 'edm', 'energetic', '20s'],
+    styleTags: ['energetic', 'sexy', 'modern'],
     languages: ['vi', 'ja'],
     hourlyRateVnd: 500000,
+    heightCm: 163,
+    birthMonth: 12,
+    zodiacSign: 'Sagittarius',
+    hobbies: ['dancing', 'music', 'fitness'],
+    youtubeLinks: ['https://www.youtube.com/embed/XqZsoesa55w'],
   },
 
   // ── Son Tra Lounge (DN Son Tra) ──
@@ -410,8 +564,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I enjoy slow conversations, cocktails, and relaxed terrace seating.\n' +
       '🇻🇳 Phù hợp khách thích trò chuyện nhẹ nhàng, cocktail và không gian biển.',
     tags: ['calm', 'cocktail', 'beach', '20s'],
+    styleTags: ['calm', 'elegant', 'casual'],
     languages: ['vi', 'en'],
     hourlyRateVnd: 480000,
+    heightCm: 161,
+    birthMonth: 4,
+    zodiacSign: 'Taurus',
+    hobbies: ['beach-walks', 'reading', 'yoga'],
+    youtubeLinks: ['https://www.youtube.com/embed/XqZsoesa55w'],
   },
   {
     slug: 'eri-son-tra',
@@ -424,8 +584,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I support private rooms, bottle service, and business entertainment.\n' +
       '🇻🇳 Hỗ trợ phòng riêng, gọi đồ và tiếp khách trong lounge cao cấp.',
     tags: ['attentive', 'vip-room', 'business', '20s'],
+    styleTags: ['professional', 'elegant', 'attentive'],
     languages: ['vi', 'ja', 'en'],
     hourlyRateVnd: 560000,
+    heightCm: 168,
+    birthMonth: 10,
+    zodiacSign: 'Scorpio',
+    hobbies: ['wine-tasting', 'golf', 'travel'],
+    youtubeLinks: ['https://www.youtube.com/embed/XqZsoesa55w'],
   },
 
   // ── Harbor KTV Hai Phong (HP Hong Bang) ──
@@ -440,8 +606,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I help groups choose songs and keep the KTV room lively.\n' +
       '🇻🇳 Biết khuấy động phòng karaoke, chọn bài và song ca cùng khách.',
     tags: ['ktv', 'singer', 'cheerful', '20s'],
+    styleTags: ['cheerful', 'casual', 'friendly'],
     languages: ['vi', 'ja'],
     hourlyRateVnd: 430000,
+    heightCm: 159,
+    birthMonth: 6,
+    zodiacSign: 'Gemini',
+    hobbies: ['karaoke', 'shopping', 'movies'],
+    youtubeLinks: ['https://www.youtube.com/embed/nfWlot6h_JM'],
   },
   {
     slug: 'hana-harbor-ktv',
@@ -454,8 +626,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Friendly hosting for private karaoke rooms and business groups.\n' +
       '🇻🇳 Phù hợp phòng riêng, nhóm tiếp khách và khách thích không khí ấm áp.',
     tags: ['ktv', 'warm', 'private-room', '20s'],
+    styleTags: ['warm', 'elegant', 'professional'],
     languages: ['vi', 'en'],
     hourlyRateVnd: 450000,
+    heightCm: 162,
+    birthMonth: 3,
+    zodiacSign: 'Aries',
+    hobbies: ['music', 'cooking', 'travel'],
+    youtubeLinks: ['https://www.youtube.com/embed/nfWlot6h_JM'],
   },
 
   // ── Opera Spa Hai Phong (HP Ngo Quyen) ──
@@ -470,8 +648,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 I help guests choose massage, sauna, and quiet-room packages.\n' +
       '🇻🇳 Hỗ trợ chọn gói massage, xông hơi và phòng thư giãn mở muộn.',
     tags: ['spa', 'wellness', 'calm', '20s'],
+    styleTags: ['calm', 'professional', 'gentle'],
     languages: ['vi', 'ja', 'en'],
     hourlyRateVnd: 420000,
+    heightCm: 160,
+    birthMonth: 8,
+    zodiacSign: 'Leo',
+    hobbies: ['yoga', 'meditation', 'wellness'],
+    youtubeLinks: ['https://www.youtube.com/embed/ScMzIvxBSi4'],
   },
   {
     slug: 'yuri-opera-spa',
@@ -484,8 +668,14 @@ const CASTS: CastSeed[] = [
       '🇬🇧 Gentle support for guests who prefer quiet wellness experiences.\n' +
       '🇻🇳 Phù hợp khách muốn trải nghiệm spa yên tĩnh gần Nhà hát Lớn.',
     tags: ['spa', 'gentle', 'quiet', '20s'],
+    styleTags: ['gentle', 'caring', 'elegant'],
     languages: ['vi', 'en'],
     hourlyRateVnd: 420000,
+    heightCm: 158,
+    birthMonth: 1,
+    zodiacSign: 'Capricorn',
+    hobbies: ['reading', 'tea', 'nature'],
+    youtubeLinks: ['https://www.youtube.com/embed/ScMzIvxBSi4'],
   },
   {
     slug: 'sumi-lotus-massage-spa',
@@ -498,8 +688,14 @@ const CASTS: CastSeed[] = [
       'EN Wellness companion for late-night massage, sauna, and quiet-room packages.\n' +
       'VI Ho tro chon goi massage, xong hoi va phong thu gian tai Quan 3.',
     tags: ['massage-spa', 'relax', 'wellness', '20s'],
+    styleTags: ['relax', 'professional', 'calm'],
     languages: ['vi'],
     hourlyRateVnd: 680000,
+    heightCm: 165,
+    birthMonth: 5,
+    zodiacSign: 'Taurus',
+    hobbies: ['wellness', 'yoga', 'skincare'],
+    youtubeLinks: ['https://www.youtube.com/embed/ScMzIvxBSi4'],
   },
 ];
 
@@ -520,30 +716,44 @@ export async function seedCasts(
     result[c.slug] = await prisma.cast.upsert({
       where: { slug: c.slug },
       update: {
-        stageName: c.stageName,
-        bio: c.bio,
-        publicAlias: c.publicAlias,
-        publicHeadline: c.publicHeadline,
-        publicBio: c.publicBio,
-        tags: c.tags,
-        languages: c.languages,
-        hourlyRateVnd: c.hourlyRateVnd,
-        status: 'ACTIVE',
-        isPublic: true,
+        stageName:        c.stageName,
+        bio:              c.bio,
+        publicAlias:      c.publicAlias,
+        publicHeadline:   c.publicHeadline,
+        publicBio:        c.publicBio,
+        tags:             c.tags,
+        styleTags:        c.styleTags ?? [],
+        languages:        c.languages,
+        hourlyRateVnd:    c.hourlyRateVnd,
+        heightCm:         c.heightCm ?? null,
+        birthMonth:       c.birthMonth ?? null,
+        zodiacSign:       c.zodiacSign ?? null,
+        measurements:     c.measurements ?? null,
+        hobbies:          c.hobbies ?? [],
+        youtubeLinks:     c.youtubeLinks ?? [],
+        status:           'ACTIVE',
+        isPublic:         true,
       },
       create: {
         storeId,
-        slug: c.slug,
-        stageName: c.stageName,
-        bio: c.bio,
-        publicAlias: c.publicAlias,
-        publicHeadline: c.publicHeadline,
-        publicBio: c.publicBio,
-        tags: c.tags,
-        languages: c.languages,
-        hourlyRateVnd: c.hourlyRateVnd,
-        status: 'ACTIVE',
-        isPublic: true,
+        slug:             c.slug,
+        stageName:        c.stageName,
+        bio:              c.bio,
+        publicAlias:      c.publicAlias,
+        publicHeadline:   c.publicHeadline,
+        publicBio:        c.publicBio,
+        tags:             c.tags,
+        styleTags:        c.styleTags ?? [],
+        languages:        c.languages,
+        hourlyRateVnd:    c.hourlyRateVnd,
+        heightCm:         c.heightCm ?? null,
+        birthMonth:       c.birthMonth ?? null,
+        zodiacSign:       c.zodiacSign ?? null,
+        measurements:     c.measurements ?? null,
+        hobbies:          c.hobbies ?? [],
+        youtubeLinks:     c.youtubeLinks ?? [],
+        status:           'ACTIVE',
+        isPublic:         true,
       },
     });
   }

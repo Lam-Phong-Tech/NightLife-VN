@@ -7,14 +7,12 @@ import {
   Bell,
   Building2,
   CalendarCheck,
-  Camera,
   Check,
   ChevronRight,
   Clock3,
   FileText,
   Handshake,
   Home,
-  ImagePlus,
   LogOut,
   MessageCircle,
   Newspaper,
@@ -91,7 +89,6 @@ type AdminView =
   | "partners"
   | "stores"
   | "cast"
-  | "media"
   | "campaign"
   | "blog"
   | "ranking"
@@ -601,7 +598,6 @@ const sectionToView: Record<string, AdminView> = {
   stores: "stores",
   store: "stores",
   cast: "cast",
-  media: "media",
   campaign: "campaign",
   "uu-dai": "campaign",
   blog: "blog",
@@ -629,7 +625,6 @@ const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
     items: [
       { view: "stores", href: "/admin/quan", icon: Building2, label: "Quán / Địa điểm", badge: "stores" },
       { view: "cast", href: "/admin/cast", icon: UsersRound, label: "Cast", badge: "cast" },
-      { view: "media", href: "/admin/media", icon: Camera, label: "Thư viện media" },
       { view: "campaign", href: "/admin/campaign", icon: TicketPercent, label: "Campaign / Ưu đãi", badge: "campaign" },
       { view: "blog", href: "/admin/blog", icon: Newspaper, label: "Blog / Nội dung", badge: "blog" },
       { view: "ranking", href: "/admin/ranking", icon: Trophy, label: "Xếp hạng thủ công", badge: "ranking" },
@@ -674,11 +669,6 @@ const pageMeta: Record<AdminView, { title: string; subtitle: string; eyebrow: st
     title: "Cast",
     subtitle: "Hồ sơ cast theo quán và trạng thái hiển thị",
     eyebrow: "CAST CMS",
-  },
-  media: {
-    title: "Thư viện media",
-    subtitle: "Ảnh và video dùng chung cho nội dung",
-    eyebrow: "MEDIA LIBRARY",
   },
   campaign: {
     title: "Campaign / Ưu đãi",
@@ -760,15 +750,6 @@ const sampleBookings: Array<[string, string, string, string, string]> = [
   ["Yuki T.", "KTV Hoàng Gia · Michi", "2", "20:00", "Hoàn tất"],
   ["Tuấn A.", "Sakura Lounge", "6", "22:00", "Mới"],
   ["Kenji M.", "Roppongi Night", "3", "23:00", "Đã hủy"],
-];
-
-const sampleMedia = [
-  ["club-lumiere-01.jpg", "Ảnh", "820 KB"],
-  ["michi-intro.mp4", "Video", "12 MB"],
-  ["vip-lounge-02.jpg", "Ảnh", "1.1 MB"],
-  ["opening-night.mp4", "Video", "45 MB"],
-  ["hana-profile-09.jpg", "Ảnh", "560 KB"],
-  ["private-room-08.jpg", "Ảnh", "1.0 MB"],
 ];
 
 const sampleMembers = [
@@ -4035,44 +4016,6 @@ export default function AdminConsole({ section }: { section?: string }) {
     );
   };
 
-  const renderMedia = () => (
-    <div style={{ display: "grid", gap: 18 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(170px,1fr))", gap: 14 }}>
-        <MetricCard icon={Camera} label="Tổng media" value="248" note="ảnh & video" />
-        <MetricCard icon={ImagePlus} label="Dung lượng" value="1.4GB" note="trên hạn mức 5GB" />
-        <MetricCard icon={FileText} label="Đang dùng" value={String(contentItems.length)} note="nội dung có metadata" />
-      </div>
-      <Panel style={{ padding: 18 }}>
-        <SectionTitle title="Thư viện media" eyebrow="ASSET GRID" />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(180px,1fr))", gap: 12 }}>
-          {sampleMedia.map(([name, type, size]) => (
-            <div
-              key={name}
-              style={{
-                minHeight: 126,
-                border: `1px solid ${colors.borderGold22}`,
-                borderRadius: 14,
-                background: "linear-gradient(135deg,rgba(212,178,106,.12),rgba(255,255,255,.035))",
-                padding: 14,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}
-            >
-              <Camera size={20} color={colors.goldBright} />
-              <div>
-                <div style={{ color: colors.text, fontWeight: 800, fontSize: 13 }}>{name}</div>
-                <div style={{ marginTop: 4, color: colors.muted, fontSize: 12 }}>
-                  {type} · {size}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-  );
-
   const renderCampaign = () => (
     <div style={{ display: "grid", gap: 18 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(160px,1fr))", gap: 14 }}>
@@ -5284,8 +5227,6 @@ export default function AdminConsole({ section }: { section?: string }) {
         return renderStores();
       case "cast":
         return renderCast();
-      case "media":
-        return renderMedia();
       case "campaign":
         return renderCampaign();
       case "blog":

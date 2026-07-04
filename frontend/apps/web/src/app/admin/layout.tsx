@@ -80,11 +80,6 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         label: 'Nội dung trang chủ', 
         href: '/admin/content' 
       },
-      { 
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l4.5-4.5 3 3L16 10l4 5"/></svg>, 
-        label: 'Thư viện media', 
-        href: '/admin/media' 
-      },
     ],
   },
   {
@@ -225,7 +220,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/casts') return { title: 'Cast', subtitle: 'CAST PROFILES' };
     if (pathname === '/admin/ranking') return { title: 'Ranking', subtitle: 'RANKING' };
     if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: 'CONTENT' };
-    if (pathname === '/admin/media') return { title: 'Thư viện media', subtitle: 'MEDIA' };
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
     if (pathname === '/admin/reports') return { title: 'Báo cáo doanh thu', subtitle: 'REVENUE' };
     if (pathname === '/admin/roles') return { title: 'Phân quyền', subtitle: 'ROLES & PERMISSIONS' };
