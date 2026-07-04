@@ -890,10 +890,10 @@ function MobileFilterSheet({
         <footer className="cast-sheet-actions">
           <button type="button" className="cast-reset-button" onClick={onReset}>
             <RotateCcw size={15} />
-            Đặt lại
+            Đặt lại bộ lọc
           </button>
           <button type="button" className="cast-apply-button" onClick={onClose}>
-            Xem {total} cast
+            {`Xem ${total} cast`}
           </button>
         </footer>
       </section>

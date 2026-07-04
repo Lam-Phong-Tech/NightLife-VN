@@ -720,7 +720,7 @@ function MobileVenueFilterSheet({
             onClick={onReset}
           >
             <RotateCcw size={15} />
-            Đặt lại
+            Đặt lại bộ lọc
           </button>
           <button
             type="button"
@@ -728,7 +728,7 @@ function MobileVenueFilterSheet({
             data-testid="venue-filter-submit"
             onClick={onClose}
           >
-            Xem {total} quán
+            {`Xem ${total} quán`}
           </button>
         </footer>
       </section>
