@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
-import { ChevronDown, Plus, Edit2, Search } from 'lucide-react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+import { useSearchParams } from 'next/navigation';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -46,7 +46,8 @@ export default function AdminStoresPage() {
   const [venueSel, setVenueSel] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [filterCity, setFilterCity] = useState('');
+  const searchParams = useSearchParams();
+  const filterCity = searchParams.get('city') || '';
   const [filterCategory, setFilterCategory] = useState('');
   
   // Form State
@@ -262,7 +263,7 @@ export default function AdminStoresPage() {
         }
       });
       if (res && res.id) {
-        setVideos(prev => [...prev, { id: res.id, title: url, meta: 'YouTube', thumb: res.url }]);
+        setVideos(prev => [...prev, { id: res.id, title: url, meta: 'YouTube', thumb: url }]);
         showToast('Thêm video YouTube thành công');
       }
     } catch (err: any) {
@@ -417,16 +418,7 @@ export default function AdminStoresPage() {
           <option value="KARAOKE" style={{ background: '#1a191f' }}>Karaoke</option>
           <option value="MASSAGE_SPA" style={{ background: '#1a191f' }}>Massage & Spa</option>
         </select>
-        
-        <select
-          value={filterCity}
-          onChange={(e) => setFilterCity(e.target.value)}
-          style={{ appearance: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer', outline: 'none' }}
-        >
-          <option value="" style={{ background: '#1a191f' }}>Khu vực: Tất cả</option>
-          <option value="Ho Chi Minh City" style={{ background: '#1a191f' }}>TP.HCM</option>
-          <option value="Hanoi" style={{ background: '#1a191f' }}>Hà Nội</option>
-        </select>
+
         <div style={{ flex: 1 }}></div>
         <span onClick={openNewDrawer} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>

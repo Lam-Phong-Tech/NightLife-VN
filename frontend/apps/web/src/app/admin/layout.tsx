@@ -116,25 +116,49 @@ function TopRegionFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
+  const [open, setOpen] = useState(false);
+
+  const opts = [
+    { v: '', l: 'Tất cả KV' },
+    { v: 'Hanoi', l: 'HN' },
+    { v: 'Ho Chi Minh City', l: 'HCM' }
+  ];
+
+  const curr = opts.find(o => o.v === city) || opts[0];
 
   return (
     <div style={{ position: 'relative' }}>
-      <select
-        value={city}
-        onChange={(e) => {
-          const params = new URLSearchParams(searchParams.toString());
-          if (e.target.value) params.set('city', e.target.value);
-          else params.delete('city');
-          router.push(pathname + '?' + params.toString());
-        }}
-        style={{ appearance: 'none', background: 'transparent', border: '1px solid rgba(212,178,106,.28)', color: '#c5c0b6', fontSize: '12.5px', borderRadius: '11px', padding: '8px 24px 8px 32px', fontWeight: 500, cursor: 'pointer', outline: 'none' }}
+      <div 
+        onClick={() => setOpen(!open)}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid rgba(212,178,106,.28)', color: '#f3f0ea', fontSize: '12.5px', borderRadius: '11px', padding: '8px 12px 8px 10px', fontWeight: 600, cursor: 'pointer', background: 'rgba(255,255,255,.02)' }}
       >
-        <option value="" style={{ background: '#1a191f' }}>Tất cả KV</option>
-        <option value="Hanoi" style={{ background: '#1a191f' }}>HN</option>
-        <option value="Ho Chi Minh City" style={{ background: '#1a191f' }}>HCM</option>
-      </select>
-      <svg style={{ position: 'absolute', left: '10px', top: '9px', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
-      <svg style={{ position: 'absolute', right: '10px', top: '11px', pointerEvents: 'none' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c5c0b6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+        <span>{curr.l}</span>
+        <svg style={{ marginLeft: '4px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#17161c', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '6px', zIndex: 100, minWidth: '140px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)' }}>
+            {opts.map(o => (
+              <div 
+                key={o.v}
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (o.v) params.set('city', o.v);
+                  else params.delete('city');
+                  router.push(pathname + '?' + params.toString());
+                  setOpen(false);
+                }}
+                style={{ padding: '9px 12px', fontSize: '13px', fontWeight: 500, color: city === o.v ? '#241a0a' : '#c5c0b6', background: city === o.v ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer', marginBottom: '2px' }}
+              >
+                {o.l}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
