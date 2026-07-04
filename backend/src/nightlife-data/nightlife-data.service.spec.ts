@@ -6596,4 +6596,36 @@ describe('NightlifeDataService', () => {
       service.claimGuestCoupon('coupon-1', { phone: '+84901234567' }),
     ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
+  describe('getAdminDashboardStats', () => {
+    it('returns dashboard stats correctly mapped', async () => {
+      prisma.store.count.mockResolvedValueOnce(5); // activeStores
+      prisma.store.count.mockResolvedValueOnce(3); // activeStoresHn
+      prisma.store.count.mockResolvedValueOnce(2); // activeStoresHcm
+      prisma.content.count.mockResolvedValue(10);
+      prisma.cast.count.mockResolvedValueOnce(20); // totalCasts
+      prisma.bill.count.mockResolvedValue(15); // pendingBills
+      prisma.bill.aggregate.mockResolvedValue({ _sum: { totalVnd: 500000, commissionAmountVnd: 50000 } });
+      prisma.cast.count.mockResolvedValueOnce(2); // pendingCasts
+      prisma.partnerRequest.count.mockResolvedValue(4); // pendingPartners
+      prisma.booking.count.mockResolvedValue(8); // todayBookings (called multiple times)
+      
+      prisma.booking.findMany.mockResolvedValue([]);
+      prisma.notificationLog.findMany.mockResolvedValue([]);
+
+      const result = await service.getAdminDashboardStats('today');
+
+      expect(prisma.store.count).toHaveBeenCalledWith({ where: { status: 'ACTIVE', deletedAt: null } });
+      expect(prisma.cast.count).toHaveBeenCalledWith({ where: { deletedAt: null } });
+      expect(prisma.bill.count).toHaveBeenCalledWith({ where: { status: 'SUBMITTED' } });
+      expect(prisma.partnerRequest.count).toHaveBeenCalledWith({ where: { status: 'PENDING_REVIEW' } });
+      expect(prisma.bill.aggregate).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ status: { in: ['VERIFIED', 'PAID'] } })
+      }));
+      expect(result.pendingBills).toBe(15);
+      expect(result.pendingPartners).toBe(4);
+      expect(result.monthlyRevenue).toBe(500000);
+      expect(result.commissionAmount).toBe(50000);
+      expect(result.telegramLogs).toEqual([]);
+    });
+  });
 });

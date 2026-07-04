@@ -14672,20 +14672,26 @@ export class NightlifeDataService {
     let startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
 
+    let endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 1);
+
     if (timeframe === 'week') {
       startDate.setDate(startDate.getDate() - 7);
+      endDate = new Date(); // Or start of next day for consistent inclusive-exclusive interval
     } else if (timeframe === 'month') {
       startDate.setDate(1);
+      endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const activeStores = await this.prisma.store.count();
-    const activeStoresHn = await this.prisma.store.count({ where: { city: { in: ['Hanoi', 'Hà Nội', 'HN'] } } }).catch(() => 0);
-    const activeStoresHcm = await this.prisma.store.count({ where: { city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM'] } } }).catch(() => 0);
+    const activeStores = await this.prisma.store.count({ where: { status: 'ACTIVE' as any, deletedAt: null } });
+    const activeStoresHn = await this.prisma.store.count({ where: { city: { in: ['Hanoi', 'Hà Nội', 'HN'] }, status: 'ACTIVE' as any, deletedAt: null } }).catch(() => 0);
+    const activeStoresHcm = await this.prisma.store.count({ where: { city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM'] }, status: 'ACTIVE' as any, deletedAt: null } }).catch(() => 0);
     const totalContents = await this.prisma.content.count();
-    const totalCasts = await this.prisma.cast.count().catch(() => 0);
+    const totalCasts = await this.prisma.cast.count({ where: { deletedAt: null } }).catch(() => 0);
 
     // Using any to bypass strict type checking for statuses we aren't 100% sure about
     const pendingBills = await this.prisma.bill
@@ -14701,26 +14707,26 @@ export class NightlifeDataService {
     const pendingBillsAmount = (pendingBillsResult._sum as any)?.totalVnd || 0;
 
     const pendingCasts = await this.prisma.cast
-      .count({ where: { status: 'PENDING' as any } })
+      .count({ where: { status: 'PENDING_REVIEW' as any, deletedAt: null } })
       .catch(() => 0);
-    const pendingPartners = await this.prisma.user
-      .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
+    const pendingPartners = await this.prisma.partnerRequest
+      .count({ where: { status: 'PENDING_REVIEW' as any } })
       .catch(() => 0);
 
     const todaysBookings = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: startDate } },
+      where: { scheduledAt: { gte: startDate, lt: endDate } },
     });
     const todaysBookingsCompleted = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: startDate }, status: 'COMPLETED' as any },
+      where: { scheduledAt: { gte: startDate, lt: endDate }, status: 'COMPLETED' as any },
     });
     const todaysBookingsNew = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: startDate }, status: 'REQUESTED' as any },
+      where: { scheduledAt: { gte: startDate, lt: endDate }, status: 'REQUESTED' as any },
     });
 
     const monthlyRevenueResult = await this.prisma.bill
       .aggregate({
         _sum: { totalVnd: true } as any,
-        where: { status: 'COMPLETED' as any, createdAt: { gte: startDate } },
+        where: { status: { in: ['VERIFIED', 'PAID'] } as any, usedAt: { gte: startDate, lt: endDate } },
       })
       .catch(() => ({ _sum: { totalVnd: 0 } }));
     const monthlyRevenue = (monthlyRevenueResult._sum as any)?.totalVnd || 0;
@@ -14728,7 +14734,7 @@ export class NightlifeDataService {
     const commissionResult = await this.prisma.bill
       .aggregate({
         _sum: { commissionAmountVnd: true } as any,
-        where: { status: 'COMPLETED' as any, createdAt: { gte: startDate } },
+        where: { status: { in: ['VERIFIED', 'PAID'] } as any, usedAt: { gte: startDate, lt: endDate } },
       })
       .catch(() => ({ _sum: { commissionAmountVnd: 0 } }));
     const commissionAmount = (commissionResult._sum as any)?.commissionAmountVnd || 0;
@@ -14746,8 +14752,8 @@ export class NightlifeDataService {
         .aggregate({
           _sum: { totalVnd: true } as any,
           where: {
-            status: 'COMPLETED' as any,
-            createdAt: { gte: d, lt: nextD },
+            status: { in: ['VERIFIED', 'PAID'] } as any,
+            usedAt: { gte: d, lt: nextD },
           },
         })
         .catch(() => ({ _sum: { totalVnd: 0 } }));
@@ -14778,7 +14784,7 @@ export class NightlifeDataService {
     }));
 
     const rawTelegramLogs = await this.prisma.notificationLog.findMany({
-      where: { channel: 'TELEGRAM' as any, templateKey: { not: null } },
+      where: { channel: 'TELEGRAM' as any, templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) } },
       take: 4,
       orderBy: { createdAt: 'desc' },
       include: {

@@ -47,18 +47,21 @@ type AdminDashboardStats = {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
 
   const loadStats = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const timeframeMap = ['today', 'week', 'month'];
       const tf = timeframeMap[activeFilter];
       const data = await apiClient<AdminDashboardStats>(`/admin/dashboard/stats?timeframe=${tf}`);
       setStats(data);
-    } catch (error) {
-      console.error(error);
-      if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
+    } catch (err: any) {
+      console.error(err);
+      setError('Lỗi khi tải dữ liệu thống kê. Vui lòng thử lại sau.');
+      if (err && typeof err === 'object' && 'status' in err && err.status === 401) {
         clearAuthSession();
         window.location.href = '/admin/dang-nhap';
       }
@@ -167,10 +170,24 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '14px' }}>
+      {isLoading && !stats && (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '14px' }}>
+          Đang tải dữ liệu...
+        </div>
+      )}
+
+      {error && (
+        <div style={{ padding: '16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', color: '#ef4444', marginBottom: '20px', fontSize: '13px' }}>
+          {error}
+        </div>
+      )}
+
+      {stats && (
+        <>
+          {/* stats grids */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '24px' }}>
         <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+2</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span></div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{activeStores}</div>
           <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '1px' }}>Quán hoạt động</div>
           <div style={{ fontSize: '10.5px', color: '#57534b', marginTop: '6px' }}>HN {stats?.activeStoresHn ?? 0} · HCM {stats?.activeStoresHcm ?? 0}</div>
@@ -200,7 +217,7 @@ export default function AdminDashboardPage() {
           <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '6px' }}>≈ {formatVnd(pendingBillsAmount)}</div>
         </div>
         <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span style={{ fontSize: '11px', color: '#7fd3a2', fontWeight: 600 }}>+18%</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#e3c27e', marginTop: '12px', letterSpacing: '-.5px' }}>
             {formatVnd(monthlyRevenue).replace('M₫', '')}
             <span style={{ fontSize: '15px', fontWeight: 700 }}>M₫</span>
@@ -365,6 +382,9 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
+
