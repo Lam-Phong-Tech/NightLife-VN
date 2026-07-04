@@ -684,7 +684,7 @@ export default function AdminContentPage() {
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}><span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Mô tả ngắn</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>{blogExcerpt.length} / 160</span></div>
-                <textarea value={blogExcerpt} onChange={e => setBlogExcerpt(e.target.value.slice(0, 160))} rows={2} placeholder="1–2 câu tóm tắt — hiển thị dưới tiêu đề trên trang chủ và kết quả tìm kiếm…" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.55, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
+                <textarea value={blogExcerpt} onChange={e => setBlogExcerpt(e.target.value.slice(0, 160))} rows={2} placeholder="Viết nội dung mô tả ngắn..." style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.55, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
