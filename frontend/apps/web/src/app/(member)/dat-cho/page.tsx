@@ -16,9 +16,14 @@ import {
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { getCastDetail } from "@/lib/api/cast-detail";
+import { getStoreDetail, type StoreOpeningHour } from "@/lib/api/store-detail";
+import {
+  buildBookingTimeSlots,
+  buildScheduledAtFromBookingSlot,
+  fallbackBookingTimeSlots,
+} from "@/lib/booking-time-slots";
 import styles from "../booking-flow.module.css";
 
-const bookingTimes = ["20:00", "21:00", "22:00", "23:00"] as const;
 const bookingDateWindowDays = 14;
 const maxGuests = 50;
 const minNameLength = 2;
@@ -68,12 +73,6 @@ const clampBookingDate = (value?: string | null) => {
   if (value < today) return today;
   if (value > maxDate) return maxDate;
   return value;
-};
-
-const buildScheduledAt = (date: string, time: string) => {
-  const [hours = "21", minutes = "00"] = time.split(":");
-  const value = new Date(`${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`);
-  return value.toISOString();
 };
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
@@ -172,9 +171,11 @@ export default function Page() {
   const [guestName, setGuestName] = useState("");
   const [email, setEmail] = useState("");
   const [bookingDate, setBookingDate] = useState(getTodayDate);
-  const [bookingTime, setBookingTime] = useState<(typeof bookingTimes)[number]>("21:00");
+  const [bookingTime, setBookingTime] = useState("21:00");
   const [guests, setGuests] = useState(4);
   const [note, setNote] = useState("");
+  const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, StoreOpeningHour> | null>(null);
+  const [storeHoursResolved, setStoreHoursResolved] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -187,11 +188,7 @@ export default function Page() {
     queueMicrotask(() => {
       setContext(parsed.context);
       setBookingDate(parsed.date);
-      setBookingTime(
-        bookingTimes.includes(parsed.time as (typeof bookingTimes)[number])
-          ? (parsed.time as (typeof bookingTimes)[number])
-          : "21:00",
-      );
+      setBookingTime(parsed.time || "21:00");
       setGuests(
         Number.isFinite(parsed.guests) ? Math.min(maxGuests, Math.max(1, parsed.guests)) : 4,
       );
@@ -250,6 +247,68 @@ export default function Page() {
     };
   }, [context.castName, context.castSlug]);
 
+  useEffect(() => {
+    if (!context.storeSlug) {
+      setStoreOpeningHours(null);
+      setStoreHoursResolved(true);
+      return;
+    }
+
+    let cancelled = false;
+    setStoreHoursResolved(false);
+
+    getStoreDetail(context.storeSlug)
+      .then((store) => {
+        if (cancelled) return;
+        setStoreOpeningHours(store.openingHours ?? null);
+        setContext((current) => {
+          if (current.storeSlug !== store.slug) return current;
+
+          return {
+            ...current,
+            storeName: current.storeName || store.name,
+            area: current.area ?? store.area?.name ?? store.district ?? undefined,
+          };
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setStoreOpeningHours(null);
+      })
+      .finally(() => {
+        if (!cancelled) setStoreHoursResolved(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [context.storeSlug]);
+
+  const bookingTimeOptions = useMemo(() => {
+    const slots = storeHoursResolved
+      ? buildBookingTimeSlots(storeOpeningHours, bookingDate)
+      : fallbackBookingTimeSlots;
+
+    if (!storeHoursResolved && bookingTime && !slots.includes(bookingTime)) {
+      return [bookingTime, ...slots];
+    }
+
+    return slots;
+  }, [bookingDate, bookingTime, storeHoursResolved, storeOpeningHours]);
+
+  useEffect(() => {
+    if (!storeHoursResolved) return;
+
+    if (!bookingTimeOptions.length) {
+      if (bookingTime) setBookingTime("");
+      return;
+    }
+
+    if (!bookingTimeOptions.includes(bookingTime)) {
+      const nextTime = bookingTimeOptions[0];
+      if (nextTime) setBookingTime(nextTime);
+    }
+  }, [bookingTime, bookingTimeOptions, storeHoursResolved]);
+
   const memberLoginPath = useMemo(() => {
     const redirectParams = new URLSearchParams({
       mode: "member",
@@ -282,6 +341,16 @@ export default function Page() {
     const normalizedEmail = normalizeEmail(email);
     const trimmedNote = note.trim();
 
+    if (!bookingTime) {
+      setErrorMessage("Quán không có khung giờ đặt bàn trong ngày này.");
+      return;
+    }
+
+    if (!storeHoursResolved) {
+      setErrorMessage("Đang tải khung giờ của quán. Vui lòng thử lại sau vài giây.");
+      return;
+    }
+
     const validationError = validateBookingForm({
       displayName,
       email: normalizedEmail,
@@ -312,7 +381,11 @@ export default function Page() {
       ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       displayName,
       email: normalizedEmail,
-      scheduledAt: buildScheduledAt(bookingDate, bookingTime),
+      scheduledAt: buildScheduledAtFromBookingSlot(
+        bookingDate,
+        bookingTime,
+        storeOpeningHours,
+      ),
       partySize: guests,
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };
@@ -444,18 +517,24 @@ export default function Page() {
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Khung giờ</span>
                 <div className={styles.timeChips} role="listbox" aria-label="Chọn khung giờ">
-                  {bookingTimes.map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      role="option"
-                      onClick={() => setBookingTime(time)}
-                      className={`${styles.timeChip} ${bookingTime === time ? styles.selectedChip : ""}`}
-                      aria-selected={bookingTime === time}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {bookingTimeOptions.length ? (
+                    bookingTimeOptions.map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        role="option"
+                        onClick={() => setBookingTime(time)}
+                        className={`${styles.timeChip} ${bookingTime === time ? styles.selectedChip : ""}`}
+                        aria-selected={bookingTime === time}
+                      >
+                        {time}
+                      </button>
+                    ))
+                  ) : (
+                    <span className={styles.emptySlotMessage}>
+                      Quán không có khung giờ đặt bàn trong ngày này.
+                    </span>
+                  )}
                 </div>
               </div>
 

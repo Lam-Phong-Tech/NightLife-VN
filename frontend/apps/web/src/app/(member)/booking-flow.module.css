@@ -422,6 +422,18 @@
   font-weight: 820;
 }
 
+.emptySlotMessage {
+  flex: 1 0 100%;
+  width: 100%;
+  border: 1px dashed rgba(212, 178, 106, 0.28);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #b7afa1;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .noteArea {
   min-height: 64px;
   resize: vertical;
