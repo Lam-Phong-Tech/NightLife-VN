@@ -60,6 +60,63 @@ type PartnerStore = {
   name: string;
   slug: string;
   status: string;
+  category?: string;
+  city?: string;
+  district?: string | null;
+};
+
+type PartnerListingPricing = {
+  label: string;
+  value: string;
+  note?: string | null;
+};
+
+type PartnerListingCast = {
+  stageName: string;
+  bio?: string | null;
+  tags?: string[];
+  languages?: string[];
+  hourlyRateVnd?: number;
+  mediaUrls?: string[];
+};
+
+type PartnerListingDraft = {
+  storeName: string;
+  businessType: string;
+  storeCategory: string;
+  area: string;
+  storeCity: string;
+  storeDistrict: string;
+  storeAddress: string;
+  phone: string;
+  openingHours: string;
+  priceRange: string;
+  description: string;
+  note: string;
+  menuSummary: string;
+  pricingItems: PartnerListingPricing[];
+  castProfiles: PartnerListingCast[];
+  mediaUrls: string[];
+};
+
+type PartnerListingReview = {
+  id: string;
+  status: string;
+  submittedAt: string;
+  reviewedAt?: string | null;
+  reviewReason?: string | null;
+  publicState?: string | null;
+} | null;
+
+type PartnerListingDraftResponse = {
+  message: string;
+  store: Pick<PartnerStore, 'id' | 'name' | 'slug' | 'status'>;
+  contentId: string | null;
+  contentStatus: string;
+  savedAt: string | null;
+  publishedAt: string | null;
+  review: PartnerListingReview;
+  draft: PartnerListingDraft;
 };
 
 type PartnerCoupon = {
@@ -345,13 +402,55 @@ const chartBars = [
   { label: 'CN', value: 60 },
 ];
 
-const listingFields = [
-  { label: 'Tên quán', value: 'Vietyoru Lounge' },
-  { label: 'Loại hình', value: 'Lounge · Bar · Karaoke' },
-  { label: 'Khu vực', value: 'Quận 1, TP. Hồ Chí Minh' },
-  { label: 'Địa chỉ', value: '12 Nguyễn Huệ, Bến Nghé' },
-  { label: 'Giờ mở cửa', value: '18:00 - 02:00' },
-  { label: 'Khoảng giá', value: '500.000đ - 3.000.000đ' },
+const emptyListingDraft: PartnerListingDraft = {
+  storeName: '',
+  businessType: '',
+  storeCategory: '',
+  area: '',
+  storeCity: '',
+  storeDistrict: '',
+  storeAddress: '',
+  phone: '',
+  openingHours: '',
+  priceRange: '',
+  description: '',
+  note: '',
+  menuSummary: '',
+  pricingItems: [],
+  castProfiles: [],
+  mediaUrls: [],
+};
+
+const fallbackPricingItems: PartnerListingPricing[] = [
+  {
+    label: 'Bàn thường',
+    value: '500.000đ - 1.200.000đ',
+    note: 'Có thể gắn coupon Happy Hour',
+  },
+  {
+    label: 'Phòng VIP',
+    value: '2.500.000đ - 6.000.000đ',
+    note: 'Ưu tiên khách VIP',
+  },
+  {
+    label: 'Combo sinh nhật',
+    value: '3.000.000đ+',
+    note: 'Cần duyệt nội dung trước khi đăng',
+  },
+];
+
+const fallbackCastProfiles: PartnerListingCast[] = [
+  {
+    stageName: 'Yuki',
+    bio: 'Host nổi bật của quán',
+    tags: ['hostess'],
+    languages: ['vi', 'ja'],
+    mediaUrls: [],
+  },
+];
+
+const fallbackMediaUrls = [
+  'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=70',
 ];
 
 const contentTabs: { key: ListingTabKey; label: string }[] = [
@@ -595,6 +694,14 @@ export default function PartnerPage() {
   const [dashboard, setDashboard] = useState<PartnerLiteDashboard | null>(null);
   const [activePanel, setActivePanel] = useState<PanelKey>('scan');
   const [listingTab, setListingTab] = useState<ListingTabKey>('store');
+  const [listingStoreId, setListingStoreId] = useState('');
+  const [listingDraft, setListingDraft] = useState<PartnerListingDraft>(emptyListingDraft);
+  const [listingReview, setListingReview] = useState<PartnerListingReview>(null);
+  const [listingContentId, setListingContentId] = useState<string | null>(null);
+  const [listingNotice, setListingNotice] = useState('');
+  const [isListingLoading, setIsListingLoading] = useState(false);
+  const [isSavingListing, setIsSavingListing] = useState(false);
+  const [isSubmittingListing, setIsSubmittingListing] = useState(false);
   const [period, setPeriod] = useState<PeriodKey>('seven');
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
@@ -902,6 +1009,7 @@ export default function PartnerPage() {
         if (!isMounted) return;
 
         setStores(storeData);
+        setListingStoreId((current) => current || storeData[0]?.id || '');
         setCoupons(couponData);
         setBookings([]);
         setBills(billData);
@@ -1051,6 +1159,216 @@ export default function PartnerPage() {
     setScanIssue(null);
     setScanPayload('');
     setScanMessage('Đã hủy kết quả quét. Partner có thể kiểm tra mã khác.');
+  };
+
+  const applyListingDraftResponse = useCallback((response: PartnerListingDraftResponse) => {
+    setListingContentId(response.contentId);
+    setListingReview(response.review);
+    setListingDraft({
+      ...emptyListingDraft,
+      ...response.draft,
+      pricingItems: response.draft.pricingItems?.length
+        ? response.draft.pricingItems
+        : fallbackPricingItems,
+      castProfiles: response.draft.castProfiles?.length
+        ? response.draft.castProfiles
+        : fallbackCastProfiles,
+      mediaUrls: response.draft.mediaUrls?.length ? response.draft.mediaUrls : fallbackMediaUrls,
+    });
+    setListingNotice(response.message);
+  }, []);
+
+  useEffect(() => {
+    if (!listingStoreId) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsListingLoading(true);
+    setListingNotice('Đang tải bản nháp đăng thông tin...');
+
+    apiClient<PartnerListingDraftResponse>(
+      `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
+    )
+      .then((response) => {
+        if (!isMounted) return;
+        applyListingDraftResponse(response);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setListingNotice(
+          error instanceof ApiError
+            ? error.message
+            : 'Không tải được bản nháp đăng thông tin.',
+        );
+      })
+      .finally(() => {
+        if (isMounted) setIsListingLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [applyListingDraftResponse, listingStoreId]);
+
+  const updateListingField = (key: keyof PartnerListingDraft, value: string) => {
+    setListingDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const updatePricingItem = (
+    index: number,
+    key: keyof PartnerListingPricing,
+    value: string,
+  ) => {
+    setListingDraft((current) => ({
+      ...current,
+      pricingItems: current.pricingItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      ),
+    }));
+  };
+
+  const addPricingItem = () => {
+    setListingDraft((current) => ({
+      ...current,
+      pricingItems: [...current.pricingItems, { label: '', value: '', note: '' }],
+    }));
+  };
+
+  const removePricingItem = (index: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      pricingItems: current.pricingItems.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const updateCastProfile = (
+    index: number,
+    key: keyof PartnerListingCast,
+    value: string | string[] | number | undefined,
+  ) => {
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      ),
+    }));
+  };
+
+  const addCastProfile = () => {
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: [
+        ...current.castProfiles,
+        { stageName: '', bio: '', tags: [], languages: [], mediaUrls: [] },
+      ],
+    }));
+  };
+
+  const removeCastProfile = (index: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      castProfiles: current.castProfiles.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const updateMediaUrl = (index: number, value: string) => {
+    setListingDraft((current) => ({
+      ...current,
+      mediaUrls: current.mediaUrls.map((item, itemIndex) =>
+        itemIndex === index ? value : item,
+      ),
+    }));
+  };
+
+  const addMediaUrl = () => {
+    setListingDraft((current) => ({
+      ...current,
+      mediaUrls: [...current.mediaUrls, ''],
+    }));
+  };
+
+  const removeMediaUrl = (index: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      mediaUrls: current.mediaUrls.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const listingPayload = () => ({
+    ...listingDraft,
+    pricingItems: listingDraft.pricingItems.filter(
+      (item) => item.label.trim() && item.value.trim(),
+    ),
+    castProfiles: listingDraft.castProfiles
+      .filter((item) => item.stageName.trim())
+      .map((item) => ({
+        ...item,
+        tags: item.tags?.filter(Boolean) ?? [],
+        languages: item.languages?.filter(Boolean) ?? [],
+        mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
+      })),
+    mediaUrls: listingDraft.mediaUrls.filter((url) => url.trim()),
+  });
+
+  const saveListingDraft = async () => {
+    if (!listingStoreId || !listingDraft.storeName.trim()) {
+      setListingNotice('Cần chọn quán và nhập tên quán trước khi lưu.');
+      return;
+    }
+
+    setIsSavingListing(true);
+    setListingNotice('Đang lưu bản nháp...');
+    try {
+      const response = await apiClient<PartnerListingDraftResponse>(
+        `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
+        {
+          method: 'PUT',
+          data: listingPayload(),
+        },
+      );
+      applyListingDraftResponse(response);
+      setListingNotice('Đã lưu bản nháp đăng thông tin.');
+    } catch (error) {
+      setListingNotice(
+        error instanceof ApiError ? error.message : 'Không lưu được bản nháp.',
+      );
+    } finally {
+      setIsSavingListing(false);
+    }
+  };
+
+  const submitListingDraft = async () => {
+    if (!listingStoreId || !listingDraft.storeName.trim()) {
+      setListingNotice('Cần chọn quán và nhập tên quán trước khi gửi duyệt.');
+      return;
+    }
+
+    setIsSubmittingListing(true);
+    setListingNotice('Đang gửi bản nháp cho Admin duyệt...');
+    try {
+      const response = await apiClient<{
+        id: string;
+        status: string;
+        submittedAt: string;
+        message: string;
+      }>(`/partner/listing-draft/${encodeURIComponent(listingStoreId)}/submit`, {
+        data: listingPayload(),
+      });
+      setListingReview({
+        id: response.id,
+        status: response.status,
+        submittedAt: response.submittedAt,
+        publicState: 'HIDDEN',
+      });
+      setListingNotice('Đã gửi Admin duyệt. Nội dung sẽ public sau khi được duyệt.');
+    } catch (error) {
+      setListingNotice(
+        error instanceof ApiError ? error.message : 'Không gửi duyệt được bản nháp.',
+      );
+    } finally {
+      setIsSubmittingListing(false);
+    }
   };
 
   const logout = () => {
@@ -1723,143 +2041,307 @@ export default function PartnerPage() {
   const renderListingTab = () => {
     if (listingTab === 'cast') {
       return (
-        <div className="partner-listing-grid">
-          {['Minh Anh', 'Yuki', 'Linh Chi'].map((name, index) => (
-            <div
-              key={name}
-              style={{
-                ...softCardStyle,
-                padding: '14px',
-                display: 'flex',
-                gap: '12px',
-                alignItems: 'center',
-              }}
-            >
-              <span
-                style={{
-                  width: '58px',
-                  height: '58px',
-                  borderRadius: '14px',
-                  border: `1px solid ${index === 0 ? colors.borderGold40 : colors.borderGold12}`,
-                  background:
-                    "linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.65)), url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=70') center/cover",
-                }}
-              />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>{name}</div>
-                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>
-                  {index === 0 ? 'Đang duyệt hồ sơ nổi bật' : 'Hiển thị trong trang quán'}
-                </div>
+        <div style={{ display: 'grid', gap: '12px' }}>
+          {listingDraft.castProfiles.map((cast, index) => (
+            <div key={`${cast.stageName}-${index}`} style={{ ...softCardStyle, padding: '14px' }}>
+              <div className="partner-listing-grid">
+                <FormField label="Tên cast">
+                  <input
+                    value={cast.stageName}
+                    onChange={(event) => updateCastProfile(index, 'stageName', event.target.value)}
+                    placeholder="VD: Yuki"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Ngôn ngữ">
+                  <input
+                    value={cast.languages?.join(', ') ?? ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'languages',
+                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+                      )
+                    }
+                    placeholder="vi, en, ja"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Tags">
+                  <input
+                    value={cast.tags?.join(', ') ?? ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'tags',
+                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+                      )
+                    }
+                    placeholder="hostess, english"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Giá theo giờ">
+                  <input
+                    inputMode="numeric"
+                    value={cast.hourlyRateVnd ? String(cast.hourlyRateVnd) : ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'hourlyRateVnd',
+                        event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined,
+                      )
+                    }
+                    placeholder="VD: 1200000"
+                    style={inputStyle}
+                  />
+                </FormField>
+              </div>
+              <FormField label="Mô tả cast">
+                <textarea
+                  value={cast.bio ?? ''}
+                  onChange={(event) => updateCastProfile(index, 'bio', event.target.value)}
+                  placeholder="Thông tin nổi bật của cast"
+                  style={{ ...inputStyle, marginTop: '10px', minHeight: '86px', resize: 'vertical', padding: '12px' }}
+                />
+              </FormField>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <GhostButton onClick={() => removeCastProfile(index)}>
+                  <XCircle size={16} />
+                  Xóa cast
+                </GhostButton>
               </div>
             </div>
           ))}
+          <GhostButton onClick={addCastProfile}>
+            <UsersRound size={16} />
+            Thêm cast
+          </GhostButton>
         </div>
       );
     }
 
     if (listingTab === 'pricing') {
       return (
-        <div style={{ display: 'grid', gap: '10px' }}>
-          {[
-            ['Bàn thường', '500.000đ - 1.200.000đ', 'Có thể gắn coupon Happy Hour'],
-            ['Phòng VIP', '2.500.000đ - 6.000.000đ', 'Ưu tiên khách VIP'],
-            ['Combo sinh nhật', '3.000.000đ+', 'Cần duyệt nội dung trước khi đăng'],
-          ].map(([label, value, sub]) => (
-            <div
-              key={label}
-              style={{
-                ...softCardStyle,
-                padding: '14px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '14px',
-              }}
-            >
-              <div>
-                <div style={{ color: colors.text, fontSize: '13.5px', fontWeight: 800 }}>
-                  {label}
-                </div>
-                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>{sub}</div>
-              </div>
-              <div
-                style={{
-                  color: colors.goldBright,
-                  fontSize: '13px',
-                  fontWeight: 900,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {value}
+        <div style={{ display: 'grid', gap: '12px' }}>
+          <FormField label="Khoảng giá tổng quan">
+            <input
+              value={listingDraft.priceRange}
+              onChange={(event) => updateListingField('priceRange', event.target.value)}
+              placeholder="VD: 500.000đ - 3.000.000đ"
+              style={inputStyle}
+            />
+          </FormField>
+          {listingDraft.pricingItems.map((item, index) => (
+            <div key={`${item.label}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+              <FormField label="Tên gói">
+                <input
+                  value={item.label}
+                  onChange={(event) => updatePricingItem(index, 'label', event.target.value)}
+                  placeholder="VD: Phòng VIP"
+                  style={inputStyle}
+                />
+              </FormField>
+              <FormField label="Mức giá">
+                <input
+                  value={item.value}
+                  onChange={(event) => updatePricingItem(index, 'value', event.target.value)}
+                  placeholder="VD: 2.500.000đ - 6.000.000đ"
+                  style={inputStyle}
+                />
+              </FormField>
+              <FormField label="Ghi chú">
+                <input
+                  value={item.note ?? ''}
+                  onChange={(event) => updatePricingItem(index, 'note', event.target.value)}
+                  placeholder="VD: Ưu tiên khách VIP"
+                  style={inputStyle}
+                />
+              </FormField>
+              <div style={{ display: 'flex', alignItems: 'end' }}>
+                <GhostButton onClick={() => removePricingItem(index)}>
+                  <XCircle size={16} />
+                  Xóa
+                </GhostButton>
               </div>
             </div>
           ))}
+          <GhostButton onClick={addPricingItem}>
+            <ReceiptText size={16} />
+            Thêm dòng giá
+          </GhostButton>
         </div>
       );
     }
 
     if (listingTab === 'media') {
       return (
-        <div className="partner-media-grid">
-          {[1, 2, 3, 4].map((item) => (
-            <button
-              key={item}
-              type="button"
-              style={{
-                minHeight: '132px',
-                borderRadius: '14px',
-                border: `1px dashed ${colors.borderGold32}`,
-                background:
-                  item === 1
-                    ? "linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.75)), url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=500&q=70') center/cover"
-                    : colors.surface2,
-                color: item === 1 ? colors.goldPale : colors.gold,
-                display: 'grid',
-                placeItems: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <span
-                style={{
-                  display: 'grid',
-                  gap: '8px',
-                  justifyItems: 'center',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                }}
-              >
-                <ImagePlus size={22} />
-                {item === 1 ? 'Ảnh cover' : 'Thêm ảnh'}
-              </span>
-            </button>
+        <div style={{ display: 'grid', gap: '12px' }}>
+          {listingDraft.mediaUrls.map((url, index) => (
+            <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+              <FormField label={index === 0 ? 'Ảnh cover / video URL' : 'Ảnh / video URL'}>
+                <input
+                  value={url}
+                  onChange={(event) => updateMediaUrl(index, event.target.value)}
+                  placeholder="https://..."
+                  style={inputStyle}
+                />
+              </FormField>
+              <div style={{ display: 'flex', alignItems: 'end' }}>
+                <GhostButton onClick={() => removeMediaUrl(index)}>
+                  <XCircle size={16} />
+                  Xóa
+                </GhostButton>
+              </div>
+            </div>
           ))}
+          <GhostButton onClick={addMediaUrl}>
+            <ImagePlus size={16} />
+            Thêm ảnh / video
+          </GhostButton>
         </div>
       );
     }
 
     return (
       <div className="partner-listing-grid">
-        {listingFields.map((field) => (
-          <FormField key={field.label} label={field.label}>
-            <input defaultValue={field.value} style={inputStyle} />
-          </FormField>
-        ))}
+        <FormField label="Tên quán">
+          <input
+            value={listingDraft.storeName}
+            onChange={(event) => updateListingField('storeName', event.target.value)}
+            placeholder="VD: Vietyoru Lounge"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Loại hình">
+          <input
+            value={listingDraft.businessType}
+            onChange={(event) => updateListingField('businessType', event.target.value)}
+            placeholder="VD: Lounge · Bar · Karaoke"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Khu vực">
+          <input
+            value={listingDraft.area}
+            onChange={(event) => updateListingField('area', event.target.value)}
+            placeholder="VD: Quận 1, TP. Hồ Chí Minh"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Thành phố">
+          <input
+            value={listingDraft.storeCity}
+            onChange={(event) => updateListingField('storeCity', event.target.value)}
+            placeholder="VD: Hồ Chí Minh"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Quận / khu">
+          <input
+            value={listingDraft.storeDistrict}
+            onChange={(event) => updateListingField('storeDistrict', event.target.value)}
+            placeholder="VD: Quận 1"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Địa chỉ">
+          <input
+            value={listingDraft.storeAddress}
+            onChange={(event) => updateListingField('storeAddress', event.target.value)}
+            placeholder="VD: 12 Nguyễn Huệ, Bến Nghé"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Số điện thoại">
+          <input
+            value={listingDraft.phone}
+            onChange={(event) => updateListingField('phone', event.target.value)}
+            placeholder="VD: 0901234567"
+            style={inputStyle}
+          />
+        </FormField>
+        <FormField label="Giờ mở cửa">
+          <input
+            value={listingDraft.openingHours}
+            onChange={(event) => updateListingField('openingHours', event.target.value)}
+            placeholder="VD: 18:00 - 02:00"
+            style={inputStyle}
+          />
+        </FormField>
         <FormField label="Mô tả ngắn">
           <textarea
-            defaultValue="Không gian lounge cao cấp, phù hợp đặt bàn tối và sự kiện riêng. Nội dung gửi duyệt trước khi hiển thị công khai."
+            value={listingDraft.description}
+            onChange={(event) => updateListingField('description', event.target.value)}
+            placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
             style={{ ...inputStyle, minHeight: '104px', resize: 'vertical', padding: '12px' }}
+          />
+        </FormField>
+        <FormField label="Ghi chú gửi Admin">
+          <textarea
+            value={listingDraft.note}
+            onChange={(event) => updateListingField('note', event.target.value)}
+            placeholder="Ghi chú nội bộ cho Admin khi duyệt nội dung"
+            style={{ ...inputStyle, minHeight: '86px', resize: 'vertical', padding: '12px' }}
           />
         </FormField>
       </div>
     );
   };
 
+  const listingReviewTone =
+    listingReview?.status === 'APPROVED'
+      ? 'success'
+      : listingReview?.status === 'REJECTED'
+        ? 'danger'
+        : listingReview?.status === 'PENDING_REVIEW'
+          ? 'gold'
+          : 'neutral';
+  const listingReviewLabel =
+    listingReview?.status === 'APPROVED'
+      ? 'Đã duyệt'
+      : listingReview?.status === 'REJECTED'
+        ? 'Bị từ chối'
+        : listingReview?.status === 'PENDING_REVIEW'
+          ? 'Đang chờ duyệt'
+          : listingContentId
+            ? 'Bản nháp đã lưu'
+            : 'Chưa có bản nháp';
+  const isListingBusy = isListingLoading || isSavingListing || isSubmittingListing;
+  const canWriteListing = Boolean(listingStoreId && listingDraft.storeName.trim()) && !isListingBusy;
+
   const renderListingPanel = () => (
     <PanelCard>
       <SectionHeading
         eyebrow="DRAFT & APPROVAL"
         title="Thông tin hiển thị trên trang quán"
-        action={<StatusPill tone="gold">Bản nháp chờ duyệt</StatusPill>}
+        action={<StatusPill tone={listingReviewTone}>{listingReviewLabel}</StatusPill>}
       />
+
+      <div className="partner-listing-grid" style={{ marginBottom: '14px' }}>
+        <FormField label="Quán cần cập nhật">
+          <select
+            value={listingStoreId}
+            onChange={(event) => setListingStoreId(event.target.value)}
+            disabled={isListingBusy}
+            style={inputStyle}
+          >
+            {stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.name} - {store.district ?? store.city ?? store.status}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <div style={{ ...softCardStyle, padding: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.5 }}>
+          {listingNotice || 'Nhập nội dung, lưu nháp hoặc gửi Admin duyệt để public sau khi được xác nhận.'}
+          {listingReview?.submittedAt ? (
+            <div style={{ marginTop: '4px', color: colors.muted }}>
+              Gửi gần nhất: {formatDateTime(listingReview.submittedAt)}
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
         {contentTabs.map((tab) => (
@@ -1895,13 +2377,13 @@ export default function PartnerPage() {
           marginTop: '18px',
         }}
       >
-        <GhostButton>
+        <GhostButton disabled={!canWriteListing} onClick={saveListingDraft}>
           <Save size={16} />
-          Lưu nháp
+          {isSavingListing ? 'Đang lưu...' : 'Lưu nháp'}
         </GhostButton>
-        <PrimaryButton>
+        <PrimaryButton disabled={!canWriteListing} onClick={submitListingDraft}>
           <Send size={16} />
-          Gửi duyệt
+          {isSubmittingListing ? 'Đang gửi...' : 'Gửi duyệt'}
         </PrimaryButton>
       </div>
     </PanelCard>
