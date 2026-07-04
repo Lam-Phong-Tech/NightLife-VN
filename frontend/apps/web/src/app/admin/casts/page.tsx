@@ -364,9 +364,14 @@ export default function AdminCastsPage() {
                         width: 40, height: 40, borderRadius: '50%', 
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '14px', fontWeight: 800,
-                        ...avatarStyle
+                        overflow: 'hidden',
+                        ...(!cast.media?.[0]?.url ? avatarStyle : { background: colors.surface2 })
                       }}>
-                        {(cast.stageName || 'A').charAt(0).toUpperCase()}
+                        {cast.media && cast.media[0]?.url ? (
+                          <img src={cast.media[0].url} alt={cast.stageName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          (cast.stageName || 'A').charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 700, color: colors.text }}>{cast.stageName}</div>
