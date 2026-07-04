@@ -45,6 +45,8 @@ export default function AdminStoresPage() {
   const [venueSel, setVenueSel] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filterCity, setFilterCity] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
   
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
@@ -70,7 +72,7 @@ export default function AdminStoresPage() {
 
   const fetchStores = async () => {
     try {
-      const res = await apiClient<any>('/admin/stores', { params: { search: search || undefined } });
+      const res = await apiClient<any>('/admin/stores', { params: { limit: 1000 } });
       if (res && res.data) {
         setStores(res.data);
       }
@@ -81,7 +83,7 @@ export default function AdminStoresPage() {
 
   useEffect(() => {
     fetchStores();
-  }, [search]);
+  }, []);
 
   // Clear slug status when typing
   useEffect(() => {
@@ -401,10 +403,29 @@ export default function AdminStoresPage() {
             style={{ background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12.5px', outline: 'none', width: '100%' }}
           />
         </div>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer' }}>
-          Tất cả loại hình
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-        </span>
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          style={{ appearance: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer', outline: 'none' }}
+        >
+          <option value="" style={{ background: '#1a191f' }}>Tất cả loại hình</option>
+          <option value="CLUB" style={{ background: '#1a191f' }}>Club</option>
+          <option value="LOUNGE" style={{ background: '#1a191f' }}>Lounge</option>
+          <option value="BAR" style={{ background: '#1a191f' }}>Bar</option>
+          <option value="GIRLS_BAR" style={{ background: '#1a191f' }}>Girls Bar</option>
+          <option value="KARAOKE" style={{ background: '#1a191f' }}>Karaoke</option>
+          <option value="MASSAGE_SPA" style={{ background: '#1a191f' }}>Massage & Spa</option>
+        </select>
+        
+        <select
+          value={filterCity}
+          onChange={(e) => setFilterCity(e.target.value)}
+          style={{ appearance: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer', outline: 'none' }}
+        >
+          <option value="" style={{ background: '#1a191f' }}>Khu vực: Tất cả</option>
+          <option value="Ho Chi Minh City" style={{ background: '#1a191f' }}>TP.HCM</option>
+          <option value="Hanoi" style={{ background: '#1a191f' }}>Hà Nội</option>
+        </select>
         <div style={{ flex: 1 }}></div>
         <span onClick={openNewDrawer} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -418,7 +439,12 @@ export default function AdminStoresPage() {
           <span>Quán</span><span>Loại hình</span><span>Khu vực</span><span>Cast</span><span>Trạng thái</span><span></span>
         </div>
         
-        {stores.map((v: any) => {
+        {stores.filter((v: any) => {
+          if (filterCity && v.city !== filterCity) return false;
+          if (filterCategory && v.category !== filterCategory) return false;
+          if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
+          return true;
+        }).map((v: any) => {
           const stMeta = getStatusMeta(v.status);
           const stStyle = getPillStyle(stMeta.style);
           const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : 'pink');
