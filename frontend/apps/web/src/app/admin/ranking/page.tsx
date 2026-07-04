@@ -186,8 +186,12 @@ export default function AdminRankingsPage() {
 
   const handleAddCast = (option: any) => {
     if (casts.find(c => c.targetId === option.id)) return;
+    if (casts.length >= 5) {
+      alert('Chỉ được xếp hạng tối đa 5 Cast!');
+      return;
+    }
     setCasts([...casts, {
-      id: `new-cast-${option.id}`,
+      id: `new-${Date.now()}`,
       targetId: option.id,
       targetType: 'CAST',
       name: option.name,
@@ -200,8 +204,12 @@ export default function AdminRankingsPage() {
 
   const handleAddStore = (option: any) => {
     if (stores.find(s => s.targetId === option.id)) return;
+    if (stores.length >= 5) {
+      alert('Chỉ được xếp hạng tối đa 5 Quán!');
+      return;
+    }
     setStores([...stores, {
-      id: `new-store-${option.id}`,
+      id: `new-${Date.now()}`,
       targetId: option.id,
       targetType: 'STORE',
       name: option.name,

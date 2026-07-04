@@ -1127,10 +1127,14 @@ export class NightlifeDataService {
     if (targetType === 'STORE') {
       const stores = await this.prisma.store.findMany({
         where: {
-          ...this.buildPublicStoreWhere(
-            { city: cityCode, category },
-            { includeTextSearch: false },
-          ),
+          status: 'ACTIVE',
+          ...(category ? { category } : {}),
+          ...(cityCode ? {
+            OR: [
+              { city: cityCode === 'hcm' ? 'Ho Chi Minh City' : cityCode === 'hn' ? 'Hanoi' : cityCode },
+              { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } }
+            ]
+          } : {}),
           ...(q
             ? {
                 OR: [
@@ -1194,10 +1198,17 @@ export class NightlifeDataService {
         deletedAt: null,
         status: 'ACTIVE',
         isPublic: true,
-        store: this.buildPublicStoreWhere(
-          { city: cityCode, category },
-          { includeTextSearch: false },
-        ),
+        ...(cityCode || category ? {
+           store: {
+              ...(category ? { category } : {}),
+              ...(cityCode ? {
+                 OR: [
+                    { city: cityCode === 'hcm' ? 'Ho Chi Minh City' : cityCode === 'hn' ? 'Hanoi' : cityCode },
+                    { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } }
+                 ]
+              } : {})
+           }
+        } : {}),
         ...(q
           ? {
               OR: [
@@ -14328,9 +14339,15 @@ export class NightlifeDataService {
     address: string,
     city: string,
   ): Promise<string | undefined> {
+    const cityNames = city === 'Ho Chi Minh City' 
+      ? ['Ho Chi Minh City', 'TP.HCM', 'Hồ Chí Minh', 'HCM'] 
+      : city === 'Hanoi' 
+      ? ['Hanoi', 'Hà Nội', 'HN'] 
+      : [city];
+      
     // A simple inference: look for matching district names in the address
     const areas = await this.prisma.area.findMany({
-      where: { city, status: 'ACTIVE' },
+      where: { city: { in: cityNames }, status: 'ACTIVE' },
     });
 
     // Find an area where its district name is mentioned in the address
