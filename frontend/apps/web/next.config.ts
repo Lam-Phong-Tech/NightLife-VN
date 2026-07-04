@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'img.icons8.com' },
       { protocol: 'https', hostname: 'api.qrserver.com' },
+      { protocol: 'https', hostname: 'api.demonightlight.test9.io.vn' },
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'http', hostname: '127.0.0.1' },
     ],
   },
   typescript: {
