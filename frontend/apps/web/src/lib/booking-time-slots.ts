@@ -10,9 +10,10 @@ const weekdayKeys = [
   "thursday",
   "friday",
   "saturday",
-];
+] as const;
 
-type OpeningHoursInput = Record<string, StoreOpeningHour | string> | null | undefined;
+type WeekdayKey = (typeof weekdayKeys)[number];
+type OpeningHoursInput = Record<string, unknown> | null | undefined;
 
 type OpeningRange =
   | { status: "open"; openMinutes: number; closeMinutes: number }
@@ -20,6 +21,13 @@ type OpeningRange =
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 
 const parseTimeToMinutes = (value: unknown) => {
   if (typeof value !== "string") return null;
@@ -48,7 +56,7 @@ const parseTimeRange = (value: unknown) => {
   if (typeof value !== "string") return null;
 
   const match = value.match(
-    /(\d{1,2})(?::(\d{2}))?\s*(?:-|to|den)\s*(\d{1,2})(?::(\d{2}))?/i,
+    /(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/,
   );
 
   if (!match) return null;
@@ -58,6 +66,99 @@ const parseTimeRange = (value: unknown) => {
 
   if (open === null || close === null) return null;
   return { openMinutes: open, closeMinutes: close };
+};
+
+const normalizeWeekdayKey = (key: string): WeekdayKey | null => {
+  const normalized = normalizeText(key);
+
+  if (normalized === "cn" || normalized.includes("sunday") || normalized.includes("chu nhat")) {
+    return "sunday";
+  }
+
+  if (normalized.includes("monday") || normalized === "mon") return "monday";
+  if (normalized.includes("tuesday") || normalized === "tue") return "tuesday";
+  if (normalized.includes("wednesday") || normalized === "wed") return "wednesday";
+  if (normalized.includes("thursday") || normalized === "thu") return "thursday";
+  if (normalized.includes("friday") || normalized === "fri") return "friday";
+  if (normalized.includes("saturday") || normalized === "sat") return "saturday";
+
+  const dayNumber = normalized.match(/[2-7]/)?.[0];
+  if (dayNumber === "2") return "monday";
+  if (dayNumber === "3") return "tuesday";
+  if (dayNumber === "4") return "wednesday";
+  if (dayNumber === "5") return "thursday";
+  if (dayNumber === "6") return "friday";
+  if (dayNumber === "7") return "saturday";
+
+  return null;
+};
+
+const isClosedText = (value: unknown) => {
+  if (typeof value !== "string") return false;
+  const normalized = normalizeText(value);
+  return normalized === "nghi" || normalized === "off" || normalized === "closed";
+};
+
+const normalizeOpeningSlot = (value: unknown): StoreOpeningHour | null => {
+  if (typeof value === "string") {
+    if (isClosedText(value)) return { closed: true };
+
+    const range = parseTimeRange(value);
+    if (range) {
+      return {
+        open: formatSlot(range.openMinutes),
+        close: formatSlot(range.closeMinutes),
+      };
+    }
+
+    return value.trim() ? { note: value.trim() } : null;
+  }
+
+  if (!isRecord(value)) return null;
+
+  if (value.closed === true || value.isOff === true || isClosedText(value.hours) || isClosedText(value.note)) {
+    return { closed: true };
+  }
+
+  const open = parseTimeToMinutes(value.open);
+  const close = parseTimeToMinutes(value.close);
+  if (open !== null && close !== null) {
+    return { open: formatSlot(open), close: formatSlot(close) };
+  }
+
+  const range = parseTimeRange(value.hours) ?? parseTimeRange(value.note);
+  if (range) {
+    return {
+      open: formatSlot(range.openMinutes),
+      close: formatSlot(range.closeMinutes),
+    };
+  }
+
+  if (typeof value.note === "string" && value.note.trim()) {
+    return { note: value.note.trim() };
+  }
+
+  return null;
+};
+
+export const normalizeStoreOpeningHours = (
+  openingHours: OpeningHoursInput,
+): Record<string, StoreOpeningHour> | null => {
+  if (!openingHours || !isRecord(openingHours)) return null;
+
+  const normalized: Partial<Record<WeekdayKey, StoreOpeningHour>> = {};
+
+  Object.entries(openingHours).forEach(([key, value]) => {
+    const weekday = normalizeWeekdayKey(key);
+    if (!weekday) return;
+
+    const slot = normalizeOpeningSlot(value);
+    if (slot) normalized[weekday] = slot;
+  });
+
+  return Object.keys(normalized).length
+    ? (normalized as Record<string, StoreOpeningHour>)
+    : null;
 };
 
 const dayKeyFromIsoDate = (dateIso: string) => {
@@ -73,10 +174,11 @@ const openingRangeForDate = (
 ): OpeningRange | null => {
   if (!openingHours || !isRecord(openingHours)) return null;
 
-  const daySlot = openingHours[dayKeyFromIsoDate(dateIso)];
+  const normalizedHours = normalizeStoreOpeningHours(openingHours);
+  const daySlot = normalizedHours?.[dayKeyFromIsoDate(dateIso)];
 
-  if (isRecord(daySlot)) {
-    if (daySlot.closed === true) return { status: "closed" };
+  if (daySlot) {
+    if (daySlot.closed) return { status: "closed" };
 
     const open = parseTimeToMinutes(daySlot.open);
     const close = parseTimeToMinutes(daySlot.close);
@@ -87,11 +189,6 @@ const openingRangeForDate = (
 
     const noteRange = parseTimeRange(daySlot.note);
     if (noteRange) return { status: "open", ...noteRange };
-  }
-
-  if (typeof daySlot === "string") {
-    const textRange = parseTimeRange(daySlot);
-    if (textRange) return { status: "open", ...textRange };
   }
 
   const summaryRange = parseTimeRange(openingHours.summary);

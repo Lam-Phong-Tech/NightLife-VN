@@ -88,18 +88,45 @@ export const openingText = (slot?: StoreOpeningHour | null) => {
   return slot.note || "Chưa cập nhật";
 };
 
-export const mapEmbedUrl = (store: PublicStoreDetail) => {
-  if (store.mapUrl) {
-    return store.mapUrl.includes("output=embed")
-      ? store.mapUrl
-      : `${store.mapUrl}${store.mapUrl.includes("?") ? "&" : "?"}output=embed`;
-  }
-
+const mapQueryEmbedUrl = (store: PublicStoreDetail) => {
   if (typeof store.latitude === "number" && typeof store.longitude === "number") {
     return `https://www.google.com/maps?q=${store.latitude},${store.longitude}&output=embed`;
   }
 
-  return "";
+  const address = [store.address, store.district, store.city].filter(Boolean).join(", ");
+  return address
+    ? `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`
+    : "";
+};
+
+const isShortGoogleMapUrl = (value: string) => {
+  try {
+    const host = new URL(value).hostname.replace(/^www\./, "");
+    return host === "maps.app.goo.gl" || host === "goo.gl" || host === "g.co";
+  } catch {
+    return false;
+  }
+};
+
+export const mapEmbedUrl = (store: PublicStoreDetail) => {
+  const mapUrl = store.mapUrl?.trim();
+  const fallbackEmbedUrl = mapQueryEmbedUrl(store);
+
+  if (mapUrl) {
+    if (mapUrl.includes("output=embed") || mapUrl.includes("/maps/embed")) {
+      return mapUrl;
+    }
+
+    if (isShortGoogleMapUrl(mapUrl)) {
+      return fallbackEmbedUrl;
+    }
+
+    if (mapUrl.includes("/maps") || mapUrl.includes("maps.google.")) {
+      return `${mapUrl}${mapUrl.includes("?") ? "&" : "?"}output=embed`;
+    }
+  }
+
+  return fallbackEmbedUrl;
 };
 
 export const mediaBackground = (media?: StoreGalleryItem | null) =>
