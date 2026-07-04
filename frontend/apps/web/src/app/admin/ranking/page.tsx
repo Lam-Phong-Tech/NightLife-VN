@@ -166,8 +166,9 @@ export default function AdminRankingsPage() {
       const res = await apiClient<any>('/admin/rankings/options', {
         params: { targetType: type, city: cityCode, limit: 200 }
       });
-      if (type === 'CAST') setCastOptions(res.data || res);
-      else setStoreOptions(res.data || res);
+      const items = Array.isArray(res) ? res : (res?.data || []);
+      if (type === 'CAST') setCastOptions(items);
+      else setStoreOptions(items);
     } catch (e) {
       console.error(e);
     }
@@ -228,7 +229,8 @@ export default function AdminRankingsPage() {
       const castItems: RankingItem[] = [];
       const storeItems: RankingItem[] = [];
       
-      res.data.forEach((r: any) => {
+      const items = Array.isArray(res) ? res : (res?.data || []);
+      items.forEach((r: any) => {
         const type = r.targetType;
         const isCast = type === 'CAST';
         const obj = {
