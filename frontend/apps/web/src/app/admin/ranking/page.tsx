@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronUp, ChevronDown, Bell, Info, GripVertical, Plus } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 import {
   DndContext,
@@ -21,23 +20,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const colors = {
-  bg: '#0f0f13',
-  surface1: '#18181f',
-  surface2: '#202028',
-  borderSoft: 'rgba(255,255,255,.05)',
-  borderGold22: 'rgba(212,178,106,.22)',
-  text: '#f3f0ea',
-  text2: '#c5c0b6',
-  muted: '#8c8679',
-  onGold: '#241a0a',
-  gold: '#d4b26a',
-  goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
-  green: '#4ade80',
-};
-
 interface RankingItem {
-  id: string; // The RankingConfig id (if exists) or a unique string for new items
+  id: string;
   targetId: string;
   targetType: 'CAST' | 'STORE';
   name: string;
@@ -46,8 +30,15 @@ interface RankingItem {
   sponsored: boolean;
 }
 
-function SortableRankingItem(props: { item: RankingItem; index: number; isStore: boolean; toggleSponsor: (id: string) => void; moveItem: (index: number, direction: 'up' | 'down') => void }) {
-  const { item, index, isStore, toggleSponsor, moveItem } = props;
+function SortableRankingItem(props: { 
+  item: RankingItem; 
+  index: number; 
+  isStore: boolean; 
+  toggleSponsor: (id: string) => void; 
+  moveItem: (index: number, direction: 'up' | 'down') => void;
+  removeItem: (id: string) => void;
+}) {
+  const { item, index, isStore, toggleSponsor, moveItem, removeItem } = props;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const style = {
@@ -59,78 +50,95 @@ function SortableRankingItem(props: { item: RankingItem; index: number; isStore:
 
   const getAvatarStyle = (name: string, storeMode: boolean = false) => {
     const hue = (name.length * 45) % 360;
-    return {
-      background: `hsl(${hue}, 40%, 80%)`,
-      color: `hsl(${hue}, 60%, 20%)`,
-      borderRadius: '50%',
-    };
+    return `linear-gradient(135deg, hsl(${hue}, 60%, 70%), hsl(${hue}, 40%, 40%))`;
   };
 
-  const avatarStyle = getAvatarStyle(item.name || 'X', isStore);
+  const rank = index + 1;
+  const numStyle = rank === 1 
+    ? { color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)' } 
+    : rank <= 3 
+      ? { color: '#d4b26a', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.3)' } 
+      : { color: '#9b958a', background: 'rgba(255,255,255,.05)' };
+
+  const rowBg = index === 0 ? 'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))' : 'rgba(255,255,255,.025)';
+  const rowBd = index === 0 ? 'rgba(212,178,106,.34)' : 'rgba(255,255,255,.06)';
+  
+  const spBadge = item.sponsored ? { fontSize: '9px', fontWeight: 700, letterSpacing: '.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '2px 7px', borderRadius: '6px' } : { display: 'none' };
+  const spBtn = item.sponsored 
+    ? { fontSize: '11px', fontWeight: 600, color: '#e3c27e', background: 'rgba(212,178,106,.14)', border: '1px solid rgba(212,178,106,.35)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap' } 
+    : { fontSize: '11px', fontWeight: 600, color: '#8c8679', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap' };
+
+  const onRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if(window.confirm('Bạn có chắc chắn muốn gỡ '+item.name+' khỏi bảng xếp hạng không?')) {
+      removeItem(item.id);
+    }
+  };
 
   return (
     <div ref={setNodeRef} style={{
       ...style,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'transparent', border: `1px solid ${colors.borderSoft}`,
-      borderRadius: '12px', padding: '12px 20px',
-      marginBottom: '8px',
+      display: 'flex', alignItems: 'center', gap: '14px',
+      background: rowBg,
+      border: `1px solid ${rowBd}`,
+      borderRadius: '14px', padding: '11px 14px', marginBottom: '9px',
       boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.5)' : 'none',
       position: 'relative'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div {...attributes} {...listeners} style={{ cursor: 'grab', display: 'flex', alignItems: 'center', paddingRight: '8px' }}>
-          <GripVertical size={16} color={colors.muted} />
-        </div>
-        
-        {/* Rank number */}
-        <div style={{
-          width: '32px', height: '32px', borderRadius: '8px',
-          background: index < 3 ? colors.goldGrad : colors.surface1,
-          color: index < 3 ? colors.onGold : colors.text2,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '14px', fontWeight: 700
+      <div {...attributes} {...listeners} style={{ display: 'flex', alignItems: 'center', cursor: 'grab' }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#57534b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+      </div>
+
+      <span style={{ 
+        width: '32px', height: '32px', flex: 'none', borderRadius: '9px', 
+        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        fontWeight: 800, fontSize: '15px', 
+        ...(numStyle as any)
+      }}>
+        {rank}
+      </span>
+
+      {isStore ? (
+        <span style={{ 
+          width: '40px', height: '40px', flex: 'none', borderRadius: '10px', 
+          background: getAvatarStyle(item.name, true), 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          color: '#241a0a', fontWeight: 700, fontSize: '14px' 
         }}>
-          {index + 1}
-        </div>
+          {item.name.substring(0,2).toUpperCase()}
+        </span>
+      ) : (
+        <span style={{ 
+          width: '40px', height: '40px', flex: 'none', borderRadius: '50%', 
+          background: getAvatarStyle(item.name, false), 
+          border: '1.5px solid rgba(212,178,106,.3)' 
+        }}></span>
+      )}
 
-        {/* Avatar */}
-        <div style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, ...avatarStyle }}>
-          {item.avatar || item.name.substring(0, 2).toUpperCase()}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontWeight: 600, fontSize: '14.5px', color: '#f3f0ea' }}>{item.name}</span>
+          <span style={spBadge as any}>Tài trợ</span>
         </div>
-
-        {/* Info */}
-        <div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: colors.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {item.name}
-          </div>
-          <div style={{ fontSize: '12px', color: colors.muted, marginTop: '2px' }}>{item.desc}</div>
-        </div>
+        <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2px' }}>{item.desc}</div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button 
-          onClick={() => toggleSponsor(item.id)}
-          style={{ 
-            background: 'transparent', 
-            border: `1px solid ${item.sponsored ? colors.gold : colors.borderSoft}`, 
-            color: item.sponsored ? colors.gold : colors.text2, 
-            padding: '6px 16px', 
-            borderRadius: '6px', 
-            fontSize: '12px', 
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          Tài trợ
-        </button>
+      <span onClick={() => toggleSponsor(item.id)} style={spBtn as any}>
+        {item.sponsored ? '★ Đang tài trợ' : 'Tài trợ'}
+      </span>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <button onClick={() => moveItem(index, 'up')} style={{ background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '4px', padding: '2px 6px', color: colors.text2, cursor: 'pointer' }}><ChevronUp size={12} /></button>
-          <button onClick={() => moveItem(index, 'down')} style={{ background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '4px', padding: '2px 6px', color: colors.text2, cursor: 'pointer' }}><ChevronDown size={12} /></button>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <span onClick={() => moveItem(index, 'up')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+        </span>
+        <span onClick={() => moveItem(index, 'down')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
       </div>
+
+      <span onClick={onRemove} title="Gỡ khỏi bảng xếp hạng" style={{ width: '26px', height: '26px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </span>
     </div>
   );
 }
@@ -140,17 +148,23 @@ export default function AdminRankingsPage() {
   const [casts, setCasts] = useState<RankingItem[]>([]);
   const [stores, setStores] = useState<RankingItem[]>([]);
   
-  // States for Adding new items
   const [showAddCast, setShowAddCast] = useState(false);
+  const [castSearch, setCastSearch] = useState('');
   const [castOptions, setCastOptions] = useState<any[]>([]);
+  
   const [showAddStore, setShowAddStore] = useState(false);
+  const [storeSearch, setStoreSearch] = useState('');
   const [storeOptions, setStoreOptions] = useState<any[]>([]);
+
+  const [auditNote, setAuditNote] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchOptions = async (type: 'CAST' | 'STORE') => {
     try {
-      const cityCode = activeTab === 'TongHop' ? 'all' : activeTab;
+      const cityCode = activeTab === 'ALL' ? 'all' : activeTab;
       const res = await apiClient<any>('/admin/rankings/options', {
-        params: { targetType: type, city: cityCode, limit: 100 }
+        params: { targetType: type, city: cityCode, limit: 200 }
       });
       if (type === 'CAST') setCastOptions(res.data || res);
       else setStoreOptions(res.data || res);
@@ -159,28 +173,32 @@ export default function AdminRankingsPage() {
     }
   };
 
+  const filteredCastOptions = castOptions.filter(opt => 
+    !casts.find(c => c.targetId === opt.id) &&
+    (!castSearch || opt.name.toLowerCase().includes(castSearch.toLowerCase()))
+  );
+
+  const filteredStoreOptions = storeOptions.filter(opt => 
+    !stores.find(s => s.targetId === opt.id) &&
+    (!storeSearch || opt.name.toLowerCase().includes(storeSearch.toLowerCase()))
+  );
+
   const handleAddCast = (option: any) => {
-    if (casts.find(c => c.targetId === option.id)) {
-      setShowAddCast(false);
-      return;
-    }
+    if (casts.find(c => c.targetId === option.id)) return;
     setCasts([...casts, {
       id: `new-cast-${option.id}`,
       targetId: option.id,
       targetType: 'CAST',
       name: option.name,
-      desc: 'Cast',
+      desc: option.store?.name || 'Cast',
       avatar: 'C',
       sponsored: false
     }]);
-    setShowAddCast(false);
+    setCastSearch('');
   };
 
   const handleAddStore = (option: any) => {
-    if (stores.find(s => s.targetId === option.id)) {
-      setShowAddStore(false);
-      return;
-    }
+    if (stores.find(s => s.targetId === option.id)) return;
     setStores([...stores, {
       id: `new-store-${option.id}`,
       targetId: option.id,
@@ -190,11 +208,8 @@ export default function AdminRankingsPage() {
       avatar: 'S',
       sponsored: false
     }]);
-    setShowAddStore(false);
+    setStoreSearch('');
   };
-  const [auditNote, setAuditNote] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -204,26 +219,24 @@ export default function AdminRankingsPage() {
   const fetchRankings = async () => {
     setIsLoading(true);
     try {
-      // The cityCode in DB is usually 'HN', 'HCM', 'all'
-      const cityCode = activeTab === 'TongHop' ? 'all' : activeTab;
+      const cityCode = activeTab === 'ALL' ? 'all' : activeTab;
       
       const res = await apiClient<any>('/admin/rankings', {
         params: { city: cityCode }
       });
       
-      // Parse the response records
       const castItems: RankingItem[] = [];
       const storeItems: RankingItem[] = [];
       
       res.data.forEach((r: any) => {
-        const type = r.targetType; // 'CAST' | 'STORE'
+        const type = r.targetType;
         const isCast = type === 'CAST';
         const obj = {
-          id: r.id, // RankingConfig id
+          id: r.id,
           targetId: r.targetId,
-          targetType: type,
+          targetType: type as any,
           name: isCast ? (r.cast?.name || 'Unknown Cast') : (r.store?.name || 'Unknown Store'),
-          desc: isCast ? 'Cast' : 'Store',
+          desc: isCast ? (r.cast?.store?.name || 'Cast') : 'Store',
           avatar: isCast ? 'C' : 'S',
           sponsored: r.sponsored || false,
         };
@@ -231,7 +244,6 @@ export default function AdminRankingsPage() {
         else storeItems.push(obj);
       });
       
-      // We assume backend returns them ordered by pinRank. If not, we could sort here.
       setCasts(castItems);
       setStores(storeItems);
     } catch (e) {
@@ -258,7 +270,7 @@ export default function AdminRankingsPage() {
 
   const handleDragEndStores = (event: any) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (active && over && active.id !== over.id) {
       setStores((items) => {
         const oldIndex = items.findIndex(item => item.id === active.id);
         const newIndex = items.findIndex(item => item.id === over.id);
@@ -277,7 +289,6 @@ export default function AdminRankingsPage() {
     setList(newList);
   };
 
-
   const toggleSponsorCast = (id: string) => {
     setCasts(casts.map(item => item.id === id ? { ...item, sponsored: !item.sponsored } : item));
   };
@@ -286,7 +297,15 @@ export default function AdminRankingsPage() {
     setStores(stores.map(item => item.id === id ? { ...item, sponsored: !item.sponsored } : item));
   };
 
-    const handleSave = async () => {
+  const removeCast = (id: string) => {
+    setCasts(casts.filter(item => item.id !== id));
+  };
+
+  const removeStore = (id: string) => {
+    setStores(stores.filter(item => item.id !== id));
+  };
+
+  const handleSave = async () => {
     if (!auditNote.trim()) {
       alert("Vui lòng nhập Audit Note (lý do cập nhật) trước khi lưu!");
       return;
@@ -294,7 +313,7 @@ export default function AdminRankingsPage() {
 
     setIsSaving(true);
     try {
-      const cityCode = activeTab === 'TongHop' ? 'all' : activeTab.toLowerCase();
+      const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
       
       for (let i = 0; i < casts.length; i++) {
         const cast = casts[i];
@@ -361,143 +380,144 @@ export default function AdminRankingsPage() {
     }
   };
 
-  return (
-    <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%', maxWidth: '1000px', margin: '0 auto' }}>
-      
-      {/* HEADER & TABS */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', background: 'transparent', borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
-          {['HN', 'HCM', 'TongHop'].map((tab) => (
-            <button 
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                background: activeTab === tab ? colors.goldGrad : 'transparent',
-                color: activeTab === tab ? colors.onGold : colors.muted,
-                border: 'none', padding: '8px 24px', borderRadius: '6px',
-                fontSize: '13px', fontWeight: activeTab === tab ? 700 : 500,
-                cursor: 'pointer'
-              }}
-            >
-              {tab === 'HN' ? 'Hà Nội' : tab === 'HCM' ? 'TP. Hồ Chí Minh' : 'Tổng hợp'}
-            </button>
-          ))}
-        </div>
-        <div style={{ color: colors.muted, fontSize: '13px' }}>Kéo - dùng mũi tên để đổi thứ hạng</div>
-      </div>
+  const getTabStyle = (tab: string) => {
+    const isActive = activeTab === tab;
+    return {
+      fontSize: '12.5px', padding: '7px 14px', borderRadius: '8px', cursor: 'pointer',
+      ...(isActive 
+        ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', fontWeight: 600 } 
+        : { color: '#9b958a', background: 'transparent', fontWeight: 500 })
+    };
+  };
 
-      <div style={{ 
-        display: 'flex', alignItems: 'center', gap: '8px', 
-        border: `1px solid ${colors.borderGold22}`, borderRadius: '8px', 
-        padding: '12px 16px', marginBottom: '32px', background: 'rgba(212,178,106,.05)'
-      }}>
-        <Info size={16} color={colors.gold} />
-        <span style={{ fontSize: '13px', color: colors.text2 }}>
-          <span style={{ color: colors.gold }}>Ranking 100% thủ công</span> — Admin tự cấu hình. Quán/cast <strong style={{ color: '#fff' }}>trả tài trợ</strong> có thể lên Top, không phụ thuộc thuật toán. Thứ tự ưu tiên: <strong>Cast trước → Quán</strong>.
+  return (
+    <div style={{ padding: '22px 26px 44px', maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+          <span onClick={() => setActiveTab('HN')} style={getTabStyle('HN')}>Hà Nội</span>
+          <span onClick={() => setActiveTab('HCM')} style={getTabStyle('HCM')}>TP. Hồ Chí Minh</span>
+          <span onClick={() => setActiveTab('ALL')} style={getTabStyle('ALL')}>Tổng hợp</span>
+        </div>
+        <div style={{ flex: 1 }}></div>
+        <span style={{ fontSize: '11.5px', color: '#8c8679' }}>Kéo · dùng mũi tên để đổi thứ hạng</span>
+      </div>
+      
+      <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '20px' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+        <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
+          Ranking 100% thủ công — Admin tự cấu hình. Quán/cast <b style={{ color: '#f0dda8' }}>trả tài trợ</b> có thể lên Top, không phụ thuộc thuật toán. Thứ tự ưu tiên: <b style={{ color: '#f0dda8' }}>Cast trước → Quán</b>.
         </span>
       </div>
 
       {isLoading ? (
-        <div style={{ color: colors.muted, textAlign: 'center', marginTop: '100px' }}>Đang tải...</div>
+        <div style={{ color: '#8c8679', textAlign: 'center', marginTop: '100px' }}>Đang tải dữ liệu xếp hạng...</div>
       ) : (
         <>
           {/* CAST LIST */}
-          <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: 24, height: 24, borderRadius: '6px', background: colors.surface1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ color: colors.gold, fontSize: '14px' }}>👤</span>
-                </div>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, color: colors.text, margin: 0 }}>Xếp hạng Cast</h2>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: colors.gold, border: `1px solid ${colors.borderGold22}`, padding: '2px 8px', borderRadius: '12px' }}>
-                  Ưu tiên 1
-                </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+            <span style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(224,114,158,.14)', border: '1px solid rgba(224,114,158,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e79ab8' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/></svg>
+            </span>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Xếp hạng Cast</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 9px', borderRadius: '7px' }}>ƯU TIÊN</span>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.4),transparent)' }}></span>
+            <span 
+              onClick={() => { setShowAddCast(!showAddCast); if (!showAddCast) fetchOptions('CAST'); }} 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap', ...(showAddCast ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#e3c27e', background: 'rgba(212,178,106,.1)', border: '1px solid rgba(212,178,106,.35)' }) }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm cast
+            </span>
+          </div>
+          
+          {showAddCast && (
+            <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input value={castSearch} onChange={(e) => setCastSearch(e.target.value)} placeholder="Tìm cast theo nghệ danh..." style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
               </div>
-              
-              <div style={{ position: 'relative' }}>
-                <button onClick={() => { setShowAddCast(!showAddCast); fetchOptions('CAST'); }} style={{ background: 'transparent', border: `1px solid ${colors.gold}`, color: colors.gold, padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Plus size={14} /> Thêm Cast
-                </button>
-                {showAddCast && (
-                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: colors.surface2, border: `1px solid ${colors.borderSoft}`, borderRadius: '8px', width: '250px', zIndex: 100, maxHeight: '200px', overflowY: 'auto' }}>
-                    {castOptions.length === 0 ? <div style={{ padding: '12px', color: colors.muted, fontSize: '13px' }}>Không có dữ liệu...</div> : castOptions.map(opt => (
-                      <div key={opt.id} onClick={() => handleAddCast(opt)} style={{ padding: '10px 12px', color: colors.text, fontSize: '13px', cursor: 'pointer', borderBottom: `1px solid ${colors.borderSoft}` }}>
-                        {opt.name}
-                      </div>
-                    ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '240px', overflowY: 'auto' }}>
+                {filteredCastOptions.map(opt => (
+                  <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                    <span style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '50%', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', border: '1.5px solid rgba(212,178,106,.3)' }}></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.store?.name || 'Cast'}</div>
+                    </div>
+                    <span onClick={() => handleAddCast(opt)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Thêm vào Top</span>
                   </div>
+                ))}
+                {filteredCastOptions.length === 0 && (
+                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#8c8679', padding: '14px' }}>Không còn cast phù hợp.</div>
                 )}
               </div>
             </div>
+          )}
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginBottom: '30px' }}>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndCasts}>
               <SortableContext items={casts.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {casts.map((item, index) => (
-                    <SortableRankingItem key={item.id} item={item} index={index} isStore={false} toggleSponsor={toggleSponsorCast} moveItem={(idx, dir) => moveItem(casts, setCasts, idx, dir)} />
-                  ))}
-                  {casts.length === 0 && <div style={{ color: colors.muted, padding: '20px', textAlign: 'center', border: `1px dashed ${colors.borderSoft}`, borderRadius: '12px' }}>Chưa có Cast nào được xếp hạng</div>}
-                </div>
+                {casts.map((item, index) => (
+                  <SortableRankingItem key={item.id} item={item} index={index} isStore={false} toggleSponsor={toggleSponsorCast} moveItem={(idx, dir) => moveItem(casts, setCasts, idx, dir)} removeItem={removeCast} />
+                ))}
+                {casts.length === 0 && <div style={{ color: '#8c8679', padding: '20px', textAlign: 'center', border: '1px dashed rgba(255,255,255,.1)', borderRadius: '12px' }}>Chưa có Cast nào được xếp hạng</div>}
               </SortableContext>
             </DndContext>
           </div>
 
           {/* STORE LIST */}
-          <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: 24, height: 24, borderRadius: '6px', background: colors.surface1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ color: colors.gold, fontSize: '14px' }}>🏬</span>
-                </div>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, color: colors.text, margin: 0 }}>Xếp hạng Quán</h2>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: colors.muted, border: `1px solid ${colors.borderSoft}`, padding: '2px 8px', borderRadius: '12px' }}>
-                  Ưu tiên 2
-                </span>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+            <span style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(212,178,106,.14)', border: '1px solid rgba(212,178,106,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg>
+            </span>
+            <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Xếp hạng Quán</span>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.4),transparent)' }}></span>
+            <span 
+              onClick={() => { setShowAddStore(!showAddStore); if (!showAddStore) fetchOptions('STORE'); }} 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, padding: '8px 14px', borderRadius: '10px', cursor: 'pointer', whiteSpace: 'nowrap', ...(showAddStore ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#e3c27e', background: 'rgba(212,178,106,.1)', border: '1px solid rgba(212,178,106,.35)' }) }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>Thêm quán
+            </span>
+          </div>
 
-              <div style={{ position: 'relative' }}>
-                <button onClick={() => { setShowAddStore(!showAddStore); fetchOptions('STORE'); }} style={{ background: 'transparent', border: `1px solid ${colors.borderSoft}`, color: colors.text, padding: '6px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Plus size={14} /> Thêm Quán
-                </button>
-                {showAddStore && (
-                  <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: colors.surface2, border: `1px solid ${colors.borderSoft}`, borderRadius: '8px', width: '250px', zIndex: 100, maxHeight: '200px', overflowY: 'auto' }}>
-                    {storeOptions.length === 0 ? <div style={{ padding: '12px', color: colors.muted, fontSize: '13px' }}>Không có dữ liệu...</div> : storeOptions.map(opt => (
-                      <div key={opt.id} onClick={() => handleAddStore(opt)} style={{ padding: '10px 12px', color: colors.text, fontSize: '13px', cursor: 'pointer', borderBottom: `1px solid ${colors.borderSoft}` }}>
-                        {opt.name}
-                      </div>
-                    ))}
+          {showAddStore && (
+            <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} placeholder="Tìm quán theo tên..." style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '240px', overflowY: 'auto' }}>
+                {filteredStoreOptions.map(opt => (
+                  <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                    <span style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '9px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 700, fontSize: '12px' }}>{opt.name.substring(0,2).toUpperCase()}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.category || 'Store'}</div>
+                    </div>
+                    <span onClick={() => handleAddStore(opt)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Thêm vào Top</span>
                   </div>
+                ))}
+                {filteredStoreOptions.length === 0 && (
+                  <div style={{ textAlign: 'center', fontSize: '12px', color: '#8c8679', padding: '14px' }}>Không còn quán phù hợp.</div>
                 )}
               </div>
             </div>
+          )}
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginBottom: '30px' }}>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEndStores}>
               <SortableContext items={stores.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {stores.map((item, index) => (
-                    <SortableRankingItem key={item.id} item={item} index={index} isStore={true} toggleSponsor={toggleSponsorStore} moveItem={(idx, dir) => moveItem(stores, setStores, idx, dir)} />
-                  ))}
-                  {stores.length === 0 && <div style={{ color: colors.muted, padding: '20px', textAlign: 'center', border: `1px dashed ${colors.borderSoft}`, borderRadius: '12px' }}>Chưa có Quán nào được xếp hạng</div>}
-                </div>
+                {stores.map((item, index) => (
+                  <SortableRankingItem key={item.id} item={item} index={index} isStore={true} toggleSponsor={toggleSponsorStore} moveItem={(idx, dir) => moveItem(stores, setStores, idx, dir)} removeItem={removeStore} />
+                ))}
+                {stores.length === 0 && <div style={{ color: '#8c8679', padding: '20px', textAlign: 'center', border: '1px dashed rgba(255,255,255,.1)', borderRadius: '12px' }}>Chưa có Quán nào được xếp hạng</div>}
               </SortableContext>
             </DndContext>
           </div>
 
           {/* SAVE AREA */}
-          <div style={{ 
-            background: colors.surface1, 
-            border: `1px solid ${colors.borderGold22}`, 
-            borderRadius: '16px', 
-            padding: '24px',
-            position: 'sticky',
-            bottom: '32px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px'
-          }}>
+          <div style={{ background: '#18181f', border: '1px solid rgba(212,178,106,.22)', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '13px', color: colors.text2, marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '13px', color: '#c5c0b6', marginBottom: '8px' }}>
                 Ghi chú nội bộ (Audit Note) - Bắt buộc
               </label>
               <input 
@@ -505,36 +525,20 @@ export default function AdminRankingsPage() {
                 value={auditNote}
                 onChange={(e) => setAuditNote(e.target.value)}
                 placeholder="VD: Cập nhật do quán ABC tài trợ tháng 7..."
-                style={{
-                  width: '100%', height: '40px', background: colors.surface2, border: `1px solid ${colors.borderSoft}`,
-                  borderRadius: '8px', color: colors.text, padding: '0 16px', fontSize: '14px', outline: 'none'
-                }}
+                style={{ width: '100%', height: '40px', background: '#202028', border: '1px solid rgba(255,255,255,.05)', borderRadius: '8px', color: '#f3f0ea', padding: '0 16px', fontSize: '14px', outline: 'none' }}
               />
             </div>
             
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              style={{
-                background: colors.goldGrad,
-                color: colors.onGold,
-                border: 'none',
-                height: '40px',
-                padding: '0 32px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 700,
-                cursor: isSaving ? 'not-allowed' : 'pointer',
-                opacity: isSaving ? 0.7 : 1,
-                alignSelf: 'flex-end'
-              }}
+              style={{ background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', border: 'none', height: '40px', padding: '0 32px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, alignSelf: 'flex-end' }}
             >
               {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
             </button>
           </div>
         </>
       )}
-
     </div>
   );
 }

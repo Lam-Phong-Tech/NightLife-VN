@@ -124,7 +124,7 @@ function TopRegionFilter() {
     { v: 'Ho Chi Minh City', l: 'HCM' }
   ];
 
-  const curr = opts.find(o => o.v === city) || opts[0];
+  const curr = opts.find(o => o.v === city) || { v: '', l: 'Tất cả KV' };
 
   return (
     <div style={{ position: 'relative' }}>
