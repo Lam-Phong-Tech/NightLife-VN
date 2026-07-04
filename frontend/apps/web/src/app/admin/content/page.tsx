@@ -74,6 +74,8 @@ export default function AdminContentPage() {
   const [blogLanguage, setBlogLanguage] = useState('Tiếng Việt');
   const [blogExcerpt, setBlogExcerpt] = useState('');
   const [blogContent, setBlogContent] = useState('');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
@@ -590,7 +592,7 @@ export default function AdminContentPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tiêu đề bài viết</div>
-                <input value={blogTitle} onChange={e => setBlogTitle(e.target.value)} placeholder="VD: Top 10 lounge lãng mạn cho buổi hẹn tại Hà Nội" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                <input value={blogTitle} onChange={e => setBlogTitle(e.target.value)} placeholder="Nhập tiêu đề bài viết" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
                 <div style={{ fontSize: '11px', color: '#57534b', marginTop: '7px' }}>vietyoru.vn/blog/<span style={{ color: '#b99a55' }}>{blogTitle ? blogTitle.toLowerCase().replace(/\s+/g, '-') : 'tieu-de-bai-viet'}</span></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -644,11 +646,41 @@ export default function AdminContentPage() {
               </div>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Ảnh bìa</div>
-                <div style={{ position: 'relative', height: '150px', borderRadius: '13px', overflow: 'hidden', border: '1px dashed rgba(212,178,106,.4)', background: 'rgba(12,12,15,.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-                  <ImageIcon size={28} style={{ color: '#8c8679' }} strokeWidth={1.5} />
-                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#cbb884' }}>Bấm để tải ảnh bìa</span>
-                  <span style={{ fontSize: '10.5px', color: '#57534b' }}>PNG / JPG · tỉ lệ 16:9 · hiển thị trên trang chủ</span>
-                </div>
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg" 
+                  style={{ display: 'none' }} 
+                  id="cover-image-upload" 
+                  onChange={(e) => { 
+                    const file = e.target.files?.[0]; 
+                    if (file) { 
+                      setCoverImage(URL.createObjectURL(file)); 
+                      setCoverImageFile(file); 
+                    } 
+                  }} 
+                />
+                <label htmlFor="cover-image-upload" style={{ display: 'block', cursor: 'pointer' }}>
+                  <div style={{ position: 'relative', height: '150px', borderRadius: '13px', overflow: 'hidden', border: coverImage ? 'none' : '1px dashed rgba(212,178,106,.4)', background: 'rgba(12,12,15,.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                    {coverImage ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={coverImage} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <span 
+                          onClick={(e) => { e.preventDefault(); setCoverImage(null); setCoverImageFile(null); }} 
+                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,.6)', color: '#fff', borderRadius: '50%', padding: '4px', cursor: 'pointer' }}
+                        >
+                          <X size={14} />
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon size={28} style={{ color: '#8c8679' }} strokeWidth={1.5} />
+                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#cbb884' }}>Bấm để tải ảnh bìa</span>
+                        <span style={{ fontSize: '10.5px', color: '#57534b' }}>PNG / JPG · tỉ lệ 16:9 · hiển thị trên trang chủ</span>
+                      </>
+                    )}
+                  </div>
+                </label>
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}><span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Mô tả ngắn</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>{blogExcerpt.length} / 160</span></div>
