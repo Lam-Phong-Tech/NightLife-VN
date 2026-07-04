@@ -43,9 +43,12 @@ export default function AdminCastsPage() {
   });
   
   const [albums, setAlbums] = useState<any[]>([]);
+  const [avatarImage, setAvatarImage] = useState<any>(null);
   
   const imageUploadRef = useRef<HTMLInputElement>(null);
+  const albumUploadRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingAlbum, setUploadingAlbum] = useState(false);
   
   const [youtubeInput, setYoutubeInput] = useState('');
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
@@ -134,6 +137,7 @@ export default function AdminCastsPage() {
       heightCm: '', measurements: '', languages: [], hobbies: [], tags: [], isPublic: true, status: 'ACTIVE',
       youtubeLinks: []
     });
+    setAvatarImage(null);
     setAlbums([]);
     setIsAddingCast(true);
     setSelectedCast(null);
@@ -155,7 +159,8 @@ export default function AdminCastsPage() {
       isPublic: c.isPublic ?? true,
       status: c.status || 'ACTIVE'
     });
-    setAlbums(c.media || []);
+    setAvatarImage(c.media?.[0] || null);
+    setAlbums(c.media?.slice(1) || []);
     setSelectedCast(c);
     setIsAddingCast(false);
   };
@@ -175,7 +180,7 @@ export default function AdminCastsPage() {
         ...formData,
         birthMonth: formData.birthMonth ? parseInt(formData.birthMonth, 10) : undefined,
         heightCm: formData.heightCm ? parseInt(formData.heightCm, 10) : undefined,
-        mediaIds: albums.map(a => a.id)
+        mediaIds: [avatarImage?.id, ...albums.map(a => a.id)].filter(Boolean)
       };
 
       if (isAddingCast) {
@@ -204,13 +209,35 @@ export default function AdminCastsPage() {
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
-        setAlbums(prev => [...prev, { id: res.id, url: res.url }]);
-        showToast('Tải ảnh lên thành công');
+        setAvatarImage({ id: res.id, url: res.url });
+        showToast('Tải ảnh đại diện thành công');
       }
     } catch (err: any) {
       showToast('Lỗi tải ảnh: ' + err.message);
     } finally {
       setUploadingImage(false);
+    } 
+  };
+
+  const handleUploadAlbum = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingAlbum(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'CAST_PHOTO');
+      form.append('access', 'PUBLIC');
+      
+      const res = await apiFormDataClient<any>('/storage/upload', form);
+      if (res && res.id) {
+        setAlbums(prev => [...prev, { id: res.id, url: res.url }]);
+        showToast('Tải ảnh album thành công');
+      }
+    } catch (err: any) {
+      showToast('Lỗi tải ảnh: ' + err.message);
+    } finally {
+      setUploadingAlbum(false);
     } 
   };
 
@@ -514,13 +541,44 @@ export default function AdminCastsPage() {
                 <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>Ảnh đại diện (1 ảnh)</span>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    {albums.length === 0 && (
+                    {!avatarImage && (
                       <button onClick={() => imageUploadRef.current?.click()} style={{ background: 'transparent', border: 'none', color: colors.gold, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Upload size={14} /> Thêm ảnh
                       </button>
                     )}
                   </div>
                   <input type="file" ref={imageUploadRef} style={{ display: 'none' }} accept="image/*" onChange={handleUploadImage} />
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+                  {avatarImage && (
+                    <div style={{ position: 'relative', width: 120, height: 160, borderRadius: '12px', flexShrink: 0, backgroundImage: `url(${avatarImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                      <button onClick={() => setAvatarImage(null)} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                  {uploadingImage && (
+                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
+                  )}
+                  {!avatarImage && !uploadingImage && (
+                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
+                      Chưa có ảnh
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ALBUM ẢNH */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Album ảnh (Nhiều ảnh)</span>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={() => albumUploadRef.current?.click()} style={{ background: 'transparent', border: 'none', color: colors.gold, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Upload size={14} /> Thêm ảnh
+                    </button>
+                  </div>
+                  <input type="file" ref={albumUploadRef} style={{ display: 'none' }} accept="image/*" onChange={handleUploadAlbum} />
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
@@ -531,10 +589,10 @@ export default function AdminCastsPage() {
                       </button>
                     </div>
                   ))}
-                  {uploadingImage && (
+                  {uploadingAlbum && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
                   )}
-                  {albums.length === 0 && !uploadingImage && (
+                  {albums.length === 0 && !uploadingAlbum && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
                       Chưa có ảnh
                     </div>
