@@ -736,6 +736,10 @@ export default function AdminContentPage() {
               .ql-snow .ql-fill { fill: #c5c0b6; }
               .ql-snow .ql-picker { color: #c5c0b6; }
               .ql-editor.ql-blank::before { color: #8c8679; font-style: normal; }
+              .ql-editor * {
+                background-color: transparent !important;
+                color: inherit !important;
+              }
               
               /* Hover, Focus, Active states for Quill */
               .ql-snow.ql-toolbar button:hover .ql-stroke, .ql-snow .ql-toolbar button:hover .ql-stroke, 
