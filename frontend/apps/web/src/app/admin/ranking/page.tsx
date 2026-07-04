@@ -245,8 +245,8 @@ export default function AdminRankingsPage() {
           id: r.id,
           targetId: r.targetId,
           targetType: type as any,
-          name: isCast ? (r.cast?.name || 'Unknown Cast') : (r.store?.name || 'Unknown Store'),
-          desc: isCast ? (r.cast?.store?.name || 'Cast') : 'Store',
+          name: r.targetName || (isCast ? 'Unknown Cast' : 'Unknown Store'),
+          desc: isCast ? (r.targetArea || r.targetCity || 'Cast') : (r.targetCategory || r.targetArea || 'Store'),
           avatar: isCast ? 'C' : 'S',
           sponsored: r.sponsored || false,
         };
