@@ -62,8 +62,8 @@ export default function AdminStoresPage() {
   const fetchStores = async () => {
     try {
       const res = await apiClient<any>('/admin/stores', { params: { search: search || undefined } });
-      if (res.data && res.data.data) {
-        setStores(res.data.data);
+      if (res && res.data) {
+        setStores(res.data);
       }
     } catch (e) {
       console.error(e);
