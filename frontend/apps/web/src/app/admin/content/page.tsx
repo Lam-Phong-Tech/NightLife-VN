@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft } from 'lucide-react';
+import 'react-quill/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill'), { 
+  ssr: false, 
+  loading: () => <div style={{ height: 190, background: 'rgba(12,12,15,.55)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', fontSize: 13, border: '1px solid rgba(255,255,255,.1)' }}>Đang tải Editor...</div>
+});
 
 const colors = {
   bg: '#0f0f13',
@@ -60,6 +67,7 @@ const mockVideoSearch = [
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog' | null>(null);
+  const [blogContent, setBlogContent] = useState('');
 
   const getCampaignStatusStyle = (status: string) => {
     if (status === 'Đang chạy') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
@@ -526,18 +534,95 @@ export default function AdminContentPage() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
                   <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Nội dung</span>
-                  <span style={{ flex: 1 }}></span>
-                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer', fontSize: '12px', fontWeight: 800 }}>B</span>
-                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer', fontSize: '12.5px', fontStyle: 'italic', fontFamily: 'Georgia,serif' }}>I</span>
-                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer', fontSize: '10px', fontWeight: 800 }}>H2</span>
-                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>≡</span>
-                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>🔗</span>
-                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>🖼️</span>
                 </div>
-                <textarea rows={9} placeholder="Viết nội dung bài…" style={{ width: '100%', minHeight: '190px', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '13px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.65, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
-                <div style={{ display: 'flex', marginTop: '6px' }}><span style={{ fontSize: '10.5px', color: '#57534b' }}>Hỗ trợ Markdown — ## mục, **đậm**, - danh sách, [link](url)</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>0 từ</span></div>
+                <ReactQuill 
+                  theme="snow" 
+                  value={blogContent} 
+                  onChange={setBlogContent} 
+                  placeholder="Viết nội dung bài..."
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      ['link', 'image'],
+                      ['clean']
+                    ],
+                  }}
+                />
+                <div style={{ display: 'flex', marginTop: '6px' }}><span style={{ fontSize: '10.5px', color: '#57534b' }}>Hỗ trợ phong phú — Tiêu đề, In đậm, Danh sách, Hình ảnh, Link</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>{blogContent.length > 0 ? blogContent.split(/\s+/).length : 0} từ</span></div>
               </div>
             </div>
+            
+            <style>{`
+              .ql-toolbar.ql-snow {
+                border: 1px solid rgba(255,255,255,.1);
+                border-top-left-radius: 11px;
+                border-top-right-radius: 11px;
+                background: rgba(255,255,255,.04);
+                padding: 10px;
+              }
+              .ql-container.ql-snow {
+                border: 1px solid rgba(255,255,255,.1);
+                border-bottom-left-radius: 11px;
+                border-bottom-right-radius: 11px;
+                border-top: none;
+                background: rgba(12,12,15,.55);
+                color: #f3f0ea;
+                font-family: inherit;
+                font-size: 14px;
+                min-height: 190px;
+              }
+              .ql-editor {
+                min-height: 190px;
+                line-height: 1.65;
+              }
+              .ql-snow .ql-stroke { stroke: #c5c0b6; }
+              .ql-snow .ql-fill { fill: #c5c0b6; }
+              .ql-snow .ql-picker { color: #c5c0b6; }
+              .ql-editor.ql-blank::before { color: #8c8679; font-style: normal; }
+              
+              /* Hover, Focus, Active states for Quill */
+              .ql-snow.ql-toolbar button:hover .ql-stroke, .ql-snow .ql-toolbar button:hover .ql-stroke, 
+              .ql-snow.ql-toolbar button:focus .ql-stroke, .ql-snow .ql-toolbar button:focus .ql-stroke, 
+              .ql-snow.ql-toolbar button.ql-active .ql-stroke, .ql-snow .ql-toolbar button.ql-active .ql-stroke, 
+              .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke, .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke, 
+              .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke, .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke, 
+              .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke, .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke, 
+              .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke, .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke, 
+              .ql-snow.ql-toolbar button:hover .ql-stroke-miter, .ql-snow .ql-toolbar button:hover .ql-stroke-miter, 
+              .ql-snow.ql-toolbar button:focus .ql-stroke-miter, .ql-snow .ql-toolbar button:focus .ql-stroke-miter, 
+              .ql-snow.ql-toolbar button.ql-active .ql-stroke-miter, .ql-snow .ql-toolbar button.ql-active .ql-stroke-miter, 
+              .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke-miter, .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke-miter, 
+              .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter, .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter, 
+              .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke-miter, .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke-miter, 
+              .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter, .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter {
+                stroke: #d4b26a;
+              }
+              .ql-snow.ql-toolbar button:hover .ql-fill, .ql-snow .ql-toolbar button:hover .ql-fill, 
+              .ql-snow.ql-toolbar button:focus .ql-fill, .ql-snow .ql-toolbar button:focus .ql-fill, 
+              .ql-snow.ql-toolbar button.ql-active .ql-fill, .ql-snow .ql-toolbar button.ql-active .ql-fill, 
+              .ql-snow.ql-toolbar .ql-picker-label:hover .ql-fill, .ql-snow .ql-toolbar .ql-picker-label:hover .ql-fill, 
+              .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-fill, .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-fill, 
+              .ql-snow.ql-toolbar .ql-picker-item:hover .ql-fill, .ql-snow .ql-toolbar .ql-picker-item:hover .ql-fill, 
+              .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-fill, .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-fill {
+                fill: #d4b26a;
+              }
+              .ql-snow.ql-toolbar button:hover, .ql-snow .ql-toolbar button:hover, 
+              .ql-snow.ql-toolbar button:focus, .ql-snow .ql-toolbar button:focus, 
+              .ql-snow.ql-toolbar button.ql-active, .ql-snow .ql-toolbar button.ql-active, 
+              .ql-snow.ql-toolbar .ql-picker-label:hover, .ql-snow .ql-toolbar .ql-picker-label:hover, 
+              .ql-snow.ql-toolbar .ql-picker-label.ql-active, .ql-snow .ql-toolbar .ql-picker-label.ql-active, 
+              .ql-snow.ql-toolbar .ql-picker-item:hover, .ql-snow .ql-toolbar .ql-picker-item:hover, 
+              .ql-snow.ql-toolbar .ql-picker-item.ql-selected, .ql-snow .ql-toolbar .ql-picker-item.ql-selected {
+                color: #d4b26a;
+              }
+              .ql-snow .ql-picker-options {
+                background-color: #1a1a24;
+                border-color: rgba(255,255,255,.1);
+              }
+            `}</style>
+            
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
               <span style={{ flex: 1 }}></span>
               <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
