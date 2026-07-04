@@ -387,11 +387,10 @@ const getBaseUrl = () => {
 
 export const getAuthToken = () => {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(^| )nlvn_session=([^;]+)"));
-  if (match) {
+  const match = document.cookie.match(new RegExp("(^| )auth_token=([^;]+)"));
+  if (match && match[2]) {
     try {
-      const payload = JSON.parse(decodeURIComponent(match[2]));
-      return payload.accessToken as string;
+      return decodeURIComponent(match[2]);
     } catch {
       return null;
     }
