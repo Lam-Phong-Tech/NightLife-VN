@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
+import { contentApi } from '@/lib/api/content';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -67,7 +68,12 @@ const mockVideoSearch = [
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog' | null>(null);
+  const [blogTitle, setBlogTitle] = useState('');
+  const [blogCategory, setBlogCategory] = useState('Cẩm nang');
+  const [blogLanguage, setBlogLanguage] = useState('Tiếng Việt');
+  const [blogExcerpt, setBlogExcerpt] = useState('');
   const [blogContent, setBlogContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getCampaignStatusStyle = (status: string) => {
     if (status === 'Đang chạy') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
@@ -87,6 +93,40 @@ export default function AdminContentPage() {
   };
 
   const closeDrawer = () => setIsAdding(null);
+
+  const handleSaveBlog = async (status: 'DRAFT' | 'PUBLISHED') => {
+    if (!blogTitle.trim()) {
+      alert('Vui lòng nhập tiêu đề bài viết!');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await contentApi.adminCreate({
+        type: 'BLOG',
+        title: blogTitle,
+        status,
+        excerpt: blogExcerpt,
+        body: blogContent,
+        metadata: {
+          category: blogCategory,
+          language: blogLanguage,
+        }
+      });
+      alert(status === 'DRAFT' ? 'Đã lưu nháp thành công!' : 'Đã đăng bài thành công!');
+      closeDrawer();
+      setBlogTitle('');
+      setBlogCategory('Cẩm nang');
+      setBlogLanguage('Tiếng Việt');
+      setBlogExcerpt('');
+      setBlogContent('');
+    } catch (error) {
+      console.error('Failed to save blog:', error);
+      alert('Có lỗi xảy ra khi lưu bài viết. Vui lòng thử lại!');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const renderDrawerContent = () => {
     if (isAdding === 'campaign') {
@@ -497,25 +537,52 @@ export default function AdminContentPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tiêu đề bài viết</div>
-                <input placeholder="VD: Top 10 lounge lãng mạn cho buổi hẹn tại Hà Nội" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
-                <div style={{ fontSize: '11px', color: '#57534b', marginTop: '7px' }}>vietyoru.vn/blog/<span style={{ color: '#b99a55' }}>tieu-de-bai-viet</span></div>
+                <input value={blogTitle} onChange={e => setBlogTitle(e.target.value)} placeholder="VD: Top 10 lounge lãng mạn cho buổi hẹn tại Hà Nội" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                <div style={{ fontSize: '11px', color: '#57534b', marginTop: '7px' }}>vietyoru.vn/blog/<span style={{ color: '#b99a55' }}>{blogTitle ? blogTitle.toLowerCase().replace(/\s+/g, '-') : 'tieu-de-bai-viet'}</span></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Chuyên mục</div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '6px 14px', borderRadius: '9px', cursor: 'pointer' }}>Cẩm nang</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>Hướng dẫn</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>Blog</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>Tin tức</span>
+                    {['Cẩm nang', 'Hướng dẫn', 'Blog', 'Tin tức'].map(cat => (
+                      <span 
+                        key={cat}
+                        onClick={() => setBlogCategory(cat)}
+                        style={{ 
+                          fontSize: '12.5px', 
+                          fontWeight: blogCategory === cat ? 700 : 600, 
+                          color: blogCategory === cat ? '#241a0a' : '#9b958a', 
+                          background: blogCategory === cat ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.03)', 
+                          border: blogCategory === cat ? 'none' : '1px solid rgba(255,255,255,.08)', 
+                          padding: blogCategory === cat ? '6px 14px' : '5px 13px', 
+                          borderRadius: '9px', cursor: 'pointer' 
+                        }}
+                      >
+                        {cat}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Ngôn ngữ hiển thị</div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '6px 14px', borderRadius: '9px', cursor: 'pointer' }}>Tiếng Việt</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>English</span>
-                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>日本語</span>
+                    {['Tiếng Việt', 'English', '日本語', '한국어', '中文'].map(lang => (
+                      <span 
+                        key={lang}
+                        onClick={() => setBlogLanguage(lang)}
+                        style={{ 
+                          fontSize: '12.5px', 
+                          fontWeight: blogLanguage === lang ? 700 : 600, 
+                          color: blogLanguage === lang ? '#241a0a' : '#9b958a', 
+                          background: blogLanguage === lang ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.03)', 
+                          border: blogLanguage === lang ? 'none' : '1px solid rgba(255,255,255,.08)', 
+                          padding: blogLanguage === lang ? '6px 14px' : '5px 13px', 
+                          borderRadius: '9px', cursor: 'pointer' 
+                        }}
+                      >
+                        {lang}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -528,8 +595,8 @@ export default function AdminContentPage() {
                 </div>
               </div>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}><span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Mô tả ngắn</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>0 / 160</span></div>
-                <textarea rows={2} placeholder="1–2 câu tóm tắt — hiển thị dưới tiêu đề trên trang chủ và kết quả tìm kiếm…" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.55, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}><span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Mô tả ngắn</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>{blogExcerpt.length} / 160</span></div>
+                <textarea value={blogExcerpt} onChange={e => setBlogExcerpt(e.target.value.slice(0, 160))} rows={2} placeholder="1–2 câu tóm tắt — hiển thị dưới tiêu đề trên trang chủ và kết quả tìm kiếm…" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.55, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
@@ -626,8 +693,8 @@ export default function AdminContentPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
               <span style={{ flex: 1 }}></span>
               <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#e3c27e', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.38)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>Lưu nháp</span>
-              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>Đăng bài</span>
+              <span onClick={() => !isSubmitting && handleSaveBlog('DRAFT')} style={{ fontSize: '12.5px', fontWeight: 700, color: '#e3c27e', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.38)', padding: '10px 17px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : 'Lưu nháp'}</span>
+              <span onClick={() => !isSubmitting && handleSaveBlog('PUBLISHED')} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 17px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : 'Đăng bài'}</span>
             </div>
           </div>
         </div>
