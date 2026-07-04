@@ -302,6 +302,7 @@ model User {
   auditLogs                     AuditLog[]             @relation("AuditLogActor")
   revokedTokens                 TokenBlacklist[]
   sessions                      UserSession[]
+  passwordResetTokens           PasswordResetToken[]
   storePermissions              StorePermission[]
   favoriteCasts                 MemberFavoriteCast[]
   createdAt                     DateTime               @default(now()) @map("created_at")
@@ -1077,6 +1078,25 @@ model TokenBlacklist {
   @@index([userId])
   @@index([expiresAt])
   @@map("token_blacklist")
+}
+
+model PasswordResetToken {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email          String
+  codeHash       String    @map("code_hash")
+  resetTokenHash String?   @map("reset_token_hash")
+  expiresAt      DateTime  @map("expires_at")
+  verifiedAt     DateTime? @map("verified_at")
+  usedAt         DateTime? @map("used_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model StorePermission {

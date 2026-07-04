@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailNotificationService } from '../notifications/email-notification.service';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 
@@ -24,6 +25,7 @@ describe('AuthService', () => {
     findByEmail: jest.fn(),
     validateCredentials: jest.fn(),
     findByIdOrThrow: jest.fn(),
+    updatePassword: jest.fn(),
     toPublicUser: jest.fn((value) => ({
       id: value.id,
       email: value.email,
@@ -55,11 +57,21 @@ describe('AuthService', () => {
     tokenBlacklist: {
       upsert: jest.fn(),
     },
+    passwordResetToken: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
     userSession: {
       create: jest.fn(),
       updateMany: jest.fn(),
     },
   } as unknown as jest.Mocked<PrismaService>;
+
+  const emailNotificationService = {
+    sendPasswordResetCodeEmail: jest.fn(),
+  } as unknown as jest.Mocked<EmailNotificationService>;
 
   let service: AuthService;
   const originalFetch = global.fetch;
@@ -122,7 +134,13 @@ describe('AuthService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useDefaultConfig();
-    service = new AuthService(configService, jwtService, usersService, prisma);
+    service = new AuthService(
+      configService,
+      jwtService,
+      usersService,
+      prisma,
+      emailNotificationService,
+    );
   });
 
   afterEach(() => {
@@ -519,6 +537,113 @@ describe('AuthService', () => {
       where: {
         userId: 'user-1',
         jti: 'token-id',
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: expect.any(Date),
+        lastSeenAt: expect.any(Date),
+      },
+    });
+  });
+
+  it('sends, verifies, and completes a password reset within 15 minutes', async () => {
+    const member = {
+      ...user,
+      id: 'member-reset-1',
+      email: 'member@nightlife.vn',
+      displayName: 'Reset Member',
+      role: 'USER',
+      tier: 'FREE',
+      status: 'ACTIVE',
+      deletedAt: null,
+    };
+    const tokenRecord = {
+      id: 'reset-token-1',
+      userId: member.id,
+      email: member.email,
+      codeHash: '',
+      resetTokenHash: null,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      verifiedAt: null,
+      usedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: member,
+    };
+
+    usersService.findByEmail.mockResolvedValue(member as never);
+    prisma.passwordResetToken.create.mockImplementation(async (args) => {
+      tokenRecord.codeHash = String(args.data.codeHash);
+      tokenRecord.expiresAt = args.data.expiresAt as Date;
+      return tokenRecord as never;
+    });
+    prisma.passwordResetToken.updateMany.mockResolvedValue({ count: 1 });
+    prisma.passwordResetToken.update.mockImplementation(async (args) => {
+      if (args.data.resetTokenHash) {
+        tokenRecord.resetTokenHash = String(args.data.resetTokenHash);
+        tokenRecord.verifiedAt = args.data.verifiedAt as Date;
+      }
+
+      return tokenRecord as never;
+    });
+    emailNotificationService.sendPasswordResetCodeEmail.mockResolvedValue({
+      messageId: 'mail-1',
+    });
+
+    await expect(
+      service.requestPasswordReset({ email: ' Member@Nightlife.vn ' }),
+    ).resolves.toEqual({
+      message:
+        'Nếu email tồn tại, mã xác nhận đã được gửi và có hiệu lực trong 15 phút.',
+      expiresInMinutes: 15,
+    });
+
+    const resetCode =
+      emailNotificationService.sendPasswordResetCodeEmail.mock.calls[0][0].code;
+    expect(resetCode).toMatch(/^\d{6}$/);
+    expect(prisma.passwordResetToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: member.id,
+        email: member.email,
+        codeHash: expect.any(String),
+        expiresAt: expect.any(Date),
+      }),
+    });
+
+    prisma.passwordResetToken.findFirst.mockResolvedValue(tokenRecord as never);
+    const verifyResponse = await service.verifyPasswordResetCode({
+      email: member.email,
+      code: resetCode,
+    });
+    expect(verifyResponse.resetToken).toMatch(/^[a-f0-9]{64}$/);
+    expect(tokenRecord.resetTokenHash).toEqual(expect.any(String));
+
+    usersService.updatePassword.mockResolvedValue(member as never);
+    prisma.userSession.updateMany.mockResolvedValue({ count: 2 });
+
+    await expect(
+      service.resetPassword({
+        email: member.email,
+        resetToken: verifyResponse.resetToken,
+        password: 'NewStr0ngPass!',
+        confirmPassword: 'NewStr0ngPass!',
+      }),
+    ).resolves.toEqual({ updated: true });
+    expect(usersService.updatePassword).toHaveBeenCalledWith(
+      member.id,
+      'NewStr0ngPass!',
+    );
+    expect(prisma.passwordResetToken.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: member.id,
+        usedAt: null,
+      },
+      data: { usedAt: expect.any(Date) },
+    });
+    expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: member.id,
+        status: 'ACTIVE',
       },
       data: {
         status: 'REVOKED',

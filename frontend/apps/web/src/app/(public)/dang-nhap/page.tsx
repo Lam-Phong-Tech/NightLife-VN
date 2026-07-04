@@ -73,6 +73,24 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+function getInitialQueryMessage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("reset") === "success") {
+    return {
+      tone: "success" as const,
+      text: "Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.",
+    };
+  }
+
+  const lineError = translateApiMessage(params.get("line_error"), undefined, "");
+  return lineError ? { tone: "error" as const, text: lineError } : null;
+}
+
 function validateAuthForm({
   isReg,
   displayName,
@@ -145,15 +163,7 @@ export default function Page() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState(() => {
-    if (typeof window === "undefined") return "";
-
-    return translateApiMessage(
-      new URLSearchParams(window.location.search).get("line_error"),
-      undefined,
-      "",
-    );
-  });
+  const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
@@ -162,6 +172,7 @@ export default function Page() {
   const [googleReadyClientId, setGoogleReadyClientId] = useState("");
   const [isLineConfigLoading, setIsLineConfigLoading] = useState(true);
   const [isLineConfigured, setIsLineConfigured] = useState(false);
+  const [queryMessage] = useState(getInitialQueryMessage);
   const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const isGoogleReady = googleReadyClientId === googleClientId && Boolean(googleClientId);
   const redirectTo = useMemo(() => {
@@ -180,6 +191,8 @@ export default function Page() {
   const subtitle = isReg
     ? "Tạo tài khoản để lưu ưu đãi, lịch đặt chỗ và điểm tích luỹ."
     : "Tiếp tục đặt chỗ, lưu quán yêu thích và quản lý mã ưu đãi.";
+  const visibleMessage = message || queryMessage?.text || "";
+  const visibleMessageTone = message ? messageTone : (queryMessage?.tone ?? messageTone);
 
   const switchMode = (nextIsReg: boolean) => {
     setIsReg(nextIsReg);
@@ -665,16 +678,32 @@ export default function Page() {
                   />
                 ) : null}
 
-                {message ? (
+                {!isReg ? (
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
+                    <Link
+                      href={`/quen-mat-khau${email.trim() ? `?email=${encodeURIComponent(normalizeEmail(email))}` : ""}`}
+                      style={{
+                        color: colors.goldPale,
+                        fontSize: 12.5,
+                        fontWeight: 850,
+                        textDecoration: "none",
+                      }}
+                    >
+                      Quên mật khẩu?
+                    </Link>
+                  </div>
+                ) : null}
+
+                {visibleMessage ? (
                   <div
                     style={{
-                      color: messageTone === "success" ? colors.success : colors.danger,
+                      color: visibleMessageTone === "success" ? colors.success : colors.danger,
                       background:
-                        messageTone === "success"
+                        visibleMessageTone === "success"
                           ? "rgba(134,239,172,.10)"
                           : "rgba(252,165,165,.08)",
                       border:
-                        messageTone === "success"
+                        visibleMessageTone === "success"
                           ? "1px solid rgba(134,239,172,.28)"
                           : "1px solid rgba(252,165,165,.24)",
                       borderRadius: 12,
@@ -683,7 +712,7 @@ export default function Page() {
                       lineHeight: 1.5,
                     }}
                   >
-                    {message}
+                    {visibleMessage}
                   </div>
                 ) : null}
 
