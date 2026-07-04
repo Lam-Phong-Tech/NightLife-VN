@@ -82,6 +82,7 @@ export default function AdminContentPage() {
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+  const [showVideoToast, setShowVideoToast] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -339,7 +340,16 @@ export default function AdminContentPage() {
         </div>
 
         <button 
-          onClick={() => setIsAdding(activeTab)}
+          onClick={() => {
+            if (activeTab === 'video') {
+              setShowVideoToast(true);
+              setTimeout(() => setShowVideoToast(false), 3000);
+              const searchInput = document.getElementById('video-search-input');
+              if (searchInput) searchInput.focus();
+            } else {
+              setIsAdding(activeTab);
+            }
+          }}
           style={{
             height: '40px', display: 'flex', alignItems: 'center', gap: '8px',
             background: colors.goldGrad, color: colors.onGold, border: 'none', padding: '0 20px',
@@ -347,7 +357,7 @@ export default function AdminContentPage() {
           }}
         >
           <Plus size={18} strokeWidth={3} />
-          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video' : 'Viết bài'}
+          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : 'Viết bài'}
         </button>
       </div>
 
@@ -438,10 +448,15 @@ export default function AdminContentPage() {
               Chưa có bài viết nào
             </div>
           ) : blogs.map((blog) => (
-            <div key={blog.id} style={{ 
-              background: colors.surface1, border: `1px solid ${colors.borderSoft}`, 
-              borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px'
-            }}>
+            <div 
+              key={blog.id} 
+              onClick={() => window.open(`/blog/${blog.slug}`, '_blank')}
+              style={{ 
+                background: colors.surface1, border: `1px solid ${colors.borderSoft}`, 
+                borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px',
+                cursor: 'pointer'
+              }}
+            >
               <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: '#271932', flexShrink: 0 }}></div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, color: colors.text, margin: '0 0 6px 0' }}>{blog.title}</h3>
@@ -537,7 +552,7 @@ export default function AdminContentPage() {
           <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
               <Search size={15} color="#8c8679" />
-              <input placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+              <input id="video-search-input" placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
               {mockVideoSearch.map(vr => (
@@ -847,6 +862,30 @@ export default function AdminContentPage() {
           </div>
         </div>
       )}
+
+      {/* VIDEO TOAST */}
+      <div style={{
+        position: 'fixed',
+        bottom: showVideoToast ? '40px' : '-100px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(20, 20, 25, 0.95)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '30px',
+        padding: '12px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+        transition: 'bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        zIndex: 1000
+      }}>
+        <div style={{ color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <span style={{ color: '#f3f0ea', fontSize: '14px', fontWeight: 600 }}>Dùng ô tìm kiếm phía dưới để thêm</span>
+      </div>
 
     </div>
   );
