@@ -13473,9 +13473,7 @@ export class NightlifeDataService {
     }
 
     let areaId: string | undefined;
-    if (dto.address) {
-      areaId = await this.inferAreaFromAddress(dto.address, dto.city);
-    }
+    areaId = await this.inferAreaFromAddress(dto.address || '', dto.city);
 
     const newStore = await this.prisma.store.create({
       data: {
@@ -13506,9 +13504,10 @@ export class NightlifeDataService {
     id: string,
     dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
   ) {
+    const existing = await this.prisma.store.findUniqueOrThrow({ where: { id } });
     let areaId: string | undefined;
-    if (dto.address && dto.city) {
-      areaId = await this.inferAreaFromAddress(dto.address, dto.city);
+    if (dto.address !== undefined || dto.city) {
+      areaId = await this.inferAreaFromAddress(dto.address || existing.address || '', dto.city || existing.city);
     }
 
     const updated = await this.prisma.store.update({

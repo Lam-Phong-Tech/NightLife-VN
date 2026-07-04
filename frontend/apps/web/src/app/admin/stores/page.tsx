@@ -136,12 +136,18 @@ export default function AdminStoresPage() {
         mediaIds: [...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
       
+      if (!formData.name || formData.name.trim() === '') {
+        showToast('Vui lòng nhập tên quán!');
+        return;
+      }
+      
+      if (!formData.address || formData.address.trim() === '') {
+        showToast('Vui lòng nhập địa chỉ quán!');
+        return;
+      }
+
       if (venueSel === 'new') {
         const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        if (!generatedSlug) {
-          showToast('Vui lòng nhập tên quán!');
-          return;
-        }
         
         setSlugStatus('checking');
         const checkRes = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);

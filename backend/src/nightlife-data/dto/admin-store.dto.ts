@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, IsEnum, IsArray, IsObject } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsEnum, IsArray, IsObject, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { StoreCategory, StoreStatus } from '@prisma/client';
 
@@ -34,9 +34,9 @@ export class CreateAdminStoreDto {
   @IsString()
   city: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  address?: string;
+  address: string;
 
   @IsOptional()
   @IsString()
