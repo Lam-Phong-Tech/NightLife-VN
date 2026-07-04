@@ -26,7 +26,7 @@ export function MobileSimulator() {
             document.cookie = "device_preference=; path=/; max-age=0";
             window.location.href = "/chon-giao-dien";
           }}
-          className="flex cursor-pointer items-center gap-2 rounded-full border border-[rgba(212,178,106,0.24)] bg-[rgba(8,8,11,0.86)] px-4 py-2 text-sm font-bold text-[#d4b26a] shadow-lg backdrop-blur-md transition-colors hover:text-[#f0dda8]"
+          className="flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
         >
           <Monitor size={16} />
           <span>Thoát giả lập</span>
