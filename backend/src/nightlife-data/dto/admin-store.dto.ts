@@ -71,19 +71,6 @@ export class CreateAdminStoreDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
 }
 
 export class UpdateAdminStoreDto {
