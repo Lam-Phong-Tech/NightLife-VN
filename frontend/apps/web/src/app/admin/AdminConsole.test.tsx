@@ -197,6 +197,30 @@ const partnerBills = [
 
 const adminStores = [{ id: "store-1", name: "Neon Club", slug: "neon-club" }];
 
+const adminCasts = [
+  {
+    id: "cast-1",
+    stageName: "Mika",
+    storeId: "store-1",
+    status: "ACTIVE",
+    isPublic: true,
+    zodiacSign: "Leo",
+    languages: ["VN", "EN"],
+    tags: ["host"],
+    store: { id: "store-1", name: "Neon Club" },
+  },
+  {
+    id: "cast-2",
+    stageName: "Airi",
+    storeId: "store-1",
+    status: "DRAFT",
+    isPublic: false,
+    languages: ["JP"],
+    tags: ["new"],
+    store: { id: "store-1", name: "Neon Club" },
+  },
+];
+
 const revenueReport = {
   filters: {
     from: "2026-06-30T17:00:00.000Z",
@@ -361,6 +385,7 @@ describe("AdminConsole coupon issue panel", () => {
   beforeEach(() => {
     mocks.apiClient.mockImplementation(async (path: string) => {
       if (path === "/partner/stores") return adminStores;
+      if (path === "/admin/casts") return { data: adminCasts, total: adminCasts.length, page: 1, limit: 100 };
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return [];
       if (path === "/partner/bills") return partnerBills;
@@ -393,9 +418,22 @@ describe("AdminConsole coupon issue panel", () => {
     vi.clearAllMocks();
   });
 
+  it("renders the cast section from the admin casts backend endpoint", async () => {
+    render(<AdminConsole section="cast" />);
+
+    await screen.findByText(/^Mika/);
+
+    expect(mocks.apiClient).toHaveBeenCalledWith("/admin/casts", { params: { limit: 100 } });
+    expect(screen.getByText(/^Airi/)).toBeInTheDocument();
+    expect(screen.getAllByText("Neon Club").length).toBeGreaterThan(0);
+    expect(screen.getByText("VN · EN · host")).toBeInTheDocument();
+    expect(screen.queryByText(/Michi/)).not.toBeInTheDocument();
+  });
+
   it("sends booking, coupon, and coupon issue filters to the sensitive bill endpoint", async () => {
     mocks.apiClient.mockImplementation(async (path: string) => {
       if (path === "/partner/stores") return adminStores;
+      if (path === "/admin/casts") return { data: adminCasts, total: adminCasts.length, page: 1, limit: 100 };
       if (path === "/partner/bookings") return [];
       if (path === "/admin/sensitive-bills") return sensitiveBills;
       if (path === "/partner/bills") return partnerBills;

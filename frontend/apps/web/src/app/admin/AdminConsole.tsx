@@ -105,6 +105,19 @@ type AdminStore = {
   status: string;
 };
 
+type AdminCast = {
+  id: string;
+  stageName: string;
+  storeId?: string | null;
+  status: string;
+  isPublic?: boolean | null;
+  birthMonth?: number | null;
+  zodiacSign?: string | null;
+  tags?: string[];
+  languages?: string[];
+  store?: { id?: string; name: string } | null;
+};
+
 type AdminBooking = {
   id: string;
   status: string;
@@ -388,6 +401,7 @@ type AdminCounts = {
   bill: number;
   partners: number;
   stores: number;
+  cast: number;
   ranking: number;
   blog: number;
   campaign: number;
@@ -554,6 +568,23 @@ const normalizeRevenueReport = (value: unknown): RevenueReport => {
   };
 };
 
+const normalizeAdminCastList = (value: unknown): AdminCast[] => {
+  if (Array.isArray(value)) return value as AdminCast[];
+  if (!value || typeof value !== "object") return [];
+
+  const payload = value as { data?: unknown; items?: unknown };
+  if (Array.isArray(payload.data)) return payload.data as AdminCast[];
+  if (Array.isArray(payload.items)) return payload.items as AdminCast[];
+
+  if (payload.data && typeof payload.data === "object") {
+    const nested = payload.data as { data?: unknown; items?: unknown };
+    if (Array.isArray(nested.data)) return nested.data as AdminCast[];
+    if (Array.isArray(nested.items)) return nested.items as AdminCast[];
+  }
+
+  return [];
+};
+
 const sectionToView: Record<string, AdminView> = {
   dashboard: "dashboard",
   tongquan: "dashboard",
@@ -597,7 +628,7 @@ const navGroups: Array<{ title: string; items: AdminNavItem[] }> = [
     title: "Nội dung",
     items: [
       { view: "stores", href: "/admin/quan", icon: Building2, label: "Quán / Địa điểm", badge: "stores" },
-      { view: "cast", href: "/admin/cast", icon: UsersRound, label: "Cast" },
+      { view: "cast", href: "/admin/cast", icon: UsersRound, label: "Cast", badge: "cast" },
       { view: "media", href: "/admin/media", icon: Camera, label: "Thư viện media" },
       { view: "campaign", href: "/admin/campaign", icon: TicketPercent, label: "Campaign / Ưu đãi", badge: "campaign" },
       { view: "blog", href: "/admin/blog", icon: Newspaper, label: "Blog / Nội dung", badge: "blog" },
@@ -729,14 +760,6 @@ const sampleBookings: Array<[string, string, string, string, string]> = [
   ["Yuki T.", "KTV Hoàng Gia · Michi", "2", "20:00", "Hoàn tất"],
   ["Tuấn A.", "Sakura Lounge", "6", "22:00", "Mới"],
   ["Kenji M.", "Roppongi Night", "3", "23:00", "Đã hủy"],
-];
-
-const sampleCast = [
-  ["Michi · 23", "Club Lumiere", "Nhật · Việt", "Hiển thị"],
-  ["Yuki · 24", "KTV Hoàng Gia", "Việt · Anh", "Hiển thị"],
-  ["Rina · 21", "Sakura Lounge", "Việt", "Hiển thị"],
-  ["Hana · 22", "Hanoi Velvet", "Nhật · Việt", "Hiển thị"],
-  ["Aoi · 24", "Spa Hồng Ngọc", "Việt · Anh", "Ẩn"],
 ];
 
 const sampleMedia = [
@@ -1686,6 +1709,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const activeView = resolveAdminView(section ?? focusedTab ?? pathSection);
 
   const [stores, setStores] = useState<AdminStore[]>([]);
+  const [casts, setCasts] = useState<AdminCast[]>([]);
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [sensitiveBills, setSensitiveBills] = useState<SensitiveBill[]>([]);
   const [reportBills, setReportBills] = useState<SensitiveBill[]>([]);
@@ -1763,6 +1787,7 @@ export default function AdminConsole({ section }: { section?: string }) {
     try {
       const [
         storeData,
+        castData,
         bookingData,
         billData,
         reportBillData,
@@ -1776,6 +1801,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         commissionOverrideData,
       ] = await Promise.all([
         apiClient<AdminStore[]>("/partner/stores"),
+        apiClient<AdminCast[] | { data: AdminCast[] }>("/admin/casts", { params: { limit: 100 } }),
         apiClient<AdminBooking[]>("/partner/bookings"),
         apiClient<SensitiveBill[]>(
           "/admin/sensitive-bills",
@@ -1798,6 +1824,7 @@ export default function AdminConsole({ section }: { section?: string }) {
       ]);
 
       setStores(storeData);
+      setCasts(normalizeAdminCastList(castData));
       setBookings(bookingData);
       setSensitiveBills(billData);
       setReportBills(reportBillData);
@@ -2058,11 +2085,21 @@ export default function AdminConsole({ section }: { section?: string }) {
       bill: sensitiveBills.length,
       partners: partnerRequests.length,
       stores: stores.length,
+      cast: casts.length,
       ranking: rankings.length,
       blog: contentItems.length,
       campaign: couponIssues.length,
     }),
-    [bookings, contentItems.length, couponIssues.length, partnerRequests.length, rankings.length, sensitiveBills.length, stores.length],
+    [
+      bookings,
+      casts.length,
+      contentItems.length,
+      couponIssues.length,
+      partnerRequests.length,
+      rankings.length,
+      sensitiveBills.length,
+      stores.length,
+    ],
   );
   const adminBookingRows: AdminBookingRow[] = orderedBookings.length
     ? orderedBookings.slice(0, activeView === "booking" ? 12 : 5).map((booking) => ({
@@ -2961,8 +2998,11 @@ export default function AdminConsole({ section }: { section?: string }) {
           <span>Tổng tiền</span>
           <span>Duyệt</span>
         </div>
-        {orderedSensitiveBills.slice(0, activeView === "bill" ? 12 : 6).map((bill) => (
-          <div
+        {orderedSensitiveBills.slice(0, activeView === "bill" ? 12 : 6).map((bill) => {
+          const preview = billPreviews[bill.id];
+
+          return (
+            <div
             key={bill.id}
             data-testid={`admin-sensitive-bill-row-${bill.id}`}
             style={{
@@ -3041,11 +3081,11 @@ export default function AdminConsole({ section }: { section?: string }) {
                   Commission {formatMoney(bill.commissionAmountVnd)}
                 </span>
               ) : null}
-              {billPreviews[bill.id] ? (
+              {preview ? (
                 <span style={{ display: "block", marginTop: 6, color: colors.goldBright, fontSize: 11 }}>
-                  Preview: Net {formatMoney(billPreviews[bill.id].netRevenueVnd)} · Payable{" "}
-                  {formatMoney(billPreviews[bill.id].payableVnd)} · Commission{" "}
-                  {formatMoney(billPreviews[bill.id].commissionAmountVnd)}
+                  Preview: Net {formatMoney(preview.netRevenueVnd)} · Payable{" "}
+                  {formatMoney(preview.payableVnd)} · Commission{" "}
+                  {formatMoney(preview.commissionAmountVnd)}
                 </span>
               ) : null}
             </span>
@@ -3087,9 +3127,32 @@ export default function AdminConsole({ section }: { section?: string }) {
                   Reverse
                 </button>
               ) : null}
+              {bill.status === "PENDING_PM_BA" ? (
+                <button
+                  type="button"
+                  disabled={reviewingId === bill.id}
+                  onClick={() => void confirmNegativeBill(bill.id)}
+                  style={buttonStyle("primary")}
+                >
+                  <ShieldCheck size={14} />
+                  PM/BA
+                </button>
+              ) : null}
+              {["VERIFIED", "PAID", "PENDING_PM_BA"].includes(bill.status) ? (
+                <button
+                  type="button"
+                  disabled={reviewingId === bill.id}
+                  onClick={() => void voidBill(bill.id)}
+                  style={buttonStyle("danger")}
+                >
+                  <Trash2 size={14} />
+                  Void
+                </button>
+              ) : null}
             </span>
-          </div>
-        ))}
+            </div>
+          );
+        })}
         {!orderedSensitiveBills.length ? <EmptyState>Chưa có hóa đơn nhạy cảm cần xử lý.</EmptyState> : null}
       </div>
     </Panel>
@@ -3276,28 +3339,6 @@ export default function AdminConsole({ section }: { section?: string }) {
               >
                 Tá»« chá»‘i
               </button>
-              {bill.status === "PENDING_PM_BA" ? (
-                <button
-                  type="button"
-                  disabled={reviewingId === bill.id}
-                  onClick={() => void confirmNegativeBill(bill.id)}
-                  style={buttonStyle("primary")}
-                >
-                  <ShieldCheck size={14} />
-                  PM/BA
-                </button>
-              ) : null}
-              {["VERIFIED", "PAID", "PENDING_PM_BA"].includes(bill.status) ? (
-                <button
-                  type="button"
-                  disabled={reviewingId === bill.id}
-                  onClick={() => void voidBill(bill.id)}
-                  style={buttonStyle("danger")}
-                >
-                  <Trash2 size={14} />
-                  Void
-                </button>
-              ) : null}
             </span>
             </span>
           </div>
@@ -3893,60 +3934,80 @@ export default function AdminConsole({ section }: { section?: string }) {
     </div>
   );
 
-  const renderCast = () => (
-    <div style={{ display: "grid", gap: 18 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(170px,1fr))", gap: 14 }}>
-        <MetricCard icon={UsersRound} label="Cast" value="356" note="mốc wireframe" />
-        <MetricCard icon={Star} label="Top ranking" value={String(rankings.filter((item) => item.targetType === "CAST").length)} note="đang ghim thủ công" hot />
-        <MetricCard icon={Building2} label="Quán liên kết" value={String(stores.length)} note="store scope" />
-      </div>
-      <Panel>
-        <div style={{ padding: 18 }}>
-          <SectionTitle title="Danh sách cast" eyebrow="CAST DIRECTORY" />
+  const renderCast = () => {
+    const activePublicCasts = casts.filter((cast) => cast.status === "ACTIVE" && cast.isPublic !== false).length;
+    const linkedStoreCount = new Set(casts.map((cast) => cast.store?.id ?? cast.storeId).filter(Boolean)).size;
+    const visibleCasts = casts.slice(0, 50);
+
+    return (
+      <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(170px,1fr))", gap: 14 }}>
+          <MetricCard icon={UsersRound} label="Cast" value={String(casts.length)} note="hồ sơ hiện có" />
+          <MetricCard icon={Star} label="Đang hiển thị" value={String(activePublicCasts)} note="ACTIVE + public" hot />
+          <MetricCard icon={Building2} label="Quán liên kết" value={String(linkedStoreCount)} note="theo hồ sơ cast" />
         </div>
-        <div style={{ minWidth: 780, overflowX: "auto" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr .9fr .8fr",
-              padding: "12px 18px",
-              color: colors.muted,
-              fontSize: 11,
-              fontWeight: 900,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-              borderTop: `1px solid ${colors.borderSoft}`,
-              borderBottom: `1px solid ${colors.borderSoft}`,
-            }}
-          >
-            <span>Tên · Tuổi</span>
-            <span>Quán</span>
-            <span>Tags</span>
-            <span>Trạng thái</span>
+        <Panel>
+          <div style={{ padding: 18 }}>
+            <SectionTitle title="Danh sách cast" eyebrow="CAST DIRECTORY" />
           </div>
-          {sampleCast.map(([name, store, tags, status]) => (
+          <div style={{ minWidth: 780, overflowX: "auto" }}>
             <div
-              key={name}
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr .9fr .8fr",
-                padding: "13px 18px",
+                padding: "12px 18px",
+                color: colors.muted,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+                borderTop: `1px solid ${colors.borderSoft}`,
                 borderBottom: `1px solid ${colors.borderSoft}`,
-                alignItems: "center",
-                color: colors.text2,
-                fontSize: 13,
               }}
             >
-              <span style={{ color: colors.text, fontWeight: 800 }}>{name}</span>
-              <span>{store}</span>
-              <span>{tags}</span>
-              <Badge tone={status}>{status}</Badge>
+              <span>Tên cast</span>
+              <span>Quán</span>
+              <span>Ngôn ngữ / Tags</span>
+              <span>Trạng thái</span>
             </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
-  );
+            {visibleCasts.map((cast) => {
+              const storeName =
+                cast.store?.name ?? stores.find((store) => store.id === cast.storeId)?.name ?? "Chưa gắn quán";
+              const tags = [...(cast.languages ?? []), ...(cast.tags ?? [])].slice(0, 4);
+              const status = cast.status === "ACTIVE" && cast.isPublic === false ? "HIDDEN" : cast.status;
+
+              return (
+                <div
+                  key={cast.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr .9fr .8fr",
+                    padding: "13px 18px",
+                    borderBottom: `1px solid ${colors.borderSoft}`,
+                    alignItems: "center",
+                    color: colors.text2,
+                    fontSize: 13,
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ color: colors.text, fontWeight: 800 }}>
+                    {cast.stageName}
+                    {cast.zodiacSign ? (
+                      <span style={{ color: colors.muted, fontWeight: 700 }}> · {cast.zodiacSign}</span>
+                    ) : null}
+                  </span>
+                  <span>{storeName}</span>
+                  <span>{tags.length ? tags.join(" · ") : "-"}</span>
+                  <Badge tone={status}>{status}</Badge>
+                </div>
+              );
+            })}
+            {!casts.length ? <EmptyState>Chưa có dữ liệu cast từ backend.</EmptyState> : null}
+          </div>
+        </Panel>
+      </div>
+    );
+  };
 
   const renderMedia = () => (
     <div style={{ display: "grid", gap: 18 }}>

@@ -24,6 +24,18 @@ const colors = {
 
 const COMMON_LANGS = ['VN', 'EN', 'JP', 'KR', 'CN'];
 
+const normalizeListResponse = (value: any): any[] => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== 'object') return [];
+  if (Array.isArray(value.data)) return value.data;
+  if (Array.isArray(value.items)) return value.items;
+  if (value.data && typeof value.data === 'object') {
+    if (Array.isArray(value.data.data)) return value.data.data;
+    if (Array.isArray(value.data.items)) return value.data.items;
+  }
+  return [];
+};
+
 export default function AdminCastsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [casts, setCasts] = useState<any[]>([]);
@@ -56,9 +68,7 @@ export default function AdminCastsPage() {
   const fetchCasts = async () => {
     try {
       const res = await apiClient<any>('/admin/casts', { params: { search: search || undefined, limit: 100 } });
-      if (res && res.data) {
-        setCasts(res.data);
-      }
+      setCasts(normalizeListResponse(res));
     } catch (e) {
       console.error(e);
     }
@@ -68,10 +78,7 @@ export default function AdminCastsPage() {
     try {
       // Dùng chung endpoint và cách lấy data y hệt như trang stores/page.tsx
       const res = await apiClient<any>('/admin/stores');
-      let arr = [];
-      if (Array.isArray(res)) arr = res;
-      else if (res && Array.isArray(res.data)) arr = res.data;
-      else if (res && res.data && Array.isArray(res.data.data)) arr = res.data.data;
+      const arr = normalizeListResponse(res);
       
       if (arr.length === 0) {
         setStores([{ id: 'no-data', name: 'Lỗi: API trả về mảng rỗng (0 quán)' }]);
