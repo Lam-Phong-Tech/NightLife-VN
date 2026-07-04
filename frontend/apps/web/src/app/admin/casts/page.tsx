@@ -220,24 +220,31 @@ export default function AdminCastsPage() {
   };
 
   const handleUploadAlbum = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     try {
       setUploadingAlbum(true);
-      const form = new FormData();
-      form.append('file', file);
-      form.append('purpose', 'CAST_PHOTO');
-      form.append('access', 'PUBLIC');
       
-      const res = await apiFormDataClient<any>('/storage/upload', form);
-      if (res && res.id) {
-        setAlbums(prev => [...prev, { id: res.id, url: res.url }]);
-        showToast('Tải ảnh album thành công');
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('purpose', 'CAST_PHOTO');
+        form.append('access', 'PUBLIC');
+        return apiFormDataClient<any>('/storage/upload', form);
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const newAlbums = results.filter(res => res && res.id).map(res => ({ id: res.id, url: res.url }));
+      
+      if (newAlbums.length > 0) {
+        setAlbums(prev => [...prev, ...newAlbums]);
+        showToast(`Tải lên ${newAlbums.length} ảnh thành công`);
       }
     } catch (err: any) {
       showToast('Lỗi tải ảnh: ' + err.message);
     } finally {
       setUploadingAlbum(false);
+      if (albumUploadRef.current) albumUploadRef.current.value = '';
     } 
   };
 
@@ -578,7 +585,7 @@ export default function AdminCastsPage() {
                       <Upload size={14} /> Thêm ảnh
                     </button>
                   </div>
-                  <input type="file" ref={albumUploadRef} style={{ display: 'none' }} accept="image/*" onChange={handleUploadAlbum} />
+                  <input type="file" ref={albumUploadRef} style={{ display: 'none' }} accept="image/*" multiple onChange={handleUploadAlbum} />
                 </div>
                 
                 <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
