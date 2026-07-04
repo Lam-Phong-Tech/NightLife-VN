@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import 'react-quill/dist/quill.snow.css';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
+
+const ReactQuill = dynamic(() => import('react-quill'), { 
+  ssr: false, 
+  loading: () => <div style={{ height: 190, background: 'rgba(12,12,15,.55)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', fontSize: 13, border: '1px solid rgba(255,255,255,.1)' }}>Đang tải Editor...</div>
+});
 
 const getStatusMeta = (status: string) => {
   if (status === 'ACTIVE' || status === 'active' || status === 'Đang hoạt động') return { label: 'Đang hoạt động', style: 'success' };
@@ -40,13 +47,15 @@ export default function AdminStoresPage() {
   const [search, setSearch] = useState('');
   
   // Form State
-  const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE' });
+  const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
   const [hoursForm, setHoursForm] = useState<any>(defaultHours);
   const [slugStatus, setSlugStatus] = useState<string>(''); // '', 'checking', 'ok', 'error'
   
   const [albums, setAlbums] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [menuGroups, setMenuGroups] = useState<any[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const videoUploadRef = useRef<HTMLInputElement>(null);
@@ -89,7 +98,7 @@ export default function AdminStoresPage() {
   };
 
   const openNewDrawer = () => {
-    setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE' });
+    setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
     setHoursForm(defaultHours);
     setAlbums([]);
     setVideos([]);
@@ -98,7 +107,10 @@ export default function AdminStoresPage() {
       { id: 'g2', name: 'Cocktail', items: [] }
     ];
     setMenuGroups(initialGroups);
+    setMenuGroups(initialGroups);
     setActiveMenuGroupId('g1');
+    setTags([]);
+    setTagInput('');
     setVenueSel('new');
   };
 
@@ -116,11 +128,14 @@ export default function AdminStoresPage() {
       city: st.city || 'Ho Chi Minh City', 
       address: st.address || '', 
       mapUrl: st.mapUrl || '', 
+      phone: st.phone || '',
+      description: st.description || '',
       status: mapStatusToEnum(st.status || 'ACTIVE')
     });
     setHoursForm(st.openingHours || defaultHours);
     setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE') || []);
     setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
+    setTags(st.tags || []);
     
     let groups = st.pricingInfo?.groups;
     if (!groups || groups.length === 0) {
@@ -138,6 +153,7 @@ export default function AdminStoresPage() {
     try {
       const payload = {
         ...formData,
+        tags,
         openingHours: hoursForm,
         pricingInfo: { groups: menuGroups },
         mediaIds: [...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
@@ -215,6 +231,23 @@ export default function AdminStoresPage() {
 
   const handleAddYoutubeVideo = async (url: string) => {
     if (!url) return;
+
+    // Validate trùng lặp (trích xuất Video ID để so sánh cho chính xác)
+    const extractYoutubeId = (u: string) => {
+      const match = u.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+      return match ? match[1] : u; // Nếu không lấy được ID, dùng nguyên url để so sánh fallback
+    };
+    
+    const newVideoId = extractYoutubeId(url);
+    const isDuplicate = videos.some(v => {
+      const existingTitle = v.title || '';
+      return existingTitle === url || extractYoutubeId(existingTitle) === newVideoId;
+    });
+
+    if (isDuplicate) {
+      showToast('Video này đã tồn tại trong danh sách!');
+      return;
+    }
     try {
       setUploadingVideo(true);
       const res = await apiClient<any>('/storage/external', {
@@ -468,6 +501,71 @@ export default function AdminStoresPage() {
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Địa chỉ</div>
                   <input style={inputS} placeholder="Số nhà, đường, quận…" value={formData.address} onChange={e => updateForm('address', e.target.value)} />
+                </div>
+                
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Số điện thoại (Tuỳ chọn)</div>
+                  <input style={inputS} placeholder="Nhập số điện thoại…" value={formData.phone} onChange={e => updateForm('phone', e.target.value)} />
+                </div>
+                
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Mô tả quán</div>
+                  <div style={{ borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,.09)' }}>
+                    <ReactQuill 
+                      theme="snow" 
+                      value={formData.description} 
+                      onChange={(val: any) => updateForm('description', val)}
+                      style={{ background: 'rgba(255,255,255,.02)', color: '#f3f0ea' }}
+                    />
+                  </div>
+                  <style dangerouslySetInnerHTML={{__html: `
+                    .ql-toolbar { background: rgba(255,255,255,.03); border: none !important; border-bottom: 1px solid rgba(255,255,255,.08) !important; }
+                    .ql-container { border: none !important; font-size: 13.5px; font-family: inherit; }
+                    .ql-editor { min-height: 120px; }
+                    .ql-stroke { stroke: #c5c0b6 !important; }
+                    .ql-fill { fill: #c5c0b6 !important; }
+                  `}} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Tags / Thẻ nổi bật</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                    {['Club', 'Phòng VIP', 'Hỗ trợ tiếng Nhật', 'DJ hàng đầu', 'Nhạc hay', 'Không gian đẹp', 'Cocktail', 'Rooftop', 'Sang trọng', 'Sôi động'].map(t => (
+                      <span 
+                        key={t}
+                        onClick={() => {
+                          if (!tags.includes(t)) setTags([...tags, t]);
+                        }}
+                        style={{ fontSize: '10.5px', padding: '4px 10px', borderRadius: '14px', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', color: '#c5c0b6', cursor: 'pointer', transition: '0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.1)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,.05)'}
+                      >
+                        + {t}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ ...boxS, display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px' }}>
+                    {tags.map(t => (
+                      <div key={t} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(212,178,106,.15)', border: '1px solid rgba(212,178,106,.3)', color: '#f4e3b4', padding: '4px 8px', borderRadius: '6px', fontSize: '11.5px' }}>
+                        {t}
+                        <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => setTags(tags.filter(tg => tg !== t))}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </span>
+                      </div>
+                    ))}
+                    <input 
+                      style={{ background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '12px', minWidth: '120px', flex: 1 }} 
+                      placeholder="Gõ tag và nhấn Enter..." 
+                      value={tagInput}
+                      onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && tagInput.trim()) {
+                          if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]);
+                          setTagInput('');
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Link Google Maps chỉ đường</div>

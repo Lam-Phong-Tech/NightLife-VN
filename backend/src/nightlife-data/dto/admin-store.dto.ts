@@ -94,6 +94,19 @@ export class UpdateAdminStoreDto {
   status?: StoreStatus;
 
   @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];

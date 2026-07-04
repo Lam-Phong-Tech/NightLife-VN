@@ -1118,40 +1118,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <section className="desktop-about-inline">
               <div className="feature-chips">
-                {[
-                  categoryLabel,
-                  "Phòng VIP riêng",
-                  "Hỗ trợ tiếng Nhật",
-                  "Cocktail signature",
-                  "Karaoke",
-                ].map((chip) => (
+                {[categoryLabel, ...(store.tags || [])].map((chip) => (
                   <span key={chip}>{chip}</span>
                 ))}
               </div>
-              <div className="intro-copy">
-                {introLines.map((line) => (
-                  <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
-                    {line.text}
-                  </p>
-                ))}
-              </div>
+              <div className="intro-copy" dangerouslySetInnerHTML={{ __html: store.description || '<p>Chưa có mô tả quán.</p>' }} />
             </section>
 
             <section className="mobile-about-section">
               <SectionTitle title="Giới thiệu" />
-              <div className="intro-copy">
-                {introLines.map((line) => (
-                  <p key={line.key} lang={line.key === "ja" ? "ja" : "vi"}>
-                    {line.text}
-                  </p>
-                ))}
-              </div>
+              <div className="intro-copy" dangerouslySetInnerHTML={{ __html: store.description || '<p>Chưa có mô tả quán.</p>' }} />
               <div className="feature-chips">
-                {[categoryLabel, "Phòng VIP", "Hỗ trợ tiếng Nhật", "Đặt bàn qua Admin"].map(
-                  (chip) => (
-                    <span key={chip}>{chip}</span>
-                  ),
-                )}
+                {[categoryLabel, ...(store.tags || [])].map((chip) => (
+                  <span key={chip}>{chip}</span>
+                ))}
               </div>
               <div className="language-grid">
                 {languageCards.map((card) => (
