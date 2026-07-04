@@ -13957,6 +13957,7 @@ export class NightlifeDataService {
         orderBy: { createdAt: 'desc' },
         include: {
           _count: { select: { casts: true } },
+          media: true,
         },
       }),
       this.prisma.store.count({ where }),
@@ -13969,22 +13970,16 @@ export class NightlifeDataService {
       else typeLabel = typeLabel.charAt(0) + typeLabel.slice(1).toLowerCase();
 
       return {
+        ...store,
         id: store.id,
         initials: store.name.substring(0, 2).toUpperCase(),
         name: store.name,
-        address: `${store.district ? store.district + ', ' : ''}${store.city === 'Ho Chi Minh City' ? 'TP.HCM' : 'Hà Nội'}`,
+        address: store.address || '',
         type: typeLabel,
         area: store.city === 'Ho Chi Minh City' ? 'HCM' : 'HN',
         commission: '15%',
         casts: store._count.casts,
-        status:
-          store.status === 'ACTIVE'
-            ? 'Đang hoạt động'
-            : store.status === 'DRAFT'
-              ? 'Nháp'
-              : store.status === 'SUSPENDED'
-                ? 'Đang ẩn'
-                : 'Chờ duyệt',
+        status: store.status,
       };
     });
 
