@@ -151,7 +151,7 @@ export default function AdminContentPage() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [searchFeaturedQuery, activeTab]);
+  }, [searchFeaturedQuery, activeTab, featuredCity, featuredCategory]);
 
   const fetchFeaturedItems = async () => {
     try {
@@ -176,7 +176,9 @@ export default function AdminContentPage() {
       const data = await adminRankingsApi.options({
         targetType: 'STORE',
         q,
-        limit: 10
+        limit: 10,
+        city: featuredCity === 'all' ? undefined : (featuredCity as any),
+        category: featuredCategory as any
       });
       setSearchFeaturedItems(data || []);
     } catch (err) {
