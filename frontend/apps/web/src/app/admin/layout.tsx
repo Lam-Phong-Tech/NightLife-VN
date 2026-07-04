@@ -77,7 +77,7 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
     items: [
       { 
         icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l15-6v14l-15-6z"/><path d="M3 11v4a2 2 0 0 0 2 2h1M8 17v3"/></svg>, 
-        label: 'Campaign & Blog', 
+        label: 'Nội dung trang chủ', 
         href: '/admin/content' 
       },
       { 

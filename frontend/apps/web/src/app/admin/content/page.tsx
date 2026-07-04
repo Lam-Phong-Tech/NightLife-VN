@@ -61,8 +61,8 @@ const mockVideoSearch = [
 ];
 
 export default function AdminContentPage() {
-  const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
-  const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog' | null>(null);
+  const [activeTab, setActiveTab] = useState<'banner' | 'featured' | 'video' | 'blog'>('banner');
+  const [isAdding, setIsAdding] = useState<'banner' | 'featured' | 'video' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
   const [blogTitle, setBlogTitle] = useState('');
   const [blogCategory, setBlogCategory] = useState('Cẩm nang');
@@ -385,18 +385,6 @@ export default function AdminContentPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px' }}>
           <button 
-            onClick={() => setActiveTab('campaign')}
-            style={{
-              padding: '8px 24px', borderRadius: '6px', border: 'none', 
-              background: activeTab === 'campaign' ? colors.goldGrad : 'transparent',
-              color: activeTab === 'campaign' ? colors.onGold : colors.muted,
-              fontWeight: activeTab === 'campaign' ? 700 : 500,
-              fontSize: '13px', cursor: 'pointer'
-            }}
-          >
-            Campaign & Discount
-          </button>
-          <button 
             onClick={() => setActiveTab('banner')}
             style={{
               padding: '8px 24px', borderRadius: '6px', border: 'none', 
@@ -464,48 +452,11 @@ export default function AdminContentPage() {
           }}
         >
           <Plus size={18} strokeWidth={3} />
-          {activeTab === 'campaign' ? 'Thêm campaign' : activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : 'Viết bài'}
+          {activeTab === 'banner' ? 'Thêm banner' : activeTab === 'featured' ? 'Thêm dịch vụ' : activeTab === 'video' ? 'Thêm video hot' : 'Viết bài'}
         </button>
       </div>
 
-      {/* CAMPAIGN CONTENT */}
-      {activeTab === 'campaign' && (
-        <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${colors.borderSoft}` }}>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>CHƯƠNG TRÌNH</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>ÁP DỤNG</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>THỜI GIAN</th>
-                <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px', textAlign: 'right' }}>TRẠNG THÁI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockCampaigns.map((camp, idx) => (
-                <tr key={idx} style={{ borderBottom: idx === mockCampaigns.length - 1 ? 'none' : `1px solid ${colors.borderSoft}` }}>
-                  <td style={{ padding: '20px 24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: colors.gold }}>{camp.discount}</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text }}>{camp.name}</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '20px 24px', fontSize: '14px', color: colors.text2 }}>{camp.apply}</td>
-                  <td style={{ padding: '20px 24px', fontSize: '14px', color: colors.text2 }}>{camp.time}</td>
-                  <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                    <span style={{ 
-                      border: getCampaignStatusStyle(camp.status).border, 
-                      color: getCampaignStatusStyle(camp.status).color, 
-                      padding: '4px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, display: 'inline-block'
-                    }}>
-                      {camp.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+
 
       {/* BANNER CONTENT */}
       {activeTab === 'banner' && (
