@@ -162,7 +162,7 @@ export default function AdminRankingsPage() {
 
   const fetchOptions = async (type: 'CAST' | 'STORE') => {
     try {
-      const cityCode = activeTab === 'ALL' ? 'all' : activeTab;
+      const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
       const res = await apiClient<any>('/admin/rankings/options', {
         params: { targetType: type, city: cityCode, limit: 200 }
       });
@@ -219,7 +219,7 @@ export default function AdminRankingsPage() {
   const fetchRankings = async () => {
     setIsLoading(true);
     try {
-      const cityCode = activeTab === 'ALL' ? 'all' : activeTab;
+      const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
       
       const res = await apiClient<any>('/admin/rankings', {
         params: { city: cityCode }
