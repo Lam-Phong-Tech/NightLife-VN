@@ -14,6 +14,7 @@ import { UsersService } from '../users/users.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -325,6 +326,16 @@ export class AuthService {
 
   async me(userId: string) {
     const user = await this.usersService.findByIdOrThrow(userId);
+
+    return this.usersService.toPublicUser(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.usersService.updateProfile(userId, {
+      displayName: dto.displayName,
+      email: dto.email,
+      phone: dto.phone,
+    });
 
     return this.usersService.toPublicUser(user);
   }

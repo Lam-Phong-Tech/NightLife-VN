@@ -44,7 +44,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Define protected paths
-  const memberPaths = ['/tai-khoan', '/da-luu', '/gui-hoa-don', '/vi-uu-dai'];
+  const memberPaths = ['/tai-khoan', '/bao-mat-tai-khoan', '/da-luu', '/gui-hoa-don', '/vi-uu-dai'];
   const isMemberPath = memberPaths.some(p => pathname.startsWith(p));
   const isPartnerPath = pathname.startsWith('/partner');
   const isAdminLoginPath = pathname === '/admin/dang-nhap';

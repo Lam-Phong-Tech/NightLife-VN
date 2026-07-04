@@ -39,19 +39,23 @@ const pointFormatter = new Intl.NumberFormat("vi-VN");
 
 const menuItems = [
   { title: "Lịch sử đặt chỗ", desc: "Theo dõi yêu cầu và trạng thái xác nhận", href: "/lich-su-dat-cho", icon: CalendarDays },
-  { title: "Ví ưu đãi", desc: "Coupon đã lưu và mã sắp hết hạn", href: "/vi-uu-dai", icon: Percent },
   { title: "Hóa đơn của tôi", desc: "Gửi hóa đơn để tích điểm thành viên", href: "/gui-hoa-don", icon: FileText },
   { title: "Quán & Cast đã lưu", desc: "Danh sách yêu thích để đặt lại nhanh", href: "/da-luu", icon: Heart },
-  { title: "Bảo mật tài khoản", desc: "Trạng thái đăng nhập và quyền truy cập", href: "#", icon: ShieldCheck },
+  { title: "Bảo mật tài khoản", desc: "Thông tin cá nhân và quyền truy cập", href: "/bao-mat-tai-khoan", icon: ShieldCheck },
 ];
 
 export default function Page() {
-  const [authUser] = useState<AuthUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getAuthUser();
-  });
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [pointSummary, setPointSummary] = useState<MemberPointSummary | null>(null);
   const [pointSummaryStatus, setPointSummaryStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setAuthUser(getAuthUser());
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Demo Member";
   const accountEmail = authUser?.email || "Chưa đăng nhập";
