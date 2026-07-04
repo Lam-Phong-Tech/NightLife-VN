@@ -145,6 +145,7 @@ export default function AdminStoresPage() {
         
         setSlugStatus('checking');
         const checkRes = await apiClient<any>(`/admin/stores/check-slug?slug=${generatedSlug}`);
+        console.log('CHECK RES:', checkRes);
         if (!checkRes.available) {
           setSlugStatus('error');
           showToast('Tên quán bị trùng lặp, vui lòng chọn tên khác!');
