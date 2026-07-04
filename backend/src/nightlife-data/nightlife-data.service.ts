@@ -15315,7 +15315,6 @@ export class NightlifeDataService {
     const where: Prisma.MediaWhereInput = {
       type: 'VIDEO',
       purpose: 'STORE_VIDEO',
-      status: 'READY',
       storeId: { not: null },
     };
 
@@ -15364,7 +15363,7 @@ export class NightlifeDataService {
     
     // Fetch media details
     const medias = await this.prisma.media.findMany({
-      where: { id: { in: mediaIds }, status: 'READY' },
+      where: { id: { in: mediaIds } },
       include: { store: { select: { name: true } } },
     });
 
