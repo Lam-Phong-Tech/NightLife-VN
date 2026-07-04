@@ -7,6 +7,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
+import { adminRankingsApi, AdminRankingConfig, AdminRankingTargetOption } from '@/lib/api/admin-rankings';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -89,6 +90,15 @@ export default function AdminContentPage() {
   const [isLoadingHotVideos, setIsLoadingHotVideos] = useState(false);
   const [isSearchingVideo, setIsSearchingVideo] = useState(false);
 
+  // Featured Services states
+  const [featuredCity, setFeaturedCity] = useState<'all' | 'hn' | 'hcm'>('all');
+  const [featuredCategory, setFeaturedCategory] = useState<'all' | 'RESTAURANT' | 'MASSAGE_SPA'>('all');
+  const [featuredItems, setFeaturedItems] = useState<AdminRankingConfig[]>([]);
+  const [searchFeaturedQuery, setSearchFeaturedQuery] = useState('');
+  const [searchFeaturedItems, setSearchFeaturedItems] = useState<AdminRankingTargetOption[]>([]);
+  const [isLoadingFeatured, setIsLoadingFeatured] = useState(false);
+  const [isSearchingFeatured, setIsSearchingFeatured] = useState(false);
+
   // Banner states
   const [bannerTitle, setBannerTitle] = useState('');
   const [bannerTag, setBannerTag] = useState('');
@@ -127,6 +137,147 @@ export default function AdminContentPage() {
       return () => clearTimeout(timer);
     }
   }, [searchVideoQuery, searchVideoPage, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'featured') {
+      fetchFeaturedItems();
+    }
+  }, [activeTab, featuredCity, featuredCategory]);
+
+  useEffect(() => {
+    if (activeTab === 'featured') {
+      const timer = setTimeout(() => {
+        searchFeaturedStore(searchFeaturedQuery);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchFeaturedQuery, activeTab]);
+
+  const fetchFeaturedItems = async () => {
+    try {
+      setIsLoadingFeatured(true);
+      const data = await adminRankingsApi.list({
+        targetType: 'STORE',
+        scope: 'featured_home',
+        city: featuredCity === 'all' ? undefined : featuredCity,
+        category: featuredCategory === 'all' ? undefined : featuredCategory as any
+      });
+      setFeaturedItems(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingFeatured(false);
+    }
+  };
+
+  const searchFeaturedStore = async (q: string) => {
+    try {
+      setIsSearchingFeatured(true);
+      const data = await adminRankingsApi.options({
+        targetType: 'STORE',
+        q,
+        limit: 10
+      });
+      setSearchFeaturedItems(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearchingFeatured(false);
+    }
+  };
+
+  const handleAddFeatured = async (store: AdminRankingTargetOption) => {
+    if (featuredItems.find(item => item.targetId === store.id)) return;
+    try {
+      await adminRankingsApi.create({
+        targetType: 'STORE',
+        targetId: store.id,
+        cityCode: store.cityCode as any || 'all',
+        category: store.category as any,
+        scope: 'featured_home',
+        pinRank: featuredItems.length > 0 ? (featuredItems[featuredItems.length - 1]?.pinRank || 0) + 1 : 1,
+        status: 'ACTIVE'
+      });
+      await fetchFeaturedItems();
+      setSearchFeaturedQuery('');
+    } catch (err) {
+      console.error(err);
+      alert('Không thể thêm vào danh sách nổi bật.');
+    }
+  };
+
+  const handleRemoveFeatured = async (id: string) => {
+    if (!confirm('Bạn có chắc muốn gỡ khỏi trang chủ?')) return;
+    try {
+      await adminRankingsApi.delete(id);
+      await fetchFeaturedItems();
+    } catch (err) {
+      console.error(err);
+      alert('Không thể gỡ.');
+    }
+  };
+
+  const handleMoveFeatured = async (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === featuredItems.length - 1) return;
+    
+    const currentItem = featuredItems[index];
+    const swapItem = direction === 'up' ? featuredItems[index - 1] : featuredItems[index + 1];
+    
+    if (!currentItem || !swapItem) return;
+
+    const currentRank = currentItem.pinRank || index + 1;
+    const swapRank = swapItem.pinRank || (direction === 'up' ? index : index + 2);
+
+    try {
+      await Promise.all([
+        adminRankingsApi.update(currentItem.id, {
+          targetType: 'STORE',
+          targetId: currentItem.targetId,
+          cityCode: currentItem.cityCode,
+          pinRank: swapRank
+        }),
+        adminRankingsApi.update(swapItem.id, {
+          targetType: 'STORE',
+          targetId: swapItem.targetId,
+          cityCode: swapItem.cityCode,
+          pinRank: currentRank
+        })
+      ]);
+      await fetchFeaturedItems();
+    } catch (err) {
+      console.error(err);
+      alert('Không thể đổi vị trí.');
+    }
+  };
+
+  const handleToggleFeaturedLabel = async (item: AdminRankingConfig, label: string) => {
+    try {
+      let currentLabels = item.reason ? item.reason.split(',') : [];
+      if (label === 'Không nhãn') {
+        currentLabels = [];
+      } else {
+        // Loại bỏ 'Không nhãn' (mặc định nếu rỗng thì là Không nhãn)
+        if (currentLabels.includes(label)) {
+          currentLabels = currentLabels.filter(l => l !== label);
+        } else {
+          currentLabels.push(label);
+        }
+      }
+      
+      const newReason = currentLabels.join(',');
+      await adminRankingsApi.update(item.id, {
+        targetType: 'STORE',
+        targetId: item.targetId,
+        cityCode: item.cityCode,
+        reason: newReason
+      });
+      await fetchFeaturedItems();
+    } catch (err) {
+      console.error(err);
+      alert('Không thể cập nhật nhãn.');
+    }
+  };
 
   const fetchHotVideos = async (region: string) => {
     const code = region === 'Tổng hợp' ? 'all' : region === 'Hà Nội' ? 'hn' : 'hcm';
@@ -720,81 +871,81 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={activeTabStyle}>Tổng hợp</span>
-              <span style={inactiveTabStyle}>Hà Nội</span>
-              <span style={inactiveTabStyle}>TP. Hồ Chí Minh</span>
+              <span style={featuredCity === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('all')}>Tổng hợp</span>
+              <span style={featuredCity === 'hn' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hn')}>Hà Nội</span>
+              <span style={featuredCity === 'hcm' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hcm')}>TP. Hồ Chí Minh</span>
             </div>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={activeTabStyle}>Nhà hàng</span>
-              <span style={inactiveTabStyle}>Spa</span>
+              <span style={featuredCategory === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('all')}>Tất cả</span>
+              <span style={featuredCategory === 'RESTAURANT' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('RESTAURANT')}>Nhà hàng</span>
+              <span style={featuredCategory === 'MASSAGE_SPA' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('MASSAGE_SPA')}>Spa</span>
             </div>
             <div style={{ flex: 1 }}></div>
-            <span style={{ fontSize: '11px', color: '#8c8679' }}>2 quán đang hiển thị trên trang chủ</span>
+            <span style={{ fontSize: '11px', color: '#8c8679' }}>{featuredItems.length} quán đang hiển thị trên trang chủ</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '14px' }}>
-            <div style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
-              <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.05)', position: 'relative' }}>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea' }}>Sakura Teppanyaki</div>
-                <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>Tây Hồ · Nhà hàng Nhật</div>
-                <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Không nhãn</span>
-                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Đặt bàn nhanh</span>
-                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Mới</span>
+            {featuredItems.map((item, idx) => {
+              const labels = item.reason ? item.reason.split(',') : [];
+              return (
+                <div key={item.id} style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
+                  <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
+                    {item.targetImage ? (
+                      <img src={resolveClientUrl(item.targetImage as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : null}
+                    {labels.includes('Mới') && (
+                      <span style={{ position: 'absolute', top: '7px', left: '7px', fontSize: '8.5px', fontWeight: 700, color: '#f3f0ea', background: 'rgba(12,12,15,.62)', border: '1px solid rgba(255,255,255,.2)', padding: '2.5px 7px', borderRadius: '6px', zIndex: 1 }}>Mới</span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
+                      <span onClick={() => handleToggleFeaturedLabel(item, 'Không nhãn')} style={{ cursor: 'pointer', fontSize: '9px', fontWeight: labels.length === 0 ? 700 : 600, padding: '3px 8px', borderRadius: '6px', background: labels.length === 0 ? '#f0dda8' : 'rgba(255,255,255,.05)', color: labels.length === 0 ? '#241a0a' : '#c5c0b6' }}>Không nhãn</span>
+                      <span onClick={() => handleToggleFeaturedLabel(item, 'Đặt bàn nhanh')} style={{ cursor: 'pointer', fontSize: '9px', fontWeight: labels.includes('Đặt bàn nhanh') ? 700 : 600, padding: '3px 8px', borderRadius: '6px', background: labels.includes('Đặt bàn nhanh') ? '#f0dda8' : 'rgba(255,255,255,.05)', color: labels.includes('Đặt bàn nhanh') ? '#241a0a' : '#c5c0b6' }}>Đặt bàn nhanh</span>
+                      <span onClick={() => handleToggleFeaturedLabel(item, 'Mới')} style={{ cursor: 'pointer', fontSize: '9px', fontWeight: labels.includes('Mới') ? 700 : 600, padding: '3px 8px', borderRadius: '6px', background: labels.includes('Mới') ? '#f0dda8' : 'rgba(255,255,255,.05)', color: labels.includes('Mới') ? '#241a0a' : '#c5c0b6' }}>Mới</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                    <span onClick={() => handleMoveFeatured(idx, 'up')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: idx === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === 0 ? 'default' : 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 15l-6-6-6 6"/></svg></span>
+                    <span onClick={() => handleMoveFeatured(idx, 'down')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: idx === featuredItems.length - 1 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === featuredItems.length - 1 ? 'rgba(255,255,255,.1)' : '#c5c0b6', cursor: idx === featuredItems.length - 1 ? 'default' : 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                    <span onClick={() => handleRemoveFeatured(item.id)} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
-                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
-                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
-              <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(128,90,200,.2)', position: 'relative' }}>
-                <span style={{ position: 'absolute', top: '7px', left: '7px', fontSize: '8.5px', fontWeight: 700, color: '#f3f0ea', background: 'rgba(12,12,15,.62)', border: '1px solid rgba(255,255,255,.2)', padding: '2.5px 7px', borderRadius: '6px' }}>Mới</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea' }}>Yakitori Hanoi</div>
-                <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>Ba Đình · BBQ Nhật</div>
-                <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Không nhãn</span>
-                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Đặt bàn nhanh</span>
-                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Mới</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
-                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
-                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
-              </div>
-            </div>
+              );
+            })}
+            {featuredItems.length === 0 && !isLoadingFeatured && (
+              <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có quán nào trong danh sách này</div>
+            )}
+            {isLoadingFeatured && (
+              <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>
+            )}
           </div>
 
           <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-              <input placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+              <input value={searchFeaturedQuery} onChange={e => setSearchFeaturedQuery(e.target.value)} placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                <span style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)' }}></span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>Sushi Ginza</div>
-                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>Hoàn Kiếm · Sushi &amp; Sashimi</div>
+              {isSearchingFeatured ? (
+                <div style={{ padding: '10px', color: '#8c8679', fontSize: '12px' }}>Đang tìm...</div>
+              ) : searchFeaturedItems.map(store => (
+                <div key={store.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                  <div style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                    {store.image ? <img src={resolveClientUrl(store.image as string) || undefined} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{store.name}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{store.area || store.city} · {store.category}</div>
+                  </div>
+                  {featuredItems.find(f => f.targetId === store.id) ? (
+                    <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#8c8679', padding: '7px 14px' }}>Đã thêm</span>
+                  ) : (
+                    <span onClick={() => handleAddFeatured(store)} style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
+                  )}
                 </div>
-                <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                <span style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.02)' }}></span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>Ramen Ichiban</div>
-                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>Cầu Giấy · Ramen</div>
-                </div>
-                <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
-              </div>
+              ))}
             </div>
           </div>
         </div>
