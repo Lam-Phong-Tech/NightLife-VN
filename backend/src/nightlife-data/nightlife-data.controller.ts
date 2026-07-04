@@ -107,6 +107,7 @@ import {
   CreatePartnerRequestDto,
   ReviewPartnerRequestDto,
 } from './dto/create-partner-request.dto';
+import { PartnerListingDraftDto } from './dto/partner-listing.dto';
 import {
   AdminRankingQueryDto,
   AdminRankingTargetOptionsQueryDto,
@@ -399,6 +400,49 @@ export class NightlifeDataController {
   @Get('partner/stores')
   listPartnerStores(@Req() request: RequestWithUser) {
     return this.nightlifeDataService.listPartnerStores(request.user);
+  }
+
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('partner/listing-draft/:storeId')
+  getPartnerListingDraft(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+  ) {
+    return this.nightlifeDataService.getPartnerListingDraft(
+      request.user,
+      storeId,
+    );
+  }
+
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Put('partner/listing-draft/:storeId')
+  savePartnerListingDraft(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Body() dto: PartnerListingDraftDto,
+  ) {
+    return this.nightlifeDataService.savePartnerListingDraft(
+      request.user,
+      storeId,
+      dto,
+    );
+  }
+
+  @Roles('PARTNER', 'ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('partner/listing-draft/:storeId/submit')
+  submitPartnerListingDraft(
+    @Req() request: RequestWithUser,
+    @Param('storeId') storeId: string,
+    @Body() dto: PartnerListingDraftDto,
+  ) {
+    return this.nightlifeDataService.submitPartnerListingDraft(
+      request.user,
+      storeId,
+      dto,
+    );
   }
 
   @PartnerLiteDashboardContract()

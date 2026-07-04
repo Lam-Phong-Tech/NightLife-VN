@@ -93,6 +93,11 @@ import {
   ReviewPartnerRequestDto,
 } from './dto/create-partner-request.dto';
 import {
+  PartnerListingCastDto,
+  PartnerListingDraftDto,
+  PartnerListingPricingDto,
+} from './dto/partner-listing.dto';
+import {
   PublicDiscoveryQueryDto,
   PublicRankingQueryDto,
 } from './dto/public-discovery-query.dto';
@@ -413,8 +418,28 @@ type PartnerRequestCmsRecord = {
 
 type PartnerRequestReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
 
+type PartnerListingDraftPayload = {
+  storeName: string;
+  businessType: string | null;
+  storeCategory: string | null;
+  area: string | null;
+  storeCity: string | null;
+  storeDistrict: string | null;
+  storeAddress: string | null;
+  phone: string | null;
+  openingHours: string | null;
+  priceRange: string | null;
+  description: string | null;
+  note: string | null;
+  menuSummary: string | null;
+  pricingItems: PartnerListingPricingDto[];
+  castProfiles: PartnerListingCastDto[];
+  mediaUrls: string[];
+};
+
 const bookingRateLimits = new Map<string, BookingRateLimitBucket>();
 const couponClaimRateLimits = new Map<string, BookingRateLimitBucket>();
+const PARTNER_LISTING_DRAFT_KIND = 'PARTNER_LISTING_DRAFT';
 const COUPON_DISCOUNT_PERCENT_BY_USER_TYPE = {
   GUEST: 5,
   MEMBER: 8,
@@ -2377,6 +2402,190 @@ export class NightlifeDataService {
         createdAt: true,
       },
     });
+  }
+
+  async getPartnerListingDraft(user: AuthenticatedUser, storeId: string) {
+    const store = await this.getPartnerListingStore(user, storeId);
+    const draft = await this.findPartnerListingDraft(store.id);
+    const payload = this.partnerListingDraftPayloadFromContent(draft, store);
+
+    return this.partnerListingDraftResponse(store, draft, payload, {
+      message: draft
+        ? 'Partner listing draft loaded'
+        : 'Current store data loaded as listing draft',
+      review: await this.getLatestPartnerListingReview(store.id),
+    });
+  }
+
+  async savePartnerListingDraft(
+    user: AuthenticatedUser,
+    storeId: string,
+    dto: PartnerListingDraftDto,
+  ) {
+    const store = await this.getPartnerListingStore(user, storeId);
+    const payload = this.normalizePartnerListingDraft(dto, store);
+    const draft = await this.upsertPartnerListingDraftContent(
+      user,
+      store,
+      payload,
+    );
+
+    return this.partnerListingDraftResponse(store, draft, payload, {
+      message: 'Partner listing draft saved',
+      review: await this.getLatestPartnerListingReview(store.id),
+    });
+  }
+
+  async submitPartnerListingDraft(
+    user: AuthenticatedUser,
+    storeId: string,
+    dto: PartnerListingDraftDto,
+  ) {
+    const store = await this.getPartnerListingStore(user, storeId);
+    const payload = this.normalizePartnerListingDraft(dto, store);
+    const submittedAt = new Date();
+    const requestId = `LISTING-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+    const submitted = await this.prisma.$transaction(async (tx) => {
+      const draft = await this.upsertPartnerListingDraftContent(
+        user,
+        store,
+        payload,
+        tx,
+      );
+      const contact = await this.partnerListingContact(user, store, tx);
+      const draftCastIds: string[] = [];
+      const draftMediaIds: string[] = [];
+      const castProfiles = this.normalizePartnerRequestCasts(
+        payload.castProfiles,
+      );
+
+      for (const [index, castProfile] of castProfiles.entries()) {
+        const cast = await tx.cast.create({
+          data: {
+            storeId: store.id,
+            stageName: castProfile.stageName,
+            slug: this.buildPartnerRequestSlug(
+              castProfile.stageName,
+              requestId,
+              `cast-${index + 1}`,
+            ),
+            bio: castProfile.bio,
+            publicBio: castProfile.bio,
+            tags: castProfile.tags,
+            languages: castProfile.languages,
+            hourlyRateVnd: castProfile.hourlyRateVnd,
+            isPublic: false,
+            status: 'DRAFT',
+          },
+          select: { id: true },
+        });
+        draftCastIds.push(cast.id);
+
+        for (const [mediaIndex, url] of castProfile.mediaUrls.entries()) {
+          const media = await this.createPartnerRequestMedia(
+            {
+              requestId,
+              url,
+              index: mediaIndex,
+              castId: cast.id,
+              purpose: 'PARTNER_LISTING_CAST',
+            },
+            tx,
+          );
+          draftMediaIds.push(media.id);
+        }
+      }
+
+      for (const [index, url] of payload.mediaUrls.entries()) {
+        const media = await this.createPartnerRequestMedia(
+          {
+            requestId,
+            url,
+            index,
+            storeId: store.id,
+            purpose: 'PARTNER_LISTING_STORE',
+          },
+          tx,
+        );
+        draftMediaIds.push(media.id);
+      }
+
+      const menuSummary =
+        payload.menuSummary ?? this.partnerListingMenuSummary(payload);
+
+      const request = await tx.partnerRequest.create({
+        data: {
+          id: requestId,
+          storeId: store.id,
+          partnerUserId: user.id,
+          partnerAccountId: contact.partnerAccountId,
+          status: 'PENDING_REVIEW',
+          businessName: payload.storeName,
+          businessType: payload.businessType,
+          area: payload.area,
+          contactName: contact.contactName,
+          contactPhone: contact.contactPhone,
+          contactEmail: contact.contactEmail,
+          note: payload.note,
+          storeDescription: payload.description,
+          storeAddress: payload.storeAddress,
+          storeCity: payload.storeCity,
+          storeDistrict: payload.storeDistrict,
+          openingHours: payload.openingHours,
+          menuSummary,
+          mediaUrls: payload.mediaUrls,
+          castProfiles: castProfiles.length
+            ? (castProfiles as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          draftCastIds,
+          draftMediaIds,
+          draftContentIds: [draft.id],
+          publicState: 'HIDDEN',
+          submittedAt,
+        },
+        select: this.partnerRequestSelect(),
+      });
+
+      await tx.content.update({
+        where: { id: draft.id },
+        data: {
+          metadata: this.toPrismaJson({
+            kind: PARTNER_LISTING_DRAFT_KIND,
+            version: 1,
+            listing: payload,
+            savedAt: submittedAt.toISOString(),
+            savedById: user.id,
+            submittedAt: submittedAt.toISOString(),
+            submittedRequestId: request.id,
+          }),
+        },
+        select: { id: true },
+      });
+
+      return {
+        draft,
+        request: request as unknown as PartnerRequestCmsRecord,
+      };
+    });
+
+    await this.notifyPartnerRequestDelivery(submitted.request);
+
+    return {
+      id: submitted.request.id,
+      status: submitted.request.status,
+      submittedAt: submitted.request.submittedAt.toISOString(),
+      message: 'Partner listing submitted for admin review',
+      draft: {
+        contentId: submitted.draft.id,
+        storeId: store.id,
+        storeName: payload.storeName,
+        storeSlug: store.slug,
+        castCount: submitted.request.draftCastIds.length,
+        mediaCount: submitted.request.draftMediaIds.length,
+        contentCount: submitted.request.draftContentIds.length,
+      },
+    };
   }
 
   async getPartnerLiteDashboard(user: AuthenticatedUser, periodInput?: string) {
@@ -5059,11 +5268,15 @@ export class NightlifeDataService {
       const onboarding = dto.approve
         ? await this.ensurePartnerOnboarding(tx, request)
         : null;
+      const listingStoreUpdate = dto.approve
+        ? await this.partnerListingStoreUpdateFromRequest(tx, request)
+        : {};
 
       if (dto.approve) {
         await tx.store.update({
           where: { id: request.store.id },
           data: {
+            ...listingStoreUpdate,
             status: 'ACTIVE',
             ownerId: onboarding?.userId,
             partnerAccountId: onboarding?.partnerAccountId,
@@ -11524,6 +11737,408 @@ export class NightlifeDataService {
 
       return first.distanceKm - second.distanceKm;
     });
+  }
+
+  private async getPartnerListingStore(
+    user: AuthenticatedUser,
+    storeId: string,
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    const id = this.cleanRequiredText(storeId, 'storeId');
+
+    if (!this.isUuid(id)) {
+      throw new BadRequestException('storeId must be a valid UUID');
+    }
+
+    await this.accessService.ensureStoreAccess(
+      user,
+      id,
+      'store.partner.view',
+    );
+
+    const store = await client.store.findFirst({
+      where: { id, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        category: true,
+        description: true,
+        address: true,
+        city: true,
+        district: true,
+        phone: true,
+        openingHours: true,
+        pricingInfo: true,
+        tags: true,
+        partnerAccountId: true,
+        ownerId: true,
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Partner store not found');
+    }
+
+    return store;
+  }
+
+  private async findPartnerListingDraft(
+    storeId: string,
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    return client.content.findFirst({
+      where: {
+        storeId,
+        slug: this.partnerListingDraftSlug(storeId),
+        type: 'STORE_POST',
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        excerpt: true,
+        body: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+        publishedAt: true,
+      },
+    });
+  }
+
+  private async getLatestPartnerListingReview(storeId: string) {
+    const review = await this.prisma.partnerRequest.findFirst({
+      where: {
+        storeId,
+        id: { startsWith: 'LISTING-' },
+      },
+      orderBy: { submittedAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        submittedAt: true,
+        reviewedAt: true,
+        reviewReason: true,
+        publicState: true,
+      },
+    });
+
+    return review
+      ? {
+          id: review.id,
+          status: review.status,
+          submittedAt: review.submittedAt.toISOString(),
+          reviewedAt: review.reviewedAt?.toISOString() ?? null,
+          reviewReason: review.reviewReason,
+          publicState: review.publicState,
+        }
+      : null;
+  }
+
+  private async upsertPartnerListingDraftContent(
+    user: AuthenticatedUser,
+    store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
+    payload: PartnerListingDraftPayload,
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    const savedAt = new Date().toISOString();
+    const metadata = this.toPrismaJson({
+      kind: PARTNER_LISTING_DRAFT_KIND,
+      version: 1,
+      listing: payload,
+      savedAt,
+      savedById: user.id,
+    });
+
+    return client.content.upsert({
+      where: { slug: this.partnerListingDraftSlug(store.id) },
+      update: {
+        authorId: user.id,
+        storeId: store.id,
+        title: `${payload.storeName} listing draft`,
+        status: 'DRAFT',
+        excerpt: payload.description ?? payload.businessType ?? null,
+        body: payload.description,
+        metadata,
+        publishedAt: null,
+        deletedAt: null,
+      },
+      create: {
+        authorId: user.id,
+        storeId: store.id,
+        title: `${payload.storeName} listing draft`,
+        slug: this.partnerListingDraftSlug(store.id),
+        type: 'STORE_POST',
+        status: 'DRAFT',
+        excerpt: payload.description ?? payload.businessType ?? null,
+        body: payload.description,
+        metadata,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        excerpt: true,
+        body: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+        publishedAt: true,
+      },
+    });
+  }
+
+  private normalizePartnerListingDraft(
+    dto: Partial<PartnerListingDraftDto>,
+    store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
+  ): PartnerListingDraftPayload {
+    const openingRecord = this.asRecord(store.openingHours);
+    const pricingRecord = this.asRecord(store.pricingInfo);
+    const storeArea = [store.district, store.city].filter(Boolean).join(', ');
+    const rawPricingItems = Array.isArray(dto.pricingItems)
+      ? dto.pricingItems
+      : [];
+    const pricingItems = rawPricingItems
+      .map((item) => ({
+        label: this.cleanText(item.label),
+        value: this.cleanText(item.value),
+        note: this.cleanNullableText(item.note) ?? undefined,
+      }))
+      .filter((item) => item.label && item.value)
+      .slice(0, 12);
+    const castProfiles = this.normalizePartnerRequestCasts(
+      dto.castProfiles,
+    ) as PartnerListingCastDto[];
+    const priceRange =
+      this.cleanNullableText(dto.priceRange) ??
+      this.cleanNullableText(String(pricingRecord?.summary ?? ''));
+
+    return {
+      storeName:
+        this.cleanNullableText(dto.storeName) ??
+        this.cleanRequiredText(store.name, 'storeName'),
+      businessType:
+        this.cleanNullableText(dto.businessType) ?? store.category,
+      storeCategory:
+        this.cleanNullableText(dto.storeCategory) ?? store.category,
+      area: this.cleanNullableText(dto.area) ?? (storeArea || null),
+      storeCity: this.cleanNullableText(dto.storeCity) ?? store.city,
+      storeDistrict:
+        this.cleanNullableText(dto.storeDistrict) ?? store.district,
+      storeAddress:
+        this.cleanNullableText(dto.storeAddress) ?? store.address,
+      phone: this.cleanNullableText(dto.phone) ?? store.phone,
+      openingHours:
+        this.cleanNullableText(dto.openingHours) ??
+        this.cleanNullableText(String(openingRecord?.summary ?? '')),
+      priceRange,
+      description:
+        this.cleanNullableText(dto.description) ?? store.description,
+      note: this.cleanNullableText(dto.note),
+      menuSummary:
+        this.cleanNullableText(dto.menuSummary) ??
+        this.partnerListingMenuSummary({ pricingItems, priceRange }),
+      pricingItems,
+      castProfiles,
+      mediaUrls: this.cleanStringArray(dto.mediaUrls, 12),
+    };
+  }
+
+  private partnerListingDraftPayloadFromContent(
+    draft:
+      | Awaited<ReturnType<NightlifeDataService['findPartnerListingDraft']>>
+      | null,
+    store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
+  ) {
+    const metadata = this.asRecord(draft?.metadata);
+    const listing = this.asRecord(metadata?.listing);
+
+    if (metadata?.kind === PARTNER_LISTING_DRAFT_KIND && listing) {
+      return this.normalizePartnerListingDraft(
+        listing as Partial<PartnerListingDraftDto>,
+        store,
+      );
+    }
+
+    return this.normalizePartnerListingDraft({}, store);
+  }
+
+  private partnerListingDraftResponse(
+    store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
+    draft: Awaited<ReturnType<NightlifeDataService['findPartnerListingDraft']>>,
+    payload: PartnerListingDraftPayload,
+    options: {
+      message: string;
+      review?: Awaited<
+        ReturnType<NightlifeDataService['getLatestPartnerListingReview']>
+      >;
+    },
+  ) {
+    return {
+      message: options.message,
+      store: {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+        status: store.status,
+      },
+      contentId: draft?.id ?? null,
+      contentStatus: draft?.status ?? 'DRAFT',
+      savedAt: draft?.updatedAt?.toISOString() ?? null,
+      publishedAt: draft?.publishedAt?.toISOString() ?? null,
+      review: options.review ?? null,
+      draft: payload,
+    };
+  }
+
+  private async partnerListingContact(
+    user: AuthenticatedUser,
+    store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
+    client: NightlifePrismaClient = this.prisma,
+  ) {
+    const userRecord = await client.user.findUnique({
+      where: { id: user.id },
+      select: { email: true, displayName: true, phone: true },
+    });
+    const partnerAccount = await client.partnerAccount.findFirst({
+      where: {
+        deletedAt: null,
+        OR: [
+          { userId: user.id },
+          ...(store.partnerAccountId ? [{ id: store.partnerAccountId }] : []),
+        ],
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        contactName: true,
+        contactPhone: true,
+        contactEmail: true,
+      },
+    });
+
+    return {
+      partnerAccountId: partnerAccount?.id ?? store.partnerAccountId ?? null,
+      contactName:
+        this.cleanNullableText(partnerAccount?.contactName) ??
+        this.cleanNullableText(userRecord?.displayName) ??
+        this.cleanNullableText(userRecord?.email) ??
+        this.cleanNullableText(user.email) ??
+        'Partner',
+      contactPhone:
+        this.cleanNullableText(partnerAccount?.contactPhone) ??
+        this.cleanNullableText(userRecord?.phone) ??
+        this.cleanNullableText(store.phone) ??
+        'N/A',
+      contactEmail:
+        this.cleanEmail(partnerAccount?.contactEmail) ||
+        this.cleanEmail(userRecord?.email) ||
+        this.cleanEmail(user.email) ||
+        null,
+    };
+  }
+
+  private async partnerListingStoreUpdateFromRequest(
+    client: NightlifePrismaClient,
+    request: PartnerRequestCmsRecord,
+  ): Promise<Prisma.StoreUncheckedUpdateInput> {
+    if (!request.draftContentIds.length) {
+      return {};
+    }
+
+    const store = await client.store.findUnique({
+      where: { id: request.store.id },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        category: true,
+        description: true,
+        address: true,
+        city: true,
+        district: true,
+        phone: true,
+        openingHours: true,
+        pricingInfo: true,
+        tags: true,
+        partnerAccountId: true,
+        ownerId: true,
+      },
+    });
+    const draft = await client.content.findFirst({
+      where: {
+        id: { in: request.draftContentIds },
+        storeId: request.store.id,
+        type: 'STORE_POST',
+        deletedAt: null,
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        excerpt: true,
+        body: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+        publishedAt: true,
+      },
+    });
+
+    if (!store || !draft) {
+      return {};
+    }
+
+    const payload = this.partnerListingDraftPayloadFromContent(draft, store);
+    const data: Prisma.StoreUncheckedUpdateInput = {};
+
+    if (payload.storeName) data.name = payload.storeName;
+    if (payload.storeCategory) {
+      data.category = this.normalizePartnerRequestCategory(
+        payload.storeCategory,
+      );
+    }
+    if (payload.description !== null) data.description = payload.description;
+    if (payload.storeAddress !== null) data.address = payload.storeAddress;
+    if (payload.storeCity !== null) data.city = payload.storeCity;
+    if (payload.storeDistrict !== null) data.district = payload.storeDistrict;
+    if (payload.phone !== null) data.phone = payload.phone;
+    if (payload.openingHours !== null) {
+      data.openingHours = this.toPrismaJson({ summary: payload.openingHours });
+    }
+    if (payload.priceRange !== null || payload.pricingItems.length) {
+      data.pricingInfo = this.toPrismaJson({
+        summary: payload.priceRange,
+        items: payload.pricingItems,
+      });
+    }
+
+    return data;
+  }
+
+  private partnerListingDraftSlug(storeId: string) {
+    return `partner-listing-draft-${storeId}`;
+  }
+
+  private partnerListingMenuSummary(
+    payload: Pick<PartnerListingDraftPayload, 'priceRange' | 'pricingItems'>,
+  ) {
+    const lines = [
+      payload.priceRange ? `Khoang gia: ${payload.priceRange}` : '',
+      ...payload.pricingItems.map((item) =>
+        [item.label, item.value, item.note].filter(Boolean).join(' - '),
+      ),
+    ].filter(Boolean);
+
+    return lines.length ? lines.join('\n') : null;
   }
 
   private async createPartnerRequestMedia(
