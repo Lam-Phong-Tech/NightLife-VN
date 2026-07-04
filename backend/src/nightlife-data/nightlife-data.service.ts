@@ -14609,6 +14609,7 @@ export class NightlifeDataService {
           : 0,
         adminCommission: bill.commissionAmountVnd || 0,
         points: bill.pointsEarned ? `+${bill.pointsEarned} điểm` : '+0 điểm',
+        rejectReason: bill.rejectReason || '',
       };
     });
 

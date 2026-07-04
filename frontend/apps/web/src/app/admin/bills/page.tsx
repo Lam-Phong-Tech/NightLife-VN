@@ -392,6 +392,26 @@ export default function AdminBillsPage() {
             </div>
 
             <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+              {/* Rejection Reason Banner */}
+              {selectedBill.status === 'REJECTED' && selectedBill.rejectReason && (
+                <div style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: `1px solid rgba(239,68,68,0.2)`,
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '24px',
+                  color: colors.red,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px'
+                }}>
+                  <div style={{ marginTop: '2px' }}><Info size={16} /></div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Lý do từ chối</div>
+                    <div style={{ fontSize: '13px' }}>{selectedBill.rejectReason}</div>
+                  </div>
+                </div>
+              )}
               {/* Image Preview */}
               {selectedBill.hasImage && selectedBill.images && selectedBill.images.length > 0 ? (
                 <div style={{ marginBottom: '32px', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${colors.borderSoft}` }}>
