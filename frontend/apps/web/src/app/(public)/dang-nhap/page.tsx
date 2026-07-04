@@ -594,7 +594,7 @@ export default function Page() {
                     label="Họ tên"
                     value={displayName}
                     onChange={setDisplayName}
-                    placeholder="Nguyễn Văn A"
+                    placeholder="Vui lòng nhập họ tên"
                     autoComplete="name"
                     name="name"
                     required
@@ -607,7 +607,7 @@ export default function Page() {
                   label="Email"
                   value={email}
                   onChange={setEmail}
-                  placeholder="member@nightlife.vn"
+                  placeholder="Vui lòng nhập email"
                   type="email"
                   autoComplete="email"
                   inputMode="email"
@@ -620,7 +620,7 @@ export default function Page() {
                   label="Mật khẩu"
                   value={password}
                   onChange={setPassword}
-                  placeholder="••••••••"
+                  placeholder="Vui lòng nhập mật khẩu"
                   type={showPassword ? "text" : "password"}
                   autoComplete={isReg ? "new-password" : "current-password"}
                   name="password"
@@ -655,7 +655,7 @@ export default function Page() {
                     label="Nhập lại mật khẩu"
                     value={confirmPassword}
                     onChange={setConfirmPassword}
-                    placeholder="••••••••"
+                    placeholder="Vui lòng nhập lại mật khẩu"
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     name="confirmPassword"
