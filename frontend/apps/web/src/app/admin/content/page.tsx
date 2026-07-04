@@ -798,7 +798,7 @@ export default function AdminContentPage() {
           </div>
         </div>
         );
-      })}
+      })()}
 
       {/* VIDEO HOT CONTENT */}
       {activeTab === 'video' && (
