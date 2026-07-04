@@ -61,6 +61,7 @@ describe('NightlifeDataService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
     },
@@ -82,6 +83,8 @@ describe('NightlifeDataService', () => {
       create: jest.fn(),
       updateMany: jest.fn(),
       findFirst: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
     },
     rankingConfig: {
       findMany: jest.fn(),
