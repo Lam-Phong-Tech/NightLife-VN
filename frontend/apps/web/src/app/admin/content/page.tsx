@@ -84,6 +84,7 @@ export default function AdminContentPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [showVideoToast, setShowVideoToast] = useState(false);
+  const [videoRegion, setVideoRegion] = useState('Tổng hợp');
 
   useEffect(() => {
     fetchCategories();
@@ -557,8 +558,22 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
-              <span style={{ padding: '6px 20px', borderRadius: '8px', background: colors.goldGrad, color: colors.onGold, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Hà Nội</span>
-              <span style={{ padding: '6px 20px', borderRadius: '8px', color: colors.muted, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>TP. Hồ Chí Minh</span>
+              {['Tổng hợp', 'Hà Nội', 'TP. Hồ Chí Minh'].map(region => (
+                <span 
+                  key={region}
+                  onClick={() => setVideoRegion(region)}
+                  style={{ 
+                    padding: '6px 20px', borderRadius: '8px', 
+                    background: videoRegion === region ? colors.goldGrad : 'transparent', 
+                    color: videoRegion === region ? colors.onGold : colors.muted, 
+                    fontSize: '13px', fontWeight: videoRegion === region ? 700 : 600, 
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {region}
+                </span>
+              ))}
             </div>
             <div style={{ flex: 1 }}></div>
             <span style={{ fontSize: '13px', color: colors.muted }}>3 video đang hiển thị trên trang chủ</span>
