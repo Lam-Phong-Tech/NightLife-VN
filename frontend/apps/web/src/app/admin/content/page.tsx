@@ -87,9 +87,11 @@ export default function AdminContentPage() {
   const fetchCategories = async () => {
     try {
       const data = await categoriesApi.adminList('BLOG');
-      setCategories(data);
-      if (data.length > 0 && !blogCategory) {
-        setBlogCategory(data[0].name);
+      if (data) {
+        setCategories(data);
+        if (data.length > 0 && data[0] && !blogCategory) {
+          setBlogCategory(data[0].name);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error);
