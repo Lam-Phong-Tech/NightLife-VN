@@ -286,16 +286,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* topbar */}
         <header style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 26px', background: 'rgba(12,12,15,.86)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px', marginTop: '2px' }}>{title}</div>
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '2px' }}>{subtitle}</div>
+            <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px' }}>{title}</div>
           </div>
+          
           <div style={{ flex: 1 }}></div>
+
+          {/* Search Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '100px', padding: '8px 16px', gap: '8px', minWidth: '300px' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input 
+              type="text" 
+              placeholder="Tìm quán, cast, booking, bill..." 
+              style={{ background: 'transparent', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', width: '100%', WebkitAppearance: 'none' }} 
+            />
+          </div>
+
           <React.Suspense fallback={<div />}>
             <TopRegionFilter />
           </React.Suspense>
-          <span style={{ position: 'relative', width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer' }}>
+          <span style={{ position: 'relative', width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)' }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            <span style={{ position: 'absolute', top: '8px', right: '9px', width: '7px', height: '7px', borderRadius: '50%', background: '#e0729e', border: '1.5px solid #0c0c0f' }}></span>
+            <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f' }}>4</span>
           </span>
         </header>
 
