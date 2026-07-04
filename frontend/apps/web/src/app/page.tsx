@@ -31,6 +31,7 @@ import {
 } from "@/lib/mock-data";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
+import { contentApi, type CmsContentItem } from "@/lib/api/content";
 import { resolveClientUrl } from "@/lib/api/client";
 import { storeImageForSlug } from "@/lib/demo-media";
 import { formatPriceTier } from "@/lib/price-tier";
@@ -145,6 +146,9 @@ type HomeBanner = {
   desc: string;
   btnText: string;
   img?: string | null;
+  href?: string | null;
+  statusLabel?: string | null;
+  subtitle?: string | null;
 };
 
 type HomeStoreCard = {
@@ -535,15 +539,34 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
   );
 }
 
-function EventHero({ desktop = false }: { desktop?: boolean }) {
+function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const fallbackBanner: HomeBanner = {
     title: "Sự kiện đêm nay",
     desc: "Đặt bàn VIP từ 2.500.000đ",
     btnText: "Đặt ngay",
     img: "linear-gradient(135deg,#15151a,#2a2112)",
+    statusLabel: "HOT",
+    subtitle: "NightLife-VN",
   };
-  const banners: HomeBanner[] = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  
+  const mappedBanners: HomeBanner[] = useMemo(() => {
+    if (apiBanners.length === 0) return adBanners.length > 0 ? adBanners : [fallbackBanner];
+    return apiBanners.map(b => {
+      const meta = (b.metadata as any) || {};
+      return {
+        title: b.title,
+        desc: meta.description || "",
+        btnText: meta.tag || "Chi tiết",
+        href: meta.link || "#",
+        statusLabel: meta.statusLabel || "",
+        subtitle: meta.subtitle || "",
+        img: meta.imageUrl ? `linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.76) 100%), url('${meta.imageUrl}')` : "linear-gradient(135deg,#15151a,#2a2112)",
+      };
+    });
+  }, [apiBanners]);
+
+  const banners: HomeBanner[] = mappedBanners;
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
@@ -559,7 +582,7 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <Link
-      href="/stores/neon-club"
+      href={event.href || "/stores/neon-club"}
       data-testid="home-ad-banner"
       {...swipeHandlers}
       style={{
@@ -579,28 +602,32 @@ function EventHero({ desktop = false }: { desktop?: boolean }) {
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />
       <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "7px",
-            borderRadius: "999px",
-            background: "rgba(12,12,15,.62)",
-            color: colors.goldSoft,
-            border: `1px solid ${colors.line}`,
-            padding: "5px 11px",
-            fontSize: desktop ? "12px" : "10px",
-            fontWeight: 800,
-            letterSpacing: ".16em",
-          }}
-        >
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.rose }} />
-          ĐANG DIỄN RA
-        </span>
-        <div style={{ marginTop: "20px", color: colors.goldSoft, fontSize: desktop ? "13px" : "11px", letterSpacing: ".24em" }}>
-          SỰ KIỆN ĐÊM NAY · TÂY HỒ
-        </div>
-        <h1 style={{ maxWidth: desktop ? "620px" : "260px", marginTop: "8px", fontSize: desktop ? "48px" : "25px", lineHeight: 1.05, fontWeight: 900 }}>
+        {event.statusLabel && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              borderRadius: "999px",
+              background: "rgba(12,12,15,.62)",
+              color: colors.goldSoft,
+              border: `1px solid ${colors.line}`,
+              padding: "5px 11px",
+              fontSize: desktop ? "12px" : "10px",
+              fontWeight: 800,
+              letterSpacing: ".16em",
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.rose }} />
+            {event.statusLabel}
+          </span>
+        )}
+        {event.subtitle && (
+          <div style={{ marginTop: "20px", color: colors.goldSoft, fontSize: desktop ? "13px" : "11px", letterSpacing: ".24em" }}>
+            {event.subtitle}
+          </div>
+        )}
+        <h1 style={{ maxWidth: desktop ? "620px" : "260px", marginTop: (event.subtitle || event.statusLabel) ? "8px" : "20px", fontSize: desktop ? "48px" : "25px", lineHeight: 1.05, fontWeight: 900 }}>
           {event.title}
         </h1>
         <div style={{ marginTop: desktop ? "22px" : "16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
@@ -1346,6 +1373,7 @@ export default function Page() {
   const [homeStores, setHomeStores] = useState<PublicStore[]>([]);
   const [isHomeStoresLoading, setHomeStoresLoading] = useState(true);
   const [homeStoresError, setHomeStoresError] = useState("");
+  const [homeBanners, setHomeBanners] = useState<CmsContentItem[]>([]);
   const homeStoreCards = useMemo(
     () => homeStores.map(mapStoreToHomeCard),
     [homeStores],
@@ -1400,6 +1428,13 @@ export default function Page() {
         if (!cancelled) setHomeStoresLoading(false);
       });
 
+    contentApi
+      .list({ type: "BANNER" as any, status: "PUBLISHED", limit: 3 })
+      .then((res) => {
+        if (!cancelled && res.data) setHomeBanners(res.data);
+      })
+      .catch((e) => console.error("Failed to load banners", e));
+
     return () => {
       cancelled = true;
     };
@@ -1414,8 +1449,8 @@ export default function Page() {
             <div style={{ marginTop: "12px" }}>
               <SearchPanel />
             </div>
-            <div style={{ marginTop: "18px" }}>
-              <EventHero />
+            <div style={{ padding: "0 18px", marginTop: "16px" }}>
+              <EventHero apiBanners={homeBanners} />
             </div>
             <div style={{ marginTop: "22px" }}>
               <CategoryGrid />
@@ -1517,8 +1552,8 @@ export default function Page() {
               <div>
                 <SearchPanel />
               </div>
-              <div style={{ marginTop: "18px" }}>
-                <EventHero desktop />
+              <div style={{ gridColumn: "span 12" }}>
+                <EventHero desktop apiBanners={homeBanners} />
               </div>
             </div>
 

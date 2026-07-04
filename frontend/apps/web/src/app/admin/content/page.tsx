@@ -64,6 +64,7 @@ export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<'banner' | 'featured' | 'video' | 'blog'>('banner');
   const [isAdding, setIsAdding] = useState<'banner' | 'featured' | 'video' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
+  const [editBannerId, setEditBannerId] = useState<string | null>(null);
   const [blogTitle, setBlogTitle] = useState('');
   const [blogCategory, setBlogCategory] = useState('Cẩm nang');
   const [blogLanguage, setBlogLanguage] = useState('Tiếng Việt');
@@ -309,9 +310,25 @@ export default function AdminContentPage() {
     return { color: colors.muted, border: `1px solid ${colors.borderSoft}` };
   };
 
+  const handleEditBanner = (banner: CmsContentItem) => {
+    const meta = (banner.metadata as any) || {};
+    setEditBannerId(banner.id);
+    setBannerTitle(banner.title);
+    setBannerTag(meta.tag || '');
+    setBannerPos(meta.position || 'Trang chủ #1');
+    setBannerLink(meta.link || '');
+    setBannerStatus(banner.status === 'PUBLISHED' ? 'Đang hiển thị' : banner.status === 'ARCHIVED' ? 'Ẩn' : 'Nháp');
+    setBannerImage(meta.imageUrl || null);
+    setBannerStatusLabel(meta.statusLabel || '');
+    setBannerSubtitle(meta.subtitle || '');
+    setBannerDescription(meta.description || '');
+    setIsAdding('banner');
+  };
+
   const closeDrawer = () => {
     setIsAdding(null);
     setEditBlogId(null);
+    setEditBannerId(null);
     setBlogTitle('');
     setBlogCategory('Cẩm nang');
     setBlogLanguage('Tiếng Việt');
@@ -320,6 +337,12 @@ export default function AdminContentPage() {
     setBannerTitle('');
     setBannerImage(null);
     setBannerLink('');
+    setBannerStatusLabel('');
+    setBannerSubtitle('');
+    setBannerDescription('');
+    setBannerTag('');
+    setBannerPos('Trang chủ #1');
+    setBannerStatus('Đang hiển thị');
   };
 
   const handleSaveBanner = async () => {
@@ -329,11 +352,10 @@ export default function AdminContentPage() {
     }
     try {
       setIsSubmitting(true);
-      await contentApi.adminCreate({
+      const payload = {
         title: bannerTitle,
-        slug: bannerTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
         type: 'BANNER' as any,
-        status: bannerStatus === 'Đang hiển thị' ? 'PUBLISHED' : bannerStatus === 'Ẩn' ? 'ARCHIVED' : 'DRAFT',
+        status: (bannerStatus === 'Đang hiển thị' ? 'PUBLISHED' : bannerStatus === 'Ẩn' ? 'ARCHIVED' : 'DRAFT') as any,
         metadata: {
           tag: bannerTag,
           position: bannerPos,
@@ -343,15 +365,19 @@ export default function AdminContentPage() {
           subtitle: bannerSubtitle,
           description: bannerDescription
         }
-      });
+      };
+
+      if (editBannerId) {
+        await contentApi.adminUpdate(editBannerId, payload);
+      } else {
+        await contentApi.adminCreate({
+          ...payload,
+          slug: bannerTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
+        });
+      }
+      
       fetchBanners();
       closeDrawer();
-      setBannerTitle('');
-      setBannerLink('');
-      setBannerImage(null);
-      setBannerStatusLabel('');
-      setBannerSubtitle('');
-      setBannerDescription('');
     } catch (error) {
       console.error('Failed to save banner:', error);
       alert('Có lỗi xảy ra khi lưu banner');
@@ -558,11 +584,11 @@ export default function AdminContentPage() {
             const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${metadata.imageUrl})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
             
             return (
-            <div key={banner.id} style={{ 
+            <div key={banner.id} onClick={() => handleEditBanner(banner)} style={{ 
               height: '220px', borderRadius: '16px', border: `1px solid ${colors.borderSoft}`, 
               background: bgImage, backgroundSize: 'cover', backgroundPosition: 'center',
               padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              position: 'relative'
+              position: 'relative', cursor: 'pointer'
             }}>
               <div>
                 {metadata.statusLabel && (
@@ -1024,7 +1050,7 @@ export default function AdminContentPage() {
             
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
               <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={!isSubmitting ? handleSaveBanner : undefined} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : 'Thêm banner'}</span>
+              <span onClick={!isSubmitting ? handleSaveBanner : undefined} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : (editBannerId ? 'Cập nhật' : 'Thêm banner')}</span>
             </div>
           </div>
         </div>
