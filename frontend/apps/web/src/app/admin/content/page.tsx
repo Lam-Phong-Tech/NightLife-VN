@@ -6,7 +6,7 @@ import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, L
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
-import { apiFormDataClient, apiClient } from '@/lib/api/client';
+import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -96,6 +96,7 @@ export default function AdminContentPage() {
   const [bannerLink, setBannerLink] = useState('');
   const [bannerStatus, setBannerStatus] = useState('Đang hiển thị');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
   const [bannerStatusLabel, setBannerStatusLabel] = useState('');
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerDescription, setBannerDescription] = useState('');
@@ -336,6 +337,7 @@ export default function AdminContentPage() {
     setBlogContent('');
     setBannerTitle('');
     setBannerImage(null);
+    setBannerImageFile(null);
     setBannerLink('');
     setBannerStatusLabel('');
     setBannerSubtitle('');
@@ -352,6 +354,24 @@ export default function AdminContentPage() {
     }
     try {
       setIsSubmitting(true);
+      
+      let finalImageUrl = bannerImage && !bannerImage.startsWith('blob:') ? bannerImage : '';
+      if (bannerImageFile) {
+        const form = new FormData();
+        form.append('file', bannerImageFile);
+        form.append('purpose', 'BANNER');
+        form.append('access', 'PUBLIC');
+        try {
+          const res = await apiFormDataClient<any>('/storage/upload', form);
+          if (res && res.url) {
+            finalImageUrl = res.url;
+          }
+        } catch (uploadErr) {
+          console.error('Failed to upload banner image:', uploadErr);
+          alert('Lỗi tải ảnh. Banner sẽ được lưu nhưng không có ảnh mới.');
+        }
+      }
+
       const payload = {
         title: bannerTitle,
         type: 'BANNER' as any,
@@ -360,7 +380,7 @@ export default function AdminContentPage() {
           tag: bannerTag,
           position: bannerPos,
           link: bannerLink,
-          imageUrl: bannerImage || '',
+          imageUrl: finalImageUrl,
           statusLabel: bannerStatusLabel,
           subtitle: bannerSubtitle,
           description: bannerDescription
@@ -581,7 +601,7 @@ export default function AdminContentPage() {
           {banners.map((banner) => {
             const metadata = (banner.metadata as any) || {};
             const displayStatus = banner.status === 'PUBLISHED' ? 'Đang hiển thị' : banner.status === 'DRAFT' ? 'Nháp' : 'Ẩn';
-            const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${metadata.imageUrl})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
+            const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${resolveClientUrl(metadata.imageUrl)})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
             
             return (
             <div key={banner.id} onClick={() => handleEditBanner(banner)} style={{ 
@@ -927,16 +947,19 @@ export default function AdminContentPage() {
                   id="banner-image-upload" 
                   onChange={(e) => { 
                     const file = e.target.files?.[0]; 
-                    if (file) { setBannerImage(URL.createObjectURL(file)); } 
+                    if (file) { 
+                      setBannerImageFile(file);
+                      setBannerImage(URL.createObjectURL(file)); 
+                    } 
                   }} 
                 />
                 <label htmlFor="banner-image-upload" style={{ display: 'block', cursor: 'pointer' }}>
                   <div style={{ position: 'relative', height: '180px', borderRadius: '13px', overflow: 'hidden', border: bannerImage ? 'none' : '1px dashed rgba(212,178,106,.4)', background: 'rgba(12,12,15,.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
                     {bannerImage ? (
                       <>
-                        <img src={bannerImage} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={resolveClientUrl(bannerImage) || ''} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <span 
-                          onClick={(e) => { e.preventDefault(); setBannerImage(null); }} 
+                          onClick={(e) => { e.preventDefault(); setBannerImage(null); setBannerImageFile(null); }} 
                           style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,.6)', color: '#fff', borderRadius: '50%', padding: '4px', cursor: 'pointer' }}
                         >
                           <X size={14} />
