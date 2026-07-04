@@ -34,4 +34,33 @@ describe("client translations", () => {
     expect(translateText("nhân viên a", "ja")).toBe("スタッフA");
     expect(translateText("quán A", "en")).toBe("Venue A");
   });
+
+  it("translates remaining member, venue, cast, and auth screens", () => {
+    expect(translateText("Áp dụng JA", "ja")).toBe("JAを適用");
+    expect(translateText("Xem danh sách quán", "ja")).toBe("店舗一覧を見る");
+    expect(
+      translateText("Coupon & khuyến mãi từ các quán đối tác · Hà Nội", "ja"),
+    ).toBe("提携店舗のクーポン・キャンペーン · ハノイ");
+    expect(translateText("Guest Discount 5%", "ja")).toBe("ゲスト割引 5%");
+    expect(translateText("Club Lumiere · Tây Hồ", "ja")).toBe(
+      "クラブ・リュミエール · タイホー",
+    );
+    expect(translateText("Thư viện ảnh", "ja")).toBe("フォトギャラリー");
+    expect(translateText("3 ảnh", "ja")).toBe("3枚の写真");
+    expect(translateText("1 nội dung", "ja")).toBe("1件");
+    expect(translateText("Đang mở · 19:00 - 04:00", "ja")).toBe(
+      "営業中 · 19:00 - 04:00",
+    );
+    expect(translateText("#BK-123456 · Admin đang điều phối", "ja")).toBe(
+      "#BK-123456 · 管理者が調整中",
+    );
+    expect(translateText("Quán đang thuộc về", "ja")).toBe("所属店舗");
+    expect(translateText("Cast tương tự", "ja")).toBe("似ているキャスト");
+    expect(translateText("Đặt cast này", "ja")).toBe("このキャストを予約");
+    expect(translateText("Nói tiếng Anh", "ja")).toBe("英語対応");
+    expect(translateText("Nhật Bản · Việt Nam", "ja")).toBe("日本 · ベトナム");
+    expect(translateText("Quên mật khẩu?", "ja")).toBe("パスワードをお忘れですか？");
+    expect(translateText("Gửi mã xác nhận", "ja")).toBe("確認コードを送信");
+    expect(translateText("Tạo mật khẩu mới", "ja")).toBe("新しいパスワードを作成");
+  });
 });
