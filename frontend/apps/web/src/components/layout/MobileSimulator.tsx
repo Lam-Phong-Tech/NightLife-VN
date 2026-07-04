@@ -20,7 +20,7 @@ export function MobileSimulator() {
 
   return (
     <div className="nl-mobile-simulator-root min-h-screen bg-[#f6f5f2] font-sans">
-      <div className="fixed left-4 top-4 z-20 opacity-0 transition-opacity duration-200 hover:opacity-100 focus-within:opacity-100">
+      <div className="fixed left-4 top-4 z-20">
         <button
           onClick={() => {
             document.cookie = "device_preference=; path=/; max-age=0";
