@@ -15301,7 +15301,8 @@ export class NightlifeDataService {
       id: bk.id,
       customerName:
         bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
-      phone: bk.user?.phone || bk.guest?.phone || '',
+      customerPhone: bk.user?.phone || bk.guest?.phone || '',
+      customerEmail: bk.user?.email || bk.guest?.email || '',
       store: bk.store.name,
       cast: bk.cast?.stageName ? 'Cast: ' + bk.cast.stageName : 'Không cast',
       partySize: bk.partySize,

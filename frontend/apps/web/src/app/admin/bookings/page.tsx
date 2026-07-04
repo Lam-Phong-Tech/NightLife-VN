@@ -57,9 +57,8 @@ export default function AdminBookingsPage() {
     return { color: '#c5c0b6', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)' };
   };
 
-  const formatPhone = (phone?: string) => {
-    if (!phone || phone.length < 6) return phone || 'Chưa cung cấp';
-    return `${phone.slice(0, 3)} •• ${phone.slice(-3)}`;
+  const formatEmail = (email?: string) => {
+    return email || 'Chưa cung cấp email';
   };
 
   const formatTime = (isoString: string) => {
@@ -146,7 +145,7 @@ export default function AdminBookingsPage() {
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>{formatBookingId(b.id)}</span>
-              <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px' }}>{formatPhone(b.customerPhone)}</div></div>
+              <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatEmail(b.customerEmail)}</div></div>
               <div style={{ minWidth: 0 }}><div style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.store?.name}</div><div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{b.cast ? `Cast: ${b.cast.stageName}` : 'Không cast'}</div></div>
               <span style={{ color: '#c5c0b6' }}>{b.partySize} người</span>
               <span style={{ color: '#8c8679', fontSize: '12px' }}>{formatTime(b.scheduledAt)}</span>
@@ -179,7 +178,7 @@ export default function AdminBookingsPage() {
                 <span onClick={() => setSelectedBooking(null)} style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
               </div>
               <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số điện thoại</span><span style={{ fontSize: '13px', color: '#e3c27e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1"/></svg>{formatPhone(bk.customerPhone)}</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Email</span><span style={{ fontSize: '13px', color: '#e3c27e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>{formatEmail(bk.customerEmail)}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Quán</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.store?.name}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Cast chỉ định</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.cast ? bk.cast.stageName : 'Không'}</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Số người</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{bk.partySize} khách</span></div>
