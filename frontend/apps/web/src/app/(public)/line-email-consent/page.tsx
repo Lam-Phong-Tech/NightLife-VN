@@ -28,6 +28,12 @@ const normalizeRedirect = (value: string | null) => {
   return value;
 };
 
+const emailConsentBenefits = [
+  "Không dùng email cho quảng cáo.",
+  "Chỉ dùng để đăng nhập, lưu lịch đặt và gửi thông báo cần thiết.",
+  "Bạn có thể yêu cầu hỗ trợ về dữ liệu cá nhân.",
+];
+
 export default function LineEmailConsentPage() {
   const [accepted, setAccepted] = useState(false);
   const redirectTo = useMemo(() => {
@@ -82,13 +88,13 @@ export default function LineEmailConsentPage() {
           <section
             className="nl-line-consent-hero"
             style={{
-              minHeight: 480,
+              minHeight: 360,
               border: `1px solid ${colors.border}`,
               borderRadius: 22,
               padding: 26,
               display: "flex",
               flexDirection: "column",
-              justifyContent: "space-between",
+              justifyContent: "flex-end",
               background:
                 "linear-gradient(180deg,rgba(12,12,15,.28),rgba(12,12,15,.92)),url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1400&q=80') center/cover",
               overflow: "hidden",
@@ -122,35 +128,11 @@ export default function LineEmailConsentPage() {
                   fontWeight: 950,
                 }}
               >
-                Vietyoru cần email để tạo và bảo vệ tài khoản hội viên.
+                Cần email để tạo tài khoản hội viên.
               </h1>
               <p className="nl-line-consent-hero-copy" style={{ marginTop: 14, maxWidth: 560, color: colors.muted, fontSize: 15, lineHeight: 1.68 }}>
-                Chúng tôi chỉ yêu cầu LINE chia sẻ email sau khi bạn đồng ý rõ ràng. Email được dùng để đăng nhập, nhận diện tài khoản,
-                lưu lịch đặt chỗ, quản lý ưu đãi và gửi thông báo quan trọng liên quan đến dịch vụ.
+                Email từ LINE giúp bạn đăng nhập, lưu lịch đặt chỗ và bảo vệ tài khoản.
               </p>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                maxWidth: 560,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 18,
-                padding: 16,
-                background: "rgba(12,12,15,.58)",
-              }}
-            >
-              {[
-                "Không bán hoặc chia sẻ email cho bên thứ ba để quảng cáo.",
-                "Email được lưu cùng tài khoản hội viên và được xử lý theo Chính sách bảo mật.",
-                "Bạn có thể liên hệ Vietyoru để yêu cầu hỗ trợ về dữ liệu cá nhân.",
-              ].map((item) => (
-                <div key={item} style={{ display: "flex", gap: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.55 }}>
-                  <CheckCircle2 size={17} color={colors.line} style={{ flex: "none", marginTop: 1 }} />
-                  <span>{item}</span>
-                </div>
-              ))}
             </div>
           </section>
 
@@ -188,12 +170,12 @@ export default function LineEmailConsentPage() {
               >
                 <ShieldCheck size={26} />
               </div>
-              <h2 style={{ margin: 0, fontSize: 24, lineHeight: 1.12, fontWeight: 950 }}>
-                Đồng ý chia sẻ email qua LINE
+              <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12, fontWeight: 950 }}>
+                Chia sẻ email qua LINE
               </h2>
             </div>
-            <p style={{ marginTop: 12, color: colors.muted, fontSize: 13.5, lineHeight: 1.7 }}>
-              Bằng cách tiếp tục, bạn cho phép Vietyoru nhận địa chỉ email từ LINE để tạo hoặc đăng nhập tài khoản hội viên.
+            <p style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.58 }}>
+              Cho phép Vietyoru nhận email từ LINE để tạo hoặc đăng nhập tài khoản.
             </p>
 
             <label
@@ -216,9 +198,8 @@ export default function LineEmailConsentPage() {
                 onChange={(event) => setAccepted(event.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: colors.line }}
               />
-              <span style={{ color: colors.text, fontSize: 13.5, lineHeight: 1.6, fontWeight: 780 }}>
-                Tôi đồng ý cho Vietyoru thu thập email từ LINE cho mục đích đăng nhập, quản lý tài khoản hội viên, đặt chỗ,
-                ưu đãi và bảo mật tài khoản.
+              <span style={{ color: colors.text, fontSize: 13.5, lineHeight: 1.52, fontWeight: 780 }}>
+                Tôi đồng ý chia sẻ email từ LINE cho Vietyoru.
               </span>
             </label>
 
@@ -239,10 +220,29 @@ export default function LineEmailConsentPage() {
                 cursor: accepted ? "pointer" : "not-allowed",
               }}
             >
-              Đồng ý và tiếp tục với LINE
+              Tiếp tục với LINE
             </button>
 
-            <p style={{ marginTop: 14, color: colors.dim, fontSize: 12, lineHeight: 1.65 }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 9,
+                marginTop: 16,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 15,
+                padding: 14,
+                background: "rgba(12,12,15,.34)",
+              }}
+            >
+              {emailConsentBenefits.map((item) => (
+                <div key={item} style={{ display: "flex", gap: 9, color: colors.muted, fontSize: 12.8, lineHeight: 1.45 }}>
+                  <CheckCircle2 size={16} color={colors.line} style={{ flex: "none", marginTop: 1 }} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ marginTop: 12, color: colors.dim, fontSize: 12, lineHeight: 1.55 }}>
               Xem thêm tại{" "}
               <Link href="/legal" style={{ color: colors.goldPale, fontWeight: 900 }}>
                 Chính sách bảo mật
