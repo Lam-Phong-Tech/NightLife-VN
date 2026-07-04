@@ -80,13 +80,33 @@ export type UploadedBillEvidence = {
 };
 
 export type BillOcrPreview = {
+  phase?: "P2_OCR_PREVIEW" | string;
   source: string;
+  model?: string;
+  input?: {
+    fileName: string | null;
+    textHash: string | null;
+    hasExtractedText: boolean;
+  };
   suggestions: {
     totalVnd: number | null;
     usedAt: string | null;
   };
+  extractedFields?: {
+    totalVnd?: {
+      value: number | null;
+      confidence: number;
+      source: string;
+    };
+    usedAt?: {
+      value: string | null;
+      confidence: number;
+      source: string;
+    };
+  };
   confidence: number;
   warnings: string[];
+  nextAction?: "MANUAL_REVIEW" | "CAN_PREFILL_FORM" | string;
   requiresManualReview: boolean;
 };
 
