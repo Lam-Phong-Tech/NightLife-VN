@@ -14148,6 +14148,29 @@ export class NightlifeDataService {
       scheduledAt: bk.scheduledAt,
     }));
 
+    const rawTelegramLogs = await this.prisma.notificationLog.findMany({
+      where: { channel: 'TELEGRAM' as any, templateKey: { not: null } },
+      take: 4,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        booking: { select: { id: true, partySize: true, store: { select: { name: true } } } },
+        bill: { select: { id: true, totalVnd: true, store: { select: { name: true } } } },
+        partnerRequests: { select: { businessName: true, storeCity: true }, take: 1 },
+      }
+    });
+
+    const telegramLogs = rawTelegramLogs.map(log => ({
+      id: log.id,
+      templateKey: log.templateKey,
+      recipient: log.recipient,
+      status: log.status,
+      createdAt: log.createdAt,
+      payload: log.payload,
+      booking: log.booking,
+      bill: log.bill,
+      partnerRequest: log.partnerRequests?.[0] || null,
+    }));
+
     return {
       activeStores,
       activeStoresHn,
@@ -14165,7 +14188,7 @@ export class NightlifeDataService {
       commissionAmount,
       revenue7Days,
       recentBookings: recentBookingsMapped,
-      telegramLogs: [],
+      telegramLogs,
     };
   }
 
