@@ -1,4 +1,5 @@
 import type { PublicStoreDetail, StoreOpeningHour } from "@/lib/api/store-detail";
+import { normalizeStoreOpeningHours } from "@/lib/booking-time-slots";
 import { breadcrumbJsonLd, jsonLdGraph } from "@/lib/seo/structured-data";
 import { absoluteSiteUrl } from "@/lib/site";
 import { readableName } from "./store-detail.helpers";
@@ -25,11 +26,13 @@ const schemaTypeByCategory: Record<string, string> = {
 };
 
 const openingSpec = (openingHours?: Record<string, StoreOpeningHour> | null) => {
-  if (!openingHours) {
+  const normalizedOpeningHours = normalizeStoreOpeningHours(openingHours);
+
+  if (!normalizedOpeningHours) {
     return undefined;
   }
 
-  const specs = Object.entries(openingHours)
+  const specs = Object.entries(normalizedOpeningHours)
     .filter(([, slot]) => slot && !slot.closed && slot.open && slot.close)
     .map(([day, slot]) => ({
       "@type": "OpeningHoursSpecification",

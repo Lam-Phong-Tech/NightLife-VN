@@ -24,7 +24,11 @@ import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { apiClient } from "@/lib/api/client";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
-import { buildBookingTimeSlots, buildScheduledAtFromBookingSlot } from "@/lib/booking-time-slots";
+import {
+  buildBookingTimeSlots,
+  buildScheduledAtFromBookingSlot,
+  normalizeStoreOpeningHours,
+} from "@/lib/booking-time-slots";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -417,7 +421,15 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
   );
 }
 
-function HoursList({ store, today }: { store: PublicStoreDetail; today: string }) {
+function HoursList({
+  store,
+  today,
+  openingHours,
+}: {
+  store: PublicStoreDetail;
+  today: string;
+  openingHours: ReturnType<typeof normalizeStoreOpeningHours>;
+}) {
   const summary = rawOpeningSummary(store);
 
   if (summary) {
@@ -436,7 +448,7 @@ function HoursList({ store, today }: { store: PublicStoreDetail; today: string }
       {weekdayLabels.map(([key, label]) => (
         <div className={key === today ? "today" : undefined} key={key}>
           <span>{key === today ? `Hôm nay · ${label}` : label}</span>
-          <strong>{openingText(store.openingHours?.[key])}</strong>
+          <strong>{openingText(openingHours?.[key])}</strong>
         </div>
       ))}
     </div>
@@ -724,8 +736,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
   const today = todayKey() ?? "monday";
+  const normalizedOpeningHours = useMemo(
+    () => normalizeStoreOpeningHours(store.openingHours),
+    [store.openingHours],
+  );
   const openingSummary = rawOpeningSummary(store);
-  const todayOpening = openingSummary ?? openingText(store.openingHours?.[today]);
+  const todayOpening = openingSummary ?? openingText(normalizedOpeningHours?.[today]);
   const openNow = todayOpening !== "Nghỉ" && todayOpening !== "Chưa cập nhật";
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const priceText = priceRangeText(store);
@@ -781,8 +797,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     iso: new Date().toISOString().slice(0, 10),
   };
   const bookingTimeOptions = useMemo(
-    () => buildBookingTimeSlots(store.openingHours, selectedDate.iso),
-    [selectedDate.iso, store.openingHours],
+    () => buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso),
+    [normalizedOpeningHours, selectedDate.iso, store.openingHours],
   );
 
   useEffect(() => {
@@ -874,7 +890,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       scheduledAt: buildScheduledAtFromBookingSlot(
         selectedDate.iso,
         selectedTime,
-        store.openingHours,
+        normalizedOpeningHours ?? store.openingHours,
       ),
       partySize: guestCount,
       ...(trimmedNote ? { note: trimmedNote } : {}),
@@ -1224,7 +1240,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <section>
               <SectionTitle title="Giờ mở cửa" />
-              <HoursList store={store} today={today} />
+              <HoursList store={store} today={today} openingHours={normalizedOpeningHours} />
             </section>
 
             <section className="mobile-only">

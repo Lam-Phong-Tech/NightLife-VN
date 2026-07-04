@@ -16,7 +16,7 @@ import {
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { getCastDetail } from "@/lib/api/cast-detail";
-import { getStoreDetail, type StoreOpeningHour } from "@/lib/api/store-detail";
+import { getStoreDetail } from "@/lib/api/store-detail";
 import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
@@ -174,7 +174,7 @@ export default function Page() {
   const [bookingTime, setBookingTime] = useState("21:00");
   const [guests, setGuests] = useState(4);
   const [note, setNote] = useState("");
-  const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, StoreOpeningHour> | null>(null);
+  const [storeOpeningHours, setStoreOpeningHours] = useState<Record<string, unknown> | null>(null);
   const [storeHoursResolved, setStoreHoursResolved] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
