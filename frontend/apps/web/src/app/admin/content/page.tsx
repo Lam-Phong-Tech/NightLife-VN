@@ -90,8 +90,8 @@ export default function AdminContentPage() {
 
   // Banner states
   const [bannerTitle, setBannerTitle] = useState('');
-  const [bannerTag, setBannerTag] = useState('Hero phụ');
-  const [bannerPos, setBannerPos] = useState('Trang Ưu đãi');
+  const [bannerTag, setBannerTag] = useState('Chi tiết');
+  const [bannerPos, setBannerPos] = useState('Trang chủ #1');
   const [bannerLink, setBannerLink] = useState('');
   const [bannerStatus, setBannerStatus] = useState('Đang hiển thị');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
@@ -814,7 +814,7 @@ export default function AdminContentPage() {
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>NHÃN SLOT</div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['Hero chính', 'Hero phụ', 'Ưu đãi', 'Sự kiện'].map(tag => (
+                    {['Nhận mã', 'Đặt ngay', 'Chi tiết'].map(tag => (
                       <span 
                         key={tag}
                         onClick={() => setBannerTag(tag)}
@@ -836,8 +836,8 @@ export default function AdminContentPage() {
 
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>VỊ TRÍ HIỂN THỊ</div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['Trang chủ #1', 'Trang chủ #2', 'Trang Ưu đãi', 'Nháp'].map(pos => (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['Trang chủ #1', 'Trang chủ #2', 'Nháp'].map(pos => (
                       <span 
                         key={pos}
                         onClick={() => setBannerPos(pos)}
