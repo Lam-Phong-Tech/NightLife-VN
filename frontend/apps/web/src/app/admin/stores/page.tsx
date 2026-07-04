@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
+import { ChevronDown, Plus, Edit2, Search } from 'lucide-react';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 
-const ReactQuill = dynamic(() => import('react-quill'), { 
+const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
   loading: () => <div style={{ height: 190, background: 'rgba(12,12,15,.55)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', fontSize: 13, border: '1px solid rgba(255,255,255,.1)' }}>Đang tải Editor...</div>
 });

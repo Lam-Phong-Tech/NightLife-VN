@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft } from 'lucide-react';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
 
-const ReactQuill = dynamic(() => import('react-quill'), { 
+const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
   loading: () => <div style={{ height: 190, background: 'rgba(12,12,15,.55)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', fontSize: 13, border: '1px solid rgba(255,255,255,.1)' }}>Đang tải Editor...</div>
 });
