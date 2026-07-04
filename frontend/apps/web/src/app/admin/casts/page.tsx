@@ -63,15 +63,21 @@ export default function AdminCastsPage() {
 
   const fetchStores = async () => {
     try {
-      const res = await apiClient<any>('/admin/stores', { params: { limit: 100 } });
-      if (res) {
-        if (Array.isArray(res)) setStores(res);
-        else if (res.data && Array.isArray(res.data)) setStores(res.data);
-        else if (res.data && res.data.data && Array.isArray(res.data.data)) setStores(res.data.data);
-        else setStores([]);
+      // Dùng chung endpoint và cách lấy data y hệt như trang stores/page.tsx
+      const res = await apiClient<any>('/admin/stores');
+      let arr = [];
+      if (Array.isArray(res)) arr = res;
+      else if (res && Array.isArray(res.data)) arr = res.data;
+      else if (res && res.data && Array.isArray(res.data.data)) arr = res.data.data;
+      
+      if (arr.length === 0) {
+        setStores([{ id: 'no-data', name: 'Lỗi: API trả về mảng rỗng (0 quán)' }]);
+      } else {
+        setStores(arr);
       }
     } catch (e) {
       console.error(e);
+      setStores([{ id: 'error', name: 'Lỗi: Không thể fetch API quán' }]);
     }
   };
 
