@@ -939,6 +939,33 @@ describe('NightlifeDataService', () => {
         }),
       }),
     );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-1',
+        action: 'ranking.config.create',
+        targetType: 'RankingConfig',
+        targetId: rankingId,
+        metadata: expect.objectContaining({
+          actorId: 'admin-1',
+          action: 'ranking.config.create',
+          ref_id: rankingId,
+          occurredAt: expect.any(String),
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        channel: 'IN_APP',
+        recipient: `RankingConfig:${rankingId}`,
+        templateKey: 'audit.ranking.config.create.v1',
+        payload: expect.objectContaining({
+          actorId: 'admin-1',
+          action: 'ranking.config.create',
+          ref_id: rankingId,
+          occurredAt: expect.any(String),
+        }),
+      }),
+    });
   });
 
   it('rejects duplicate admin ranking pins in the same city/category/scope', async () => {
@@ -964,6 +991,96 @@ describe('NightlifeDataService', () => {
       ),
     ).rejects.toBeInstanceOf(UnprocessableEntityException);
     expect(prisma.rankingConfig.create).not.toHaveBeenCalled();
+  });
+
+  it('logs minimal audit and notification fields when updating a ranking config', async () => {
+    const storeId = '11111111-1111-4111-8111-111111111111';
+    const rankingId = '22222222-2222-4222-8222-222222222222';
+    const createdAt = new Date('2026-06-30T10:00:00.000Z');
+    const updatedAt = new Date('2026-07-01T10:00:00.000Z');
+    const current = {
+      id: rankingId,
+      targetType: 'STORE',
+      targetId: storeId,
+      areaId: null,
+      cityCode: 'hn',
+      category: 'CLUB',
+      scope: 'global',
+      manualScore: 100,
+      pinRank: 1,
+      sponsored: true,
+      reason: 'Top club thÃ¡ng 7',
+      status: 'ACTIVE',
+      startsAt: null,
+      endsAt: null,
+      createdAt,
+      updatedAt: createdAt,
+      area: null,
+    };
+
+    prisma.rankingConfig.findFirst
+      .mockResolvedValueOnce(current as never)
+      .mockResolvedValueOnce(null as never);
+    prisma.rankingConfig.update.mockResolvedValue({
+      ...current,
+      manualScore: 120,
+      status: 'PAUSED',
+      updatedAt,
+    } as never);
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: storeId,
+        name: 'Neon Club',
+        slug: 'neon-club',
+        category: 'CLUB',
+        status: 'ACTIVE',
+        city: 'Ha Noi',
+        district: 'Tay Ho',
+        area: { name: 'Tay Ho', city: 'Ha Noi' },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.updateAdminRankingConfig(
+      { id: 'admin-2', role: 'ADMIN' },
+      rankingId,
+      { manualScore: 120, status: 'PAUSED' },
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: rankingId,
+        manualScore: 120,
+        status: 'PAUSED',
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-2',
+        action: 'ranking.config.update',
+        targetType: 'RankingConfig',
+        targetId: rankingId,
+        metadata: expect.objectContaining({
+          actorId: 'admin-2',
+          action: 'ranking.config.update',
+          ref_id: rankingId,
+          occurredAt: expect.any(String),
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        channel: 'IN_APP',
+        recipient: `RankingConfig:${rankingId}`,
+        templateKey: 'audit.ranking.config.update.v1',
+        payload: expect.objectContaining({
+          actorId: 'admin-2',
+          action: 'ranking.config.update',
+          ref_id: rankingId,
+          occurredAt: expect.any(String),
+        }),
+      }),
+    });
   });
 
   it('searches public casts by cast or store name and store filters', async () => {
@@ -3138,6 +3255,10 @@ describe('NightlifeDataService', () => {
           scannedById: 'partner-1',
         }),
         metadata: expect.objectContaining({
+          actorId: 'partner-1',
+          action: 'COUPON_ISSUE_USED',
+          ref_id: 'issue-1',
+          occurredAt: expect.any(String),
           source: 'PARTNER_CONFIRM_CHECK_IN',
           couponId: 'coupon-1',
           previousStatus: 'ISSUED',
@@ -3167,6 +3288,10 @@ describe('NightlifeDataService', () => {
         recipient: 'couponIssue:issue-1',
         templateKey: 'coupon.issue.used.v1',
         payload: expect.objectContaining({
+          actorId: 'partner-1',
+          action: 'COUPON_ISSUE_USED',
+          ref_id: 'issue-1',
+          occurredAt: expect.any(String),
           couponIssueId: 'issue-1',
           status: 'USED',
           source: 'PARTNER_CONFIRM_CHECK_IN',
@@ -4382,9 +4507,29 @@ describe('NightlifeDataService', () => {
           action: 'PARTNER_REQUEST_APPROVED',
           targetType: 'PARTNER_REQUEST',
           targetId: 'PARTNER-ABC12345',
+          metadata: expect.objectContaining({
+            actorId: 'admin-1',
+            action: 'PARTNER_REQUEST_APPROVED',
+            ref_id: 'PARTNER-ABC12345',
+            occurredAt: expect.any(String),
+          }),
         }),
       }),
     );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        channel: 'IN_APP',
+        storeId: 'store-draft-1',
+        recipient: 'partnerRequest:PARTNER-ABC12345',
+        templateKey: 'audit.partner_request.review.v1',
+        payload: expect.objectContaining({
+          actorId: 'admin-1',
+          action: 'PARTNER_REQUEST_APPROVED',
+          ref_id: 'PARTNER-ABC12345',
+          occurredAt: expect.any(String),
+        }),
+      }),
+    });
     expect(result).toEqual(
       expect.objectContaining({
         id: 'PARTNER-ABC12345',
@@ -4565,8 +4710,26 @@ describe('NightlifeDataService', () => {
           reviewedById: 'admin-1',
         }),
         metadata: expect.objectContaining({
+          actorId: 'admin-1',
+          action: 'bill.review.approve',
+          ref_id: 'bill-1',
+          occurredAt: expect.any(String),
           previousStatus: 'SUBMITTED',
           nextStatus: 'VERIFIED',
+        }),
+      }),
+    });
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        channel: 'IN_APP',
+        recipient: 'bill:bill-1',
+        billId: 'bill-1',
+        templateKey: 'audit.bill.review.v1',
+        payload: expect.objectContaining({
+          actorId: 'admin-1',
+          action: 'bill.review.approve',
+          ref_id: 'bill-1',
+          occurredAt: expect.any(String),
         }),
       }),
     });

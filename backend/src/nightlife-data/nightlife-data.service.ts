@@ -1287,24 +1287,73 @@ export class NightlifeDataService {
       pinRank,
     });
 
-    const config = await this.prisma.rankingConfig.create({
-      data: {
-        createdById: user.id,
-        targetType,
-        targetId: dto.targetId,
-        areaId: dto.areaId ?? null,
-        cityCode,
-        category,
-        scope,
-        pinRank,
-        manualScore,
-        sponsored: dto.sponsored ?? false,
-        reason: this.cleanText(dto.reason ?? undefined) || null,
-        status: (dto.status ?? 'ACTIVE') as RankingConfigStatus,
-        startsAt,
-        endsAt,
-      },
-      select: this.adminRankingConfigSelect(),
+    const config = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.rankingConfig.create({
+        data: {
+          createdById: user.id,
+          targetType,
+          targetId: dto.targetId,
+          areaId: dto.areaId ?? null,
+          cityCode,
+          category,
+          scope,
+          pinRank,
+          manualScore,
+          sponsored: dto.sponsored ?? false,
+          reason: this.cleanText(dto.reason ?? undefined) || null,
+          status: (dto.status ?? 'ACTIVE') as RankingConfigStatus,
+          startsAt,
+          endsAt,
+        },
+        select: this.adminRankingConfigSelect(),
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'ranking.config.create',
+          targetType: 'RankingConfig',
+          targetId: created.id,
+          beforeJson: Prisma.JsonNull,
+          afterJson: this.toPrismaJson(
+            this.buildRankingConfigAuditSnapshot(
+              created as AdminRankingConfigRecord,
+            ),
+          ),
+          metadata: this.toPrismaJson(
+            this.buildMinimalSensitiveMetadata({
+              actorId: user.id,
+              action: 'ranking.config.create',
+              refType: 'RankingConfig',
+              refId: created.id,
+              metadata: {
+                targetType,
+                targetId: dto.targetId,
+                cityCode,
+                category,
+                scope,
+              },
+            }),
+          ),
+        },
+      });
+
+      await this.recordSensitiveActionNotification(tx, {
+        actorId: user.id,
+        action: 'ranking.config.create',
+        refType: 'RankingConfig',
+        refId: created.id,
+        templateKey: 'audit.ranking.config.create.v1',
+        payload: {
+          targetType,
+          targetId: dto.targetId,
+          cityCode,
+          category,
+          scope,
+        },
+      });
+
+      return created;
     });
 
     return (
@@ -1313,6 +1362,7 @@ export class NightlifeDataService {
   }
 
   async updateAdminRankingConfig(
+    user: AuthenticatedUser,
     rankingId: string,
     dto: UpdateAdminRankingConfigDto,
   ) {
@@ -1369,30 +1419,81 @@ export class NightlifeDataService {
       excludeId: rankingId,
     });
 
-    const config = await this.prisma.rankingConfig.update({
-      where: { id: rankingId },
-      data: {
-        ...(dto.targetType !== undefined ? { targetType } : {}),
-        ...(dto.targetId !== undefined ? { targetId } : {}),
-        ...(dto.areaId !== undefined ? { areaId: dto.areaId ?? null } : {}),
-        ...(dto.cityCode !== undefined ? { cityCode } : {}),
-        ...(dto.category !== undefined ? { category } : {}),
-        ...(dto.scope !== undefined ? { scope } : {}),
-        ...(dto.pinRank !== undefined ? { pinRank } : {}),
-        ...(dto.manualScore !== undefined
-          ? { manualScore: dto.manualScore }
-          : {}),
-        ...(dto.sponsored !== undefined ? { sponsored: dto.sponsored } : {}),
-        ...(dto.reason !== undefined
-          ? { reason: this.cleanText(dto.reason ?? undefined) || null }
-          : {}),
-        ...(dto.status !== undefined
-          ? { status: dto.status as RankingConfigStatus }
-          : {}),
-        ...(dto.startsAt !== undefined ? { startsAt } : {}),
-        ...(dto.endsAt !== undefined ? { endsAt } : {}),
-      },
-      select: this.adminRankingConfigSelect(),
+    const config = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.rankingConfig.update({
+        where: { id: rankingId },
+        data: {
+          ...(dto.targetType !== undefined ? { targetType } : {}),
+          ...(dto.targetId !== undefined ? { targetId } : {}),
+          ...(dto.areaId !== undefined ? { areaId: dto.areaId ?? null } : {}),
+          ...(dto.cityCode !== undefined ? { cityCode } : {}),
+          ...(dto.category !== undefined ? { category } : {}),
+          ...(dto.scope !== undefined ? { scope } : {}),
+          ...(dto.pinRank !== undefined ? { pinRank } : {}),
+          ...(dto.manualScore !== undefined
+            ? { manualScore: dto.manualScore }
+            : {}),
+          ...(dto.sponsored !== undefined ? { sponsored: dto.sponsored } : {}),
+          ...(dto.reason !== undefined
+            ? { reason: this.cleanText(dto.reason ?? undefined) || null }
+            : {}),
+          ...(dto.status !== undefined
+            ? { status: dto.status as RankingConfigStatus }
+            : {}),
+          ...(dto.startsAt !== undefined ? { startsAt } : {}),
+          ...(dto.endsAt !== undefined ? { endsAt } : {}),
+        },
+        select: this.adminRankingConfigSelect(),
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'ranking.config.update',
+          targetType: 'RankingConfig',
+          targetId: rankingId,
+          beforeJson: this.toPrismaJson(
+            this.buildRankingConfigAuditSnapshot(current),
+          ),
+          afterJson: this.toPrismaJson(
+            this.buildRankingConfigAuditSnapshot(
+              updated as AdminRankingConfigRecord,
+            ),
+          ),
+          metadata: this.toPrismaJson(
+            this.buildMinimalSensitiveMetadata({
+              actorId: user.id,
+              action: 'ranking.config.update',
+              refType: 'RankingConfig',
+              refId: rankingId,
+              metadata: {
+                targetType,
+                targetId,
+                cityCode,
+                category,
+                scope,
+              },
+            }),
+          ),
+        },
+      });
+
+      await this.recordSensitiveActionNotification(tx, {
+        actorId: user.id,
+        action: 'ranking.config.update',
+        refType: 'RankingConfig',
+        refId: rankingId,
+        templateKey: 'audit.ranking.config.update.v1',
+        payload: {
+          targetType,
+          targetId,
+          cityCode,
+          category,
+          scope,
+        },
+      });
+
+      return updated;
     });
 
     return (
@@ -1400,23 +1501,77 @@ export class NightlifeDataService {
     )[0];
   }
 
-  async deleteAdminRankingConfig(rankingId: string) {
+  async deleteAdminRankingConfig(user: AuthenticatedUser, rankingId: string) {
     const existing = await this.prisma.rankingConfig.findFirst({
       where: { id: rankingId, deletedAt: null },
-      select: { id: true },
+      select: this.adminRankingConfigSelect(),
     });
 
     if (!existing) {
       throw new NotFoundException('Ranking config not found');
     }
 
-    await this.prisma.rankingConfig.update({
-      where: { id: rankingId },
-      data: {
-        status: 'DELETED',
-        deletedAt: new Date(),
-      },
-      select: { id: true },
+    const current = existing as AdminRankingConfigRecord;
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      const deleted = await tx.rankingConfig.update({
+        where: { id: rankingId },
+        data: {
+          status: 'DELETED',
+          deletedAt: now,
+        },
+        select: this.adminRankingConfigSelect(),
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'ranking.config.delete',
+          targetType: 'RankingConfig',
+          targetId: rankingId,
+          beforeJson: this.toPrismaJson(
+            this.buildRankingConfigAuditSnapshot(current),
+          ),
+          afterJson: this.toPrismaJson(
+            this.buildRankingConfigAuditSnapshot(
+              deleted as AdminRankingConfigRecord,
+            ),
+          ),
+          metadata: this.toPrismaJson(
+            this.buildMinimalSensitiveMetadata({
+              actorId: user.id,
+              action: 'ranking.config.delete',
+              refType: 'RankingConfig',
+              refId: rankingId,
+              occurredAt: now,
+              metadata: {
+                targetType: current.targetType,
+                targetId: current.targetId,
+                cityCode: current.cityCode,
+                category: current.category,
+                scope: current.scope,
+              },
+            }),
+          ),
+        },
+      });
+
+      await this.recordSensitiveActionNotification(tx, {
+        actorId: user.id,
+        action: 'ranking.config.delete',
+        refType: 'RankingConfig',
+        refId: rankingId,
+        occurredAt: now,
+        templateKey: 'audit.ranking.config.delete.v1',
+        payload: {
+          targetType: current.targetType,
+          targetId: current.targetId,
+          cityCode: current.cityCode,
+          category: current.category,
+          scope: current.scope,
+        },
+      });
     });
 
     return { id: rankingId, deleted: true };
@@ -4818,6 +4973,9 @@ export class NightlifeDataService {
     const nextStatus: PartnerRequestReviewStatus = dto.approve
       ? 'APPROVED'
       : 'REJECTED';
+    const reviewAction = dto.approve
+      ? 'PARTNER_REQUEST_APPROVED'
+      : 'PARTNER_REQUEST_REJECTED';
 
     const reviewed = await this.prisma.$transaction(async (tx) => {
       const request = await this.findPartnerRequest(lookup, tx);
@@ -4916,24 +5074,50 @@ export class NightlifeDataService {
       await tx.auditLog.create({
         data: {
           actorId: adminId,
-          action: dto.approve
-            ? 'PARTNER_REQUEST_APPROVED'
-            : 'PARTNER_REQUEST_REJECTED',
+          action: reviewAction,
           targetType: 'PARTNER_REQUEST',
           targetId: request.id,
-          metadata: this.toPrismaJson({
-            reason,
-            approve: dto.approve,
-            draftStoreId: request.store.id,
-            draftCastIds: request.draftCastIds,
-            draftMediaIds: request.draftMediaIds,
-            draftContentIds: request.draftContentIds,
-            partnerUserId: onboarding?.userId ?? null,
-            partnerAccountId: onboarding?.partnerAccountId ?? null,
-            temporaryPasswordIssued: Boolean(onboarding?.temporaryPassword),
-          }),
+          metadata: this.toPrismaJson(
+            this.buildMinimalSensitiveMetadata({
+              actorId: adminId,
+              action: reviewAction,
+              refType: 'PARTNER_REQUEST',
+              refId: request.id,
+              occurredAt: now,
+              metadata: {
+                reason,
+                approve: dto.approve,
+                draftStoreId: request.store.id,
+                draftCastIds: request.draftCastIds,
+                draftMediaIds: request.draftMediaIds,
+                draftContentIds: request.draftContentIds,
+                partnerUserId: onboarding?.userId ?? null,
+                partnerAccountId: onboarding?.partnerAccountId ?? null,
+                temporaryPasswordIssued: Boolean(
+                  onboarding?.temporaryPassword,
+                ),
+              },
+            }),
+          ),
           beforeJson: this.partnerRequestAuditJson(request),
           afterJson,
+        },
+      });
+
+      await this.recordSensitiveActionNotification(tx, {
+        actorId: adminId,
+        action: reviewAction,
+        refType: 'PARTNER_REQUEST',
+        refId: request.id,
+        occurredAt: now,
+        templateKey: 'audit.partner_request.review.v1',
+        recipient: `partnerRequest:${request.id}`,
+        storeId: request.store.id,
+        payload: {
+          status: nextStatus,
+          reason,
+          approve: dto.approve,
+          draftStoreId: request.store.id,
         },
       });
 
@@ -5595,6 +5779,11 @@ export class NightlifeDataService {
       dto.approve && requiresPmBaConfirmation && !dto.confirmNegativeCommission
         ? 'PENDING_PM_BA'
         : 'VERIFIED';
+    const reviewAction = dto.approve
+      ? nextApproveStatus === 'PENDING_PM_BA'
+        ? 'bill.review.pending_pm_ba'
+        : 'bill.review.approve'
+      : 'bill.review.reject';
 
     if (
       dto.approve &&
@@ -5691,43 +5880,71 @@ export class NightlifeDataService {
       await tx.auditLog.create({
         data: {
           actorId: adminId,
-          action: dto.approve
-            ? nextApproveStatus === 'PENDING_PM_BA'
-              ? 'bill.review.pending_pm_ba'
-              : 'bill.review.approve'
-            : 'bill.review.reject',
+          action: reviewAction,
           targetType: 'Bill',
           targetId: billId,
           beforeJson: this.buildBillReviewAuditSnapshot(bill),
           afterJson: this.buildBillReviewAuditSnapshot(reviewedBill),
-          metadata: this.toPrismaJson({
-            approve: dto.approve,
-            rejectReason: dto.rejectReason ?? null,
-            previousStatus: bill.status,
-            nextStatus: reviewedBill.status,
-            reviewedAt: now.toISOString(),
-            requiresPmBaConfirmation,
-            pmBaConfirmationReason:
-              reviewedCommissionSnapshot?.pmBaConfirmationReason ?? null,
-            pmBaConfirmed:
-              reviewedCommissionSnapshot?.pmBaConfirmationConfirmed ?? false,
-            pmBaReason: pmBaReason || null,
-            loyaltyPoints: loyaltyAward?.points ?? 0,
-            loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
-            loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
-            revenueSnapshot: revenueApproval
-              ? {
-                  grossVnd: revenueApproval.grossVnd,
-                  discountVnd: revenueApproval.discountVnd,
-                  netVnd: revenueApproval.netVnd,
-                  payableVnd: revenueApproval.payableVnd,
-                  commissionVnd: revenueApproval.commissionVnd,
-                  discountRuleSnapshot: revenueApproval.discountRuleSnapshot,
-                  commissionRuleSnapshot:
-                    revenueApproval.commissionRuleSnapshot,
-                }
-              : null,
-          }),
+          metadata: this.toPrismaJson(
+            this.buildMinimalSensitiveMetadata({
+              actorId: adminId,
+              action: reviewAction,
+              refType: 'Bill',
+              refId: billId,
+              occurredAt: now,
+              metadata: {
+                approve: dto.approve,
+                rejectReason: dto.rejectReason ?? null,
+                previousStatus: bill.status,
+                nextStatus: reviewedBill.status,
+                reviewedAt: now.toISOString(),
+                requiresPmBaConfirmation,
+                pmBaConfirmationReason:
+                  reviewedCommissionSnapshot?.pmBaConfirmationReason ?? null,
+                pmBaConfirmed:
+                  reviewedCommissionSnapshot
+                    ?.pmBaConfirmationConfirmed ?? false,
+                pmBaReason: pmBaReason || null,
+                loyaltyPoints: loyaltyAward?.points ?? 0,
+                loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
+                loyaltyExpiresAt:
+                  loyaltyAward?.expiresAt.toISOString() ?? null,
+                revenueSnapshot: revenueApproval
+                  ? {
+                      grossVnd: revenueApproval.grossVnd,
+                      discountVnd: revenueApproval.discountVnd,
+                      netVnd: revenueApproval.netVnd,
+                      payableVnd: revenueApproval.payableVnd,
+                      commissionVnd: revenueApproval.commissionVnd,
+                      discountRuleSnapshot:
+                        revenueApproval.discountRuleSnapshot,
+                      commissionRuleSnapshot:
+                        revenueApproval.commissionRuleSnapshot,
+                    }
+                  : null,
+              },
+            }),
+          ),
+        },
+      });
+
+      await this.recordSensitiveActionNotification(tx, {
+        actorId: adminId,
+        action: reviewAction,
+        refType: 'Bill',
+        refId: billId,
+        occurredAt: now,
+        templateKey: 'audit.bill.review.v1',
+        recipient: `bill:${billId}`,
+        billId,
+        userId: reviewedBill.user?.id ?? null,
+        guestId: reviewedBill.guest?.id ?? null,
+        bookingId: reviewedBill.booking?.id ?? null,
+        storeId: reviewedBill.store?.id ?? null,
+        payload: {
+          previousStatus: bill.status,
+          nextStatus: reviewedBill.status,
+          approve: dto.approve,
         },
       });
 
@@ -10284,6 +10501,26 @@ export class NightlifeDataService {
     return rankingMap;
   }
 
+  private buildRankingConfigAuditSnapshot(config: AdminRankingConfigRecord) {
+    return {
+      id: config.id,
+      targetType: config.targetType,
+      targetId: config.targetId,
+      areaId: config.areaId ?? null,
+      cityCode: config.cityCode,
+      category: config.category,
+      scope: config.scope,
+      manualScore: config.manualScore,
+      pinRank: config.pinRank ?? null,
+      sponsored: config.sponsored,
+      reason: config.reason ?? null,
+      status: config.status,
+      startsAt: this.toAuditIso(config.startsAt),
+      endsAt: this.toAuditIso(config.endsAt),
+      updatedAt: this.toAuditIso(config.updatedAt),
+    };
+  }
+
   private adminRankingConfigSelect(): Prisma.RankingConfigSelect {
     return {
       id: true,
@@ -12126,6 +12363,71 @@ export class NightlifeDataService {
     return value as Prisma.InputJsonValue;
   }
 
+  private buildMinimalSensitiveMetadata(input: {
+    actorId?: string | null;
+    action: string;
+    refType: string;
+    refId: string;
+    occurredAt?: Date;
+    metadata?: Record<string, unknown>;
+  }) {
+    const occurredAt = input.occurredAt ?? new Date();
+
+    return {
+      ...(input.metadata ?? {}),
+      actorId: input.actorId ?? null,
+      action: input.action,
+      refType: input.refType,
+      refId: input.refId,
+      ref_id: input.refId,
+      occurredAt: occurredAt.toISOString(),
+    };
+  }
+
+  private async recordSensitiveActionNotification(
+    prisma: Prisma.TransactionClient | PrismaService,
+    input: {
+      actorId?: string | null;
+      action: string;
+      refType: string;
+      refId: string;
+      templateKey: string;
+      occurredAt?: Date;
+      recipient?: string;
+      userId?: string | null;
+      guestId?: string | null;
+      storeId?: string | null;
+      bookingId?: string | null;
+      billId?: string | null;
+      payload?: Record<string, unknown>;
+    },
+  ) {
+    await prisma.notificationLog.create({
+      data: {
+        userId: input.userId ?? undefined,
+        guestId: input.guestId ?? undefined,
+        storeId: input.storeId ?? undefined,
+        bookingId: input.bookingId ?? undefined,
+        billId: input.billId ?? undefined,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient:
+          input.recipient ?? `${input.refType}:${input.refId}`,
+        templateKey: input.templateKey,
+        payload: this.toPrismaJson(
+          this.buildMinimalSensitiveMetadata({
+            actorId: input.actorId,
+            action: input.action,
+            refType: input.refType,
+            refId: input.refId,
+            occurredAt: input.occurredAt,
+            metadata: input.payload,
+          }),
+        ),
+      },
+    });
+  }
+
   private async assertContentSlugAvailable(slug: string, excludeId?: string) {
     const existing = await this.prisma.content.findFirst({
       where: {
@@ -12817,6 +13119,7 @@ export class NightlifeDataService {
     prisma?: Prisma.TransactionClient;
   }) {
     const prisma = input.prisma ?? this.prisma;
+    const occurredAt = new Date();
     await prisma.auditLog.create({
       data: {
         actorId: input.actorId ?? undefined,
@@ -12825,13 +13128,22 @@ export class NightlifeDataService {
         targetId: input.issue.id,
         beforeJson: this.toPrismaJson(input.beforeJson),
         afterJson: this.toPrismaJson(input.afterJson),
-        metadata: {
-          issueCode: input.issue.code ?? null,
-          couponId: input.issue.couponId ?? null,
-          storeId: input.issue.coupon?.storeId ?? null,
-          status: input.issue.status,
-          ...(input.metadata ?? {}),
-        },
+        metadata: this.toPrismaJson(
+          this.buildMinimalSensitiveMetadata({
+            actorId: input.actorId,
+            action: input.action,
+            refType: 'CouponIssue',
+            refId: input.issue.id,
+            occurredAt,
+            metadata: {
+              issueCode: input.issue.code ?? null,
+              couponId: input.issue.couponId ?? null,
+              storeId: input.issue.coupon?.storeId ?? null,
+              status: input.issue.status,
+              ...(input.metadata ?? {}),
+            },
+          }),
+        ),
       },
     });
   }
@@ -12984,6 +13296,15 @@ export class NightlifeDataService {
     },
     payload: Record<string, unknown> = {},
   ) {
+    const action =
+      templateKey === 'coupon.issue.used.v1'
+        ? 'COUPON_ISSUE_USED'
+        : templateKey === 'coupon.issue.scanned.v1'
+          ? 'COUPON_ISSUE_SCANNED'
+          : templateKey;
+    const actorId =
+      typeof payload.actorId === 'string' ? payload.actorId : null;
+
     await this.prisma.notificationLog.create({
       data: {
         userId: issue.userId ?? undefined,
@@ -12993,20 +13314,28 @@ export class NightlifeDataService {
         status: 'QUEUED',
         recipient: `couponIssue:${issue.id}`,
         templateKey,
-        payload: {
-          couponIssueId: issue.id,
-          issueCode: issue.code,
-          status: issue.status,
-          coupon: issue.coupon
-            ? {
-                id: issue.coupon.id,
-                code: issue.coupon.code,
-                name: issue.coupon.name,
-                store: issue.coupon.store,
-              }
-            : null,
-          ...payload,
-        },
+        payload: this.toPrismaJson(
+          this.buildMinimalSensitiveMetadata({
+            actorId,
+            action,
+            refType: 'CouponIssue',
+            refId: issue.id,
+            metadata: {
+              couponIssueId: issue.id,
+              issueCode: issue.code,
+              status: issue.status,
+              coupon: issue.coupon
+                ? {
+                    id: issue.coupon.id,
+                    code: issue.coupon.code,
+                    name: issue.coupon.name,
+                    store: issue.coupon.store,
+                  }
+                : null,
+              ...payload,
+            },
+          }),
+        ),
       },
     });
   }

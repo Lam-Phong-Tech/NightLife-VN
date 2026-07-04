@@ -181,17 +181,28 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('admin/rankings/:rankingId')
   updateAdminRankingConfig(
+    @Req() request: RequestWithUser,
     @Param('rankingId') rankingId: string,
     @Body() dto: UpdateAdminRankingConfigDto,
   ) {
-    return this.nightlifeDataService.updateAdminRankingConfig(rankingId, dto);
+    return this.nightlifeDataService.updateAdminRankingConfig(
+      request.user,
+      rankingId,
+      dto,
+    );
   }
 
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('admin/rankings/:rankingId')
-  deleteAdminRankingConfig(@Param('rankingId') rankingId: string) {
-    return this.nightlifeDataService.deleteAdminRankingConfig(rankingId);
+  deleteAdminRankingConfig(
+    @Req() request: RequestWithUser,
+    @Param('rankingId') rankingId: string,
+  ) {
+    return this.nightlifeDataService.deleteAdminRankingConfig(
+      request.user,
+      rankingId,
+    );
   }
 
   @PublicContentsContract()
