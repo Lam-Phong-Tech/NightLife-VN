@@ -30,6 +30,36 @@ export type UpdateProfilePayload = {
   phone?: string | null;
 };
 
+export type RequestPasswordResetPayload = {
+  email: string;
+};
+
+export type VerifyPasswordResetCodePayload = {
+  email: string;
+  code: string;
+};
+
+export type ResetPasswordPayload = {
+  email: string;
+  resetToken: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export type PasswordResetRequestResponse = {
+  message: string;
+  expiresInMinutes: number;
+};
+
+export type PasswordResetVerifyResponse = {
+  resetToken: string;
+  expiresAt: string;
+};
+
+export type PasswordResetCompleteResponse = {
+  updated: boolean;
+};
+
 type DemoAccount = {
   id: string;
   email: string;
@@ -186,6 +216,27 @@ export const registerMember = (payload: RegisterPayload) => {
 export const updateMemberProfile = (payload: UpdateProfilePayload) => {
   return apiClient<AuthResponse["user"]>("/auth/me", {
     method: "PATCH",
+    data: payload,
+  });
+};
+
+export const requestPasswordReset = (payload: RequestPasswordResetPayload) => {
+  return apiClient<PasswordResetRequestResponse>("/auth/password-reset/request", {
+    method: "POST",
+    data: payload,
+  });
+};
+
+export const verifyPasswordResetCode = (payload: VerifyPasswordResetCodePayload) => {
+  return apiClient<PasswordResetVerifyResponse>("/auth/password-reset/verify", {
+    method: "POST",
+    data: payload,
+  });
+};
+
+export const resetPassword = (payload: ResetPasswordPayload) => {
+  return apiClient<PasswordResetCompleteResponse>("/auth/password-reset/complete", {
+    method: "POST",
     data: payload,
   });
 };

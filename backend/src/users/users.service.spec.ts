@@ -21,6 +21,7 @@ describe('UsersService', () => {
     user: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
   } as unknown as jest.Mocked<PrismaService>;
 
@@ -77,6 +78,22 @@ describe('UsersService', () => {
         role: 'USER',
         tier: 'FREE',
       }),
+    });
+  });
+
+  it('updates a user password with a hashed value', async () => {
+    passwordService.hash.mockResolvedValue('new-hashed-password');
+    prisma.user.update.mockResolvedValue({
+      ...activeUser,
+      passwordHash: 'new-hashed-password',
+    } as never);
+
+    await service.updatePassword(activeUser.id, 'NewStr0ngPass!');
+
+    expect(passwordService.hash).toHaveBeenCalledWith('NewStr0ngPass!');
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: activeUser.id },
+      data: { passwordHash: 'new-hashed-password' },
     });
   });
 });

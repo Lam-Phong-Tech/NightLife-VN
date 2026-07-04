@@ -27,6 +27,14 @@ import {
 } from './dto/auth-response.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
+import {
+  PasswordResetCompleteResponseDto,
+  PasswordResetRequestResponseDto,
+  PasswordResetVerifyResponseDto,
+  RequestPasswordResetDto,
+  ResetPasswordDto,
+  VerifyPasswordResetCodeDto,
+} from './dto/password-reset.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -48,6 +56,27 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.login(dto, this.sessionContext(request));
+  }
+
+  @ApiOperation({ summary: 'Gửi mã đặt lại mật khẩu qua email' })
+  @ApiOkResponse({ type: PasswordResetRequestResponseDto })
+  @Post('password-reset/request')
+  requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @ApiOperation({ summary: 'Xác thực mã đặt lại mật khẩu' })
+  @ApiOkResponse({ type: PasswordResetVerifyResponseDto })
+  @Post('password-reset/verify')
+  verifyPasswordResetCode(@Body() dto: VerifyPasswordResetCodeDto) {
+    return this.authService.verifyPasswordResetCode(dto);
+  }
+
+  @ApiOperation({ summary: 'Cập nhật mật khẩu mới sau khi xác thực mã' })
+  @ApiOkResponse({ type: PasswordResetCompleteResponseDto })
+  @Post('password-reset/complete')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @ApiOperation({ summary: 'Đăng nhập cho Member' })

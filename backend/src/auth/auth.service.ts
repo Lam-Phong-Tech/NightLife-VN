@@ -7,12 +7,24 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { randomUUID } from 'node:crypto';
+import {
+  createHmac,
+  randomBytes,
+  randomInt,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
 import type { Request, Response } from 'express';
+import { EmailNotificationService } from '../notifications/email-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
+import {
+  RequestPasswordResetDto,
+  ResetPasswordDto,
+  VerifyPasswordResetCodeDto,
+} from './dto/password-reset.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -108,6 +120,10 @@ const lineRedirectCookie = 'line_oauth_redirect';
 const lineFallbackEmailDomain = 'line.vietyoru.local';
 const authCookieMaxAgeMs = 24 * 60 * 60 * 1000;
 const oauthCookieMaxAgeMs = 10 * 60 * 1000;
+const passwordResetTtlMs = 15 * 60 * 1000;
+const passwordResetTtlMinutes = 15;
+const passwordResetRequestMessage =
+  'Nếu email tồn tại, mã xác nhận đã được gửi và có hiệu lực trong 15 phút.';
 
 @Injectable()
 export class AuthService {
@@ -116,6 +132,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
   async register(dto: RegisterDto, sessionContext?: SessionContext) {
@@ -338,6 +355,137 @@ export class AuthService {
     });
 
     return this.usersService.toPublicUser(user);
+  }
+
+  async requestPasswordReset(dto: RequestPasswordResetDto) {
+    const email = dto.email.trim().toLowerCase();
+    const expiresAt = new Date(Date.now() + passwordResetTtlMs);
+    const user = await this.usersService.findByEmail(email);
+    const response = {
+      message: passwordResetRequestMessage,
+      expiresInMinutes: passwordResetTtlMinutes,
+    };
+
+    if (!user || user.deletedAt || user.status !== 'ACTIVE') {
+      return response;
+    }
+
+    const code = this.generatePasswordResetCode();
+    const now = new Date();
+    const token = await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        email: user.email.toLowerCase(),
+        codeHash: this.hashPasswordResetValue(user.email, code),
+        expiresAt,
+      },
+    });
+
+    try {
+      await this.emailNotificationService.sendPasswordResetCodeEmail({
+        to: user.email,
+        displayName: user.displayName,
+        code,
+        expiresAt,
+      });
+    } catch {
+      await this.prisma.passwordResetToken.update({
+        where: { id: token.id },
+        data: { usedAt: now },
+      });
+      throw new ServiceUnavailableException(
+        'Password reset email is not configured',
+      );
+    }
+
+    await this.prisma.passwordResetToken.updateMany({
+      where: {
+        userId: user.id,
+        id: { not: token.id },
+        usedAt: null,
+      },
+      data: { usedAt: now },
+    });
+
+    return response;
+  }
+
+  async verifyPasswordResetCode(dto: VerifyPasswordResetCodeDto) {
+    const email = dto.email.trim().toLowerCase();
+    const token = await this.findActivePasswordResetToken(email);
+
+    if (
+      !token ||
+      !this.passwordResetHashMatches(token.codeHash, email, dto.code.trim())
+    ) {
+      throw new BadRequestException('Invalid or expired password reset code');
+    }
+
+    const resetToken = randomBytes(32).toString('hex');
+    const updatedToken = await this.prisma.passwordResetToken.update({
+      where: { id: token.id },
+      data: {
+        resetTokenHash: this.hashPasswordResetValue(email, resetToken),
+        verifiedAt: new Date(),
+      },
+    });
+
+    return {
+      resetToken,
+      expiresAt: updatedToken.expiresAt.toISOString(),
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    if (dto.password !== dto.confirmPassword) {
+      throw new BadRequestException('Password confirmation does not match');
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const token = await this.findActivePasswordResetToken(email);
+
+    if (
+      !token?.resetTokenHash ||
+      !token.verifiedAt ||
+      !this.passwordResetHashMatches(
+        token.resetTokenHash,
+        email,
+        dto.resetToken.trim(),
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid or expired password reset session',
+      );
+    }
+
+    if (token.user.deletedAt || token.user.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        'Invalid or expired password reset session',
+      );
+    }
+
+    const now = new Date();
+    await this.usersService.updatePassword(token.userId, dto.password);
+    await this.prisma.passwordResetToken.updateMany({
+      where: {
+        userId: token.userId,
+        usedAt: null,
+      },
+      data: { usedAt: now },
+    });
+    await this.prisma.userSession.updateMany({
+      where: {
+        userId: token.userId,
+        status: 'ACTIVE',
+      },
+      data: {
+        status: 'REVOKED',
+        revokedAt: now,
+        lastSeenAt: now,
+      },
+    });
+
+    return { updated: true };
   }
 
   async logout(user: { id: string; jti?: string; exp?: number }) {
@@ -654,6 +802,52 @@ export class AuthService {
       lineSubject.toLowerCase().replace(/[^a-z0-9._-]/g, '-') || 'unknown';
 
     return `line-${normalizedSubject}@${lineFallbackEmailDomain}`;
+  }
+
+  private findActivePasswordResetToken(email: string) {
+    return this.prisma.passwordResetToken.findFirst({
+      where: {
+        email,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  private generatePasswordResetCode() {
+    return String(randomInt(100000, 1000000));
+  }
+
+  private hashPasswordResetValue(email: string, value: string) {
+    return createHmac('sha256', this.passwordResetSecret())
+      .update(email.trim().toLowerCase())
+      .update(':')
+      .update(value)
+      .digest('hex');
+  }
+
+  private passwordResetHashMatches(hash: string, email: string, value: string) {
+    const expectedHash = this.hashPasswordResetValue(email, value);
+    const expected = Buffer.from(expectedHash, 'hex');
+    const received = Buffer.from(hash, 'hex');
+
+    return (
+      expected.length === received.length && timingSafeEqual(expected, received)
+    );
+  }
+
+  private passwordResetSecret() {
+    return (
+      this.configService.get<string>('PASSWORD_RESET_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'nightlife-password-reset-local-secret'
+    );
   }
 
   private setAuthCookies(response: Response, authResponse: AuthCookiePayload) {
