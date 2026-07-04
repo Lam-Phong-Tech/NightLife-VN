@@ -407,12 +407,7 @@ export default function AdminRankingsPage() {
         <span style={{ fontSize: '11.5px', color: '#8c8679' }}>Kéo · dùng mũi tên để đổi thứ hạng</span>
       </div>
       
-      <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '20px' }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
-        <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
-          Ranking 100% thủ công — Admin tự cấu hình. Thứ tự ưu tiên: <b style={{ color: '#f0dda8' }}>Cast trước → Quán</b>.
-        </span>
-      </div>
+
 
       {isLoading ? (
         <div style={{ color: '#8c8679', textAlign: 'center', marginTop: '100px' }}>Đang tải dữ liệu xếp hạng...</div>

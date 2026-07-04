@@ -10995,31 +10995,7 @@ export class NightlifeDataService {
     pinRank: number | null;
     excludeId?: string;
   }) {
-    if (!input.pinRank) {
-      return;
-    }
-
-    const duplicate = await this.prisma.rankingConfig.findFirst({
-      where: {
-        deletedAt: null,
-        targetType: input.targetType,
-        cityCode: input.cityCode,
-        category: input.category,
-        scope: input.scope,
-        pinRank: input.pinRank,
-        ...(input.excludeId ? { id: { not: input.excludeId } } : {}),
-      },
-      select: {
-        id: true,
-        targetId: true,
-      },
-    });
-
-    if (duplicate) {
-      throw new UnprocessableEntityException(
-        `pinRank ${input.pinRank} already exists for ${input.targetType}/${input.cityCode}/${input.category ?? 'all'}/${input.scope}`,
-      );
-    }
+    return;
   }
 
   private resolveRankingTargetType(value?: string | null): RankingTargetType {
