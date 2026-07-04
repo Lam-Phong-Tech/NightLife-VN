@@ -707,32 +707,98 @@ export default function AdminContentPage() {
       )}
 
       {/* FEATURED CONTENT */}
-      {activeTab === 'featured' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {mockFeatured.map((f, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: '16px', background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', padding: '16px' }}>
-              <div style={{ width: 100, height: 80, flex: 'none', borderRadius: '12px', background: f.img, position: 'relative' }}>
-                {f.badge && <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '10px', fontWeight: 700, color: colors.text, background: 'rgba(12,12,15,.7)', border: `1px solid rgba(255,255,255,.2)`, padding: '2px 8px', borderRadius: '6px' }}>{f.badge}</span>}
+      {activeTab === 'featured' && (() => {
+        const activeTabStyle = { background: 'rgba(212,178,106,.15)', color: '#d4b26a', fontWeight: 700, padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', cursor: 'pointer' };
+        const inactiveTabStyle = { background: 'transparent', color: '#c5c0b6', fontWeight: 500, padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', cursor: 'pointer' };
+        
+        return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '16px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z"/></svg>
+            <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>"Dịch vụ nổi bật"</b> trên trang chủ — chọn quán theo khu vực &amp; nhóm dịch vụ, gắn nhãn, sắp thứ tự. Trang chủ hiển thị đúng thứ tự này.</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+              <span style={activeTabStyle}>Hà Nội</span>
+              <span style={inactiveTabStyle}>TP. Hồ Chí Minh</span>
+            </div>
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+              <span style={activeTabStyle}>Nhà hàng</span>
+              <span style={inactiveTabStyle}>Spa</span>
+            </div>
+            <div style={{ flex: 1 }}></div>
+            <span style={{ fontSize: '11px', color: '#8c8679' }}>2 quán đang hiển thị trên trang chủ</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
+              <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.05)', position: 'relative' }}>
               </div>
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ fontSize: '15px', fontWeight: 700, color: colors.text }}>{f.name}</div>
-                <div style={{ fontSize: '13px', color: colors.muted, marginTop: '4px' }}>{f.sub}</div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                  {f.labels.map(l => (
-                    <span key={l} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', border: `1px solid ${colors.borderSoft}`, color: colors.text2 }}>{l}</span>
-                  ))}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea' }}>Sakura Teppanyaki</div>
+                <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>Tây Hồ · Nhà hàng Nhật</div>
+                <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Không nhãn</span>
+                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Đặt bàn nhanh</span>
+                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Mới</span>
                 </div>
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+              </div>
             </div>
-          ))}
-          <div style={{ background: 'rgba(212,178,106,.05)', border: `1px solid rgba(212,178,106,.26)`, borderRadius: '16px', padding: '20px', marginTop: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(12,12,15,.5)', border: `1px solid rgba(255,255,255,.1)`, borderRadius: '12px', padding: '12px 16px' }}>
-              <Search size={18} color={colors.muted} />
-              <input placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: colors.text, fontSize: '14px', fontFamily: 'inherit' }} />
+
+            <div style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
+              <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(128,90,200,.2)', position: 'relative' }}>
+                <span style={{ position: 'absolute', top: '7px', left: '7px', fontSize: '8.5px', fontWeight: 700, color: '#f3f0ea', background: 'rgba(12,12,15,.62)', border: '1px solid rgba(255,255,255,.2)', padding: '2.5px 7px', borderRadius: '6px' }}>Mới</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea' }}>Yakitori Hanoi</div>
+                <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>Ba Đình · BBQ Nhật</div>
+                <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Không nhãn</span>
+                  <span style={{ fontSize: '9px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', color: '#c5c0b6' }}>Đặt bàn nhanh</span>
+                  <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Mới</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6"/></svg></span>
+                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                <span style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                <span style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.05)' }}></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>Sushi Ginza</div>
+                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>Hoàn Kiếm · Sushi &amp; Sashimi</div>
+                </div>
+                <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                <span style={{ width: '44px', height: '34px', flex: 'none', borderRadius: '8px', background: 'rgba(255,255,255,.02)' }}></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>Ramen Ichiban</div>
+                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>Cầu Giấy · Ramen</div>
+                </div>
+                <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })}
 
       {/* VIDEO HOT CONTENT */}
       {activeTab === 'video' && (
