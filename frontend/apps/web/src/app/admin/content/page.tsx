@@ -720,7 +720,8 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={activeTabStyle}>Hà Nội</span>
+              <span style={activeTabStyle}>Tổng hợp</span>
+              <span style={inactiveTabStyle}>Hà Nội</span>
               <span style={inactiveTabStyle}>TP. Hồ Chí Minh</span>
             </div>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
