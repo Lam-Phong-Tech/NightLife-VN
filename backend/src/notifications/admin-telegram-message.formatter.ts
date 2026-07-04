@@ -45,6 +45,12 @@ export type PartnerTelegramMessageInput = {
 };
 
 const fallbackText = 'Chưa cập nhật';
+const noValueText = 'Không có';
+const defaultBookingQrStatus = 'Đã cấp - Còn hiệu lực';
+const bookingCastNotice =
+  'Cast mong muốn chưa phải xác nhận giữ lịch cast. Admin cần điều phối offline với quán.';
+const bookingCancelledNotice =
+  'Booking đã hủy. Admin kiểm tra lại điều phối và lịch quán/cast.';
 
 export function formatBookingRequestTelegramMessage(
   input: BookingTelegramMessageInput,
@@ -52,36 +58,24 @@ export function formatBookingRequestTelegramMessage(
   const customerType = normalizeCustomerType(input.customerType);
 
   return compactLines([
-    '[BOOKING MỚI]',
-    `Mã booking: ${valueOrFallback(input.bookingCode)}`,
-    `Khách: ${valueOrFallback(input.customerName)}`,
-    `Email: ${valueOrFallback(input.customerEmail)}`,
-    `Loại khách: ${customerType}`,
-    `Mức giảm: ${input.discountLabel || discountLabelForCustomerType(customerType)}`,
-    `Quán: ${valueOrFallback(input.storeName)}`,
-    `Cast mong muốn: ${input.castName || 'Không có'}`,
-    `Ngày giờ đến: ${formatBookingArrivalDateTime(input.scheduledAt, input.timeZone)}`,
-    `Số người: ${formatPartySizeNumber(input.partySize)}`,
-    `Ghi chú: ${input.note || 'Không có'}`,
-    `QR: ${input.qrStatus || 'Đã cấp - Còn hiệu lực'}`,
-    `Trạng thái booking: ${input.bookingStatusLabel || bookingStatusLabel(input.status)}`,
-    'Lưu ý: Cast mong muốn chưa phải xác nhận giữ lịch cast. Admin cần điều phối offline với quán.',
+    '🆕 [BOOKING MỚI]',
+    '',
+    ...bookingDetailLines(input, customerType),
+    `⚠️ Lưu ý: ${bookingCastNotice}`,
   ]);
 }
 
 export function formatBookingCancelledTelegramMessage(
   input: BookingTelegramMessageInput,
 ) {
+  const customerType = normalizeCustomerType(input.customerType);
+
   return compactLines([
-    '⚠️ Booking đã hủy',
+    '⚠️ [BOOKING ĐÃ HỦY]',
     '',
-    `🏪 Quán: ${valueOrFallback(input.storeName)}`,
-    `👤 Khách hàng: ${valueOrFallback(input.customerName)}`,
-    `📞 Số điện thoại: ${valueOrFallback(input.contact)}`,
-    `⏰ Thời gian: ${formatTelegramDateTime(input.scheduledAt, input.timeZone)}`,
-    `👥 Số khách: ${formatPartySize(input.partySize)}`,
-    input.status ? `📌 Trạng thái: ${input.status}` : null,
-    input.reason ? `📝 Lý do: ${input.reason}` : null,
+    ...bookingDetailLines(input, customerType),
+    input.reason ? `📝 Lý do hủy: ${input.reason}` : null,
+    `⚠️ Lưu ý: ${bookingCancelledNotice}`,
   ]);
 }
 
@@ -178,20 +172,32 @@ function formatBookingArrivalDateTime(
   return `${get('hour')}:${get('minute')} - ${get('day')}/${get('month')}/${get('year')}`;
 }
 
-function formatPartySize(value?: number | null) {
-  if (value === undefined || value === null) {
-    return fallbackText;
-  }
-
-  return `${value} pax`;
-}
-
 function formatPartySizeNumber(value?: number | null) {
   if (value === undefined || value === null) {
     return fallbackText;
   }
 
   return String(value);
+}
+
+function bookingDetailLines(
+  input: BookingTelegramMessageInput,
+  customerType: string,
+) {
+  return [
+    `🧾 Mã booking: ${valueOrFallback(input.bookingCode)}`,
+    `👤 Khách: ${valueOrFallback(input.customerName)}`,
+    `📧 Email: ${valueOrFallback(input.customerEmail)}`,
+    `🏷️ Loại khách: ${customerType}`,
+    `🎟️ Mức giảm: ${input.discountLabel || discountLabelForCustomerType(customerType)}`,
+    `🏪 Quán: ${valueOrFallback(input.storeName)}`,
+    `👑 Cast mong muốn: ${input.castName || noValueText}`,
+    `🗓️ Ngày giờ đến: ${formatBookingArrivalDateTime(input.scheduledAt, input.timeZone)}`,
+    `👥 Số người: ${formatPartySizeNumber(input.partySize)}`,
+    `💬 Ghi chú: ${input.note || noValueText}`,
+    `🔳 QR: ${input.qrStatus || defaultBookingQrStatus}`,
+    `📌 Trạng thái booking: ${input.bookingStatusLabel || bookingStatusLabel(input.status)}`,
+  ];
 }
 
 function normalizeCustomerType(value?: string | null) {

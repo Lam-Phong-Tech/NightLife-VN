@@ -192,13 +192,18 @@ export class AdminNotificationService {
         reason: options.reason,
       }),
       lines: [
-        ['Booking', booking.id],
+        ['Booking', this.bookingPublicCode(booking.id)],
         ['Quán', booking.store?.name],
         ['Khách hàng', this.customerName(booking)],
-        ['Số điện thoại', this.customerContact(booking)],
+        ['Email', this.customerEmail(booking)],
+        ['Loại khách', this.customerType(booking)],
+        ['Mức giảm', this.bookingDiscountLabel(booking)],
         ['Thời gian', this.formatDateTime(booking.scheduledAt)],
-        ['Trạng thái', booking.status],
-        ['Lý do', options.reason],
+        ['Số khách', booking.partySize],
+        ['Cast', this.castLabel(booking.cast)],
+        ['Ghi chú', booking.note],
+        ['Trạng thái', this.bookingStatusLabel(booking.status)],
+        ['Lý do hủy', options.reason],
       ],
       payload: {
         ...this.bookingPayload(booking),
@@ -738,7 +743,20 @@ export class AdminNotificationService {
       return this.formatDateTime(value);
     }
 
-    return String(value);
+    if (typeof value === 'object') {
+      return JSON.stringify(value) ?? '';
+    }
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint'
+    ) {
+      return String(value);
+    }
+
+    return '';
   }
 
   private formatDateTime(value?: Date | string | null) {

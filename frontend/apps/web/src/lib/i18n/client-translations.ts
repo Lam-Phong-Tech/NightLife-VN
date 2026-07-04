@@ -2263,6 +2263,321 @@ const entries: TranslationEntry[] = [
     ko: "영상 이미지",
     zh: "视频图片",
   },
+  {
+    vi: "Tìm cast",
+    en: "Find Cast",
+    ja: "キャストを探す",
+    ko: "캐스트 찾기",
+    zh: "查找 Cast",
+  },
+  {
+    vi: "Tìm",
+    en: "Search",
+    ja: "検索",
+    ko: "검색",
+    zh: "搜索",
+  },
+  {
+    vi: "Thành phố",
+    en: "City",
+    ja: "都市",
+    ko: "도시",
+    zh: "城市",
+  },
+  {
+    vi: "Khu vực",
+    en: "Area",
+    ja: "エリア",
+    ko: "지역",
+    zh: "区域",
+  },
+  {
+    vi: "Loại hình",
+    en: "Category",
+    ja: "ジャンル",
+    ko: "유형",
+    zh: "类型",
+  },
+  {
+    vi: "Ngôn ngữ",
+    en: "Language",
+    ja: "言語",
+    ko: "언어",
+    zh: "语言",
+  },
+  {
+    vi: "Khoảng giá",
+    en: "Price range",
+    ja: "価格帯",
+    ko: "가격대",
+    zh: "价格区间",
+  },
+  {
+    vi: "/ 60 phút",
+    en: "/ 60 min",
+    ja: "/ 60分",
+    ko: "/ 60분",
+    zh: "/ 60分钟",
+  },
+  {
+    vi: "Độ tuổi",
+    en: "Age range",
+    ja: "年齢",
+    ko: "연령대",
+    zh: "年龄",
+  },
+  {
+    vi: "Có ưu đãi",
+    en: "Has deals",
+    ja: "特典あり",
+    ko: "혜택 있음",
+    zh: "有优惠",
+  },
+  {
+    vi: "Có ưu đãi đang chạy",
+    en: "Active deals available",
+    ja: "実施中の特典あり",
+    ko: "진행 중인 혜택 있음",
+    zh: "有进行中的优惠",
+  },
+  {
+    vi: "Còn lịch trống tuần này",
+    en: "Available this week",
+    ja: "今週空きあり",
+    ko: "이번 주 예약 가능",
+    zh: "本周仍有空档",
+  },
+  {
+    vi: "Nói tiếng Nhật",
+    en: "Speaks Japanese",
+    ja: "日本語対応",
+    ko: "일본어 가능",
+    zh: "会说日语",
+  },
+  {
+    vi: "Top ranking",
+    en: "Top ranking",
+    ja: "上位ランキング",
+    ko: "상위 랭킹",
+    zh: "高排名",
+  },
+  {
+    vi: "Bộ lọc",
+    en: "Filters",
+    ja: "フィルター",
+    ko: "필터",
+    zh: "筛选",
+  },
+  {
+    vi: "Bộ lọc nhanh",
+    en: "Quick filters",
+    ja: "クイックフィルター",
+    ko: "빠른 필터",
+    zh: "快捷筛选",
+  },
+  {
+    vi: "Sắp xếp:",
+    en: "Sort:",
+    ja: "並び替え:",
+    ko: "정렬:",
+    zh: "排序：",
+  },
+  {
+    vi: "Sắp xếp",
+    en: "Sort",
+    ja: "並び替え",
+    ko: "정렬",
+    zh: "排序",
+  },
+  {
+    vi: "Mới nhất",
+    en: "Newest",
+    ja: "新着順",
+    ko: "최신순",
+    zh: "最新",
+  },
+  {
+    vi: "Gần nhất",
+    en: "Nearest",
+    ja: "近い順",
+    ko: "가까운 순",
+    zh: "最近",
+  },
+  {
+    vi: "Nổi tiếng Nhất",
+    en: "Most popular",
+    ja: "人気順",
+    ko: "인기순",
+    zh: "最受欢迎",
+  },
+  {
+    vi: "Nổi tiếng nhất",
+    en: "Most popular",
+    ja: "人気順",
+    ko: "인기순",
+    zh: "最受欢迎",
+  },
+  {
+    vi: "Tổng hợp",
+    en: "All areas",
+    ja: "総合",
+    ko: "종합",
+    zh: "综合",
+  },
+  {
+    vi: "Lọc cast theo nhu cầu",
+    en: "Filter Cast by your needs",
+    ja: "希望条件でキャストを絞り込み",
+    ko: "조건에 맞게 캐스트 필터링",
+    zh: "按需求筛选 Cast",
+  },
+  {
+    vi: "Lưới chân dung theo mẫu Vietyoru, ưu tiên ảnh, ngôn ngữ và quán làm việc.",
+    en: "A Vietyoru-style portrait grid focused on photos, languages, and working venues.",
+    ja: "写真、対応言語、勤務店舗を優先したVietyoru形式のポートレート一覧です。",
+    ko: "사진, 언어, 근무 매장을 우선한 Vietyoru 스타일의 프로필 그리드입니다.",
+    zh: "Vietyoru 风格头像列表，优先展示照片、语言和工作店铺。",
+  },
+  {
+    vi: "Lọc quán theo nhu cầu",
+    en: "Filter venues by your needs",
+    ja: "希望条件で店舗を絞り込み",
+    ko: "조건에 맞게 매장 필터링",
+    zh: "按需求筛选店铺",
+  },
+  {
+    vi: "Đặt lại bộ lọc",
+    en: "Reset filters",
+    ja: "フィルターをリセット",
+    ko: "필터 초기화",
+    zh: "重置筛选",
+  },
+  {
+    vi: "Đóng bộ lọc",
+    en: "Close filters",
+    ja: "フィルターを閉じる",
+    ko: "필터 닫기",
+    zh: "关闭筛选",
+  },
+  {
+    vi: "Mở bộ lọc",
+    en: "Open filters",
+    ja: "フィルターを開く",
+    ko: "필터 열기",
+    zh: "打开筛选",
+  },
+  {
+    vi: "Xóa tìm kiếm",
+    en: "Clear search",
+    ja: "検索をクリア",
+    ko: "검색어 지우기",
+    zh: "清除搜索",
+  },
+  {
+    vi: "Chọn sắp xếp",
+    en: "Choose sort",
+    ja: "並び替えを選択",
+    ko: "정렬 선택",
+    zh: "选择排序",
+  },
+  {
+    vi: "Chọn thành phố",
+    en: "Choose city",
+    ja: "都市を選択",
+    ko: "도시 선택",
+    zh: "选择城市",
+  },
+  {
+    vi: "Danh sách cast",
+    en: "Cast list",
+    ja: "キャスト一覧",
+    ko: "캐스트 목록",
+    zh: "Cast 列表",
+  },
+  {
+    vi: "Gợi ý tìm kiếm",
+    en: "Search suggestions",
+    ja: "検索候補",
+    ko: "검색 제안",
+    zh: "搜索建议",
+  },
+  {
+    vi: "Gợi ý cast",
+    en: "Suggested Cast",
+    ja: "おすすめキャスト",
+    ko: "추천 캐스트",
+    zh: "推荐 Cast",
+  },
+  {
+    vi: "Không có gợi ý trùng khớp.",
+    en: "No matching suggestions.",
+    ja: "一致する候補がありません。",
+    ko: "일치하는 제안이 없습니다.",
+    zh: "没有匹配的建议。",
+  },
+  {
+    vi: "Tìm gần đây",
+    en: "Recent searches",
+    ja: "最近の検索",
+    ko: "최근 검색",
+    zh: "最近搜索",
+  },
+  {
+    vi: "Xóa lịch sử",
+    en: "Clear history",
+    ja: "履歴を削除",
+    ko: "기록 삭제",
+    zh: "清除历史",
+  },
+  {
+    vi: "Từ khóa phổ biến",
+    en: "Popular keywords",
+    ja: "人気キーワード",
+    ko: "인기 키워드",
+    zh: "热门关键词",
+  },
+  {
+    vi: "Còn lịch tối nay",
+    en: "Available tonight",
+    ja: "今夜空きあり",
+    ko: "오늘 밤 예약 가능",
+    zh: "今晚仍有空档",
+  },
+  {
+    vi: "Chưa có cast phù hợp",
+    en: "No matching Cast",
+    ja: "条件に合うキャストがいません",
+    ko: "조건에 맞는 캐스트가 없습니다",
+    zh: "没有匹配的 Cast",
+  },
+  {
+    vi: "Đổi khu vực, ngôn ngữ hoặc khoảng giá để xem thêm.",
+    en: "Change area, language, or price range to see more.",
+    ja: "エリア、言語、価格帯を変えるとさらに表示できます。",
+    ko: "지역, 언어 또는 가격대를 바꾸면 더 볼 수 있습니다.",
+    zh: "更改区域、语言或价格区间以查看更多。",
+  },
+  {
+    vi: "4.5★ trở lên",
+    en: "4.5★ and up",
+    ja: "4.5★以上",
+    ko: "4.5★ 이상",
+    zh: "4.5★以上",
+  },
+  {
+    vi: "Đặt",
+    en: "Book",
+    ja: "予約",
+    ko: "예약",
+    zh: "预约",
+  },
+  {
+    vi: "Tối nay",
+    en: "Tonight",
+    ja: "今夜",
+    ko: "오늘 밤",
+    zh: "今晚",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -2391,6 +2706,181 @@ const termEntries: TranslationEntry[] = [
     zh: "胡志明",
   },
   {
+    vi: "Club Lumière",
+    en: "Club Lumière",
+    ja: "クラブ・リュミエール",
+    ko: "클럽 뤼미에르",
+    zh: "Lumière 俱乐部",
+  },
+  {
+    vi: "KTV Hoàng Gia",
+    en: "Hoang Gia KTV",
+    ja: "ホアンザーKTV",
+    ko: "호앙자 KTV",
+    zh: "皇家KTV",
+  },
+  {
+    vi: "Sakura Lounge",
+    en: "Sakura Lounge",
+    ja: "サクララウンジ",
+    ko: "사쿠라 라운지",
+    zh: "樱花酒廊",
+  },
+  {
+    vi: "Sakura Club",
+    en: "Sakura Club",
+    ja: "サクラクラブ",
+    ko: "사쿠라 클럽",
+    zh: "樱花俱乐部",
+  },
+  {
+    vi: "Neon Club",
+    en: "Neon Club",
+    ja: "ネオンクラブ",
+    ko: "네온 클럽",
+    zh: "Neon 俱乐部",
+  },
+  {
+    vi: "Tokyo Kitchen Old Quarter",
+    en: "Tokyo Kitchen Old Quarter",
+    ja: "東京キッチン旧市街",
+    ko: "도쿄 키친 올드쿼터",
+    zh: "东京厨房老城区",
+  },
+  {
+    vi: "Tokyo Kitchen",
+    en: "Tokyo Kitchen",
+    ja: "東京キッチン",
+    ko: "도쿄 키친",
+    zh: "东京厨房",
+  },
+  {
+    vi: "Star KTV",
+    en: "Star KTV",
+    ja: "スターKTV",
+    ko: "스타 KTV",
+    zh: "星光KTV",
+  },
+  {
+    vi: "Jade Lounge",
+    en: "Jade Lounge",
+    ja: "ジェイドラウンジ",
+    ko: "제이드 라운지",
+    zh: "翡翠酒廊",
+  },
+  {
+    vi: "Crimson Bar",
+    en: "Crimson Bar",
+    ja: "クリムゾンバー",
+    ko: "크림슨 바",
+    zh: "绯红酒吧",
+  },
+  {
+    vi: "Sora Lounge",
+    en: "Sora Lounge",
+    ja: "ソララウンジ",
+    ko: "소라 라운지",
+    zh: "Sora 酒廊",
+  },
+  {
+    vi: "Moonlight Q1 Bar",
+    en: "Moonlight Q1 Bar",
+    ja: "ムーンライト1区バー",
+    ko: "문라이트 1군 바",
+    zh: "月光一区酒吧",
+  },
+  {
+    vi: "Golden Voice KTV",
+    en: "Golden Voice KTV",
+    ja: "ゴールデンボイスKTV",
+    ko: "골든 보이스 KTV",
+    zh: "金嗓KTV",
+  },
+  {
+    vi: "Lotus Massage Spa",
+    en: "Lotus Massage Spa",
+    ja: "ロータスマッサージスパ",
+    ko: "로터스 마사지 스파",
+    zh: "莲花按摩水疗",
+  },
+  {
+    vi: "Club",
+    en: "Club",
+    ja: "クラブ",
+    ko: "클럽",
+    zh: "俱乐部",
+  },
+  {
+    vi: "Lounge",
+    en: "Lounge",
+    ja: "ラウンジ",
+    ko: "라운지",
+    zh: "酒廊",
+  },
+  {
+    vi: "Girls Bar",
+    en: "Girls Bar",
+    ja: "ガールズバー",
+    ko: "걸즈 바",
+    zh: "Girls Bar",
+  },
+  {
+    vi: "Karaoke / KTV",
+    en: "Karaoke / KTV",
+    ja: "カラオケ / KTV",
+    ko: "노래방 / KTV",
+    zh: "卡拉 OK / KTV",
+  },
+  {
+    vi: "Karaoke",
+    en: "Karaoke",
+    ja: "カラオケ",
+    ko: "노래방",
+    zh: "卡拉 OK",
+  },
+  {
+    vi: "Massage / Spa",
+    en: "Massage / Spa",
+    ja: "マッサージ / スパ",
+    ko: "마사지 / 스파",
+    zh: "按摩 / 水疗",
+  },
+  {
+    vi: "Massage spa",
+    en: "Massage spa",
+    ja: "マッサージスパ",
+    ko: "마사지 스파",
+    zh: "按摩水疗",
+  },
+  {
+    vi: "Restaurant",
+    en: "Restaurant",
+    ja: "レストラン",
+    ko: "레스토랑",
+    zh: "餐厅",
+  },
+  {
+    vi: "Casino",
+    en: "Casino",
+    ja: "カジノ",
+    ko: "카지노",
+    zh: "赌场",
+  },
+  {
+    vi: "nhân viên a",
+    en: "Staff A",
+    ja: "スタッフA",
+    ko: "직원 A",
+    zh: "员工A",
+  },
+  {
+    vi: "quán A",
+    en: "Venue A",
+    ja: "店舗A",
+    ko: "매장 A",
+    zh: "店铺A",
+  },
+  {
     vi: "Nhà hàng Nhật",
     en: "Japanese restaurant",
     ja: "日本料理店",
@@ -2480,12 +2970,15 @@ function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
   return output;
 }
 
-function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) {
+function translatePattern(
+  value: string,
+  language: Exclude<LanguageCode, "vi">,
+): string | null {
   const normalized = normalizeText(value);
-  const topMatch = normalized.match(/^TOP\s+(\d+)$/i);
+  const topMatch = normalized.match(/^TOP\s+(\d+)$/i) ?? normalized.match(/^Top\s+(\d+)$/i);
 
   if (topMatch) {
-    const rank = topMatch[1];
+    const rank = topMatch[1] ?? "";
     return {
       en: `Top ${rank}`,
       ja: `トップ ${rank}`,
@@ -2496,7 +2989,7 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
 
   const bannerMatch = normalized.match(/^Banner\s+(\d+)$/i);
   if (bannerMatch) {
-    const index = bannerMatch[1];
+    const index = bannerMatch[1] ?? "";
     return {
       en: `Banner ${index}`,
       ja: `バナー ${index}`,
@@ -2507,7 +3000,7 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
 
   const featuredBannerMatch = normalized.match(/^Banner nổi bật\s+(\d+)$/i);
   if (featuredBannerMatch) {
-    const index = featuredBannerMatch[1];
+    const index = featuredBannerMatch[1] ?? "";
     return {
       en: `Featured banner ${index}`,
       ja: `注目バナー ${index}`,
@@ -2518,7 +3011,7 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
 
   const guestMatch = normalized.match(/^(\d+)\s+người$/i);
   if (guestMatch) {
-    const count = guestMatch[1];
+    const count = guestMatch[1] ?? "";
     return {
       en: `${count} guests`,
       ja: `${count}名`,
@@ -2527,9 +3020,86 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
     }[language];
   }
 
+  const castCountMatch = normalized.match(/^(\d+)\s+cast$/i);
+  if (castCountMatch) {
+    const count = castCountMatch[1] ?? "";
+    return {
+      en: `${count} Cast`,
+      ja: `${count}人のキャスト`,
+      ko: `캐스트 ${count}명`,
+      zh: `${count} 位 Cast`,
+    }[language];
+  }
+
+  const venueCountMatch = normalized.match(/^(\d+)\s+quán$/i);
+  if (venueCountMatch) {
+    const count = venueCountMatch[1] ?? "";
+    return {
+      en: `${count} venues`,
+      ja: `${count}店舗`,
+      ko: `매장 ${count}곳`,
+      zh: `${count} 家店铺`,
+    }[language];
+  }
+
+  const viewCastMatch = normalized.match(/^Xem\s+(\d+)\s+cast$/i);
+  if (viewCastMatch) {
+    const count = viewCastMatch[1] ?? "";
+    return {
+      en: `View ${count} Cast`,
+      ja: `${count}人のキャストを見る`,
+      ko: `캐스트 ${count}명 보기`,
+      zh: `查看 ${count} 位 Cast`,
+    }[language];
+  }
+
+  const viewVenueMatch = normalized.match(/^Xem\s+(\d+)\s+quán$/i);
+  if (viewVenueMatch) {
+    const count = viewVenueMatch[1] ?? "";
+    return {
+      en: `View ${count} venues`,
+      ja: `${count}店舗を見る`,
+      ko: `매장 ${count}곳 보기`,
+      zh: `查看 ${count} 家店铺`,
+    }[language];
+  }
+
+  const filterActiveMatch = normalized.match(/^(\d+)\s+bộ lọc đang bật$/i);
+  if (filterActiveMatch) {
+    const count = filterActiveMatch[1] ?? "";
+    return {
+      en: `${count} filters active`,
+      ja: `${count}件のフィルターが有効`,
+      ko: `필터 ${count}개 적용 중`,
+      zh: `${count} 个筛选已启用`,
+    }[language];
+  }
+
+  const sortWithValueMatch = normalized.match(/^Sắp xếp:\s*(.+)$/i);
+  if (sortWithValueMatch) {
+    const sortValue = translateText(sortWithValueMatch[1] ?? "", language);
+    return {
+      en: `Sort: ${sortValue}`,
+      ja: `並び替え: ${sortValue}`,
+      ko: `정렬: ${sortValue}`,
+      zh: `排序：${sortValue}`,
+    }[language];
+  }
+
+  const findCastNightMatch = normalized.match(/^Tìm cast đêm\s+(.+)$/i);
+  if (findCastNightMatch) {
+    const city = replaceTerms(findCastNightMatch[1] ?? "", language);
+    return {
+      en: `Find night Cast in ${city}`,
+      ja: `${city}の夜キャストを探す`,
+      ko: `${city} 밤 캐스트 찾기`,
+      zh: `查找${city}夜间 Cast`,
+    }[language];
+  }
+
   const priceFromMatch = normalized.match(/^từ\s+(.+)$/i);
   if (priceFromMatch) {
-    const price = priceFromMatch[1];
+    const price = priceFromMatch[1] ?? "";
     return {
       en: `from ${price}`,
       ja: `${price}〜`,
@@ -2540,8 +3110,8 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
 
   const pointsNeededMatch = normalized.match(/^Cần thêm\s+(.+?)\s+điểm để lên hạng\s+(.+)$/i);
   if (pointsNeededMatch) {
-    const points = pointsNeededMatch[1];
-    const tier = pointsNeededMatch[2];
+    const points = pointsNeededMatch[1] ?? "";
+    const tier = pointsNeededMatch[2] ?? "";
     return {
       en: `Need ${points} more points to reach ${tier}`,
       ja: `${tier}まであと${points}ポイント`,
@@ -2552,7 +3122,7 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
 
   const tierReadyMatch = normalized.match(/^Đã đủ điểm để lên hạng\s+(.+)$/i);
   if (tierReadyMatch) {
-    const tier = tierReadyMatch[1];
+    const tier = tierReadyMatch[1] ?? "";
     return {
       en: `Enough points to reach ${tier}`,
       ja: `${tier}にアップグレード可能`,
@@ -2563,7 +3133,7 @@ function translatePattern(value: string, language: Exclude<LanguageCode, "vi">) 
 
   const confidenceMatch = normalized.match(/^Độ tin cậy\s+(.+)$/i);
   if (confidenceMatch) {
-    const confidence = confidenceMatch[1];
+    const confidence = confidenceMatch[1] ?? "";
     return {
       en: `Confidence ${confidence}`,
       ja: `信頼度 ${confidence}`,
@@ -2620,7 +3190,7 @@ export function getVietnameseSource(value: string) {
   return reverseTranslations.get(normalized) ?? value;
 }
 
-export function translateText(value: string, language: LanguageCode) {
+export function translateText(value: string, language: LanguageCode): string {
   const source = getVietnameseSource(value);
   if (language === "vi") return source;
 
