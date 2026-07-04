@@ -23,8 +23,6 @@ import {
 import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ranking";
 
 type RankingKind = "cast" | "quan";
-type RankingPeriod = "week" | "month";
-type CategoryFilter = "all" | RankingCategory;
 type LoadState = "loading" | "ready" | "error";
 
 type SelectOption<T extends string> = {
@@ -70,28 +68,22 @@ const kindTabs: Array<SelectOption<RankingKind>> = [
   { key: "quan", label: "Quán" },
 ];
 
-const periodTabs: Array<SelectOption<RankingPeriod>> = [
-  { key: "week", label: "Tuần" },
-  { key: "month", label: "Tháng" },
-];
-
 const areaOptions: Array<SelectOption<RankingCity>> = [
   { key: "hn", label: "Hà Nội" },
   { key: "hcm", label: "TP.HCM" },
   { key: "all", label: "Tổng hợp" },
 ];
 
-const categoryOptions: Array<SelectOption<CategoryFilter>> = [
-  { key: "all", label: "Tất cả loại hình" },
-  { key: "bar", label: "Bar" },
-  { key: "club", label: "Club" },
-  { key: "lounge", label: "Lounge" },
-  { key: "girls_bar", label: "Girls bar" },
-  { key: "karaoke", label: "Karaoke" },
-  { key: "massage_spa", label: "Massage/Spa" },
-  { key: "restaurant", label: "Restaurant" },
-  { key: "casino", label: "Casino" },
-];
+const categoryLabels: Partial<Record<RankingCategory, string>> = {
+  bar: "Bar",
+  club: "Club",
+  lounge: "Lounge",
+  girls_bar: "Girls bar",
+  karaoke: "Karaoke",
+  massage_spa: "Massage/Spa",
+  restaurant: "Restaurant",
+  casino: "Casino",
+};
 
 const targetTypeByKind: Record<RankingKind, RankingTargetType> = {
   cast: "CAST",
@@ -114,9 +106,9 @@ function getInitials(name: string) {
 
 function formatCategory(value?: string | null) {
   if (!value) return "Chưa phân loại";
-  const token = value.toLowerCase() as CategoryFilter;
+  const token = value.toLowerCase() as RankingCategory;
   return (
-    categoryOptions.find((option) => option.key === token)?.label ??
+    categoryLabels[token] ??
     value
       .toLowerCase()
       .split("_")
@@ -142,29 +134,6 @@ function KindTabs({
           type="button"
           className={rankingType === tab.key ? "is-active" : ""}
           data-testid={`${testIdPrefix}-${tab.key}`}
-          onClick={() => onChange(tab.key)}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function PeriodTabs({
-  period,
-  onChange,
-}: {
-  period: RankingPeriod;
-  onChange: (value: RankingPeriod) => void;
-}) {
-  return (
-    <div className="vyr-ranking-period" aria-label="Chọn thời gian xếp hạng">
-      {periodTabs.map((tab) => (
-        <button
-          key={tab.key}
-          type="button"
-          className={period === tab.key ? "is-active" : ""}
           onClick={() => onChange(tab.key)}
         >
           {tab.label}
@@ -408,9 +377,7 @@ function RankingRow({
 
 export default function Page() {
   const [rankingType, setRankingType] = useState<RankingKind>("cast");
-  const [period, setPeriod] = useState<RankingPeriod>("month");
   const [selectedArea, setSelectedArea] = useState<RankingCity>("hn");
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
   const [list, setList] = useState<PublicRankingItem[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
@@ -420,10 +387,9 @@ export default function Page() {
     () => ({
       targetType: targetTypeByKind[rankingType],
       city: selectedArea,
-      category: selectedCategory === "all" ? undefined : selectedCategory,
       limit: 5,
     }),
-    [rankingType, selectedArea, selectedCategory],
+    [rankingType, selectedArea],
   );
 
   const markRankingLoading = () => {
@@ -439,11 +405,6 @@ export default function Page() {
   const changeSelectedArea = (value: RankingCity) => {
     markRankingLoading();
     setSelectedArea(value);
-  };
-
-  const changeSelectedCategory = (value: CategoryFilter) => {
-    markRankingLoading();
-    setSelectedCategory(value);
   };
 
   const retryRanking = () => {
@@ -470,11 +431,11 @@ export default function Page() {
     return () => controller.abort();
   }, [query, reloadKey]);
 
-  const dateLabel = period === "month" ? "Tháng 6 năm 2026" : "Tuần này";
+  const dateLabel = "Tháng 6 năm 2026";
   const hasItems = list.length > 0;
   const trackingContext: RankingClickContext = {
     city: selectedArea,
-    category: selectedCategory,
+    category: "all",
     targetType: query.targetType,
     surface: "ranking-card",
   };
@@ -499,7 +460,6 @@ export default function Page() {
           </div>
 
           <div className="vyr-ranking-desktop-controls">
-            <PeriodTabs period={period} onChange={setPeriod} />
             <RankingSelect
               value={selectedArea}
               options={areaOptions}
@@ -507,14 +467,6 @@ export default function Page() {
               label="Chọn khu vực"
               icon={<MapPin size={15} strokeWidth={1.8} aria-hidden="true" />}
               testId="ranking-city-select"
-            />
-            <RankingSelect
-              value={selectedCategory}
-              options={categoryOptions}
-              onChange={changeSelectedCategory}
-              label="Chọn loại hình"
-              testId="ranking-category-select"
-              className="vyr-category-select"
             />
             <KindTabs
               rankingType={rankingType}
@@ -531,7 +483,6 @@ export default function Page() {
             testIdPrefix="ranking-kind-mobile"
           />
           <div className="vyr-ranking-mobile-filter-row">
-            <PeriodTabs period={period} onChange={setPeriod} />
             <RankingSelect
               value={selectedArea}
               options={areaOptions}
@@ -541,14 +492,6 @@ export default function Page() {
               testId="ranking-city-select-mobile"
             />
           </div>
-          <RankingSelect
-            value={selectedCategory}
-            options={categoryOptions}
-            onChange={changeSelectedCategory}
-            label="Chọn loại hình"
-            testId="ranking-category-select-mobile"
-            className="vyr-category-select"
-          />
         </div>
 
         <div className="vyr-ranking-list" aria-live="polite">
@@ -568,13 +511,12 @@ export default function Page() {
           {loadState === "ready" && !hasItems ? (
             <div className="vyr-ranking-state" data-testid="ranking-empty-state">
               <strong>Chưa có ranking phù hợp</strong>
-              <span>Thử đổi khu vực hoặc loại hình để xem bảng khác.</span>
+              <span>Thử đổi khu vực để xem bảng khác.</span>
               <button
                 type="button"
                 onClick={() => {
                   markRankingLoading();
                   setSelectedArea("all");
-                  setSelectedCategory("all");
                 }}
               >
                 <RefreshCcw size={15} />
@@ -668,8 +610,7 @@ export default function Page() {
           display: none;
         }
 
-        .vyr-ranking-segment,
-        .vyr-ranking-period {
+        .vyr-ranking-segment {
           display: flex;
           align-items: center;
           gap: 6px;
@@ -679,8 +620,7 @@ export default function Page() {
           padding: 4px;
         }
 
-        .vyr-ranking-segment button,
-        .vyr-ranking-period button {
+        .vyr-ranking-segment button {
           min-height: 0;
           border: 0;
           border-radius: 9px;
@@ -695,12 +635,7 @@ export default function Page() {
           white-space: nowrap;
         }
 
-        .vyr-ranking-period button {
-          padding-inline: 14px;
-        }
-
-        .vyr-ranking-segment button.is-active,
-        .vyr-ranking-period button.is-active {
+        .vyr-ranking-segment button.is-active {
           color: #241a0a;
           background: linear-gradient(135deg, #f0dda8, #d4b26a);
         }
@@ -741,15 +676,6 @@ export default function Page() {
           white-space: nowrap;
         }
 
-        .vyr-category-select .vyr-ranking-select-trigger {
-          max-width: 156px;
-        }
-
-        .vyr-category-select .vyr-ranking-select-trigger span {
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
         .vyr-ranking-select.is-open {
           border-color: rgba(212, 178, 106, 0.34);
           background: rgba(212, 178, 106, 0.07);
@@ -774,10 +700,6 @@ export default function Page() {
           background: #15131a;
           box-shadow: 0 18px 44px rgba(0, 0, 0, 0.52);
           z-index: 90;
-        }
-
-        .vyr-category-select .vyr-ranking-select-menu {
-          min-width: 178px;
         }
 
         .vyr-ranking-select-menu button {
@@ -1144,32 +1066,8 @@ export default function Page() {
           .vyr-ranking-mobile-filter-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             gap: 10px;
-          }
-
-          .vyr-ranking-period {
-            gap: 6px;
-            flex: none;
-            background: transparent;
-            border: 0;
-            border-radius: 0;
-            padding: 0;
-          }
-
-          .vyr-ranking-period button {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 13px;
-            background: rgba(255, 255, 255, 0.05);
-            color: #c5c0b6;
-            font-size: 11.5px;
-            padding: 7px 13px;
-          }
-
-          .vyr-ranking-period button.is-active {
-            color: #e3c27e;
-            border-color: rgba(212, 178, 106, 0.3);
-            background: rgba(212, 178, 106, 0.1);
           }
 
           .vyr-ranking-select {
@@ -1191,28 +1089,6 @@ export default function Page() {
           .vyr-ranking-select-menu {
             top: calc(100% + 6px);
             min-width: 112px;
-          }
-
-          .vyr-category-select {
-            width: 100%;
-            min-height: 36px;
-            justify-content: space-between;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 13px;
-            padding: 0 12px;
-            background: rgba(255, 255, 255, 0.05);
-          }
-
-          .vyr-category-select .vyr-ranking-select-trigger {
-            width: 100%;
-            max-width: none;
-            justify-content: space-between;
-          }
-
-          .vyr-category-select .vyr-ranking-select-menu {
-            left: 0;
-            right: auto;
-            width: 100%;
           }
 
           .vyr-ranking-select-menu button {
