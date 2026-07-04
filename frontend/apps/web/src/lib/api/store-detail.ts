@@ -56,6 +56,11 @@ export type StorePriceItem = {
   amountVnd?: number | null;
   unit?: string | null;
   note?: string | null;
+  group?: string | null;
+  imageUrl?: string | null;
+  tier?: number | null;
+  hot?: boolean;
+  displayPrice?: string | null;
 };
 
 export type StorePriceReference = {

@@ -27,6 +27,7 @@ describe('NightlifeDataService', () => {
       upsert: jest.fn(),
     },
     partnerRequest: {
+      count: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -81,6 +82,7 @@ describe('NightlifeDataService', () => {
     },
     content: {
       create: jest.fn(),
+      count: jest.fn(),
       updateMany: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
@@ -111,6 +113,7 @@ describe('NightlifeDataService', () => {
     bill: {
       create: jest.fn(),
       count: jest.fn(),
+      aggregate: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
@@ -554,6 +557,24 @@ describe('NightlifeDataService', () => {
       longitude: '105.822',
       openingHours: { monday: { open: '19:00', close: '02:00' } },
       holidaySchedule: { specialClosures: [] },
+      pricingInfo: {
+        groups: [
+          {
+            id: 'g1',
+            name: 'Set menu',
+            items: [
+              {
+                id: 'menu-1',
+                name: 'VIP bottle set',
+                desc: 'For 4 guests',
+                tier: 3,
+                hot: true,
+                thumb: 'https://example.com/menu-vip.jpg',
+              },
+            ],
+          },
+        ],
+      },
       mapUrl: 'https://maps.google.com/?q=21.063,105.822',
       googlePlaceId: 'place-neon',
       area: {
@@ -645,7 +666,7 @@ describe('NightlifeDataService', () => {
           expect.objectContaining({
             id: 'media-video',
             type: 'VIDEO',
-            url: 'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
+            url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
           }),
         ]),
         casts: [
@@ -661,6 +682,16 @@ describe('NightlifeDataService', () => {
         priceReference: expect.objectContaining({
           currency: 'VND',
           startingFromVnd: 700000,
+          items: expect.arrayContaining([
+            expect.objectContaining({
+              label: 'VIP bottle set',
+              group: 'Set menu',
+              imageUrl: 'https://example.com/menu-vip.jpg',
+              tier: 3,
+              hot: true,
+              displayPrice: '$$$',
+            }),
+          ]),
         }),
         activeCoupons: [
           expect.objectContaining({

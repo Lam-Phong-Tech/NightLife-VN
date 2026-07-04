@@ -24,7 +24,6 @@ import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { apiClient } from "@/lib/api/client";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
-import { castImageForSlug, storeGalleryForSlug, storeImageForSlug } from "@/lib/demo-media";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -77,18 +76,8 @@ const maxBookingEmailLength = 160;
 const maxBookingNoteLength = 300;
 const bookingEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const fallbackHero: StoreGalleryItem = {
-  id: "fallback-hero",
-  type: "IMAGE",
-  url: storeImageForSlug("crimson-bar"),
-  alt: "Nightlife venue",
-};
-
-const fallbackTourImages = [
-  storeImageForSlug("crimson-bar"),
-  storeImageForSlug("neon-club"),
-  storeImageForSlug("tokyo-kitchen"),
-];
+const emptyMediaBackground =
+  "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 
 const normalizeLanguageCode = (language: string) => language.trim().toLowerCase();
 
@@ -178,14 +167,24 @@ const plainMapsUrl = (store: PublicStoreDetail) => {
 const storeAddressText = (store: PublicStoreDetail) =>
   store.address || [store.area?.name, store.district, store.city].filter(Boolean).join(", ");
 
+const imageBackground = (url: string) =>
+  `linear-gradient(180deg, rgba(12,12,15,.05), rgba(12,12,15,.66)), url("${url}")`;
+
 const galleryImageUrl = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
   if (media?.type === "IMAGE" && media.url) return media.url;
   if (fallback?.type === "IMAGE" && fallback.url) return fallback.url;
-  return fallbackHero.url;
+  return "";
 };
 
-const imageBackground = (url: string) =>
-  `linear-gradient(180deg, rgba(12,12,15,.05), rgba(12,12,15,.66)), url("${url}")`;
+const galleryBackground = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
+  const url = galleryImageUrl(media, fallback);
+  return url ? imageBackground(url) : emptyMediaBackground;
+};
+
+const rawOpeningSummary = (store: PublicStoreDetail) => {
+  const value = (store.openingHours as Record<string, unknown> | null | undefined)?.summary;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+};
 
 const priceRangeText = (store: PublicStoreDetail) => {
   const values = store.priceReference.items
@@ -334,15 +333,15 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
 
   return (
     <div className="cast-rail hscroll">
-      {store.casts.slice(0, 10).map((cast, index) => {
-        const avatarUrl = castImageForSlug(cast.slug, index);
+      {store.casts.slice(0, 10).map((cast) => {
+        const avatarUrl = cast.thumbnailUrl || "";
 
         return (
           <Link className="cast-bubble" key={cast.id} href={`/casts/${cast.slug}`}>
             <span
               className="cast-avatar"
               style={{
-                backgroundImage: imageBackground(avatarUrl),
+                backgroundImage: avatarUrl ? imageBackground(avatarUrl) : emptyMediaBackground,
               }}
             />
             <strong>{cast.publicAlias || cast.stageName}</strong>
@@ -359,16 +358,21 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
 
 function PriceMenu({ store }: { store: PublicStoreDetail }) {
   const items = store.priceReference.items;
+  const menuGroups = Array.from(
+    new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
+  );
 
   return (
     <section className="menu-panel">
-      <div className="menu-chips hscroll" aria-label="Nhóm thực đơn">
-        {["Set bàn", "Cocktail", "Champagne", "Đồ ăn"].map((chip, index) => (
-          <span className={index === 0 ? "active" : undefined} key={chip}>
-            {chip}
-          </span>
-        ))}
-      </div>
+      {menuGroups.length ? (
+        <div className="menu-chips hscroll" aria-label="Nhóm thực đơn">
+          {menuGroups.map((chip, index) => (
+            <span className={index === 0 ? "active" : undefined} key={chip}>
+              {chip}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div className="menu-list">
         {items.length ? (
@@ -377,24 +381,23 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
               <span
                 className="menu-photo"
                 style={{
-                  backgroundImage: imageBackground(
-                    fallbackTourImages[index % fallbackTourImages.length] ?? fallbackHero.url,
-                  ),
+                  backgroundImage: item.imageUrl ? imageBackground(item.imageUrl) : emptyMediaBackground,
                 }}
                 aria-hidden="true"
               />
               <span className="menu-copy">
                 <strong>
                   {item.label}
-                  {index === 1 ? <em>Bán chạy</em> : null}
+                  {item.hot ? <em>HOT</em> : null}
                 </strong>
                 <small>
                   {item.note ||
+                    item.group ||
                     (item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán")}
                 </small>
               </span>
               <b>
-                {formatPriceTier(item.amountVnd)}
+                {item.displayPrice || formatPriceTier(item.amountVnd)}
                 {item.unit === "hour" ? "/giờ" : ""}
               </b>
             </div>
@@ -420,6 +423,19 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
 }
 
 function HoursList({ store, today }: { store: PublicStoreDetail; today: string }) {
+  const summary = rawOpeningSummary(store);
+
+  if (summary) {
+    return (
+      <div className="hours-list">
+        <div className="today">
+          <span>Giờ mở cửa</span>
+          <strong>{summary}</strong>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="hours-list">
       {weekdayLabels.map(([key, label]) => (
@@ -640,32 +656,30 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
     <section className="related-section">
       <SectionTitle title="Quán tương tự" meta="Xem thêm" />
       <div className="related-grid">
-        {stores.slice(0, 4).map((related, index) => {
-          const photoUrl = storeImageForSlug(related.slug, index);
-
-          return (
-            <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
-              <span
-                className="related-photo"
-                style={{
-                  backgroundImage: imageBackground(photoUrl),
-                }}
-              />
-              <span className="related-copy">
-                <strong>{readableName(related.name)}</strong>
-                <small>{recommendationLabel(related)}</small>
-                <em>
-                  {[
-                    categoryLabels[related.category] ?? related.category,
-                    related.area?.name ?? related.district,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </em>
-              </span>
-            </Link>
-          );
-        })}
+        {stores.slice(0, 4).map((related) => (
+          <Link className="related-card" key={related.id} href={`/stores/${related.slug}`}>
+            <span
+              className="related-photo"
+              style={{
+                backgroundImage: related.thumbnailUrl
+                  ? imageBackground(related.thumbnailUrl)
+                  : emptyMediaBackground,
+              }}
+            />
+            <span className="related-copy">
+              <strong>{readableName(related.name)}</strong>
+              <small>{recommendationLabel(related)}</small>
+              <em>
+                {[
+                  categoryLabels[related.category] ?? related.category,
+                  related.area?.name ?? related.district,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </em>
+            </span>
+          </Link>
+        ))}
       </div>
     </section>
   );
@@ -696,26 +710,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   }, [store.id]);
 
   const displayName = readableName(store.name);
-  const localGallery = storeGalleryForSlug(store.slug, displayName);
-  const videoGallery = store.gallery?.filter((item) => item.type === "VIDEO" && item.url) ?? [];
-  const gallery = [...localGallery, ...videoGallery];
-  const heroImage = gallery.find((item) => item.type === "IMAGE") ?? fallbackHero;
-  const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? fallbackHero;
-  const heroMedia = selectedMedia.type === "IMAGE" ? selectedMedia : heroImage;
+  const gallery = store.gallery?.filter((item) => item.url) ?? [];
+  const videoGallery = gallery.filter((item) => item.type === "VIDEO");
+  const heroImage = gallery.find((item) => item.type === "IMAGE") ?? null;
+  const selectedMedia = gallery[selectedGalleryIndex] ?? gallery[0] ?? heroImage;
+  const heroMedia = selectedMedia?.type === "IMAGE" ? selectedMedia : heroImage;
   const heroBackground = mediaBackground(heroMedia);
-  const galleryTiles = Array.from(
-    { length: Math.min(Math.max(gallery.length, 5), 5) },
-    (_, index) => gallery[index % gallery.length]!,
-  );
-  const tourMedia = gallery.filter((item) => item.type === "VIDEO").length
-    ? gallery.filter((item) => item.type === "VIDEO")
-    : gallery.slice(0, 3);
+  const galleryTiles = gallery.slice(0, 5);
+  const tourMedia = videoGallery;
   const location = [store.area?.name, store.district, store.city].filter(Boolean).join(" · ");
   const addressText = storeAddressText(store);
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
   const today = todayKey() ?? "monday";
-  const todayOpening = openingText(store.openingHours?.[today]);
+  const openingSummary = rawOpeningSummary(store);
+  const todayOpening = openingSummary ?? openingText(store.openingHours?.[today]);
   const openNow = todayOpening !== "Nghỉ" && todayOpening !== "Chưa cập nhật";
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const priceText = priceRangeText(store);
@@ -797,13 +806,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         categoryLabel,
         areaLabel: store.area?.name ?? store.district ?? "",
         cityLabel: store.cityCode ?? store.city,
-        image: galleryImageUrl(heroImage, fallbackHero),
+        image: galleryImageUrl(heroImage),
       },
       nextValue,
     );
     trackStoreDetailClick(store, "favorite", { favorited: nextValue });
   };
   const openGallery = (index: number) => {
+    if (!gallery.length) return;
     setSelectedGalleryIndex(index % gallery.length);
     setIsLightboxOpen(true);
   };
@@ -898,14 +908,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </div>
               </div>
 
-              <button
-                className="hero-play"
-                type="button"
-                aria-label="Mở video tour"
-                onClick={() => openGallery(selectedGalleryIndex)}
-              >
-                <Play size={25} fill="currentColor" />
-              </button>
+              {selectedMedia ? (
+                <button
+                  className="hero-play"
+                  type="button"
+                  aria-label={selectedMedia.type === "VIDEO" ? "Mở video tour" : "Mở ảnh quán"}
+                  onClick={() => openGallery(selectedGalleryIndex)}
+                >
+                  <Play size={25} fill="currentColor" />
+                </button>
+              ) : null}
 
               {gallery.length > 1 ? (
                 <>
@@ -930,14 +942,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </>
               ) : null}
 
-              <button
-                className="video-badge"
-                type="button"
-                onClick={() => openGallery(selectedGalleryIndex)}
-              >
-                <Play size={13} fill="currentColor" />
-                Video quán
-              </button>
+              {tourMedia.length ? (
+                <button
+                  className="video-badge"
+                  type="button"
+                  onClick={() => openGallery(gallery.indexOf(tourMedia[0]!))}
+                >
+                  <Play size={13} fill="currentColor" />
+                  Video quán
+                </button>
+              ) : null}
 
               <div className="hero-name">
                 <h1>{displayName}</h1>
@@ -951,28 +965,30 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
             </section>
 
-            <div className="mobile-gallery-strip" aria-label="Thư viện ảnh của quán">
-              <div className="mobile-gallery-head">
-                <span>Thư viện ảnh</span>
-                <small>
-                  {selectedGalleryIndex + 1}/{gallery.length}
-                </small>
+            {galleryTiles.length ? (
+              <div className="mobile-gallery-strip" aria-label="Thư viện ảnh của quán">
+                <div className="mobile-gallery-head">
+                  <span>Thư viện ảnh</span>
+                  <small>
+                    {selectedGalleryIndex + 1}/{gallery.length}
+                  </small>
+                </div>
+                <div className="mobile-gallery-rail hscroll">
+                  {galleryTiles.map((item, index) => (
+                    <button
+                      key={`mobile-${item.id}-${index}`}
+                      className={index === selectedGalleryIndex ? "active" : undefined}
+                      type="button"
+                      style={{ backgroundImage: galleryBackground(item, heroImage) }}
+                      aria-label={`Mở nội dung ${index + 1}`}
+                      onClick={() => openGallery(index)}
+                    >
+                      {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="mobile-gallery-rail hscroll">
-                {galleryTiles.map((item, index) => (
-                  <button
-                    key={`mobile-${item.id}-${index}`}
-                    className={index === selectedGalleryIndex ? "active" : undefined}
-                    type="button"
-                    style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                    aria-label={`Mở nội dung ${index + 1}`}
-                    onClick={() => openGallery(index)}
-                  >
-                    {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
-                  </button>
-                ))}
-              </div>
-            </div>
+            ) : null}
 
             <div className="quick-stats">
               <div>
@@ -1018,42 +1034,44 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </a>
             </div>
 
-            <div className="thumb-grid">
-              {galleryTiles.map((item, index) => (
-                <button
-                  key={`${item.id}-${index}`}
-                  className={index === selectedGalleryIndex ? "active" : undefined}
-                  type="button"
-                  style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                  aria-label={`Mở nội dung ${index + 1}`}
-                  onClick={() => openGallery(index)}
-                >
-                  {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
-                </button>
-              ))}
-            </div>
-
-            <section className="desktop-only">
-              <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
-              <div className="tour-grid">
-                {tourMedia.slice(0, 4).map((item, index) => (
+            {galleryTiles.length ? (
+              <div className="thumb-grid">
+                {galleryTiles.map((item, index) => (
                   <button
-                    className="tour-card"
-                    type="button"
                     key={`${item.id}-${index}`}
-                    style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                    onClick={() =>
-                      openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
-                    }
+                    className={index === selectedGalleryIndex ? "active" : undefined}
+                    type="button"
+                    style={{ backgroundImage: galleryBackground(item, heroImage) }}
+                    aria-label={`Mở nội dung ${index + 1}`}
+                    onClick={() => openGallery(index)}
                   >
-                    <Play size={18} fill="currentColor" />
-                    <span>
-                      {item.purpose || (item.type === "VIDEO" ? "Video quán" : "Không gian quán")}
-                    </span>
+                    {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
                   </button>
                 ))}
               </div>
-            </section>
+            ) : null}
+
+            {tourMedia.length ? (
+              <section className="desktop-only">
+                <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
+                <div className="tour-grid">
+                  {tourMedia.slice(0, 4).map((item, index) => (
+                    <button
+                      className="tour-card"
+                      type="button"
+                      key={`${item.id}-${index}`}
+                      style={{ backgroundImage: galleryBackground(item, heroImage) }}
+                      onClick={() =>
+                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
+                      }
+                    >
+                      <Play size={18} fill="currentColor" />
+                      <span>{item.purpose || "Video quán"}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
             <section className="desktop-only">
               <SectionTitle title="Vị trí" kicker={addressText || undefined} kickerTone="address" />
@@ -1143,25 +1161,27 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               </div>
             </section>
 
-            <section className="mobile-only">
-              <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
-              <div className="tour-rail hscroll">
-                {tourMedia.slice(0, 6).map((item, index) => (
-                  <button
-                    className="tour-card"
-                    type="button"
-                    key={`${item.id}-${index}`}
-                    style={{ backgroundImage: imageBackground(galleryImageUrl(item, heroImage)) }}
-                    onClick={() =>
-                      openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
-                    }
-                  >
-                    <Play size={18} fill="currentColor" />
-                    <span>{item.purpose || "Không gian quán"}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
+            {tourMedia.length ? (
+              <section className="mobile-only">
+                <SectionTitle title="Video quán" meta={`${tourMedia.length} nội dung`} />
+                <div className="tour-rail hscroll">
+                  {tourMedia.slice(0, 6).map((item, index) => (
+                    <button
+                      className="tour-card"
+                      type="button"
+                      key={`${item.id}-${index}`}
+                      style={{ backgroundImage: galleryBackground(item, heroImage) }}
+                      onClick={() =>
+                        openGallery(gallery.indexOf(item) >= 0 ? gallery.indexOf(item) : index)
+                      }
+                    >
+                      <Play size={18} fill="currentColor" />
+                      <span>{item.purpose || "Video quán"}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
             <section>
               <SectionTitle title="Cast đang làm" meta={`${store.casts.length} cast`} />
@@ -2319,7 +2339,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .coupon-photo {
           width: 78px;
           flex: none;
-          background: ${imageBackground(fallbackTourImages[1] ?? fallbackHero.url)};
+          background: ${emptyMediaBackground};
           background-size: cover;
           background-position: center;
         }

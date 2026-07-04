@@ -550,32 +550,6 @@ const CAST_SLUG_ALIASES: Record<string, string> = {
   'yuna-neon-district': 'yuna-neon',
 };
 
-const LEGACY_DEMO_VIDEO_URLS = new Set([
-  'https://www.youtube.com/embed/dQw4w9WgXcQ',
-  'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-  'https://youtu.be/dQw4w9WgXcQ',
-]);
-
-const STORE_VIDEO_URLS = {
-  nightlife:
-    'https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4',
-  restaurant:
-    'https://videos.pexels.com/video-files/31631562/13476222_3840_2160_25fps.mp4',
-  ktv: 'https://www.pexels.com/download/video/8117118/',
-  spa: 'https://www.pexels.com/download/video/6187089/',
-} as const;
-
-const STORE_CATEGORY_VIDEO_URLS: Partial<Record<StoreCategory, string>> = {
-  BAR: STORE_VIDEO_URLS.nightlife,
-  CLUB: STORE_VIDEO_URLS.nightlife,
-  LOUNGE: STORE_VIDEO_URLS.nightlife,
-  GIRLS_BAR: STORE_VIDEO_URLS.nightlife,
-  CASINO: STORE_VIDEO_URLS.nightlife,
-  KARAOKE: STORE_VIDEO_URLS.ktv,
-  RESTAURANT: STORE_VIDEO_URLS.restaurant,
-  MASSAGE_SPA: STORE_VIDEO_URLS.spa,
-};
-
 type Coordinates = {
   lat: number;
   lng: number;
@@ -1780,6 +1754,7 @@ export class NightlifeDataService {
         longitude: true,
         openingHours: true,
         holidaySchedule: true,
+        pricingInfo: true,
         mapUrl: true,
         googlePlaceId: true,
         area: {
@@ -1915,11 +1890,7 @@ export class NightlifeDataService {
     const gallery = store.media.map((media) => ({
       id: media.id,
       type: media.type,
-      url: this.resolvePublicStoreMediaUrl(
-        media.url,
-        media.type,
-        store.category,
-      ),
+      url: media.url,
       purpose: media.purpose,
       mimeType: media.mimeType,
       alt: media.originalName || store.name,
@@ -1972,7 +1943,10 @@ export class NightlifeDataService {
         languages: cast.languages,
         hourlyRateVnd: cast.hourlyRateVnd,
       })),
-      priceReference: this.buildStorePriceReference(store.casts),
+      priceReference: this.buildStorePriceReference(
+        store.pricingInfo,
+        store.casts,
+      ),
       activeCoupons,
       campaigns: activeCoupons.map((coupon) => ({
         id: coupon.id,
@@ -10322,6 +10296,7 @@ export class NightlifeDataService {
   }
 
   private buildStorePriceReference(
+    pricingInfo: unknown,
     casts: Array<{
       hourlyRateVnd: number | null;
     }>,
@@ -10329,18 +10304,37 @@ export class NightlifeDataService {
     const rates = casts
       .map((cast) => cast.hourlyRateVnd)
       .filter((rate): rate is number => typeof rate === 'number' && rate > 0);
-    const startingFromVnd = rates.length ? Math.min(...rates) : null;
+    const castStartingFromVnd = rates.length ? Math.min(...rates) : null;
+    const pricingRecord = this.asRecord(pricingInfo);
+    const menuItems = this.buildStoreMenuPriceItems(pricingRecord);
+    const menuAmounts = menuItems
+      .map((item) => item.amountVnd)
+      .filter((amount): amount is number => typeof amount === 'number' && amount > 0);
+    const startingFromVnd = menuAmounts.length
+      ? Math.min(...menuAmounts)
+      : castStartingFromVnd;
+
+    if (menuItems.length) {
+      return {
+        currency: 'VND',
+        startingFromVnd,
+        note:
+          this.cleanNullableText(String(pricingRecord?.summary ?? '')) ??
+          'Menu và mức chi phí do quán cập nhật, admin xác nhận lại sau khi đặt chỗ.',
+        items: menuItems,
+      };
+    }
 
     return {
       currency: 'VND',
-      startingFromVnd,
+      startingFromVnd: castStartingFromVnd,
       note: 'Reference price only; admin confirms final pricing by guest count, room type, and time slot.',
       items: [
-        ...(startingFromVnd
+        ...(castStartingFromVnd
           ? [
               {
                 label: 'Cast hourly rate',
-                amountVnd: startingFromVnd,
+                amountVnd: castStartingFromVnd,
                 unit: 'hour',
                 note: 'Lowest active public cast rate for this store.',
               },
@@ -10354,6 +10348,109 @@ export class NightlifeDataService {
         },
       ],
     };
+  }
+
+  private buildStoreMenuPriceItems(pricingRecord?: Record<string, unknown>) {
+    if (!pricingRecord) {
+      return [];
+    }
+
+    const rawGroups = Array.isArray(pricingRecord.groups)
+      ? pricingRecord.groups
+      : [];
+    const rawItems = Array.isArray(pricingRecord.items)
+      ? [
+          {
+            name: this.cleanNullableText(String(pricingRecord.summary ?? '')) ??
+              'Menu',
+            items: pricingRecord.items,
+          },
+        ]
+      : [];
+    const groups = [...rawGroups, ...rawItems];
+
+    return groups.flatMap((group, groupIndex) => {
+      const groupRecord = this.asRecord(group);
+      const groupName =
+        this.cleanNullableText(
+          String(groupRecord?.name ?? groupRecord?.label ?? ''),
+        ) ?? `Nhóm ${groupIndex + 1}`;
+      const items = Array.isArray(groupRecord?.items)
+        ? groupRecord.items
+        : [];
+
+      return items
+        .map((item) => this.normalizeStoreMenuPriceItem(item, groupName))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    });
+  }
+
+  private normalizeStoreMenuPriceItem(item: unknown, groupName: string) {
+    const record = this.asRecord(item);
+    if (!record) {
+      return null;
+    }
+
+    const label = this.cleanNullableText(
+      String(record.name ?? record.label ?? record.title ?? ''),
+    );
+    if (!label) {
+      return null;
+    }
+
+    const valueText = this.cleanNullableText(
+      String(record.value ?? record.priceText ?? record.priceRange ?? ''),
+    );
+    const amountVnd =
+      this.toNumber(record.amountVnd) ??
+      this.toNumber(record.priceVnd) ??
+      this.toNumber(record.price) ??
+      this.parseVndAmountFromText(valueText);
+    const tier = this.toNumber(record.tier);
+    const imageUrl = this.normalizePublicImageUrl(
+      this.cleanNullableText(
+        String(record.thumb ?? record.imageUrl ?? record.url ?? ''),
+      ),
+    );
+    const displayPrice =
+      valueText ??
+      (tier && tier > 0 ? '$'.repeat(Math.min(Math.max(Math.trunc(tier), 1), 4)) : null);
+
+    return {
+      label,
+      amountVnd,
+      unit: this.cleanNullableText(String(record.unit ?? '')),
+      note: this.cleanNullableText(
+        String(record.desc ?? record.description ?? record.note ?? ''),
+      ),
+      group: groupName,
+      imageUrl,
+      tier: tier && tier > 0 ? Math.trunc(tier) : null,
+      hot: record.hot === true,
+      displayPrice,
+    };
+  }
+
+  private normalizePublicImageUrl(value: string | null) {
+    if (!value || value.startsWith('linear-gradient')) {
+      return null;
+    }
+
+    return value;
+  }
+
+  private parseVndAmountFromText(value: string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const match = value.replace(/\s+/g, '').match(/(\d[\d.,]*)/);
+    if (!match) {
+      return null;
+    }
+
+    const numeric = Number(match[1].replace(/[.,]/g, ''));
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
   }
 
   private buildCastSeoDescription(cast: {
@@ -12083,26 +12180,6 @@ export class NightlifeDataService {
       return {};
     }
 
-    const store = await client.store.findUnique({
-      where: { id: request.store.id },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        category: true,
-        description: true,
-        address: true,
-        city: true,
-        district: true,
-        phone: true,
-        openingHours: true,
-        pricingInfo: true,
-        tags: true,
-        partnerAccountId: true,
-        ownerId: true,
-      },
-    });
     const draft = await client.content.findFirst({
       where: {
         id: { in: request.draftContentIds },
@@ -12125,7 +12202,37 @@ export class NightlifeDataService {
       },
     });
 
-    if (!store || !draft) {
+    if (!draft) {
+      return {};
+    }
+
+    const metadata = this.asRecord(draft.metadata);
+    if (metadata?.kind !== PARTNER_LISTING_DRAFT_KIND) {
+      return {};
+    }
+
+    const store = await client.store.findUnique({
+      where: { id: request.store.id },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        category: true,
+        description: true,
+        address: true,
+        city: true,
+        district: true,
+        phone: true,
+        openingHours: true,
+        pricingInfo: true,
+        tags: true,
+        partnerAccountId: true,
+        ownerId: true,
+      },
+    });
+
+    if (!store) {
       return {};
     }
 
@@ -13019,18 +13126,6 @@ export class NightlifeDataService {
   private normalizeCastSlug(value?: string | null) {
     const token = this.normalizeToken(value);
     return CAST_SLUG_ALIASES[token] ?? token;
-  }
-
-  private resolvePublicStoreMediaUrl(
-    url: string,
-    type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'OTHER',
-    category: StoreCategory,
-  ) {
-    if (type !== 'VIDEO' || !LEGACY_DEMO_VIDEO_URLS.has(url)) {
-      return url;
-    }
-
-    return STORE_CATEGORY_VIDEO_URLS[category] ?? STORE_VIDEO_URLS.nightlife;
   }
 
   private containsInsensitive(value: string): Prisma.StringFilter {
