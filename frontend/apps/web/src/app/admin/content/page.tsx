@@ -86,11 +86,93 @@ export default function AdminContentPage() {
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [showVideoToast, setShowVideoToast] = useState(false);
   const [videoRegion, setVideoRegion] = useState('Tổng hợp');
+  const [hotVideos, setHotVideos] = useState<any[]>([]);
+  const [searchVideos, setSearchVideos] = useState<any[]>([]);
+  const [searchVideoQuery, setSearchVideoQuery] = useState('');
+  const [searchVideoPage, setSearchVideoPage] = useState(1);
+  const [searchVideoTotalPages, setSearchVideoTotalPages] = useState(1);
+  const [isLoadingHotVideos, setIsLoadingHotVideos] = useState(false);
+  const [isSearchingVideo, setIsSearchingVideo] = useState(false);
 
   useEffect(() => {
     fetchCategories();
     fetchBlogs();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'video') {
+      fetchHotVideos(videoRegion);
+    }
+  }, [activeTab, videoRegion]);
+
+  useEffect(() => {
+    if (activeTab === 'video') {
+      const timer = setTimeout(() => {
+        fetchStoreVideos(searchVideoQuery, searchVideoPage);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [searchVideoQuery, searchVideoPage, activeTab]);
+
+  const fetchHotVideos = async (region: string) => {
+    const code = region === 'Tổng hợp' ? 'all' : region === 'Hà Nội' ? 'hn' : 'hcm';
+    try {
+      setIsLoadingHotVideos(true);
+      const data = await apiClient<any[]>(`/admin/content/hot-videos/${code}`);
+      setHotVideos(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingHotVideos(false);
+    }
+  };
+
+  const fetchStoreVideos = async (query: string, page: number) => {
+    try {
+      setIsSearchingVideo(true);
+      const data = await apiClient<any>('/admin/media/store-videos', {
+        params: { search: query, page, limit: 10 }
+      });
+      setSearchVideos(data?.items || []);
+      setSearchVideoTotalPages(data?.totalPages || 1);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearchingVideo(false);
+    }
+  };
+
+  const handleAddHotVideo = (video: any) => {
+    if (hotVideos.find(v => v.id === video.id)) return;
+    setHotVideos(prev => [...prev, video]);
+  };
+
+  const handleRemoveHotVideo = (id: string) => {
+    setHotVideos(prev => prev.filter(v => v.id !== id));
+  };
+
+  const handleMoveHotVideo = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === hotVideos.length - 1) return;
+    const newArr = [...hotVideos];
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    [newArr[index], newArr[swapIndex]] = [newArr[swapIndex], newArr[index]];
+    setHotVideos(newArr);
+  };
+
+  const handleSaveHotVideos = async () => {
+    const code = videoRegion === 'Tổng hợp' ? 'all' : videoRegion === 'Hà Nội' ? 'hn' : 'hcm';
+    try {
+      await apiClient(`/admin/content/hot-videos/${code}`, {
+        method: 'PUT',
+        data: { mediaIds: hotVideos.map(v => v.id) }
+      });
+      alert('Đã lưu danh sách Video Hot thành công');
+    } catch (err) {
+      console.error(err);
+      alert('Có lỗi xảy ra khi lưu');
+    }
+  };
 
   const fetchBlogs = async () => {
     try {
@@ -596,25 +678,40 @@ export default function AdminContentPage() {
               ))}
             </div>
             <div style={{ flex: 1 }}></div>
-            <span style={{ fontSize: '13px', color: colors.muted }}>3 video đang hiển thị trên trang chủ</span>
+            <span style={{ fontSize: '13px', color: colors.muted }}>{hotVideos.length} video đang hiển thị</span>
+            <div 
+              onClick={handleSaveHotVideos}
+              style={{ fontSize: '13px', fontWeight: 600, color: colors.bg, background: colors.goldGrad, padding: '6px 16px', borderRadius: '8px', cursor: 'pointer' }}>
+              Lưu thay đổi
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-            {mockVideos.map(v => (
+            {isLoadingHotVideos ? (
+              <span style={{ color: colors.muted, fontSize: '13px', padding: '20px' }}>Đang tải...</span>
+            ) : hotVideos.length === 0 ? (
+              <span style={{ color: colors.muted, fontSize: '13px', padding: '20px' }}>Chưa có video nào. Hãy tìm và thêm từ bên dưới.</span>
+            ) : hotVideos.map((v, index) => (
               <div key={v.id} style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
-                <div style={{ aspectRatio: '16/9', background: v.color, position: 'relative' }}>
+                <div style={{ aspectRatio: '16/9', background: '#1a1824', position: 'relative' }}>
+                  {v.url ? (
+                    v.url.includes('youtube.com') ? (
+                       <img src={`https://img.youtube.com/vi/${v.url.match(/v=([^&]+)/)?.[1] || v.url.split('/').pop()}/mqdefault.jpg`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="thumb" />
+                    ) : (
+                       <video src={v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )
+                  ) : null}
                   <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>▶</span>
-                  <span style={{ position: 'absolute', right: '9px', bottom: '9px', fontSize: '9px', fontWeight: 600, color: '#f3f0ea', background: 'rgba(12,12,15,.65)', padding: '2.5px 7px', borderRadius: '6px' }}>{v.dur}</span>
-                  <span style={{ position: 'absolute', left: '9px', top: '9px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px' }}>#{v.rank}</span>
+                  <span style={{ position: 'absolute', left: '9px', top: '9px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px' }}>#{index + 1}</span>
                 </div>
                 <div style={{ padding: '11px 13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.venue}</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.storeName || 'Không xác định'}</div>
                     <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.title}</div>
                   </div>
-                  <span style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>↑</span>
-                  <span style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>↓</span>
-                  <span style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>✕</span>
+                  <span onClick={() => handleMoveHotVideo(index, 'up')} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: index === 0 ? 'rgba(255,255,255,0.1)' : '#c5c0b6', cursor: index === 0 ? 'default' : 'pointer' }}>↑</span>
+                  <span onClick={() => handleMoveHotVideo(index, 'down')} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: index === hotVideos.length - 1 ? 'rgba(255,255,255,0.1)' : '#c5c0b6', cursor: index === hotVideos.length - 1 ? 'default' : 'pointer' }}>↓</span>
+                  <span onClick={() => handleRemoveHotVideo(v.id)} style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>✕</span>
                 </div>
               </div>
             ))}
@@ -623,20 +720,58 @@ export default function AdminContentPage() {
           <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
               <Search size={15} color="#8c8679" />
-              <input id="video-search-input" placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+              <input 
+                id="video-search-input" 
+                value={searchVideoQuery}
+                onChange={e => { setSearchVideoQuery(e.target.value); setSearchVideoPage(1); }}
+                placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} 
+              />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
-              {mockVideoSearch.map(vr => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '310px', overflowY: 'auto' }}>
+              {isSearchingVideo ? (
+                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Đang tìm kiếm...</div>
+              ) : searchVideos.length === 0 ? (
+                <div style={{ fontSize: '13px', color: '#8c8679', padding: '10px' }}>Không tìm thấy video nào</div>
+              ) : searchVideos.map(vr => (
                 <div key={vr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                  <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: vr.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span></span>
+                  <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: '#1a221f', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {vr.url && vr.url.includes('youtube.com') ? (
+                      <img src={`https://img.youtube.com/vi/${vr.url.match(/v=([^&]+)/)?.[1] || vr.url.split('/').pop()}/default.jpg`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="thumb" />
+                    ) : (
+                      <span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span>
+                    )}
+                  </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.venue}</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.storeName || 'Không xác định'}</div>
                     <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{vr.title}</div>
                   </div>
-                  <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
+                  <span 
+                    onClick={() => handleAddHotVideo(vr)}
+                    style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: hotVideos.find(h => h.id === vr.id) ? '#999' : 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: hotVideos.find(h => h.id === vr.id) ? 'default' : 'pointer' }}
+                  >
+                    {hotVideos.find(h => h.id === vr.id) ? 'Đã thêm' : '+ Hiện trên trang chủ'}
+                  </span>
                 </div>
               ))}
             </div>
+            {/* Pagination for Search */}
+            {searchVideoTotalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}>
+                <span 
+                  onClick={() => setSearchVideoPage(p => Math.max(1, p - 1))}
+                  style={{ fontSize: '12px', color: searchVideoPage > 1 ? colors.gold : colors.muted, cursor: searchVideoPage > 1 ? 'pointer' : 'default' }}
+                >
+                  &laquo; Trước
+                </span>
+                <span style={{ fontSize: '12px', color: colors.text }}>Trang {searchVideoPage} / {searchVideoTotalPages}</span>
+                <span 
+                  onClick={() => setSearchVideoPage(p => Math.min(searchVideoTotalPages, p + 1))}
+                  style={{ fontSize: '12px', color: searchVideoPage < searchVideoTotalPages ? colors.gold : colors.muted, cursor: searchVideoPage < searchVideoTotalPages ? 'pointer' : 'default' }}
+                >
+                  Sau &raquo;
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

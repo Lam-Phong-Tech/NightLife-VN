@@ -103,6 +103,7 @@ import {
 } from './dto/public-discovery-query.dto';
 import { RecordProfileViewDto } from './dto/profile-view.dto';
 import { ReviewBillDto, VoidBillDto } from './dto/review-bill.dto';
+import { AdminStoreVideoQueryDto, UpdateHotVideosDto } from './dto/admin-video.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
@@ -15304,5 +15305,103 @@ export class NightlifeDataService {
         all: newCount + completedCount + cancelledCount,
       },
     };
+  }
+
+  async adminListStoreVideos(query: AdminStoreVideoQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 50;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.MediaWhereInput = {
+      type: 'VIDEO',
+      purpose: 'STORE_VIDEO',
+      status: 'READY',
+      storeId: { not: null },
+    };
+
+    if (query.search) {
+      where.OR = [
+        { originalName: { contains: query.search, mode: 'insensitive' } },
+        { store: { name: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.media.findMany({
+        where,
+        include: { store: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.media.count({ where }),
+    ]);
+
+    return {
+      items: items.map(item => ({
+        id: item.id,
+        url: item.url,
+        title: item.originalName,
+        storeName: item.store?.name,
+        createdAt: item.createdAt,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async adminGetHotVideos(cityCode: string) {
+    const slug = `hot-videos-${cityCode}`;
+    const content = await this.prisma.content.findUnique({ where: { slug } });
+    if (!content || !content.metadata) return [];
+
+    const meta = this.asRecord(content.metadata);
+    if (!meta || !Array.isArray(meta.videos)) return [];
+
+    const mediaIds = meta.videos.map((v: any) => v.mediaId);
+    
+    // Fetch media details
+    const medias = await this.prisma.media.findMany({
+      where: { id: { in: mediaIds }, status: 'READY' },
+      include: { store: { select: { name: true } } },
+    });
+
+    // Sort according to mediaIds array to preserve rank
+    const sortedMedias = mediaIds
+      .map(id => medias.find(m => m.id === id))
+      .filter(m => !!m);
+
+    return sortedMedias.map(item => ({
+      id: item!.id,
+      url: item!.url,
+      title: item!.originalName,
+      storeName: item!.store?.name,
+      createdAt: item!.createdAt,
+    }));
+  }
+
+  async adminUpdateHotVideos(cityCode: string, dto: UpdateHotVideosDto, adminId: string) {
+    const slug = `hot-videos-${cityCode}`;
+    const videosMeta = dto.mediaIds.map((id, index) => ({ mediaId: id, rank: index + 1 }));
+
+    await this.prisma.content.upsert({
+      where: { slug },
+      create: {
+        slug,
+        title: `Hot Videos - ${cityCode.toUpperCase()}`,
+        type: 'BANNER',
+        status: 'PUBLISHED',
+        authorId: adminId,
+        metadata: this.toPrismaJson({ videos: videosMeta }),
+      },
+      update: {
+        metadata: this.toPrismaJson({ videos: videosMeta }),
+        updatedAt: new Date(),
+      },
+    });
+
+    return { success: true };
   }
 }

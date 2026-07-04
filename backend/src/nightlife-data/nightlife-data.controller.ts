@@ -132,6 +132,7 @@ import {
   UpdateCommissionOverrideDto,
 } from './dto/commission-override.dto';
 import { NightlifeDataService } from './nightlife-data.service';
+import { AdminStoreVideoQueryDto, UpdateHotVideosDto } from './dto/admin-video.dto';
 
 type RequestWithUser = express.Request & {
   user: AuthenticatedUser;
@@ -152,6 +153,31 @@ export class NightlifeDataController {
   @Get('rankings')
   listPublicRankings(@Query() query: PublicRankingQueryDto) {
     return this.nightlifeDataService.listPublicRankings(query);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/media/store-videos')
+  adminListStoreVideos(@Query() query: AdminStoreVideoQueryDto) {
+    return this.nightlifeDataService.adminListStoreVideos(query);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/content/hot-videos/:cityCode')
+  adminGetHotVideos(@Param('cityCode') cityCode: string) {
+    return this.nightlifeDataService.adminGetHotVideos(cityCode);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Put('admin/content/hot-videos/:cityCode')
+  adminUpdateHotVideos(
+    @Param('cityCode') cityCode: string,
+    @Body() dto: UpdateHotVideosDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.nightlifeDataService.adminUpdateHotVideos(cityCode, dto, req.user.id);
   }
 
   @Roles('ADMIN')
