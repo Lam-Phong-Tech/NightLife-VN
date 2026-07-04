@@ -55,12 +55,15 @@ export default function AdminCastsPage() {
   });
   
   const [albums, setAlbums] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
   const [avatarImage, setAvatarImage] = useState<any>(null);
   
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const albumUploadRef = useRef<HTMLInputElement>(null);
+  const videoUploadRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingAlbum, setUploadingAlbum] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   
   const [youtubeInput, setYoutubeInput] = useState('');
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
@@ -146,6 +149,7 @@ export default function AdminCastsPage() {
     });
     setAvatarImage(null);
     setAlbums([]);
+    setVideos([]);
     setIsAddingCast(true);
     setSelectedCast(null);
   };
@@ -166,8 +170,14 @@ export default function AdminCastsPage() {
       isPublic: c.isPublic ?? true,
       status: c.status || 'ACTIVE'
     });
-    setAvatarImage(c.media?.[0] || null);
-    setAlbums(c.media?.slice(1) || []);
+    
+    const mediaList = c.media || [];
+    const imageList = mediaList.filter((m: any) => !m.type || m.type === 'IMAGE' || (m.url && m.url.match(/\.(jpeg|jpg|gif|png|webp)$/i)));
+    const videoList = mediaList.filter((m: any) => m.type === 'VIDEO' || (m.url && m.url.match(/\.(mp4|webm|ogg|mov)$/i)));
+    
+    setAvatarImage(imageList[0] || null);
+    setAlbums(imageList.slice(1) || []);
+    setVideos(videoList || []);
     setSelectedCast(c);
     setIsAddingCast(false);
   };
@@ -187,7 +197,7 @@ export default function AdminCastsPage() {
         ...formData,
         birthMonth: formData.birthMonth ? parseInt(formData.birthMonth, 10) : undefined,
         heightCm: formData.heightCm ? parseInt(formData.heightCm, 10) : undefined,
-        mediaIds: [avatarImage?.id, ...albums.map(a => a.id)].filter(Boolean)
+        mediaIds: [avatarImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
 
       if (isAddingCast) {
@@ -229,10 +239,26 @@ export default function AdminCastsPage() {
   const handleUploadAlbum = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    if (albums.length + files.length > 10) {
+      showToast('Chỉ được tải lên tối đa 10 ảnh trong album!');
+      if (albumUploadRef.current) albumUploadRef.current.value = '';
+      return;
+    }
+
+    const validFiles = Array.from(files).filter(f => f.size <= 15 * 1024 * 1024);
+    if (validFiles.length < files.length) {
+      showToast('Một số ảnh vượt quá 15MB đã bị loại bỏ!');
+    }
+    if (validFiles.length === 0) {
+      if (albumUploadRef.current) albumUploadRef.current.value = '';
+      return;
+    }
+
     try {
       setUploadingAlbum(true);
       
-      const uploadPromises = Array.from(files).map(async (file) => {
+      const uploadPromises = validFiles.map(async (file) => {
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'CAST_PHOTO');
@@ -241,7 +267,7 @@ export default function AdminCastsPage() {
       });
 
       const results = await Promise.all(uploadPromises);
-      const newAlbums = results.filter(res => res && res.id).map(res => ({ id: res.id, url: res.url }));
+      const newAlbums = results.filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'IMAGE' }));
       
       if (newAlbums.length > 0) {
         setAlbums(prev => [...prev, ...newAlbums]);
@@ -252,6 +278,35 @@ export default function AdminCastsPage() {
     } finally {
       setUploadingAlbum(false);
       if (albumUploadRef.current) albumUploadRef.current.value = '';
+    } 
+  };
+
+  const handleUploadVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setUploadingVideo(true);
+      
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('purpose', 'CAST_VIDEO');
+        form.append('access', 'PUBLIC');
+        return apiFormDataClient<any>('/storage/upload', form);
+      });
+
+      const results = await Promise.all(uploadPromises);
+      const newVideos = results.filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'VIDEO' }));
+      
+      if (newVideos.length > 0) {
+        setVideos(prev => [...prev, ...newVideos]);
+        showToast(`Tải lên ${newVideos.length} video thành công`);
+      }
+    } catch (err: any) {
+      showToast('Lỗi tải video: ' + err.message);
+    } finally {
+      setUploadingVideo(false);
+      if (videoUploadRef.current) videoUploadRef.current.value = '';
     } 
   };
 
@@ -582,7 +637,7 @@ export default function AdminCastsPage() {
               {/* ALBUM ẢNH */}
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Album ảnh (Nhiều ảnh)</span>
+                  <span>Album ảnh (Tối đa 10 ảnh, &lt; 15MB/ảnh)</span>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <button onClick={() => albumUploadRef.current?.click()} style={{ background: 'transparent', border: 'none', color: colors.gold, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Upload size={14} /> Thêm ảnh
@@ -605,6 +660,41 @@ export default function AdminCastsPage() {
                   {albums.length === 0 && !uploadingAlbum && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
                       Chưa có ảnh
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* VIDEO TỪ MÁY */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Video từ máy (Nhiều video)</span>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={() => videoUploadRef.current?.click()} style={{ background: 'transparent', border: 'none', color: colors.gold, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Upload size={14} /> Thêm video
+                    </button>
+                  </div>
+                  <input type="file" ref={videoUploadRef} style={{ display: 'none' }} accept="video/*" multiple onChange={handleUploadVideo} />
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+                  {videos.map((v, i) => (
+                    <div key={i} style={{ position: 'relative', width: 120, height: 160, borderRadius: '12px', flexShrink: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      <video src={v.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                         <Play size={24} fill="rgba(255,255,255,0.7)" color="rgba(255,255,255,0.7)" />
+                      </div>
+                      <button onClick={() => setVideos(videos.filter((_, idx) => idx !== i))} style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  {uploadingVideo && (
+                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
+                  )}
+                  {videos.length === 0 && !uploadingVideo && (
+                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
+                      Chưa có video
                     </div>
                   )}
                 </div>
