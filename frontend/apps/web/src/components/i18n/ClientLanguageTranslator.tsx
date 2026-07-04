@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 import {
+  getVietnameseSource,
   languageChangedEvent,
   languageHtmlLang,
   readStoredLanguage,
@@ -13,6 +14,7 @@ import {
 
 const textSourceMap = new WeakMap<Text, string>();
 const translatedAttributes = ["placeholder", "aria-label", "title", "alt"] as const;
+const valueSourceKey = "data-vietyoru-i18n-value";
 const skippedElementSelector =
   "script, style, noscript, code, pre, textarea, svg, [data-no-translate='true']";
 
@@ -28,11 +30,20 @@ function translateTextNode(node: Text, language: LanguageCode) {
   const rawValue = node.nodeValue ?? "";
   if (!rawValue.trim()) return;
 
-  const source = textSourceMap.get(node) ?? rawValue;
+  const storedSource = textSourceMap.get(node);
+  let source = storedSource ?? rawValue;
+
+  if (storedSource) {
+    const translatedStoredSource = translateWithWhitespace(storedSource, language);
+    if (rawValue !== storedSource && rawValue !== translatedStoredSource) {
+      source = getVietnameseSource(rawValue);
+    }
+  }
+
   const translated = translateWithWhitespace(source, language);
 
   if (translated !== source || textSourceMap.has(node)) {
-    textSourceMap.set(node, source);
+    textSourceMap.set(node, getVietnameseSource(source));
     if (node.nodeValue !== translated) {
       node.nodeValue = translated;
     }
@@ -57,6 +68,27 @@ function translateElementAttributes(element: HTMLElement, language: LanguageCode
       }
     }
   }
+
+  if (element instanceof HTMLInputElement && element.readOnly && element.value.trim()) {
+    const storedSource = element.getAttribute(valueSourceKey);
+    let sourceValue = storedSource ?? element.value;
+
+    if (storedSource) {
+      const translatedStoredSource = translateText(storedSource, language);
+      if (element.value !== storedSource && element.value !== translatedStoredSource) {
+        sourceValue = getVietnameseSource(element.value);
+      }
+    }
+
+    const translated = translateText(sourceValue, language);
+
+    if (translated !== sourceValue || element.hasAttribute(valueSourceKey)) {
+      element.setAttribute(valueSourceKey, getVietnameseSource(sourceValue));
+      if (element.value !== translated) {
+        element.value = translated;
+      }
+    }
+  }
 }
 
 function applyTranslations(language: LanguageCode) {
@@ -74,7 +106,7 @@ function applyTranslations(language: LanguageCode) {
 
   textNodes.forEach((node) => translateTextNode(node, language));
   document
-    .querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title], img[alt]")
+    .querySelectorAll<HTMLElement>("[placeholder], [aria-label], [title], img[alt], input[readonly]")
     .forEach((element) => translateElementAttributes(element, language));
 }
 
