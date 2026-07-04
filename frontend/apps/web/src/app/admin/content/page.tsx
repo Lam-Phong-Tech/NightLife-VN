@@ -187,6 +187,7 @@ export default function AdminContentPage() {
         metadata: {
           category: blogCategory,
           language: blogLanguage,
+          ...(coverImage && !coverImage.startsWith('blob:') ? { image: coverImage } : {}),
         }
       };
 
@@ -213,6 +214,7 @@ export default function AdminContentPage() {
     setBlogLanguage((blog.metadata as any)?.language || 'Tiếng Việt');
     setBlogExcerpt(blog.excerpt || '');
     setBlogContent(blog.body || '');
+    setCoverImage((blog.metadata as any)?.image || null);
     setIsAdding('blog');
   };
 
@@ -475,7 +477,12 @@ export default function AdminContentPage() {
                 borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px',
               }}
             >
-              <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: '#271932', flexShrink: 0 }}></div>
+              <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: '#271932', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                {(blog.metadata as any)?.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={(blog.metadata as any).image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : null}
+              </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, color: colors.text, margin: '0 0 6px 0' }}>{blog.title}</h3>
                 <div style={{ fontSize: '13px', color: colors.muted }}>
