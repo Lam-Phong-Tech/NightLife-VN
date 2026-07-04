@@ -77,9 +77,8 @@ export default function Page() {
 
   const isConfirmed = booking ? confirmedStatuses.has(booking.status) : false;
   const isCancelled = booking ? cancelledStatuses.has(booking.status) : false;
-  const hasCouponQr = booking ? Boolean(couponIssueQrPayload(booking)) : false;
-  const canShowQr = booking ? !isCancelled && hasCouponQr : false;
-  const qrImageUrl = booking && hasCouponQr ? bookingQrImageUrl(booking) : "";
+  const canShowQr = booking ? !isCancelled : false;
+  const qrImageUrl = booking ? bookingQrImageUrl(booking) : "";
   const title = bookingTitle(booking);
   const heroTitle = !booking
     ? "Chưa tìm thấy booking"
@@ -93,23 +92,15 @@ export default function Page() {
     : isCancelled
       ? "Booking này đã hủy. NightLife không thu cọc, nên bạn có thể đặt lại khi cần đổi lịch."
       : isConfirmed
-        ? hasCouponQr
-          ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
-          : "Admin đã xác nhận với quán. Booking này không kèm mã giảm giá để quét tại quán."
-        : hasCouponQr
-          ? "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi."
-          : "Yêu cầu đã gửi thành công. Booking này không kèm mã giảm giá để quét tại quán.";
+        ? "Admin đã xác nhận với quán. Mã QR giảm giá đã sẵn sàng để dùng khi tới nơi."
+        : "Yêu cầu đã gửi thành công. Mã QR giảm giá đã sẵn sàng, bạn có thể lưu lại để đưa nhân viên quán quét khi tới nơi.";
   const statusText = !booking
     ? "Không có dữ liệu"
     : isCancelled
       ? "Đã hủy"
       : isConfirmed
-        ? hasCouponQr
-          ? "Đã xác nhận · QR đã cấp"
-          : "Đã xác nhận"
-        : hasCouponQr
-          ? "Mới · QR đã cấp"
-          : "Mới";
+        ? "Đã xác nhận · QR đã cấp"
+        : "Mới · QR đã cấp";
 
   const saveQrImage = async () => {
     if (!booking || !qrImageUrl) {
@@ -211,7 +202,7 @@ export default function Page() {
             <span>
               {canShowQr
                 ? "Mã QR gắn với đúng booking này và dùng một lần tại quán. Nếu cần đổi thông tin, hãy hủy booking cũ và đặt lại."
-                : "Không thu cọc. Nếu booking không kèm mã ưu đãi, nhân viên quán sẽ không cần quét QR giảm giá."}
+                : "Không thu cọc. Có thể hủy trước giờ hẹn tối thiểu 1 giờ. Muốn đổi giờ hoặc số người: hủy và đặt lại hoặc liên hệ hỗ trợ."}
             </span>
           </div>
 
