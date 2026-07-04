@@ -13201,14 +13201,14 @@ export class NightlifeDataService {
     }
 
     if (options.strict) {
-      throw new BadRequestException('type must be BLOG or POLICY');
+      throw new BadRequestException('Loại nội dung phải là blog, banner hoặc chính sách.');
     }
 
     return undefined;
   }
 
   private isContentType(value: string): value is ContentType {
-    return ['BLOG', 'POLICY'].includes(value);
+    return ['BLOG', 'POLICY', 'BANNER'].includes(value);
   }
 
   private resolveContentStatus(
