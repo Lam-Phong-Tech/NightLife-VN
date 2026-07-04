@@ -54,6 +54,13 @@ export default function AdminStoresPage() {
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
   const [hoursForm, setHoursForm] = useState<any>(defaultHours);
   const [slugStatus, setSlugStatus] = useState<string>(''); // '', 'checking', 'ok', 'error'
+
+  // Address API States
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
+  const [selProvince, setSelProvince] = useState('');
+  const [selWard, setSelWard] = useState('');
+  const [streetAddress, setStreetAddress] = useState('');
   
   const [albums, setAlbums] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -85,7 +92,28 @@ export default function AdminStoresPage() {
 
   useEffect(() => {
     fetchStores();
+    fetch('https://provinces.open-api.vn/api/v2/p/')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setProvinces(data);
+      })
+      .catch(e => console.error(e));
   }, []);
+
+  useEffect(() => {
+    if (!selProvince) {
+      setWards([]);
+      setSelWard('');
+      return;
+    }
+    fetch(`https://provinces.open-api.vn/api/v2/p/${selProvince}?depth=2`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.wards)) setWards(data.wards);
+        else setWards([]);
+      })
+      .catch(e => console.error(e));
+  }, [selProvince]);
 
   // Clear slug status when typing
   useEffect(() => {
@@ -115,6 +143,9 @@ export default function AdminStoresPage() {
     setActiveMenuGroupId('g1');
     setTags([]);
     setTagInput('');
+    setSelProvince('');
+    setSelWard('');
+    setStreetAddress('');
     setVenueSel('new');
   };
 
@@ -141,6 +172,10 @@ export default function AdminStoresPage() {
     setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
     setTags(st.tags || []);
     
+    setSelProvince('');
+    setSelWard('');
+    setStreetAddress(st.address || '');
+    
     let groups = st.pricingInfo?.groups;
     if (!groups || groups.length === 0) {
       groups = [
@@ -155,24 +190,37 @@ export default function AdminStoresPage() {
 
   const saveStore = async () => {
     try {
+      if (!formData.name || formData.name.trim() === '') {
+        showToast('Vui lòng nhập tên quán!');
+        return;
+      }
+
+      const pName = provinces.find(x => x.code.toString() === selProvince)?.name || '';
+      const wName = wards.find(x => x.code.toString() === selWard)?.name || '';
+      const finalParts = [streetAddress, wName, pName].filter(Boolean);
+      const finalAddress = finalParts.length > 0 ? finalParts.join(', ') : formData.address;
+
+      if (!finalAddress || finalAddress.trim() === '') {
+        showToast('Vui lòng nhập địa chỉ quán!');
+        return;
+      }
+
+      let finalCity = formData.city;
+      if (pName) {
+         if (pName.includes('Hồ Chí Minh')) finalCity = 'Ho Chi Minh City';
+         else if (pName.includes('Hà Nội')) finalCity = 'Hanoi';
+      }
+
       const payload = {
         ...formData,
+        address: finalAddress,
+        city: finalCity,
         tags,
         openingHours: hoursForm,
         pricingInfo: { groups: menuGroups },
         mediaIds: [...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
       
-      if (!formData.name || formData.name.trim() === '') {
-        showToast('Vui lòng nhập tên quán!');
-        return;
-      }
-      
-      if (!formData.address || formData.address.trim() === '') {
-        showToast('Vui lòng nhập địa chỉ quán!');
-        return;
-      }
-
       if (venueSel === 'new') {
         const generatedSlug = formData.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         
@@ -510,16 +558,25 @@ export default function AdminStoresPage() {
                     </select>
                   </div>
                   <div>
-                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Khu vực</div>
-                    <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={formData.city} onChange={e => updateForm('city', e.target.value)}>
-                      <option value="Ho Chi Minh City" style={optS}>Hồ Chí Minh</option>
-                      <option value="Hanoi" style={optS}>Hà Nội</option>
+                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Tỉnh/Thành phố</div>
+                    <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={selProvince} onChange={e => { setSelProvince(e.target.value); updateForm('city', e.target.value === '79' ? 'Ho Chi Minh City' : e.target.value === '1' ? 'Hanoi' : formData.city); }}>
+                      <option value="" style={optS}>-- Chọn Tỉnh/Thành --</option>
+                      {provinces.map(p => <option key={p.code} value={p.code.toString()} style={optS}>{p.name}</option>)}
                     </select>
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Địa chỉ</div>
-                  <input style={inputS} placeholder="Số nhà, đường, quận…" value={formData.address} onChange={e => updateForm('address', e.target.value)} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Phường/Xã</div>
+                    <select style={{ ...inputS, appearance: 'none', cursor: 'pointer' }} value={selWard} onChange={e => setSelWard(e.target.value)} disabled={!selProvince}>
+                      <option value="" style={optS}>-- Chọn Phường/Xã --</option>
+                      {wards.map(w => <option key={w.code} value={w.code.toString()} style={optS}>{w.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Số nhà, Tên đường</div>
+                    <input style={inputS} placeholder="Ví dụ: 123 Lê Lợi..." value={streetAddress} onChange={e => setStreetAddress(e.target.value)} />
+                  </div>
                 </div>
                 
                 <div>
