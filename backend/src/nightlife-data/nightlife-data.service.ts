@@ -15463,6 +15463,10 @@ export class NightlifeDataService {
       storeId: { not: null },
     };
 
+    if (query.cityCode && query.cityCode !== 'all') {
+      where.store = { cityCode: query.cityCode };
+    }
+
     if (query.search) {
       where.OR = [
         { originalName: { contains: query.search, mode: 'insensitive' } },

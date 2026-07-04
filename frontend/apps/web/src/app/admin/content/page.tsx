@@ -132,11 +132,11 @@ export default function AdminContentPage() {
   useEffect(() => {
     if (activeTab === 'video') {
       const timer = setTimeout(() => {
-        fetchStoreVideos(searchVideoQuery, searchVideoPage);
+        fetchStoreVideos(searchVideoQuery, searchVideoPage, videoRegion);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [searchVideoQuery, searchVideoPage, activeTab]);
+  }, [searchVideoQuery, searchVideoPage, activeTab, videoRegion]);
 
   useEffect(() => {
     if (activeTab === 'featured') {
@@ -292,11 +292,12 @@ export default function AdminContentPage() {
     }
   };
 
-  const fetchStoreVideos = async (query: string, page: number) => {
+  const fetchStoreVideos = async (query: string, page: number, region?: string) => {
     try {
       setIsSearchingVideo(true);
+      const cityCode = region === 'Hà Nội' ? 'hn' : (region === 'TP. Hồ Chí Minh' ? 'hcm' : 'all');
       const data = await apiClient<any>('/admin/media/store-videos', {
-        params: { search: query, page, limit: 10 }
+        params: { search: query, page, limit: 10, ...(cityCode !== 'all' && { cityCode }) }
       });
       setSearchVideos(data?.items || []);
       setSearchVideoTotalPages(data?.totalPages || 1);
