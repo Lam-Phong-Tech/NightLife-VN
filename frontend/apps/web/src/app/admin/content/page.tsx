@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft } from 'lucide-react';
+import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft, Image as ImageIcon, Settings } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi } from '@/lib/api/content';
+import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -74,6 +75,56 @@ export default function AdminContentPage() {
   const [blogExcerpt, setBlogExcerpt] = useState('');
   const [blogContent, setBlogContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const data = await categoriesApi.adminList('BLOG');
+      setCategories(data);
+      if (data.length > 0 && !blogCategory) {
+        setBlogCategory(data[0].name);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      setIsSubmittingCategory(true);
+      await categoriesApi.adminCreate({
+        name: newCategoryName,
+        slug: newCategoryName.toLowerCase().replace(/\s+/g, '-'),
+        type: 'BLOG',
+      });
+      setNewCategoryName('');
+      fetchCategories();
+    } catch (error) {
+      console.error('Failed to add category:', error);
+      alert('Có lỗi xảy ra khi thêm chuyên mục.');
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa chuyên mục này?')) return;
+    try {
+      await categoriesApi.adminDelete(id);
+      fetchCategories();
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      alert('Có lỗi xảy ra khi xóa chuyên mục.');
+    }
+  };
 
   const getCampaignStatusStyle = (status: string) => {
     if (status === 'Đang chạy') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
@@ -542,25 +593,28 @@ export default function AdminContentPage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Chuyên mục</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Chuyên mục</div>
+                    <div onClick={() => setIsManagingCategories(true)} style={{ fontSize: '10px', fontWeight: 600, color: '#cbb884', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}><Settings size={12} /> Quản lý</div>
+                  </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {['Cẩm nang', 'Hướng dẫn', 'Blog', 'Tin tức'].map(cat => (
+                    {categories.length > 0 ? categories.map(cat => (
                       <span 
-                        key={cat}
-                        onClick={() => setBlogCategory(cat)}
+                        key={cat.id}
+                        onClick={() => setBlogCategory(cat.name)}
                         style={{ 
                           fontSize: '12.5px', 
-                          fontWeight: blogCategory === cat ? 700 : 600, 
-                          color: blogCategory === cat ? '#241a0a' : '#9b958a', 
-                          background: blogCategory === cat ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.03)', 
-                          border: blogCategory === cat ? 'none' : '1px solid rgba(255,255,255,.08)', 
-                          padding: blogCategory === cat ? '6px 14px' : '5px 13px', 
+                          fontWeight: blogCategory === cat.name ? 700 : 600, 
+                          color: blogCategory === cat.name ? '#241a0a' : '#9b958a', 
+                          background: blogCategory === cat.name ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.03)', 
+                          border: blogCategory === cat.name ? 'none' : '1px solid rgba(255,255,255,.08)', 
+                          padding: blogCategory === cat.name ? '6px 14px' : '5px 13px', 
                           borderRadius: '9px', cursor: 'pointer' 
                         }}
                       >
-                        {cat}
+                        {cat.name}
                       </span>
-                    ))}
+                    )) : <span style={{ fontSize: '12.5px', color: '#8c8679' }}>Chưa có chuyên mục</span>}
                   </div>
                 </div>
                 <div>
@@ -589,7 +643,7 @@ export default function AdminContentPage() {
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Ảnh bìa</div>
                 <div style={{ position: 'relative', height: '150px', borderRadius: '13px', overflow: 'hidden', border: '1px dashed rgba(212,178,106,.4)', background: 'rgba(12,12,15,.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-                  <span style={{ fontSize: '20px' }}>🖼️</span>
+                  <ImageIcon size={28} style={{ color: '#8c8679' }} strokeWidth={1.5} />
                   <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#cbb884' }}>Bấm để tải ảnh bìa</span>
                   <span style={{ fontSize: '10.5px', color: '#57534b' }}>PNG / JPG · tỉ lệ 16:9 · hiển thị trên trang chủ</span>
                 </div>
@@ -695,6 +749,44 @@ export default function AdminContentPage() {
               <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
               <span onClick={() => !isSubmitting && handleSaveBlog('DRAFT')} style={{ fontSize: '12.5px', fontWeight: 700, color: '#e3c27e', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.38)', padding: '10px 17px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : 'Lưu nháp'}</span>
               <span onClick={() => !isSubmitting && handleSaveBlog('PUBLISHED')} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 17px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : 'Đăng bài'}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MANAGE CATEGORIES MODAL */}
+      {isManagingCategories && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '400px', maxWidth: '94vw', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: '#f3f0ea' }}>Quản lý chuyên mục</div>
+              <span onClick={() => setIsManagingCategories(false)} style={{ cursor: 'pointer', color: '#9b958a' }}><X size={16} /></span>
+            </div>
+            <div style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <input 
+                  value={newCategoryName} 
+                  onChange={e => setNewCategoryName(e.target.value)} 
+                  placeholder="Nhập tên chuyên mục mới..." 
+                  style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '9px', padding: '10px 12px', color: '#f3f0ea', fontSize: '13px', outline: 'none' }} 
+                />
+                <button 
+                  onClick={handleAddCategory}
+                  disabled={isSubmittingCategory}
+                  style={{ background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', color: '#241a0a', border: 'none', borderRadius: '9px', padding: '0 16px', fontSize: '13px', fontWeight: 700, cursor: isSubmittingCategory ? 'not-allowed' : 'pointer', opacity: isSubmittingCategory ? 0.7 : 1 }}
+                >
+                  Thêm
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                {categories.length === 0 && <div style={{ fontSize: '13px', color: '#8c8679', textAlign: 'center', padding: '10px 0' }}>Chưa có chuyên mục nào.</div>}
+                {categories.map(cat => (
+                  <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '9px' }}>
+                    <span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{cat.name}</span>
+                    <span onClick={() => handleDeleteCategory(cat.id)} style={{ color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Xóa</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

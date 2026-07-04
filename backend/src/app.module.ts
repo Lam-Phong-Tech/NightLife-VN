@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 import { NightlifeDataModule } from './nightlife-data/nightlife-data.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { CategoriesModule } from './categories/categories.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -21,6 +22,7 @@ import { validateEnv } from './config/env.validation';
     StorageModule,
     NightlifeDataModule,
     TelegramModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

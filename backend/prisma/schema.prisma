@@ -1146,3 +1146,15 @@ model RankingConfig {
   @@index([status])
   @@map("ranking_configs")
 }
+
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String    @unique
+  description String?
+  type        String    @default("BLOG")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
