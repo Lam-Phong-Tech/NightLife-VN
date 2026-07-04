@@ -44,13 +44,12 @@ export const SocketProvider = ({
     });
 
     socketInstance.on('booking_status_updated', (data) => {
-      // Create a browser notification or toast alert here
+      window.dispatchEvent(new CustomEvent('nightlife:booking-status-updated', { detail: data }));
+
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Booking Confirmed!', {
-          body: `Your booking at ${data?.store?.name || 'the store'} has been confirmed.`,
+        new Notification('Trạng thái lịch đặt đã cập nhật', {
+          body: `Lịch đặt tại ${data?.store?.name || 'Vietyoru'} vừa có trạng thái mới.`,
         });
-      } else {
-        alert(`Booking Confirmed! Your booking at ${data?.store?.name || 'the store'} has been confirmed.`);
       }
     });
 

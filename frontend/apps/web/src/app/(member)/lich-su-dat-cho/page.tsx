@@ -33,6 +33,7 @@ import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
+const isConfirmedStatus = (status: string) => confirmedStatuses.has(status.trim().toUpperCase());
 const supportLineUrl = process.env.NEXT_PUBLIC_LINE_OA_URL ?? "https://line.me/R/ti/p/@vietyoru";
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@vietyoru.vn";
 const supportMailHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Vietyoru booking support")}`;
@@ -117,7 +118,7 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
     return "Đã hủy trước giờ hẹn · không thu cọc";
   }
 
-  return confirmedStatuses.has(booking.status)
+  return isConfirmedStatus(booking.status)
     ? `${bookingCode(booking)} · QR đã cấp`
     : `${bookingCode(booking)} · Admin đang điều phối`;
 };
@@ -157,19 +158,24 @@ export default function Page() {
       try {
         if (isMemberAccount) {
           const items = await bookingApi.listMemberBookings();
+          const resolvedMemberUserId =
+            authUser?.id || items.find((booking) => booking.user?.id)?.user?.id || "";
           const memberBookings = items.map((booking) => ({
             ...booking,
             user:
               booking.user ??
               (authUser
                 ? {
-                    id: authUser.id || "current-member",
+                    id: resolvedMemberUserId || "current-member",
                     displayName: authUser.displayName,
                     tier: authUser.tier ?? null,
                   }
                 : undefined),
           }));
-          if (alive) setBookings(mergeBookingHistories(memberBookings, getGuestBookingHistory()));
+          if (alive) {
+            setMemberUserId(resolvedMemberUserId);
+            setBookings(mergeBookingHistories(memberBookings, getGuestBookingHistory()));
+          }
           return;
         }
 
@@ -212,6 +218,47 @@ export default function Page() {
       socket.off("booking_chat_message_created", onMessage);
     };
   }, [chatBooking, socket]);
+
+  useEffect(() => {
+    if (!socket || !memberUserId) {
+      return;
+    }
+
+    socket.emit("join_room", { userId: memberUserId });
+    const onBookingStatusUpdated = (updatedBooking: BookingRecord) => {
+      if (!updatedBooking?.id) {
+        return;
+      }
+
+      setBookings((current) => {
+        const currentIndex = current.findIndex((booking) => booking.id === updatedBooking.id);
+        if (currentIndex === -1) {
+          return mergeBookingHistories([updatedBooking], current);
+        }
+
+        return current.map((booking) =>
+          booking.id === updatedBooking.id
+            ? {
+                ...booking,
+                ...updatedBooking,
+                store: updatedBooking.store ?? booking.store,
+                cast: updatedBooking.cast ?? booking.cast,
+                guest: updatedBooking.guest ?? booking.guest,
+                user: updatedBooking.user ?? booking.user,
+                coupon: updatedBooking.coupon ?? booking.coupon,
+                couponIssue: updatedBooking.couponIssue ?? booking.couponIssue,
+              }
+            : booking,
+        );
+      });
+    };
+
+    socket.on("booking_status_updated", onBookingStatusUpdated);
+
+    return () => {
+      socket.off("booking_status_updated", onBookingStatusUpdated);
+    };
+  }, [memberUserId, socket]);
 
   const visibleBookings = useMemo(
     () =>
@@ -703,7 +750,7 @@ function BookingCard({
 }) {
   const group = bookingStatusGroup(booking.status);
   const isOpenBooking = group === "Mới";
-  const hasQr = confirmedStatuses.has(booking.status);
+  const hasQr = isConfirmedStatus(booking.status);
   const isMemberActionBooking =
     isMember && Boolean(booking.user?.id) && (!memberUserId || booking.user?.id === memberUserId);
   const hasCancelIdentity = isMemberActionBooking || Boolean(booking.guest?.phone?.trim());
