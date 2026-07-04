@@ -6,7 +6,7 @@ import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, L
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
-import { apiFormDataClient } from '@/lib/api/client';
+import { apiFormDataClient, apiClient } from '@/lib/api/client';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
