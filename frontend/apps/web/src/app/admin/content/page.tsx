@@ -94,6 +94,14 @@ export default function AdminContentPage() {
   const [isLoadingHotVideos, setIsLoadingHotVideos] = useState(false);
   const [isSearchingVideo, setIsSearchingVideo] = useState(false);
 
+  // Banner states
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerTag, setBannerTag] = useState('Hero phụ');
+  const [bannerPos, setBannerPos] = useState('Trang Ưu đãi');
+  const [bannerLink, setBannerLink] = useState('');
+  const [bannerStatus, setBannerStatus] = useState('Đang hiển thị');
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
+
   useEffect(() => {
     fetchCategories();
     fetchBlogs();
@@ -252,6 +260,9 @@ export default function AdminContentPage() {
     setBlogLanguage('Tiếng Việt');
     setBlogExcerpt('');
     setBlogContent('');
+    setBannerTitle('');
+    setBannerImage(null);
+    setBannerLink('');
   };
 
   const handleSaveBlog = async (status: 'DRAFT' | 'PUBLISHED') => {
@@ -355,40 +366,7 @@ export default function AdminContentPage() {
     }
     
     if (isAdding === 'banner') {
-      return (
-        <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-          <div style={{ width: '100%', height: 200, borderRadius: '16px', background: colors.surface1, border: `1px dashed ${colors.borderSoft}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, marginBottom: '32px', cursor: 'pointer' }}>
-            <Plus size={32} style={{ marginBottom: '8px' }} />
-            <span style={{ fontSize: '13px', fontWeight: 600 }}>Tải lên ảnh Banner (1920x800)</span>
-          </div>
-          
-          <div style={{ marginBottom: '24px' }}>
-            <input type="text" placeholder="Tiêu đề Banner..." style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '24px', fontWeight: 700, outline: 'none', marginBottom: '16px' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
-              <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}><TagIcon size={14} /> Tag / Loại Banner</div>
-              <select style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 600, outline: 'none', cursor: 'pointer' }}>
-                <option value="" disabled selected hidden>Chọn Tag...</option>
-                <option>HERO CHÍNH</option>
-                <option>HERO PHỤ</option>
-                <option>ƯU ĐÃI</option>
-                <option>SỰ KIỆN</option>
-              </select>
-            </div>
-            <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
-              <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}><Layout size={14} /> Vị trí hiển thị</div>
-              <select style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 600, outline: 'none', cursor: 'pointer' }}>
-                <option value="" disabled selected hidden>Chọn vị trí...</option>
-                <option>Trang chủ #1</option>
-                <option>Trang chủ #2</option>
-                <option>Trang Ưu đãi</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      );
+      return null; // Rendered as Modal instead
     }
 
     if (isAdding === 'blog') {
@@ -778,13 +756,13 @@ export default function AdminContentPage() {
 
       {/* ADD DRAWER */}
       <div style={{
-        position: 'fixed', top: 0, right: isAdding && isAdding !== 'blog' ? 0 : '-520px', bottom: 0, width: '520px',
+        position: 'fixed', top: 0, right: (isAdding && isAdding !== 'blog' && isAdding !== 'banner') ? 0 : '-520px', bottom: 0, width: '520px',
         background: colors.bg, borderLeft: `1px solid ${colors.borderSoft}`,
-        boxShadow: isAdding && isAdding !== 'blog' ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
+        boxShadow: (isAdding && isAdding !== 'blog' && isAdding !== 'banner') ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
         transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 100,
         display: 'flex', flexDirection: 'column'
       }}>
-        {isAdding && isAdding !== 'blog' && (
+        {isAdding && isAdding !== 'blog' && isAdding !== 'banner' && (
           <>
             <div style={{ padding: '24px', borderBottom: `1px solid ${colors.borderSoft}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', color: colors.gold, textTransform: 'uppercase' }}>
@@ -814,6 +792,153 @@ export default function AdminContentPage() {
           </>
         )}
       </div>
+
+      {/* NEW BANNER MODAL */}
+      {isAdding === 'banner' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '600px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase' }}>BANNER · TRANG CHỦ & LANDING</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#f3f0ea', marginTop: '4px' }}>Thêm banner</div>
+              </div>
+              <span onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
+                <X size={16} />
+              </span>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>TIÊU ĐỀ BANNER</div>
+                <input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="VD: Đêm nhạc acoustic · Akari Lounge" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>ẢNH BANNER</div>
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg" 
+                  style={{ display: 'none' }} 
+                  id="banner-image-upload" 
+                  onChange={(e) => { 
+                    const file = e.target.files?.[0]; 
+                    if (file) { setBannerImage(URL.createObjectURL(file)); } 
+                  }} 
+                />
+                <label htmlFor="banner-image-upload" style={{ display: 'block', cursor: 'pointer' }}>
+                  <div style={{ position: 'relative', height: '180px', borderRadius: '13px', overflow: 'hidden', border: bannerImage ? 'none' : '1px dashed rgba(212,178,106,.4)', background: 'rgba(12,12,15,.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                    {bannerImage ? (
+                      <>
+                        <img src={bannerImage} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <span 
+                          onClick={(e) => { e.preventDefault(); setBannerImage(null); }} 
+                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,.6)', color: '#fff', borderRadius: '50%', padding: '4px', cursor: 'pointer' }}
+                        >
+                          <X size={14} />
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon size={28} style={{ color: '#cbb884' }} strokeWidth={1.5} />
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#cbb884' }}>Bấm để tải ảnh banner</span>
+                        <span style={{ fontSize: '11px', color: '#57534b' }}>PNG / JPG · khuyến nghị 1920x720</span>
+                      </>
+                    )}
+                  </div>
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>NHÃN SLOT</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['Hero chính', 'Hero phụ', 'Ưu đãi', 'Sự kiện'].map(tag => (
+                      <span 
+                        key={tag}
+                        onClick={() => setBannerTag(tag)}
+                        style={{ 
+                          fontSize: '13px', 
+                          fontWeight: bannerTag === tag ? 700 : 500, 
+                          color: bannerTag === tag ? '#241a0a' : '#c5c0b6', 
+                          background: bannerTag === tag ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', 
+                          border: bannerTag === tag ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', 
+                          padding: '6px 14px', 
+                          borderRadius: '20px', cursor: 'pointer' 
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>VỊ TRÍ HIỂN THỊ</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['Trang chủ #1', 'Trang chủ #2', 'Trang Ưu đãi', 'Nháp'].map(pos => (
+                      <span 
+                        key={pos}
+                        onClick={() => setBannerPos(pos)}
+                        style={{ 
+                          fontSize: '13px', 
+                          fontWeight: bannerPos === pos ? 700 : 500, 
+                          color: bannerPos === pos ? '#241a0a' : '#c5c0b6', 
+                          background: bannerPos === pos ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', 
+                          border: bannerPos === pos ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', 
+                          padding: '6px 14px', 
+                          borderRadius: '20px', cursor: 'pointer' 
+                        }}
+                      >
+                        {pos}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>LIÊN KẾT KHI BẤM</div>
+                <input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://... hoặc /uu-dai/happy-hour" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', fontWeight: 500, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>TRẠNG THÁI</div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span 
+                    onClick={() => setBannerStatus('Đang hiển thị')}
+                    style={{ 
+                      fontSize: '13px', fontWeight: 600, color: bannerStatus === 'Đang hiển thị' ? '#241a0a' : '#c5c0b6', 
+                      background: bannerStatus === 'Đang hiển thị' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', 
+                      border: bannerStatus === 'Đang hiển thị' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', 
+                      padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' 
+                    }}
+                  >
+                    <span style={{ fontSize: bannerStatus === 'Đang hiển thị' ? '16px' : '12px', lineHeight: 1 }}>{bannerStatus === 'Đang hiển thị' ? '•' : '○'}</span> Đang hiển thị
+                  </span>
+                  <span 
+                    onClick={() => setBannerStatus('Ẩn')}
+                    style={{ 
+                      fontSize: '13px', fontWeight: 600, color: bannerStatus === 'Ẩn' ? '#241a0a' : '#c5c0b6', 
+                      background: bannerStatus === 'Ẩn' ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', 
+                      border: bannerStatus === 'Ẩn' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', 
+                      padding: '8px 16px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' 
+                    }}
+                  >
+                    <span style={{ fontSize: bannerStatus === 'Ẩn' ? '16px' : '12px', lineHeight: 1 }}>{bannerStatus === 'Ẩn' ? '•' : '○'}</span> Ẩn
+                  </span>
+                </div>
+              </div>
+
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
+              <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', cursor: 'pointer' }}>Hủy</span>
+              <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer' }}>Thêm banner</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* NEW BLOG MODAL */}
       {isAdding === 'blog' && (
