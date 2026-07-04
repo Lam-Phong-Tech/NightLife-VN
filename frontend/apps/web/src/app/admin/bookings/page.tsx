@@ -86,9 +86,9 @@ export default function AdminBookingsPage() {
         <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
           {[
             { id: 'all', label: 'Tất cả', count: meta.all },
-            { id: 'REQUESTED', label: 'Mới', count: meta.new },
-            { id: 'COMPLETED', label: 'Hoàn tất', count: meta.completed },
-            { id: 'CANCELLED', label: 'Đã hủy', count: meta.cancelled }
+            { id: 'new', label: 'Mới', count: meta.new },
+            { id: 'completed', label: 'Hoàn tất', count: meta.completed },
+            { id: 'cancelled', label: 'Đã hủy', count: meta.cancelled }
           ].map(tab => {
             const isActive = activeTab === tab.id;
             return (
