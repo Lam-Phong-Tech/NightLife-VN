@@ -221,8 +221,9 @@ const asSections = (value: unknown): BlogPost["sections"] =>
         .filter((item): item is BlogPost["sections"][number] => Boolean(item))
     : [];
 
-const mapCmsContentToBlogPost = (content: CmsContentItem): BlogPost | null => {
-  if (content.type !== "BLOG" || content.status !== "PUBLISHED") return null;
+const mapCmsContentToBlogPost = (content: CmsContentItem, preview: boolean = false): BlogPost | null => {
+  if (content.type !== "BLOG") return null;
+  if (!preview && content.status !== "PUBLISHED") return null;
 
   const metadata = asRecord(content.metadata) ?? {};
   const publishedAt = content.publishedAt?.slice(0, 10) ?? content.createdAt.slice(0, 10);
@@ -280,7 +281,7 @@ export const getPublishedBlogPosts = async () => {
   try {
     const response = await contentApi.list({ type: "BLOG", limit: 100 });
     const cmsPosts = response.data
-      .map(mapCmsContentToBlogPost)
+      .map((post) => mapCmsContentToBlogPost(post))
       .filter((post): post is BlogPost => Boolean(post))
       .filter((post) => post.status === "PUBLISHED");
 
@@ -300,15 +301,15 @@ export const getFeaturedBlogPost = async () => {
   return posts.find((post) => post.featured && !post.noindex) ?? posts.find((post) => !post.noindex) ?? posts[0]!;
 };
 
-export const getBlogPost = async (slug: string) => {
+export const getBlogPost = async (slug: string, options?: { preview?: boolean }) => {
   const posts = await getPublishedBlogPosts();
   const found = posts.find((post) => post.slug === slug);
   if (found) return found;
 
   try {
-    const response = await contentApi.get(slug);
+    const response = await contentApi.get(slug, options?.preview ? { preview: "1" } : undefined);
     if (response) {
-      const mapped = mapCmsContentToBlogPost(response);
+      const mapped = mapCmsContentToBlogPost(response, options?.preview);
       if (mapped) return mapped;
     }
   } catch (error) {

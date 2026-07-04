@@ -8,6 +8,7 @@ import { absoluteSiteUrl } from "@/lib/site";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ preview?: string }>;
 };
 
 export const revalidate = 300;
@@ -25,9 +26,11 @@ export async function generateStaticParams() {
   return posts.map((post) => ({ slug: post.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getBlogPost(slug);
+  const { preview } = await searchParams;
+  const isPreview = preview === "1";
+  const post = await getBlogPost(slug, { preview: isPreview });
 
   if (!post) {
     return {
@@ -78,9 +81,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BlogDetailPage({ params }: PageProps) {
+export default async function BlogDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const post = await getBlogPost(slug);
+  const { preview } = await searchParams;
+  const isPreview = preview === "1";
+  const post = await getBlogPost(slug, { preview: isPreview });
 
   if (!post) notFound();
 
@@ -219,9 +224,11 @@ export default async function BlogDetailPage({ params }: PageProps) {
                 <h2 style={{ margin: 0, fontSize: "24px", lineHeight: 1.24, fontWeight: 900 }}>
                   {section.heading}
                 </h2>
-                <p style={{ margin: "10px 0 0", color: "#d7d0c3", fontSize: "16px", lineHeight: 1.85 }}>
-                  {section.body}
-                </p>
+                <div 
+                  style={{ margin: "10px 0 0", color: "#d7d0c3", fontSize: "16px", lineHeight: 1.85 }}
+                  dangerouslySetInnerHTML={{ __html: section.body }}
+                  className="nl-blog-body"
+                />
               </section>
             ))}
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft, Image as ImageIcon, Settings } from 'lucide-react';
+import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft, Image as ImageIcon, Settings, Pencil } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
@@ -69,6 +69,7 @@ const mockVideoSearch = [
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog' | null>(null);
+  const [editBlogId, setEditBlogId] = useState<string | null>(null);
   const [blogTitle, setBlogTitle] = useState('');
   const [blogCategory, setBlogCategory] = useState('Cẩm nang');
   const [blogLanguage, setBlogLanguage] = useState('Tiếng Việt');
@@ -159,7 +160,15 @@ export default function AdminContentPage() {
     return { color: colors.muted, border: `1px solid ${colors.borderSoft}` };
   };
 
-  const closeDrawer = () => setIsAdding(null);
+  const closeDrawer = () => {
+    setIsAdding(null);
+    setEditBlogId(null);
+    setBlogTitle('');
+    setBlogCategory('Cẩm nang');
+    setBlogLanguage('Tiếng Việt');
+    setBlogExcerpt('');
+    setBlogContent('');
+  };
 
   const handleSaveBlog = async (status: 'DRAFT' | 'PUBLISHED') => {
     if (!blogTitle.trim()) {
@@ -169,8 +178,8 @@ export default function AdminContentPage() {
 
     try {
       setIsSubmitting(true);
-      await contentApi.adminCreate({
-        type: 'BLOG',
+      const payload = {
+        type: 'BLOG' as const,
         title: blogTitle,
         status,
         excerpt: blogExcerpt,
@@ -179,21 +188,32 @@ export default function AdminContentPage() {
           category: blogCategory,
           language: blogLanguage,
         }
-      });
+      };
+
+      if (editBlogId) {
+        await contentApi.adminUpdate(editBlogId, payload);
+      } else {
+        await contentApi.adminCreate(payload);
+      }
       alert(status === 'DRAFT' ? 'Đã lưu nháp thành công!' : 'Đã đăng bài thành công!');
       fetchBlogs();
       closeDrawer();
-      setBlogTitle('');
-      setBlogCategory('Cẩm nang');
-      setBlogLanguage('Tiếng Việt');
-      setBlogExcerpt('');
-      setBlogContent('');
     } catch (error) {
       console.error('Failed to save blog:', error);
       alert('Có lỗi xảy ra khi lưu bài viết. Vui lòng thử lại!');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditBlog = (blog: CmsContentItem) => {
+    setEditBlogId(blog.id);
+    setBlogTitle(blog.title);
+    setBlogCategory((blog.metadata as any)?.category || 'Cẩm nang');
+    setBlogLanguage((blog.metadata as any)?.language || 'Tiếng Việt');
+    setBlogExcerpt(blog.excerpt || '');
+    setBlogContent(blog.body || '');
+    setIsAdding('blog');
   };
 
   const renderDrawerContent = () => {
@@ -450,11 +470,9 @@ export default function AdminContentPage() {
           ) : blogs.map((blog) => (
             <div 
               key={blog.id} 
-              onClick={() => window.open(`/blog/${blog.slug}`, '_blank')}
               style={{ 
                 background: colors.surface1, border: `1px solid ${colors.borderSoft}`, 
                 borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px',
-                cursor: 'pointer'
               }}
             >
               <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: '#271932', flexShrink: 0 }}></div>
@@ -465,8 +483,19 @@ export default function AdminContentPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', paddingRight: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.muted, fontSize: '13px' }}>
-                  <Eye size={16} /> --
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div 
+                    onClick={() => handleEditBlog(blog)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.muted, fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    <Pencil size={15} /> <span style={{ fontWeight: 600 }}>Sửa</span>
+                  </div>
+                  <div 
+                    onClick={() => window.open(`/blog/${blog.slug}?preview=1`, '_blank')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.muted, fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    <Eye size={15} /> <span style={{ fontWeight: 600 }}>Xem</span>
+                  </div>
                 </div>
                 <span style={{ 
                   border: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').border, 
@@ -616,7 +645,7 @@ export default function AdminContentPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Blog &amp; cẩm nang · Trang chủ</div>
-                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>Viết bài mới</div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>{editBlogId ? 'Sửa bài viết' : 'Viết bài mới'}</div>
               </div>
               <span onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
                 <X size={16} />

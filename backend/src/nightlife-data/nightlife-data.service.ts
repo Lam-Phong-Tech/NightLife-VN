@@ -807,14 +807,16 @@ export class NightlifeDataService {
     return { data: contents.map((content) => this.mapContent(content)) };
   }
 
-  async getPublicContentBySlug(slug: string) {
+  async getPublicContentBySlug(slug: string, isPreview: boolean = false) {
     const now = new Date();
     const content = await this.prisma.content.findFirst({
       where: {
         slug: this.normalizeContentSlug(slug),
         deletedAt: null,
-        status: 'PUBLISHED',
-        OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+        ...(isPreview ? {} : {
+          status: 'PUBLISHED',
+          OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+        }),
       },
       select: this.contentSelect(),
     });

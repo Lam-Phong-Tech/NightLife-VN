@@ -218,8 +218,11 @@ export class NightlifeDataController {
 
   @PublicContentDetailContract()
   @Get('contents/:slug')
-  getPublicContentBySlug(@Param('slug') slug: string) {
-    return this.nightlifeDataService.getPublicContentBySlug(slug);
+  getPublicContentBySlug(
+    @Param('slug') slug: string,
+    @Query('preview') preview?: string,
+  ) {
+    return this.nightlifeDataService.getPublicContentBySlug(slug, preview === '1');
   }
 
   @AdminContentsContract()

@@ -53,8 +53,11 @@ const toParams = (params: CmsContentListParams = {}) => {
 export const contentApi = {
   list: (params?: CmsContentListParams) =>
     apiClient<CmsContentListResponse>("/contents", { params: toParams(params) }),
-  get: (slug: string) =>
-    apiClient<CmsContentItem>(`/contents/${encodeURIComponent(slug)}`),
+  get: (slug: string, params?: Record<string, string>) => {
+    const searchParams = new URLSearchParams(params || {});
+    const queryString = searchParams.toString();
+    return apiClient<CmsContentItem>(`/contents/${encodeURIComponent(slug)}${queryString ? `?${queryString}` : ''}`);
+  },
   adminList: (params?: CmsContentListParams) =>
     apiClient<CmsContentItem[]>("/admin/contents", { params: toParams(params) }),
   adminCreate: (payload: Partial<CmsContentItem>) =>
