@@ -6,6 +6,7 @@ import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, L
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
+import { apiFormDataClient } from '@/lib/api/client';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -179,6 +180,25 @@ export default function AdminContentPage() {
 
     try {
       setIsSubmitting(true);
+      let finalImageUrl = coverImage && !coverImage.startsWith('blob:') ? coverImage : null;
+
+      if (coverImageFile) {
+        const form = new FormData();
+        form.append('file', coverImageFile);
+        form.append('purpose', 'BLOG_COVER');
+        form.append('access', 'PUBLIC');
+        
+        try {
+          const res = await apiFormDataClient<any>('/storage/upload', form);
+          if (res && res.url) {
+            finalImageUrl = res.url;
+          }
+        } catch (uploadErr) {
+          console.error('Failed to upload image:', uploadErr);
+          alert('Lỗi tải ảnh bìa. Bài viết vẫn sẽ được lưu nhưng không có ảnh bìa mới.');
+        }
+      }
+
       const payload = {
         type: 'BLOG' as const,
         title: blogTitle,
@@ -188,7 +208,7 @@ export default function AdminContentPage() {
         metadata: {
           category: blogCategory,
           language: blogLanguage,
-          ...(coverImage && !coverImage.startsWith('blob:') ? { image: coverImage } : {}),
+          ...(finalImageUrl ? { image: finalImageUrl } : {}),
         }
       };
 
