@@ -93,5 +93,8 @@ describe('Home Page', () => {
       'href',
       '/stores/api-neon-lounge',
     );
+    expect(screen.getAllByText('Tây Hồ · Hà Nội · Lounge').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Quận 1 · TP.HCM · Nhà hàng').length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? '').not.toMatch(/Â·|NhÃ|HÃ|Ná»|tá»|Ä‘|ChÆ|áº|á»/);
   });
 });

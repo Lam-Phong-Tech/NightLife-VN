@@ -102,32 +102,32 @@ const categoryLabels: Record<string, string> = {
   GIRLS_BAR: "Girls bar",
   KARAOKE: "Karaoke",
   MASSAGE_SPA: "Spa",
-  RESTAURANT: "NhÃ  hÃ ng",
+  RESTAURANT: "Nhà hàng",
   CASINO: "Casino",
 };
 
 const cityLabels: Record<string, string> = {
-  hn: "HÃ  Ná»™i",
+  hn: "Hà Nội",
   hcm: "TP.HCM",
 };
 
 const areaLabels: Record<string, string> = {
-  "Hoan Kiem": "HoÃ n Kiáº¿m",
-  "Tay Ho": "TÃ¢y Há»“",
-  "Quan 1": "Quáº­n 1",
-  "Quan 3": "Quáº­n 3",
-  "Quan 7": "Quáº­n 7",
+  "Hoan Kiem": "Hoàn Kiếm",
+  "Tay Ho": "Tây Hồ",
+  "Quan 1": "Quận 1",
+  "Quan 3": "Quận 3",
+  "Quan 7": "Quận 7",
 };
 
 const categoryPrices: Record<string, string> = {
-  BAR: "tá»« 650.000Ä‘",
-  CLUB: "tá»« 2.500.000Ä‘",
-  LOUNGE: "tá»« 900.000Ä‘",
-  GIRLS_BAR: "tá»« 1.200.000Ä‘",
-  KARAOKE: "tá»« 1.500.000Ä‘",
-  MASSAGE_SPA: "tá»« 500.000Ä‘",
-  RESTAURANT: "tá»« 800.000Ä‘",
-  CASINO: "tá»« 3.000.000Ä‘",
+  BAR: "từ 650.000đ",
+  CLUB: "từ 2.500.000đ",
+  LOUNGE: "từ 900.000đ",
+  GIRLS_BAR: "từ 1.200.000đ",
+  KARAOKE: "từ 1.500.000đ",
+  MASSAGE_SPA: "từ 500.000đ",
+  RESTAURANT: "từ 800.000đ",
+  CASINO: "từ 3.000.000đ",
 };
 
 type RankedItem = {
@@ -207,7 +207,7 @@ function storeAreaLabel(store: PublicStore) {
   const readableArea = areaLabels[areaName] ?? areaName;
   const readableCity = cityLabels[store.cityCode ?? ""] ?? store.city;
 
-  return [readableArea, readableCity].filter(Boolean).join(" Â· ");
+  return [readableArea, readableCity].filter(Boolean).join(" · ");
 }
 
 function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
@@ -223,8 +223,8 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
     cityCode: store.cityCode ?? "",
     img: storeImage(store, index),
     href: `/stores/${store.slug}`,
-    badgeText: index < 2 ? "Äáº·t bÃ n nhanh" : categoryLabel,
-    priceLabel: formatPriceTier(categoryPrices[store.category] ?? "tá»« 900.000Ä‘"),
+    badgeText: index < 2 ? "Đặt bàn nhanh" : categoryLabel,
+    priceLabel: formatPriceTier(categoryPrices[store.category] ?? "từ 900.000đ"),
   };
 }
 
@@ -1393,7 +1393,7 @@ export default function Page() {
       .catch(() => {
         if (!cancelled) {
           setHomeStores([]);
-          setHomeStoresError("ChÆ°a káº¿t ná»‘i Ä‘Æ°á»£c API quÃ¡n.");
+          setHomeStoresError("Chưa kết nối được API quán.");
         }
       })
       .finally(() => {
