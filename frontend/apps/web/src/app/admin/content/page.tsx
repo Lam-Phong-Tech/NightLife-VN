@@ -90,16 +90,25 @@ export default function AdminContentPage() {
 
   // Banner states
   const [bannerTitle, setBannerTitle] = useState('');
-  const [bannerTag, setBannerTag] = useState('Chi tiết');
+  const [bannerTag, setBannerTag] = useState('');
   const [bannerPos, setBannerPos] = useState('Trang chủ #1');
   const [bannerLink, setBannerLink] = useState('');
   const [bannerStatus, setBannerStatus] = useState('Đang hiển thị');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [bannerStatusLabel, setBannerStatusLabel] = useState('');
+  const [bannerSubtitle, setBannerSubtitle] = useState('');
+  const [bannerDescription, setBannerDescription] = useState('');
+
+  const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
+  const [isManagingTags, setIsManagingTags] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [isSubmittingTag, setIsSubmittingTag] = useState(false);
 
   useEffect(() => {
     fetchCategories();
     fetchBlogs();
     fetchBanners();
+    fetchBannerTags();
   }, []);
 
   useEffect(() => {
@@ -188,10 +197,54 @@ export default function AdminContentPage() {
 
   const fetchBanners = async () => {
     try {
-      const data = await contentApi.adminList({ type: 'BANNER' });
+      const data = await contentApi.adminList({ type: 'BANNER' as any });
       if (data) setBanners(data);
     } catch (error) {
       console.error('Failed to fetch banners:', error);
+    }
+  };
+
+  const fetchBannerTags = async () => {
+    try {
+      const data = await categoriesApi.adminList('BANNER_TAG');
+      if (data) {
+        setBannerTagsList(data);
+        if (data.length > 0 && !bannerTag) {
+          setBannerTag(data[0]?.name || '');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch banner tags:', error);
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) return;
+    try {
+      setIsSubmittingTag(true);
+      await categoriesApi.adminCreate({
+        name: newTagName,
+        slug: newTagName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+        type: 'BANNER_TAG',
+      });
+      setNewTagName('');
+      fetchBannerTags();
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+      alert('Có lỗi xảy ra khi thêm nhãn');
+    } finally {
+      setIsSubmittingTag(false);
+    }
+  };
+
+  const handleDeleteTag = async (id: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa nhãn này?')) return;
+    try {
+      await categoriesApi.adminDelete(id);
+      fetchBannerTags();
+    } catch (error) {
+      console.error('Failed to delete tag:', error);
+      alert('Có lỗi xảy ra khi xóa nhãn');
     }
   };
 
@@ -269,6 +322,44 @@ export default function AdminContentPage() {
     setBannerLink('');
   };
 
+  const handleSaveBanner = async () => {
+    if (!bannerTitle.trim()) {
+      alert('Vui lòng nhập tiêu đề banner!');
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      await contentApi.adminCreate({
+        title: bannerTitle,
+        slug: bannerTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
+        type: 'BANNER' as any,
+        status: bannerStatus === 'Đang hiển thị' ? 'PUBLISHED' : bannerStatus === 'Ẩn' ? 'ARCHIVED' : 'DRAFT',
+        metadata: {
+          tag: bannerTag,
+          position: bannerPos,
+          link: bannerLink,
+          imageUrl: bannerImage || '',
+          statusLabel: bannerStatusLabel,
+          subtitle: bannerSubtitle,
+          description: bannerDescription
+        }
+      });
+      fetchBanners();
+      closeDrawer();
+      setBannerTitle('');
+      setBannerLink('');
+      setBannerImage(null);
+      setBannerStatusLabel('');
+      setBannerSubtitle('');
+      setBannerDescription('');
+    } catch (error) {
+      console.error('Failed to save banner:', error);
+      alert('Có lỗi xảy ra khi lưu banner');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSaveBlog = async (status: 'DRAFT' | 'PUBLISHED') => {
     if (!blogTitle.trim()) {
       alert('Vui lòng nhập tiêu đề bài viết!');
@@ -337,7 +428,7 @@ export default function AdminContentPage() {
   };
 
   const renderDrawerContent = () => {
-    if (isAdding === 'campaign') {
+    if (isAdding === 'featured') {
       return (
         <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
           <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', alignItems: 'center' }}>
@@ -474,23 +565,33 @@ export default function AdminContentPage() {
               position: 'relative'
             }}>
               <div>
-                <span style={{ 
-                  display: 'inline-block', padding: '4px 12px', borderRadius: '16px', 
-                  border: `1px solid ${colors.borderGold22}`, color: colors.gold, 
-                  fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase'
-                }}>
-                  {metadata.tag || 'Banner'}
-                </span>
+                {metadata.statusLabel && (
+                  <span style={{ 
+                    display: 'inline-block', padding: '4px 12px', borderRadius: '16px', 
+                    background: 'rgba(0,0,0,0.5)', border: `1px solid ${colors.borderGold22}`, color: colors.gold, 
+                    fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase'
+                  }}>
+                    <span style={{ color: '#ef4444', marginRight: '6px' }}>•</span>{metadata.statusLabel}
+                  </span>
+                )}
               </div>
               <div>
-                <h3 style={{ fontSize: '18px', fontWeight: 700, color: colors.text, margin: '0 0 16px 0' }}>{banner.title}</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: '13px', color: colors.muted }}>Vị trí: <span style={{ color: colors.text2 }}>{metadata.position || 'Không xác định'}</span></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {displayStatus === 'Đang hiển thị' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.green }} />}
+                {metadata.subtitle && <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', color: colors.gold, textTransform: 'uppercase', marginBottom: '8px' }}>{metadata.subtitle}</div>}
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: colors.text, margin: '0 0 4px 0' }}>{banner.title}</h3>
+                {metadata.description && <div style={{ fontSize: '12px', color: '#c5c0b6', marginBottom: '12px' }}>{metadata.description}</div>}
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                  <div style={{ fontSize: '12px', color: colors.muted }}>Vị trí: <span style={{ color: colors.text2 }}>{metadata.position || 'Không xác định'}</span></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ 
+                      padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 700,
+                      background: colors.goldGrad, color: colors.onGold
+                    }}>
+                      {metadata.tag || 'Chi tiết'}
+                    </span>
                     <span style={{ 
                       color: getBannerStatusStyle(displayStatus).color, 
-                      padding: '2px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 600,
+                      padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600,
                       border: getBannerStatusStyle(displayStatus).border
                     }}>
                       {displayStatus}
@@ -775,6 +876,22 @@ export default function AdminContentPage() {
                 <input value={bannerTitle} onChange={e => setBannerTitle(e.target.value)} placeholder="VD: Đêm nhạc acoustic · Akari Lounge" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>NHÃN TRẠNG THÁI (VD: ĐANG DIỄN RA)</div>
+                  <input value={bannerStatusLabel} onChange={e => setBannerStatusLabel(e.target.value)} placeholder="Tùy chọn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', outline: 'none' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>TIÊU ĐỀ PHỤ (SUBTITLE)</div>
+                  <input value={bannerSubtitle} onChange={e => setBannerSubtitle(e.target.value)} placeholder="Tùy chọn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', outline: 'none' }} />
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>MÔ TẢ (DESCRIPTION)</div>
+                <input value={bannerDescription} onChange={e => setBannerDescription(e.target.value)} placeholder="Tùy chọn" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', outline: 'none' }} />
+              </div>
+
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>ẢNH BANNER</div>
                 <input 
@@ -812,25 +929,37 @@ export default function AdminContentPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>NHÃN SLOT</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase' }}>NHÃN SLOT</div>
+                    <button 
+                      onClick={() => setIsManagingTags(true)}
+                      style={{ background: 'transparent', border: 'none', color: colors.gold, cursor: 'pointer', padding: 0, display: 'flex' }}
+                      title="Quản lý nhãn"
+                    >
+                      <Settings size={14} />
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['Nhận mã', 'Đặt ngay', 'Chi tiết'].map(tag => (
+                    {bannerTagsList.map(tag => (
                       <span 
-                        key={tag}
-                        onClick={() => setBannerTag(tag)}
+                        key={tag.id}
+                        onClick={() => setBannerTag(tag.name)}
                         style={{ 
                           fontSize: '13px', 
-                          fontWeight: bannerTag === tag ? 700 : 500, 
-                          color: bannerTag === tag ? '#241a0a' : '#c5c0b6', 
-                          background: bannerTag === tag ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', 
-                          border: bannerTag === tag ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', 
+                          fontWeight: bannerTag === tag.name ? 700 : 500, 
+                          color: bannerTag === tag.name ? '#241a0a' : '#c5c0b6', 
+                          background: bannerTag === tag.name ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', 
+                          border: bannerTag === tag.name ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', 
                           padding: '6px 14px', 
                           borderRadius: '20px', cursor: 'pointer' 
                         }}
                       >
-                        {tag}
+                        {tag.name}
                       </span>
                     ))}
+                    {bannerTagsList.length === 0 && (
+                      <span style={{ color: colors.muted, fontSize: '13px' }}>Chưa có nhãn nào. Hãy thêm mới!</span>
+                    )}
                   </div>
                 </div>
 
@@ -895,7 +1024,7 @@ export default function AdminContentPage() {
             
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
               <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer' }}>Thêm banner</span>
+              <span onClick={!isSubmitting ? handleSaveBanner : undefined} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : 'Thêm banner'}</span>
             </div>
           </div>
         </div>
@@ -1147,6 +1276,44 @@ export default function AdminContentPage() {
                   <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '9px' }}>
                     <span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{cat.name}</span>
                     <span onClick={() => handleDeleteCategory(cat.id)} style={{ color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Xóa</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isManagingTags && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 400, background: '#18181f', borderRadius: 16, border: '1px solid rgba(255,255,255,.05)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f3f0ea' }}>Quản lý Nhãn Slot</h3>
+              <button onClick={() => setIsManagingTags(false)} style={{ background: 'transparent', border: 'none', color: '#8c8679', cursor: 'pointer', padding: 0 }}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                <input 
+                  type="text" 
+                  placeholder="Nhập tên nhãn mới..." 
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  style={{ flex: 1, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '9px', padding: '0 16px', fontSize: '13px', color: '#f3f0ea', outline: 'none' }} 
+                />
+                <button 
+                  onClick={handleAddTag}
+                  disabled={isSubmittingTag || !newTagName.trim()}
+                  style={{ background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', color: '#241a0a', border: 'none', borderRadius: '9px', padding: '0 20px', fontSize: '13px', fontWeight: 700, cursor: isSubmittingTag || !newTagName.trim() ? 'not-allowed' : 'pointer', opacity: isSubmittingTag || !newTagName.trim() ? 0.5 : 1 }}
+                >
+                  Thêm
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                {bannerTagsList.length === 0 && <div style={{ fontSize: '13px', color: '#8c8679', textAlign: 'center', padding: '10px 0' }}>Chưa có nhãn nào.</div>}
+                {bannerTagsList.map(tag => (
+                  <div key={tag.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)', borderRadius: '9px' }}>
+                    <span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{tag.name}</span>
+                    <span onClick={() => handleDeleteTag(tag.id)} style={{ color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Xóa</span>
                   </div>
                 ))}
               </div>
