@@ -306,11 +306,6 @@ export default function AdminRankingsPage() {
   };
 
   const handleSave = async () => {
-    if (!auditNote.trim()) {
-      alert("Vui lòng nhập Audit Note (lý do cập nhật) trước khi lưu!");
-      return;
-    }
-
     setIsSaving(true);
     try {
       const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
@@ -327,7 +322,7 @@ export default function AdminRankingsPage() {
               cityCode: cityCode,
               pinRank: i + 1,
               sponsored: cast.sponsored,
-              reason: auditNote
+              reason: 'Cập nhật Ranking'
             }
           });
         } else {
@@ -336,7 +331,7 @@ export default function AdminRankingsPage() {
             data: {
               pinRank: i + 1,
               sponsored: cast.sponsored,
-              reason: auditNote
+              reason: 'Cập nhật Ranking'
             }
           });
         }
@@ -354,7 +349,7 @@ export default function AdminRankingsPage() {
               cityCode: cityCode,
               pinRank: i + 1,
               sponsored: store.sponsored,
-              reason: auditNote
+              reason: 'Cập nhật Ranking'
             }
           });
         } else {
@@ -371,7 +366,6 @@ export default function AdminRankingsPage() {
 
       alert('Lưu ranking thành công!');
       fetchRankings();
-      setAuditNote('');
     } catch (error: any) {
       console.error(error);
       alert('Lỗi khi lưu ranking');
@@ -515,24 +509,11 @@ export default function AdminRankingsPage() {
           </div>
 
           {/* SAVE AREA */}
-          <div style={{ background: '#18181f', border: '1px solid rgba(212,178,106,.22)', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '13px', color: '#c5c0b6', marginBottom: '8px' }}>
-                Ghi chú nội bộ (Audit Note) - Bắt buộc
-              </label>
-              <input 
-                type="text"
-                value={auditNote}
-                onChange={(e) => setAuditNote(e.target.value)}
-                placeholder="VD: Cập nhật do quán ABC tài trợ tháng 7..."
-                style={{ width: '100%', height: '40px', background: '#202028', border: '1px solid rgba(255,255,255,.05)', borderRadius: '8px', color: '#f3f0ea', padding: '0 16px', fontSize: '14px', outline: 'none' }}
-              />
-            </div>
-            
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              style={{ background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', border: 'none', height: '40px', padding: '0 32px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1, alignSelf: 'flex-end' }}
+              style={{ background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', border: 'none', height: '40px', padding: '0 32px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1 }}
             >
               {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
             </button>
