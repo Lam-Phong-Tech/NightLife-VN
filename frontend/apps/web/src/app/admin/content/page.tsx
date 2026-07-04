@@ -194,17 +194,17 @@ export default function AdminContentPage() {
       await adminRankingsApi.create({
         targetType: 'STORE',
         targetId: store.id,
-        cityCode: store.cityCode as any || 'all',
-        category: store.category as any,
+        cityCode: featuredCity === 'all' ? (store.cityCode as any || 'all') : featuredCity,
+        category: featuredCategory as any,
         scope: 'featured_home',
         pinRank: featuredItems.length > 0 ? (featuredItems[featuredItems.length - 1]?.pinRank || 0) + 1 : 1,
         status: 'ACTIVE'
       });
       await fetchFeaturedItems();
       setSearchFeaturedQuery('');
-    } catch (err) {
-      console.error(err);
-      alert('Không thể thêm vào danh sách nổi bật.');
+    } catch (err: any) {
+      console.error(err?.response?.data || err);
+      alert(`Không thể thêm vào danh sách nổi bật: ${err?.response?.data?.message || err.message || ''}`);
     }
   };
 

@@ -98,12 +98,11 @@ export const adminRankingsApi = {
 };
 
 function normalizePayload(payload: AdminRankingFormPayload) {
-  return {
-    ...payload,
-    category: payload.category === "all" ? null : payload.category,
-    pinRank: payload.pinRank || null,
-    startsAt: payload.startsAt || null,
-    endsAt: payload.endsAt || null,
-    reason: payload.reason || null,
-  };
+  const result: any = { ...payload };
+  if (result.category === "all") delete result.category;
+  if (!result.pinRank) delete result.pinRank;
+  if (!result.startsAt) delete result.startsAt;
+  if (!result.endsAt) delete result.endsAt;
+  if (!result.reason) delete result.reason;
+  return result;
 }
