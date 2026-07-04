@@ -437,15 +437,6 @@ export default function AdminCastsPage() {
 
               {/* CAST HEADER INFO */}
               <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
-                <div style={{ 
-                  width: 80, height: 80, borderRadius: '16px', 
-                  background: isAddingCast ? colors.surface1 : getAvatarStyle(formData.stageName).background,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '24px', fontWeight: 800, color: isAddingCast ? colors.muted : getAvatarStyle(formData.stageName).color,
-                  border: isAddingCast ? `1px dashed ${colors.borderSoft}` : 'none'
-                }}>
-                  {isAddingCast ? <Plus size={24} /> : (formData.stageName ? formData.stageName.charAt(0).toUpperCase() : 'A')}
-                </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <input type="text" placeholder="Tên Cast (Stage Name)" value={formData.stageName} onChange={e => setFormData({...formData, stageName: e.target.value})} style={{ background: 'transparent', border: 'none', color: colors.text, fontSize: '24px', fontWeight: 700, outline: 'none', marginBottom: '8px', width: '100%' }} />
                   <select value={formData.storeId} onChange={e => setFormData({...formData, storeId: e.target.value})} style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, color: colors.text2, fontSize: '13px', padding: '6px 12px', borderRadius: '6px', outline: 'none', width: '220px' }}>
