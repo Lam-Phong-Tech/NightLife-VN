@@ -107,6 +107,7 @@ export async function seedCoupons(
     result[c.code] = await prisma.coupon.upsert({
       where: { code: c.code },
       update: {
+        storeId,
         name: c.name,
         description: c.description,
         discountType: c.discountType,
@@ -114,7 +115,10 @@ export async function seedCoupons(
         maxDiscountVnd: c.maxDiscountVnd ?? null,
         minSpendVnd: c.minSpendVnd ?? null,
         usageLimit: c.usageLimit,
+        startsAt: now,
+        endsAt: thirtyDaysLater,
         status: 'ACTIVE',
+        deletedAt: null,
       },
       create: {
         storeId,

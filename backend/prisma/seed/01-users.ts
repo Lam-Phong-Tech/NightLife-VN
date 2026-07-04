@@ -98,7 +98,7 @@ const USERS: UserSeed[] = [
     displayName: 'Phạm Thành Viên',
     phone: '+84901000004',
     role: 'USER',
-    tier: UserTier.FREE,
+    tier: UserTier.MEMBER,
     roleKey: 'member',
     profile: {
       fullName: 'Phạm Văn Thành Viên',

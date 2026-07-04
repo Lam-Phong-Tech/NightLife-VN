@@ -1,4 +1,6 @@
 import { createHash, createHmac } from 'crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 export type SeedProfile = 'demo' | 'full';
 
@@ -53,11 +55,40 @@ export function seedHash(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-export function buildSeedCouponQr(
-  issueId: string,
-  now: Date,
-  key: string,
+export function materializeSeedUpload(
+  storageKey: string,
+  contents: Buffer | string,
 ) {
+  if (
+    !storageKey ||
+    storageKey.includes('/') ||
+    storageKey.includes('\\') ||
+    storageKey.includes('..')
+  ) {
+    throw new Error(`Seed storage key must be a flat filename: ${storageKey}`);
+  }
+
+  const uploadDir = join(
+    process.cwd(),
+    process.env.STORAGE_LOCAL_DIR ?? 'uploads',
+  );
+  mkdirSync(uploadDir, { recursive: true });
+  writeFileSync(join(uploadDir, storageKey), contents);
+}
+
+export function seedStorageUrl(
+  access: 'PUBLIC' | 'PROTECTED',
+  storageKey: string,
+) {
+  const publicBase =
+    process.env.PUBLIC_BASE_URL ??
+    `http://localhost:${process.env.PORT ?? '3001'}`;
+  return `${publicBase.replace(/\/$/, '')}/storage/${
+    access === 'PUBLIC' ? 'public' : 'files'
+  }/${storageKey}`;
+}
+
+export function buildSeedCouponQr(issueId: string, now: Date, key: string) {
   const secret =
     process.env.COUPON_QR_SECRET ??
     process.env.JWT_SECRET ??

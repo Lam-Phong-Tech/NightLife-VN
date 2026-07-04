@@ -378,6 +378,8 @@ export async function seedContents(
         body: c.body,
         metadata: c.metadata,
         status: 'PUBLISHED',
+        publishedAt: new Date(),
+        deletedAt: null,
       },
       create: {
         authorId: adminId,

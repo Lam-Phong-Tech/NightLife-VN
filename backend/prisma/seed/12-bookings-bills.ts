@@ -14,12 +14,7 @@ import {
   Store,
   User,
 } from '@prisma/client';
-import {
-  buildSeedCouponQr,
-  seedDate,
-  seedHash,
-  seedUuid,
-} from './shared';
+import { buildSeedCouponQr, seedDate, seedHash, seedUuid } from './shared';
 
 type BookingSeed = {
   key: string;
@@ -458,7 +453,9 @@ export async function seedBookingsAndBills(
   for (const fixture of BOOKINGS) {
     const store = stores[fixture.storeSlug];
     if (!store) {
-      throw new Error(`Missing store for booking fixture: ${fixture.storeSlug}`);
+      throw new Error(
+        `Missing store for booking fixture: ${fixture.storeSlug}`,
+      );
     }
 
     const cast = fixture.castSlug ? casts[fixture.castSlug] : undefined;
@@ -467,16 +464,18 @@ export async function seedBookingsAndBills(
     }
 
     const user = fixture.userKey ? users[fixture.userKey] : undefined;
-    const guest = fixture.guestKey ? result.guests[fixture.guestKey] : undefined;
+    const guest = fixture.guestKey
+      ? result.guests[fixture.guestKey]
+      : undefined;
     if (!user && !guest) {
       throw new Error(`Booking fixture ${fixture.key} has no customer`);
     }
 
-    const coupon = fixture.couponCode
-      ? coupons[fixture.couponCode]
-      : undefined;
+    const coupon = fixture.couponCode ? coupons[fixture.couponCode] : undefined;
     if (fixture.couponCode && !coupon) {
-      throw new Error(`Missing coupon for booking fixture: ${fixture.couponCode}`);
+      throw new Error(
+        `Missing coupon for booking fixture: ${fixture.couponCode}`,
+      );
     }
     if (coupon && coupon.storeId !== store.id) {
       throw new Error(
@@ -508,8 +507,7 @@ export async function seedBookingsAndBills(
         userId: user?.id ?? null,
         guestId: guest?.id ?? null,
         issuedById: users.admin?.id ?? null,
-        scannedById:
-          issueStatus === 'USED' ? (store.ownerId ?? null) : null,
+        scannedById: issueStatus === 'USED' ? (store.ownerId ?? null) : null,
         code: issueCode,
         qrPayloadHash: qr.payloadHash,
         status: issueStatus,
@@ -551,10 +549,7 @@ export async function seedBookingsAndBills(
     }
 
     const bookingId = seedUuid(`booking:${fixture.key}`);
-    const totalVnd = Math.max(
-      0,
-      fixture.subtotalVnd - fixture.discountVnd,
-    );
+    const totalVnd = Math.max(0, fixture.subtotalVnd - fixture.discountVnd);
     const bookingData = {
       userId: user?.id ?? null,
       guestId: guest?.id ?? null,
@@ -580,9 +575,7 @@ export async function seedBookingsAndBills(
       cancelReason:
         fixture.status === 'CANCELLED' ? 'Seed cancellation scenario' : null,
       cancelledAt:
-        fixture.status === 'CANCELLED'
-          ? seedDate(now, -1, 12)
-          : null,
+        fixture.status === 'CANCELLED' ? seedDate(now, -1, 12) : null,
       createdAt,
       deletedAt: null,
     };
@@ -609,12 +602,10 @@ export async function seedBookingsAndBills(
         validFrom: new Date(scheduledAt.getTime() - 60 * 60 * 1000),
         expiresAt: new Date(scheduledAt.getTime() + 6 * 60 * 60 * 1000),
         status: qrStatus,
-        usedAt:
-          qrStatus === 'USED' ? scheduledAt : null,
+        usedAt: qrStatus === 'USED' ? scheduledAt : null,
         scannedByPartnerAccountId:
           qrStatus === 'USED' ? (store.partnerAccountId ?? null) : null,
-        revokedAt:
-          qrStatus === 'REVOKED' ? seedDate(now, -1, 12) : null,
+        revokedAt: qrStatus === 'REVOKED' ? seedDate(now, -1, 12) : null,
       };
       result.bookingQrs[fixture.key] = await prisma.bookingQr.upsert({
         where: { id: qrId },
@@ -629,8 +620,7 @@ export async function seedBookingsAndBills(
     const serviceChargeVnd = Math.round(totalVnd * 0.05);
     const taxVnd = Math.round(totalVnd * 0.1);
     const paidVnd = totalVnd + serviceChargeVnd + taxVnd;
-    const commissionPercent =
-      commissionPercentByStore.get(store.id) ?? 15;
+    const commissionPercent = commissionPercentByStore.get(store.id) ?? 15;
     const commissionAmountVnd =
       Math.round((fixture.subtotalVnd * commissionPercent) / 100) -
       fixture.discountVnd;
@@ -650,8 +640,7 @@ export async function seedBookingsAndBills(
     const reviewedAt = reviewedStatuses.includes(fixture.billStatus)
       ? new Date(submittedAt.getTime() + 30 * 60 * 1000)
       : null;
-    const flags =
-      commissionAmountVnd < 0 ? ['NEGATIVE_COMMISSION'] : [];
+    const flags = commissionAmountVnd < 0 ? ['NEGATIVE_COMMISSION'] : [];
     const billData = {
       bookingId: booking.id,
       userId: user?.id ?? null,

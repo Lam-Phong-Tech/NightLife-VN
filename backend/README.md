@@ -128,17 +128,39 @@ When Telegram is not configured, the API still completes the business action and
 
 ## Seed
 
-After migrations, load demo accounts and a demo store:
+After migrations, load clean demo data for the public, member, partner,
+operator, and admin APIs:
 
 ```bash
 pnpm seed
 ```
 
+Load every schema model and lifecycle state, including safe historical auth
+fixtures:
+
+```bash
+pnpm seed:full
+```
+
+Verify an existing database without writing data:
+
+```bash
+pnpm seed:check
+pnpm seed:check -- --profile=full
+pnpm seed:check-links
+```
+
+The transactional fixtures use deterministic IDs and can be seeded repeatedly.
+Databases that previously used the legacy random booking seed should be reset
+once before adopting the deterministic seed.
+
 Seed credentials:
 
 - Admin: `admin@nightlife.vn` / `Str0ngPass!`
 - Partner: `partner@nightlife.vn` / `Str0ngPass!`
-- Store slug: `demo-nightlife-store`
+- Member: `member@nightlife.vn` / `Str0ngPass!`
+- VIP: `vip@nightlife.vn` / `Str0ngPass!`
+- Store slug: `moonlight-bar`
 
 ## Verification
 

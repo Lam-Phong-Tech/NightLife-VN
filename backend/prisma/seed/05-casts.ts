@@ -93,7 +93,7 @@ const CASTS: CastSeed[] = [
     zodiacSign: 'Scorpio',
     measurements: 'B86-W60-H88',
     hobbies: ['dancing', 'DJing', 'fitness'],
-    youtubeLinks: ['https://www.youtube.com/embed/x0yNaLNI4c4'],
+    youtubeLinks: ['https://www.youtube.com/embed/KRvv0QdruMQ'],
   },
   {
     slug: 'aya-velvet',
@@ -115,7 +115,7 @@ const CASTS: CastSeed[] = [
     zodiacSign: 'Taurus',
     measurements: 'B88-W62-H90',
     hobbies: ['wine-tasting', 'shopping', 'golf'],
-    youtubeLinks: ['https://www.youtube.com/embed/x0yNaLNI4c4'],
+    youtubeLinks: ['https://www.youtube.com/embed/KRvv0QdruMQ'],
   },
 
   // ── Sakura Lounge (HCM Q3) ──
@@ -364,7 +364,7 @@ const CASTS: CastSeed[] = [
     publicAlias: 'Sora',
     publicHeadline: '🎧 音楽で繋がろう',
     publicBio:
-      "🇯🇵 音楽が全て。EDM、ハウス、テクノ。一緒にビートに乗りましょう！\n" +
+      '🇯🇵 音楽が全て。EDM、ハウス、テクノ。一緒にビートに乗りましょう！\n' +
       "🇬🇧 Music is everything. EDM, House, Techno. Let's ride the beat together!\n" +
       '🇻🇳 Âm nhạc là tất cả. EDM, House, Techno. Hòa mình vào nhịp beat cùng nhau!',
     tags: ['cool', 'DJ', 'music-lover', '20s'],
@@ -452,7 +452,7 @@ const CASTS: CastSeed[] = [
     publicAlias: 'Tsubasa',
     publicHeadline: '🕊️ 楽しい時間をお約束',
     publicBio:
-      "🇯🇵 明るい性格が取り柄です！一緒に歌って笑って最高の時間を過ごしましょう。\n" +
+      '🇯🇵 明るい性格が取り柄です！一緒に歌って笑って最高の時間を過ごしましょう。\n' +
       "🇬🇧 My bright personality is my best trait! Let's sing, laugh, and have the best time.\n" +
       '🇻🇳 Tính cách vui vẻ là điểm mạnh! Hãy cùng hát, cười và có khoảng thời gian tuyệt vời.',
     tags: ['cheerful', 'bright', 'anime-songs', '20s'],
@@ -716,48 +716,50 @@ export async function seedCasts(
     result[c.slug] = await prisma.cast.upsert({
       where: { slug: c.slug },
       update: {
-        stageName:        c.stageName,
-        bio:              c.bio,
-        publicAlias:      c.publicAlias,
-        publicHeadline:   c.publicHeadline,
-        publicBio:        c.publicBio,
-        tags:             c.tags,
-        styleTags:        c.styleTags ?? [],
-        languages:        c.languages,
-        hourlyRateVnd:    c.hourlyRateVnd,
-        heightCm:         c.heightCm ?? null,
-        birthMonth:       c.birthMonth ?? null,
-        zodiacSign:       c.zodiacSign ?? null,
-        measurements:     c.measurements ?? null,
-        hobbies:          c.hobbies ?? [],
-        youtubeLinks:     c.youtubeLinks ?? [],
-        status:           'ACTIVE',
-        isPublic:         true,
+        stageName: c.stageName,
+        bio: c.bio,
+        publicAlias: c.publicAlias,
+        publicHeadline: c.publicHeadline,
+        publicBio: c.publicBio,
+        tags: c.tags,
+        styleTags: c.styleTags ?? [],
+        languages: c.languages,
+        hourlyRateVnd: c.hourlyRateVnd,
+        heightCm: c.heightCm ?? null,
+        birthMonth: c.birthMonth ?? null,
+        zodiacSign: c.zodiacSign ?? null,
+        measurements: c.measurements ?? null,
+        hobbies: c.hobbies ?? [],
+        youtubeLinks: c.youtubeLinks ?? [],
+        status: 'ACTIVE',
+        isPublic: true,
       },
       create: {
         storeId,
-        slug:             c.slug,
-        stageName:        c.stageName,
-        bio:              c.bio,
-        publicAlias:      c.publicAlias,
-        publicHeadline:   c.publicHeadline,
-        publicBio:        c.publicBio,
-        tags:             c.tags,
-        styleTags:        c.styleTags ?? [],
-        languages:        c.languages,
-        hourlyRateVnd:    c.hourlyRateVnd,
-        heightCm:         c.heightCm ?? null,
-        birthMonth:       c.birthMonth ?? null,
-        zodiacSign:       c.zodiacSign ?? null,
-        measurements:     c.measurements ?? null,
-        hobbies:          c.hobbies ?? [],
-        youtubeLinks:     c.youtubeLinks ?? [],
-        status:           'ACTIVE',
-        isPublic:         true,
+        slug: c.slug,
+        stageName: c.stageName,
+        bio: c.bio,
+        publicAlias: c.publicAlias,
+        publicHeadline: c.publicHeadline,
+        publicBio: c.publicBio,
+        tags: c.tags,
+        styleTags: c.styleTags ?? [],
+        languages: c.languages,
+        hourlyRateVnd: c.hourlyRateVnd,
+        heightCm: c.heightCm ?? null,
+        birthMonth: c.birthMonth ?? null,
+        zodiacSign: c.zodiacSign ?? null,
+        measurements: c.measurements ?? null,
+        hobbies: c.hobbies ?? [],
+        youtubeLinks: c.youtubeLinks ?? [],
+        status: 'ACTIVE',
+        isPublic: true,
       },
     });
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} casts (JP names, trilingual bios, multilingual tags)`);
+  console.log(
+    `     ✓ ${Object.keys(result).length} casts (JP names, trilingual bios, multilingual tags)`,
+  );
   return result;
 }

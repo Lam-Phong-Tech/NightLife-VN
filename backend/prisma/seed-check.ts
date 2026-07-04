@@ -1,27 +1,24 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PasswordService } from '../src/common/password.service';
-import { seedAll } from './seed/index';
 import { resolveSeedProfile } from './seed/shared';
+import { verifySeedCoverage } from './seed/verify';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
     connectionString: process.env.DATABASE_URL ?? '',
   }),
 });
-const passwordService = new PasswordService();
 
 async function main() {
-  const passwordHash = await passwordService.hash('Str0ngPass!');
-  await seedAll(prisma, passwordHash, {
-    profile: resolveSeedProfile(),
-    now: new Date(),
-  });
+  const profile = resolveSeedProfile();
+  await verifySeedCoverage(prisma, profile);
 }
 
 main()
-  .finally(() => prisma.$disconnect())
+  .finally(async () => {
+    await prisma.$disconnect();
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);
