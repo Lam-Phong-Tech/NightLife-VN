@@ -46,6 +46,17 @@ const mockFeatured = [
   { id: '2', img: '#1a1d24', name: 'Gói Private Party', sub: 'Club Lumière', labels: ['Không nhãn'] },
 ];
 
+const mockVideos = [
+  { id: '1', venue: 'Club Lumière', title: 'Tour không gian quán', dur: '01:24', rank: '1', color: '#2a2215' },
+  { id: '2', venue: 'Sakura Lounge', title: 'Dessert & cocktail signature', dur: '00:38', rank: '2', color: '#1a1824' },
+  { id: '3', venue: 'Akari Lounge', title: 'Đêm nhạc acoustic cuối tuần', dur: '00:52', rank: '3', color: '#1b1e22' },
+];
+
+const mockVideoSearch = [
+  { id: '4', venue: 'KTV Hoàng Gia', title: 'Phòng VIP tổng thống · 01:05', color: '#271b20' },
+  { id: '5', venue: 'Bar Tokyo Night', title: 'Quầy bar signature · 00:44', color: '#1a221f' },
+];
+
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog'>('campaign');
   const [isAdding, setIsAdding] = useState<'campaign' | 'banner' | 'featured' | 'video' | 'blog' | null>(null);
@@ -399,16 +410,54 @@ export default function AdminContentPage() {
             </div>
             <span style={{ fontSize: '13px', color: '#cbb884', lineHeight: 1.5 }}>Khối <b style={{ color: '#f0dda8' }}>"Video Hot"</b> trên trang chủ — chọn từ <b style={{ color: '#f0dda8' }}>thư viện video của các quán</b> (mục Quán → Video quán), sắp thứ tự theo khu vực.</span>
           </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '4px', gap: '4px' }}>
               <span style={{ padding: '6px 20px', borderRadius: '8px', background: colors.goldGrad, color: colors.onGold, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Hà Nội</span>
               <span style={{ padding: '6px 20px', borderRadius: '8px', color: colors.muted, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>TP. Hồ Chí Minh</span>
             </div>
             <div style={{ flex: 1 }}></div>
-            <span style={{ fontSize: '13px', color: colors.muted }}>0 video đang hiển thị trên trang chủ</span>
+            <span style={{ fontSize: '13px', color: colors.muted }}>3 video đang hiển thị trên trang chủ</span>
           </div>
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: colors.muted, fontSize: '14px', border: `1px dashed ${colors.borderSoft}`, borderRadius: '16px', marginTop: '16px' }}>
-            Chưa có video nào. Hãy thêm video từ mục Quản lý Quán.
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            {mockVideos.map(v => (
+              <div key={v.id} style={{ background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', overflow: 'hidden' }}>
+                <div style={{ aspectRatio: '16/9', background: v.color, position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>▶</span>
+                  <span style={{ position: 'absolute', right: '9px', bottom: '9px', fontSize: '9px', fontWeight: 600, color: '#f3f0ea', background: 'rgba(12,12,15,.65)', padding: '2.5px 7px', borderRadius: '6px' }}>{v.dur}</span>
+                  <span style={{ position: 'absolute', left: '9px', top: '9px', fontSize: '9px', fontWeight: 800, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: '6px' }}>#{v.rank}</span>
+                </div>
+                <div style={{ padding: '11px 13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.venue}</div>
+                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.title}</div>
+                  </div>
+                  <span style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>↑</span>
+                  <span style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>↓</span>
+                  <span style={{ width: 24, height: 22, flex: 'none', borderRadius: 6, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>✕</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
+              <Search size={15} color="#8c8679" />
+              <input placeholder="Tìm video theo tên quán hoặc tiêu đề…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
+              {mockVideoSearch.map(vr => (
+                <div key={vr.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
+                  <span style={{ width: 56, height: 34, flex: 'none', borderRadius: 8, background: vr.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ color: '#f3f0ea', fontSize: '10px' }}>▶</span></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{vr.venue}</div>
+                    <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{vr.title}</div>
+                  </div>
+                  <span style={{ flex: 'none', fontSize: '11.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 14px', borderRadius: '9px', cursor: 'pointer' }}>+ Hiện trên trang chủ</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
