@@ -164,7 +164,7 @@ export default function AdminRankingsPage() {
     try {
       const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
       const res = await apiClient<any>('/admin/rankings/options', {
-        params: { targetType: type, city: cityCode, limit: 200 }
+        params: { targetType: type, city: cityCode, limit: 100 }
       });
       const items = Array.isArray(res) ? res : (res?.data || []);
       if (type === 'CAST') setCastOptions(items);
