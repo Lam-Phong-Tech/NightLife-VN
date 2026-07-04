@@ -136,7 +136,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             action="/blog"
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(220px, 1fr) minmax(180px, 240px) minmax(160px, 220px) auto",
+              gridTemplateColumns: "minmax(220px, 1fr) minmax(160px, 220px) auto",
               gap: "10px",
               alignItems: "center",
             }}
@@ -154,25 +154,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 padding: "0 13px",
               }}
             />
-            <select
-              name="category"
-              defaultValue={params.category ?? ""}
-              style={{
-                minHeight: "42px",
-                border: "1px solid rgba(212,178,106,.22)",
-                borderRadius: "8px",
-                background: "#111114",
-                color: "#f3f0ea",
-                padding: "0 12px",
-              }}
-            >
-              <option value="">Tất cả chủ đề</option>
-              {categories.map((category) => (
-                <option key={category} value={slugifyBlogTerm(category)}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            {params.category && <input type="hidden" name="category" value={params.category} />}
             <select
               name="tag"
               defaultValue={params.tag ?? ""}
@@ -219,42 +201,58 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             }}
           >
             <Link
-              href="/blog"
+              href={{ pathname: "/blog", query: { ...(params.q ? { q: params.q } : {}), ...(params.tag ? { tag: params.tag } : {}) } }}
               style={{
                 flex: "none",
-                border: "1px solid rgba(212,178,106,.58)",
-                background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
-                color: "#241a0a",
                 borderRadius: "999px",
                 padding: "8px 13px",
                 fontSize: "12.5px",
                 fontWeight: 800,
                 whiteSpace: "nowrap",
                 textDecoration: "none",
+                ...(!params.category ? {
+                  border: "1px solid rgba(212,178,106,.58)",
+                  background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
+                  color: "#241a0a",
+                } : {
+                  border: "1px solid rgba(255,255,255,.1)",
+                  background: "rgba(255,255,255,.045)",
+                  color: "#dcd6ca",
+                })
               }}
             >
               Tất cả
             </Link>
-            {categories.map((category) => (
-              <Link
-                key={category}
-                href={`/blog/category/${slugifyBlogTerm(category)}`}
-                style={{
-                  flex: "none",
-                  border: "1px solid rgba(255,255,255,.1)",
-                  background: "rgba(255,255,255,.045)",
-                  color: "#dcd6ca",
-                  borderRadius: "999px",
-                  padding: "8px 13px",
-                  fontSize: "12.5px",
-                  fontWeight: 800,
-                  whiteSpace: "nowrap",
-                  textDecoration: "none",
-                }}
-              >
-                {category}
-              </Link>
-            ))}
+            {categories.map((category) => {
+              const slug = slugifyBlogTerm(category);
+              const isActive = params.category === slug;
+              return (
+                <Link
+                  key={category}
+                  href={{ pathname: "/blog", query: { ...(params.q ? { q: params.q } : {}), ...(params.tag ? { tag: params.tag } : {}), category: slug } }}
+                  style={{
+                    flex: "none",
+                    borderRadius: "999px",
+                    padding: "8px 13px",
+                    fontSize: "12.5px",
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                    textDecoration: "none",
+                    ...(isActive ? {
+                      border: "1px solid rgba(212,178,106,.58)",
+                      background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
+                      color: "#241a0a",
+                    } : {
+                      border: "1px solid rgba(255,255,255,.1)",
+                      background: "rgba(255,255,255,.045)",
+                      color: "#dcd6ca",
+                    })
+                  }}
+                >
+                  {category}
+                </Link>
+              );
+            })}
           </div>
         </div>
 
