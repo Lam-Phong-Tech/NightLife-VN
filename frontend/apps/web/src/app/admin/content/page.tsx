@@ -92,7 +92,7 @@ export default function AdminContentPage() {
 
   // Featured Services states
   const [featuredCity, setFeaturedCity] = useState<'all' | 'hn' | 'hcm'>('all');
-  const [featuredCategory, setFeaturedCategory] = useState<'all' | 'RESTAURANT' | 'MASSAGE_SPA'>('all');
+  const [featuredCategory, setFeaturedCategory] = useState<'RESTAURANT' | 'MASSAGE_SPA'>('RESTAURANT');
   const [featuredItems, setFeaturedItems] = useState<AdminRankingConfig[]>([]);
   const [searchFeaturedQuery, setSearchFeaturedQuery] = useState('');
   const [searchFeaturedItems, setSearchFeaturedItems] = useState<AdminRankingTargetOption[]>([]);
@@ -160,7 +160,7 @@ export default function AdminContentPage() {
         targetType: 'STORE',
         scope: 'featured_home',
         city: featuredCity === 'all' ? undefined : featuredCity,
-        category: featuredCategory === 'all' ? undefined : featuredCategory as any
+        category: featuredCategory as any
       });
       setFeaturedItems(data || []);
     } catch (err) {
@@ -877,7 +877,6 @@ export default function AdminContentPage() {
               <span style={featuredCity === 'hcm' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCity('hcm')}>TP. Hồ Chí Minh</span>
             </div>
             <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-              <span style={featuredCategory === 'all' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('all')}>Tất cả</span>
               <span style={featuredCategory === 'RESTAURANT' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('RESTAURANT')}>Nhà hàng</span>
               <span style={featuredCategory === 'MASSAGE_SPA' ? activeTabStyle : inactiveTabStyle} onClick={() => setFeaturedCategory('MASSAGE_SPA')}>Spa</span>
             </div>
