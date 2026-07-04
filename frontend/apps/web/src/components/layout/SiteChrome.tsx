@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
@@ -892,6 +892,39 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
+
+  useEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const previousRootScrollBehavior = root.style.scrollBehavior;
+    const previousBodyScrollBehavior = body.style.scrollBehavior;
+
+    root.style.scrollBehavior = "auto";
+    body.style.scrollBehavior = "auto";
+    window.scrollTo(0, 0);
+    root.scrollTop = 0;
+    body.scrollTop = 0;
+
+    const restoreTimer = window.setTimeout(() => {
+      root.style.scrollBehavior = previousRootScrollBehavior;
+      body.style.scrollBehavior = previousBodyScrollBehavior;
+    }, 120);
+
+    return () => {
+      window.clearTimeout(restoreTimer);
+      root.style.scrollBehavior = previousRootScrollBehavior;
+      body.style.scrollBehavior = previousBodyScrollBehavior;
+    };
+  }, [pathname]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 767px)");
