@@ -1010,3 +1010,21 @@ textarea::placeholder {
 .scw { scrollbar-width: thin; scrollbar-color: rgba(212,178,106,.25) transparent; }
 @keyframes vpulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 @keyframes vrise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Override rich text inline styles for blog body */
+.nl-blog-body * {
+  background-color: transparent !important;
+  color: inherit !important;
+  font-family: inherit !important;
+}
+
+.nl-blog-body img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.nl-blog-body p, .nl-blog-body span, .nl-blog-body div {
+  white-space: normal !important;
+}
