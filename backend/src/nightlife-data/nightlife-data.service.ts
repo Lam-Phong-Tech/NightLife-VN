@@ -830,7 +830,19 @@ export class NightlifeDataService {
       select: this.contentSelect(),
     });
 
-    return { data: contents.map((content) => this.mapContent(content)) };
+    let result = contents.map((content) => this.mapContent(content));
+
+    if (type === 'BANNER') {
+      result.sort((a, b) => {
+        const posA = (a.metadata as any)?.position || '';
+        const posB = (b.metadata as any)?.position || '';
+        if (posA.includes('Trang chủ #1') && !posB.includes('Trang chủ #1')) return -1;
+        if (!posA.includes('Trang chủ #1') && posB.includes('Trang chủ #1')) return 1;
+        return 0;
+      });
+    }
+
+    return { data: result };
   }
 
   async getPublicContentBySlug(slug: string, isPreview: boolean = false) {
@@ -901,6 +913,15 @@ export class NightlifeDataService {
           ? new Date()
           : null;
 
+    if (type === 'BANNER' && status === 'PUBLISHED') {
+      const activeBannersCount = await this.prisma.content.count({
+        where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
+      });
+      if (activeBannersCount >= 3) {
+        throw new BadRequestException('Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.');
+      }
+    }
+
     await this.assertContentSlugAvailable(slug);
 
     const content = await this.prisma.content.create({
@@ -925,7 +946,7 @@ export class NightlifeDataService {
   async updateAdminContent(contentId: string, dto: UpdateAdminContentDto) {
     const existing = await this.prisma.content.findFirst({
       where: { id: contentId, deletedAt: null },
-      select: { id: true, slug: true, status: true, publishedAt: true },
+      select: { id: true, slug: true, type: true, status: true, publishedAt: true },
     });
 
     if (!existing) {
@@ -948,6 +969,16 @@ export class NightlifeDataService {
         : nextStatus === 'PUBLISHED' && !existing.publishedAt
           ? new Date()
           : undefined;
+
+    const nextType = dto.type !== undefined ? this.resolveContentType(dto.type, { strict: true }) : existing.type;
+    if (nextType === 'BANNER' && nextStatus === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      const activeBannersCount = await this.prisma.content.count({
+        where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
+      });
+      if (activeBannersCount >= 3) {
+        throw new BadRequestException('Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.');
+      }
+    }
 
     const content = await this.prisma.content.update({
       where: { id: contentId },
