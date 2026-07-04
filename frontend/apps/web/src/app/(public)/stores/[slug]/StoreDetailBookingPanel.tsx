@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Ticket } from "lucide-react";
 import type { StoreActiveCoupon } from "@/lib/api/store-detail";
+import { fallbackBookingTimeSlots } from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
 import { formatDiscount } from "./store-detail.helpers";
 
@@ -14,6 +15,7 @@ type StoreDetailBookingPanelProps = {
   dateOptions: DateOption[];
   selectedDateIndex: number;
   selectedTime: string;
+  timeOptions?: string[];
   guestCount: number;
   bookingHref: string;
   couponHref: string;
@@ -25,13 +27,12 @@ type StoreDetailBookingPanelProps = {
   onCouponClick: (surface: string) => void;
 };
 
-const bookingTimes = ["20:00", "21:00", "22:00", "23:00"];
-
 export function StoreDetailBookingPanel({
   startingFromVnd,
   dateOptions,
   selectedDateIndex,
   selectedTime,
+  timeOptions = fallbackBookingTimeSlots,
   guestCount,
   bookingHref,
   couponHref,
@@ -63,16 +64,20 @@ export function StoreDetailBookingPanel({
       </div>
       <label>Khung giờ</label>
       <div className="slot-row">
-        {bookingTimes.map((time) => (
-          <button
-            key={time}
-            type="button"
-            className={time === selectedTime ? "slot active" : "slot"}
-            onClick={() => onTimeSelect(time)}
-          >
-            {time}
-          </button>
-        ))}
+        {timeOptions.length ? (
+          timeOptions.map((time) => (
+            <button
+              key={time}
+              type="button"
+              className={time === selectedTime ? "slot active" : "slot"}
+              onClick={() => onTimeSelect(time)}
+            >
+              {time}
+            </button>
+          ))
+        ) : (
+          <span className="slot-empty">Quán không có khung giờ đặt bàn trong ngày này.</span>
+        )}
       </div>
       <label>Số khách</label>
       <div className="guest-stepper">
@@ -119,6 +124,7 @@ type StoreDetailMobileBookingControlsProps = {
   dateOptions: DateOption[];
   selectedDateIndex: number;
   selectedTime: string;
+  timeOptions?: string[];
   guestCount: number;
   onDateSelect: (index: number) => void;
   onTimeSelect: (time: string) => void;
@@ -129,6 +135,7 @@ export function StoreDetailMobileBookingControls({
   dateOptions,
   selectedDateIndex,
   selectedTime,
+  timeOptions = fallbackBookingTimeSlots,
   guestCount,
   onDateSelect,
   onTimeSelect,
@@ -154,16 +161,20 @@ export function StoreDetailMobileBookingControls({
       <div className="mobile-booking-group">
         <h2>Khung giờ</h2>
         <div className="mobile-booking-options">
-          {bookingTimes.map((time) => (
-          <button
-            key={time}
-            type="button"
-            className={time === selectedTime ? "slot active" : "slot"}
-            onClick={() => onTimeSelect(time)}
-          >
-            {time}
-          </button>
-          ))}
+          {timeOptions.length ? (
+            timeOptions.map((time) => (
+              <button
+                key={time}
+                type="button"
+                className={time === selectedTime ? "slot active" : "slot"}
+                onClick={() => onTimeSelect(time)}
+              >
+                {time}
+              </button>
+            ))
+          ) : (
+            <span className="slot-empty">Quán không có khung giờ đặt bàn trong ngày này.</span>
+          )}
         </div>
       </div>
       <div className="mobile-booking-group">

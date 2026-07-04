@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { apiClient } from "@/lib/api/client";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
+import { buildBookingTimeSlots, buildScheduledAtFromBookingSlot } from "@/lib/booking-time-slots";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -67,7 +68,6 @@ const nationalityLabels: Record<string, string> = {
   vi: "Việt Nam",
 };
 
-const bookingTimes = ["20:00", "21:00", "22:00", "23:00"];
 const bookingDateWindowDays = 14;
 const maxBookingGuests = 50;
 const minBookingNameLength = 2;
@@ -198,11 +198,6 @@ const todayKey = () =>
   ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
     new Date().getDay()
   ];
-
-const buildScheduledAt = (date: string, time: string) => {
-  const [hours = "21", minutes = "00"] = time.split(":");
-  return new Date(`${date}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00`).toISOString();
-};
 
 const toDateInputValue = (date: Date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -492,6 +487,7 @@ function BookingCard({
   dateOptions,
   selectedDateIndex,
   selectedTime,
+  timeOptions,
   guestCount,
   guestName,
   email,
@@ -510,6 +506,7 @@ function BookingCard({
   dateOptions: Array<{ label: string; iso: string }>;
   selectedDateIndex: number;
   selectedTime: string;
+  timeOptions: string[];
   guestCount: number;
   guestName: string;
   email: string;
@@ -605,16 +602,20 @@ function BookingCard({
 
         <label>Khung giờ</label>
         <div className="slot-row">
-          {bookingTimes.map((time) => (
-            <button
-              key={time}
-              type="button"
-              className={time === selectedTime ? "slot active" : "slot"}
-              onClick={() => onTimeSelect(time)}
-            >
-              {time}
-            </button>
-          ))}
+          {timeOptions.length ? (
+            timeOptions.map((time) => (
+              <button
+                key={time}
+                type="button"
+                className={time === selectedTime ? "slot active" : "slot"}
+                onClick={() => onTimeSelect(time)}
+              >
+                {time}
+              </button>
+            ))
+          ) : (
+            <span className="slot-empty">Quán không có khung giờ đặt bàn trong ngày này.</span>
+          )}
         </div>
 
         <label>Ghi chú tuỳ chọn</label>
@@ -779,6 +780,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     label: "",
     iso: new Date().toISOString().slice(0, 10),
   };
+  const bookingTimeOptions = useMemo(
+    () => buildBookingTimeSlots(store.openingHours, selectedDate.iso),
+    [selectedDate.iso, store.openingHours],
+  );
+
+  useEffect(() => {
+    if (!bookingTimeOptions.length) {
+      if (selectedTime) setSelectedTime("");
+      return;
+    }
+
+    if (!bookingTimeOptions.includes(selectedTime)) {
+      const nextTime = bookingTimeOptions[0];
+      if (nextTime) setSelectedTime(nextTime);
+    }
+  }, [bookingTimeOptions, selectedTime]);
+
   const bookingQuery = new URLSearchParams({
     storeId: store.id,
     storeSlug: store.slug,
@@ -826,6 +844,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     });
   const submitDesktopBooking = async () => {
     setBookingErrorMessage("");
+
+    if (!selectedTime) {
+      setBookingErrorMessage("Quán không có khung giờ đặt bàn trong ngày này.");
+      return;
+    }
+
     const displayName = guestName.trim();
     const normalizedEmail = normalizeBookingEmail(email);
     const trimmedNote = note.trim();
@@ -847,7 +871,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       storeSlug: store.slug,
       displayName,
       email: normalizedEmail,
-      scheduledAt: buildScheduledAt(selectedDate.iso, selectedTime),
+      scheduledAt: buildScheduledAtFromBookingSlot(
+        selectedDate.iso,
+        selectedTime,
+        store.openingHours,
+      ),
       partySize: guestCount,
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };
@@ -1119,6 +1147,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               dateOptions={dateOptions}
               selectedDateIndex={selectedDateIndex}
               selectedTime={selectedTime}
+              timeOptions={bookingTimeOptions}
               guestCount={guestCount}
               guestName={guestName}
               email={email}
@@ -2083,6 +2112,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: #241a0a;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
           border-color: transparent;
+        }
+
+        .slot-empty {
+          display: block;
+          width: 100%;
+          padding: 9px 10px;
+          border: 1px dashed rgba(212, 178, 106, .28);
+          border-radius: 8px;
+          color: #b7afa1;
+          background: rgba(255, 255, 255, .035);
+          font-size: 12px;
+          line-height: 1.45;
         }
 
         .guest-stepper {
