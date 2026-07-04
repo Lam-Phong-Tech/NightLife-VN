@@ -13783,8 +13783,7 @@ export class NightlifeDataService {
         ...(dto.mediaIds
           ? {
               media: {
-                set: [], // Clear existing relations
-                connect: dto.mediaIds.map((id) => ({ id })), // Then connect new ones
+                set: dto.mediaIds.map((id) => ({ id })), // Replace existing relations
               },
             }
           : {}),
