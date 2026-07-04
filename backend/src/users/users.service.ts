@@ -38,6 +38,32 @@ export class UsersService {
     return user;
   }
 
+  async updateProfile(
+    id: string,
+    input: { displayName: string; email: string; phone?: string | null },
+  ) {
+    const currentUser = await this.findByIdOrThrow(id);
+    const email = input.email.trim().toLowerCase();
+    const displayName = input.displayName.trim();
+    const phone = input.phone?.trim() || null;
+
+    if (currentUser.email !== email) {
+      const existingUser = await this.findByEmail(email);
+      if (existingUser && existingUser.id !== id) {
+        throw new ConflictException('Email is already registered');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        email,
+        displayName,
+        phone,
+      },
+    });
+  }
+
   async createUser(input: {
     email: string;
     password: string;

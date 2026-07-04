@@ -24,6 +24,12 @@ export type OAuthLoginConfig = {
   configured: boolean;
 };
 
+export type UpdateProfilePayload = {
+  displayName: string;
+  email: string;
+  phone?: string | null;
+};
+
 type DemoAccount = {
   id: string;
   email: string;
@@ -173,6 +179,13 @@ export const getLineLoginConfig = () => {
 export const registerMember = (payload: RegisterPayload) => {
   return apiClient<AuthResponse>("/auth/register", {
     method: "POST",
+    data: payload,
+  });
+};
+
+export const updateMemberProfile = (payload: UpdateProfilePayload) => {
+  return apiClient<AuthResponse["user"]>("/auth/me", {
+    method: "PATCH",
     data: payload,
   });
 };

@@ -21,6 +21,19 @@ const setCookie = (name: string, value: string) => {
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${sessionCookieMaxAge}; SameSite=Lax`;
 };
 
+const getStoredAuthToken = () => {
+  const cookies = document.cookie.split(";").reduce<Record<string, string>>((acc, cookie) => {
+    const [name, ...valueParts] = cookie.trim().split("=");
+    const value = valueParts.join("=");
+    if (name && value) {
+      acc[name] = decodeURIComponent(value);
+    }
+    return acc;
+  }, {});
+
+  return cookies.auth_token || "";
+};
+
 export const setAuthSession = (session: AuthResponse) => {
   setCookie("auth_token", session.accessToken);
   setCookie("user_role", session.user.role);
@@ -28,6 +41,25 @@ export const setAuthSession = (session: AuthResponse) => {
   setCookie("user_name", session.user.displayName ?? session.user.email);
 
   window.localStorage.setItem("nightlife_user", JSON.stringify(session.user));
+};
+
+export const updateStoredAuthUser = (updates: Pick<AuthUser, "displayName" | "email" | "phone">) => {
+  const currentUser = getAuthUser();
+  if (!currentUser) return null;
+
+  const nextUser: AuthUser = {
+    ...currentUser,
+    displayName: updates.displayName,
+    email: updates.email,
+    phone: updates.phone,
+  };
+
+  setAuthSession({
+    accessToken: getStoredAuthToken(),
+    user: nextUser,
+  });
+
+  return nextUser;
 };
 
 export const getAuthUser = (): AuthUser | null => {

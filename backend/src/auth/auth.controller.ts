@@ -2,19 +2,33 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Query,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { AuthResponseDto, GoogleConfigResponseDto, LineConfigResponseDto, LogoutResponseDto, PublicUserDto } from './dto/auth-response.dto';
+import {
+  AuthResponseDto,
+  GoogleConfigResponseDto,
+  LineConfigResponseDto,
+  LogoutResponseDto,
+  PublicUserDto,
+} from './dto/auth-response.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('auth')
@@ -135,6 +149,18 @@ export class AuthController {
   @Get('me')
   me(@Req() request: Request & { user: { id: string } }) {
     return this.authService.me(request.user.id);
+  }
+
+  @ApiOperation({ summary: 'Cập nhật thông tin tài khoản hiện tại' })
+  @ApiOkResponse({ type: PublicUserDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  updateMe(
+    @Req() request: Request & { user: { id: string } },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(request.user.id, dto);
   }
 
   @ApiOperation({ summary: 'Đăng xuất tài khoản' })

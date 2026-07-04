@@ -94,6 +94,7 @@ const exactMessageTranslations: Record<string, string> = {
   "partner request not found": "Không tìm thấy hồ sơ đối tác.",
   "payload is required": "Thiếu dữ liệu gửi lên.",
   "phone is required": "Vui lòng nhập số điện thoại.",
+  "phone must be a valid phone number": "Số điện thoại chưa đúng định dạng.",
   "possible duplicate bill submission": "Bill này có dấu hiệu bị gửi trùng. Vui lòng kiểm tra lại.",
   "ranking config not found": "Không tìm thấy cấu hình xếp hạng.",
   "ranking target not found": "Không tìm thấy mục xếp hạng.",
