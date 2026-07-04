@@ -61,6 +61,7 @@ export default function AdminStoresPage() {
   const [selProvince, setSelProvince] = useState('');
   const [selWard, setSelWard] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
+  const [pendingAddress, setPendingAddress] = useState('');
   
   const [albums, setAlbums] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -115,6 +116,28 @@ export default function AdminStoresPage() {
       .catch(e => console.error(e));
   }, [selProvince]);
 
+  useEffect(() => {
+    if (pendingAddress && wards.length > 0 && selProvince) {
+      const p = provinces.find(x => x.code.toString() === selProvince);
+      const w = wards.find(x => pendingAddress.includes(x.name));
+      
+      let street = pendingAddress;
+      if (p) {
+        street = street.replace(new RegExp(`,?\\s*${p.name}$`), '').trim();
+      }
+      
+      if (w) {
+        setSelWard(w.code.toString());
+        street = street.replace(new RegExp(`,?\\s*${w.name}$`), '').trim();
+      } else {
+        setSelWard('');
+      }
+      
+      setStreetAddress(street);
+      setPendingAddress('');
+    }
+  }, [wards, pendingAddress, selProvince, provinces]);
+
   // Clear slug status when typing
   useEffect(() => {
     setSlugStatus('');
@@ -146,6 +169,7 @@ export default function AdminStoresPage() {
     setSelProvince('');
     setSelWard('');
     setStreetAddress('');
+    setPendingAddress('');
     setVenueSel('new');
   };
 
@@ -172,9 +196,17 @@ export default function AdminStoresPage() {
     setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
     setTags(st.tags || []);
     
-    setSelProvince('');
-    setSelWard('');
-    setStreetAddress(st.address || '');
+    const fullAddress = st.address || '';
+    const matchedProv = provinces.find(p => fullAddress.includes(p.name));
+    if (matchedProv) {
+      setSelProvince(matchedProv.code.toString());
+      setPendingAddress(fullAddress);
+    } else {
+      setSelProvince('');
+      setSelWard('');
+      setStreetAddress(fullAddress);
+      setPendingAddress('');
+    }
     
     let groups = st.pricingInfo?.groups;
     if (!groups || groups.length === 0) {
