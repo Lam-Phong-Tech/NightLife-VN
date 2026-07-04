@@ -164,6 +164,36 @@ function TopRegionFilter() {
   );
 }
 
+function TopSearchBar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [val, setVal] = useState(searchParams.get('search') || '');
+
+  useEffect(() => { setVal(searchParams.get('search') || ''); }, [searchParams]);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '100px', padding: '8px 16px', gap: '8px', minWidth: '300px' }}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input 
+        type="text" 
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const params = new URLSearchParams(searchParams.toString());
+            if (val) params.set('search', val);
+            else params.delete('search');
+            router.push(pathname + '?' + params.toString());
+          }
+        }}
+        placeholder="Tìm quán, cast, booking, bill..." 
+        style={{ background: 'transparent', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', width: '100%', WebkitAppearance: 'none' }} 
+      />
+    </div>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
@@ -294,21 +324,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div style={{ flex: 1 }}></div>
 
           {/* Search Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '100px', padding: '8px 16px', gap: '8px', minWidth: '300px' }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input 
-              type="text" 
-              placeholder="Tìm quán, cast, booking, bill..." 
-              style={{ background: 'transparent', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', width: '100%', WebkitAppearance: 'none' }} 
-            />
-          </div>
+          <React.Suspense fallback={<div style={{ minWidth: '300px' }} />}>
+            <TopSearchBar />
+          </React.Suspense>
 
           <React.Suspense fallback={<div />}>
             <TopRegionFilter />
           </React.Suspense>
           <span style={{ position: 'relative', width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)' }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f' }}>4</span>
+            {badges.pendingBills > 0 && (
+              <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f' }}>
+                {badges.pendingBills > 99 ? '99+' : badges.pendingBills}
+              </span>
+            )}
           </span>
         </header>
 

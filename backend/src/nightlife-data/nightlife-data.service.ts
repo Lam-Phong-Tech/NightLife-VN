@@ -14529,7 +14529,7 @@ export class NightlifeDataService {
   async listAdminBills(
     query: import('./dto/admin-bill.dto').AdminBillQueryDto,
   ) {
-    const { page = 1, limit = 10, status, storeId } = query;
+    const { page = 1, limit = 10, status, storeId, search, city } = query;
     const skip = (page - 1) * limit;
 
     let prismaStatus: import('@prisma/client').BillStatus | undefined;
@@ -14540,6 +14540,15 @@ export class NightlifeDataService {
     const where: import('@prisma/client').Prisma.BillWhereInput = {
       ...(prismaStatus && { status: prismaStatus }),
       ...(storeId && { storeId }),
+      ...(city && { store: { city } }),
+      ...(search && {
+        OR: [
+          { billNumber: { contains: search, mode: 'insensitive' } },
+          { store: { name: { contains: search, mode: 'insensitive' } } },
+          { user: { displayName: { contains: search, mode: 'insensitive' } } },
+          { guest: { displayName: { contains: search, mode: 'insensitive' } } },
+        ],
+      }),
     };
 
     const orderBy = { createdAt: 'desc' } as any;
@@ -14565,6 +14574,7 @@ export class NightlifeDataService {
             user: true,
             guest: true,
             booking: { include: { cast: true } },
+            media: true,
           },
         }),
         this.prisma.bill.count({ where }),
@@ -14588,11 +14598,12 @@ export class NightlifeDataService {
         amount: bill.totalVnd || 0,
         date: bill.createdAt.toISOString(),
         sender,
-        hasImage: false, // We'd need to query media, leaving false for now or implement if needed
+        hasImage: (bill as any).media && (bill as any).media.length > 0,
+        images: (bill as any).media ? (bill as any).media.map((m: any) => m.url) : [],
         status: bill.status,
         guestType,
         discount: bill.discountVnd || 0,
-        discountPercent: 0,
+        discountPercent: bill.totalVnd && bill.discountVnd ? Math.round((bill.discountVnd / bill.totalVnd) * 100) : 0,
         commissionPercent: bill.commissionAmountVnd
           ? Math.round((bill.commissionAmountVnd / (bill.totalVnd || 1)) * 100)
           : 0,

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Info, X, Check, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+
 const colors = {
   bg: '#0f0f13',
   surface1: '#18181f',
@@ -24,38 +26,31 @@ const colors = {
   blueBg: 'rgba(96,165,250,0.1)',
 };
 
-const bills = [
-  { 
-    id: 'BILL-8842', 
-    store: 'Sakura Lounge', 
-    location: 'Hoàn Kiếm', 
-    amount: '12.500.000đ', 
-    date: '30/06/2026', 
-    sender: 'Khách', 
-    hasImage: true, 
-    status: 'Chờ duyệt',
-    guestType: 'Member',
-    discount: '1.000.000đ',
-    discountPercent: 8,
-    commissionPercent: 15,
-    adminCommission: '875.000đ',
-    points: '+120 điểm'
-  },
-  { id: 'BILL-8841', store: 'Club Lumière', location: 'Tây Hồ', amount: '8.200.000đ', date: '30/06/2026', sender: 'Chủ quán', hasImage: true, status: 'Chờ duyệt', guestType: 'Normal', discount: '0', discountPercent: 0, commissionPercent: 10, adminCommission: '820.000đ', points: '+82 điểm' },
-  { id: 'BILL-8840', store: 'KTV Hoàng Gia', location: 'Kim Mã', amount: '15.800.000đ', date: '29/06/2026', sender: 'Khách', hasImage: false, status: 'Chờ duyệt', guestType: 'Guest', discount: '500.000đ', discountPercent: 5, commissionPercent: 15, adminCommission: '1.580.000đ', points: '+158 điểm' },
-  { id: 'BILL-8839', store: 'Bar Tokyo Night', location: 'Ba Đình', amount: '6.400.000đ', date: '29/06/2026', sender: 'Khách', hasImage: true, status: 'Chờ duyệt', guestType: 'Normal', discount: '0', discountPercent: 0, commissionPercent: 10, adminCommission: '640.000đ', points: '+64 điểm' },
-  { id: 'BILL-8838', store: 'Akari Lounge', location: 'Tây Hồ', amount: '5.300.000đ', date: '28/06/2026', sender: 'Chủ quán', hasImage: true, status: 'Chờ duyệt', guestType: 'Member', discount: '530.000đ', discountPercent: 10, commissionPercent: 15, adminCommission: '265.000đ', points: '+53 điểm' }
-];
+const getStatusLabel = (status: string) => {
+  if (status === 'SUBMITTED') return 'Chờ duyệt';
+  if (status === 'VERIFIED') return 'Đã duyệt';
+  if (status === 'REJECTED') return 'Từ chối';
+  return status;
+};
 
 export default function AdminBillsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.get('search') || '';
+  const city = searchParams.get('city') || '';
+  const pageParam = parseInt(searchParams.get('page') || '1');
+
   const [activeTab, setActiveTab] = useState('pending');
   const [selectedBill, setSelectedBill] = useState<any>(null);
-  const [billsList, setBillsList] = useState<any[]>(bills);
+  const [billsList, setBillsList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [meta, setMeta] = useState<any>(null);
   const [stats, setStats] = useState<any>({
-    pendingCount: 5,
-    approvedCount: 1,
-    rejectedCount: 1,
-    totalAmountPending: 48200000
+    pendingCount: 0,
+    approvedCount: 0,
+    rejectedCount: 0,
+    totalAmountPending: 0
   });
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -68,16 +63,20 @@ export default function AdminBillsPage() {
   const [approveBillId, setApproveBillId] = useState('');
 
   const fetchBills = async () => {
+    setIsLoading(true);
     try {
       const res = await apiClient<any>('/admin/bills', {
-        params: { status: activeTab }
+        params: { status: activeTab, search, city, page: pageParam }
       });
-      if (res && res.data && res.data.length > 0) {
+      if (res && res.data) {
         setBillsList(res.data);
         if (res.stats) setStats(res.stats);
+        if (res.meta) setMeta(res.meta);
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -132,7 +131,7 @@ export default function AdminBillsPage() {
 
   useEffect(() => {
     fetchBills();
-  }, [activeTab]);
+  }, [activeTab, search, city, pageParam]);
 
   return (
     <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
@@ -249,7 +248,15 @@ export default function AdminBillsPage() {
             </tr>
           </thead>
           <tbody>
-            {billsList.map((bill, idx) => (
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Đang tải dữ liệu...</td>
+              </tr>
+            ) : billsList.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Không có hóa đơn nào</td>
+              </tr>
+            ) : billsList.map((bill, idx) => (
               <tr 
                 key={idx} 
                 onClick={() => setSelectedBill(bill)}
@@ -267,7 +274,7 @@ export default function AdminBillsPage() {
                   <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text }}>{bill.store || 'N/A'}</div>
                   <div style={{ fontSize: '12px', color: colors.muted, marginTop: '2px' }}>{bill.location || 'N/A'}</div>
                 </td>
-                <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 700, color: colors.text }}>{bill.amount?.toLocaleString('vi-VN')}đ</td>
+                <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 700, color: colors.text }}>{(bill.amount || 0).toLocaleString('vi-VN')}đ</td>
                 <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{bill.date ? new Date(bill.date).toLocaleDateString('vi-VN') : 'N/A'}</td>
                 <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2 }}>{bill.sender || 'N/A'}</td>
                 <td style={{ padding: '16px 24px', textAlign: 'center' }}>
@@ -295,13 +302,43 @@ export default function AdminBillsPage() {
                     fontWeight: 600,
                     background: 'rgba(212,178,106,.05)'
                   }}>
-                    {bill.status}
+                    {getStatusLabel(bill.status)}
                   </span>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {meta && meta.totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '16px', borderTop: `1px solid ${colors.borderSoft}` }}>
+            <button 
+              disabled={pageParam <= 1}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', (pageParam - 1).toString());
+                router.push(pathname + '?' + params.toString());
+              }}
+              style={{ background: colors.surface2, color: colors.text, border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: pageParam <= 1 ? 'not-allowed' : 'pointer', opacity: pageParam <= 1 ? 0.5 : 1 }}
+            >
+              Trước
+            </button>
+            <span style={{ color: colors.muted, display: 'flex', alignItems: 'center', fontSize: '13px' }}>
+              Trang {pageParam} / {meta.totalPages}
+            </span>
+            <button 
+              disabled={pageParam >= meta.totalPages}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', (pageParam + 1).toString());
+                router.push(pathname + '?' + params.toString());
+              }}
+              style={{ background: colors.surface2, color: colors.text, border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: pageParam >= meta.totalPages ? 'not-allowed' : 'pointer', opacity: pageParam >= meta.totalPages ? 0.5 : 1 }}
+            >
+              Sau
+            </button>
+          </div>
+        )}
       </div>
 
       {/* SIDE DRAWER (Modal) */}
@@ -337,7 +374,7 @@ export default function AdminBillsPage() {
                     fontWeight: 600,
                     background: 'rgba(212,178,106,.05)'
                   }}>
-                    {selectedBill.status}
+                    {getStatusLabel(selectedBill.status)}
                   </span>
                 </div>
                 <button 
@@ -355,27 +392,33 @@ export default function AdminBillsPage() {
             </div>
 
             <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-              {/* Image Placeholder */}
-              <div style={{ 
-                height: 200, 
-                borderRadius: '12px', 
-                border: `1px dashed ${colors.borderSoft}`, 
-                background: colors.surface1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: colors.muted,
-                marginBottom: '32px'
-              }}>
-                <ImageIcon size={24} style={{ marginBottom: '8px' }} />
-                <span style={{ fontSize: '13px' }}>Ảnh hóa đơn đính kèm</span>
-              </div>
+              {/* Image Preview */}
+              {selectedBill.hasImage && selectedBill.images && selectedBill.images.length > 0 ? (
+                <div style={{ marginBottom: '32px', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${colors.borderSoft}` }}>
+                  <img src={selectedBill.images[0]} alt="Bill preview" style={{ width: '100%', display: 'block' }} />
+                </div>
+              ) : (
+                <div style={{ 
+                  height: 200, 
+                  borderRadius: '12px', 
+                  border: `1px dashed ${colors.borderSoft}`, 
+                  background: colors.surface1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: colors.muted,
+                  marginBottom: '32px'
+                }}>
+                  <ImageIcon size={24} style={{ marginBottom: '8px' }} />
+                  <span style={{ fontSize: '13px' }}>Ảnh hóa đơn đính kèm</span>
+                </div>
+              )}
 
               {/* Basic Info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                 <span style={{ color: colors.muted, fontSize: '14px' }}>Ngày dùng dịch vụ</span>
-                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 600 }}>{selectedBill.date}</span>
+                <span style={{ color: colors.text, fontSize: '14px', fontWeight: 600 }}>{selectedBill.date ? new Date(selectedBill.date).toLocaleDateString('vi-VN') : 'N/A'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                 <span style={{ color: colors.muted, fontSize: '14px' }}>Người gửi</span>
@@ -400,25 +443,24 @@ export default function AdminBillsPage() {
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span style={{ color: colors.text2, fontSize: '14px' }}>Bill gốc</span>
-                  <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBill.amount}</span>
+                  <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{(selectedBill.amount || 0).toLocaleString('vi-VN')}đ</span>
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                   <span style={{ color: colors.text2, fontSize: '14px' }}>Giảm giá ({selectedBill.discountPercent}%)</span>
-                  <span style={{ color: colors.red, fontSize: '14px', fontWeight: 700 }}>– {selectedBill.discount}</span>
+                  <span style={{ color: colors.red, fontSize: '14px', fontWeight: 700 }}>– {(selectedBill.discount || 0).toLocaleString('vi-VN')}đ</span>
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                   <span style={{ color: colors.text2, fontSize: '14px' }}>% hoa hồng thỏa thuận</span>
                   <span style={{ color: colors.text, fontSize: '14px', fontWeight: 700 }}>{selectedBill.commissionPercent}%</span>
                 </div>
-                
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: `1px solid ${colors.borderSoft}`, marginBottom: '16px' }}>
                   <div>
                     <div style={{ color: colors.gold, fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>Hoa hồng Admin</div>
-                    <div style={{ color: colors.muted, fontSize: '11px' }}>= {selectedBill.amount} × ({selectedBill.commissionPercent}% – {selectedBill.discountPercent}%)</div>
+                    <div style={{ color: colors.muted, fontSize: '11px' }}>= {(selectedBill.amount || 0).toLocaleString('vi-VN')}đ × ({selectedBill.commissionPercent}% – {selectedBill.discountPercent}%)</div>
                   </div>
-                  <span style={{ color: colors.gold, fontSize: '18px', fontWeight: 700 }}>{selectedBill.adminCommission}</span>
+                  <span style={{ color: colors.gold, fontSize: '18px', fontWeight: 700 }}>{(selectedBill.adminCommission || 0).toLocaleString('vi-VN')}đ</span>
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

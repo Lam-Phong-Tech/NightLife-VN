@@ -26,4 +26,14 @@ export class AdminBillQueryDto {
   @IsOptional()
   @IsString()
   storeId?: string;
+
+  @ApiPropertyOptional({ description: 'Search term for store name, bill number, etc.' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by city' })
+  @IsOptional()
+  @IsString()
+  city?: string;
 }
