@@ -524,6 +524,7 @@ model Cast {
   publicHeadline        String?                @map("public_headline")
   publicBio             String?                @map("public_bio")
   tags                  String[]               @default([])
+  youtubeLinks          String[]               @default([]) @map("youtube_links")
   languages             String[]               @default([])
   birthMonth            Int?                   @map("birth_month")
   zodiacSign            String?                @map("zodiac_sign")

@@ -1,4 +1,6 @@
-"use client";
+import os
+
+content = """\"use client\";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video } from 'lucide-react';
@@ -576,3 +578,8 @@ export default function AdminCastsPage() {
     </div>
   );
 }
+"""
+
+with open("frontend/apps/web/src/app/admin/casts/page.tsx", "w", encoding="utf-8") as f:
+    f.write(content)
+print("Done writing to page.tsx")
