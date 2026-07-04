@@ -15464,7 +15464,12 @@ export class NightlifeDataService {
     };
 
     if (query.cityCode && query.cityCode !== 'all') {
-      where.store = { cityCode: query.cityCode };
+      where.store = {
+        OR: [
+          { city: query.cityCode === 'hcm' ? 'Ho Chi Minh City' : query.cityCode === 'hn' ? 'Hanoi' : query.cityCode },
+          { area: { is: { ...this.buildMvpAreaCodeWhere(query.cityCode) } } }
+        ]
+      };
     }
 
     if (query.search) {

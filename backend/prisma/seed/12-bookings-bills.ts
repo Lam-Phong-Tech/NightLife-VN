@@ -1,563 +1,782 @@
-import { PrismaClient, Store, Cast, User, Coupon } from '@prisma/client';
-import crypto from 'crypto';
+import {
+  Bill,
+  BillStatus,
+  Booking,
+  BookingQr,
+  BookingStatus,
+  Cast,
+  Coupon,
+  CouponIssue,
+  CouponIssueStatus,
+  Guest,
+  PointLedger,
+  PrismaClient,
+  Store,
+  User,
+} from '@prisma/client';
+import {
+  buildSeedCouponQr,
+  seedDate,
+  seedHash,
+  seedUuid,
+} from './shared';
 
-/**
- * Seed: Guests, Bookings, Bills, PointLedgers
- *
- * Creates realistic transactional data:
- *   - 10 guests (walk-in customers without accounts)
- *   - 20 bookings across stores (mix of USER + GUEST, various statuses)
- *   - 12 bills tied to COMPLETED bookings (PAID status)
- *   - PointLedger entries for bills that earned points
- */
+type BookingSeed = {
+  key: string;
+  storeSlug: string;
+  castSlug?: string;
+  userKey?: string;
+  guestKey?: string;
+  status: BookingStatus;
+  scheduledDaysOffset: number;
+  partySize: number;
+  note?: string;
+  subtotalVnd: number;
+  discountVnd: number;
+  couponCode?: string;
+  withQr?: boolean;
+  billStatus?: BillStatus;
+};
 
-function randomBetween(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d;
-}
-
-function daysFromNow(n: number): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d;
-}
-
-function billNumber(storeSlug: string, idx: number): string {
-  const prefix = storeSlug.slice(0, 4).toUpperCase().replace(/-/g, '');
-  const date = new Date();
-  const yyyymm = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`;
-  return `${prefix}-${yyyymm}-${String(idx).padStart(4, '0')}`;
-}
-
-function qrCode(bookingIdx: number): string {
-  return crypto.createHash('sha256')
-    .update(`QR-BOOKING-SEED-${bookingIdx}-${Date.now()}`)
-    .digest('hex')
-    .slice(0, 32)
-    .toUpperCase();
-}
-
-function qrHash(code: string): string {
-  return crypto.createHash('sha256').update(`HASH-${code}`).digest('hex');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GUEST DATA
-// ─────────────────────────────────────────────────────────────────────────────
-interface GuestSeed {
+type GuestSeed = {
   key: string;
   displayName: string;
   phone: string;
   email: string;
   note?: string;
-}
+};
+
+export type TransactionSeedResult = {
+  guests: Record<string, Guest>;
+  bookings: Record<string, Booking>;
+  bookingQrs: Record<string, BookingQr>;
+  couponIssues: Record<string, CouponIssue>;
+  bills: Record<string, Bill>;
+  pointLedgers: Record<string, PointLedger>;
+};
 
 const GUESTS: GuestSeed[] = [
-  { key: 'g1', displayName: 'Tanaka Hiroshi', phone: '+81801234001', email: 'tanaka.h@guest.nightlife.vn', note: 'Prefers private booth' },
-  { key: 'g2', displayName: 'Suzuki Yuki',    phone: '+81801234002', email: 'suzuki.y@guest.nightlife.vn', note: 'First visit from Japan' },
-  { key: 'g3', displayName: 'Trần Minh Đức',  phone: '+84901234003', email: 'minhduc@guest.nightlife.vn', note: 'Regular weekend guest' },
-  { key: 'g4', displayName: 'Nguyễn Thu Hà',  phone: '+84901234004', email: 'thuha@guest.nightlife.vn', note: 'Birthday celebration' },
-  { key: 'g5', displayName: 'Watanabe Kenji',  phone: '+81901234005', email: 'watanabe.k@guest.nightlife.vn', note: 'Business entertainment' },
-  { key: 'g6', displayName: 'Lê Hoàng Nam',   phone: '+84911234006', email: 'hoangnam@guest.nightlife.vn' },
-  { key: 'g7', displayName: 'Sato Akiko',      phone: '+81701234007', email: 'sato.a@guest.nightlife.vn', note: 'VIP table request' },
-  { key: 'g8', displayName: 'Phạm Quang Huy',  phone: '+84921234008', email: 'quanghuy@guest.nightlife.vn' },
-  { key: 'g9', displayName: 'Yamamoto Ren',    phone: '+81801234009', email: 'yamamoto.r@guest.nightlife.vn', note: 'Saké only' },
-  { key: 'g10', displayName: 'Đỗ Thị Lan',    phone: '+84931234010', email: 'thilan@guest.nightlife.vn', note: 'Cocktail lover' },
+  {
+    key: 'g1',
+    displayName: 'Tanaka Hiroshi',
+    phone: '+81801234001',
+    email: 'tanaka.h@guest.nightlife.vn',
+    note: 'Prefers private booth',
+  },
+  {
+    key: 'g2',
+    displayName: 'Suzuki Yuki',
+    phone: '+81801234002',
+    email: 'suzuki.y@guest.nightlife.vn',
+    note: 'First visit from Japan',
+  },
+  {
+    key: 'g3',
+    displayName: 'Trần Minh Đức',
+    phone: '+84901234003',
+    email: 'minhduc@guest.nightlife.vn',
+  },
+  {
+    key: 'g4',
+    displayName: 'Nguyễn Thu Hà',
+    phone: '+84901234004',
+    email: 'thuha@guest.nightlife.vn',
+  },
+  {
+    key: 'g5',
+    displayName: 'Watanabe Kenji',
+    phone: '+81901234005',
+    email: 'watanabe.k@guest.nightlife.vn',
+  },
+  {
+    key: 'g6',
+    displayName: 'Lê Hoàng Nam',
+    phone: '+84911234006',
+    email: 'hoangnam@guest.nightlife.vn',
+  },
+  {
+    key: 'g7',
+    displayName: 'Sato Akiko',
+    phone: '+81701234007',
+    email: 'sato.a@guest.nightlife.vn',
+  },
+  {
+    key: 'g8',
+    displayName: 'Phạm Quang Huy',
+    phone: '+84921234008',
+    email: 'quanghuy@guest.nightlife.vn',
+  },
+  {
+    key: 'g9',
+    displayName: 'Yamamoto Ren',
+    phone: '+81801234009',
+    email: 'yamamoto.r@guest.nightlife.vn',
+  },
+  {
+    key: 'g10',
+    displayName: 'Đỗ Thị Lan',
+    phone: '+84931234010',
+    email: 'thilan@guest.nightlife.vn',
+  },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BOOKING DEFINITIONS
-// ─────────────────────────────────────────────────────────────────────────────
-interface BookingSeed {
-  idx: number;
-  storeSlug: string;
-  castSlug?: string;
-  userKey?: string;   // user from seedUsers (e.g. 'member', 'vip')
-  guestKey?: string;  // guest from GUESTS
-  status: 'REQUESTED' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
-  scheduledDaysOffset: number; // negative = past, positive = future
-  partySize: number;
-  note?: string;
-  subtotalVnd: number;
-  discountVnd: number;
-  totalVnd: number;
-  withBill?: boolean;   // create a PAID bill for this booking
-  withQr?: boolean;     // create a QR code
-}
-
 const BOOKINGS: BookingSeed[] = [
-  // ── Past COMPLETED bookings (generate bills) ─────────────────────
   {
-    idx: 1,
+    key: 'completed-member-paid',
     storeSlug: 'moonlight-bar',
     castSlug: 'sakura-moonlight',
     userKey: 'member',
     status: 'COMPLETED',
     scheduledDaysOffset: -15,
     partySize: 2,
-    note: 'Anniversary dinner, please prepare flowers',
-    subtotalVnd: 1800000,
-    discountVnd: 144000,
-    totalVnd: 1656000,
-    withBill: true,
+    note: 'Seed: member completed and paid',
+    subtotalVnd: 1_800_000,
+    discountVnd: 90_000,
+    couponCode: 'GUEST5',
     withQr: true,
+    billStatus: 'PAID',
   },
   {
-    idx: 2,
+    key: 'completed-vip-verified',
     storeSlug: 'velvet-club',
     castSlug: 'aya-velvet',
     userKey: 'vip',
     status: 'COMPLETED',
     scheduledDaysOffset: -12,
     partySize: 4,
-    note: 'VIP table with champagne tower',
-    subtotalVnd: 5200000,
-    discountVnd: 520000,
-    totalVnd: 4680000,
-    withBill: true,
+    note: 'Seed: VIP verified bill',
+    subtotalVnd: 5_200_000,
+    discountVnd: 416_000,
+    couponCode: 'MEMBER8',
     withQr: true,
+    billStatus: 'VERIFIED',
   },
   {
-    idx: 3,
+    key: 'completed-guest-submitted',
     storeSlug: 'sakura-lounge',
     castSlug: 'yuki-sakura-lounge',
     guestKey: 'g1',
     status: 'COMPLETED',
     scheduledDaysOffset: -10,
     partySize: 2,
-    note: 'Business meeting setup preferred',
-    subtotalVnd: 2400000,
-    discountVnd: 0,
-    totalVnd: 2400000,
-    withBill: true,
+    note: 'Seed: partner-submitted guest bill',
+    subtotalVnd: 2_400_000,
+    discountVnd: 240_000,
+    couponCode: 'VIP10',
     withQr: true,
+    billStatus: 'SUBMITTED',
   },
   {
-    idx: 4,
+    key: 'completed-guest-submitted-fixed',
     storeSlug: 'golden-voice-ktv',
     castSlug: 'mai-golden',
     guestKey: 'g3',
     status: 'COMPLETED',
     scheduledDaysOffset: -8,
     partySize: 6,
-    note: 'Birthday party karaoke',
-    subtotalVnd: 3600000,
-    discountVnd: 100000,
-    totalVnd: 3500000,
-    withBill: true,
+    note: 'Seed: fixed coupon bill pending review',
+    subtotalVnd: 3_600_000,
+    discountVnd: 100_000,
+    couponCode: 'WELCOME100K',
     withQr: true,
+    billStatus: 'SUBMITTED',
   },
   {
-    idx: 5,
+    key: 'completed-negative-commission',
     storeSlug: 'hanami-dining',
     castSlug: 'kaori-hanami',
     guestKey: 'g5',
     status: 'COMPLETED',
     scheduledDaysOffset: -7,
     partySize: 3,
-    note: 'Business entertainment, quiet table',
-    subtotalVnd: 4200000,
-    discountVnd: 0,
-    totalVnd: 4200000,
-    withBill: true,
+    note: 'Seed: PM/BA negative commission review',
+    subtotalVnd: 4_200_000,
+    discountVnd: 800_000,
+    billStatus: 'PENDING_PM_BA',
   },
   {
-    idx: 6,
+    key: 'completed-member-rejected',
     storeSlug: 'crimson-bar',
     castSlug: 'misaki-crimson',
     userKey: 'member',
     status: 'COMPLETED',
     scheduledDaysOffset: -5,
     partySize: 2,
-    note: 'Jazz night request',
-    subtotalVnd: 1500000,
-    discountVnd: 120000,
-    totalVnd: 1380000,
-    withBill: true,
+    note: 'Seed: rejected evidence bill',
+    subtotalVnd: 1_500_000,
+    discountVnd: 200_000,
+    couponCode: 'SPECIAL200K',
     withQr: true,
+    billStatus: 'REJECTED',
   },
   {
-    idx: 7,
+    key: 'completed-guest-voided',
     storeSlug: 'neon-club',
     castSlug: 'yuna-neon',
     guestKey: 'g7',
     status: 'COMPLETED',
     scheduledDaysOffset: -4,
     partySize: 5,
-    note: 'VIP booth + bottle service',
-    subtotalVnd: 6800000,
+    note: 'Seed: voided bill',
+    subtotalVnd: 6_800_000,
     discountVnd: 0,
-    totalVnd: 6800000,
-    withBill: true,
     withQr: true,
+    billStatus: 'VOIDED',
   },
   {
-    idx: 8,
+    key: 'completed-guest-verified',
     storeSlug: 'tokyo-kitchen',
     castSlug: 'kotone-tokyo',
     guestKey: 'g9',
     status: 'COMPLETED',
     scheduledDaysOffset: -3,
     partySize: 4,
-    note: 'Sake pairing menu please',
-    subtotalVnd: 3800000,
+    subtotalVnd: 3_800_000,
     discountVnd: 0,
-    totalVnd: 3800000,
-    withBill: true,
+    billStatus: 'VERIFIED',
   },
   {
-    idx: 9,
+    key: 'completed-guest-paid-dn',
     storeSlug: 'dragon-rooftop-da-nang',
     castSlug: 'lina-dragon-rooftop',
     guestKey: 'g4',
     status: 'COMPLETED',
     scheduledDaysOffset: -6,
     partySize: 8,
-    note: 'Birthday celebration, cake arranged',
-    subtotalVnd: 7200000,
-    discountVnd: 200000,
-    totalVnd: 7000000,
-    withBill: true,
+    subtotalVnd: 7_200_000,
+    discountVnd: 200_000,
     withQr: true,
+    billStatus: 'PAID',
   },
   {
-    idx: 10,
+    key: 'completed-guest-paid-spa',
     storeSlug: 'lotus-massage-spa',
     castSlug: 'sumi-lotus-massage-spa',
     guestKey: 'g10',
     status: 'COMPLETED',
     scheduledDaysOffset: -2,
     partySize: 1,
-    note: 'Late night wellness package',
-    subtotalVnd: 1200000,
+    subtotalVnd: 1_200_000,
     discountVnd: 0,
-    totalVnd: 1200000,
-    withBill: true,
+    billStatus: 'PAID',
   },
   {
-    idx: 11,
+    key: 'completed-guest-paid-hn',
     storeSlug: 'jade-lounge',
     castSlug: 'akari-jade',
     guestKey: 'g2',
     status: 'COMPLETED',
     scheduledDaysOffset: -9,
     partySize: 2,
-    note: 'Wine pairing, Hoàn Kiếm view table',
-    subtotalVnd: 3200000,
+    subtotalVnd: 3_200_000,
     discountVnd: 0,
-    totalVnd: 3200000,
-    withBill: true,
     withQr: true,
+    billStatus: 'PAID',
   },
   {
-    idx: 12,
+    key: 'completed-guest-paid-ktv',
     storeSlug: 'star-ktv',
     castSlug: 'erika-star',
     guestKey: 'g6',
     status: 'COMPLETED',
     scheduledDaysOffset: -11,
     partySize: 5,
-    note: 'Company outing karaoke night',
-    subtotalVnd: 4500000,
+    subtotalVnd: 4_500_000,
     discountVnd: 0,
-    totalVnd: 4500000,
-    withBill: true,
+    billStatus: 'PAID',
   },
-
-  // ── Upcoming CONFIRMED bookings ──────────────────────────────────
   {
-    idx: 13,
+    key: 'confirmed-vip',
     storeSlug: 'moonlight-bar',
     castSlug: 'miyuki-moonlight',
     userKey: 'vip',
     status: 'CONFIRMED',
     scheduledDaysOffset: 3,
     partySize: 2,
-    note: 'Quiet corner please',
-    subtotalVnd: 2000000,
-    discountVnd: 200000,
-    totalVnd: 1800000,
+    note: 'Seed: active member booking QR',
+    subtotalVnd: 2_000_000,
+    discountVnd: 100_000,
+    couponCode: 'GUEST5',
     withQr: true,
   },
   {
-    idx: 14,
+    key: 'confirmed-guest',
     storeSlug: 'sakura-lounge',
     castSlug: 'hana-sakura-lounge',
     guestKey: 'g8',
     status: 'CONFIRMED',
     scheduledDaysOffset: 5,
     partySize: 3,
-    subtotalVnd: 2700000,
+    subtotalVnd: 2_700_000,
     discountVnd: 0,
-    totalVnd: 2700000,
     withQr: true,
   },
   {
-    idx: 15,
+    key: 'confirmed-member',
     storeSlug: 'velvet-club',
     castSlug: 'rina-velvet',
     userKey: 'member',
     status: 'CONFIRMED',
     scheduledDaysOffset: 7,
     partySize: 4,
-    note: 'EDM night birthday party',
-    subtotalVnd: 4800000,
-    discountVnd: 384000,
-    totalVnd: 4416000,
+    subtotalVnd: 4_800_000,
+    discountVnd: 384_000,
+    couponCode: 'MEMBER8',
     withQr: true,
   },
-
-  // ── REQUESTED (pending) ──────────────────────────────────────────
   {
-    idx: 16,
+    key: 'requested-guest',
     storeSlug: 'crimson-bar',
     guestKey: 'g2',
     status: 'REQUESTED',
     scheduledDaysOffset: 2,
     partySize: 2,
-    note: 'First time visiting Hanoi',
-    subtotalVnd: 1600000,
+    subtotalVnd: 1_600_000,
     discountVnd: 0,
-    totalVnd: 1600000,
   },
   {
-    idx: 17,
+    key: 'requested-member',
     storeSlug: 'harbor-ktv-hai-phong',
     castSlug: 'mika-harbor-ktv',
     userKey: 'member',
     status: 'REQUESTED',
     scheduledDaysOffset: 4,
     partySize: 6,
-    subtotalVnd: 3000000,
-    discountVnd: 240000,
-    totalVnd: 2760000,
+    subtotalVnd: 3_000_000,
+    discountVnd: 0,
   },
-
-  // ── CANCELLED ────────────────────────────────────────────────────
   {
-    idx: 18,
+    key: 'cancelled-guest',
     storeSlug: 'hanami-dining',
     guestKey: 'g6',
     status: 'CANCELLED',
     scheduledDaysOffset: -1,
     partySize: 2,
-    note: 'Change of plans',
-    subtotalVnd: 2000000,
+    subtotalVnd: 2_000_000,
     discountVnd: 0,
-    totalVnd: 2000000,
+    withQr: true,
   },
-
-  // ── NO_SHOW ──────────────────────────────────────────────────────
   {
-    idx: 19,
+    key: 'no-show-guest',
     storeSlug: 'son-tra-lounge',
     guestKey: 'g8',
     status: 'NO_SHOW',
     scheduledDaysOffset: -2,
     partySize: 2,
-    subtotalVnd: 1800000,
+    subtotalVnd: 1_800_000,
     discountVnd: 0,
-    totalVnd: 1800000,
+    withQr: true,
   },
-
-  // ── CHECKED_IN (currently at venue) ─────────────────────────────
   {
-    idx: 20,
+    key: 'checked-in-guest',
     storeSlug: 'opera-spa-hai-phong',
     castSlug: 'yuri-opera-spa',
     guestKey: 'g10',
     status: 'CHECKED_IN',
     scheduledDaysOffset: 0,
     partySize: 1,
-    note: 'Sauna + full body massage',
-    subtotalVnd: 1400000,
+    subtotalVnd: 1_400_000,
     discountVnd: 0,
-    totalVnd: 1400000,
     withQr: true,
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SEED FUNCTION
-// ─────────────────────────────────────────────────────────────────────────────
+function issueStatusForBooking(status: BookingStatus): CouponIssueStatus {
+  if (status === 'CANCELLED') return 'REVOKED';
+  if (status === 'NO_SHOW') return 'EXPIRED';
+  if (status === 'COMPLETED' || status === 'CHECKED_IN') return 'USED';
+  return 'ISSUED';
+}
+
+function qrStatusForBooking(status: BookingStatus) {
+  if (status === 'CANCELLED') return 'REVOKED' as const;
+  if (status === 'NO_SHOW') return 'EXPIRED' as const;
+  if (status === 'COMPLETED' || status === 'CHECKED_IN') {
+    return 'USED' as const;
+  }
+  return 'ACTIVE' as const;
+}
+
 export async function seedBookingsAndBills(
   prisma: PrismaClient,
   stores: Record<string, Store>,
   casts: Record<string, Cast>,
-  users: Record<string, { id: string }>,
-): Promise<void> {
-  console.log('  📅 Seeding guests, bookings, bills & point ledgers...');
+  users: Record<string, User>,
+  coupons: Record<string, Coupon>,
+  now: Date,
+): Promise<TransactionSeedResult> {
+  console.log('  📅 Seeding deterministic transactions...');
 
-  // 1. Create Guests
-  const guestMap: Record<string, string> = {}; // key → id
-  for (const g of GUESTS) {
-    let guest = await prisma.guest.findFirst({ where: { email: g.email } });
-    if (guest) {
-      guest = await prisma.guest.update({
-        where: { id: guest.id },
-        data: { displayName: g.displayName, phone: g.phone, note: g.note ?? null },
-      });
-    } else {
-      guest = await prisma.guest.create({
-        data: {
-          displayName: g.displayName,
-          phone: g.phone,
-          email: g.email,
-          note: g.note ?? null,
-          status: 'ACTIVE',
-        },
-      });
-    }
-    guestMap[g.key] = guest.id;
+  const result: TransactionSeedResult = {
+    guests: {},
+    bookings: {},
+    bookingQrs: {},
+    couponIssues: {},
+    bills: {},
+    pointLedgers: {},
+  };
+
+  for (const fixture of GUESTS) {
+    const id = seedUuid(`guest:${fixture.key}`);
+    result.guests[fixture.key] = await prisma.guest.upsert({
+      where: { id },
+      update: {
+        displayName: fixture.displayName,
+        phone: fixture.phone,
+        email: fixture.email,
+        note: fixture.note ?? null,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      create: {
+        id,
+        displayName: fixture.displayName,
+        phone: fixture.phone,
+        email: fixture.email,
+        note: fixture.note ?? null,
+        status: 'ACTIVE',
+      },
+    });
   }
-  console.log(`     ✓ ${GUESTS.length} guests`);
 
-  // 2. Create Bookings + optional BookingQr + Bills + PointLedgers
-  let bookingCount = 0;
-  let billCount = 0;
-  let pointCount = 0;
-  let qrCount = 0;
-
-  for (const b of BOOKINGS) {
-    const storeId = stores[b.storeSlug]?.id;
-    if (!storeId) {
-      console.warn(`     ⚠ Store not found for booking idx ${b.idx}: ${b.storeSlug}`);
-      continue;
-    }
-
-    const castId  = b.castSlug  ? (casts[b.castSlug]?.id ?? null)  : null;
-    const userId  = b.userKey   ? (users[b.userKey]?.id ?? null)    : null;
-    const guestId = b.guestKey  ? (guestMap[b.guestKey] ?? null)    : null;
-
-    const scheduledAt = b.scheduledDaysOffset >= 0
-      ? daysFromNow(b.scheduledDaysOffset)
-      : daysAgo(Math.abs(b.scheduledDaysOffset));
-
-    // Use a deterministic field to identify existing seed bookings
-    // We use note + storeId + scheduledAt approach but since upsert needs unique,
-    // we'll just create (skip if already exists via try/catch pattern).
-    // The seed is idempotent via the billNumber unique constraint downstream.
-    let booking: { id: string };
-    try {
-      booking = await prisma.booking.create({
-        data: {
-          storeId,
-          castId,
-          userId,
-          guestId,
-          status: b.status,
-          scheduledAt,
-          partySize: b.partySize,
-          note: b.note ?? null,
-          subtotalVnd: b.subtotalVnd,
-          discountVnd: b.discountVnd,
-          totalVnd: b.totalVnd,
-          cancelledAt: b.status === 'CANCELLED' ? daysAgo(Math.abs(b.scheduledDaysOffset)) : null,
-        },
-      });
-      bookingCount++;
-    } catch {
-      // Booking already exists (re-run seed), skip
-      continue;
-    }
-
-    // 3. BookingQr for confirmed/checked_in/completed bookings
-    if (b.withQr) {
-      const code = qrCode(b.idx);
-      const hash = qrHash(code);
-      try {
-        await prisma.bookingQr.create({
-          data: {
-            bookingId: booking.id,
-            storeId,
-            code,
-            qrPayloadHash: hash,
-            discountSnapshot: { discountVnd: b.discountVnd, discountPct: b.discountVnd > 0 ? Math.round((b.discountVnd / b.subtotalVnd) * 100) : 0 },
-            validFrom: scheduledAt,
-            expiresAt: new Date(scheduledAt.getTime() + 6 * 60 * 60 * 1000), // 6h window
-            status: b.status === 'COMPLETED' ? 'USED' : (b.status === 'CANCELLED' ? 'REVOKED' : 'ACTIVE'),
-            usedAt: b.status === 'COMPLETED' ? scheduledAt : null,
-          },
-        });
-        qrCount++;
-      } catch { /* already exists */ }
-    }
-
-    // 4. Bill for COMPLETED bookings
-    if (b.withBill && b.status === 'COMPLETED') {
-      const bn = billNumber(b.storeSlug, b.idx);
-      const serviceCharge = Math.round(b.totalVnd * 0.05);
-      const tax           = Math.round(b.totalVnd * 0.10);
-      const grandTotal    = b.totalVnd + serviceCharge + tax;
-      const commPct       = 15; // 15% platform commission
-      const commAmt       = Math.round(grandTotal * commPct / 100);
-      const pointsEarned  = Math.floor(grandTotal / 100000); // 1 pt per 100k
-
-      let bill: { id: string } | null = null;
-      try {
-        bill = await prisma.bill.create({
-          data: {
-            bookingId:    booking.id,
-            storeId,
-            userId,
-            guestId,
-            billNumber:   bn,
-            status:       'PAID',
-            submitterType: userId ? 'MEMBER' : 'PARTNER',
-            subtotalVnd:  b.subtotalVnd,
-            discountVnd:  b.discountVnd,
-            serviceChargeVnd: serviceCharge,
-            taxVnd:       tax,
-            totalVnd:     grandTotal,
-            paidVnd:      grandTotal,
-            commissionAmountVnd: commAmt,
-            pointsEarned: userId ? pointsEarned : 0,
-            commissionRuleSnapshot: { type: 'PERCENT', value: commPct, basis: 'GRAND_TOTAL' },
-            pointRuleSnapshot: { rate: 0.0001, basis: 'GRAND_TOTAL' },
-            submittedAt:  scheduledAt,
-            verifiedAt:   new Date(scheduledAt.getTime() + 30 * 60 * 1000),
-            paidAt:       new Date(scheduledAt.getTime() + 60 * 60 * 1000),
-          },
-        });
-        billCount++;
-      } catch { /* billNumber already unique — skip */ }
-
-      // 5. PointLedger for member user bookings that earned points
-      if (bill && userId && pointsEarned > 0) {
-        const prevLedger = await prisma.pointLedger.findFirst({
-          where: { userId },
-          orderBy: { createdAt: 'desc' },
-        });
-        const prevBalance = prevLedger?.balanceAfter ?? 0;
-        try {
-          await prisma.pointLedger.create({
-            data: {
-              userId,
-              bookingId: booking.id,
-              billId:    bill.id,
-              type:      'EARN',
-              status:    'POSTED',
-              amountVnd: grandTotal,
-              points:    pointsEarned,
-              balanceAfter: prevBalance + pointsEarned,
-              description: `Earned ${pointsEarned} pts from booking at ${b.storeSlug}`,
-              ruleSnapshot: { rate: 0.0001, basis: 'GRAND_TOTAL' },
-              postedAt:  new Date(scheduledAt.getTime() + 65 * 60 * 1000),
-            },
-          });
-          pointCount++;
-        } catch { /* already exists */ }
-      }
+  const commissionConfigs = await prisma.commissionConfig.findMany({
+    where: { status: 'ACTIVE' },
+    orderBy: { activeFrom: 'desc' },
+  });
+  const commissionPercentByStore = new Map<string, number>();
+  for (const config of commissionConfigs) {
+    if (!commissionPercentByStore.has(config.storeId)) {
+      commissionPercentByStore.set(
+        config.storeId,
+        config.commissionType === 'PERCENT' ? config.commissionValue : 0,
+      );
     }
   }
 
-  console.log(`     ✓ ${bookingCount} bookings (${BOOKINGS.filter(b => b.status === 'COMPLETED').length} completed, ${BOOKINGS.filter(b => b.status === 'CONFIRMED').length} confirmed, ${BOOKINGS.filter(b => b.status === 'REQUESTED').length} requested)`);
-  console.log(`     ✓ ${billCount} bills (all PAID with service charge + tax + commission)`);
-  console.log(`     ✓ ${qrCount} booking QR codes`);
-  console.log(`     ✓ ${pointCount} point ledger entries`);
+  const balances = new Map<string, number>();
+
+  for (const fixture of BOOKINGS) {
+    const store = stores[fixture.storeSlug];
+    if (!store) {
+      throw new Error(`Missing store for booking fixture: ${fixture.storeSlug}`);
+    }
+
+    const cast = fixture.castSlug ? casts[fixture.castSlug] : undefined;
+    if (fixture.castSlug && !cast) {
+      throw new Error(`Missing cast for booking fixture: ${fixture.castSlug}`);
+    }
+
+    const user = fixture.userKey ? users[fixture.userKey] : undefined;
+    const guest = fixture.guestKey ? result.guests[fixture.guestKey] : undefined;
+    if (!user && !guest) {
+      throw new Error(`Booking fixture ${fixture.key} has no customer`);
+    }
+
+    const coupon = fixture.couponCode
+      ? coupons[fixture.couponCode]
+      : undefined;
+    if (fixture.couponCode && !coupon) {
+      throw new Error(`Missing coupon for booking fixture: ${fixture.couponCode}`);
+    }
+    if (coupon && coupon.storeId !== store.id) {
+      throw new Error(
+        `Coupon ${coupon.code} does not belong to ${fixture.storeSlug}`,
+      );
+    }
+
+    const scheduledAt = seedDate(
+      now,
+      fixture.scheduledDaysOffset,
+      fixture.status === 'CHECKED_IN' ? 21 : 20,
+    );
+    const createdAt = seedDate(
+      now,
+      Math.min(fixture.scheduledDaysOffset - 2, -1),
+      10,
+    );
+    const couponIssueId = coupon
+      ? seedUuid(`coupon-issue:${fixture.key}`)
+      : null;
+
+    if (coupon && couponIssueId) {
+      const issueStatus = issueStatusForBooking(fixture.status);
+      const qr = buildSeedCouponQr(couponIssueId, now, fixture.key);
+      const issueCode = `SEED-${fixture.key.toUpperCase()}`;
+      const expiresAt = new Date(scheduledAt.getTime() + 6 * 60 * 60 * 1000);
+      const issueData = {
+        couponId: coupon.id,
+        userId: user?.id ?? null,
+        guestId: guest?.id ?? null,
+        issuedById: users.admin?.id ?? null,
+        scannedById:
+          issueStatus === 'USED' ? (store.ownerId ?? null) : null,
+        code: issueCode,
+        qrPayloadHash: qr.payloadHash,
+        status: issueStatus,
+        expiresAt,
+        usedAt: issueStatus === 'USED' ? scheduledAt : null,
+        revokedAt: issueStatus === 'REVOKED' ? createdAt : null,
+        metadata: {
+          seedKey: fixture.key,
+          qrPayload: qr.payload,
+          qrPayloadType: 'SIGNED_DEEP_LINK',
+          qrTokenHash: qr.tokenHash,
+          userType: user ? (user.tier === 'VIP' ? 'VIP' : 'MEMBER') : 'GUEST',
+          discountPercent:
+            coupon.discountType === 'PERCENT'
+              ? coupon.discountValue
+              : Math.round(
+                  (fixture.discountVnd / fixture.subtotalVnd) * 10_000,
+                ) / 100,
+          discountRuleSnapshot: {
+            type: coupon.discountType,
+            value: coupon.discountValue,
+            discountVnd: fixture.discountVnd,
+            maxDiscountVnd: coupon.maxDiscountVnd,
+            minSpendVnd: coupon.minSpendVnd,
+          },
+          campaignSnapshot: {
+            id: coupon.id,
+            code: coupon.code,
+            storeId: store.id,
+          },
+        },
+        createdAt,
+      };
+      result.couponIssues[fixture.key] = await prisma.couponIssue.upsert({
+        where: { id: couponIssueId },
+        update: issueData,
+        create: { id: couponIssueId, ...issueData },
+      });
+    }
+
+    const bookingId = seedUuid(`booking:${fixture.key}`);
+    const totalVnd = Math.max(
+      0,
+      fixture.subtotalVnd - fixture.discountVnd,
+    );
+    const bookingData = {
+      userId: user?.id ?? null,
+      guestId: guest?.id ?? null,
+      storeId: store.id,
+      castId: cast?.id ?? null,
+      couponId: coupon?.id ?? null,
+      couponIssueId,
+      status: fixture.status,
+      scheduledAt,
+      partySize: fixture.partySize,
+      note: fixture.note ?? `Seed booking: ${fixture.key}`,
+      subtotalVnd: fixture.subtotalVnd,
+      discountVnd: fixture.discountVnd,
+      totalVnd,
+      discountSnapshot: coupon
+        ? {
+            couponId: coupon.id,
+            code: coupon.code,
+            discountType: coupon.discountType,
+            discountValue: coupon.discountValue,
+          }
+        : undefined,
+      cancelReason:
+        fixture.status === 'CANCELLED' ? 'Seed cancellation scenario' : null,
+      cancelledAt:
+        fixture.status === 'CANCELLED'
+          ? seedDate(now, -1, 12)
+          : null,
+      createdAt,
+      deletedAt: null,
+    };
+    const booking = await prisma.booking.upsert({
+      where: { id: bookingId },
+      update: bookingData,
+      create: { id: bookingId, ...bookingData },
+    });
+    result.bookings[fixture.key] = booking;
+
+    if (fixture.withQr) {
+      const qrId = seedUuid(`booking-qr:${fixture.key}`);
+      const code = `SEED-BOOKING-QR-${fixture.key.toUpperCase()}`;
+      const qrStatus = qrStatusForBooking(fixture.status);
+      const qrData = {
+        bookingId: booking.id,
+        storeId: store.id,
+        code,
+        qrPayloadHash: seedHash(`booking-qr-payload:${fixture.key}`),
+        discountSnapshot: {
+          discountVnd: fixture.discountVnd,
+          couponCode: coupon?.code ?? null,
+        },
+        validFrom: new Date(scheduledAt.getTime() - 60 * 60 * 1000),
+        expiresAt: new Date(scheduledAt.getTime() + 6 * 60 * 60 * 1000),
+        status: qrStatus,
+        usedAt:
+          qrStatus === 'USED' ? scheduledAt : null,
+        scannedByPartnerAccountId:
+          qrStatus === 'USED' ? (store.partnerAccountId ?? null) : null,
+        revokedAt:
+          qrStatus === 'REVOKED' ? seedDate(now, -1, 12) : null,
+      };
+      result.bookingQrs[fixture.key] = await prisma.bookingQr.upsert({
+        where: { id: qrId },
+        update: qrData,
+        create: { id: qrId, ...qrData },
+      });
+    }
+
+    if (!fixture.billStatus) continue;
+
+    const billId = seedUuid(`bill:${fixture.key}`);
+    const serviceChargeVnd = Math.round(totalVnd * 0.05);
+    const taxVnd = Math.round(totalVnd * 0.1);
+    const paidVnd = totalVnd + serviceChargeVnd + taxVnd;
+    const commissionPercent =
+      commissionPercentByStore.get(store.id) ?? 15;
+    const commissionAmountVnd =
+      Math.round((fixture.subtotalVnd * commissionPercent) / 100) -
+      fixture.discountVnd;
+    const reviewedStatuses: BillStatus[] = [
+      'PENDING_PM_BA',
+      'VERIFIED',
+      'REJECTED',
+      'PAID',
+      'VOIDED',
+    ];
+    const verifiedStatuses: BillStatus[] = ['VERIFIED', 'PAID', 'VOIDED'];
+    const submittedByUserId = user?.id ?? store.ownerId ?? null;
+    const submittedByPartnerAccountId = user
+      ? null
+      : (store.partnerAccountId ?? null);
+    const submittedAt = new Date(scheduledAt.getTime() + 30 * 60 * 1000);
+    const reviewedAt = reviewedStatuses.includes(fixture.billStatus)
+      ? new Date(submittedAt.getTime() + 30 * 60 * 1000)
+      : null;
+    const flags =
+      commissionAmountVnd < 0 ? ['NEGATIVE_COMMISSION'] : [];
+    const billData = {
+      bookingId: booking.id,
+      userId: user?.id ?? null,
+      guestId: guest?.id ?? null,
+      storeId: store.id,
+      couponId: coupon?.id ?? null,
+      couponIssueId,
+      reviewedById: reviewedAt ? (users.admin?.id ?? null) : null,
+      verifiedById: verifiedStatuses.includes(fixture.billStatus)
+        ? (users.admin?.id ?? null)
+        : null,
+      rejectedById:
+        fixture.billStatus === 'REJECTED'
+          ? (users.operator?.id ?? users.admin?.id ?? null)
+          : null,
+      status: fixture.billStatus,
+      submitterType: user ? 'MEMBER' : 'PARTNER',
+      submittedByUserId,
+      submittedByPartnerAccountId,
+      billNumber: `SEED-BILL-${fixture.key.toUpperCase()}`,
+      subtotalVnd: fixture.subtotalVnd,
+      discountVnd: fixture.discountVnd,
+      serviceChargeVnd,
+      taxVnd,
+      totalVnd,
+      paidVnd,
+      commissionAmountVnd,
+      pointsEarned:
+        user && verifiedStatuses.includes(fixture.billStatus)
+          ? Math.floor(fixture.subtotalVnd / 100_000)
+          : 0,
+      discountRuleSnapshot: {
+        version: 'bill-revenue-v1',
+        basis: 'bill_gross_before_discount',
+        couponId: coupon?.id ?? null,
+        couponCode: coupon?.code ?? null,
+        grossVnd: fixture.subtotalVnd,
+        discountVnd: fixture.discountVnd,
+      },
+      commissionRuleSnapshot: {
+        version: 'bill-revenue-v1',
+        basis: 'bill_gross_before_discount',
+        formula: 'grossVnd * commission_rate - discountVnd',
+        commissionPercent,
+        grossVnd: fixture.subtotalVnd,
+        discountVnd: fixture.discountVnd,
+        commissionAmountVnd,
+        requiresPmBaConfirmation: commissionAmountVnd < 0,
+        flags,
+      },
+      pointRuleSnapshot: {
+        version: 'bill-loyalty-v1',
+        basis: 'subtotalVnd',
+        pointsPer100kVnd: 1,
+      },
+      submittedAt,
+      reviewedAt,
+      verifiedAt: verifiedStatuses.includes(fixture.billStatus)
+        ? reviewedAt
+        : null,
+      rejectedAt: fixture.billStatus === 'REJECTED' ? reviewedAt : null,
+      rejectReason:
+        fixture.billStatus === 'REJECTED'
+          ? 'Ảnh chứng từ không rõ tổng tiền'
+          : null,
+      usedAt: scheduledAt,
+      paidAt:
+        fixture.billStatus === 'PAID' || fixture.billStatus === 'VOIDED'
+          ? new Date(submittedAt.getTime() + 60 * 60 * 1000)
+          : null,
+      createdAt: submittedAt,
+      deletedAt: null,
+    };
+    const bill = await prisma.bill.upsert({
+      where: { id: billId },
+      update: billData,
+      create: { id: billId, ...billData },
+    });
+    result.bills[fixture.key] = bill;
+
+    if (
+      user &&
+      verifiedStatuses.includes(fixture.billStatus) &&
+      bill.pointsEarned > 0
+    ) {
+      const previousBalance = balances.get(user.id) ?? 0;
+      const balanceAfter = previousBalance + bill.pointsEarned;
+      balances.set(user.id, balanceAfter);
+      const ledgerId = seedUuid(`point-ledger:earn:${fixture.key}`);
+      const ledgerData = {
+        userId: user.id,
+        bookingId: booking.id,
+        billId: bill.id,
+        type: 'EARN' as const,
+        status: 'POSTED' as const,
+        amountVnd: fixture.subtotalVnd,
+        points: bill.pointsEarned,
+        balanceAfter,
+        description: `Seed points from ${fixture.storeSlug}`,
+        ruleSnapshot: {
+          basis: 'subtotalVnd',
+          pointsPer100kVnd: 1,
+        },
+        expiresAt: seedDate(now, 365, 23, 59),
+        postedAt: bill.verifiedAt,
+        createdAt: bill.verifiedAt ?? submittedAt,
+      };
+      result.pointLedgers[fixture.key] = await prisma.pointLedger.upsert({
+        where: { id: ledgerId },
+        update: ledgerData,
+        create: { id: ledgerId, ...ledgerData },
+      });
+    }
+  }
+
+  console.log(
+    `     ✓ ${Object.keys(result.guests).length} guests, ` +
+      `${Object.keys(result.bookings).length} bookings, ` +
+      `${Object.keys(result.bookingQrs).length} booking QRs`,
+  );
+  console.log(
+    `     ✓ ${Object.keys(result.couponIssues).length} coupon issues, ` +
+      `${Object.keys(result.bills).length} bills, ` +
+      `${Object.keys(result.pointLedgers).length} point ledgers`,
+  );
+
+  return result;
 }

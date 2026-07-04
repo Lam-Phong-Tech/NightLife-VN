@@ -11,7 +11,7 @@ import { seedCommissions } from './08-commissions';
 import { seedContents } from './09-contents';
 import { seedRankings } from './10-rankings';
 import { seedStorePermissions } from './11-store-permissions';
-import { seedBookingsAndBills } from './12-bookings-bills';
+
 
 export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   console.log('🌱 NightLife Vietnam — Seed Data v2.0\n');
@@ -30,7 +30,7 @@ export async function seedAll(prisma: PrismaClient, passwordHash: string) {
   await seedCommissions(prisma, stores, users);
   await seedContents(prisma, users);
   await seedRankings(prisma, stores, casts, users);
-  await seedBookingsAndBills(prisma, stores, casts, users);
+
 
   console.log('═══════════════════════════════════════');
   console.log('\n✅ Seed completed successfully!\n');
