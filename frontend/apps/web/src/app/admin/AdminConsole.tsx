@@ -1745,6 +1745,7 @@ export default function AdminConsole({ section }: { section?: string }) {
   const [statusMessage, setStatusMessage] = useState("Đang tải dữ liệu admin...");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reversingBillId, setReversingBillId] = useState<string | null>(null);
+  const [isAutoReversingBills, setIsAutoReversingBills] = useState(false);
   const [cancelBookingTarget, setCancelBookingTarget] = useState<AdminBooking | null>(null);
   const [cancelBookingReason, setCancelBookingReason] = useState("");
   const [cancelingBookingId, setCancelingBookingId] = useState<string | null>(null);
@@ -2400,6 +2401,31 @@ export default function AdminConsole({ section }: { section?: string }) {
       setStatusMessage(error instanceof ApiError ? error.message : "Khong reverse duoc bill.");
     } finally {
       setReversingBillId(null);
+    }
+  };
+
+  const autoReverseHighRiskBills = async () => {
+    setIsAutoReversingBills(true);
+    try {
+      const response = await apiClient<{
+        mode: "EXECUTED" | "DRY_RUN";
+        candidateCount: number;
+        reversedCount: number;
+      }>("/admin/sensitive-bills/auto-reverse", {
+        data: {
+          execute: true,
+          limit: 5,
+          reason: "Auto reversal from admin high-risk fraud dashboard.",
+        },
+      });
+      setStatusMessage(
+        `Auto reverse xong: ${response.reversedCount}/${response.candidateCount} bill high-risk.`,
+      );
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof ApiError ? error.message : "Khong auto reverse duoc bill.");
+    } finally {
+      setIsAutoReversingBills(false);
     }
   };
 
@@ -4906,9 +4932,21 @@ export default function AdminConsole({ section }: { section?: string }) {
                   gap: 10,
                 }}
               >
-                <strong style={{ color: colors.goldPale, fontSize: 13 }}>
-                  Bill reversal tự động
-                </strong>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <strong style={{ color: colors.goldPale, fontSize: 13 }}>
+                    Bill reversal tự động
+                  </strong>
+                  <button
+                    type="button"
+                    aria-label="Auto reverse high-risk bills"
+                    disabled={isAutoReversingBills}
+                    onClick={() => void autoReverseHighRiskBills()}
+                    style={buttonStyle("danger")}
+                  >
+                    <RefreshCcw size={14} />
+                    {isAutoReversingBills ? "Đang chạy" : "Auto reverse"}
+                  </button>
+                </div>
                 {reversibleBills.slice(0, 5).map((bill) => (
                   <div
                     key={`reverse-${bill.id}`}

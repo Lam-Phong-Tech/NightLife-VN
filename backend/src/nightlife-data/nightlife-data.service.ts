@@ -74,7 +74,11 @@ import {
   AdminSensitiveBillQueryDto,
   CreateBillDto,
 } from './dto/create-bill.dto';
-import { BillOcrPreviewDto, ReverseBillDto } from './dto/bill-p2.dto';
+import {
+  AutoReverseBillsDto,
+  BillOcrPreviewDto,
+  ReverseBillDto,
+} from './dto/bill-p2.dto';
 import {
   AdminCommissionOverrideQueryDto,
   CreateCommissionOverrideDto,
@@ -4259,14 +4263,23 @@ export class NightlifeDataService {
     const text = [dto.text, dto.fileName].filter(Boolean).join('\n');
     const amount = this.extractBillOcrAmount(text);
     const usedAt = this.extractBillOcrUsedAt(text);
+    const normalizedText = text.trim().replace(/\s+/g, ' ');
     const warnings: string[] = [];
 
     if (!amount) {
       warnings.push('Không đọc được tổng tiền, cần nhập tay totalVnd.');
+    } else if (amount < 50_000) {
+      warnings.push('Tổng tiền OCR thấp bất thường, cần kiểm tra lại bill gốc.');
+    } else if (amount > 500_000_000) {
+      warnings.push('Tổng tiền OCR rất lớn, cần kiểm tra lại bill gốc.');
     }
 
     if (!usedAt) {
       warnings.push('Không đọc được ngày/giờ sử dụng, cần nhập tay usedAt.');
+    } else if (usedAt.getTime() > Date.now()) {
+      warnings.push('Thời gian OCR nằm trong tương lai, cần nhập lại usedAt.');
+    } else if (Date.now() - usedAt.getTime() > BILL_SUBMISSION_DEADLINE_MS) {
+      warnings.push('Thời gian OCR đã quá hạn nhận bill 10 ngày.');
     }
 
     if (!dto.text?.trim()) {
@@ -4280,16 +4293,45 @@ export class NightlifeDataService {
       (amount ? 0.45 : 0) +
       (usedAt ? 0.3 : 0) +
       (dto.text?.trim() ? 0.1 : 0);
+    const confidenceScore = Math.min(
+      0.95,
+      Math.round(confidence * 100) / 100,
+    );
 
     return {
+      phase: 'P2_OCR_PREVIEW',
       source: 'HEURISTIC_OCR_AI_MVP',
+      model: 'rule-based-v1',
       actorId: user.id,
+      input: {
+        fileName: dto.fileName ?? null,
+        textHash: normalizedText
+          ? createHash('sha256').update(normalizedText).digest('hex')
+          : null,
+        hasExtractedText: Boolean(dto.text?.trim()),
+      },
       suggestions: {
         totalVnd: amount,
         usedAt: usedAt?.toISOString() ?? null,
       },
-      confidence: Math.min(0.95, Math.round(confidence * 100) / 100),
+      extractedFields: {
+        totalVnd: {
+          value: amount,
+          confidence: amount ? 0.86 : 0,
+          source: amount ? 'text_or_filename_amount_pattern' : 'not_found',
+        },
+        usedAt: {
+          value: usedAt?.toISOString() ?? null,
+          confidence: usedAt ? 0.76 : 0,
+          source: usedAt ? 'text_or_filename_date_pattern' : 'not_found',
+        },
+      },
+      confidence: confidenceScore,
       warnings,
+      nextAction:
+        warnings.length > 0 || confidenceScore < 0.75
+          ? 'MANUAL_REVIEW'
+          : 'CAN_PREFILL_FORM',
       requiresManualReview: warnings.length > 0,
     };
   }
@@ -5271,7 +5313,12 @@ export class NightlifeDataService {
     booking?: { id: string; scheduledAt?: Date | null } | null;
     coupon?: { id: string; code: string; minSpendVnd?: number | null } | null;
     couponIssue?: { id: string; code: string; status: string } | null;
-    media?: Array<{ id: string; access?: string | null }> | null;
+    media?: Array<{
+      id: string;
+      access?: string | null;
+      originalName?: string | null;
+      mimeType?: string | null;
+    }> | null;
   }) {
     const warnings: Array<{
       code: string;
@@ -5293,6 +5340,36 @@ export class NightlifeDataService {
         code: 'EVIDENCE_NOT_PROTECTED',
         severity: 'MEDIUM',
         message: 'Chứng từ bill không ở chế độ PROTECTED.',
+      });
+    }
+
+    const suspiciousEvidence = bill.media?.find((media) => {
+      const originalName = media.originalName ?? '';
+      const mimeType = media.mimeType ?? '';
+      const normalizedName = originalName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+      return (
+        Boolean(mimeType) &&
+          !mimeType.startsWith('image/') &&
+          mimeType !== 'application/pdf'
+      ) || /(fake|sample|demo|test|template|mau|gia|sua-bill|bill-gia)/i.test(
+        normalizedName,
+      );
+    });
+
+    if (suspiciousEvidence) {
+      warnings.push({
+        code: 'SUSPICIOUS_EVIDENCE_FILE',
+        severity: 'HIGH',
+        message: 'Chứng từ bill có dấu hiệu là file mẫu/test hoặc không đúng định dạng bill.',
+        evidence: {
+          mediaId: suspiciousEvidence.id,
+          originalName: suspiciousEvidence.originalName ?? null,
+          mimeType: suspiciousEvidence.mimeType ?? null,
+        },
       });
     }
 
@@ -5975,6 +6052,124 @@ export class NightlifeDataService {
       action: 'bill.reversal',
       defaultReason: 'Bill reversed by admin reconciliation',
     });
+  }
+
+  async autoReverseSensitiveBills(
+    adminId: string,
+    dto: AutoReverseBillsDto = {},
+  ) {
+    const limit = Math.min(Math.max(dto.limit ?? 10, 1), 25);
+    const execute = dto.execute === true;
+    const reason =
+      this.cleanText(dto.reason) ??
+      'Auto reversal for high-risk duplicate/fake bill signals';
+    const scanLimit = Math.max(limit * 3, 25);
+    const bills = await this.prisma.bill.findMany({
+      where: {
+        deletedAt: null,
+        status: { in: ['VERIFIED', 'PAID'] },
+      },
+      orderBy: [{ reviewedAt: 'desc' }, { submittedAt: 'desc' }],
+      take: scanLimit,
+      select: {
+        id: true,
+        billNumber: true,
+        status: true,
+        storeId: true,
+        totalVnd: true,
+        usedAt: true,
+        submittedAt: true,
+        store: { select: { id: true, name: true, slug: true } },
+        booking: { select: { id: true, scheduledAt: true } },
+        coupon: {
+          select: { id: true, code: true, minSpendVnd: true },
+        },
+        couponIssue: { select: { id: true, code: true, status: true } },
+        media: {
+          select: {
+            id: true,
+            access: true,
+            originalName: true,
+            mimeType: true,
+          },
+        },
+      },
+    });
+
+    const candidates: Array<{
+      billId: string;
+      billNumber: string | null;
+      status: string;
+      store: { id?: string; name: string; slug?: string | null } | null;
+      totalVnd: number | null;
+      usedAt: string | null;
+      warningCodes: string[];
+      warnings: Array<{
+        code: string;
+        severity: 'LOW' | 'MEDIUM' | 'HIGH';
+        message: string;
+        evidence?: Record<string, unknown>;
+      }>;
+      reversed?: boolean;
+    }> = [];
+
+    for (const bill of bills) {
+      const warnings = await this.buildBillFraudWarnings(bill);
+      const highRiskWarnings = warnings.filter(
+        (warning) =>
+          warning.severity === 'HIGH' &&
+          ['POSSIBLE_DUPLICATE_BILL', 'SUSPICIOUS_EVIDENCE_FILE'].includes(
+            warning.code,
+          ),
+      );
+
+      if (!highRiskWarnings.length) {
+        continue;
+      }
+
+      candidates.push({
+        billId: bill.id,
+        billNumber: bill.billNumber ?? null,
+        status: bill.status,
+        store: bill.store,
+        totalVnd: bill.totalVnd ?? null,
+        usedAt: bill.usedAt?.toISOString() ?? null,
+        warningCodes: highRiskWarnings.map((warning) => warning.code),
+        warnings: highRiskWarnings,
+        reversed: false,
+      });
+
+      if (candidates.length >= limit) {
+        break;
+      }
+    }
+
+    if (execute) {
+      for (const candidate of candidates) {
+        await this.applySensitiveBillReversal(
+          adminId,
+          candidate.billId,
+          {
+            reason,
+          },
+          {
+            action: 'bill.reversal',
+            defaultReason: reason,
+          },
+        );
+        candidate.reversed = true;
+      }
+    }
+
+    return {
+      mode: execute ? 'EXECUTED' : 'DRY_RUN',
+      scannedCount: bills.length,
+      candidateCount: candidates.length,
+      reversedCount: candidates.filter((candidate) => candidate.reversed)
+        .length,
+      reason,
+      candidates,
+    };
   }
 
   async voidSensitiveBill(adminId: string, billId: string, dto: VoidBillDto) {

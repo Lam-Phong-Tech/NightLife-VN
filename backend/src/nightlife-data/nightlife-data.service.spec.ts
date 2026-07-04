@@ -3589,11 +3589,18 @@ describe('NightlifeDataService', () => {
       ),
     ).toEqual(
       expect.objectContaining({
+        phase: 'P2_OCR_PREVIEW',
         source: 'HEURISTIC_OCR_AI_MVP',
+        model: 'rule-based-v1',
         suggestions: {
           totalVnd: 1800000,
           usedAt: '2026-07-03T14:30:00.000Z',
         },
+        extractedFields: expect.objectContaining({
+          totalVnd: expect.objectContaining({ confidence: 0.86 }),
+          usedAt: expect.objectContaining({ confidence: 0.76 }),
+        }),
+        nextAction: 'CAN_PREFILL_FORM',
         requiresManualReview: false,
       }),
     );
@@ -4842,6 +4849,55 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+  });
+
+  it('dry-runs auto reversal candidates for suspicious evidence bills', async () => {
+    prisma.bill.findMany
+      .mockResolvedValueOnce([
+        {
+          id: 'bill-fake-1',
+          billNumber: 'BILL-FAKE-001',
+          status: 'VERIFIED',
+          storeId: 'store-1',
+          totalVnd: 1800000,
+          usedAt: new Date('2026-07-03T14:00:00.000Z'),
+          submittedAt: new Date('2026-07-03T14:30:00.000Z'),
+          store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+          booking: null,
+          coupon: null,
+          couponIssue: null,
+          media: [
+            {
+              id: 'media-fake-1',
+              access: 'PROTECTED',
+              originalName: 'fake-bill-template.png',
+              mimeType: 'image/png',
+            },
+          ],
+        },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const result = await service.autoReverseSensitiveBills('admin-2', {
+      limit: 5,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        mode: 'DRY_RUN',
+        scannedCount: 1,
+        candidateCount: 1,
+        reversedCount: 0,
+      }),
+    );
+    expect(result.candidates[0]).toEqual(
+      expect.objectContaining({
+        billId: 'bill-fake-1',
+        warningCodes: ['SUSPICIOUS_EVIDENCE_FILE'],
+        reversed: false,
+      }),
+    );
+    expect(prisma.bill.update).not.toHaveBeenCalled();
   });
 
   it('calculates net revenue without service charge or tax when approving', async () => {

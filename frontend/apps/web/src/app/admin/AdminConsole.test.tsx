@@ -155,6 +155,7 @@ const sensitiveBills = [
     id: "bill-1",
     billNumber: "BILL-20260701-ABC12345",
     status: "SUBMITTED",
+    submitterType: "PARTNER",
     totalVnd: 1800000,
     paidVnd: 1800000,
     commissionAmountVnd: 180000,
@@ -448,6 +449,7 @@ describe("AdminConsole coupon issue panel", () => {
     const panel = await screen.findByTestId("admin-sensitive-bills-panel");
     await within(panel).findByText("BILL-20260701-ABC12345");
     expect(within(panel).getByText(/booking/i)).toBeInTheDocument();
+    expect(within(panel).getByText("Chủ quán")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Booking ID filter"), {
       target: { value: "booking-1" },
@@ -536,6 +538,7 @@ describe("AdminConsole coupon issue panel", () => {
     expect(within(panel).getByText("Bill submitted")).toBeInTheDocument();
     expect(within(panel).getByText("Bill approved")).toBeInTheDocument();
     expect(within(panel).getByTestId("admin-bill-reversal-panel")).toBeInTheDocument();
+    expect(within(panel).getByLabelText("Auto reverse high-risk bills")).toBeInTheDocument();
     expect(within(panel).getByLabelText("Reverse bill BILL-20260701-VERIFIED")).toBeInTheDocument();
     expect(within(panel).getByText(/Neon Partner/)).toBeInTheDocument();
     expect(within(panel).getByText(/District 1/)).toBeInTheDocument();

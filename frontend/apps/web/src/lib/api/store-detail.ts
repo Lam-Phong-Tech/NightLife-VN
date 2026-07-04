@@ -119,6 +119,7 @@ export type PublicStoreDetail = {
   cityCode?: string;
   district?: string | null;
   phone?: string | null;
+  tags?: string[];
   latitude?: number | null;
   longitude?: number | null;
   mapUrl?: string | null;

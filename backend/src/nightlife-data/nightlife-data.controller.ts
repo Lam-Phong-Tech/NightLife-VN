@@ -79,7 +79,11 @@ import {
   ReviewBookingChangeRequestDto,
   UpdateStoreBookingPolicyDto,
 } from './dto/booking-p2.dto';
-import { BillOcrPreviewDto, ReverseBillDto } from './dto/bill-p2.dto';
+import {
+  AutoReverseBillsDto,
+  BillOcrPreviewDto,
+  ReverseBillDto,
+} from './dto/bill-p2.dto';
 import { ClaimGuestCouponDto } from './dto/claim-guest-coupon.dto';
 import {
   AdminCouponIssueQueryDto,
@@ -1081,6 +1085,23 @@ export class NightlifeDataController {
     return this.nightlifeDataService.updateStoreBookingPolicy(
       request.user,
       storeId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Bill P2: auto-reverse high-risk duplicate or fake bills',
+  })
+  @ActionPolicy('canReviewBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('admin/sensitive-bills/auto-reverse')
+  autoReverseSensitiveBills(
+    @Req() request: RequestWithUser,
+    @Body() dto: AutoReverseBillsDto,
+  ) {
+    return this.nightlifeDataService.autoReverseSensitiveBills(
+      request.user.id,
       dto,
     );
   }

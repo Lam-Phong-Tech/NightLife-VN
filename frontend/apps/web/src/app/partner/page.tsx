@@ -12,6 +12,7 @@ import {
   ImagePlus,
   LogOut,
   QrCode,
+  ReceiptText,
   Save,
   Send,
   Settings,
@@ -2165,6 +2166,30 @@ export default function PartnerPage() {
               );
             })}
           </nav>
+
+          <Link
+            href="/partner/gui-hoa-don"
+            style={{
+              minHeight: '52px',
+              width: '100%',
+              borderRadius: '12px',
+              padding: '0 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '11px',
+              color: colors.text2,
+              background: 'transparent',
+              fontSize: '13px',
+              fontWeight: 600,
+              textAlign: 'left',
+              textDecoration: 'none',
+            }}
+          >
+            <ReceiptText size={18} strokeWidth={1.7} />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block' }}>Gửi hóa đơn</span>
+            </span>
+          </Link>
 
           <div
             style={{

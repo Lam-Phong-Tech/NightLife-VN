@@ -1,5 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class BillOcrPreviewDto {
   @ApiPropertyOptional({
@@ -25,6 +34,36 @@ export class BillOcrPreviewDto {
 export class ReverseBillDto {
   @ApiPropertyOptional({
     example: 'Duplicate/fake bill confirmed during reconciliation.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class AutoReverseBillsDto {
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'When false or omitted, returns candidates only. When true, reverses eligible high-risk bills.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  execute?: boolean;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Maximum number of eligible bills to reverse in one run.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(25)
+  limit?: number;
+
+  @ApiPropertyOptional({
+    example: 'Auto reversal for confirmed duplicate/fake bill signals.',
   })
   @IsOptional()
   @IsString()
