@@ -147,43 +147,55 @@ export default function AdminBillsPage() {
               color: activeTab === 'pending' ? colors.onGold : colors.muted,
               border: 'none',
               padding: '8px 16px',
-              borderRadius: '6px',
+              borderRadius: '8px',
               fontSize: '13px',
-              fontWeight: activeTab === 'pending' ? 700 : 500,
-              cursor: 'pointer'
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
           >
-            Chờ duyệt {stats?.pendingCount ?? 0}
+            <span>Chờ duyệt</span>
+            <span style={{ fontWeight: 700 }}>{stats?.pendingCount ?? 0}</span>
           </button>
           <button 
             onClick={() => setActiveTab('approved')}
             style={{
-              background: activeTab === 'approved' ? colors.surface2 : 'transparent',
-              color: activeTab === 'approved' ? colors.text : colors.muted,
+              background: activeTab === 'approved' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'approved' ? colors.onGold : colors.muted,
               border: 'none',
               padding: '8px 16px',
-              borderRadius: '6px',
+              borderRadius: '8px',
               fontSize: '13px',
-              fontWeight: activeTab === 'approved' ? 700 : 500,
-              cursor: 'pointer'
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
           >
-            Đã duyệt {stats?.approvedCount ?? 0}
+            <span>Đã duyệt</span>
+            <span style={{ fontWeight: 700 }}>{stats?.approvedCount ?? 0}</span>
           </button>
           <button 
             onClick={() => setActiveTab('rejected')}
             style={{
-              background: activeTab === 'rejected' ? colors.surface2 : 'transparent',
-              color: activeTab === 'rejected' ? colors.text : colors.muted,
+              background: activeTab === 'rejected' ? colors.goldGrad : 'transparent',
+              color: activeTab === 'rejected' ? colors.onGold : colors.muted,
               border: 'none',
               padding: '8px 16px',
-              borderRadius: '6px',
+              borderRadius: '8px',
               fontSize: '13px',
-              fontWeight: activeTab === 'rejected' ? 700 : 500,
-              cursor: 'pointer'
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}
           >
-            Từ chối {stats?.rejectedCount ?? 0}
+            <span>Từ chối</span>
+            <span style={{ fontWeight: 700 }}>{stats?.rejectedCount ?? 0}</span>
           </button>
         </div>
 
@@ -416,8 +428,8 @@ export default function AdminBillsPage() {
               </div>
             </div>
 
-            {/* Actions Footer - Only show if SUBMITTED */}
-            {selectedBill.status === 'SUBMITTED' && (
+            {/* Actions Footer - Only show if pending */}
+            {(selectedBill.status === 'SUBMITTED' || selectedBill.status === 'Chờ duyệt') && (
               <div style={{ padding: '24px', borderTop: `1px solid ${colors.borderSoft}`, display: 'flex', gap: '16px' }}>
                 <button 
                   onClick={() => handleApproveClick(selectedBill.id)}
