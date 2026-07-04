@@ -1255,7 +1255,6 @@ export class NightlifeDataController {
 
   @ApiOperation({ summary: 'Admin action: Check cast slug availability' })
   @ApiOkResponse({
-    status: 200,
     schema: {
       type: 'object',
       properties: { available: { type: 'boolean' } },

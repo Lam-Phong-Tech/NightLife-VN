@@ -46,6 +46,9 @@ export default function AdminCastsPage() {
   
   const imageUploadRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  
+  const [youtubeInput, setYoutubeInput] = useState('');
+  const [showYoutubeInput, setShowYoutubeInput] = useState(false);
 
   const fetchCasts = async () => {
     try {
@@ -62,7 +65,7 @@ export default function AdminCastsPage() {
     try {
       const res = await apiClient<any>('/admin/stores', { params: { limit: 100 } });
       if (res && res.data) {
-        setStores(res.data);
+        setStores(Array.isArray(res.data) ? res.data : res.data.data || []);
       }
     } catch (e) {
       console.error(e);
@@ -203,12 +206,7 @@ export default function AdminCastsPage() {
   };
 
   const handleAddYoutube = () => {
-    const url = prompt('Nhập link YouTube:');
-    if (url && url.includes('youtu')) {
-      setFormData((prev: any) => ({ ...prev, youtubeLinks: [...(prev.youtubeLinks || []), url] }));
-    } else if (url) {
-      showToast('Link YouTube không hợp lệ');
-    }
+    setShowYoutubeInput(true);
   };
 
   const toggleLanguage = (lang: string) => {
@@ -502,17 +500,16 @@ export default function AdminCastsPage() {
                 </select>
               </div>
 
-              {/* ALBUM ẢNH & VIDEO */}
-              <div style={{ marginBottom: '32px' }}>
+              {/* ẢNH ĐẠI DIỆN */}
+              <div style={{ marginBottom: '24px' }}>
                 <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Album ảnh & video YouTube</span>
+                  <span>Ảnh đại diện (1 ảnh)</span>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => imageUploadRef.current?.click()} style={{ background: 'transparent', border: 'none', color: colors.gold, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Upload size={14} /> Thêm ảnh
-                    </button>
-                    <button onClick={handleAddYoutube} style={{ background: 'transparent', border: 'none', color: colors.red, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Video size={14} /> Thêm link YouTube
-                    </button>
+                    {albums.length === 0 && (
+                      <button onClick={() => imageUploadRef.current?.click()} style={{ background: 'transparent', border: 'none', color: colors.gold, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Upload size={14} /> Thêm ảnh
+                      </button>
+                    )}
                   </div>
                   <input type="file" ref={imageUploadRef} style={{ display: 'none' }} accept="image/*" onChange={handleUploadImage} />
                 </div>
@@ -525,7 +522,50 @@ export default function AdminCastsPage() {
                       </button>
                     </div>
                   ))}
-                  
+                  {uploadingImage && (
+                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
+                  )}
+                  {albums.length === 0 && !uploadingImage && (
+                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
+                      Chưa có ảnh
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* VIDEO YOUTUBE */}
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Video YouTube</span>
+                  {!showYoutubeInput ? (
+                    <button onClick={handleAddYoutube} style={{ background: 'transparent', border: 'none', color: colors.red, fontSize: '12px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Video size={14} /> Thêm link YouTube
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Dán link YouTube..." 
+                        value={youtubeInput}
+                        onChange={(e) => setYoutubeInput(e.target.value)}
+                        style={{ background: 'transparent', border: `1px solid ${colors.borderSoft}`, color: colors.text, fontSize: '12px', padding: '6px 12px', borderRadius: '6px', outline: 'none', width: '200px' }}
+                      />
+                      <button onClick={() => {
+                        if (youtubeInput && youtubeInput.includes('youtu')) {
+                          setFormData((prev: any) => ({ ...prev, youtubeLinks: [...(prev.youtubeLinks || []), youtubeInput] }));
+                          setYoutubeInput('');
+                          setShowYoutubeInput(false);
+                        } else if (youtubeInput) {
+                          showToast('Link YouTube không hợp lệ');
+                        } else {
+                          setShowYoutubeInput(false);
+                        }
+                      }} style={{ background: colors.red, color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Lưu</button>
+                    </div>
+                  )}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
                   {formData.youtubeLinks?.map((url: string, i: number) => {
                     const videoId = url.includes('v=') ? url.split('v=')[1]?.split('&')[0] : url.split('/').pop()?.split('?')[0];
                     const thumbUrl = videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : '';
@@ -540,13 +580,9 @@ export default function AdminCastsPage() {
                       </div>
                     );
                   })}
-
-                  {uploadingImage && (
-                    <div style={{ width: 120, height: 160, borderRadius: '12px', background: colors.surface2, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px' }}>Đang tải...</div>
-                  )}
-                  {albums.length === 0 && (!formData.youtubeLinks || formData.youtubeLinks.length === 0) && !uploadingImage && (
+                  {(!formData.youtubeLinks || formData.youtubeLinks.length === 0) && (
                     <div style={{ width: 120, height: 160, borderRadius: '12px', background: 'transparent', border: `1px dashed ${colors.borderSoft}`, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: colors.muted, fontSize: '12px', textAlign: 'center', padding: '16px' }}>
-                      Chưa có <br/> media
+                      Chưa có video
                     </div>
                   )}
                 </div>
