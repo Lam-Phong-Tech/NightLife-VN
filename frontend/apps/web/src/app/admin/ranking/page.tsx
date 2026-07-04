@@ -63,10 +63,7 @@ function SortableRankingItem(props: {
   const rowBg = index === 0 ? 'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))' : 'rgba(255,255,255,.025)';
   const rowBd = index === 0 ? 'rgba(212,178,106,.34)' : 'rgba(255,255,255,.06)';
   
-  const spBadge = item.sponsored ? { fontSize: '9px', fontWeight: 700, letterSpacing: '.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '2px 7px', borderRadius: '6px' } : { display: 'none' };
-  const spBtn = item.sponsored 
-    ? { fontSize: '11px', fontWeight: 600, color: '#e3c27e', background: 'rgba(212,178,106,.14)', border: '1px solid rgba(212,178,106,.35)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap' } 
-    : { fontSize: '11px', fontWeight: 600, color: '#8c8679', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', padding: '6px 12px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap' };
+  // Removed sponsorship badge and button styles
 
   const onRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -118,14 +115,9 @@ function SortableRankingItem(props: {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 600, fontSize: '14.5px', color: '#f3f0ea' }}>{item.name}</span>
-          <span style={spBadge as any}>Tài trợ</span>
         </div>
         <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2px' }}>{item.desc}</div>
       </div>
-
-      <span onClick={() => toggleSponsor(item.id)} style={spBtn as any}>
-        {item.sponsored ? '★ Đang tài trợ' : 'Tài trợ'}
-      </span>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
         <span onClick={() => moveItem(index, 'up')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
@@ -159,6 +151,7 @@ export default function AdminRankingsPage() {
   const [auditNote, setAuditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
 
   const fetchOptions = async (type: 'CAST' | 'STORE') => {
     try {
@@ -265,6 +258,7 @@ export default function AdminRankingsPage() {
 
   useEffect(() => {
     fetchRankings();
+    setDeletedItemIds([]);
   }, [activeTab]);
 
   const handleDragEndCasts = (event: DragEndEvent) => {
@@ -308,10 +302,12 @@ export default function AdminRankingsPage() {
   };
 
   const removeCast = (id: string) => {
+    if (!id.startsWith('new-')) setDeletedItemIds(prev => [...prev, id]);
     setCasts(casts.filter(item => item.id !== id));
   };
 
   const removeStore = (id: string) => {
+    if (!id.startsWith('new-')) setDeletedItemIds(prev => [...prev, id]);
     setStores(stores.filter(item => item.id !== id));
   };
 
@@ -320,6 +316,10 @@ export default function AdminRankingsPage() {
     try {
       const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
       
+      for (const id of deletedItemIds) {
+        await apiClient(`/admin/rankings/${id}`, { method: 'DELETE' });
+      }
+
       for (let i = 0; i < casts.length; i++) {
         const cast = casts[i];
         if (!cast) continue;
@@ -375,6 +375,7 @@ export default function AdminRankingsPage() {
       }
 
       alert('Lưu ranking thành công!');
+      setDeletedItemIds([]);
       fetchRankings();
     } catch (error: any) {
       console.error(error);
@@ -409,7 +410,7 @@ export default function AdminRankingsPage() {
       <div style={{ display: 'flex', gap: '9px', padding: '12px 15px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px', marginBottom: '20px' }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
         <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>
-          Ranking 100% thủ công — Admin tự cấu hình. Quán/cast <b style={{ color: '#f0dda8' }}>trả tài trợ</b> có thể lên Top, không phụ thuộc thuật toán. Thứ tự ưu tiên: <b style={{ color: '#f0dda8' }}>Cast trước → Quán</b>.
+          Ranking 100% thủ công — Admin tự cấu hình. Thứ tự ưu tiên: <b style={{ color: '#f0dda8' }}>Cast trước → Quán</b>.
         </span>
       </div>
 
