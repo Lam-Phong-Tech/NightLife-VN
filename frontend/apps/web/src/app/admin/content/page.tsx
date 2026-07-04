@@ -151,35 +151,7 @@ export default function AdminContentPage() {
     }
 
     if (isAdding === 'blog') {
-      return (
-        <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', alignItems: 'flex-start' }}>
-            <div style={{ width: 120, height: 80, borderRadius: '12px', background: colors.surface1, border: `1px dashed ${colors.borderSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted, flexShrink: 0, cursor: 'pointer' }}>
-              <Plus size={24} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <textarea placeholder="Nhập tiêu đề bài viết..." style={{ width: '100%', height: '60px', background: 'transparent', border: 'none', color: colors.text, fontSize: '20px', fontWeight: 700, outline: 'none', resize: 'none' }} />
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <select style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, color: colors.text2, fontSize: '12px', padding: '6px 12px', borderRadius: '6px', outline: 'none', cursor: 'pointer' }}>
-                  <option value="" disabled selected hidden>Chuyên mục</option>
-                  <option>Cẩm nang</option>
-                  <option>Hướng dẫn</option>
-                  <option>Blog</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '12px', display: 'flex', gap: '6px', alignItems: 'center', borderBottom: `1px solid ${colors.borderSoft}`, paddingBottom: '12px' }}>
-                <AlignLeft size={14} /> Nội dung
-              </div>
-              <textarea placeholder="Bắt đầu viết nội dung ở đây..." style={{ width: '100%', flex: 1, background: 'transparent', border: 'none', color: colors.text, fontSize: '14px', outline: 'none', resize: 'none', lineHeight: 1.6 }} />
-            </div>
-          </div>
-        </div>
-      );
+      return null;
     }
   };
 
@@ -464,13 +436,13 @@ export default function AdminContentPage() {
 
       {/* ADD DRAWER */}
       <div style={{
-        position: 'fixed', top: 0, right: isAdding ? 0 : '-520px', bottom: 0, width: '520px',
+        position: 'fixed', top: 0, right: isAdding && isAdding !== 'blog' ? 0 : '-520px', bottom: 0, width: '520px',
         background: colors.bg, borderLeft: `1px solid ${colors.borderSoft}`,
-        boxShadow: isAdding ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
+        boxShadow: isAdding && isAdding !== 'blog' ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
         transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 100,
         display: 'flex', flexDirection: 'column'
       }}>
-        {isAdding && (
+        {isAdding && isAdding !== 'blog' && (
           <>
             <div style={{ padding: '24px', borderBottom: `1px solid ${colors.borderSoft}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', color: colors.gold, textTransform: 'uppercase' }}>
@@ -500,6 +472,81 @@ export default function AdminContentPage() {
           </>
         )}
       </div>
+
+      {/* NEW BLOG MODAL */}
+      {isAdding === 'blog' && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '750px', maxWidth: '94vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Blog &amp; cẩm nang · Trang chủ</div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>Viết bài mới</div>
+              </div>
+              <span onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
+                <X size={16} />
+              </span>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tiêu đề bài viết</div>
+                <input placeholder="VD: Top 10 lounge lãng mạn cho buổi hẹn tại Hà Nội" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                <div style={{ fontSize: '11px', color: '#57534b', marginTop: '7px' }}>vietyoru.vn/blog/<span style={{ color: '#b99a55' }}>tieu-de-bai-viet</span></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Chuyên mục</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '6px 14px', borderRadius: '9px', cursor: 'pointer' }}>Cẩm nang</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>Hướng dẫn</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>Blog</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>Tin tức</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Ngôn ngữ hiển thị</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '6px 14px', borderRadius: '9px', cursor: 'pointer' }}>Tiếng Việt</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>English</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', padding: '5px 13px', borderRadius: '9px', cursor: 'pointer' }}>日本語</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Ảnh bìa</div>
+                <div style={{ position: 'relative', height: '150px', borderRadius: '13px', overflow: 'hidden', border: '1px dashed rgba(212,178,106,.4)', background: 'rgba(12,12,15,.55)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                  <span style={{ fontSize: '20px' }}>🖼️</span>
+                  <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#cbb884' }}>Bấm để tải ảnh bìa</span>
+                  <span style={{ fontSize: '10.5px', color: '#57534b' }}>PNG / JPG · tỉ lệ 16:9 · hiển thị trên trang chủ</span>
+                </div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}><span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Mô tả ngắn</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>0 / 160</span></div>
+                <textarea rows={2} placeholder="1–2 câu tóm tắt — hiển thị dưới tiêu đề trên trang chủ và kết quả tìm kiếm…" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.55, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase' }}>Nội dung</span>
+                  <span style={{ flex: 1 }}></span>
+                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer', fontSize: '12px', fontWeight: 800 }}>B</span>
+                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer', fontSize: '12.5px', fontStyle: 'italic', fontFamily: 'Georgia,serif' }}>I</span>
+                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer', fontSize: '10px', fontWeight: 800 }}>H2</span>
+                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>≡</span>
+                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>🔗</span>
+                  <span style={{ width: 30, height: 27, borderRadius: 7, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>🖼️</span>
+                </div>
+                <textarea rows={9} placeholder="Viết nội dung bài…" style={{ width: '100%', minHeight: '190px', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '13px 15px', color: '#f3f0ea', fontSize: '13px', lineHeight: 1.65, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}></textarea>
+                <div style={{ display: 'flex', marginTop: '6px' }}><span style={{ fontSize: '10.5px', color: '#57534b' }}>Hỗ trợ Markdown — ## mục, **đậm**, - danh sách, [link](url)</span><span style={{ flex: 1 }}></span><span style={{ fontSize: '10.5px', color: '#57534b' }}>0 từ</span></div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
+              <span style={{ flex: 1 }}></span>
+              <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
+              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#e3c27e', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.38)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>Lưu nháp</span>
+              <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>Đăng bài</span>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
