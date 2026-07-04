@@ -3515,6 +3515,7 @@ export class NightlifeDataService {
         },
         coupon: { select: { id: true, code: true, name: true } },
         couponIssue: { select: { id: true, code: true, status: true } },
+        user: { select: { id: true, displayName: true, tier: true } },
         guest: { select: { id: true, displayName: true, phone: true } },
         note: true,
         createdAt: true,
@@ -13145,6 +13146,11 @@ export class NightlifeDataService {
         user: true,
       },
     });
+
+    if (booking.user?.id) {
+      this.socketGateway?.notifyBookingStatusUpdate(booking.user.id, booking);
+    }
+
     return booking;
   }
 

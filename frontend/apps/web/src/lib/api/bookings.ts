@@ -192,15 +192,29 @@ const toApiParams = (params?: Record<string, string | number | undefined>) => {
 };
 
 export const bookingStatusGroup = (status: string): BookingStatusGroup => {
-  if (status === "COMPLETED" || status === "CHECKED_IN") return "Hoàn tất";
-  if (status === "CANCELLED" || status === "NO_SHOW") return "Đã hủy";
+  const normalizedStatus = status.trim().toUpperCase();
+  if (normalizedStatus === "COMPLETED" || normalizedStatus === "CHECKED_IN") return "Hoàn tất";
+  if (normalizedStatus === "CANCELLED" || normalizedStatus === "NO_SHOW") return "Đã hủy";
   return "Mới";
 };
 
-export const bookingStatusLabel = bookingStatusGroup;
+export const bookingStatusLabel = (status: string) => {
+  const normalizedStatus = status.trim().toUpperCase();
+  const labels: Record<string, string> = {
+    REQUESTED: "Mới",
+    CONFIRMED: "Đã xác nhận",
+    CHECKED_IN: "Đã check-in",
+    COMPLETED: "Hoàn tất",
+    CANCELLED: "Đã hủy",
+    NO_SHOW: "Không đến",
+  };
+
+  return labels[normalizedStatus] ?? status;
+};
 
 export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "scheduledAt" | "store">) => {
-  if (booking.status !== "REQUESTED" && booking.status !== "CONFIRMED") {
+  const normalizedStatus = booking.status.trim().toUpperCase();
+  if (normalizedStatus !== "REQUESTED" && normalizedStatus !== "CONFIRMED") {
     return false;
   }
 

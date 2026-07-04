@@ -54,7 +54,7 @@ export default function Page() {
   const [pointSummaryStatus, setPointSummaryStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Demo Member";
-  const phone = authUser?.phone || "0912 345 678";
+  const accountEmail = authUser?.email || "Chưa đăng nhập";
   const tier = authUser?.tier || "VIP";
   const canLoadPoints = authUser?.role === "USER";
   const rewardPoints = Math.max(0, pointSummary?.availablePoints ?? 0);
@@ -145,8 +145,18 @@ export default function Page() {
                   >
                     {name}
                   </h1>
-                  <p style={{ marginTop: 5, fontSize: 13, color: "rgba(36,26,10,.75)", fontWeight: 800 }}>
-                    {phone}
+                  <p
+                    style={{
+                      marginTop: 5,
+                      fontSize: 13,
+                      color: "rgba(36,26,10,.75)",
+                      fontWeight: 800,
+                      lineHeight: 1.25,
+                      overflowWrap: "anywhere",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {accountEmail}
                   </p>
                 </div>
                 <span style={{ borderRadius: 999, background: colors.onGold, color: colors.goldPale, padding: "7px 10px", fontSize: 11, fontWeight: 950 }}>
