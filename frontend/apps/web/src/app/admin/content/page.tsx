@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft, Image as ImageIcon, Settings } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
-import { contentApi } from '@/lib/api/content';
+import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
@@ -78,13 +78,24 @@ export default function AdminContentPage() {
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [blogs, setBlogs] = useState<CmsContentItem[]>([]);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
 
   useEffect(() => {
     fetchCategories();
+    fetchBlogs();
   }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      const data = await contentApi.adminList({ type: 'BLOG' });
+      if (data) setBlogs(data);
+    } catch (error) {
+      console.error('Failed to fetch blogs:', error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -169,6 +180,7 @@ export default function AdminContentPage() {
         }
       });
       alert(status === 'DRAFT' ? 'Đã lưu nháp thành công!' : 'Đã đăng bài thành công!');
+      fetchBlogs();
       closeDrawer();
       setBlogTitle('');
       setBlogCategory('Cẩm nang');
@@ -421,26 +433,32 @@ export default function AdminContentPage() {
       {/* BLOG CONTENT */}
       {activeTab === 'blog' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {mockBlogs.map((blog, idx) => (
-            <div key={idx} style={{ 
+          {blogs.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: colors.muted, fontSize: '14px', background: colors.surface1, borderRadius: '16px', border: `1px solid ${colors.borderSoft}` }}>
+              Chưa có bài viết nào
+            </div>
+          ) : blogs.map((blog) => (
+            <div key={blog.id} style={{ 
               background: colors.surface1, border: `1px solid ${colors.borderSoft}`, 
               borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px'
             }}>
-              <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: blog.color, flexShrink: 0 }}></div>
+              <div style={{ width: '96px', height: '64px', borderRadius: '8px', background: '#271932', flexShrink: 0 }}></div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '15px', fontWeight: 700, color: colors.text, margin: '0 0 6px 0' }}>{blog.title}</h3>
-                <div style={{ fontSize: '13px', color: colors.muted }}>{blog.cat} · {blog.date}</div>
+                <div style={{ fontSize: '13px', color: colors.muted }}>
+                  {(blog.metadata as any)?.category || 'Không phân loại'} · {new Date(blog.createdAt).toLocaleDateString('vi-VN')}
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', paddingRight: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.muted, fontSize: '13px' }}>
-                  <Eye size={16} /> {blog.views}
+                  <Eye size={16} /> --
                 </div>
                 <span style={{ 
-                  border: getBlogStatusStyle(blog.status).border, 
-                  color: getBlogStatusStyle(blog.status).color, 
+                  border: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').border, 
+                  color: getBlogStatusStyle(blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp').color, 
                   padding: '4px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, display: 'inline-block', minWidth: '80px', textAlign: 'center'
                 }}>
-                  {blog.status}
+                  {blog.status === 'PUBLISHED' ? 'Đã đăng' : 'Nháp'}
                 </span>
               </div>
             </div>
