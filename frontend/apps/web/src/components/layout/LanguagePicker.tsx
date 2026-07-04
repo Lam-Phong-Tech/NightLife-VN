@@ -3,8 +3,13 @@
 import { Check, ChevronDown, Globe, X } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-
-type LanguageCode = "vi" | "en" | "ja" | "ko" | "zh";
+import {
+  languageChangedEvent,
+  languageHtmlLang,
+  readStoredLanguage,
+  storeLanguagePreference,
+  type LanguageCode,
+} from "@/lib/i18n/client-translations";
 
 type LanguageOption = {
   code: LanguageCode;
@@ -13,9 +18,6 @@ type LanguageOption = {
   helper: string;
   htmlLang: string;
 };
-
-const storageKey = "vietyoru.language";
-const cookieName = "vietyoru_language";
 
 const colors = {
   modalBg: "#16141b",
@@ -38,56 +40,48 @@ const defaultLanguage: LanguageOption = {
   badge: "VI",
   label: "Tiếng Việt",
   helper: "Vietnamese",
-  htmlLang: "vi",
+  htmlLang: languageHtmlLang.vi,
 };
 
 const languages: LanguageOption[] = [
   defaultLanguage,
-  { code: "en", badge: "EN", label: "English", helper: "International", htmlLang: "en" },
-  { code: "ja", badge: "JA", label: "日本語", helper: "Japanese", htmlLang: "ja" },
-  { code: "ko", badge: "KO", label: "한국어", helper: "Korean", htmlLang: "ko" },
-  { code: "zh", badge: "ZH", label: "中文", helper: "Chinese", htmlLang: "zh" },
+  { code: "en", badge: "EN", label: "English", helper: "International", htmlLang: languageHtmlLang.en },
+  { code: "ja", badge: "JA", label: "日本語", helper: "Japanese", htmlLang: languageHtmlLang.ja },
+  { code: "ko", badge: "KO", label: "한국어", helper: "Korean", htmlLang: languageHtmlLang.ko },
+  { code: "zh", badge: "ZH", label: "中文", helper: "Chinese", htmlLang: languageHtmlLang.zh },
 ];
-
-function isLanguageCode(value: string | null): value is LanguageCode {
-  return languages.some((language) => language.code === value);
-}
 
 function getLanguage(code: LanguageCode) {
   return languages.find((language) => language.code === code) || defaultLanguage;
 }
 
-function readStoredLanguage(): LanguageCode {
-  if (typeof window === "undefined") return "vi";
-
-  try {
-    const storedLanguage = window.localStorage.getItem(storageKey);
-    if (isLanguageCode(storedLanguage)) return storedLanguage;
-  } catch {
-    return "vi";
-  }
-
-  return "vi";
-}
-
 function storeLanguage(language: LanguageOption) {
-  try {
-    window.localStorage.setItem(storageKey, language.code);
-  } catch {
-    // The visual picker should still work if browser storage is unavailable.
-  }
-
-  document.cookie = `${cookieName}=${language.code}; path=/; max-age=31536000; SameSite=Lax`;
-  document.documentElement.lang = language.htmlLang;
+  storeLanguagePreference(language.code);
+  window.dispatchEvent(
+    new CustomEvent(languageChangedEvent, { detail: { language: language.code } }),
+  );
 }
 
 export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
-  const [activeCode, setActiveCode] = useState<LanguageCode>(() => readStoredLanguage());
-  const [draftCode, setDraftCode] = useState<LanguageCode>(() => readStoredLanguage());
+  const [activeCode, setActiveCode] = useState<LanguageCode>("vi");
+  const [draftCode, setDraftCode] = useState<LanguageCode>("vi");
   const [isOpen, setIsOpen] = useState(false);
 
   const activeLanguage = useMemo(() => getLanguage(activeCode), [activeCode]);
   const draftLanguage = useMemo(() => getLanguage(draftCode), [draftCode]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const storedLanguage = readStoredLanguage();
+      setActiveCode(storedLanguage);
+      setDraftCode(storedLanguage);
+      window.dispatchEvent(
+        new CustomEvent(languageChangedEvent, { detail: { language: storedLanguage } }),
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = activeLanguage.htmlLang;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { ClientLanguageTranslator } from "@/components/i18n/ClientLanguageTranslator";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { jsonLdGraph, organizationJsonLd } from "@/lib/seo/structured-data";
@@ -46,9 +47,11 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
-        <SocketProvider>
-          <SiteChrome>{children}</SiteChrome>
-        </SocketProvider>
+        <ClientLanguageTranslator>
+          <SocketProvider>
+            <SiteChrome>{children}</SiteChrome>
+          </SocketProvider>
+        </ClientLanguageTranslator>
       </body>
     </html>
   );
