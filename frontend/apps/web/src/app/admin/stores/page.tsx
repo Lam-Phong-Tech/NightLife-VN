@@ -103,13 +103,20 @@ export default function AdminStoresPage() {
   };
 
   const openEditDrawer = (st: any) => {
+    const mapStatusToEnum = (s: string) => {
+      if (s === 'Đang hoạt động' || s === 'active' || s === 'ACTIVE') return 'ACTIVE';
+      if (s === 'Đang ẩn' || s === 'hidden' || s === 'SUSPENDED') return 'SUSPENDED';
+      if (s === 'Nháp' || s === 'draft' || s === 'DRAFT') return 'DRAFT';
+      return 'ACTIVE';
+    };
+
     setFormData({ 
       name: st.name || '', 
       category: st.category || 'CLUB', 
       city: st.city || 'Ho Chi Minh City', 
       address: st.address || '', 
       mapUrl: st.mapUrl || '', 
-      status: st.status || 'ACTIVE' 
+      status: mapStatusToEnum(st.status || 'ACTIVE')
     });
     setHoursForm(st.openingHours || defaultHours);
     setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE') || []);
