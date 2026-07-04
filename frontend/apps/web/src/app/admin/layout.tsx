@@ -215,18 +215,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* topbar */}
         <header style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 26px', background: 'rgba(12,12,15,.86)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1.8px', color: '#8c8679', textTransform: 'uppercase' }}>{subtitle}</div>
             <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px', marginTop: '2px' }}>{title}</div>
           </div>
           <div style={{ flex: 1 }}></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '9px 14px', width: '280px', maxWidth: '26vw' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.9" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-            <input 
-              type="text"
-              placeholder="Tìm quán, cast, booking, bill…" 
-              style={{ flex: 1, background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '13px', outline: 'none' }}
-            />
-          </div>
           <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', color: '#c5c0b6', border: '1px solid rgba(212,178,106,.28)', borderRadius: '11px', padding: '8px 13px', fontWeight: 500, cursor: 'pointer' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
             HN
