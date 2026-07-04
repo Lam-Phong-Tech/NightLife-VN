@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
+import { resolveClientUrl } from "@/lib/api/client";
 import { storeImageForSlug } from "@/lib/demo-media";
 import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
@@ -151,7 +152,8 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
   const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
-  const image = storeImageForSlug(store.slug, index);
+  const backendImage = resolveClientUrl(store.thumbnailUrl);
+  const image = backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : storeImageForSlug(store.slug, index);
   const statusLabel = index % 3 === 2 ? "Mở đến 02:00" : "Đang mở";
 
   return {
@@ -214,7 +216,7 @@ export default function Page() {
       setIsLoading(true);
       setError(null);
       discoveryApi
-        .listStores({
+        .listStoresStrict({
           q: query,
           city,
           area,

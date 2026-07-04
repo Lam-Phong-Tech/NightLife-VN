@@ -668,6 +668,10 @@ export const discoveryApi = {
         }).then(unwrapListResponse),
       () => getFallbackStores(params),
     ),
+  listStoresStrict: (params?: DiscoveryParams) =>
+    apiClient<PublicStore[] | PublicDiscoveryListResponse<PublicStore>>("/stores", {
+      params: toParams(params),
+    }).then(unwrapListResponse),
   listCasts: (params?: DiscoveryParams) =>
     withDemoFallback(
       () =>

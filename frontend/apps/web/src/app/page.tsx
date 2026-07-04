@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type CSSProperties, useEffect, useRef, useState } from "react";
+import React, { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -28,12 +28,12 @@ import {
   hotVideos,
   offers,
   rankListCast,
-  rankListQuan,
-  recs,
-  spaData,
-  svcData,
 } from "@/lib/mock-data";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
+import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
+import { resolveClientUrl } from "@/lib/api/client";
+import { storeImageForSlug } from "@/lib/demo-media";
+import { formatPriceTier } from "@/lib/price-tier";
 
 const colors = {
   shell: "#f0eee9",
@@ -95,6 +95,41 @@ const contentPlaceholders = [
   },
 ];
 
+const categoryLabels: Record<string, string> = {
+  BAR: "Bar",
+  CLUB: "Club",
+  LOUNGE: "Lounge",
+  GIRLS_BAR: "Girls bar",
+  KARAOKE: "Karaoke",
+  MASSAGE_SPA: "Spa",
+  RESTAURANT: "NhÃ  hÃ ng",
+  CASINO: "Casino",
+};
+
+const cityLabels: Record<string, string> = {
+  hn: "HÃ  Ná»™i",
+  hcm: "TP.HCM",
+};
+
+const areaLabels: Record<string, string> = {
+  "Hoan Kiem": "HoÃ n Kiáº¿m",
+  "Tay Ho": "TÃ¢y Há»“",
+  "Quan 1": "Quáº­n 1",
+  "Quan 3": "Quáº­n 3",
+  "Quan 7": "Quáº­n 7",
+};
+
+const categoryPrices: Record<string, string> = {
+  BAR: "tá»« 650.000Ä‘",
+  CLUB: "tá»« 2.500.000Ä‘",
+  LOUNGE: "tá»« 900.000Ä‘",
+  GIRLS_BAR: "tá»« 1.200.000Ä‘",
+  KARAOKE: "tá»« 1.500.000Ä‘",
+  MASSAGE_SPA: "tá»« 500.000Ä‘",
+  RESTAURANT: "tá»« 800.000Ä‘",
+  CASINO: "tá»« 3.000.000Ä‘",
+};
+
 type RankedItem = {
   rank?: string | number;
   numColor?: string;
@@ -112,8 +147,21 @@ type HomeBanner = {
   img?: string | null;
 };
 
+type HomeStoreCard = {
+  id: string;
+  slug: string;
+  name: string;
+  area: string;
+  catLabel: string;
+  category: string;
+  cityCode: string;
+  img: string;
+  href: string;
+  badgeText: string;
+  priceLabel: string;
+};
+
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
-type ServiceItem = (typeof svcData)[number];
 type VideoItem = (typeof hotVideos)[number];
 
 function normalizeArea(value = "") {
@@ -130,11 +178,11 @@ function getAreaRegion(areaValue = ""): Exclude<ServiceRegion, "all"> {
     : "hanoi";
 }
 
-function getServiceRegion(item: ServiceItem): Exclude<ServiceRegion, "all"> {
+function getServiceRegion(item: HomeStoreCard): Exclude<ServiceRegion, "all"> {
   return getAreaRegion(item.area);
 }
 
-function filterServicesByRegion(items: ServiceItem[], region: ServiceRegion) {
+function filterServicesByRegion(items: HomeStoreCard[], region: ServiceRegion) {
   if (region === "all") return items;
   return items.filter((item) => getServiceRegion(item) === region);
 }
@@ -147,6 +195,37 @@ function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
 function filterVideosByRegion(items: VideoItem[], region: ServiceRegion) {
   if (region === "all") return items;
   return items.filter((item) => getAreaRegion(item.name) === region);
+}
+
+function storeImage(store: PublicStore, index: number) {
+  const backendImage = resolveClientUrl(store.thumbnailUrl);
+  return backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : storeImageForSlug(store.slug, index);
+}
+
+function storeAreaLabel(store: PublicStore) {
+  const areaName = store.area?.name ?? store.district ?? "";
+  const readableArea = areaLabels[areaName] ?? areaName;
+  const readableCity = cityLabels[store.cityCode ?? ""] ?? store.city;
+
+  return [readableArea, readableCity].filter(Boolean).join(" Â· ");
+}
+
+function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
+  const categoryLabel = categoryLabels[store.category] ?? store.category;
+
+  return {
+    id: store.id,
+    slug: store.slug,
+    name: store.name,
+    area: storeAreaLabel(store),
+    catLabel: categoryLabel,
+    category: store.category,
+    cityCode: store.cityCode ?? "",
+    img: storeImage(store, index),
+    href: `/stores/${store.slug}`,
+    badgeText: index < 2 ? "Äáº·t bÃ n nhanh" : categoryLabel,
+    priceLabel: formatPriceTier(categoryPrices[store.category] ?? "tá»« 900.000Ä‘"),
+  };
 }
 
 function getRankingVisual(rankNumber: number, item: RankedItem) {
@@ -749,10 +828,10 @@ function SectionHeading({ title, action }: { title: string; action?: string }) {
   );
 }
 
-function VenueMiniCard({ item, compact = false }: { item: (typeof recs)[number]; compact?: boolean }) {
+function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact?: boolean }) {
   return (
     <Link
-      href="/stores/neon-club"
+      href={item.href}
       style={{
         minWidth: compact ? "162px" : "0",
         display: "block",
@@ -916,17 +995,10 @@ function RankingRow({ item }: { item: RankedItem }) {
   );
 }
 
-function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]; compact?: boolean }) {
-  const slug = item.name
-    ?.toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "") || "neon-club";
-
+function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?: boolean }) {
   return (
     <Link
-      href={`/stores/${slug}`}
+      href={item.href}
       style={{
         overflow: "hidden",
         borderRadius: homeCardRadius,
@@ -936,7 +1008,7 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
       }}
     >
       <PlaceholderMedia
-        src={item.grad}
+        src={item.img}
         alt={item.name ?? "Dịch vụ"}
         label="Ảnh dịch vụ"
         style={{ height: compact ? "92px" : "132px", position: "relative" }}
@@ -948,6 +1020,7 @@ function ServiceCard({ item, compact = false }: { item: (typeof svcData)[number]
       <div style={{ padding: "12px" }}>
         <div style={{ fontSize: "14px", fontWeight: 800 }}>{item.name}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.area}</div>
+        <div style={{ marginTop: "6px", color: colors.goldSoft, fontSize: "12px", fontWeight: 800 }}>{item.priceLabel}</div>
       </div>
     </Link>
   );
@@ -1019,6 +1092,31 @@ function ContentPlaceholderCard({
         Xem placeholder
       </div>
     </Link>
+  );
+}
+
+function HomeDataMessage({ text, compact = false }: { text: string; compact?: boolean }) {
+  return (
+    <div
+      style={{
+        minHeight: compact ? 92 : 118,
+        width: "100%",
+        minWidth: compact ? 180 : 0,
+        gridColumn: "1 / -1",
+        display: "grid",
+        placeItems: "center",
+        borderRadius: homeCardRadius,
+        border: `1px dashed ${colors.line}`,
+        background: "rgba(255,255,255,.035)",
+        color: colors.muted,
+        fontSize: compact ? 12 : 13,
+        fontWeight: 800,
+        textAlign: "center",
+        padding: "14px",
+      }}
+    >
+      {text}
+    </div>
   );
 }
 
@@ -1245,11 +1343,32 @@ export default function Page() {
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
   const [activeVideoRegion, setActiveVideoRegion] = useState<ServiceRegion>("hanoi");
+  const [homeStores, setHomeStores] = useState<PublicStore[]>([]);
+  const [isHomeStoresLoading, setHomeStoresLoading] = useState(true);
+  const [homeStoresError, setHomeStoresError] = useState("");
+  const homeStoreCards = useMemo(
+    () => homeStores.map(mapStoreToHomeCard),
+    [homeStores],
+  );
+  const storeRankItems = useMemo<RankedItem[]>(
+    () =>
+      homeStoreCards.map((store, index) => ({
+        rank: index + 1,
+        img: store.img,
+        name: store.name,
+        area: store.area,
+        href: store.href,
+      })),
+    [homeStoreCards],
+  );
   const rankList = filterRankingsByRegion(
-    (activeRankTab === "quan" ? rankListQuan : rankListCast) as RankedItem[],
+    activeRankTab === "quan" ? storeRankItems : (rankListCast as RankedItem[]),
     activeRankRegion,
   );
-  const svc = filterServicesByRegion(activeSvcTab === "nhahang" ? svcData : spaData, activeServiceRegion);
+  const serviceSource = homeStoreCards.filter((store) =>
+    activeSvcTab === "nhahang" ? store.category === "RESTAURANT" : store.category === "MASSAGE_SPA",
+  );
+  const svc = filterServicesByRegion(serviceSource, activeServiceRegion);
   const videoList = filterVideosByRegion(hotVideos, activeVideoRegion);
 
   useEffect(() => {
@@ -1260,6 +1379,29 @@ export default function Page() {
 
     return () => {
       style.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    discoveryApi
+      .listStoresStrict({ city: "all", limit: 24, sort: "priority" })
+      .then((stores) => {
+        if (!cancelled) setHomeStores(stores);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHomeStores([]);
+          setHomeStoresError("ChÆ°a káº¿t ná»‘i Ä‘Æ°á»£c API quÃ¡n.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHomeStoresLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -1282,7 +1424,13 @@ export default function Page() {
             <section style={{ marginTop: "24px" }}>
               <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "6px" }}>
-                {recs.slice(0, 3).map((item) => <VenueMiniCard key={item.name} item={item} compact />)}
+                {isHomeStoresLoading ? (
+                  <HomeDataMessage text="Đang tải quán từ API..." compact />
+                ) : homeStoreCards.length ? (
+                  homeStoreCards.slice(0, 3).map((item) => <VenueMiniCard key={item.slug} item={item} compact />)
+                ) : (
+                  <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} compact />
+                )}
               </div>
             </section>
 
@@ -1301,7 +1449,13 @@ export default function Page() {
                 onRegionChange={setActiveRankRegion}
               />
               <div style={{ display: "grid", gap: "10px" }}>
-                {rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)}
+                {activeRankTab === "quan" && isHomeStoresLoading ? (
+                  <HomeDataMessage text="Đang tải xếp hạng quán..." />
+                ) : rankList.length ? (
+                  rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)
+                ) : (
+                  <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} />
+                )}
               </div>
             </section>
 
@@ -1320,7 +1474,13 @@ export default function Page() {
                 onRegionChange={setActiveServiceRegion}
               />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
-                {svc.slice(0, 2).map((item) => <ServiceCard key={item.name} item={item} compact />)}
+                {isHomeStoresLoading ? (
+                  <HomeDataMessage text="Đang tải dịch vụ từ API..." compact />
+                ) : svc.length ? (
+                  svc.slice(0, 2).map((item) => <ServiceCard key={item.slug} item={item} compact />)
+                ) : (
+                  <HomeDataMessage text={homeStoresError || "Chưa có quán phù hợp."} compact />
+                )}
               </div>
             </section>
 
@@ -1369,7 +1529,13 @@ export default function Page() {
             <section style={{ marginTop: "34px" }}>
               <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {recs.map((item) => <VenueMiniCard key={item.name} item={item} />)}
+                {isHomeStoresLoading ? (
+                  <HomeDataMessage text="Đang tải quán từ API..." />
+                ) : homeStoreCards.length ? (
+                  homeStoreCards.slice(0, 4).map((item) => <VenueMiniCard key={item.slug} item={item} />)
+                ) : (
+                  <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} />
+                )}
               </div>
             </section>
 
@@ -1388,7 +1554,13 @@ export default function Page() {
                   onRegionChange={setActiveRankRegion}
                 />
                 <div style={{ display: "grid", gap: "12px" }}>
-                  {rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)}
+                  {activeRankTab === "quan" && isHomeStoresLoading ? (
+                    <HomeDataMessage text="Đang tải xếp hạng quán..." />
+                  ) : rankList.length ? (
+                    rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)
+                  ) : (
+                    <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} />
+                  )}
                 </div>
               </div>
             </section>
@@ -1411,7 +1583,13 @@ export default function Page() {
                 onRegionChange={setActiveServiceRegion}
               />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {svc.map((item) => <ServiceCard key={item.name} item={item} />)}
+                {isHomeStoresLoading ? (
+                  <HomeDataMessage text="Đang tải dịch vụ từ API..." />
+                ) : svc.length ? (
+                  svc.map((item) => <ServiceCard key={item.slug} item={item} />)
+                ) : (
+                  <HomeDataMessage text={homeStoresError || "Chưa có quán phù hợp."} />
+                )}
               </div>
             </section>
 
