@@ -1038,12 +1038,13 @@ export class NightlifeDataService {
       strict: true,
     });
     const category = this.normalizeCategory(query.category, { strict: true });
+    const scope = this.resolveAdminRankingScope(query.scope);
     const limit = this.resolveRankingLimit(query.limit);
     const now = new Date();
     const configs = await this.prisma.rankingConfig.findMany({
       where: {
         targetType,
-        scope: 'global',
+        scope,
         status: 'ACTIVE',
         deletedAt: null,
         ...(cityCode ? { OR: [{ cityCode: 'all' }, { cityCode }] } : {}),
@@ -1081,8 +1082,9 @@ export class NightlifeDataService {
             cityCode,
             category,
           });
+    const allowFallback = scope === 'global';
     const fallbackItems =
-      rankedItems.length < limit
+      allowFallback && rankedItems.length < limit
         ? await this.loadRankingFallbackItems(targetType, {
             cityCode,
             category,
@@ -1103,6 +1105,7 @@ export class NightlifeDataService {
         targetType,
         city: cityCode ?? 'all',
         category: category ?? null,
+        scope,
         limit,
         total: data.length,
       },
@@ -1122,7 +1125,10 @@ export class NightlifeDataService {
     const category = hasCategoryFilter
       ? this.resolveAdminRankingCategory(query.category)
       : undefined;
-    const scope = this.cleanText(query.scope);
+    const scope =
+      query.scope !== undefined && query.scope !== ''
+        ? this.resolveAdminRankingScope(query.scope)
+        : undefined;
 
     const configs = await this.prisma.rankingConfig.findMany({
       where: {
@@ -2357,6 +2363,19 @@ export class NightlifeDataService {
             category: true,
             city: true,
             district: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                url: true,
+              },
+            },
           },
         },
       },
@@ -15505,45 +15524,71 @@ export class NightlifeDataService {
     };
   }
 
+  async listPublicHotVideos(cityCode: string) {
+    return this.getHotVideos(cityCode, { publicOnly: true });
+  }
+
   async adminGetHotVideos(cityCode: string) {
-    const slug = `hot-videos-${cityCode}`;
+    return this.getHotVideos(cityCode, { publicOnly: false });
+  }
+
+  private async getHotVideos(
+    cityCode: string,
+    options: { publicOnly: boolean },
+  ) {
+    const normalizedCityCode = this.normalizeHotVideoCityCode(cityCode);
+    const slug = `hot-videos-${normalizedCityCode}`;
     const content = await this.prisma.content.findUnique({ where: { slug } });
     if (!content || !content.metadata) return [];
 
     const meta = this.asRecord(content.metadata);
     if (!meta || !Array.isArray(meta.videos)) return [];
 
-    const mediaIds = meta.videos.map((v: any) => v.mediaId);
-    
-    // Fetch media details
+    const mediaIds = meta.videos
+      .map((video: unknown) => this.asRecord(video)?.mediaId)
+      .filter((mediaId): mediaId is string => typeof mediaId === 'string');
+    if (!mediaIds.length) return [];
+
     const medias = await this.prisma.media.findMany({
-      where: { id: { in: mediaIds } },
-      include: { store: { select: { name: true } } },
+      where: {
+        id: { in: mediaIds },
+        ...(options.publicOnly
+          ? {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'VIDEO',
+            }
+          : {}),
+      },
+      include: { store: { select: { name: true, slug: true } } },
     });
 
-    // Sort according to mediaIds array to preserve rank
     const sortedMedias = mediaIds
-      .map(id => medias.find(m => m.id === id))
-      .filter(m => !!m);
+      .map((id) => medias.find((media) => media.id === id))
+      .filter((media) => !!media);
 
-    return sortedMedias.map(item => ({
+    return sortedMedias.map((item) => ({
       id: item!.id,
       url: item!.url,
       title: item!.originalName,
       storeName: item!.store?.name,
+      storeSlug: item!.store?.slug,
+      href: item!.store?.slug ? `/stores/${item!.store.slug}` : null,
       createdAt: item!.createdAt,
     }));
   }
 
   async adminUpdateHotVideos(cityCode: string, dto: UpdateHotVideosDto, adminId: string) {
-    const slug = `hot-videos-${cityCode}`;
+    const normalizedCityCode = this.normalizeHotVideoCityCode(cityCode);
+    const slug = `hot-videos-${normalizedCityCode}`;
     const videosMeta = dto.mediaIds.map((id, index) => ({ mediaId: id, rank: index + 1 }));
 
     await this.prisma.content.upsert({
       where: { slug },
       create: {
         slug,
-        title: `Hot Videos - ${cityCode.toUpperCase()}`,
+        title: `Hot Videos - ${normalizedCityCode.toUpperCase()}`,
         type: 'BANNER',
         status: 'PUBLISHED',
         authorId: adminId,
@@ -15556,5 +15601,10 @@ export class NightlifeDataService {
     });
 
     return { success: true };
+  }
+
+  private normalizeHotVideoCityCode(cityCode: string) {
+    const normalized = this.normalizeToken(cityCode) || 'all';
+    return ['all', 'hn', 'hcm'].includes(normalized) ? normalized : 'all';
   }
 }

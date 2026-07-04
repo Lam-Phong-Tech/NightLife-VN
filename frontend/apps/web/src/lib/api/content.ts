@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 
 export type CmsContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
-export type CmsContentType = "BLOG" | "POLICY";
+export type CmsContentType = "BLOG" | "POLICY" | "BANNER";
 
 export type CmsContentItem = {
   id: string;
@@ -39,6 +39,16 @@ export type CmsContentListParams = {
   limit?: number;
 };
 
+export type PublicHotVideo = {
+  id: string;
+  url: string;
+  title?: string | null;
+  storeName?: string | null;
+  storeSlug?: string | null;
+  href?: string | null;
+  createdAt?: string;
+};
+
 const toParams = (params: CmsContentListParams = {}) => {
   const searchParams: Record<string, string> = {};
 
@@ -58,6 +68,8 @@ export const contentApi = {
     const queryString = searchParams.toString();
     return apiClient<CmsContentItem>(`/contents/${encodeURIComponent(slug)}${queryString ? `?${queryString}` : ''}`);
   },
+  hotVideos: (cityCode: "all" | "hn" | "hcm") =>
+    apiClient<PublicHotVideo[]>(`/content/hot-videos/${encodeURIComponent(cityCode)}`),
   adminList: (params?: CmsContentListParams) =>
     apiClient<CmsContentItem[]>("/admin/contents", { params: toParams(params) }),
   adminCreate: (payload: Partial<CmsContentItem>) =>

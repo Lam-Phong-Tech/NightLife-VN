@@ -162,6 +162,11 @@ export class NightlifeDataController {
     return this.nightlifeDataService.adminListStoreVideos(query);
   }
 
+  @Get('content/hot-videos/:cityCode')
+  listPublicHotVideos(@Param('cityCode') cityCode: string) {
+    return this.nightlifeDataService.listPublicHotVideos(cityCode);
+  }
+
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/content/hot-videos/:cityCode')

@@ -18,6 +18,7 @@ export type PublicCoupon = {
     category: string;
     city: string;
     district?: string | null;
+    media?: Array<{ url: string }>;
   };
 };
 

@@ -36,6 +36,7 @@ export type PublicRankingResponse = {
     targetType: RankingTargetType;
     city: RankingCity;
     category?: string | null;
+    scope?: string;
     limit: number;
     total: number;
   };
@@ -44,7 +45,8 @@ export type PublicRankingResponse = {
 export type RankingParams = {
   targetType?: RankingTargetType;
   city?: RankingCity;
-  category?: RankingCategory;
+  category?: RankingCategory | string;
+  scope?: string;
   limit?: number;
 };
 
