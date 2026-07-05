@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/api/client';
 
 const ICONS: Record<string, string> = {
   pin: '<path d="M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/>',
@@ -58,6 +59,11 @@ const DEFAULT_STATE = {
   brand: { name: 'Vietyoru', tagline: 'VIETNAM NIGHTLIFE GUIDE' }
 };
 
+type AppearanceState = typeof DEFAULT_STATE;
+type AppearanceConfigResponse = {
+  data?: Partial<AppearanceState> | null;
+};
+
 const getSvgUri = (k: string, color: string) => {
   const body = ICONS[k] || ICONS.star;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
@@ -65,6 +71,8 @@ const getSvgUri = (k: string, color: string) => {
 };
 
 export default function AppearancePage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [savedState, setSavedState] = useState(JSON.stringify(DEFAULT_STATE));
   
   const [quick, setQuick] = useState([...DEFAULT_STATE.quick]);
@@ -75,6 +83,33 @@ export default function AppearancePage() {
   const [drawer, setDrawer] = useState<{group: 'quick' | 'nav', id: string} | null>(null);
   const [logoOpen, setLogoOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const res = await apiClient<AppearanceConfigResponse>('/system-config/appearance');
+        if (res?.data) {
+          const fetchedState = {
+            quick: res.data.quick || DEFAULT_STATE.quick,
+            nav: res.data.nav || DEFAULT_STATE.nav,
+            titles: res.data.titles || DEFAULT_STATE.titles,
+            brand: res.data.brand || DEFAULT_STATE.brand,
+          };
+          setSavedState(JSON.stringify(fetchedState));
+          setQuick(fetchedState.quick);
+          setNav(fetchedState.nav);
+          setTitles(fetchedState.titles);
+          setBrand(fetchedState.brand);
+        }
+      } catch (err) {
+        console.error('Failed to load appearance config', err);
+        setToast('Lỗi tải cấu hình: Đang dùng dữ liệu mặc định');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadConfig();
+  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -106,9 +141,22 @@ export default function AppearancePage() {
     showToast('Đã hoàn tác về bản đang chạy');
   };
 
-  const handleSaveAll = () => {
-    setSavedState(currentStateStr);
-    showToast('Đã áp dụng lên giao diện người dùng · bản demo');
+  const handleSaveAll = async () => {
+    try {
+      setSaving(true);
+      const dataToSave = { quick, nav, titles, brand };
+      await apiClient('/admin/system-config/appearance', {
+        method: 'PUT',
+        data: { value: dataToSave }
+      });
+      setSavedState(currentStateStr);
+      showToast('Đã lưu thành công và áp dụng giao diện');
+    } catch (err) {
+      console.error(err);
+      showToast(err instanceof Error ? err.message : 'Lưu cấu hình thất bại!');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderIconDrawer = () => {
@@ -260,7 +308,7 @@ export default function AppearancePage() {
         </div>
       </div>
 
-      <div style={{ padding: '22px 26px 110px' }}>
+      <div style={{ padding: '22px 26px 110px', opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
         {/* LOGO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '0 0 12px' }}>
           <div>
@@ -469,7 +517,9 @@ export default function AppearancePage() {
           <span style={{ fontSize: '11.5px', color: '#8c8679' }}>Người dùng vẫn thấy bản cũ cho tới khi áp dụng</span>
           <div style={{ flex: 1 }}></div>
           <span onClick={handleUndoAll} style={{ fontSize: '12.5px', fontWeight: 600, color: '#c5c0b6', border: '1px solid rgba(255,255,255,.14)', borderRadius: '10px', padding: '9px 16px', cursor: 'pointer' }}>Hoàn tác tất cả</span>
-          <span onClick={handleSaveAll} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '10px', padding: '9px 18px', cursor: 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>Lưu & áp dụng</span>
+          <span onClick={saving ? undefined : handleSaveAll} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: saving ? '#c5c0b6' : 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', borderRadius: '10px', padding: '9px 18px', cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>
+            {saving ? 'Đang lưu...' : 'Lưu & áp dụng'}
+          </span>
         </div>
       )}
 
