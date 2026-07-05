@@ -71,6 +71,11 @@ describeDb('CouponIssue one-time update with a real database (e2e)', () => {
     return { id };
   };
 
+  const createValidPhoneFixture = () => {
+    const digits = randomUUID().replace(/\D/g, '').padEnd(8, '0').slice(0, 8);
+    return `+8490${digits}`;
+  };
+
   it('allows exactly one concurrent ISSUED to USED transition', async () => {
     const suffix = randomUUID().slice(0, 8);
     const store = await createStoreFixture(
@@ -150,7 +155,7 @@ describeDb('CouponIssue one-time update with a real database (e2e)', () => {
     });
     createdCouponIds.push(coupon.id);
 
-    const phone = `+8490${suffix}`;
+    const phone = createValidPhoneFixture();
     createdGuestPhones.push(phone);
     const failingPrisma = prisma.$extends({
       query: {
