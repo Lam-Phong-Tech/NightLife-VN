@@ -58,6 +58,7 @@ export class ResetPasswordDto {
   resetToken: string;
 
   @ApiProperty({ minLength: 8, example: 'NewStr0ngPass!' })
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
@@ -68,6 +69,7 @@ export class ResetPasswordDto {
   password: string;
 
   @ApiProperty({ minLength: 8, example: 'NewStr0ngPass!' })
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MinLength(8)

@@ -1,6 +1,7 @@
 "use client";
 
 import { clearAuthSession, getAuthUser, type AuthUser } from "@/lib/auth/session";
+import { logoutCurrentUser } from "@/lib/api/auth";
 import { memberApi, type MemberPointSummary } from "@/lib/api/member";
 import {
   CalendarDays,
@@ -46,20 +47,31 @@ const menuItems = [
 
 export default function Page() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authStatus, setAuthStatus] = useState<"checking" | "ready" | "redirecting">("checking");
   const [pointSummary, setPointSummary] = useState<MemberPointSummary | null>(null);
   const [pointSummaryStatus, setPointSummaryStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setAuthUser(getAuthUser());
+      const currentUser = getAuthUser();
+
+      if (!currentUser || currentUser.role !== "USER") {
+        clearAuthSession();
+        setAuthStatus("redirecting");
+        window.location.replace("/dang-nhap?redirect=/tai-khoan");
+        return;
+      }
+
+      setAuthUser(currentUser);
+      setAuthStatus("ready");
     }, 0);
 
     return () => window.clearTimeout(timer);
   }, []);
 
-  const name = authUser?.displayName || authUser?.email?.split("@")[0] || "Demo Member";
-  const accountEmail = authUser?.email || "Chưa đăng nhập";
-  const tier = authUser?.tier || "VIP";
+  const name = authUser?.displayName || authUser?.email?.split("@")[0] || "";
+  const accountEmail = authUser?.email || "";
+  const tier = authUser?.tier || "FREE";
   const canLoadPoints = authUser?.role === "USER";
   const rewardPoints = Math.max(0, pointSummary?.availablePoints ?? 0);
   const rewardTarget = Math.max(pointSummary?.nextTierThreshold ?? defaultPointTarget, 1);
@@ -95,9 +107,30 @@ export default function Page() {
     };
   }, [canLoadPoints]);
 
-  const logout = () => {
-    clearAuthSession();
+  const logout = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    try {
+      await logoutCurrentUser();
+    } catch {
+      // Local logout still clears the browser session if the server token is already invalid.
+    } finally {
+      clearAuthSession();
+      window.location.replace("/dang-nhap");
+    }
   };
+
+  if (authStatus !== "ready" || !authUser) {
+    return (
+      <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+        <section style={{ maxWidth: 1120, margin: "0 auto", padding: "42px 18px" }}>
+          <div style={{ color: colors.muted, fontSize: 14, fontWeight: 800 }}>
+            {authStatus === "redirecting" ? "Đang chuyển về trang đăng nhập..." : "Đang kiểm tra phiên đăng nhập..."}
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>

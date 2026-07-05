@@ -62,6 +62,7 @@ declare global {
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const displayNamePattern = /^[\p{L}\s]+$/u;
 const passwordRules = [
   { test: (value: string) => value.length >= 8, message: "Mật khẩu cần tối thiểu 8 ký tự." },
   { test: (value: string) => /[a-z]/.test(value), message: "Mật khẩu cần có chữ thường." },
@@ -71,6 +72,14 @@ const passwordRules = [
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
+}
+
+function normalizeDisplayName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function normalizePassword(value: string) {
+  return value.trim();
 }
 
 function getInitialQueryMessage() {
@@ -105,7 +114,13 @@ function validateAuthForm({
   confirmPassword: string;
 }) {
   const normalizedEmail = normalizeEmail(email);
-  const trimmedName = displayName.trim();
+  const trimmedName = normalizeDisplayName(displayName);
+  const normalizedPassword = normalizePassword(password);
+  const normalizedConfirmPassword = normalizePassword(confirmPassword);
+
+  if (isReg && !trimmedName) {
+    return "Vui lòng nhập họ tên.";
+  }
 
   if (isReg && trimmedName.length < 2) {
     return "Vui lòng nhập họ tên tối thiểu 2 ký tự.";
@@ -113,6 +128,10 @@ function validateAuthForm({
 
   if (isReg && trimmedName.length > 80) {
     return "Họ tên không được vượt quá 80 ký tự.";
+  }
+
+  if (isReg && !displayNamePattern.test(trimmedName)) {
+    return "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
   }
 
   if (!normalizedEmail) {
@@ -127,29 +146,29 @@ function validateAuthForm({
     return "Email không được vượt quá 254 ký tự.";
   }
 
-  if (!password) {
+  if (!normalizedPassword) {
     return "Vui lòng nhập mật khẩu.";
   }
 
-  if (password.length > 72) {
+  if (normalizedPassword.length > 72) {
     return "Mật khẩu không được vượt quá 72 ký tự.";
   }
 
   if (isReg) {
-    const failedRule = passwordRules.find((rule) => !rule.test(password));
+    const failedRule = passwordRules.find((rule) => !rule.test(normalizedPassword));
 
     if (failedRule) {
       return failedRule.message;
     }
 
-    if (!confirmPassword) {
+    if (!normalizedConfirmPassword) {
       return "Vui lòng nhập lại mật khẩu.";
     }
 
-    if (password !== confirmPassword) {
+    if (normalizedPassword !== normalizedConfirmPassword) {
       return "Mật khẩu nhập lại chưa khớp.";
     }
-  } else if (password.length < 8) {
+  } else if (normalizedPassword.length < 8) {
     return "Mật khẩu cần tối thiểu 8 ký tự.";
   }
 
@@ -204,14 +223,23 @@ export default function Page() {
     event.preventDefault();
 
     const normalizedEmail = normalizeEmail(email);
-    const trimmedDisplayName = displayName.trim();
+    const trimmedDisplayName = normalizeDisplayName(displayName);
+    const normalizedPassword = normalizePassword(password);
+    const normalizedConfirmPassword = normalizePassword(confirmPassword);
     const validationMessage = validateAuthForm({
       isReg,
-      displayName,
-      email,
-      password,
-      confirmPassword,
+      displayName: trimmedDisplayName,
+      email: normalizedEmail,
+      password: normalizedPassword,
+      confirmPassword: normalizedConfirmPassword,
     });
+
+    setEmail(normalizedEmail);
+    setPassword(normalizedPassword);
+    if (isReg) {
+      setDisplayName(trimmedDisplayName);
+      setConfirmPassword(normalizedConfirmPassword);
+    }
 
     if (validationMessage) {
       setMessageTone("error");
@@ -226,7 +254,7 @@ export default function Page() {
       if (isReg) {
         const session = await registerMember({
           email: normalizedEmail,
-          password,
+          password: normalizedPassword,
           displayName: trimmedDisplayName,
         });
         setAuthSession(session);
@@ -234,7 +262,7 @@ export default function Page() {
         return;
       }
 
-      const session = await loginMember({ email: normalizedEmail, password });
+      const session = await loginMember({ email: normalizedEmail, password: normalizedPassword });
       setAuthSession(session);
       window.location.href = redirectTo;
     } catch (error) {

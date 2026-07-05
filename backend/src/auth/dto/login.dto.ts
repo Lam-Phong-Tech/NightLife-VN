@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, type TransformFnParams } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
@@ -7,6 +7,9 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+
+const trimString = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? value.trim() : value;
 
 export class LoginDto {
   @ApiProperty({ example: 'owner@nightlife.vn' })
@@ -18,6 +21,7 @@ export class LoginDto {
   email: string;
 
   @ApiProperty({ minLength: 8, example: 'Str0ngPass!' })
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MinLength(8)

@@ -313,7 +313,7 @@ export const getLastBooking = (bookingId?: string | null) => {
     return lastBooking;
   }
 
-  return readStoredBookings().find((booking) => booking.id === bookingId) ?? lastBooking;
+  return null;
 };
 
 export const getGuestBookingHistory = readStoredBookings;

@@ -61,6 +61,7 @@ describe('NightlifeDataService', () => {
     store: {
       create: jest.fn(),
       findMany: jest.fn(),
+      findUnique: jest.fn(),
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       count: jest.fn(),
@@ -78,6 +79,7 @@ describe('NightlifeDataService', () => {
     },
     media: {
       create: jest.fn(),
+      findMany: jest.fn(),
       updateMany: jest.fn(),
     },
     content: {
@@ -266,6 +268,7 @@ describe('NightlifeDataService', () => {
     prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' } as never);
     prisma.cast.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.media.create.mockResolvedValue({ id: 'media-draft-1' } as never);
+    prisma.media.findMany.mockResolvedValue([] as never);
     prisma.media.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.content.create.mockResolvedValue({ id: 'content-draft-1' } as never);
     prisma.content.updateMany.mockResolvedValue({ count: 1 } as never);
@@ -3720,6 +3723,139 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('shows submitted member bills in the admin pending bill queue', async () => {
+    const createdAt = new Date('2026-07-01T10:05:00.000Z');
+    prisma.bill.aggregate.mockResolvedValue({
+      _sum: { totalVnd: 1800000 },
+    } as never);
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-1',
+        billNumber: 'BILL-20260701-ABC12345',
+        status: 'SUBMITTED',
+        totalVnd: 1800000,
+        discountVnd: 0,
+        commissionAmountVnd: 0,
+        pointsEarned: 0,
+        rejectReason: null,
+        createdAt,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        user: { id: 'member-1', displayName: 'Minh', tier: 'Member' },
+        guest: null,
+        booking: null,
+        media: [],
+      },
+    ] as never);
+    prisma.media.findMany.mockResolvedValue([
+      { billId: 'bill-1', url: '/storage/files/bill-1.png' },
+    ] as never);
+    prisma.bill.count
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+
+    const result = await service.listAdminBills({
+      status: 'pending',
+      page: 1,
+      limit: 8,
+    });
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'SUBMITTED',
+        }),
+        skip: 0,
+        take: 8,
+        select: expect.objectContaining({
+          store: { select: { name: true, slug: true } },
+          user: { select: { id: true, displayName: true, tier: true } },
+          guest: { select: { id: true, displayName: true } },
+        }),
+      }),
+    );
+    expect(prisma.media.findMany).toHaveBeenCalledWith({
+      where: { billId: { in: ['bill-1'] }, deletedAt: null },
+      select: { billId: true, url: true },
+    });
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: 'bill-1',
+        billNumber: 'BILL-20260701-ABC12345',
+        store: 'Neon Club',
+        amount: 1800000,
+        sender: 'Minh',
+        status: 'SUBMITTED',
+        hasImage: true,
+        images: ['/storage/files/bill-1.png'],
+      }),
+    ]);
+    expect(result.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        page: 1,
+        limit: 8,
+        totalPages: 1,
+      }),
+    );
+    expect(result.stats).toEqual(
+      expect.objectContaining({
+        pendingCount: 1,
+        approvedCount: 0,
+        rejectedCount: 0,
+        totalAmountPending: 1800000,
+      }),
+    );
+  });
+
+  it('keeps the admin pending bill queue available when bill evidence lookup fails', async () => {
+    const createdAt = new Date('2026-07-01T10:05:00.000Z');
+    prisma.bill.aggregate.mockResolvedValue({
+      _sum: { totalVnd: 900000 },
+    } as never);
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-2',
+        billNumber: 'BILL-20260701-XYZ98765',
+        status: 'SUBMITTED',
+        totalVnd: 900000,
+        discountVnd: 0,
+        commissionAmountVnd: 0,
+        pointsEarned: 0,
+        rejectReason: null,
+        createdAt,
+        store: { id: 'store-2', name: 'Moonlight Bar', slug: 'moonlight-bar' },
+        user: null,
+        guest: { id: 'guest-1', displayName: 'Guest Minh' },
+        booking: null,
+      },
+    ] as never);
+    prisma.media.findMany.mockRejectedValue(new Error('media relation failed'));
+    prisma.bill.count
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+
+    const result = await service.listAdminBills({
+      status: 'pending',
+      page: 1,
+      limit: 8,
+    });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: 'bill-2',
+        store: 'Moonlight Bar',
+        sender: 'Guest Minh',
+        hasImage: false,
+        images: [],
+      }),
+    ]);
+  });
+
   it('submits a member bill with a coupon issue without requiring a booking', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.store.findFirst.mockResolvedValue({
@@ -6242,16 +6378,16 @@ describe('NightlifeDataService', () => {
       },
     ] as never);
 
-    await expect(
-      service.getAdminRevenueReport(
-        { id: 'admin-1', role: 'ADMIN' },
-        {
-          from: '2026-07-01T00:00:00.000Z',
-          to: '2026-07-02T23:59:59.999Z',
-          timezone: 'UTC',
-        },
-      ),
-    ).resolves.toEqual({
+    const report = await service.getAdminRevenueReport(
+      { id: 'admin-1', role: 'ADMIN' },
+      {
+        from: '2026-07-01T00:00:00.000Z',
+        to: '2026-07-02T23:59:59.999Z',
+        timezone: 'UTC',
+      },
+    );
+
+    expect(report).toMatchObject({
       filters: {
         from: '2026-07-01T00:00:00.000Z',
         to: '2026-07-02T23:59:59.999Z',
@@ -6267,15 +6403,15 @@ describe('NightlifeDataService', () => {
         partnerAccountId: null,
         areaId: null,
         castId: null,
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled: false,
+        exportFormats: [],
       },
       meta: expect.objectContaining({
         billStatusIncluded: ['VERIFIED', 'PAID'],
         timezone: 'UTC',
         generatedAt: expect.any(String),
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled: false,
+        exportFormats: [],
         formula: {
           grossVnd: 'subtotalVnd',
           discountVnd: 'discountVnd',
@@ -6401,143 +6537,10 @@ describe('NightlifeDataService', () => {
           ],
         },
       ],
-      breakdowns: {
-        stores: [
-          expect.objectContaining({
-            id: 'store-1',
-            code: 'neon-club',
-            name: 'Neon Club',
-            billCount: 2,
-            commissionVnd: 280000,
-          }),
-          expect.objectContaining({
-            id: 'store-2',
-            code: 'velvet',
-            name: 'Velvet Lounge',
-            billCount: 1,
-            commissionVnd: 50000,
-          }),
-        ],
-        partners: [
-          expect.objectContaining({
-            id: 'partner-1',
-            code: 'ACTIVE',
-            name: 'Neon Partner',
-            billCount: 2,
-            commissionVnd: 280000,
-          }),
-          expect.objectContaining({
-            id: null,
-            code: 'NO_PARTNER',
-            billCount: 1,
-            commissionVnd: 50000,
-          }),
-        ],
-        campaigns: [
-          expect.objectContaining({
-            id: 'coupon-1',
-            code: 'WELCOME20',
-            billCount: 2,
-          }),
-          expect.objectContaining({
-            id: null,
-            code: 'NO_COUPON',
-            billCount: 1,
-          }),
-        ],
-        coupons: [
-          expect.objectContaining({
-            id: 'coupon-1',
-            code: 'WELCOME20',
-            billCount: 2,
-          }),
-          expect.objectContaining({
-            id: null,
-            code: 'NO_COUPON',
-            billCount: 1,
-          }),
-        ],
-        areas: [
-          expect.objectContaining({
-            id: 'area-1',
-            code: 'D1',
-            name: 'District 1',
-            billCount: 2,
-          }),
-          expect.objectContaining({
-            id: null,
-            code: 'NO_AREA',
-            billCount: 1,
-          }),
-        ],
-        casts: [
-          expect.objectContaining({
-            id: 'cast-1',
-            code: 'mika',
-            name: 'Mika',
-            billCount: 1,
-          }),
-          expect.objectContaining({
-            id: null,
-            code: 'NO_CAST',
-            billCount: 2,
-          }),
-        ],
-      },
-      funnel: [
-        expect.objectContaining({ key: 'coupon_qr', count: 0 }),
-        expect.objectContaining({ key: 'qr_scan', count: 0 }),
-        expect.objectContaining({ key: 'confirm_used', count: 0 }),
-        expect.objectContaining({ key: 'bill_submitted', count: 0 }),
-        expect.objectContaining({ key: 'bill_approved', count: 0 }),
-        expect.objectContaining({
-          key: 'commission',
-          count: 330000,
-          commissionVnd: 330000,
-        }),
-      ],
-      comparison: {
-        previousPeriod: {
-          from: '2026-06-29T00:00:00.000Z',
-          to: '2026-06-30T23:59:59.999Z',
-          fromDate: '2026-06-29',
-          toDate: '2026-06-30',
-        },
-        totals: {
-          billCount: { current: 3, previous: 3, delta: 0, deltaPercent: 0 },
-          grossVnd: {
-            current: 3500000,
-            previous: 3500000,
-            delta: 0,
-            deltaPercent: 0,
-          },
-          discountVnd: {
-            current: 200000,
-            previous: 200000,
-            delta: 0,
-            deltaPercent: 0,
-          },
-          netVnd: {
-            current: 3300000,
-            previous: 3300000,
-            delta: 0,
-            deltaPercent: 0,
-          },
-          payableVnd: {
-            current: 3450000,
-            previous: 3450000,
-            delta: 0,
-            deltaPercent: 0,
-          },
-          commissionVnd: {
-            current: 330000,
-            previous: 330000,
-            delta: 0,
-            deltaPercent: 0,
-          },
-        },
-      },
     });
+    expect(report).not.toHaveProperty('breakdowns');
+    expect(report).not.toHaveProperty('funnel');
+    expect(report).not.toHaveProperty('comparison');
 
     expect(prisma.bill.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -6679,8 +6682,8 @@ describe('NightlifeDataService', () => {
         toDate: '2026-07-01',
         timezone: 'Asia/Ho_Chi_Minh',
         billStatusIncluded: ['VERIFIED', 'PAID'],
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled: false,
+        exportFormats: [],
       }),
     );
     expect(report.meta).toEqual(

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
+import { AdminPagination, adminPageSize } from '../components/AdminPagination';
 
 export default function AdminBookingsPage() {
   return (
@@ -22,6 +23,7 @@ function AdminBookingsContent() {
   const [meta, setMeta] = useState<any>({ all: 0, new: 0, completed: 0, cancelled: 0 });
   const [search, setSearch] = useState('');
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleUpdateStatus = async (bookingId: string, status: string) => {
     try {
@@ -41,7 +43,7 @@ function AdminBookingsContent() {
     try {
       let statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<any>('/admin/bookings', { 
-        params: { status: statusParam, search: search || undefined, city: city || undefined, category: category || undefined } 
+        params: { status: statusParam, search: search || undefined, city: city || undefined, category: category || undefined, page: currentPage, limit: adminPageSize }
       });
       setBookings(res.data);
       setMeta(res.meta);
@@ -52,6 +54,10 @@ function AdminBookingsContent() {
 
   useEffect(() => {
     fetchBookings();
+  }, [activeTab, search, city, category, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [activeTab, search, city, category]);
 
   const getDisplayStatus = (status: string) => {
@@ -171,6 +177,14 @@ function AdminBookingsContent() {
         })}
         {bookings.length === 0 && (
           <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có booking nào.</div>
+        )}
+        {bookings.length > 0 && (
+          <AdminPagination
+            page={currentPage}
+            totalItems={meta?.total ?? bookings.length}
+            onPageChange={setCurrentPage}
+            itemLabel="booking"
+          />
         )}
       </div>
 

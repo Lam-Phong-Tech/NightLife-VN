@@ -31,6 +31,8 @@ const maxNameLength = 80;
 const maxEmailLength = 160;
 const maxNoteLength = 300;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const displayNamePattern = /^[\p{L}\s]+$/u;
+const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
 
 type BookingContext = {
   storeSlug?: string;
@@ -75,27 +77,47 @@ const clampBookingDate = (value?: string | null) => {
   return value;
 };
 
+const normalizeDisplayName = (value: string) => value.trim().replace(/\s+/g, " ");
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
+const normalizeNote = (value: string) => value.trim();
 
 const validateBookingForm = ({
   displayName,
   email,
   guests,
   bookingDate,
+  bookingTime,
+  availableTimes,
+  scheduledAt,
   note,
 }: {
   displayName: string;
   email: string;
   guests: number;
   bookingDate: string;
+  bookingTime: string;
+  availableTimes: string[];
+  scheduledAt: string;
   note: string;
 }) => {
+  if (!displayName) {
+    return "Vui lòng nhập họ tên.";
+  }
+
   if (displayName.length < minNameLength) {
     return `Vui lòng nhập họ tên từ ${minNameLength} ký tự.`;
   }
 
   if (displayName.length > maxNameLength) {
     return `Họ tên tối đa ${maxNameLength} ký tự.`;
+  }
+
+  if (!displayNamePattern.test(displayName)) {
+    return "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
+  }
+
+  if (!email) {
+    return "Vui lòng nhập email.";
   }
 
   if (!emailPattern.test(email)) {
@@ -110,8 +132,29 @@ const validateBookingForm = ({
     return `Số người chỉ được từ 1 đến ${maxGuests}.`;
   }
 
+  if (!dateInputPattern.test(bookingDate) || Number.isNaN(new Date(`${bookingDate}T00:00:00`).getTime())) {
+    return "Ngày đặt bàn không hợp lệ.";
+  }
+
   if (bookingDate < getTodayDate() || bookingDate > getMaxBookingDate()) {
     return `Ngày đặt bàn chỉ được chọn từ hôm nay đến ${bookingDateWindowDays} ngày tới.`;
+  }
+
+  if (!bookingTime) {
+    return "Vui lòng chọn khung giờ.";
+  }
+
+  if (!availableTimes.includes(bookingTime)) {
+    return "Khung giờ đã chọn không còn khả dụng.";
+  }
+
+  const scheduledDate = new Date(scheduledAt);
+  if (Number.isNaN(scheduledDate.getTime())) {
+    return "Khung giờ đặt chỗ không hợp lệ.";
+  }
+
+  if (scheduledDate.getTime() <= Date.now()) {
+    return "Khung giờ đặt chỗ phải ở tương lai.";
   }
 
   if (note.length > maxNoteLength) {
@@ -249,13 +292,21 @@ export default function Page() {
 
   useEffect(() => {
     if (!context.storeSlug) {
-      setStoreOpeningHours(null);
-      setStoreHoursResolved(true);
-      return;
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setStoreOpeningHours(null);
+        setStoreHoursResolved(true);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     let cancelled = false;
-    setStoreHoursResolved(false);
+    queueMicrotask(() => {
+      if (!cancelled) setStoreHoursResolved(false);
+    });
 
     getStoreDetail(context.storeSlug)
       .then((store) => {
@@ -298,15 +349,22 @@ export default function Page() {
   useEffect(() => {
     if (!storeHoursResolved) return;
 
+    let nextBookingTime = bookingTime;
     if (!bookingTimeOptions.length) {
-      if (bookingTime) setBookingTime("");
-      return;
+      nextBookingTime = "";
+    } else if (!bookingTimeOptions.includes(bookingTime)) {
+      const nextTime = bookingTimeOptions[0];
+      if (nextTime) nextBookingTime = nextTime;
     }
 
-    if (!bookingTimeOptions.includes(bookingTime)) {
-      const nextTime = bookingTimeOptions[0];
-      if (nextTime) setBookingTime(nextTime);
-    }
+    if (nextBookingTime === bookingTime) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setBookingTime(nextBookingTime);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [bookingTime, bookingTimeOptions, storeHoursResolved]);
 
   const memberLoginPath = useMemo(() => {
@@ -337,9 +395,9 @@ export default function Page() {
 
   const submit = async () => {
     setErrorMessage("");
-    const displayName = guestName.trim();
+    const displayName = normalizeDisplayName(guestName);
     const normalizedEmail = normalizeEmail(email);
-    const trimmedNote = note.trim();
+    const trimmedNote = normalizeNote(note);
 
     if (!bookingTime) {
       setErrorMessage("Quán không có khung giờ đặt bàn trong ngày này.");
@@ -351,13 +409,26 @@ export default function Page() {
       return;
     }
 
+    const scheduledAt = buildScheduledAtFromBookingSlot(
+      bookingDate,
+      bookingTime,
+      storeOpeningHours,
+    );
+
     const validationError = validateBookingForm({
       displayName,
       email: normalizedEmail,
       guests,
       bookingDate,
+      bookingTime,
+      availableTimes: bookingTimeOptions,
+      scheduledAt,
       note: trimmedNote,
     });
+
+    setGuestName(displayName);
+    setEmail(normalizedEmail);
+    setNote(trimmedNote);
 
     if (validationError) {
       setErrorMessage(validationError);
@@ -381,11 +452,7 @@ export default function Page() {
       ...(context.couponIssueId ? { couponIssueId: context.couponIssueId } : {}),
       displayName,
       email: normalizedEmail,
-      scheduledAt: buildScheduledAtFromBookingSlot(
-        bookingDate,
-        bookingTime,
-        storeOpeningHours,
-      ),
+      scheduledAt,
       partySize: guests,
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };
@@ -396,7 +463,7 @@ export default function Page() {
         ? await bookingApi.createMemberBooking(payload)
         : await bookingApi.createGuestBooking(payload);
 
-      rememberLastBooking(booking, { history: true });
+      rememberLastBooking(booking);
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt chỗ.";

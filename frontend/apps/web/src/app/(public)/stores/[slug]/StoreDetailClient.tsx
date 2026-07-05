@@ -802,15 +802,22 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   );
 
   useEffect(() => {
+    let nextSelectedTime = selectedTime;
     if (!bookingTimeOptions.length) {
-      if (selectedTime) setSelectedTime("");
-      return;
+      nextSelectedTime = "";
+    } else if (!bookingTimeOptions.includes(selectedTime)) {
+      const nextTime = bookingTimeOptions[0];
+      if (nextTime) nextSelectedTime = nextTime;
     }
 
-    if (!bookingTimeOptions.includes(selectedTime)) {
-      const nextTime = bookingTimeOptions[0];
-      if (nextTime) setSelectedTime(nextTime);
-    }
+    if (nextSelectedTime === selectedTime) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setSelectedTime(nextSelectedTime);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [bookingTimeOptions, selectedTime]);
 
   const bookingQuery = new URLSearchParams({
@@ -901,7 +908,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       trackBookingClick("desktop-booking-card");
       const booking = await bookingApi.createGuestBooking(payload);
 
-      rememberLastBooking(booking, { history: true });
+      rememberLastBooking(booking);
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt bàn.";

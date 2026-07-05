@@ -32,6 +32,22 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+function validateEmailInput(value: string) {
+  if (!value) {
+    return "Vui lòng nhập email.";
+  }
+
+  if (!emailPattern.test(value)) {
+    return "Email chưa đúng định dạng.";
+  }
+
+  if (value.length > 254) {
+    return "Email không được vượt quá 254 ký tự.";
+  }
+
+  return "";
+}
+
 function initialEmail() {
   if (typeof window === "undefined") return "";
   return normalizeEmail(new URLSearchParams(window.location.search).get("email") ?? "");
@@ -51,16 +67,12 @@ export default function ForgotPasswordPage() {
 
   const requestCode = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const emailError = validateEmailInput(normalizedEmail);
+    setEmail(normalizedEmail);
 
-    if (!normalizedEmail) {
+    if (emailError) {
       setMessageTone("error");
-      setMessage("Vui lòng nhập email.");
-      return;
-    }
-
-    if (!emailPattern.test(normalizedEmail)) {
-      setMessageTone("error");
-      setMessage("Email chưa đúng định dạng.");
+      setMessage(emailError);
       return;
     }
 
@@ -83,7 +95,22 @@ export default function ForgotPasswordPage() {
 
   const verifyCode = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const emailError = validateEmailInput(normalizedEmail);
     const normalizedCode = code.trim();
+    setEmail(normalizedEmail);
+    setCode(normalizedCode);
+
+    if (emailError) {
+      setMessageTone("error");
+      setMessage(emailError);
+      return;
+    }
+
+    if (!normalizedCode) {
+      setMessageTone("error");
+      setMessage("Vui lòng nhập mã xác nhận.");
+      return;
+    }
 
     if (!/^\d{6}$/.test(normalizedCode)) {
       setMessageTone("error");

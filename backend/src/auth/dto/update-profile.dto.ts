@@ -9,18 +9,27 @@ import {
   MinLength,
 } from 'class-validator';
 
-const trimString = ({ value }: TransformFnParams): unknown =>
-  typeof value === 'string' ? value.trim() : value;
+const trimNullableString = ({ value }: TransformFnParams): unknown => {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed || null;
+};
+
+const trimDisplayName = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value;
 
 const trimLowerEmail = ({ value }: TransformFnParams): unknown =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
 
 export class UpdateProfileDto {
   @ApiProperty({ minLength: 2, maxLength: 80, example: 'Nguyen Van A' })
-  @Transform(trimString)
+  @Transform(trimDisplayName)
   @IsString()
   @MinLength(2)
   @MaxLength(80)
+  @Matches(/^[\p{L}\s]+$/u, {
+    message: 'displayName must contain letters and spaces only',
+  })
   displayName: string;
 
   @ApiProperty({ example: 'member@nightlife.vn' })
@@ -30,7 +39,7 @@ export class UpdateProfileDto {
   email: string;
 
   @ApiProperty({ example: '+84901234567', required: false, nullable: true })
-  @Transform(trimString)
+  @Transform(trimNullableString)
   @IsOptional()
   @IsString()
   @MaxLength(20)

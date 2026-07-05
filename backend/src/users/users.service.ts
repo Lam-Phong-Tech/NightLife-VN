@@ -11,6 +11,9 @@ import { PasswordService } from '../common/password.service';
 
 type UserTierInput = UserTier | 'FREE' | 'PREMIUM';
 
+const normalizeDisplayName = (value?: string | null) =>
+  value?.trim().replace(/\s+/g, ' ') || undefined;
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -44,7 +47,7 @@ export class UsersService {
   ) {
     const currentUser = await this.findByIdOrThrow(id);
     const email = input.email.trim().toLowerCase();
-    const displayName = input.displayName.trim();
+    const displayName = normalizeDisplayName(input.displayName);
     const phone = input.phone?.trim() || null;
 
     if (currentUser.email !== email) {
@@ -82,7 +85,7 @@ export class UsersService {
     tier?: UserTierInput;
   }) {
     const email = input.email.trim().toLowerCase();
-    const displayName = input.displayName?.trim();
+    const displayName = normalizeDisplayName(input.displayName);
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email is already registered');

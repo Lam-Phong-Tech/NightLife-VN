@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type, type TransformFnParams } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
@@ -11,12 +11,22 @@ import {
   Min,
 } from 'class-validator';
 
+const trimOptionalString = ({ value }: TransformFnParams): unknown => {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const trimString = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? value.trim() : value;
+
 export class CreateBillDto {
   @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440010',
     description:
       'Optional booking id to connect this bill to a member booking.',
   })
+  @Transform(trimOptionalString)
   @IsOptional()
   @IsUUID()
   bookingId?: string;
@@ -25,6 +35,7 @@ export class CreateBillDto {
     example: '550e8400-e29b-41d4-a716-446655440000',
     description: 'Store id. Required when bookingId is not provided.',
   })
+  @Transform(trimOptionalString)
   @IsOptional()
   @IsUUID()
   storeId?: string;
@@ -34,6 +45,7 @@ export class CreateBillDto {
     description:
       'Store slug. Required when bookingId and storeId are not provided.',
   })
+  @Transform(trimOptionalString)
   @IsOptional()
   @IsString()
   @MaxLength(120)
@@ -44,6 +56,7 @@ export class CreateBillDto {
     description:
       'Optional direct coupon campaign id to connect this bill. Direct campaign links must still be ACTIVE at submit time; use couponIssueId for historical reconciliation.',
   })
+  @Transform(trimOptionalString)
   @IsOptional()
   @IsUUID()
   couponId?: string;
@@ -53,6 +66,7 @@ export class CreateBillDto {
     description:
       'Optional issued coupon id to connect this bill for reconciliation. Store can be inferred from the issue when bookingId/store are omitted.',
   })
+  @Transform(trimOptionalString)
   @IsOptional()
   @IsUUID()
   couponIssueId?: string;
@@ -74,6 +88,7 @@ export class CreateBillDto {
     description:
       'Service usage time. Bill submissions are accepted only within 10 days of this time.',
   })
+  @Transform(trimString)
   @IsDateString()
   usedAt: string;
 }

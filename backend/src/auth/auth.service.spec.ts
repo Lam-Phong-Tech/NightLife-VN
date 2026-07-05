@@ -153,7 +153,7 @@ describe('AuthService', () => {
     await expect(
       service.register({
         email: user.email,
-        password: 'Str0ngPass!',
+        password: ' Str0ngPass! ',
         displayName: user.displayName,
       }),
     ).resolves.toEqual({
@@ -185,7 +185,7 @@ describe('AuthService', () => {
 
     await service.login({
       email: user.email,
-      password: 'Str0ngPass!',
+      password: ' Str0ngPass! ',
     });
 
     expect(usersService.validateCredentials).toHaveBeenCalledWith(
@@ -625,8 +625,8 @@ describe('AuthService', () => {
       service.resetPassword({
         email: member.email,
         resetToken: verifyResponse.resetToken,
-        password: 'NewStr0ngPass!',
-        confirmPassword: 'NewStr0ngPass!',
+        password: ' NewStr0ngPass! ',
+        confirmPassword: ' NewStr0ngPass! ',
       }),
     ).resolves.toEqual({ updated: true });
     expect(usersService.updatePassword).toHaveBeenCalledWith(

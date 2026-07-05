@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Info, X, Check, Image as ImageIcon } from 'lucide-react';
-import { apiClient } from '@/lib/api/client';
+import { ApiError, apiClient, translateApiMessage } from '@/lib/api/client';
+import { adminPageSize } from '../components/AdminPagination';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -45,6 +46,7 @@ export default function AdminBillsPage() {
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [billsList, setBillsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [meta, setMeta] = useState<any>(null);
   const [stats, setStats] = useState<any>({
     pendingCount: 0,
@@ -62,11 +64,23 @@ export default function AdminBillsPage() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approveBillId, setApproveBillId] = useState('');
 
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', page.toString());
+    router.push(pathname + '?' + params.toString());
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    goToPage(1);
+  };
+
   const fetchBills = async () => {
     setIsLoading(true);
+    setLoadError('');
     try {
       const res = await apiClient<any>('/admin/bills', {
-        params: { status: activeTab, search, city, page: pageParam }
+        params: { status: activeTab, search, city, page: pageParam, limit: adminPageSize }
       });
       if (res && res.data) {
         setBillsList(res.data);
@@ -75,6 +89,13 @@ export default function AdminBillsPage() {
       }
     } catch (e) {
       console.error(e);
+      setBillsList([]);
+      setMeta(null);
+      setLoadError(
+        e instanceof ApiError
+          ? translateApiMessage(e.message, e.status)
+          : 'Không tải được danh sách hóa đơn. Vui lòng thử lại.',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -140,7 +161,7 @@ export default function AdminBillsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
           <button 
-            onClick={() => setActiveTab('pending')}
+            onClick={() => handleTabChange('pending')}
             style={{
               background: activeTab === 'pending' ? colors.goldGrad : 'transparent',
               color: activeTab === 'pending' ? colors.onGold : colors.muted,
@@ -159,7 +180,7 @@ export default function AdminBillsPage() {
             <span style={{ fontWeight: 700 }}>{stats?.pendingCount ?? 0}</span>
           </button>
           <button 
-            onClick={() => setActiveTab('approved')}
+            onClick={() => handleTabChange('approved')}
             style={{
               background: activeTab === 'approved' ? colors.goldGrad : 'transparent',
               color: activeTab === 'approved' ? colors.onGold : colors.muted,
@@ -178,7 +199,7 @@ export default function AdminBillsPage() {
             <span style={{ fontWeight: 700 }}>{stats?.approvedCount ?? 0}</span>
           </button>
           <button 
-            onClick={() => setActiveTab('rejected')}
+            onClick={() => handleTabChange('rejected')}
             style={{
               background: activeTab === 'rejected' ? colors.goldGrad : 'transparent',
               color: activeTab === 'rejected' ? colors.onGold : colors.muted,
@@ -251,6 +272,15 @@ export default function AdminBillsPage() {
             {isLoading ? (
               <tr>
                 <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Đang tải dữ liệu...</td>
+              </tr>
+            ) : loadError ? (
+              <tr>
+                <td colSpan={7} style={{ padding: '28px 32px', textAlign: 'center' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: colors.red, background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.24)', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>
+                    <Info size={16} />
+                    {loadError}
+                  </div>
+                </td>
               </tr>
             ) : billsList.length === 0 ? (
               <tr>

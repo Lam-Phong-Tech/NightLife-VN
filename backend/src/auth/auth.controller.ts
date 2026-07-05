@@ -197,11 +197,14 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout(
+  async logout(
     @Req()
     request: Request & { user: { id: string; jti?: string; exp?: number } },
+    @Res({ passthrough: true }) response: Response,
   ) {
-    return this.authService.logout(request.user);
+    const result = await this.authService.logout(request.user);
+    this.authService.clearAuthCookies(response);
+    return result;
   }
 
   private sessionContext(request: Request) {

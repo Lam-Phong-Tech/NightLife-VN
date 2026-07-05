@@ -1751,9 +1751,10 @@ export class NightlifeDataService {
               type: 'IMAGE',
             },
             orderBy: { createdAt: 'desc' },
-            take: 1,
+            take: 8,
             select: {
               url: true,
+              purpose: true,
             },
           },
         },
@@ -1785,7 +1786,7 @@ export class NightlifeDataService {
         : null,
       latitude: this.toNumber(store.latitude),
       longitude: this.toNumber(store.longitude),
-      thumbnailUrl: store.media[0]?.url ?? null,
+      thumbnailUrl: this.resolveStoreCoverImage(store.media),
       distanceKm: this.calculateDistanceKm(
         coordinates,
         store.latitude,
@@ -1964,9 +1965,10 @@ export class NightlifeDataService {
             type: 'IMAGE',
           },
           orderBy: { createdAt: 'desc' },
-          take: 1,
+          take: 8,
           select: {
             url: true,
+            purpose: true,
           },
         },
       },
@@ -2048,7 +2050,7 @@ export class NightlifeDataService {
         city: relatedStore.city,
         district: relatedStore.district,
         area: this.mapPublicArea(relatedStore.area),
-        thumbnailUrl: relatedStore.media[0]?.url ?? null,
+        thumbnailUrl: this.resolveStoreCoverImage(relatedStore.media),
         relatedReason:
           relatedStore.area?.id && relatedStore.area.id === store.areaId
             ? 'same-area'
@@ -5894,6 +5896,9 @@ export class NightlifeDataService {
     void user;
     const reportWindow = this.resolveAdminRevenueReportWindow(query);
     const { from, to } = reportWindow;
+    const exportEnabled = this.isRevenueReportExportEnabled();
+    const exportFormats = exportEnabled ? ['excel', 'pdf'] : [];
+    const revenueBiEnabled = this.isRevenueReportBiEnabled();
     const where: Prisma.BillWhereInput = {
       deletedAt: null,
       status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
@@ -5902,9 +5907,11 @@ export class NightlifeDataService {
     const storeId = this.cleanText(query.storeId);
     const couponId = this.cleanText(query.couponId);
     const flag = this.cleanText(query.flag);
-    const partnerAccountId = this.cleanText(query.partnerAccountId);
-    const areaId = this.cleanText(query.areaId);
-    const castId = this.cleanText(query.castId);
+    const partnerAccountId = revenueBiEnabled
+      ? this.cleanText(query.partnerAccountId)
+      : undefined;
+    const areaId = revenueBiEnabled ? this.cleanText(query.areaId) : undefined;
+    const castId = revenueBiEnabled ? this.cleanText(query.castId) : undefined;
 
     if (storeId) {
       where.storeId = storeId;
@@ -5981,7 +5988,9 @@ export class NightlifeDataService {
 
     const totals = this.emptyRevenueReportTotals();
     const days = new Map<string, MutableRevenueReportDayNode>();
-    const breakdownMaps = this.emptyRevenueReportBreakdownMaps();
+    const breakdownMaps = revenueBiEnabled
+      ? this.emptyRevenueReportBreakdownMaps()
+      : null;
 
     for (const bill of bills) {
       if (!bill.usedAt) {
@@ -5990,36 +5999,38 @@ export class NightlifeDataService {
 
       const money = this.billRevenueReportMoney(bill);
       this.addRevenueReportTotals(totals, money);
-      this.addRevenueReportBreakdown(
-        breakdownMaps.stores,
-        this.revenueReportStoreDimension(bill.store),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.partners,
-        this.revenueReportPartnerDimension(bill.store),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.campaigns,
-        this.revenueReportCampaignDimension(bill),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.coupons,
-        this.revenueReportCampaignDimension(bill),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.areas,
-        this.revenueReportAreaDimension(bill.store),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.casts,
-        this.revenueReportCastDimension(bill),
-        money,
-      );
+      if (breakdownMaps) {
+        this.addRevenueReportBreakdown(
+          breakdownMaps.stores,
+          this.revenueReportStoreDimension(bill.store),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.partners,
+          this.revenueReportPartnerDimension(bill.store),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.campaigns,
+          this.revenueReportCampaignDimension(bill),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.coupons,
+          this.revenueReportCampaignDimension(bill),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.areas,
+          this.revenueReportAreaDimension(bill.store),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.casts,
+          this.revenueReportCastDimension(bill),
+          money,
+        );
+      }
 
       const day = this.getRevenueReportDay(
         days,
@@ -6060,15 +6071,15 @@ export class NightlifeDataService {
         partnerAccountId: partnerAccountId || null,
         areaId: areaId || null,
         castId: castId || null,
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled,
+        exportFormats,
       },
       meta: {
         billStatusIncluded: [...REVENUE_REPORT_BILL_STATUSES],
         timezone: reportWindow.timezone,
         generatedAt: new Date().toISOString(),
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled,
+        exportFormats,
         formula: {
           grossVnd: 'subtotalVnd',
           discountVnd: 'discountVnd',
@@ -6106,15 +6117,31 @@ export class NightlifeDataService {
           })),
         })),
       })),
-      breakdowns: this.finalizeRevenueReportBreakdowns(breakdownMaps),
-      funnel: await this.buildRevenueReportFunnel(query, reportWindow, totals),
-      comparison: await this.buildRevenueReportComparison(
-        query,
-        reportWindow,
-        where,
-        totals,
-      ),
+      ...(breakdownMaps
+        ? {
+            breakdowns: this.finalizeRevenueReportBreakdowns(breakdownMaps),
+            funnel: await this.buildRevenueReportFunnel(
+              query,
+              reportWindow,
+              totals,
+            ),
+            comparison: await this.buildRevenueReportComparison(
+              query,
+              reportWindow,
+              where,
+              totals,
+            ),
+          }
+        : {}),
     };
+  }
+
+  private isRevenueReportExportEnabled() {
+    return process.env.ENABLE_REVENUE_EXPORT === 'true';
+  }
+
+  private isRevenueReportBiEnabled() {
+    return process.env.ENABLE_REVENUE_BI === 'true';
   }
 
   async listAdminCommissionOverrides(
@@ -8354,19 +8381,46 @@ export class NightlifeDataService {
   }
 
   private sanitizeBookingContact(dto: CreateBookingDto) {
-    const displayName = this.cleanText(dto.displayName);
+    const displayName = this.cleanText(dto.displayName).replace(/\s+/g, ' ');
     const phone = this.cleanText(dto.phone);
     const email = this.cleanEmail(dto.email);
+    const note = this.cleanText(dto.note);
 
     if (!displayName || (!email && !phone)) {
       throw new BadRequestException('displayName and email are required');
+    }
+
+    if (
+      displayName.length < 2 ||
+      displayName.length > 80 ||
+      !/^[\p{L}\s]+$/u.test(displayName)
+    ) {
+      throw new BadRequestException(
+        'displayName must contain letters and spaces only',
+      );
+    }
+
+    if (email && email.length > 160) {
+      throw new BadRequestException(
+        'email must be shorter than or equal to 160 characters',
+      );
+    }
+
+    if (phone && !/^[0-9+\-\s().]{8,20}$/.test(phone)) {
+      throw new BadRequestException('phone must be a valid phone number');
+    }
+
+    if (note.length > 300) {
+      throw new BadRequestException(
+        'note must be shorter than or equal to 300 characters',
+      );
     }
 
     return {
       displayName,
       phone,
       email,
-      note: this.cleanText(dto.note),
+      note,
     };
   }
 
@@ -12129,6 +12183,23 @@ export class NightlifeDataService {
     );
   }
 
+  private resolveStoreCoverImage(
+    media: Array<{ url: string; purpose?: string | null }>,
+  ) {
+    const coverPurposes = new Set([
+      'store-hero',
+      'hero',
+      'cover',
+      'store-cover',
+      'PARTNER_LISTING_STORE',
+    ]);
+    const cover = media.find((item) =>
+      coverPurposes.has(String(item.purpose ?? '').trim()),
+    );
+
+    return cover?.url ?? media[0]?.url ?? null;
+  }
+
   private resolveRankingCastImage(slug: string, media: Array<{ url: string }>) {
     return (
       media[0]?.url ??
@@ -15089,6 +15160,7 @@ export class NightlifeDataService {
     else if (status === 'rejected') prismaStatus = 'REJECTED';
 
     const where: import('@prisma/client').Prisma.BillWhereInput = {
+      deletedAt: null,
       ...(prismaStatus && { status: prismaStatus }),
       ...(storeId && { storeId }),
       ...(city && { store: { city } }),
@@ -15120,26 +15192,58 @@ export class NightlifeDataService {
           skip,
           take: limit,
           orderBy,
-          include: {
-            store: true,
-            user: true,
-            guest: true,
-            booking: { include: { cast: true } },
-            media: true,
+          select: {
+            id: true,
+            billNumber: true,
+            status: true,
+            submitterType: true,
+            totalVnd: true,
+            discountVnd: true,
+            commissionAmountVnd: true,
+            pointsEarned: true,
+            rejectReason: true,
+            createdAt: true,
+            submittedAt: true,
+            store: { select: { name: true, slug: true } },
+            user: { select: { id: true, displayName: true, tier: true } },
+            guest: { select: { id: true, displayName: true } },
           },
         }),
-        this.prisma.bill.count({ where }),
-        this.prisma.bill.count({ where: { ...where, status: 'SUBMITTED' } }),
-        this.prisma.bill.count({ where: { ...where, status: 'VERIFIED' } }),
-        this.prisma.bill.count({ where: { ...where, status: 'REJECTED' } }),
+        this.prisma.bill.count({ where }).catch(() => 0),
+        this.prisma.bill
+          .count({ where: { ...where, status: 'SUBMITTED' } })
+          .catch(() => 0),
+        this.prisma.bill
+          .count({ where: { ...where, status: 'VERIFIED' } })
+          .catch(() => 0),
+        this.prisma.bill
+          .count({ where: { ...where, status: 'REJECTED' } })
+          .catch(() => 0),
       ]);
+
+    const billIds = items.map((bill) => bill.id);
+    const mediaRows = billIds.length
+      ? await this.prisma.media
+          .findMany({
+            where: { billId: { in: billIds }, deletedAt: null },
+            select: { billId: true, url: true },
+          })
+          .catch(() => [] as Array<{ billId: string | null; url: string }>)
+      : [];
+    const mediaByBillId = new Map<string, string[]>();
+    mediaRows.forEach((media) => {
+      if (!media.billId || !media.url) return;
+      const urls = mediaByBillId.get(media.billId) ?? [];
+      urls.push(media.url);
+      mediaByBillId.set(media.billId, urls);
+    });
 
     const mappedItems = items.map((bill) => {
       let guestType = 'Khách vãng lai';
       let sender =
         bill.user?.displayName || bill.guest?.displayName || 'Unknown';
       if (bill.user) guestType = bill.user.tier || 'Member';
-      if (bill.booking?.cast) guestType = 'Cast';
+      if (bill.submitterType === 'PARTNER') guestType = 'Partner';
 
       return {
         id: bill.id,
@@ -15147,12 +15251,10 @@ export class NightlifeDataService {
         store: bill.store?.name || 'Unknown Store',
         location: bill.store?.slug || '',
         amount: bill.totalVnd || 0,
-        date: bill.createdAt.toISOString(),
+        date: (bill.submittedAt ?? bill.createdAt).toISOString(),
         sender,
-        hasImage: (bill as any).media && (bill as any).media.length > 0,
-        images: (bill as any).media
-          ? (bill as any).media.map((m: any) => m.url)
-          : [],
+        hasImage: (mediaByBillId.get(bill.id)?.length ?? 0) > 0,
+        images: mediaByBillId.get(bill.id) ?? [],
         status: bill.status,
         guestType,
         discount: bill.discountVnd || 0,

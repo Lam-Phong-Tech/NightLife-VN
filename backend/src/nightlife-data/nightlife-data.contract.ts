@@ -768,15 +768,15 @@ const adminRevenueReportExample = {
     partnerAccountId: null,
     areaId: null,
     castId: null,
-    exportEnabled: true,
-    exportFormats: ['excel', 'pdf'],
+    exportEnabled: false,
+    exportFormats: [],
   },
   meta: {
     billStatusIncluded: ['VERIFIED', 'PAID'],
     timezone: 'Asia/Ho_Chi_Minh',
     generatedAt: '2026-07-03T10:00:00.000Z',
-    exportEnabled: true,
-    exportFormats: ['excel', 'pdf'],
+    exportEnabled: false,
+    exportFormats: [],
     formula: {
       grossVnd: 'subtotalVnd',
       discountVnd: 'discountVnd',
@@ -843,135 +843,6 @@ const adminRevenueReportExample = {
       ],
     },
   ],
-  breakdowns: {
-    partners: [
-      {
-        id: 'partner_01',
-        code: 'ACTIVE',
-        name: 'Neon Partner Group',
-        secondary: 'ACTIVE',
-        billCount: 3,
-        grossVnd: 6200000,
-        discountVnd: 500000,
-        netVnd: 5700000,
-        commissionVnd: 620000,
-      },
-    ],
-    campaigns: [
-      {
-        id: 'coupon_01',
-        code: 'MEMBER8',
-        name: 'Member 8',
-        secondary: null,
-        billCount: 2,
-        grossVnd: 4200000,
-        discountVnd: 300000,
-        netVnd: 3900000,
-        commissionVnd: 420000,
-      },
-      {
-        id: null,
-        code: 'NO_COUPON',
-        name: 'No coupon',
-        secondary: null,
-        billCount: 1,
-        grossVnd: 2000000,
-        discountVnd: 200000,
-        netVnd: 1800000,
-        commissionVnd: 200000,
-      },
-    ],
-    areas: [
-      {
-        id: 'area_01',
-        code: 'D1',
-        name: 'District 1',
-        secondary: 'Ho Chi Minh City',
-        billCount: 3,
-        grossVnd: 6200000,
-        discountVnd: 500000,
-        netVnd: 5700000,
-        commissionVnd: 620000,
-      },
-    ],
-    casts: [
-      {
-        id: 'cast_01',
-        code: 'mika',
-        name: 'Mika',
-        secondary: null,
-        billCount: 1,
-        grossVnd: 2000000,
-        discountVnd: 160000,
-        netVnd: 1840000,
-        commissionVnd: 240000,
-      },
-    ],
-  },
-  funnel: [
-    { key: 'coupon_qr', label: 'Coupon/QR', count: 9, rateFromPrevious: null },
-    { key: 'qr_scan', label: 'QR scan', count: 6, rateFromPrevious: 66.67 },
-    {
-      key: 'confirm_used',
-      label: 'Confirm USED',
-      count: 5,
-      rateFromPrevious: 83.33,
-    },
-    {
-      key: 'bill_submitted',
-      label: 'Bill submitted',
-      count: 3,
-      rateFromPrevious: 60,
-    },
-    {
-      key: 'bill_approved',
-      label: 'Bill approved',
-      count: 3,
-      rateFromPrevious: 100,
-    },
-    {
-      key: 'commission',
-      label: 'Commission',
-      count: 620000,
-      commissionVnd: 620000,
-      rateFromPrevious: null,
-    },
-  ],
-  comparison: {
-    previousPeriod: {
-      from: '2026-05-31T17:00:00.000Z',
-      to: '2026-06-30T16:59:59.999Z',
-      fromDate: '2026-06-01',
-      toDate: '2026-06-30',
-    },
-    totals: {
-      billCount: { current: 3, previous: 2, delta: 1, deltaPercent: 50 },
-      grossVnd: {
-        current: 6200000,
-        previous: 4100000,
-        delta: 2100000,
-        deltaPercent: 51.22,
-      },
-      discountVnd: {
-        current: 500000,
-        previous: 250000,
-        delta: 250000,
-        deltaPercent: 100,
-      },
-      netVnd: {
-        current: 5700000,
-        previous: 3850000,
-        delta: 1850000,
-        deltaPercent: 48.05,
-      },
-      commissionVnd: {
-        current: 620000,
-        previous: 410000,
-        delta: 210000,
-        deltaPercent: 51.22,
-      },
-    },
-  },
 };
 
 const partnerRequestExample = {
@@ -2264,9 +2135,9 @@ export function AdminRevenueReportContract() {
   return applyDecorators(
     ApiBearerAuth(),
     ApiOperation({
-      summary: 'Admin action: revenue report with P2 BI breakdowns',
+      summary: 'Admin action: P0 revenue report grouped by service date, store, and coupon',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewRevenueReport). Filters by Bill.usedAt service usage date in the selected timezone and returns revenue report grouped by date -> store -> discount code, plus P2 partner/campaign/area/cast breakdowns, funnel metrics, period comparison, and export metadata.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canViewRevenueReport). Filters by Bill.usedAt service usage date in the selected timezone and returns P0 revenue totals grouped by date -> store -> discount code. MVP export is disabled by default (`ENABLE_REVENUE_EXPORT=false`) and P2 BI fields are hidden unless `ENABLE_REVENUE_BI=true`.',
     }),
     ApiQuery({
       name: 'from',
@@ -2333,7 +2204,7 @@ export function AdminRevenueReportContract() {
     }),
     ApiOkResponse({
       description:
-        'Revenue report grouped by service usage date, store, and discount code with P2 BI breakdowns.',
+        'MVP revenue report grouped by service usage date, store, and discount code.',
       schema: { example: adminRevenueReportExample },
     }),
     ApiUnauthorizedResponse({

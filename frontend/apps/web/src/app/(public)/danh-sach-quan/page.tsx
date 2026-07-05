@@ -153,7 +153,7 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
   const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
   const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
   const backendImage = resolveClientUrl(store.thumbnailUrl);
-  const image = backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : storeImageForSlug(store.slug, index);
+  const image = backendImage ?? storeImageForSlug(store.slug, index);
   const statusLabel = index % 3 === 2 ? "Mở đến 02:00" : "Đang mở";
 
   return {
@@ -786,7 +786,7 @@ function VenueResultCard({
       <div
         className="venue-card-media"
         aria-label={`Ảnh ${venue.name}`}
-        style={{ backgroundImage: `url("${venue.image}")` }}
+        style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
       >
         <div className="venue-image-shade" />
         <span className={`venue-status ${venue.statusLabel.includes("02:00") ? "is-late" : ""}`}>

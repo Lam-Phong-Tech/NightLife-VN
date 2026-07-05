@@ -35,6 +35,10 @@ const passwordRules = [
   { test: (value: string) => /\d/.test(value), message: "Mật khẩu cần có chữ số." },
 ];
 
+function normalizePassword(value: string) {
+  return value.trim();
+}
+
 function getResetSession(): ResetSession | null {
   if (typeof window === "undefined") return null;
 
@@ -101,24 +105,31 @@ export default function ResetPasswordPage() {
   }, [resetSession]);
 
   const validate = () => {
+    const normalizedPassword = normalizePassword(password);
+    const normalizedConfirmPassword = normalizePassword(confirmPassword);
+
     if (!resetSession) {
       return "Phiên đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu mã mới.";
     }
 
-    if (password.length > 72) {
+    if (!normalizedPassword) {
+      return "Vui lòng nhập mật khẩu mới.";
+    }
+
+    if (normalizedPassword.length > 72) {
       return "Mật khẩu không được vượt quá 72 ký tự.";
     }
 
-    const failedRule = passwordRules.find((rule) => !rule.test(password));
+    const failedRule = passwordRules.find((rule) => !rule.test(normalizedPassword));
     if (failedRule) {
       return failedRule.message;
     }
 
-    if (!confirmPassword) {
+    if (!normalizedConfirmPassword) {
       return "Vui lòng nhập lại mật khẩu.";
     }
 
-    if (password !== confirmPassword) {
+    if (normalizedPassword !== normalizedConfirmPassword) {
       return "Mật khẩu nhập lại chưa khớp.";
     }
 
@@ -127,6 +138,10 @@ export default function ResetPasswordPage() {
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedPassword = normalizePassword(password);
+    const normalizedConfirmPassword = normalizePassword(confirmPassword);
+    setPassword(normalizedPassword);
+    setConfirmPassword(normalizedConfirmPassword);
     const validationMessage = validate();
 
     if (validationMessage) {
@@ -144,8 +159,8 @@ export default function ResetPasswordPage() {
       await resetPassword({
         email: resetSession.email,
         resetToken: resetSession.resetToken,
-        password,
-        confirmPassword,
+        password: normalizedPassword,
+        confirmPassword: normalizedConfirmPassword,
       });
       window.sessionStorage.removeItem("nightlife_password_reset");
       setMessageTone("success");
