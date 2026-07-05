@@ -1521,7 +1521,7 @@ export default function Page() {
       });
 
     contentApi
-      .list({ type: "BANNER", status: "PUBLISHED", limit: 3 })
+      .list({ type: "BANNER", limit: 3 })
       .then((res) => {
         if (!cancelled && res.data) setHomeBanners(res.data);
       })

@@ -283,7 +283,7 @@ describe('Home Page', () => {
       expect(listStoresStrictMock).toHaveBeenCalledWith({ city: 'all', limit: 24, sort: 'priority' });
     });
 
-    expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', status: 'PUBLISHED', limit: 3 });
+    expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', limit: 3 });
     expect(listPublicCouponsMock).toHaveBeenCalled();
     expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'all', limit: 10 });
     expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'all', limit: 10 });

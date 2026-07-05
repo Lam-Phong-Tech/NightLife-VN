@@ -32,11 +32,14 @@ export type CmsContentListResponse = {
   data: CmsContentItem[];
 };
 
-export type CmsContentListParams = {
+export type PublicCmsContentListParams = {
   type?: CmsContentType;
-  status?: CmsContentStatus;
   q?: string;
   limit?: number;
+};
+
+export type AdminCmsContentListParams = PublicCmsContentListParams & {
+  status?: CmsContentStatus;
 };
 
 export type PublicHotVideo = {
@@ -49,7 +52,7 @@ export type PublicHotVideo = {
   createdAt?: string;
 };
 
-const toParams = (params: CmsContentListParams = {}) => {
+const toParams = (params: PublicCmsContentListParams | AdminCmsContentListParams = {}) => {
   const searchParams: Record<string, string> = {};
 
   Object.entries(params).forEach(([key, value]) => {
@@ -61,7 +64,7 @@ const toParams = (params: CmsContentListParams = {}) => {
 };
 
 export const contentApi = {
-  list: (params?: CmsContentListParams) =>
+  list: (params?: PublicCmsContentListParams) =>
     apiClient<CmsContentListResponse>("/contents", { params: toParams(params) }),
   get: (slug: string, params?: Record<string, string>) => {
     const searchParams = new URLSearchParams(params || {});
@@ -70,7 +73,7 @@ export const contentApi = {
   },
   hotVideos: (cityCode: "all" | "hn" | "hcm") =>
     apiClient<PublicHotVideo[]>(`/content/hot-videos/${encodeURIComponent(cityCode)}`),
-  adminList: (params?: CmsContentListParams) =>
+  adminList: (params?: AdminCmsContentListParams) =>
     apiClient<CmsContentItem[]>("/admin/contents", { params: toParams(params) }),
   adminCreate: (payload: Partial<CmsContentItem>) =>
     apiClient<CmsContentItem>("/admin/contents", { method: "POST", data: payload }),
