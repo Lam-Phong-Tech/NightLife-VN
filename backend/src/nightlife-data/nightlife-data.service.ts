@@ -15160,6 +15160,7 @@ export class NightlifeDataService {
     else if (status === 'rejected') prismaStatus = 'REJECTED';
 
     const where: import('@prisma/client').Prisma.BillWhereInput = {
+      deletedAt: null,
       ...(prismaStatus && { status: prismaStatus }),
       ...(storeId && { storeId }),
       ...(city && { store: { city } }),
@@ -15196,7 +15197,6 @@ export class NightlifeDataService {
             user: true,
             guest: true,
             booking: { include: { cast: true } },
-            media: true,
           },
         }),
         this.prisma.bill.count({ where }),
@@ -15204,6 +15204,23 @@ export class NightlifeDataService {
         this.prisma.bill.count({ where: { ...where, status: 'VERIFIED' } }),
         this.prisma.bill.count({ where: { ...where, status: 'REJECTED' } }),
       ]);
+
+    const billIds = items.map((bill) => bill.id);
+    const mediaRows = billIds.length
+      ? await this.prisma.media
+          .findMany({
+            where: { billId: { in: billIds }, deletedAt: null },
+            select: { billId: true, url: true },
+          })
+          .catch(() => [] as Array<{ billId: string | null; url: string }>)
+      : [];
+    const mediaByBillId = new Map<string, string[]>();
+    mediaRows.forEach((media) => {
+      if (!media.billId || !media.url) return;
+      const urls = mediaByBillId.get(media.billId) ?? [];
+      urls.push(media.url);
+      mediaByBillId.set(media.billId, urls);
+    });
 
     const mappedItems = items.map((bill) => {
       let guestType = 'Khách vãng lai';
@@ -15220,10 +15237,8 @@ export class NightlifeDataService {
         amount: bill.totalVnd || 0,
         date: bill.createdAt.toISOString(),
         sender,
-        hasImage: (bill as any).media && (bill as any).media.length > 0,
-        images: (bill as any).media
-          ? (bill as any).media.map((m: any) => m.url)
-          : [],
+        hasImage: (mediaByBillId.get(bill.id)?.length ?? 0) > 0,
+        images: mediaByBillId.get(bill.id) ?? [],
         status: bill.status,
         guestType,
         discount: bill.discountVnd || 0,

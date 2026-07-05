@@ -79,6 +79,7 @@ describe('NightlifeDataService', () => {
     },
     media: {
       create: jest.fn(),
+      findMany: jest.fn(),
       updateMany: jest.fn(),
     },
     content: {
@@ -267,6 +268,7 @@ describe('NightlifeDataService', () => {
     prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' } as never);
     prisma.cast.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.media.create.mockResolvedValue({ id: 'media-draft-1' } as never);
+    prisma.media.findMany.mockResolvedValue([] as never);
     prisma.media.updateMany.mockResolvedValue({ count: 1 } as never);
     prisma.content.create.mockResolvedValue({ id: 'content-draft-1' } as never);
     prisma.content.updateMany.mockResolvedValue({ count: 1 } as never);
@@ -3744,6 +3746,9 @@ describe('NightlifeDataService', () => {
         media: [],
       },
     ] as never);
+    prisma.media.findMany.mockResolvedValue([
+      { billId: 'bill-1', url: '/storage/files/bill-1.png' },
+    ] as never);
     prisma.bill.count
       .mockResolvedValueOnce(1 as never)
       .mockResolvedValueOnce(1 as never)
@@ -3758,11 +3763,18 @@ describe('NightlifeDataService', () => {
 
     expect(prisma.bill.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'SUBMITTED' },
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'SUBMITTED',
+        }),
         skip: 0,
         take: 8,
       }),
     );
+    expect(prisma.media.findMany).toHaveBeenCalledWith({
+      where: { billId: { in: ['bill-1'] }, deletedAt: null },
+      select: { billId: true, url: true },
+    });
     expect(result.data).toEqual([
       expect.objectContaining({
         id: 'bill-1',
@@ -3771,6 +3783,8 @@ describe('NightlifeDataService', () => {
         amount: 1800000,
         sender: 'Minh',
         status: 'SUBMITTED',
+        hasImage: true,
+        images: ['/storage/files/bill-1.png'],
       }),
     ]);
     expect(result.meta).toEqual(
@@ -3789,6 +3803,52 @@ describe('NightlifeDataService', () => {
         totalAmountPending: 1800000,
       }),
     );
+  });
+
+  it('keeps the admin pending bill queue available when bill evidence lookup fails', async () => {
+    const createdAt = new Date('2026-07-01T10:05:00.000Z');
+    prisma.bill.aggregate.mockResolvedValue({
+      _sum: { totalVnd: 900000 },
+    } as never);
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-2',
+        billNumber: 'BILL-20260701-XYZ98765',
+        status: 'SUBMITTED',
+        totalVnd: 900000,
+        discountVnd: 0,
+        commissionAmountVnd: 0,
+        pointsEarned: 0,
+        rejectReason: null,
+        createdAt,
+        store: { id: 'store-2', name: 'Moonlight Bar', slug: 'moonlight-bar' },
+        user: null,
+        guest: { id: 'guest-1', displayName: 'Guest Minh' },
+        booking: null,
+      },
+    ] as never);
+    prisma.media.findMany.mockRejectedValue(new Error('media relation failed'));
+    prisma.bill.count
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+
+    const result = await service.listAdminBills({
+      status: 'pending',
+      page: 1,
+      limit: 8,
+    });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: 'bill-2',
+        store: 'Moonlight Bar',
+        sender: 'Guest Minh',
+        hasImage: false,
+        images: [],
+      }),
+    ]);
   });
 
   it('submits a member bill with a coupon issue without requiring a booking', async () => {
