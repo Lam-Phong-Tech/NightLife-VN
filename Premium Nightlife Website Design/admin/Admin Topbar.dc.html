@@ -53,6 +53,14 @@
       <div style="padding:10px 15px;background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.05);font-size:10px;color:#8c8679;line-height:1.5;">Số liệu &amp; danh sách trên trang admin lọc theo khu vực này.</div>
     </div>
   </sc-if>
+  <span onClick="{{ thToggle }}" title="{{ thTitle }}" style="width:39px;height:39px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#d4b26a;border:1px solid rgba(212,178,106,.28);" style-hover="background:rgba(212,178,106,.1);">
+    <sc-if value="{{ thDark }}" hint-placeholder-val="{{ true }}">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>
+    </sc-if>
+    <sc-if value="{{ thLight }}" hint-placeholder-val="{{ false }}">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.3 8.3 0 0 1 9.5 4 8.3 8.3 0 1 0 20 14.5z"/></svg>
+    </sc-if>
+  </span>
   <span onClick="{{ ntToggle }}" style="{{ bellStyle }}">
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
     <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
@@ -96,7 +104,32 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1190,&quot;height&quot;:520},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Bảng điều khiển&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Topbar&quot;},&quot;pageEn&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Topbar&quot;}}">
 class Component extends DCLogic {
-  state = { open:false, readAll:false, read:{}, region:'HN', regionOpen:false };
+  state = { open:false, readAll:false, read:{}, region:'HN', regionOpen:false, theme:'dark' };
+
+  componentDidMount(){
+    let t='dark';
+    try{ t=localStorage.getItem('vy-admin-theme')||'dark'; }catch(e){}
+    this.applyTheme(t);
+  }
+  applyTheme(t){
+    if(typeof document==='undefined')return;
+    const st0=document.getElementById('vy-theme-style');
+    const css='html.vy-light{filter:invert(1) hue-rotate(180deg);background:#0c0c0f;}html.vy-light img,html.vy-light video{filter:invert(1) hue-rotate(180deg);}';
+    if(!st0){
+      const st=document.createElement('style');
+      st.id='vy-theme-style';
+      st.textContent=css;
+      document.head.appendChild(st);
+    } else if(st0.textContent!==css){ st0.textContent=css; }
+    document.body.classList.remove('vy-light');
+    document.documentElement.classList.toggle('vy-light',t==='light');
+    if(this.state.theme!==t)this.setState({theme:t});
+  }
+  toggleTheme(){
+    const t=this.state.theme==='light'?'dark':'light';
+    try{ localStorage.setItem('vy-admin-theme',t); }catch(e){}
+    this.applyTheme(t);
+  }
   renderVals(){
     const S=this.state;
     const NT=[
@@ -120,6 +153,10 @@ class Component extends DCLogic {
     return {
       title:this.props.title??'Trang quản trị',
       pageEn:this.props.pageEn??'Admin',
+      thLight:S.theme==='light',
+      thDark:S.theme!=='light',
+      thToggle:()=>this.toggleTheme(),
+      thTitle:S.theme==='light'?'Chuyển giao diện tối':'Chuyển giao diện sáng',
       regionLabel:curRegion.short,
       rgOpen:S.regionOpen,
       rgToggle:()=>this.setState({regionOpen:!S.regionOpen,open:false}),

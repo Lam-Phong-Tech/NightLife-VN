@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0c0c0f;}
+  ::selection{background:rgba(212,178,106,.3);color:#fff;}
+  .scw::-webkit-scrollbar{width:9px;height:9px;}
+  .scw::-webkit-scrollbar-thumb{background:rgba(212,178,106,.2);border-radius:9px;}
+  .scw::-webkit-scrollbar-track{background:transparent;}
+  .scw{scrollbar-width:thin;scrollbar-color:rgba(212,178,106,.25) transparent;}
+  @keyframes vpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  @keyframes vrise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;min-height:100vh;background:#0c0c0f;color:#f3f0ea;font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;">
+  <dc-import name="Admin Sidebar" active="appearance" style="width:250px;flex:none;position:sticky;top:0;height:100vh;" hint-size="250px,100vh"></dc-import>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <dc-import name="Admin Topbar" title="Giao diện &amp; Logo" page-en="" style="position:sticky;top:0;z-index:30;" hint-size="100%,68px"></dc-import>
+
+    <div class="scw" style="flex:1;overflow:auto;">
+      <div data-screen-label="Admin · Giao diện" style="padding:22px 26px 110px;">
+
+        <!-- ===== LOGO ===== -->
+        <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
+          <div>
+            <div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">Logo &amp; nhận diện</div>
+            <div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Hiển thị trên web · app · favicon</div>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></div>
+        </div>
+
+        <div style="display:flex;gap:14px;align-items:stretch;margin-bottom:28px;">
+          <div style="flex:1.4;min-width:0;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+              <span style="font-size:12.5px;font-weight:600;color:#c5c0b6;">Logo hiện tại</span>
+              <sc-if value="{{ brandChanged }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:700;color:#e0a44e;border:1px solid rgba(224,164,78,.4);border-radius:6px;padding:2px 7px;">CHƯA ÁP DỤNG</span></sc-if>
+              <div style="flex:1;"></div>
+              <span onClick="{{ dlLogo }}" style="font-size:11.5px;font-weight:600;color:#c5c0b6;border:1px solid rgba(255,255,255,.13);border-radius:9px;padding:7px 13px;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.28);">Tải .svg</span>
+              <span onClick="{{ lgOpenFn }}" style="display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:9px;padding:7px 14px;cursor:pointer;box-shadow:0 10px 20px -10px rgba(168,124,60,.6);" style-hover="filter:brightness(1.05);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L8 21H3v-5z"/><path d="M12.5 6.5l5 5"/></svg>Thay logo
+              </span>
+            </div>
+
+            <div style="border:1px solid rgba(255,255,255,.07);border-radius:13px;overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:24px;background:#0e0d12;padding:13px 18px;">
+                <div style="flex:none;">
+                  <div style="font-weight:800;font-size:20px;line-height:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">{{ brandName }}</div>
+                  <div style="font-size:6.5px;letter-spacing:2.6px;color:#8c8679;margin-top:3px;text-transform:uppercase;">{{ brandTag }}</div>
+                </div>
+                <div style="display:flex;gap:15px;font-size:11.5px;color:#8c8679;">
+                  <span>Trang chủ</span><span>Tìm quán</span><span>Cast</span><span>Ưu đãi</span>
+                </div>
+                <div style="flex:1;"></div>
+                <span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#57534b;text-transform:uppercase;">Desktop · cao 28px</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;background:#0c0c0f;padding:10px 15px;border-top:1px solid rgba(255,255,255,.06);">
+                <div>
+                  <div style="font-weight:800;font-size:15.5px;line-height:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">{{ brandName }}</div>
+                  <div style="font-size:5.5px;letter-spacing:2.2px;color:#8c8679;margin-top:2px;text-transform:uppercase;">{{ brandTag }}</div>
+                </div>
+                <span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#57534b;text-transform:uppercase;">Mobile · cao 22px</span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:12px;">
+              <div style="text-align:center;">
+                <div style="width:46px;height:46px;border-radius:11px;background:#17151c;border:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;background-image:none;"><span style="background:linear-gradient(135deg,#f4e3b4,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">{{ brandInitial }}</span></div>
+                <div style="font-size:9px;color:#57534b;margin-top:5px;">Favicon 32px</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="width:46px;height:46px;border-radius:11px;background:#f4f0e6;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#241a0a;">{{ brandInitial }}</div>
+                <div style="font-size:9px;color:#57534b;margin-top:5px;">Nền sáng</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="width:46px;height:46px;border-radius:11px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#241a0a;">{{ brandInitial }}</div>
+                <div style="font-size:9px;color:#57534b;margin-top:5px;">App icon 180px</div>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{ showSpecs }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;min-width:0;background:rgba(212,178,106,.045);border:1px solid rgba(212,178,106,.2);border-radius:16px;padding:16px 18px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+              <span style="font-size:12.5px;font-weight:700;color:#e3c27e;">Chuẩn kỹ thuật khi thay logo</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;gap:9px;"><span style="flex:none;font-size:9px;font-weight:700;color:#241a0a;background:#d4b26a;border-radius:5px;padding:2px 6px;height:fit-content;margin-top:1px;">SVG</span><span style="font-size:11.5px;color:#cbb884;line-height:1.5;"><b style="color:#f0dda8;">Định dạng:</b> SVG (vector) ưu tiên — sắc nét mọi màn hình, nhẹ. Fallback PNG-24 nền trong suốt. Tránh JPG (dính nền trắng).</span></div>
+              <div style="display:flex;gap:9px;"><span style="flex:none;font-size:9px;font-weight:700;color:#241a0a;background:#d4b26a;border-radius:5px;padding:2px 6px;height:fit-content;margin-top:1px;">PX</span><span style="font-size:11.5px;color:#cbb884;line-height:1.5;"><b style="color:#f0dda8;">Kích thước:</b> PNG xuất @2x ≥ 480×120px (logo ngang ~4:1). Hiển thị thật: cao 28px desktop · 22px mobile — tránh chi tiết quá nhỏ.</span></div>
+              <div style="display:flex;gap:9px;"><span style="flex:none;font-size:9px;font-weight:700;color:#241a0a;background:#d4b26a;border-radius:5px;padding:2px 6px;height:fit-content;margin-top:1px;">ICO</span><span style="font-size:11.5px;color:#cbb884;line-height:1.5;"><b style="color:#f0dda8;">Favicon:</b> kèm bản vuông 32×32px (.png/.ico) + 180×180px cho iOS.</span></div>
+              <div style="display:flex;gap:9px;"><span style="flex:none;font-size:9px;font-weight:700;color:#241a0a;background:#d4b26a;border-radius:5px;padding:2px 6px;height:fit-content;margin-top:1px;">KB</span><span style="font-size:11.5px;color:#cbb884;line-height:1.5;"><b style="color:#f0dda8;">Dung lượng:</b> &lt; 200 KB (SVG thường &lt; 20 KB).</span></div>
+              <div style="display:flex;gap:9px;"><span style="flex:none;font-size:9px;font-weight:700;color:#241a0a;background:#d4b26a;border-radius:5px;padding:2px 6px;height:fit-content;margin-top:1px;">HEX</span><span style="font-size:11.5px;color:#cbb884;line-height:1.5;"><b style="color:#f0dda8;">Màu:</b> dùng bản sáng (trắng / vàng #D4B26A) vì nền hệ thống tối #0C0C0F.</span></div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+
+        <!-- ===== ICON TRANG CHỦ ===== -->
+        <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
+          <div>
+            <div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">Bộ icon trang chủ</div>
+            <div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Hàng truy cập nhanh · 8 mục</div>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></div>
+          <span style="font-size:11px;color:#8c8679;">Bấm vào mục để đổi icon / tên</span>
+        </div>
+
+        <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:17px 16px 13px;margin-bottom:12px;">
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ quickTiles }}" as="t" hint-placeholder-count="8">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <span style="width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.035);border:1px solid rgba(212,178,106,.16);display:flex;align-items:center;justify-content:center;">{{ t.img }}</span>
+                <span style="font-size:11px;color:#c5c0b6;white-space:nowrap;">{{ t.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:9.5px;color:#57534b;text-align:center;margin-top:10px;letter-spacing:.6px;text-transform:uppercase;">Xem trước trên trang chủ</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:28px;">
+          <sc-for list="{{ quickRows }}" as="r" hint-placeholder-count="8">
+            <div onClick="{{ r.edit }}" style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:10px 12px;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.45);background:rgba(212,178,106,.04);">
+              <span style="width:38px;height:38px;flex:none;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;">{{ r.img }}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12.5px;font-weight:600;color:#f3f0ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.label }}</div>
+                <sc-if value="{{ r.changed }}" hint-placeholder-val="{{ false }}"><div style="font-size:9px;font-weight:700;color:#e0a44e;margin-top:2px;">● Chưa áp dụng</div></sc-if>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M14.5 4.5l5 5L8 21H3v-5z"/></svg>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- ===== ICON BOTTOM NAV ===== -->
+        <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
+          <div>
+            <div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">Bộ icon điều hướng mobile</div>
+            <div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Bottom navigation · 5 mục</div>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></div>
+        </div>
+
+        <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:17px 16px 13px;margin-bottom:12px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:376px;max-width:100%;background:#131218;border:1px solid rgba(255,255,255,.09);border-radius:15px;display:grid;grid-template-columns:repeat(5,1fr);padding:9px 6px 8px;box-shadow:0 14px 30px -16px rgba(0,0,0,.7);">
+            <sc-for list="{{ navTiles }}" as="t" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                {{ t.img }}
+                <span style="font-size:9.5px;font-weight:{{ t.fw }};color:{{ t.lc }};white-space:nowrap;">{{ t.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:9.5px;color:#57534b;text-align:center;margin-top:10px;letter-spacing:.6px;text-transform:uppercase;">Xem trước thanh điều hướng · tab đầu đang chọn</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:28px;">
+          <sc-for list="{{ navRows }}" as="r" hint-placeholder-count="5">
+            <div onClick="{{ r.edit }}" style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:10px 12px;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.45);background:rgba(212,178,106,.04);">
+              <span style="width:38px;height:38px;flex:none;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;">{{ r.img }}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12.5px;font-weight:600;color:#f3f0ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.label }}</div>
+                <sc-if value="{{ r.changed }}" hint-placeholder-val="{{ false }}"><div style="font-size:9px;font-weight:700;color:#e0a44e;margin-top:2px;">● Chưa áp dụng</div></sc-if>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#57534b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M14.5 4.5l5 5L8 21H3v-5z"/></svg>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- ===== TIÊU ĐỀ MỤC ===== -->
+        <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
+          <div>
+            <div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">Tiêu đề các mục trang chủ</div>
+            <div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Section titles · sửa trực tiếp</div>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:150px 1fr 280px 78px;gap:14px;padding:12px 18px;font-size:10px;font-weight:700;letter-spacing:.9px;color:#57534b;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);">
+            <span>Khối</span><span>Hiển thị trên trang chủ</span><span>Sửa tiêu đề</span><span></span>
+          </div>
+          <sc-for list="{{ titleRows }}" as="t" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:150px 1fr 280px 78px;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.04);">
+              <span style="font-size:11px;color:#8c8679;">{{ t.key }}</span>
+              <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                <span style="width:3.5px;height:20px;border-radius:2px;background:linear-gradient(180deg,#f0dda8,#b6924a);flex:none;"></span>
+                <span style="font-size:16.5px;font-weight:800;color:#f3f0ea;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ t.label }}</span>
+                <sc-if value="{{ t.changed }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:9px;font-weight:700;color:#e0a44e;border:1px solid rgba(224,164,78,.4);border-radius:6px;padding:2px 6px;">CHƯA ÁP DỤNG</span></sc-if>
+              </div>
+              <input value="{{ t.label }}" onChange="{{ t.set }}" maxLength="28" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 12px;color:#f3f0ea;font-size:13px;font-family:'Inter',sans-serif;outline:none;" style-focus="border-color:rgba(212,178,106,.5);">
+              <span onClick="{{ t.reset }}" style="font-size:11px;font-weight:600;color:#8c8679;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;cursor:pointer;text-align:center;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.25);">Hoàn tác</span>
+            </div>
+          </sc-for>
+          <div style="padding:10px 18px;font-size:10.5px;color:#57534b;">Tiêu đề ngắn gọn ≤ 24 ký tự để hiển thị đẹp trên mobile · hỗ trợ tiếng Việt có dấu.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVE BAR -->
+  <sc-if value="{{ dirty }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;left:274px;right:24px;bottom:16px;z-index:45;display:flex;align-items:center;gap:13px;background:rgba(19,18,24,.94);border:1px solid rgba(212,178,106,.32);border-radius:15px;padding:12px 16px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);backdrop-filter:blur(10px);animation:vrise .25s ease;">
+    <span style="width:9px;height:9px;flex:none;border-radius:50%;background:#e0a44e;box-shadow:0 0 8px #e0a44e;animation:vpulse 2s infinite;"></span>
+    <span style="font-size:13px;font-weight:700;color:#f3f0ea;">{{ dirtyLabel }}</span>
+    <span style="font-size:11.5px;color:#8c8679;">Người dùng vẫn thấy bản cũ cho tới khi áp dụng</span>
+    <div style="flex:1;"></div>
+    <span onClick="{{ undoAll }}" style="font-size:12.5px;font-weight:600;color:#c5c0b6;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:9px 16px;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.3);">Hoàn tác tất cả</span>
+    <span onClick="{{ saveAll }}" style="font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);border-radius:10px;padding:9px 18px;cursor:pointer;box-shadow:0 12px 24px -12px rgba(168,124,60,.6);" style-hover="filter:brightness(1.05);">Lưu &amp; áp dụng</span>
+  </div>
+  </sc-if>
+
+  <!-- DRAWER ĐỔI ICON -->
+  <sc-if value="{{ icOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;">
+    <div onClick="{{ icClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:430px;max-width:94vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="padding:17px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#131218;z-index:2;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#f3f0ea;">{{ icTitle }}</div>
+          <div style="font-size:9px;font-weight:600;letter-spacing:1.5px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Đổi icon &amp; tên hiển thị</div>
+        </div>
+        <span onClick="{{ icClose }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:20px 24px 28px;display:flex;flex-direction:column;gap:18px;">
+
+        <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.03);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:13px 15px;">
+          <span style="width:58px;height:58px;flex:none;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.3);display:flex;align-items:center;justify-content:center;">{{ icImg }}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:6px;">Tên hiển thị</div>
+            <input value="{{ icLabel }}" onChange="{{ icSetLabel }}" maxLength="16" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;color:#f3f0ea;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;" style-focus="border-color:rgba(212,178,106,.5);">
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:9px;">Chọn từ thư viện icon</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <sc-for list="{{ libIcons }}" as="i" hint-placeholder-count="24">
+              <span onClick="{{ i.pick }}" style="{{ i.style }}" title="{{ i.name }}">{{ i.el }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:9px;">Hoặc tải icon riêng</div>
+          <div onClick="{{ uploadMock }}" style="border:1.5px dashed rgba(212,178,106,.35);border-radius:13px;padding:20px;text-align:center;cursor:pointer;" style-hover="background:rgba(212,178,106,.05);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+            <div style="font-size:12.5px;font-weight:600;color:#e3c27e;margin-top:6px;">Kéo thả file .svg / .png vào đây</div>
+            <div style="font-size:10.5px;color:#8c8679;margin-top:3px;">hoặc bấm để chọn từ máy</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:9px;padding:12px 14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+          <span style="font-size:11.5px;color:#cbb884;line-height:1.55;"><b style="color:#f0dda8;">Chuẩn icon:</b> SVG viewBox 24×24, nét 1.5–2px (hệ thống dùng 1.7px), 1 màu — dùng <b style="color:#f0dda8;">currentColor</b> để icon tự đổi màu theo trạng thái (vàng khi chọn). Nếu là PNG: 96×96px @2x, nền trong suốt. Dung lượng &lt; 30 KB. Icon hiển thị thật 20–24px, chừa lề an toàn 2px.</span>
+        </div>
+
+        <span onClick="{{ icClose }}" style="display:block;text-align:center;font-size:14px;font-weight:700;padding:13px;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;box-shadow:0 14px 28px -12px rgba(168,124,60,.55);">Xong</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- DRAWER THAY LOGO -->
+  <sc-if value="{{ lgOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:72;">
+    <div onClick="{{ lgClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:430px;max-width:94vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="padding:17px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#131218;z-index:2;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#f3f0ea;">Thay logo</div>
+          <div style="font-size:9px;font-weight:600;letter-spacing:1.5px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Wordmark hoặc file tải lên</div>
+        </div>
+        <span onClick="{{ lgClose }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:20px 24px 28px;display:flex;flex-direction:column;gap:18px;">
+
+        <div style="background:#0e0d12;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-weight:800;font-size:22px;line-height:1;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px;">{{ brandName }}</div>
+            <div style="font-size:7px;letter-spacing:2.8px;color:#8c8679;margin-top:4px;text-transform:uppercase;">{{ brandTag }}</div>
+          </div>
+          <span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#57534b;text-transform:uppercase;">Xem trước</span>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tên thương hiệu</div>
+          <input value="{{ lgName }}" onChange="{{ lgSetName }}" maxLength="20" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 14px;color:#f3f0ea;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;" style-focus="border-color:rgba(212,178,106,.5);">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tagline</div>
+          <input value="{{ lgTag }}" onChange="{{ lgSetTag }}" maxLength="32" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 14px;color:#f3f0ea;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;letter-spacing:1.5px;" style-focus="border-color:rgba(212,178,106,.5);">
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:9px;">Hoặc tải file logo</div>
+          <div onClick="{{ uploadMock }}" style="border:1.5px dashed rgba(212,178,106,.35);border-radius:13px;padding:22px;text-align:center;cursor:pointer;" style-hover="background:rgba(212,178,106,.05);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+            <div style="font-size:12.5px;font-weight:600;color:#e3c27e;margin-top:6px;">Kéo thả file .svg / .png vào đây</div>
+            <div style="font-size:10.5px;color:#8c8679;margin-top:3px;">SVG ưu tiên · PNG nền trong suốt ≥ 480×120px · &lt; 200 KB</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:9px;padding:12px 14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+          <span style="font-size:11.5px;color:#cbb884;line-height:1.55;">Hệ thống tự sinh các cỡ: topbar 28px, mobile 22px, favicon 32px, app icon 180px. Logo tải lên nên là bản sáng để nổi trên nền tối.</span>
+        </div>
+
+        <span onClick="{{ lgClose }}" style="display:block;text-align:center;font-size:14px;font-weight:700;padding:13px;border-radius:12px;cursor:pointer;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;box-shadow:0 14px 28px -12px rgba(168,124,60,.55);">Xong</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:95;background:#1c1a22;border:1px solid rgba(212,178,106,.4);color:#f0dda8;font-size:13px;font-weight:600;padding:12px 20px;border-radius:12px;box-shadow:0 16px 36px -12px rgba(0,0,0,.8);animation:vrise .25s ease;white-space:nowrap;">{{ toastMsg }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showSpecs&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Hiển thị&quot;},&quot;iconStroke&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.7,&quot;min&quot;:1.4,&quot;max&quot;:2.2,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Icon&quot;}}">
+class Component extends DCLogic {
+  static DEF(){ return {
+    quick:[
+      {id:'q1',label:'Tìm quán',icon:'pin'},
+      {id:'q2',label:'Tìm Cast',icon:'user'},
+      {id:'q3',label:'Ưu đãi',icon:'ticket'},
+      {id:'q4',label:'Sự kiện',icon:'calendar'},
+      {id:'q5',label:'Ranking',icon:'crown'},
+      {id:'q6',label:'Spa',icon:'waves'},
+      {id:'q7',label:'Nhà hàng',icon:'dining'},
+      {id:'q8',label:'VIP',icon:'star'}],
+    nav:[
+      {id:'n1',label:'Trang chủ',icon:'home'},
+      {id:'n2',label:'Tìm Cast',icon:'search'},
+      {id:'n3',label:'Ưu đãi',icon:'ticket'},
+      {id:'n4',label:'Lịch đặt',icon:'calcheck'},
+      {id:'n5',label:'Tài khoản',icon:'account'}],
+    titles:[
+      {id:'t1',key:'Khối đề xuất',label:'Đề xuất tối nay'},
+      {id:'t2',key:'Khối coupon',label:'Coupon Hot'},
+      {id:'t3',key:'Khối xếp hạng',label:'Bảng xếp hạng'},
+      {id:'t4',key:'Khối dịch vụ',label:'Dịch vụ nổi bật'},
+      {id:'t5',key:'Khối video',label:'Video Hot'},
+      {id:'t6',key:'Khối cẩm nang',label:'Tour · Blog · Guide'}],
+    brand:{name:'Vietyoru',tagline:'VIETNAM NIGHTLIFE GUIDE'}
+  }; }
+
+  static ICONS = {
+    pin:'<path d="M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/>',
+    user:'<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>',
+    ticket:'<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2.4"/>',
+    calendar:'<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 2.5v4M16 2.5v4"/>',
+    crown:'<path d="M4 17L2.8 8l5.2 3.6L12 5l4 6.6L21.2 8 20 17z"/><path d="M6 20.5h12"/>',
+    waves:'<path d="M4.5 8.5c2.5-2 5-2 7.5 0s5 2 7.5 0M4.5 13.5c2.5-2 5-2 7.5 0s5 2 7.5 0M4.5 18.5c2.5-2 5-2 7.5 0s5 2 7.5 0"/>',
+    dining:'<path d="M8 2.5v19M5 2.5V8a3 3 0 0 0 6 0V2.5"/><path d="M16.5 21V2.5c2.2 1.6 3.2 4.5 3.2 7 0 2.1-1.4 3.6-3.2 3.6"/>',
+    star:'<path d="M12 3.5l2.7 5.4 6 .9-4.35 4.2 1.05 5.9L12 17.1 6.6 19.9l1.05-5.9L3.3 9.8l6-.9z"/>',
+    home:'<path d="M4 11l8-7.5L20 11"/><path d="M6 9.5V20.5h12V9.5"/><path d="M10 20.5V14h4v6.5"/>',
+    search:'<circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5L15.8 15.8"/>',
+    calcheck:'<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 10h17M8 2.5v4M16 2.5v4"/><path d="M9 15.3l2 2 4-4"/>',
+    account:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.1"/><path d="M6.3 18.7a7 7 0 0 1 11.4 0"/>',
+    martini:'<path d="M4 4.5h16L12 13z"/><path d="M12 13v7.5M8 20.5h8M8.5 8h7"/>',
+    mic:'<rect x="9" y="3" width="6" height="11.5" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/>',
+    music:'<path d="M9 18.5V6.5l11-2.5v12"/><circle cx="6.5" cy="18.5" r="2.6"/><circle cx="17.5" cy="16" r="2.6"/>',
+    sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/>',
+    gift:'<rect x="3.5" y="8" width="17" height="4.5"/><path d="M5 12.5V20.5h14v-8M12 8v12.5"/><path d="M12 8c-4.2 0-5.6-2.1-4.4-3.6C8.7 3 11 3.7 12 8zM12 8c4.2 0 5.6-2.1 4.4-3.6C15.3 3 13 3.7 12 8z"/>',
+    map:'<path d="M9 4.5L3.5 6.5v13L9 17.5l6 2 5.5-2v-13L15 6.5z"/><path d="M9 4.5v13M15 6.5v13"/>',
+    heart:'<path d="M12 20.5S3.5 15.2 3.5 9.6A4.6 4.6 0 0 1 12 7a4.6 4.6 0 0 1 8.5 2.6c0 5.6-8.5 10.9-8.5 10.9z"/>',
+    gem:'<path d="M7.5 4h9l4 5.5L12 20.5 3.5 9.5z"/><path d="M3.5 9.5h17M9.5 9.5l2.5 11 2.5-11M7.5 4l2 5.5L12 4l2.5 5.5 2-5.5"/>',
+    moon:'<path d="M20 14.5A8.3 8.3 0 0 1 9.5 4 8.3 8.3 0 1 0 20 14.5z"/>',
+    bell:'<path d="M6 9.7a6 6 0 0 1 12 0c0 4.8 1.8 5.8 1.8 5.8H4.2S6 14.5 6 9.7z"/><path d="M10 19.5a2.2 2.2 0 0 0 4 0"/>',
+    camera:'<path d="M4 8h3l1.5-2.5h7L17 8h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 8z"/><circle cx="12" cy="13.5" r="3.4"/>',
+    qr:'<rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><path d="M13.5 13.5h3v3h-3zM17.5 17.5h3v3h-3z"/>'
+  };
+
+  state = (()=>{ const d=Component.DEF(); return { ...d, saved:JSON.stringify(Component.DEF()), drawer:null, logoOpen:false, toast:null }; })();
+
+  showToast(m){ this.setState({toast:m}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+
+  uri(k,color){
+    const sw=+(this.props.iconStroke ?? 1.7);
+    const body=Component.ICONS[k]||Component.ICONS.star;
+    const svg='<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-linejoin="round">'+body+'</svg>';
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  }
+
+  renderVals(){
+    const S=this.state, o={};
+    const saved=JSON.parse(S.saved);
+    o.showSpecs=this.props.showSpecs ?? true;
+    o.toast=S.toast; o.toastMsg=S.toast||'';
+
+    // ----- brand -----
+    o.brandName=S.brand.name||'Vietyoru';
+    o.brandTag=S.brand.tagline||'';
+    o.brandInitial=(S.brand.name||'V').trim().charAt(0).toUpperCase();
+    o.brandChanged=JSON.stringify(S.brand)!==JSON.stringify(saved.brand);
+    o.lgOpen=S.logoOpen;
+    o.lgOpenFn=()=>this.setState({logoOpen:true});
+    o.lgClose=()=>this.setState({logoOpen:false});
+    o.lgName=S.brand.name;
+    o.lgSetName=(e)=>this.setState(s=>({brand:{...s.brand,name:e.target.value.slice(0,20)}}));
+    o.lgTag=S.brand.tagline;
+    o.lgSetTag=(e)=>this.setState(s=>({brand:{...s.brand,tagline:e.target.value.toUpperCase().slice(0,32)}}));
+    o.uploadMock=()=>this.showToast('Bản demo — khi nối backend sẽ nhận file kéo thả tại đây');
+    o.dlLogo=()=>this.showToast('Đã tải Vietyoru-logo.svg');
+
+    // ----- icon sets -----
+    const img=(u,s)=>React.createElement('img',{src:u,width:s,height:s,alt:'',style:{display:'block'}});
+    const mkRows=(list,group,savedList)=>list.map((it,i)=>{
+      const sv=savedList[i]||{};
+      return { ...it, img:img(this.uri(it.icon,'#e3c27e'),19),
+        changed:(sv.icon!==it.icon||sv.label!==it.label),
+        edit:()=>this.setState({drawer:{group,id:it.id}}) };
+    });
+    o.quickTiles=S.quick.map(it=>({label:it.label,img:img(this.uri(it.icon,'#d4b26a'),22)}));
+    o.quickRows=mkRows(S.quick,'quick',saved.quick);
+    o.navTiles=S.nav.map((it,i)=>({label:it.label,img:img(this.uri(it.icon,i===0?'#e3c27e':'#8c8679'),20),lc:i===0?'#e3c27e':'#8c8679',fw:i===0?'700':'500'}));
+    o.navRows=mkRows(S.nav,'nav',saved.nav);
+
+    // ----- titles -----
+    o.titleRows=S.titles.map((t,i)=>{
+      const sv=saved.titles[i]||{};
+      return { ...t, changed:sv.label!==t.label,
+        set:(e)=>this.setState(s=>({titles:s.titles.map(x=>x.id===t.id?{...x,label:e.target.value.slice(0,28)}:x)})),
+        reset:()=>this.setState(s=>({titles:s.titles.map(x=>x.id===t.id?{...x,label:sv.label}:x)})) };
+    });
+
+    // ----- dirty / save -----
+    const cur=JSON.stringify({quick:S.quick,nav:S.nav,titles:S.titles,brand:S.brand});
+    o.dirty=cur!==S.saved;
+    let n=0;
+    S.quick.forEach((it,i)=>{const sv=saved.quick[i]; if(sv.icon!==it.icon||sv.label!==it.label)n++;});
+    S.nav.forEach((it,i)=>{const sv=saved.nav[i]; if(sv.icon!==it.icon||sv.label!==it.label)n++;});
+    S.titles.forEach((t,i)=>{ if(saved.titles[i].label!==t.label)n++; });
+    if(o.brandChanged)n++;
+    o.dirtyLabel=n+' thay đổi chưa áp dụng';
+    o.saveAll=()=>{ this.setState({saved:cur}); this.showToast('Đã áp dụng lên giao diện người dùng · bản demo'); };
+    o.undoAll=()=>{ this.setState({quick:saved.quick,nav:saved.nav,titles:saved.titles,brand:saved.brand}); this.showToast('Đã hoàn tác về bản đang chạy'); };
+
+    // ----- icon drawer -----
+    const dr=S.drawer;
+    o.icOpen=!!dr;
+    o.icClose=()=>this.setState({drawer:null});
+    if(dr){
+      const list=S[dr.group];
+      const it=list.find(x=>x.id===dr.id)||list[0];
+      o.icTitle=(dr.group==='quick'?'Icon trang chủ · ':'Icon điều hướng · ')+it.label;
+      o.icImg=img(this.uri(it.icon,'#e3c27e'),26);
+      o.icLabel=it.label;
+      o.icSetLabel=(e)=>this.setState(s=>({[dr.group]:s[dr.group].map(x=>x.id===it.id?{...x,label:e.target.value.slice(0,16)}:x)}));
+      const cellOn='width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:linear-gradient(135deg,#f0dda8,#d4b26a);box-shadow:0 8px 18px -8px rgba(168,124,60,.6);';
+      const cellOff='width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);';
+      o.libIcons=Object.keys(Component.ICONS).map(k=>({
+        name:k,
+        el:img(this.uri(k, k===it.icon?'#241a0a':'#c5c0b6'),21),
+        style:k===it.icon?cellOn:cellOff,
+        pick:()=>this.setState(s=>({[dr.group]:s[dr.group].map(x=>x.id===it.id?{...x,icon:k}:x)})) }));
+    } else { o.libIcons=[]; o.icImg=''; o.icLabel=''; o.icTitle=''; o.icSetLabel=()=>{}; }
+
+    return o;
+  }
+}
+</script>
+</body>
+</html>

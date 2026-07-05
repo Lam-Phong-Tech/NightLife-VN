@@ -39,6 +39,51 @@
           <div style="background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.22);border-radius:14px;padding:15px 16px;"><div style="font-size:24px;font-weight:800;color:#e3c27e;">68%</div><div style="font-size:11.5px;color:#8c8679;margin-top:2px;">Tỷ lệ sử dụng</div></div>
         </div>
 
+        <div style="display:flex;align-items:center;gap:14px;margin:6px 0 12px;">
+          <div>
+            <div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">Chiến dịch coupon</div>
+            <div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Campaigns · Admin tự tạo</div>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></div>
+          <span onClick="{{ crOpenFn }}" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;font-size:12.5px;font-weight:700;padding:10px 17px;border-radius:11px;cursor:pointer;box-shadow:0 12px 24px -12px rgba(168,124,60,.6);" style-hover="filter:brightness(1.05);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Tạo coupon
+          </span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:26px;">
+          <sc-for list="{{ camps }}" as="cp" hint-placeholder-count="3">
+            <div onClick="{{ cp.view }}" style="background:rgba(255,255,255,.02);border:1px solid {{ cp.bd }};border-radius:16px;padding:15px 16px;cursor:pointer;opacity:{{ cp.op }};display:flex;flex-direction:column;gap:10px;" style-hover="background:rgba(212,178,106,.045);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <span style="font-size:25px;font-weight:800;color:#e3c27e;line-height:1;">{{ cp.deal }}</span>
+                <span style="{{ cp.stStyle }}">{{ cp.stLabel }}</span>
+              </div>
+              <div style="min-width:0;">
+                <div style="font-size:14px;font-weight:600;color:#f3f0ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cp.name }}</div>
+                <div style="font-size:11px;font-weight:600;color:#d4b26a;letter-spacing:.8px;margin-top:2px;">{{ cp.code }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                <span style="{{ cp.scopeStyle }}" title="{{ cp.scopeFull }}">{{ cp.scopeLabel }}</span>
+                <span style="font-size:11px;color:#8c8679;">{{ cp.tiersLabel }}</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;">
+                <span style="font-size:11px;color:#8c8679;">{{ cp.hsd }}</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:11.5px;color:#c5c0b6;font-weight:600;">{{ cp.usage }}</span>
+                  <span onClick="{{ cp.togglePause }}" style="font-size:10.5px;font-weight:600;color:#9b958a;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:4px 9px;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.25);">{{ cp.pauseLabel }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;margin:0 0 12px;">
+          <div>
+            <div style="font-size:15.5px;font-weight:600;color:#f3f0ea;">Mã khách đã lấy</div>
+            <div style="font-size:8.5px;font-weight:600;letter-spacing:1.6px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Issued codes</div>
+          </div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.45),transparent);"></div>
+        </div>
+
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
           <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
             <span onClick="{{ cpAll }}" style="{{ cpTabAll }}">Tất cả</span>
@@ -105,6 +150,155 @@
   </div>
   </sc-if>
 
+  <sc-if value="{{ crShow }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:70;">
+    <div onClick="{{ crClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:440px;max-width:94vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="padding:17px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#131218;z-index:2;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#f3f0ea;">Tạo coupon mới</div>
+          <div style="font-size:9px;font-weight:600;letter-spacing:1.5px;color:#8c8679;text-transform:uppercase;margin-top:2px;">Sinh mã giảm giá + QR</div>
+        </div>
+        <span onClick="{{ crClose }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:20px 24px 28px;display:flex;flex-direction:column;gap:19px;">
+
+        <div style="display:flex;align-items:stretch;background:rgba(255,255,255,.035);border:1px solid rgba(212,178,106,.22);border-radius:14px;overflow:hidden;">
+          <div style="flex:1;padding:13px 15px;min-width:0;">
+            <div style="font-size:21px;font-weight:800;color:#e3c27e;">{{ pvDeal }}</div>
+            <div style="font-size:12.5px;font-weight:600;color:#f3f0ea;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ pvName }}</div>
+            <div style="font-size:11px;color:#8c8679;margin-top:2px;">{{ pvScope }} · {{ pvHsd }}</div>
+          </div>
+          <div style="width:62px;flex:none;border-left:1.5px dashed rgba(212,178,106,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#d4b26a;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
+            <span style="font-size:8.5px;font-weight:700;letter-spacing:1.2px;">QR</span>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tên ưu đãi</div>
+          <input value="{{ fName }}" onChange="{{ setName }}" placeholder="VD: Happy Hour tháng 7" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 14px;color:#f3f0ea;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;" style-focus="border-color:rgba(212,178,106,.5);">
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Mức giảm</div>
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;margin-bottom:10px;">
+            <span onClick="{{ typePct }}" style="{{ typePctStyle }}flex:1;text-align:center;">Giảm %</span>
+            <span onClick="{{ typeAmt }}" style="{{ typeAmtStyle }}flex:1;text-align:center;">Giảm tiền (₫)</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <sc-for list="{{ valChips }}" as="v" hint-placeholder-count="5">
+              <span onClick="{{ v.on }}" style="{{ v.style }}">{{ v.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Phạm vi áp dụng</div>
+          <div style="display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:3px;gap:2px;">
+            <span onClick="{{ scopeAll }}" style="{{ scopeAllStyle }}flex:1;text-align:center;">Toàn hệ thống</span>
+            <span onClick="{{ scopeSel }}" style="{{ scopeSelStyle }}flex:1;text-align:center;">Chọn quán</span>
+          </div>
+          <sc-if value="{{ scopeSelect }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ venueRows }}" as="v" hint-placeholder-count="4">
+                <div onClick="{{ v.toggle }}" style="{{ v.rowStyle }}" style-hover="border-color:rgba(212,178,106,.45);">
+                  <span style="{{ v.boxStyle }}"><sc-if value="{{ v.checked }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#241a0a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></sc-if></span>
+                  <div style="flex:1;min-width:0;font-size:13px;font-weight:600;color:#f3f0ea;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.name }}</div>
+                  <span style="font-size:11px;color:#8c8679;">{{ v.area }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:10.5px;color:#8c8679;margin-top:8px;">Đã chọn {{ venueCount }} quán</div>
+          </sc-if>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Hạng khách áp dụng</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <sc-for list="{{ tierChips }}" as="t" hint-placeholder-count="3">
+              <span onClick="{{ t.on }}" style="{{ t.style }}">{{ t.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Thời hạn</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <sc-for list="{{ durChips }}" as="d" hint-placeholder-count="4">
+              <span onClick="{{ d.on }}" style="{{ d.style }}">{{ d.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.3px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Giới hạn số mã</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <sc-for list="{{ limitChips }}" as="l" hint-placeholder-count="5">
+              <span onClick="{{ l.on }}" style="{{ l.style }}">{{ l.label }}</span>
+            </sc-for>
+          </div>
+          <sc-if value="{{ limitCustom }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px;display:flex;align-items:center;gap:9px;">
+              <input value="{{ fLimitN }}" onChange="{{ setLimitN }}" placeholder="VD: 250" inputMode="numeric" style="width:130px;background:rgba(255,255,255,.04);border:1px solid rgba(212,178,106,.4);border-radius:11px;padding:11px 14px;color:#f3f0ea;font-size:13.5px;font-family:'Inter',sans-serif;outline:none;" style-focus="border-color:rgba(212,178,106,.65);">
+              <span style="font-size:12.5px;color:#8c8679;">mã · nhập số lượng tuỳ ý</span>
+            </div>
+          </sc-if>
+        </div>
+
+        <span onClick="{{ doCreate }}" style="{{ crBtnStyle }}">Tạo coupon &amp; sinh QR</span>
+
+        <div style="display:flex;gap:9px;padding:12px 14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+          <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Hệ thống sinh 1 mã QR chung cho chiến dịch. Khách quét QR hoặc bấm "Lấy mã" trong app để nhận coupon; mã hiển thị trong danh sách bên dưới.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ vcOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:72;">
+    <div onClick="{{ vcClose }}" style="position:absolute;inset:0;background:rgba(6,6,9,.6);backdrop-filter:blur(2px);"></div>
+    <div class="scw" style="position:absolute;right:0;top:0;height:100vh;width:412px;max-width:92vw;overflow:auto;background:#131218;border-left:1px solid rgba(212,178,106,.18);box-shadow:-30px 0 60px -30px rgba(0,0,0,.8);">
+      <div style="padding:19px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Chiến dịch coupon</div>
+        <span onClick="{{ vcClose }}" style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#c5c0b6;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+      <div style="padding:24px;">
+        <div style="text-align:center;">
+          <div style="font-size:34px;font-weight:800;color:#e3c27e;">{{ vc.deal }}</div>
+          <div style="font-size:13.5px;color:#f3f0ea;font-weight:600;margin-top:2px;">{{ vc.name }}</div>
+          <div style="font-size:12px;color:#8c8679;margin-top:3px;">{{ vc.scopeFull }}</div>
+          <div style="margin-top:12px;"><span style="{{ vc.stStyle }}">{{ vc.stLabel }}</span></div>
+        </div>
+        <div style="margin:20px auto 0;width:184px;height:184px;border-radius:16px;background:#fff;padding:14px;box-shadow:0 14px 30px -14px rgba(0,0,0,.6);position:relative;">
+          <img src="../assets/qr-sample.svg" alt="QR" style="width:100%;height:100%;object-fit:contain;{{ vc.qrDim }}">
+          <sc-if value="{{ vc.isPaused }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:0;background:rgba(20,19,25,.72);border-radius:16px;display:flex;align-items:center;justify-content:center;color:#9b958a;font-size:13px;font-weight:700;">ĐANG TẠM DỪNG</span></sc-if>
+        </div>
+        <div style="margin-top:16px;border:1.5px dashed rgba(212,178,106,.4);border-radius:11px;padding:12px;text-align:center;"><div style="font-size:9.5px;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Mã chiến dịch</div><div style="font-size:18px;font-weight:700;color:#f0dda8;letter-spacing:2px;margin-top:3px;">{{ vc.code }}</div></div>
+
+        <div style="margin-top:14px;display:flex;gap:9px;">
+          <span onClick="{{ vcDownload }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border:1px solid rgba(212,178,106,.4);border-radius:11px;color:#e3c27e;font-size:12.5px;font-weight:600;cursor:pointer;" style-hover="background:rgba(212,178,106,.08);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Tải QR (.png)</span>
+          <span onClick="{{ vcCopy }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;border:1px solid rgba(212,178,106,.4);border-radius:11px;color:#e3c27e;font-size:12.5px;font-weight:600;cursor:pointer;" style-hover="background:rgba(212,178,106,.08);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Sao chép mã</span>
+        </div>
+
+        <div style="margin-top:18px;display:flex;flex-direction:column;gap:2px;">
+          <div style="display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;flex:none;">Phạm vi</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;text-align:right;">{{ vc.scopeFull }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Hạng khách</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ vc.tiers }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-size:12.5px;color:#8c8679;">Hạn dùng</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ vc.hsd }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:14px;padding:10px 0;"><span style="font-size:12.5px;color:#8c8679;">Đã phát hành</span><span style="font-size:13px;color:#f3f0ea;font-weight:500;">{{ vc.usage }}</span></div>
+        </div>
+
+        <div style="margin-top:14px;display:flex;gap:9px;padding:12px 14px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>
+          <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">In hoặc chia sẻ QR này tại quán / campaign. Khách quét → nhận coupon theo hạng; nhân viên quán quét lại để xác nhận sử dụng.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
   <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
@@ -115,8 +309,15 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940}}">
 class Component extends DCLogic {
-  state = { toast:null };
+  state = { toast:null, crOpen:false, vcSel:null,
+    f:{ name:'', type:'pct', val:10, scope:'all', venues:[], tiers:['Guest','Member','VIP'], dur:'30 ngày', limit:'500 mã', limitN:'' },
+    camps:[
+      {id:'c1', code:'VY-HE10', name:'Ưu đãi hè toàn hệ thống', type:'pct', val:10, scope:'all', venues:[], tiers:['Guest','Member','VIP'], hsd:'HSD 31/07/2026', usedN:214, limit:'1.000 mã', status:'active'},
+      {id:'c2', code:'LUM-HH30', name:'Happy Hour cuối tuần', type:'pct', val:30, scope:'select', venues:['Club Lumière · Tây Hồ','Akari Lounge · Tây Hồ'], tiers:['Member','VIP'], hsd:'HSD 15/07/2026', usedN:86, limit:'500 mã', status:'active'},
+      {id:'c3', code:'VIP-200K', name:'Tri ân khách VIP', type:'amt', val:200000, scope:'select', venues:['KTV Hoàng Gia · Kim Mã'], tiers:['VIP'], hsd:'HSD 10/07/2026', usedN:41, limit:'100 mã', status:'paused'},
+    ] };
   showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  setF(k,v){ this.setState(s=>({ f:{...s.f,[k]:v} })); }
   chip(kind){ const m={success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],warn:['rgba(224,164,78,.12)','rgba(224,164,78,.3)','#e7b869'],error:['rgba(224,105,122,.1)','rgba(224,105,122,.28)','#e88b99'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
   pill(kind){ return this.chip(kind)+'font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;'; }
 
@@ -144,6 +345,85 @@ class Component extends DCLogic {
     o.cpOpen=!!cqs;
     o.cq = cqs ? {...cqs, stStyle:this.chip(cpmeta[cqs.status][1])+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;', stLabel:cpmeta[cqs.status][0], isExpired:cqs.status==='expired', isUsed:cqs.status==='used', qrDim:cqs.status!=='holding'?'filter:grayscale(1);opacity:.5;':''} : {};
     o.cpClose=()=>this.setState({couponSel:null});
+
+    // ===== Chiến dịch coupon (admin tạo) =====
+    const VENUES=['Club Lumière · Tây Hồ','Akari Lounge · Tây Hồ','Sakura Lounge · Hoàn Kiếm','Bar Tokyo Night · Ba Đình','KTV Hoàng Gia · Kim Mã','Yume Spa · Đống Đa'];
+    const dealOf=(c)=> c.type==='pct' ? ('−'+c.val+'%') : ('−'+(c.val/1000)+'K');
+    const scopeShort=(c)=> c.scope==='all' ? 'Toàn hệ thống' : (c.venues.length+' quán');
+    const scopeFull=(c)=> c.scope==='all' ? 'Toàn hệ thống · tất cả quán' : c.venues.map(v=>v.split(' · ')[0]).join(', ');
+    o.camps=S.camps.map(c=>{
+      const act=c.status==='active';
+      return { ...c, deal:dealOf(c),
+        bd: act?'rgba(212,178,106,.22)':'rgba(255,255,255,.07)', op:act?'1':'.62',
+        stStyle:this.pill(act?'success':'muted'), stLabel:act?'Đang chạy':'Tạm dừng',
+        scopeStyle:this.chip(c.scope==='all'?'gold':'info')+'font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:7px;white-space:nowrap;',
+        scopeLabel:scopeShort(c), scopeFull:scopeFull(c),
+        tiersLabel:c.tiers.join(' · '),
+        usage:c.limit==='Không giới hạn' ? (c.usedN+' mã đã phát') : (c.usedN+' / '+c.limit),
+        pauseLabel:act?'Tạm dừng':'Chạy lại',
+        togglePause:(e)=>{ e.stopPropagation(); this.setState(s=>({camps:s.camps.map(x=>x.id===c.id?{...x,status:act?'paused':'active'}:x)})); this.showToast(act?('Đã tạm dừng chiến dịch '+c.code):('Chiến dịch '+c.code+' đang chạy lại')); },
+        view:()=>this.setState({vcSel:c.id}) };
+    });
+
+    // ----- form tạo coupon -----
+    const F=S.f;
+    o.crShow=S.crOpen;
+    o.crOpenFn=()=>this.setState({crOpen:true});
+    o.crClose=()=>this.setState({crOpen:false});
+    o.fName=F.name; o.setName=(e)=>this.setF('name',e.target.value);
+    const seg=(a)=>'font-size:12px;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;');
+    o.typePctStyle=seg(F.type==='pct'); o.typeAmtStyle=seg(F.type==='amt');
+    o.typePct=()=>this.setState(s=>({f:{...s.f,type:'pct',val:10}}));
+    o.typeAmt=()=>this.setState(s=>({f:{...s.f,type:'amt',val:200000}}));
+    const chipS=(a)=>'font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;border:1px solid '+(a?'rgba(212,178,106,.55);background:rgba(212,178,106,.14);color:#f0dda8;':'rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#9b958a;');
+    const vals=F.type==='pct'?[5,10,15,20,30,50]:[100000,200000,300000,500000];
+    o.valChips=vals.map(v=>({label:F.type==='pct'?(v+'%'):((v/1000)+'K ₫'), style:chipS(F.val===v), on:()=>this.setF('val',v)}));
+    o.scopeAllStyle=seg(F.scope==='all'); o.scopeSelStyle=seg(F.scope==='select');
+    o.scopeAll=()=>this.setF('scope','all'); o.scopeSel=()=>this.setF('scope','select');
+    o.scopeSelect=F.scope==='select';
+    o.venueRows=VENUES.map(v=>{
+      const ck=F.venues.includes(v); const parts=v.split(' · ');
+      return { name:parts[0], area:parts[1], checked:ck,
+        rowStyle:'display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;cursor:pointer;border:1px solid '+(ck?'rgba(212,178,106,.4);background:rgba(212,178,106,.07);':'rgba(255,255,255,.07);background:rgba(255,255,255,.02);'),
+        boxStyle:'width:18px;height:18px;flex:none;border-radius:5px;display:flex;align-items:center;justify-content:center;'+(ck?'background:linear-gradient(135deg,#f0dda8,#d4b26a);':'border:1.5px solid rgba(255,255,255,.2);'),
+        toggle:()=>this.setState(s=>({f:{...s.f,venues:ck?s.f.venues.filter(x=>x!==v):[...s.f.venues,v]}})) };
+    });
+    o.venueCount=F.venues.length;
+    o.tierChips=['Guest','Member','VIP'].map(t=>{ const ck=F.tiers.includes(t); return {label:t, style:chipS(ck), on:()=>this.setState(s=>({f:{...s.f,tiers:ck?s.f.tiers.filter(x=>x!==t):[...s.f.tiers,t]}}))}; });
+    const DUR={'7 ngày':'HSD 12/07/2026','14 ngày':'HSD 19/07/2026','30 ngày':'HSD 04/08/2026','90 ngày':'HSD 03/10/2026'};
+    o.durChips=Object.keys(DUR).map(d=>({label:d, style:chipS(F.dur===d), on:()=>this.setF('dur',d)}));
+    o.limitChips=[...['100 mã','500 mã','1.000 mã','Không giới hạn'].map(l=>({label:l, style:chipS(F.limit===l), on:()=>this.setF('limit',l)})), {label:'Tự nhập…', style:chipS(F.limit==='custom'), on:()=>this.setF('limit','custom')}];
+    o.limitCustom=F.limit==='custom';
+    o.fLimitN=F.limitN;
+    o.setLimitN=(e)=>this.setF('limitN', e.target.value.replace(/[^\d]/g,'').slice(0,7));
+    o.pvDeal=dealOf({type:F.type,val:F.val});
+    o.pvName=F.name.trim()||'Tên ưu đãi…';
+    o.pvScope=F.scope==='all'?'Toàn hệ thống':(F.venues.length?(F.venues.length+' quán'):'Chưa chọn quán');
+    o.pvHsd=DUR[F.dur];
+    const canCreate=!!F.name.trim() && (F.scope==='all'||F.venues.length>0) && F.tiers.length>0 && (F.limit!=='custom' || +F.limitN>0);
+    o.crBtnStyle='display:block;text-align:center;font-size:14px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;'+(canCreate?'background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);color:#241a0a;box-shadow:0 14px 28px -12px rgba(168,124,60,.55);':'background:rgba(255,255,255,.05);color:#57534b;cursor:not-allowed;');
+    o.doCreate=()=>{
+      if(!canCreate){ this.showToast('Nhập tên ưu đãi, quán áp dụng và số lượng mã'); return; }
+      const pre=(F.name.replace(/[^a-zA-Z]/g,'').toUpperCase().slice(0,3)||'VY');
+      const code=pre+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+      const camp={id:'c'+Date.now(), code, name:F.name.trim(), type:F.type, val:F.val, scope:F.scope, venues:[...F.venues], tiers:[...F.tiers], hsd:DUR[F.dur], usedN:0, limit:(F.limit==='custom' ? Number(F.limitN).toLocaleString('vi-VN')+' mã' : F.limit), status:'active'};
+      this.setState(s=>({ camps:[camp,...s.camps], crOpen:false, vcSel:camp.id,
+        f:{ name:'', type:'pct', val:10, scope:'all', venues:[], tiers:['Guest','Member','VIP'], dur:'30 ngày', limit:'500 mã', limitN:'' } }));
+      this.showToast('Đã tạo coupon '+code+' · QR sẵn sàng');
+    };
+
+    // ----- drawer xem chiến dịch / QR -----
+    const vcc=S.camps.find(c=>c.id===S.vcSel);
+    o.vcOpen=!!vcc;
+    o.vcClose=()=>this.setState({vcSel:null});
+    if(vcc){ const act=vcc.status==='active';
+      o.vc={ deal:dealOf(vcc), name:vcc.name, code:vcc.code, scopeFull:scopeFull(vcc), tiers:vcc.tiers.join(' · '), hsd:vcc.hsd,
+        usage:vcc.limit==='Không giới hạn' ? (vcc.usedN+' mã') : (vcc.usedN+' / '+vcc.limit),
+        stStyle:this.chip(act?'success':'muted')+'font-size:12px;font-weight:600;padding:5px 13px;border-radius:20px;display:inline-flex;',
+        stLabel:act?'Đang chạy':'Tạm dừng', qrDim:act?'':'filter:grayscale(1);opacity:.5;', isPaused:!act };
+    } else { o.vc={}; }
+    o.vcDownload=()=>this.showToast('Đã tải QR '+(vcc?vcc.code:'')+'.png');
+    o.vcCopy=()=>this.showToast('Đã sao chép mã '+(vcc?vcc.code:''));
     return o;
   }
 }

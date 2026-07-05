@@ -80,6 +80,11 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         label: 'Nội dung trang chủ', 
         href: '/admin/content' 
       },
+      {
+        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18M9 21V9"/></svg>,
+        label: 'Giao diện',
+        href: '/admin/appearance'
+      },
     ],
   },
   {
