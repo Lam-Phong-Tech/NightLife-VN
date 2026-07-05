@@ -85,7 +85,7 @@ export default function AppearancePage() {
 
   const showToast = (m: string) => setToast(m);
 
-  const saved = JSON.parse(savedState);
+  const saved = JSON.parse(savedState) as typeof DEFAULT_STATE;
   const brandChanged = JSON.stringify(brand) !== JSON.stringify(saved.brand);
   const brandInitial = (brand.name || 'V').trim().charAt(0).toUpperCase();
 
@@ -93,9 +93,9 @@ export default function AppearancePage() {
   const dirty = currentStateStr !== savedState;
 
   let changedCount = 0;
-  quick.forEach((it, i) => { const sv = saved.quick[i]; if (sv.icon !== it.icon || sv.label !== it.label) changedCount++; });
-  nav.forEach((it, i) => { const sv = saved.nav[i]; if (sv.icon !== it.icon || sv.label !== it.label) changedCount++; });
-  titles.forEach((t, i) => { if (saved.titles[i].label !== t.label) changedCount++; });
+  quick.forEach((it, i) => { const sv = saved.quick[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label) changedCount++; });
+  nav.forEach((it, i) => { const sv = saved.nav[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label) changedCount++; });
+  titles.forEach((t, i) => { const sv = saved.titles[i]; if (!sv || sv.label !== t.label) changedCount++; });
   if (brandChanged) changedCount++;
 
   const handleUndoAll = () => {
@@ -115,6 +115,7 @@ export default function AppearancePage() {
     if (!drawer) return null;
     const list = drawer.group === 'quick' ? quick : nav;
     const it = list.find(x => x.id === drawer.id) || list[0];
+    if (!it) return null;
     const setLabel = (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value.slice(0, 16);
       if (drawer.group === 'quick') {
@@ -362,7 +363,7 @@ export default function AppearancePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
           {quick.map((r, i) => {
             const sv = saved.quick[i];
-            const changed = sv.icon !== r.icon || sv.label !== r.label;
+            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label;
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'quick', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -406,7 +407,7 @@ export default function AppearancePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
           {nav.map((r, i) => {
             const sv = saved.nav[i];
-            const changed = sv.icon !== r.icon || sv.label !== r.label;
+            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label;
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'nav', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -437,7 +438,7 @@ export default function AppearancePage() {
           </div>
           {titles.map((t, i) => {
             const sv = saved.titles[i];
-            const changed = sv.label !== t.label;
+            const changed = !sv || sv.label !== t.label;
             return (
               <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 280px 78px', gap: '14px', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
                 <span style={{ fontSize: '11px', color: '#8c8679' }}>{t.key}</span>
@@ -452,7 +453,7 @@ export default function AppearancePage() {
                   maxLength={28} 
                   style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '9px 12px', color: '#f3f0ea', fontSize: '13px', fontFamily: "'Inter', sans-serif", outline: 'none' }} 
                 />
-                <span onClick={() => setTitles(prev => prev.map(x => x.id === t.id ? { ...x, label: sv.label } : x))} style={{ fontSize: '11px', fontWeight: 600, color: '#8c8679', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', textAlign: 'center' }}>Hoàn tác</span>
+                <span onClick={() => setTitles(prev => prev.map(x => x.id === t.id ? { ...x, label: sv?.label ?? t.label } : x))} style={{ fontSize: '11px', fontWeight: 600, color: '#8c8679', border: '1px solid rgba(255,255,255,.1)', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', textAlign: 'center' }}>Hoàn tác</span>
               </div>
             );
           })}
