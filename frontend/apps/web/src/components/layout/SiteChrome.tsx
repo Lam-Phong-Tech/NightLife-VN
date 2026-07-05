@@ -5,7 +5,6 @@ import {
   Bell,
   CalendarDays,
   CheckCheck,
-  ChevronLeft,
   Home,
   LogIn,
   ReceiptText,
@@ -13,6 +12,7 @@ import {
   Search,
   Ticket,
   UserRound,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -232,22 +232,29 @@ function NotificationBellButton({
           aria-hidden="true"
           style={{
             position: "absolute",
-            top: isMobile ? "4px" : "5px",
-            right: isMobile ? "5px" : "6px",
-            minWidth: "15px",
-            height: "15px",
+            top: isMobile ? "-2px" : "-1px",
+            right: isMobile ? "-2px" : "-1px",
+            width: unreadCount > 9 ? "22px" : "18px",
+            minWidth: unreadCount > 9 ? "22px" : "18px",
+            maxWidth: unreadCount > 9 ? "22px" : "18px",
+            height: "18px",
+            minHeight: "18px",
+            maxHeight: "18px",
             borderRadius: "999px",
             background: "#e0729e",
             border: "2px solid #15131a",
             color: "#fff",
-            fontSize: "9px",
-            lineHeight: "11px",
+            fontSize: unreadCount > 9 ? "8px" : "10px",
+            lineHeight: "1",
             fontWeight: 900,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: unreadCount > 9 ? "0 3px" : 0,
-            boxSizing: "content-box",
+            padding: 0,
+            boxSizing: "border-box",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            aspectRatio: unreadCount > 9 ? undefined : "1 / 1",
           }}
         >
           {unreadCount > 9 ? "9+" : unreadCount}
@@ -705,19 +712,28 @@ function MobileNotificationPanel({
 
   return (
     <section
+      data-notification-popup="true"
       role="dialog"
-      aria-modal="true"
+      aria-modal="false"
       aria-labelledby="mobile-notification-title"
+      onMouseDown={(event) => event.stopPropagation()}
       style={{
         position: "fixed",
-        inset: 0,
-        zIndex: 120,
-        background: colors.bg,
+        top: "calc(62px + env(safe-area-inset-top))",
+        right: "10px",
+        left: "10px",
+        zIndex: 101,
+        maxHeight: "min(68vh, 560px)",
+        background: "#16141b",
+        border: "1px solid rgba(255,255,255,.09)",
+        borderRadius: "18px",
+        boxShadow: "0 22px 60px -24px rgba(0,0,0,.92)",
         color: colors.text,
         fontFamily: "var(--nl-font-sans)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        transformOrigin: "top right",
       }}
     >
       <div
@@ -725,7 +741,7 @@ function MobileNotificationPanel({
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          padding: "calc(10px + env(safe-area-inset-top)) 14px 8px",
+          padding: "14px 14px 8px",
         }}
       >
         <button
@@ -746,7 +762,7 @@ function MobileNotificationPanel({
             cursor: "pointer",
           }}
         >
-          <ChevronLeft size={17} strokeWidth={2} />
+          <X size={17} strokeWidth={2} />
         </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1288,9 +1304,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isNotificationOpen) return;
 
-    const previousOverflow = document.body.style.overflow;
     const onPointerDown = (event: PointerEvent) => {
-      if (isMobile) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.closest("[data-notification-popup='true'], [data-notification-trigger='true']")) {
@@ -1304,19 +1318,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       }
     };
 
-    if (isMobile) {
-      document.body.style.overflow = "hidden";
-    }
-
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isMobile, isNotificationOpen]);
+  }, [isNotificationOpen]);
 
   useEffect(() => {
     if (!enableScrollReveal) return;
