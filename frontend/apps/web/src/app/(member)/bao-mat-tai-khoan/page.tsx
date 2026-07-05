@@ -36,7 +36,12 @@ type ProfileForm = {
   phone: string;
 };
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const displayNamePattern = /^[\p{L}\s]+$/u;
+const phonePattern = /^[0-9+\-\s().]+$/;
+const minPhoneDigits = 8;
+const maxPhoneDigits = 15;
+const maxPhoneLength = 20;
 
 function formFromUser(user: AuthUser | null): ProfileForm {
   return {
@@ -50,7 +55,7 @@ function normalizeForm(form: ProfileForm): ProfileForm {
   return {
     displayName: form.displayName.trim().replace(/\s+/g, " "),
     email: form.email.trim().toLowerCase(),
-    phone: form.phone.trim(),
+    phone: form.phone.trim().replace(/\s+/g, " "),
   };
 }
 
@@ -58,12 +63,18 @@ function validateForm(form: ProfileForm) {
   const errors: Partial<Record<keyof ProfileForm, string>> = {};
   const normalized = normalizeForm(form);
 
-  if (!normalized.displayName || normalized.displayName.length < 2) {
+  if (!normalized.displayName) {
+    errors.displayName = "Vui lòng nhập họ tên.";
+  } else if (normalized.displayName.length < 2) {
     errors.displayName = "Vui lòng nhập họ tên tối thiểu 2 ký tự.";
   }
 
   if (normalized.displayName.length > 80) {
     errors.displayName = "Họ tên không được vượt quá 80 ký tự.";
+  }
+
+  if (normalized.displayName && !displayNamePattern.test(normalized.displayName)) {
+    errors.displayName = "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
   }
 
   if (!normalized.email) {
@@ -76,8 +87,16 @@ function validateForm(form: ProfileForm) {
     errors.email = "Email không được vượt quá 254 ký tự.";
   }
 
-  if (normalized.phone && !/^[0-9+\-\s().]{8,20}$/.test(normalized.phone)) {
-    errors.phone = "Số điện thoại chưa đúng định dạng.";
+  if (normalized.phone) {
+    const digitCount = normalized.phone.replace(/\D/g, "").length;
+
+    if (normalized.phone.length > maxPhoneLength) {
+      errors.phone = `Số điện thoại không được vượt quá ${maxPhoneLength} ký tự.`;
+    } else if (!phonePattern.test(normalized.phone)) {
+      errors.phone = "Số điện thoại chỉ được nhập số và các ký tự + - ( ) .";
+    } else if (digitCount < minPhoneDigits || digitCount > maxPhoneDigits) {
+      errors.phone = `Số điện thoại cần từ ${minPhoneDigits} đến ${maxPhoneDigits} chữ số.`;
+    }
   }
 
   return errors;
@@ -120,10 +139,18 @@ export default function Page() {
 
   const saveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (hasErrors || !hasChanges || isSubmitting) return;
+    if (isSubmitting) return;
+
+    if (hasErrors) {
+      setMessage(Object.values(errors).find(Boolean) ?? "Vui lòng kiểm tra lại thông tin.");
+      return;
+    }
+
+    if (!hasChanges) return;
 
     setIsSubmitting(true);
     setMessage("");
+    setForm(normalizedForm);
 
     try {
       const updatedProfile = await updateMemberProfile({

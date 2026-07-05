@@ -32,6 +32,16 @@ const colors = {
 };
 
 const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+const maxBillTotalVnd = 1_000_000_000;
+const maxEvidenceSizeBytes = 25 * 1024 * 1024;
+const allowedEvidenceMimeTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
+const allowedEvidenceExtension = /\.(jpe?g|png|webp|gif|pdf)$/i;
 
 type FormNotice =
   | { tone: "success"; message: string; bill?: BillRecord }
@@ -75,6 +85,89 @@ const formatDateTime = (value?: string | null) => {
 };
 
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
+
+const validateEvidenceFile = (file: File | null) => {
+  if (!file) return "";
+
+  const hasAllowedMime = allowedEvidenceMimeTypes.has(file.type);
+  const hasAllowedExtension = allowedEvidenceExtension.test(file.name);
+
+  if (!hasAllowedMime && !hasAllowedExtension) {
+    return "Ảnh/chứng từ chỉ hỗ trợ JPG, PNG, WEBP, GIF hoặc PDF.";
+  }
+
+  if (file.size > maxEvidenceSizeBytes) {
+    return "Ảnh/chứng từ không được vượt quá 25MB.";
+  }
+
+  return "";
+};
+
+const validateBillForm = ({
+  isLoadingOptions,
+  hasStore,
+  amountInput,
+  amount,
+  usedAt,
+  isUsedAtInvalid,
+  isFutureUsage,
+  isPastDeadline,
+  evidenceFile,
+  timeReady,
+}: {
+  isLoadingOptions: boolean;
+  hasStore: boolean;
+  amountInput: string;
+  amount: number;
+  usedAt: string;
+  isUsedAtInvalid: boolean;
+  isFutureUsage: boolean;
+  isPastDeadline: boolean;
+  evidenceFile: File | null;
+  timeReady: boolean;
+}) => {
+  if (isLoadingOptions) {
+    return "Đang tải danh sách quán, vui lòng thử lại sau vài giây.";
+  }
+
+  if (!hasStore) {
+    return "Vui lòng chọn quán/cơ sở.";
+  }
+
+  if (!amountInput.trim()) {
+    return "Vui lòng nhập tổng tiền bill gốc.";
+  }
+
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    return "Tổng tiền bill gốc phải là số nguyên lớn hơn 0.";
+  }
+
+  if (amount > maxBillTotalVnd) {
+    return "Tổng tiền bill gốc không được vượt quá 1.000.000.000đ.";
+  }
+
+  if (!usedAt.trim()) {
+    return "Vui lòng chọn thời gian sử dụng.";
+  }
+
+  if (isUsedAtInvalid) {
+    return "Thời gian sử dụng không hợp lệ.";
+  }
+
+  if (!timeReady) {
+    return "Đang đồng bộ thời gian, vui lòng thử lại sau vài giây.";
+  }
+
+  if (isFutureUsage) {
+    return "Thời gian sử dụng không được ở tương lai.";
+  }
+
+  if (isPastDeadline) {
+    return "Bill quá 10 ngày sẽ không được nhận.";
+  }
+
+  return validateEvidenceFile(evidenceFile);
+};
 
 const canAttachCouponIssueToBill = (issue: CouponIssue) =>
   issue.status === "ISSUED" || issue.status === "USED";
@@ -124,7 +217,18 @@ export default function Page() {
   });
 
   const handleEvidenceFileChange = (input: HTMLInputElement) => {
-    setEvidenceFile(input.files?.[0] ?? null);
+    const file = input.files?.[0] ?? null;
+    const fileError = validateEvidenceFile(file);
+    if (fileError) {
+      input.value = "";
+      setEvidenceFile(null);
+      setOcrPreview(null);
+      setNotice({ tone: "danger", message: fileError });
+      return;
+    }
+
+    setNotice(null);
+    setEvidenceFile(file);
     setOcrPreview(null);
   };
 
@@ -146,6 +250,12 @@ export default function Page() {
 
   const handleReadEvidence = async () => {
     if (!evidenceFile) return;
+    const fileError = validateEvidenceFile(evidenceFile);
+    if (fileError) {
+      setNotice({ tone: "danger", message: fileError });
+      return;
+    }
+
     setIsReadingEvidence(true);
     setNotice(null);
     try {
@@ -274,15 +384,37 @@ export default function Page() {
     Boolean(timeWindow.nowMs) &&
     !isUsedAtInvalid &&
     timeWindow.nowMs - usedAtDate.getTime() > tenDaysMs;
+  const billValidationMessage = useMemo(
+    () =>
+      validateBillForm({
+        isLoadingOptions,
+        hasStore: Boolean(bookingId || storeSlug),
+        amountInput,
+        amount,
+        usedAt,
+        isUsedAtInvalid,
+        isFutureUsage,
+        isPastDeadline,
+        evidenceFile,
+        timeReady: Boolean(timeWindow.nowMs),
+      }),
+    [
+      amount,
+      amountInput,
+      bookingId,
+      evidenceFile,
+      isFutureUsage,
+      isLoadingOptions,
+      isPastDeadline,
+      isUsedAtInvalid,
+      storeSlug,
+      timeWindow.nowMs,
+      usedAt,
+    ],
+  );
   const canSubmit =
     !isSubmitting &&
-    Boolean(timeWindow.nowMs) &&
-    amount > 0 &&
-    Boolean(usedAt) &&
-    !isUsedAtInvalid &&
-    !isFutureUsage &&
-    !isPastDeadline &&
-    Boolean(bookingId || storeSlug);
+    !billValidationMessage;
 
   const handleBookingChange = (value: string) => {
     setBookingId(value);
@@ -312,10 +444,10 @@ export default function Page() {
     event.preventDefault();
     setNotice(null);
 
-    if (!canSubmit) {
+    if (billValidationMessage) {
       setNotice({
         tone: "danger",
-        message: "Kiểm tra lại quán, tổng tiền bill gốc và thời gian sử dụng.",
+        message: billValidationMessage,
       });
       return;
     }

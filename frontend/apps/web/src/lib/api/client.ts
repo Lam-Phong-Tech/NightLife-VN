@@ -66,6 +66,7 @@ const exactMessageTranslations: Record<string, string> = {
   "couponid must match the booking couponid": "Mã coupon không khớp với booking.",
   "couponissueid must match the booking couponissueid": "Mã ưu đãi đã lưu không khớp với booking.",
   "displayname and phone are required": "Vui lòng nhập họ tên và số điện thoại.",
+  "displayname and email are required": "Vui lòng nhập họ tên và email.",
   "displayname must contain letters and spaces only": "Họ tên chỉ được nhập chữ cái và khoảng trắng.",
   "file is required": "Vui lòng chọn file để tải lên.",
   "email is already registered": "Email này đã được đăng ký.",
@@ -105,6 +106,7 @@ const exactMessageTranslations: Record<string, string> = {
   "ranking config not found": "Không tìm thấy cấu hình xếp hạng.",
   "ranking target not found": "Không tìm thấy mục xếp hạng.",
   "scheduledat must be a valid iso date": "Thời gian đặt chỗ không hợp lệ.",
+  "scheduledat cannot be in the past": "Thời gian đặt chỗ không được ở quá khứ.",
   "slug is required": "Thiếu mã đường dẫn.",
   "store not found": "Không tìm thấy quán.",
   "storeid or storeslug is required": "Vui lòng chọn quán.",
@@ -122,6 +124,8 @@ const exactMessageTranslations: Record<string, string> = {
   "forbidden resource": "Bạn không có quyền thực hiện thao tác này.",
   "usedat cannot be in the future": "Thời gian sử dụng không được ở tương lai.",
   "usedat must be a valid iso date": "Thời gian sử dụng không hợp lệ.",
+  "unsupported file type. upload image, video, or pdf files only":
+    "File không đúng định dạng. Vui lòng tải ảnh, video hoặc PDF.",
   "you cannot access this media file": "Bạn không có quyền xem file này.",
   "user not found": "Không tìm thấy tài khoản.",
   "access must be public or protected": "Quyền truy cập file không hợp lệ.",
@@ -258,6 +262,10 @@ const translateSingleApiMessage = (message: string, status?: number, fallback?: 
   );
   if (billDeadlineMatch)
     return `Chỉ có thể gửi hóa đơn trong vòng ${billDeadlineMatch[1]} ngày từ thời gian sử dụng.`;
+
+  const bookingWindowMatch = key.match(/^scheduledat can only be within (\d+) days$/);
+  if (bookingWindowMatch)
+    return `Ngày đặt bàn chỉ được chọn từ hôm nay đến ${bookingWindowMatch[1]} ngày tới.`;
 
   const rescheduleCutoffMatch = key.match(
     /^booking can only be rescheduled at least (\d+) minutes before scheduled time$/,

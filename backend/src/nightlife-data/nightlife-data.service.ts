@@ -8381,19 +8381,46 @@ export class NightlifeDataService {
   }
 
   private sanitizeBookingContact(dto: CreateBookingDto) {
-    const displayName = this.cleanText(dto.displayName);
+    const displayName = this.cleanText(dto.displayName).replace(/\s+/g, ' ');
     const phone = this.cleanText(dto.phone);
     const email = this.cleanEmail(dto.email);
+    const note = this.cleanText(dto.note);
 
     if (!displayName || (!email && !phone)) {
       throw new BadRequestException('displayName and email are required');
+    }
+
+    if (
+      displayName.length < 2 ||
+      displayName.length > 80 ||
+      !/^[\p{L}\s]+$/u.test(displayName)
+    ) {
+      throw new BadRequestException(
+        'displayName must contain letters and spaces only',
+      );
+    }
+
+    if (email && email.length > 160) {
+      throw new BadRequestException(
+        'email must be shorter than or equal to 160 characters',
+      );
+    }
+
+    if (phone && !/^[0-9+\-\s().]{8,20}$/.test(phone)) {
+      throw new BadRequestException('phone must be a valid phone number');
+    }
+
+    if (note.length > 300) {
+      throw new BadRequestException(
+        'note must be shorter than or equal to 300 characters',
+      );
     }
 
     return {
       displayName,
       phone,
       email,
-      note: this.cleanText(dto.note),
+      note,
     };
   }
 
