@@ -103,4 +103,6 @@ export const clearAuthSession = () => {
   }
 
   window.localStorage.removeItem("nightlife_user");
+  window.localStorage.removeItem("nightlife_guest_bookings");
+  window.sessionStorage.removeItem("nightlife_last_booking");
 };

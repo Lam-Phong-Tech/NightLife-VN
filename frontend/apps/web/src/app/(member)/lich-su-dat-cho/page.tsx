@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Check,
@@ -20,7 +21,6 @@ import {
   bookingStatusGroup,
   bookingStatusLabel,
   canCancelBooking,
-  getGuestBookingHistory,
   mergeBookingHistories,
   rememberLastBooking,
   type BookingChatMessage,
@@ -124,6 +124,7 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
 };
 
 export default function Page() {
+  const router = useRouter();
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -150,9 +151,20 @@ export default function Page() {
     const loadBookings = async () => {
       const authUser = getAuthUser();
       const isMemberAccount = authUser?.role?.toUpperCase() === "USER";
+      if (!isMemberAccount) {
+        if (alive) {
+          setIsMember(false);
+          setMemberUserId("");
+          setBookings([]);
+          setIsLoading(false);
+        }
+        router.replace(`/dang-nhap?redirect=${encodeURIComponent("/lich-su-dat-cho")}`);
+        return;
+      }
+
       if (alive) {
-        setIsMember(isMemberAccount);
-        setMemberUserId(isMemberAccount ? (authUser?.id ?? "") : "");
+        setIsMember(true);
+        setMemberUserId(authUser?.id ?? "");
       }
 
       try {
@@ -174,15 +186,13 @@ export default function Page() {
           }));
           if (alive) {
             setMemberUserId(resolvedMemberUserId);
-            setBookings(mergeBookingHistories(memberBookings, getGuestBookingHistory()));
+            setBookings(memberBookings);
           }
           return;
         }
-
-        if (alive) setBookings(getGuestBookingHistory());
       } catch (error) {
         if (alive) {
-          setBookings(getGuestBookingHistory());
+          setBookings([]);
           setMessage(error instanceof Error ? error.message : "Không tải được lịch sử đặt chỗ.");
         }
       } finally {
@@ -195,7 +205,7 @@ export default function Page() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!socket || !chatBooking) {
@@ -330,7 +340,7 @@ export default function Page() {
       setBookings((current) =>
         current.map((item) => (item.id === booking.id ? mergedBooking : item)),
       );
-      rememberLastBooking(mergedBooking, { history: true });
+      rememberLastBooking(mergedBooking);
       setPendingCancelBooking(null);
       setCancelReason("");
       setMessage("Đã hủy booking. Admin đã nhận thông báo.");
@@ -805,7 +815,7 @@ function BookingCard({
             {hasQr ? (
               <Link
                 href={`/xac-nhan?bookingId=${booking.id}`}
-                onClick={() => rememberLastBooking(booking, { history: true })}
+                onClick={() => rememberLastBooking(booking)}
                 className={styles.secondaryCta}
               >
                 <QrCode size={14} />
@@ -814,7 +824,7 @@ function BookingCard({
             ) : !cancelAllowed ? (
               <Link
                 href={`/xac-nhan?bookingId=${booking.id}`}
-                onClick={() => rememberLastBooking(booking, { history: true })}
+                onClick={() => rememberLastBooking(booking)}
                 className={styles.ghostCta}
               >
                 <MessageCircle size={14} />

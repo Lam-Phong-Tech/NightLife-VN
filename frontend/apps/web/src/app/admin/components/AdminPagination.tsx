@@ -94,7 +94,9 @@ export function AdminPagination({
         </button>
 
         {getPageButtons().map((pageNumber, index, pages) => {
-          const hasGapBefore = index > 0 && pageNumber - pages[index - 1] > 1;
+          const previousPageNumber = pages[index - 1];
+          const hasGapBefore =
+            typeof previousPageNumber === "number" && pageNumber - previousPageNumber > 1;
           const isActive = pageNumber === safePage;
           return (
             <span key={pageNumber} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>

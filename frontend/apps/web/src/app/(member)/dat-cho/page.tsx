@@ -292,13 +292,21 @@ export default function Page() {
 
   useEffect(() => {
     if (!context.storeSlug) {
-      setStoreOpeningHours(null);
-      setStoreHoursResolved(true);
-      return;
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setStoreOpeningHours(null);
+        setStoreHoursResolved(true);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     let cancelled = false;
-    setStoreHoursResolved(false);
+    queueMicrotask(() => {
+      if (!cancelled) setStoreHoursResolved(false);
+    });
 
     getStoreDetail(context.storeSlug)
       .then((store) => {
@@ -341,15 +349,22 @@ export default function Page() {
   useEffect(() => {
     if (!storeHoursResolved) return;
 
+    let nextBookingTime = bookingTime;
     if (!bookingTimeOptions.length) {
-      if (bookingTime) setBookingTime("");
-      return;
+      nextBookingTime = "";
+    } else if (!bookingTimeOptions.includes(bookingTime)) {
+      const nextTime = bookingTimeOptions[0];
+      if (nextTime) nextBookingTime = nextTime;
     }
 
-    if (!bookingTimeOptions.includes(bookingTime)) {
-      const nextTime = bookingTimeOptions[0];
-      if (nextTime) setBookingTime(nextTime);
-    }
+    if (nextBookingTime === bookingTime) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setBookingTime(nextBookingTime);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [bookingTime, bookingTimeOptions, storeHoursResolved]);
 
   const memberLoginPath = useMemo(() => {
@@ -448,7 +463,7 @@ export default function Page() {
         ? await bookingApi.createMemberBooking(payload)
         : await bookingApi.createGuestBooking(payload);
 
-      rememberLastBooking(booking, { history: true });
+      rememberLastBooking(booking);
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt chỗ.";
