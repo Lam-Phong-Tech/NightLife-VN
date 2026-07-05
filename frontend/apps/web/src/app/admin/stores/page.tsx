@@ -408,8 +408,8 @@ export default function AdminStoresPage() {
       }
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
-      if (res && res.data && res.data.length > 0) {
-        setCoverImage(res.data[0]);
+      if (res && res.id) {
+        setCoverImage(res);
       } else {
         showToast('Lỗi tải lên ảnh bìa');
       }
