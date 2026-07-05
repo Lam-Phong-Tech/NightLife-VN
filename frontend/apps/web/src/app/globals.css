@@ -814,6 +814,27 @@ textarea::placeholder {
     white-space: nowrap !important;
   }
 
+  .nl-site-actions .nl-notification-count {
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    max-height: 18px !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .nl-site-actions .nl-notification-count[data-wide="true"] {
+    width: 22px !important;
+    min-width: 22px !important;
+    max-width: 22px !important;
+  }
+
   .nl-site-actions a:last-child {
     min-width: 0 !important;
     overflow: hidden !important;

@@ -5,23 +5,26 @@ import {
   Bell,
   CalendarDays,
   CheckCheck,
-  ChevronLeft,
-  Clock3,
-  Crown,
   Home,
   LogIn,
-  Send,
+  ReceiptText,
   Settings,
   Search,
   Ticket,
-  Trophy,
   UserRound,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import {
+  notificationApi,
+  type MemberNotification,
+  type MemberNotificationCategory,
+  type MemberNotificationTone,
+} from "@/lib/api/notifications";
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
@@ -108,7 +111,7 @@ const mobileFooterLinks = [
   { href: "/legal/chinh-sach-bao-mat", label: "Chính sách" },
 ];
 
-type NoticeTone = "gold" | "green" | "amber" | "vip";
+type NoticeTone = MemberNotificationTone;
 
 type Notice = {
   id: string;
@@ -120,70 +123,9 @@ type Notice = {
   unread?: boolean;
   icon: LucideIcon;
   tone: NoticeTone;
+  href?: string;
+  category: MemberNotificationCategory;
 };
-
-const notices: Notice[] = [
-  {
-    id: "happy-hour",
-    group: "today",
-    title: "Ưu đãi mới −30% Happy Hour",
-    body: "Club Lumière vừa tung mã giảm cho khung giờ vàng tối nay.",
-    time: "5 phút",
-    action: "Lấy mã",
-    unread: true,
-    icon: Ticket,
-    tone: "gold",
-  },
-  {
-    id: "booking-confirmed",
-    group: "today",
-    title: "Đặt bàn VIP đã được xác nhận",
-    body: "Bàn tại Sakura Lounge · 22:30 tối nay đã sẵn sàng.",
-    time: "22 phút",
-    action: "Xem chi tiết",
-    unread: true,
-    icon: CalendarDays,
-    tone: "green",
-  },
-  {
-    id: "admin-routing",
-    group: "today",
-    title: "Admin đang điều phối đặt chỗ",
-    body: "Đã gửi yêu cầu tới quán qua Telegram, sẽ liên hệ bạn trong ít phút.",
-    time: "40 phút",
-    unread: true,
-    icon: Send,
-    tone: "gold",
-  },
-  {
-    id: "ranking",
-    group: "yesterday",
-    title: "Club Lumière đã lên #1 BXH tuần",
-    body: "Quán bạn yêu thích đang dẫn đầu bảng xếp hạng Hà Nội.",
-    time: "Hôm qua",
-    icon: Trophy,
-    tone: "gold",
-  },
-  {
-    id: "vip-points",
-    group: "yesterday",
-    title: "Bạn nhận 200 điểm thưởng VIP",
-    body: "Tích luỹ đủ 1.000 điểm để lên hạng Gold.",
-    time: "Hôm qua",
-    action: "Xem quyền lợi",
-    icon: Crown,
-    tone: "vip",
-  },
-  {
-    id: "coupon-expiring",
-    group: "yesterday",
-    title: "Mã “2+1 Combo phòng” sắp hết hạn",
-    body: "Còn hiệu lực trong 2 giờ — dùng kẻo lỡ.",
-    time: "Hôm qua",
-    icon: Clock3,
-    tone: "amber",
-  },
-];
 
 const noticeToneStyle: Record<NoticeTone, { background: string; border: string; color: string }> = {
   gold: {
@@ -201,10 +143,10 @@ const noticeToneStyle: Record<NoticeTone, { background: string; border: string; 
     border: "rgba(224,164,78,.3)",
     color: "#e6b873",
   },
-  vip: {
-    background: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
-    border: "rgba(212,178,106,.4)",
-    color: "#241a0a",
+  danger: {
+    background: "rgba(255,107,139,.12)",
+    border: "rgba(255,107,139,.32)",
+    color: "#ff8aa5",
   },
 };
 
@@ -247,10 +189,12 @@ function isRevealTarget(element: HTMLElement) {
 function NotificationBellButton({
   isMobile,
   isOpen,
+  unreadCount,
   onClick,
 }: {
   isMobile: boolean;
   isOpen: boolean;
+  unreadCount: number;
   onClick: () => void;
 }) {
   const size = isMobile ? 36 : 40;
@@ -283,26 +227,50 @@ function NotificationBellButton({
       }}
     >
       <Bell size={isMobile ? 16 : 18} strokeWidth={1.8} />
-      <i
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: isMobile ? "6px" : "7px",
-          right: isMobile ? "8px" : "9px",
-          width: "8px",
-          height: "8px",
-          borderRadius: "50%",
-          background: "#e0729e",
-          border: "2px solid #15131a",
-          boxSizing: "content-box",
-        }}
-      />
+      {unreadCount > 0 ? (
+        <i
+          className="nl-notification-count"
+          data-wide={unreadCount > 9 ? "true" : undefined}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: isMobile ? "-2px" : "-1px",
+            right: isMobile ? "-2px" : "-1px",
+            width: unreadCount > 9 ? "22px" : "18px",
+            minWidth: unreadCount > 9 ? "22px" : "18px",
+            maxWidth: unreadCount > 9 ? "22px" : "18px",
+            height: "18px",
+            minHeight: "18px",
+            maxHeight: "18px",
+            borderRadius: "999px",
+            background: "#e0729e",
+            border: "2px solid #15131a",
+            color: "#fff",
+            fontSize: unreadCount > 9 ? "8px" : "10px",
+            lineHeight: "1",
+            fontWeight: 900,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            boxSizing: "border-box",
+            fontStyle: "normal",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            aspectRatio: unreadCount > 9 ? undefined : "1 / 1",
+          }}
+        >
+          {unreadCount > 9 ? "9+" : unreadCount}
+        </i>
+      ) : null}
     </button>
   );
 }
 
-function NotificationTabs({ isMobile }: { isMobile: boolean }) {
-  const tabs = isMobile ? ["Tất cả", "Đặt chỗ", "Ưu đãi", "Sự kiện", "Hệ thống"] : ["Tất cả", "Đặt chỗ", "Ưu đãi", "Hệ thống"];
+function NotificationTabs({ isMobile, unreadCount }: { isMobile: boolean; unreadCount: number }) {
+  const tabs = isMobile
+    ? ["Tất cả", "Hóa đơn", "Đặt chỗ", "Hệ thống"]
+    : ["Tất cả", "Hóa đơn", "Đặt chỗ"];
 
   return (
     <div
@@ -329,7 +297,9 @@ function NotificationTabs({ isMobile }: { isMobile: boolean }) {
               fontSize: "12px",
               fontWeight: active ? 700 : 600,
               color: active ? colors.onGold : colors.text2,
-              background: active ? "linear-gradient(135deg,#f0dda8,#d4b26a)" : "rgba(255,255,255,.05)",
+              background: active
+                ? "linear-gradient(135deg,#f0dda8,#d4b26a)"
+                : "rgba(255,255,255,.05)",
               border: active ? "0" : "1px solid rgba(255,255,255,.1)",
               borderRadius: "15px",
               padding: isMobile ? "7px 13px" : "6px 12px",
@@ -338,7 +308,7 @@ function NotificationTabs({ isMobile }: { isMobile: boolean }) {
             }}
           >
             {tab}
-            {active ? (
+            {active && unreadCount > 0 ? (
               <b
                 style={{
                   background: colors.onGold,
@@ -350,7 +320,7 @@ function NotificationTabs({ isMobile }: { isMobile: boolean }) {
                   padding: "0 5px",
                 }}
               >
-                3
+                {unreadCount > 9 ? "9+" : unreadCount}
               </b>
             ) : null}
           </button>
@@ -360,22 +330,36 @@ function NotificationTabs({ isMobile }: { isMobile: boolean }) {
   );
 }
 
-function NoticeRow({ notice, isMobile }: { notice: Notice; isMobile: boolean }) {
+function NoticeRow({
+  notice,
+  isMobile,
+  onSelect,
+}: {
+  notice: Notice;
+  isMobile: boolean;
+  onSelect: (notice: Notice) => void;
+}) {
   const Icon = notice.icon;
   const tone = noticeToneStyle[notice.tone];
+  const rowStyle: React.CSSProperties = {
+    display: "flex",
+    gap: "12px",
+    padding: "11px 16px",
+    alignItems: "flex-start",
+    background: notice.unread ? "rgba(212,178,106,.06)" : "transparent",
+    border: 0,
+    borderBottom: "1px solid rgba(255,255,255,.05)",
+    position: "relative",
+    width: "100%",
+    textAlign: "left",
+    textDecoration: "none",
+    color: "inherit",
+    fontFamily: "var(--nl-font-sans)",
+    cursor: "pointer",
+  };
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: "12px",
-        padding: "11px 16px",
-        alignItems: "flex-start",
-        background: notice.unread ? "rgba(212,178,106,.06)" : "transparent",
-        borderBottom: "1px solid rgba(255,255,255,.05)",
-        position: "relative",
-      }}
-    >
+  const content = (
+    <>
       <span
         style={{
           width: "40px",
@@ -390,11 +374,17 @@ function NoticeRow({ notice, isMobile }: { notice: Notice; isMobile: boolean }) 
           color: tone.color,
         }}
       >
-        <Icon size={isMobile ? 18 : 19} strokeWidth={notice.tone === "vip" ? 2 : 1.7} />
+        <Icon size={isMobile ? 18 : 19} strokeWidth={1.8} />
       </span>
 
       <div style={{ flex: 1, minWidth: 0, paddingRight: notice.unread ? "10px" : 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: isMobile ? "8px" : "10px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: isMobile ? "8px" : "10px",
+          }}
+        >
           <span
             style={{
               fontSize: isMobile ? "14px" : "13.5px",
@@ -415,8 +405,7 @@ function NoticeRow({ notice, isMobile }: { notice: Notice; isMobile: boolean }) 
         </div>
 
         {notice.action ? (
-          <button
-            type="button"
+          <span
             style={{
               display: "inline-block",
               marginTop: "9px",
@@ -431,11 +420,10 @@ function NoticeRow({ notice, isMobile }: { notice: Notice; isMobile: boolean }) 
               borderRadius: isMobile ? "9px" : "8px",
               padding: isMobile ? "7px 14px" : "6px 13px",
               fontFamily: "var(--nl-font-sans)",
-              cursor: "pointer",
             }}
           >
             {notice.action}
-          </button>
+          </span>
         ) : null}
       </div>
 
@@ -453,18 +441,36 @@ function NoticeRow({ notice, isMobile }: { notice: Notice; isMobile: boolean }) 
           }}
         />
       ) : null}
-    </div>
+    </>
+  );
+
+  if (notice.href) {
+    return (
+      <Link href={notice.href} onClick={() => onSelect(notice)} style={rowStyle}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={() => onSelect(notice)} style={rowStyle}>
+      {content}
+    </button>
   );
 }
 
-function NoticeGroup({ label, group, isMobile }: { label: string; group: Notice["group"]; isMobile: boolean }) {
-  const groupNotices = notices.filter((notice) => notice.group === group);
-  const visibleNotices =
-    group === "yesterday"
-      ? groupNotices.filter((notice) =>
-          isMobile ? notice.id !== "coupon-expiring" : notice.id === "coupon-expiring",
-        )
-      : groupNotices;
+function NoticeGroup({
+  label,
+  notices,
+  isMobile,
+  onSelect,
+}: {
+  label: string;
+  notices: Notice[];
+  isMobile: boolean;
+  onSelect: (notice: Notice) => void;
+}) {
+  if (!notices.length) return null;
 
   return (
     <>
@@ -480,14 +486,77 @@ function NoticeGroup({ label, group, isMobile }: { label: string; group: Notice[
       >
         {label}
       </div>
-      {visibleNotices.map((notice) => (
-        <NoticeRow key={notice.id} notice={notice} isMobile={isMobile} />
+      {notices.map((notice) => (
+        <NoticeRow key={notice.id} notice={notice} isMobile={isMobile} onSelect={onSelect} />
       ))}
     </>
   );
 }
 
-function DesktopNotificationDropdown() {
+const notificationIconByCategory: Record<MemberNotificationCategory, LucideIcon> = {
+  bill: ReceiptText,
+  booking: CalendarDays,
+  system: Bell,
+};
+
+const toNotice = (notification: MemberNotification): Notice => {
+  const createdAt = new Date(notification.createdAt);
+  const isToday =
+    !Number.isNaN(createdAt.getTime()) && createdAt.toDateString() === new Date().toDateString();
+
+  return {
+    id: notification.id,
+    group: isToday ? "today" : "yesterday",
+    title: notification.title,
+    body: notification.body,
+    time: notification.timeLabel,
+    action: notification.actionLabel,
+    unread: notification.unread,
+    icon: notificationIconByCategory[notification.category] ?? Bell,
+    tone: notification.tone,
+    href: notification.href,
+    category: notification.category,
+  };
+};
+
+type NotificationPanelProps = {
+  notices: Notice[];
+  unreadCount: number;
+  isLoading: boolean;
+  error: string;
+  onMarkAllRead: () => void;
+  onNoticeSelect: (notice: Notice) => void;
+};
+
+function NotificationEmptyState({ isLoading, error }: { isLoading: boolean; error: string }) {
+  return (
+    <div
+      style={{
+        padding: "28px 18px",
+        textAlign: "center",
+        color: colors.muted,
+        fontSize: "13px",
+        lineHeight: 1.55,
+      }}
+    >
+      {isLoading
+        ? "Đang tải thông báo..."
+        : error || "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây."}
+    </div>
+  );
+}
+
+function DesktopNotificationDropdown({
+  notices,
+  unreadCount,
+  isLoading,
+  error,
+  onMarkAllRead,
+  onNoticeSelect,
+}: NotificationPanelProps) {
+  const todayNotices = notices.filter((notice) => notice.group === "today");
+  const previousNotices = notices.filter((notice) => notice.group === "yesterday");
+
   return (
     <>
       <div
@@ -525,12 +594,24 @@ function DesktopNotificationDropdown() {
           fontFamily: "var(--nl-font-sans)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 12px" }}>
-          <h2 id="notification-panel-title" style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: colors.text }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 16px 12px",
+          }}
+        >
+          <h2
+            id="notification-panel-title"
+            style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: colors.text }}
+          >
             Thông báo
           </h2>
           <button
             type="button"
+            onClick={onMarkAllRead}
+            disabled={!unreadCount}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -541,7 +622,8 @@ function DesktopNotificationDropdown() {
               fontSize: "11.5px",
               fontWeight: 700,
               fontFamily: "var(--nl-font-sans)",
-              cursor: "pointer",
+              cursor: unreadCount ? "pointer" : "default",
+              opacity: unreadCount ? 1 : 0.45,
               padding: 0,
             }}
           >
@@ -550,13 +632,37 @@ function DesktopNotificationDropdown() {
           </button>
         </div>
 
-        <NotificationTabs isMobile={false} />
-        <NoticeGroup label="Hôm nay" group="today" isMobile={false} />
-        <NoticeGroup label="Trước đó" group="yesterday" isMobile={false} />
+        <NotificationTabs isMobile={false} unreadCount={unreadCount} />
+        {notices.length ? (
+          <>
+            <NoticeGroup
+              label="Hôm nay"
+              notices={todayNotices}
+              isMobile={false}
+              onSelect={onNoticeSelect}
+            />
+            <NoticeGroup
+              label="Trước đó"
+              notices={previousNotices}
+              isMobile={false}
+              onSelect={onNoticeSelect}
+            />
+          </>
+        ) : (
+          <NotificationEmptyState isLoading={isLoading} error={error} />
+        )}
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.06)" }}>
-          <button
-            type="button"
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderTop: "1px solid rgba(255,255,255,.06)",
+          }}
+        >
+          <Link
+            href="/gui-hoa-don"
             style={{
               border: 0,
               padding: 0,
@@ -566,10 +672,11 @@ function DesktopNotificationDropdown() {
               fontWeight: 700,
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
+              textDecoration: "none",
             }}
           >
-            Xem tất cả thông báo
-          </button>
+            Xem hóa đơn của tôi
+          </Link>
           <button
             type="button"
             style={{
@@ -594,25 +701,52 @@ function DesktopNotificationDropdown() {
   );
 }
 
-function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
+function MobileNotificationPanel({
+  onClose,
+  notices,
+  unreadCount,
+  isLoading,
+  error,
+  onMarkAllRead,
+  onNoticeSelect,
+}: { onClose: () => void } & NotificationPanelProps) {
+  const todayNotices = notices.filter((notice) => notice.group === "today");
+  const previousNotices = notices.filter((notice) => notice.group === "yesterday");
+
   return (
     <section
+      data-notification-popup="true"
       role="dialog"
-      aria-modal="true"
+      aria-modal="false"
       aria-labelledby="mobile-notification-title"
+      onMouseDown={(event) => event.stopPropagation()}
       style={{
         position: "fixed",
-        inset: 0,
-        zIndex: 120,
-        background: colors.bg,
+        top: "calc(62px + env(safe-area-inset-top))",
+        right: "10px",
+        left: "10px",
+        zIndex: 101,
+        maxHeight: "min(68vh, 560px)",
+        background: "#16141b",
+        border: "1px solid rgba(255,255,255,.09)",
+        borderRadius: "18px",
+        boxShadow: "0 22px 60px -24px rgba(0,0,0,.92)",
         color: colors.text,
         fontFamily: "var(--nl-font-sans)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        transformOrigin: "top right",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "calc(10px + env(safe-area-inset-top)) 14px 8px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "14px 14px 8px",
+        }}
+      >
         <button
           type="button"
           aria-label="Đóng thông báo"
@@ -631,14 +765,26 @@ function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
             cursor: "pointer",
           }}
         >
-          <ChevronLeft size={17} strokeWidth={2} />
+          <X size={17} strokeWidth={2} />
         </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h2 id="mobile-notification-title" style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: colors.text }}>
+          <h2
+            id="mobile-notification-title"
+            style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: colors.text }}
+          >
             Thông báo
           </h2>
-          <div style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "1.8px", color: colors.muted, textTransform: "uppercase", marginTop: "2px" }}>
+          <div
+            style={{
+              fontSize: "8px",
+              fontWeight: 700,
+              letterSpacing: "1.8px",
+              color: colors.muted,
+              textTransform: "uppercase",
+              marginTop: "2px",
+            }}
+          >
             Notifications
           </div>
         </div>
@@ -664,12 +810,22 @@ function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px 8px", gap: "12px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 16px 8px",
+          gap: "12px",
+        }}
+      >
         <span style={{ fontSize: "11.5px", color: "#9b958a" }}>
-          <b style={{ color: colors.goldPale }}>3</b> thông báo chưa đọc
+          <b style={{ color: colors.goldPale }}>{unreadCount}</b> thông báo chưa đọc
         </span>
         <button
           type="button"
+          onClick={onMarkAllRead}
+          disabled={!unreadCount}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -680,7 +836,8 @@ function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
             fontSize: "11.5px",
             fontWeight: 700,
             fontFamily: "var(--nl-font-sans)",
-            cursor: "pointer",
+            cursor: unreadCount ? "pointer" : "default",
+            opacity: unreadCount ? 1 : 0.45,
             padding: 0,
             whiteSpace: "nowrap",
           }}
@@ -690,18 +847,48 @@ function MobileNotificationPanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      <NotificationTabs isMobile />
+      <NotificationTabs isMobile unreadCount={unreadCount} />
 
-      <div style={{ flex: 1, overflowY: "auto", paddingBottom: "calc(24px + env(safe-area-inset-bottom))" }}>
-        <NoticeGroup label="Hôm nay" group="today" isMobile />
-        <NoticeGroup label="Hôm qua" group="yesterday" isMobile />
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
+        }}
+      >
+        {notices.length ? (
+          <>
+            <NoticeGroup
+              label="Hôm nay"
+              notices={todayNotices}
+              isMobile
+              onSelect={onNoticeSelect}
+            />
+            <NoticeGroup
+              label="Hôm qua"
+              notices={previousNotices}
+              isMobile
+              onSelect={onNoticeSelect}
+            />
+          </>
+        ) : (
+          <NotificationEmptyState isLoading={isLoading} error={error} />
+        )}
       </div>
     </section>
   );
 }
 
-function NotificationOverlay({ isMobile, onClose }: { isMobile: boolean; onClose: () => void }) {
-  return isMobile ? <MobileNotificationPanel onClose={onClose} /> : <DesktopNotificationDropdown />;
+function NotificationOverlay({
+  isMobile,
+  onClose,
+  ...props
+}: { isMobile: boolean; onClose: () => void } & NotificationPanelProps) {
+  return isMobile ? (
+    <MobileNotificationPanel onClose={onClose} {...props} />
+  ) : (
+    <DesktopNotificationDropdown {...props} />
+  );
 }
 
 function SiteFooter({ isMobile }: { isMobile: boolean }) {
@@ -729,7 +916,15 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
             }}
           >
             <span style={{ fontSize: "22px", fontWeight: 900, lineHeight: 1 }}>Vietyoru</span>
-            <span style={{ marginTop: "5px", color: colors.goldPale, opacity: 0.64, fontSize: "9px", letterSpacing: "1.2px" }}>
+            <span
+              style={{
+                marginTop: "5px",
+                color: colors.goldPale,
+                opacity: 0.64,
+                fontSize: "9px",
+                letterSpacing: "1.2px",
+              }}
+            >
               VIETNAM NIGHTLIFE GUIDE
             </span>
           </Link>
@@ -815,11 +1010,20 @@ function SiteFooter({ isMobile }: { isMobile: boolean }) {
             <span style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: 900, lineHeight: 1 }}>
               Vietyoru
             </span>
-            <span style={{ marginTop: "6px", color: colors.goldPale, opacity: 0.7, letterSpacing: "1.2px" }}>
+            <span
+              style={{
+                marginTop: "6px",
+                color: colors.goldPale,
+                opacity: 0.7,
+                letterSpacing: "1.2px",
+              }}
+            >
               VIETNAM NIGHTLIFE GUIDE
             </span>
           </Link>
-          <p style={{ maxWidth: "310px", margin: "14px 0 0", color: colors.text2, lineHeight: 1.65 }}>
+          <p
+            style={{ maxWidth: "310px", margin: "14px 0 0", color: colors.text2, lineHeight: 1.65 }}
+          >
             Khám phá quán, cast, ưu đãi và cẩm nang nightlife tại Việt Nam.
           </p>
           <p style={{ margin: "12px 0 0", color: "#9a9488", lineHeight: 1.6 }}>
@@ -888,12 +1092,63 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [memberNotifications, setMemberNotifications] = useState<MemberNotification[]>([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [isNotificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
+  const notificationNotices = memberNotifications.map(toNotice);
+
+  const refreshMemberNotifications = useCallback(async () => {
+    if (!showCustomerNotifications) {
+      setMemberNotifications([]);
+      setNotificationUnreadCount(0);
+      setNotificationsError("");
+      return;
+    }
+
+    setNotificationsLoading(true);
+    setNotificationsError("");
+    try {
+      const response = await notificationApi.listMemberNotifications(20);
+      setMemberNotifications(response.data);
+      setNotificationUnreadCount(response.unreadCount);
+    } catch {
+      setNotificationsError("Chưa tải được thông báo. Vui lòng thử lại.");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [showCustomerNotifications]);
+
+  const markAllNotificationsRead = useCallback(() => {
+    if (!notificationUnreadCount) return;
+    setMemberNotifications((items) => items.map((item) => ({ ...item, unread: false })));
+    setNotificationUnreadCount(0);
+    notificationApi.markAllMemberNotificationsRead().catch(() => {
+      void refreshMemberNotifications();
+    });
+  }, [notificationUnreadCount, refreshMemberNotifications]);
+
+  const handleNotificationSelect = useCallback(
+    (notice: Notice) => {
+      setIsNotificationOpen(false);
+      if (!notice.unread) return;
+
+      setMemberNotifications((items) =>
+        items.map((item) => (item.id === notice.id ? { ...item, unread: false } : item)),
+      );
+      setNotificationUnreadCount((count) => Math.max(0, count - 1));
+      notificationApi.markMemberNotificationRead(notice.id).catch(() => {
+        void refreshMemberNotifications();
+      });
+    },
+    [refreshMemberNotifications],
+  );
 
   useEffect(() => {
     const previousScrollRestoration = window.history.scrollRestoration;
@@ -963,6 +1218,23 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    void refreshMemberNotifications();
+    if (!showCustomerNotifications) return;
+
+    const interval = window.setInterval(() => {
+      void refreshMemberNotifications();
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, [refreshMemberNotifications, showCustomerNotifications]);
+
+  useEffect(() => {
+    if (isNotificationOpen) {
+      void refreshMemberNotifications();
+    }
+  }, [isNotificationOpen, refreshMemberNotifications]);
+
+  useEffect(() => {
     const checkedElements = new WeakMap<HTMLElement, string>();
     const imageStatus = new Map<string, boolean>();
     let scanTimer: number | undefined;
@@ -1004,9 +1276,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
     const scan = () => {
       scanTimer = undefined;
-      document
-        .querySelectorAll<HTMLElement>("[style*='url(']")
-        .forEach(checkElement);
+      document.querySelectorAll<HTMLElement>("[style*='url(']").forEach(checkElement);
     };
 
     const scheduleScan = () => {
@@ -1037,9 +1307,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isNotificationOpen) return;
 
-    const previousOverflow = document.body.style.overflow;
     const onPointerDown = (event: PointerEvent) => {
-      if (isMobile) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.closest("[data-notification-popup='true'], [data-notification-trigger='true']")) {
@@ -1053,19 +1321,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       }
     };
 
-    if (isMobile) {
-      document.body.style.overflow = "hidden";
-    }
-
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isMobile, isNotificationOpen]);
+  }, [isNotificationOpen]);
 
   useEffect(() => {
     if (!enableScrollReveal) return;
@@ -1205,318 +1468,325 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           fontFamily: "var(--nl-font-sans)",
         }}
       >
-      <header
-        className="nl-site-header"
-        style={{
-          minHeight: isMobile ? "56px" : "82px",
-          padding: isMobile ? "0 16px" : "18px 34px",
-          borderBottom: `1px solid ${colors.borderGold12}`,
-          background: colors.bg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: isMobile ? "12px" : "24px",
-          flexWrap: "nowrap",
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
-        }}
-      >
-        <div
+        <header
+          className="nl-site-header"
           style={{
+            minHeight: isMobile ? "56px" : "82px",
+            padding: isMobile ? "0 16px" : "18px 34px",
+            borderBottom: `1px solid ${colors.borderGold12}`,
+            background: colors.bg,
             display: "flex",
             alignItems: "center",
-            gap: "34px",
-            minWidth: 0,
-            flex: isMobile ? "1 1 auto" : "none",
+            justifyContent: "space-between",
+            gap: isMobile ? "12px" : "24px",
+            flexWrap: "nowrap",
+            position: "sticky",
+            top: 0,
+            zIndex: 50,
           }}
         >
-          <Link
-            href="/"
+          <div
             style={{
-              display: "inline-flex",
-              flexDirection: "column",
-              textDecoration: "none",
-              flex: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "34px",
               minWidth: 0,
-              maxWidth: "100%",
+              flex: isMobile ? "1 1 auto" : "none",
             }}
           >
-            <span
+            <Link
+              href="/"
               style={{
-                fontSize: isMobile ? "22px" : "26px",
-                fontWeight: 800,
-                lineHeight: 1,
-                background: colors.goldGrad,
-                WebkitBackgroundClip: "text",
-                color: "transparent",
-                textShadow: "0 0 22px rgba(247,217,120,.28)",
-                whiteSpace: "nowrap",
+                display: "inline-flex",
+                flexDirection: "column",
+                textDecoration: "none",
+                flex: "none",
+                minWidth: 0,
+                maxWidth: "100%",
               }}
             >
-              Vietyoru
-            </span>
-            <span
-              style={{
-                marginTop: "3px",
-                fontSize: isMobile ? "7px" : "8.5px",
-                letterSpacing: isMobile ? "1.2px" : "1.6px",
-                color: colors.goldPale,
-                opacity: 0.72,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              VIETNAM NIGHTLIFE GUIDE
-            </span>
-          </Link>
-          {!isMobile ? (
-            <nav
-              className="nl-site-nav-links"
+              <span
+                style={{
+                  fontSize: isMobile ? "22px" : "26px",
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  background: colors.goldGrad,
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                  textShadow: "0 0 22px rgba(247,217,120,.28)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Vietyoru
+              </span>
+              <span
+                style={{
+                  marginTop: "3px",
+                  fontSize: isMobile ? "7px" : "8.5px",
+                  letterSpacing: isMobile ? "1.2px" : "1.6px",
+                  color: colors.goldPale,
+                  opacity: 0.72,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                VIETNAM NIGHTLIFE GUIDE
+              </span>
+            </Link>
+            {!isMobile ? (
+              <nav
+                className="nl-site-nav-links"
+                style={{
+                  display: "flex",
+                  gap: "22px",
+                  fontSize: "13px",
+                  color: colors.text2,
+                  fontWeight: 500,
+                }}
+              >
+                {desktopNavLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    style={{
+                      color: isActive(pathname, link.href) ? colors.goldPale : colors.text2,
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+          </div>
+
+          {isMobile ? (
+            /* ── Mobile: 3 icon buttons ── */
+            <div
+              className="nl-site-actions"
               style={{
                 display: "flex",
-                gap: "22px",
-                fontSize: "13px",
-                color: colors.text2,
-                fontWeight: 500,
+                alignItems: "center",
+                gap: "8px",
+                flex: "none",
               }}
             >
-              {desktopNavLinks.map((link) => (
+              <LanguagePicker isMobile={isMobile} />
+
+              {/* Chat */}
+              <SupportChatWidget
+                isMobile={isMobile}
+                isOpen={isChatOpen}
+                onOpen={() => setIsNotificationOpen(false)}
+                onOpenChange={setIsChatOpen}
+              />
+
+              {showCustomerNotifications ? (
+                <NotificationBellButton
+                  isMobile={isMobile}
+                  isOpen={isNotificationOpen}
+                  unreadCount={notificationUnreadCount}
+                  onClick={() => {
+                    setIsChatOpen(false);
+                    setIsNotificationOpen((open) => !open);
+                  }}
+                />
+              ) : null}
+
+              {!authUser ? (
                 <Link
-                  key={link.href}
-                  href={link.href}
+                  href="/dang-nhap"
+                  aria-label="Đăng nhập"
                   style={{
-                    color: isActive(pathname, link.href) ? colors.goldPale : colors.text2,
+                    minHeight: "36px",
+                    padding: "0 12px",
+                    borderRadius: "18px",
+                    border: 0,
+                    color: colors.onGold,
+                    background: "linear-gradient(135deg,#f4e3b4,#d4b26a 58%,#b6924a)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "11.5px",
+                    fontWeight: 900,
+                    fontFamily: "var(--nl-font-sans)",
+                    lineHeight: 1,
+                    letterSpacing: 0,
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 8px 20px rgba(212,178,106,.18)",
+                  }}
+                >
+                  Đăng nhập
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            /* ── Desktop: icon buttons (same as mobile, slightly larger) ── */
+            <div
+              className="nl-site-actions"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                flex: "none",
+              }}
+            >
+              <LanguagePicker isMobile={isMobile} />
+
+              {/* Chat */}
+              <SupportChatWidget
+                isMobile={isMobile}
+                isOpen={isChatOpen}
+                onOpen={() => setIsNotificationOpen(false)}
+                onOpenChange={setIsChatOpen}
+              />
+
+              {showCustomerNotifications ? (
+                <NotificationBellButton
+                  isMobile={isMobile}
+                  isOpen={isNotificationOpen}
+                  unreadCount={notificationUnreadCount}
+                  onClick={() => {
+                    setIsChatOpen(false);
+                    setIsNotificationOpen((open) => !open);
+                  }}
+                />
+              ) : null}
+
+              {/* Login / User */}
+              {!authUser ? (
+                <Link
+                  href="/dang-nhap"
+                  style={{
+                    minHeight: "40px",
+                    padding: "0 18px",
+                    borderRadius: "20px",
+                    border: `1px solid ${colors.borderGold32}`,
+                    color: colors.goldPale,
+                    background: "rgba(255,255,255,.04)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    fontSize: "13px",
+                    fontWeight: 700,
                     textDecoration: "none",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {link.label}
+                  <LogIn size={16} style={{ flex: "none" }} />
+                  Đăng nhập
                 </Link>
-              ))}
-            </nav>
-          ) : null}
-        </div>
-
-        {isMobile ? (
-          /* ── Mobile: 3 icon buttons ── */
-          <div
-            className="nl-site-actions"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flex: "none",
-            }}
-          >
-            <LanguagePicker isMobile={isMobile} />
-
-            {/* Chat */}
-            <SupportChatWidget
-              isMobile={isMobile}
-              isOpen={isChatOpen}
-              onOpen={() => setIsNotificationOpen(false)}
-              onOpenChange={setIsChatOpen}
-            />
-
-            {showCustomerNotifications ? (
-              <NotificationBellButton
-                isMobile={isMobile}
-                isOpen={isNotificationOpen}
-                onClick={() => {
-                  setIsChatOpen(false);
-                  setIsNotificationOpen((open) => !open);
-                }}
-              />
-            ) : null}
-
-            {!authUser ? (
-              <Link
-                href="/dang-nhap"
-                aria-label="Đăng nhập"
-                style={{
-                  minHeight: "36px",
-                  padding: "0 12px",
-                  borderRadius: "18px",
-                  border: 0,
-                  color: colors.onGold,
-                  background: "linear-gradient(135deg,#f4e3b4,#d4b26a 58%,#b6924a)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "11.5px",
-                  fontWeight: 900,
-                  fontFamily: "var(--nl-font-sans)",
-                  lineHeight: 1,
-                  letterSpacing: 0,
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                  boxShadow: "0 8px 20px rgba(212,178,106,.18)",
-                }}
-              >
-                Đăng nhập
-              </Link>
-            ) : null}
-
-          </div>
-        ) : (
-          /* ── Desktop: icon buttons (same as mobile, slightly larger) ── */
-          <div
-            className="nl-site-actions"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              flex: "none",
-            }}
-          >
-            <LanguagePicker isMobile={isMobile} />
-
-            {/* Chat */}
-            <SupportChatWidget
-              isMobile={isMobile}
-              isOpen={isChatOpen}
-              onOpen={() => setIsNotificationOpen(false)}
-              onOpenChange={setIsChatOpen}
-            />
-
-            {showCustomerNotifications ? (
-              <NotificationBellButton
-                isMobile={isMobile}
-                isOpen={isNotificationOpen}
-                onClick={() => {
-                  setIsChatOpen(false);
-                  setIsNotificationOpen((open) => !open);
-                }}
-              />
-            ) : null}
-
-            {/* Login / User */}
-            {!authUser ? (
-              <Link
-                href="/dang-nhap"
-                style={{
-                  minHeight: "40px",
-                  padding: "0 18px",
-                  borderRadius: "20px",
-                  border: `1px solid ${colors.borderGold32}`,
-                  color: colors.goldPale,
-                  background: "rgba(255,255,255,.04)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <LogIn size={16} style={{ flex: "none" }} />
-                Đăng nhập
-              </Link>
-            ) : (
-              <Link
-                href="/tai-khoan"
-                title="Xem thông tin tài khoản"
-                style={{
-                  minHeight: "40px",
-                  height: "40px",
-                  maxWidth: "190px",
-                  padding: "0 16px",
-                  borderRadius: "20px",
-                  border: `1px solid ${colors.borderGold32}`,
-                  color: colors.goldPale,
-                  background: "rgba(212,178,106,.1)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  fontSize: "13px",
-                  fontWeight: 800,
-                  textDecoration: "none",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  minWidth: 0,
-                }}
-              >
-                <UserRound size={16} style={{ flex: "none" }} />
-                <span
+              ) : (
+                <Link
+                  href="/tai-khoan"
+                  title="Xem thông tin tài khoản"
                   style={{
+                    minHeight: "40px",
+                    height: "40px",
+                    maxWidth: "190px",
+                    padding: "0 16px",
+                    borderRadius: "20px",
+                    border: `1px solid ${colors.borderGold32}`,
+                    color: colors.goldPale,
+                    background: "rgba(212,178,106,.1)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    textDecoration: "none",
                     overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    minWidth: 0,
                   }}
                 >
-                  {displayName}
-                </span>
+                  <UserRound size={16} style={{ flex: "none" }} />
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {displayName}
+                  </span>
+                </Link>
+              )}
+            </div>
+          )}
+        </header>
+
+        <div className="nl-page-content">{children}</div>
+
+        <SiteFooter isMobile={isMobile} />
+
+        <nav
+          style={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 60,
+            height: "calc(74px + env(safe-area-inset-bottom))",
+            background: colors.navBg,
+            borderTop: `1px solid ${colors.borderGold22}`,
+            display: "grid",
+            gridTemplateColumns: "repeat(5,1fr)",
+            alignItems: "center",
+            padding: "6px 8px calc(8px + env(safe-area-inset-bottom))",
+            backdropFilter: "blur(16px)",
+          }}
+          className="nl-mobile-bottom-nav"
+        >
+          {bottomNav.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  color: active ? colors.gold : "#6f6b62",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "4px",
+                  minHeight: "54px",
+                  borderRadius: "14px",
+                  background: active ? "rgba(212,178,106,.1)" : "transparent",
+                  textDecoration: "none",
+                  fontSize: "9.5px",
+                  fontWeight: active ? 700 : 500,
+                  touchAction: "manipulation",
+                }}
+              >
+                <Icon size={21} />
+                <span>{item.label}</span>
               </Link>
-            )}
-          </div>
-        )}
-      </header>
+            );
+          })}
+        </nav>
 
-      <div className="nl-page-content">{children}</div>
-
-      <SiteFooter isMobile={isMobile} />
-
-      <nav
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 60,
-          height: "calc(74px + env(safe-area-inset-bottom))",
-          background: colors.navBg,
-          borderTop: `1px solid ${colors.borderGold22}`,
-          display: "grid",
-          gridTemplateColumns: "repeat(5,1fr)",
-          alignItems: "center",
-          padding: "6px 8px calc(8px + env(safe-area-inset-bottom))",
-          backdropFilter: "blur(16px)",
-        }}
-        className="nl-mobile-bottom-nav"
-      >
-        {bottomNav.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                color: active ? colors.gold : "#6f6b62",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "4px",
-                minHeight: "54px",
-                borderRadius: "14px",
-                background: active ? "rgba(212,178,106,.1)" : "transparent",
-                textDecoration: "none",
-                fontSize: "9.5px",
-                fontWeight: active ? 700 : 500,
-                touchAction: "manipulation",
-              }}
-            >
-              <Icon size={21} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {isNotificationOpen && typeof document !== "undefined"
-        ? createPortal(
-            <NotificationOverlay
-              isMobile={isMobile}
-              onClose={() => setIsNotificationOpen(false)}
-            />,
-            document.body,
-          )
-        : null}
+        {isNotificationOpen && typeof document !== "undefined"
+          ? createPortal(
+              <NotificationOverlay
+                isMobile={isMobile}
+                notices={notificationNotices}
+                unreadCount={notificationUnreadCount}
+                isLoading={isNotificationsLoading}
+                error={notificationsError}
+                onMarkAllRead={markAllNotificationsRead}
+                onNoticeSelect={handleNotificationSelect}
+                onClose={() => setIsNotificationOpen(false)}
+              />,
+              document.body,
+            )
+          : null}
       </div>
     </SystemFeedbackProvider>
   );

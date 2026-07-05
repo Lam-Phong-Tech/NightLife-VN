@@ -86,6 +86,11 @@ export class PublicRankingQueryDto {
   category?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  scope?: string;
+
+  @IsOptional()
   @Matches(/^\d{1,2}$/)
   limit?: string;
 }

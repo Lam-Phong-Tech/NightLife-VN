@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 
 export type CmsContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "DELETED";
-export type CmsContentType = "BLOG" | "POLICY";
+export type CmsContentType = "BLOG" | "POLICY" | "BANNER";
 
 export type CmsContentItem = {
   id: string;
@@ -32,14 +32,27 @@ export type CmsContentListResponse = {
   data: CmsContentItem[];
 };
 
-export type CmsContentListParams = {
+export type PublicCmsContentListParams = {
   type?: CmsContentType;
-  status?: CmsContentStatus;
   q?: string;
   limit?: number;
 };
 
-const toParams = (params: CmsContentListParams = {}) => {
+export type AdminCmsContentListParams = PublicCmsContentListParams & {
+  status?: CmsContentStatus;
+};
+
+export type PublicHotVideo = {
+  id: string;
+  url: string;
+  title?: string | null;
+  storeName?: string | null;
+  storeSlug?: string | null;
+  href?: string | null;
+  createdAt?: string;
+};
+
+const toParams = (params: PublicCmsContentListParams | AdminCmsContentListParams = {}) => {
   const searchParams: Record<string, string> = {};
 
   Object.entries(params).forEach(([key, value]) => {
@@ -51,14 +64,16 @@ const toParams = (params: CmsContentListParams = {}) => {
 };
 
 export const contentApi = {
-  list: (params?: CmsContentListParams) =>
+  list: (params?: PublicCmsContentListParams) =>
     apiClient<CmsContentListResponse>("/contents", { params: toParams(params) }),
   get: (slug: string, params?: Record<string, string>) => {
     const searchParams = new URLSearchParams(params || {});
     const queryString = searchParams.toString();
     return apiClient<CmsContentItem>(`/contents/${encodeURIComponent(slug)}${queryString ? `?${queryString}` : ''}`);
   },
-  adminList: (params?: CmsContentListParams) =>
+  hotVideos: (cityCode: "all" | "hn" | "hcm") =>
+    apiClient<PublicHotVideo[]>(`/content/hot-videos/${encodeURIComponent(cityCode)}`),
+  adminList: (params?: AdminCmsContentListParams) =>
     apiClient<CmsContentItem[]>("/admin/contents", { params: toParams(params) }),
   adminCreate: (payload: Partial<CmsContentItem>) =>
     apiClient<CmsContentItem>("/admin/contents", { method: "POST", data: payload }),

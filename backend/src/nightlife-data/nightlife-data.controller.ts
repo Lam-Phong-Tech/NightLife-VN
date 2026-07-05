@@ -132,7 +132,10 @@ import {
   UpdateCommissionOverrideDto,
 } from './dto/commission-override.dto';
 import { NightlifeDataService } from './nightlife-data.service';
-import { AdminStoreVideoQueryDto, UpdateHotVideosDto } from './dto/admin-video.dto';
+import {
+  AdminStoreVideoQueryDto,
+  UpdateHotVideosDto,
+} from './dto/admin-video.dto';
 
 type RequestWithUser = express.Request & {
   user: AuthenticatedUser;
@@ -162,6 +165,11 @@ export class NightlifeDataController {
     return this.nightlifeDataService.adminListStoreVideos(query);
   }
 
+  @Get('content/hot-videos/:cityCode')
+  listPublicHotVideos(@Param('cityCode') cityCode: string) {
+    return this.nightlifeDataService.listPublicHotVideos(cityCode);
+  }
+
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/content/hot-videos/:cityCode')
@@ -177,7 +185,11 @@ export class NightlifeDataController {
     @Body() dto: UpdateHotVideosDto,
     @Req() req: RequestWithUser,
   ) {
-    return this.nightlifeDataService.adminUpdateHotVideos(cityCode, dto, req.user.id);
+    return this.nightlifeDataService.adminUpdateHotVideos(
+      cityCode,
+      dto,
+      req.user.id,
+    );
   }
 
   @Roles('ADMIN')
@@ -249,7 +261,10 @@ export class NightlifeDataController {
     @Param('slug') slug: string,
     @Query('preview') preview?: string,
   ) {
-    return this.nightlifeDataService.getPublicContentBySlug(slug, preview === '1');
+    return this.nightlifeDataService.getPublicContentBySlug(
+      slug,
+      preview === '1',
+    );
   }
 
   @AdminContentsContract()
@@ -901,6 +916,50 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listMemberBills(request.user);
   }
 
+  @ApiOperation({
+    summary: 'Member action: list in-app notifications',
+  })
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('member/notifications')
+  listMemberNotifications(
+    @Req() request: RequestWithUser,
+    @Query() query: { limit?: string | number },
+  ) {
+    return this.nightlifeDataService.listMemberNotifications(
+      request.user,
+      query,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Member action: mark all in-app notifications as read',
+  })
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('member/notifications/read-all')
+  markAllMemberNotificationsRead(@Req() request: RequestWithUser) {
+    return this.nightlifeDataService.markAllMemberNotificationsRead(
+      request.user,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Member action: mark one in-app notification as read',
+  })
+  @Roles('USER')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('member/notifications/:notificationId/read')
+  markMemberNotificationRead(
+    @Req() request: RequestWithUser,
+    @Param('notificationId') notificationId: string,
+  ) {
+    return this.nightlifeDataService.markMemberNotificationRead(
+      request.user,
+      notificationId,
+    );
+  }
+
   @CreateMemberBillContract()
   @Roles('USER')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1198,7 +1257,8 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
-    summary: 'Admin action: confirm a negative commission bill after PM/BA review',
+    summary:
+      'Admin action: confirm a negative commission bill after PM/BA review',
   })
   @ActionPolicy('canReviewBill')
   @Roles('ADMIN')
@@ -1340,8 +1400,8 @@ export class NightlifeDataController {
     schema: {
       type: 'object',
       properties: { available: { type: 'boolean' } },
-      example: { available: true }
-    }
+      example: { available: true },
+    },
   })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1379,7 +1439,9 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/casts')
-  listAdminCasts(@Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto) {
+  listAdminCasts(
+    @Query() query: import('./dto/admin-store.dto').AdminStoreQueryDto,
+  ) {
     return this.nightlifeDataService.listAdminCasts(query);
   }
 
@@ -1388,8 +1450,8 @@ export class NightlifeDataController {
     schema: {
       type: 'object',
       properties: { available: { type: 'boolean' } },
-      example: { available: true }
-    }
+      example: { available: true },
+    },
   })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1453,10 +1515,15 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/dashboard/export')
-  async getAdminDashboardExport(@Query('timeframe') timeframe: string, @Res() res: express.Response) {
-    const buffer = await this.nightlifeDataService.getAdminDashboardExport(timeframe);
+  async getAdminDashboardExport(
+    @Query('timeframe') timeframe: string,
+    @Res() res: express.Response,
+  ) {
+    const buffer =
+      await this.nightlifeDataService.getAdminDashboardExport(timeframe);
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': 'attachment; filename=bao_cao.xlsx',
       'Content-Length': buffer.byteLength,
     });

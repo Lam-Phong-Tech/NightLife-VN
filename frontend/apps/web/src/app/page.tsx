@@ -12,7 +12,6 @@ import {
   MapPin,
   Newspaper,
   Play,
-  Route,
   Search,
   SlidersHorizontal,
   Star,
@@ -23,17 +22,12 @@ import {
   Waves,
 } from "lucide-react";
 
-import {
-  adBanners,
-  hotVideos,
-  offers,
-  rankListCast,
-} from "@/lib/mock-data";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
-import { contentApi, type CmsContentItem } from "@/lib/api/content";
+import { contentApi, type CmsContentItem, type PublicHotVideo } from "@/lib/api/content";
+import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
+import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
 import { resolveClientUrl } from "@/lib/api/client";
-import { storeImageForSlug } from "@/lib/demo-media";
 import { formatPriceTier } from "@/lib/price-tier";
 
 const colors = {
@@ -73,27 +67,6 @@ const serviceRegionTabs = [
 const rankTabs = [
   { id: "cast", label: "Cast" },
   { id: "quan", label: "Quán" },
-];
-
-const contentPlaceholders = [
-  {
-    title: "Tour đêm",
-    desc: "Gợi ý lịch trình bar, lounge và ăn khuya theo khu vực.",
-    href: "/tour",
-    icon: Route,
-  },
-  {
-    title: "Blog",
-    desc: "Bài viết kinh nghiệm chọn quán, ưu đãi và xu hướng nightlife.",
-    href: "/blog",
-    icon: Newspaper,
-  },
-  {
-    title: "Guide",
-    desc: "Hướng dẫn đặt chỗ, lấy mã coupon và gửi hóa đơn.",
-    href: "/huong-dan",
-    icon: BookOpen,
-  },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -159,14 +132,37 @@ type HomeStoreCard = {
   catLabel: string;
   category: string;
   cityCode: string;
-  img: string;
+  img?: string;
   href: string;
   badgeText: string;
   priceLabel: string;
 };
 
+type HomeCouponItem = {
+  id: string;
+  title: string;
+  value: string;
+  place: string;
+  img?: string;
+  href: string;
+};
+
+type HomeVideoItem = {
+  id: string;
+  name: string;
+  img?: string;
+  href: string;
+};
+
+type HomeContentItem = {
+  id: string;
+  title: string;
+  desc: string;
+  href: string;
+  icon: typeof BookOpen;
+};
+
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
-type VideoItem = (typeof hotVideos)[number];
 
 function normalizeArea(value = "") {
   return value
@@ -182,28 +178,26 @@ function getAreaRegion(areaValue = ""): Exclude<ServiceRegion, "all"> {
     : "hanoi";
 }
 
-function getServiceRegion(item: HomeStoreCard): Exclude<ServiceRegion, "all"> {
-  return getAreaRegion(item.area);
-}
-
-function filterServicesByRegion(items: HomeStoreCard[], region: ServiceRegion) {
-  if (region === "all") return items;
-  return items.filter((item) => getServiceRegion(item) === region);
-}
-
 function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
   const filteredItems = region === "all" ? items : items.filter((item) => getAreaRegion(item.area) === region);
   return filteredItems.slice(0, 5).map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
-function filterVideosByRegion(items: VideoItem[], region: ServiceRegion) {
-  if (region === "all") return items;
-  return items.filter((item) => getAreaRegion(item.name) === region);
+function regionToCityCode(region: ServiceRegion): "all" | "hn" | "hcm" {
+  if (region === "hanoi") return "hn";
+  if (region === "hcm") return "hcm";
+  return "all";
+}
+
+function backgroundFromUrl(value?: string | null) {
+  const url = resolveClientUrl(value);
+  return url ? `url(${JSON.stringify(url)}) center/cover` : undefined;
 }
 
 function storeImage(store: PublicStore, index: number) {
   const backendImage = resolveClientUrl(store.thumbnailUrl);
-  return backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : storeImageForSlug(store.slug, index);
+  void index;
+  return backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : undefined;
 }
 
 function storeAreaLabel(store: PublicStore) {
@@ -229,6 +223,86 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
     href: `/stores/${store.slug}`,
     badgeText: index < 2 ? "Đặt bàn nhanh" : categoryLabel,
     priceLabel: formatPriceTier(categoryPrices[store.category] ?? "từ 900.000đ"),
+  };
+}
+
+function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
+  return {
+    rank: item.rank,
+    img: backgroundFromUrl(item.image),
+    name: item.name,
+    area: storeAreaText(item.area, item.cityCode, item.city),
+    href: item.href,
+  };
+}
+
+function mapRankingToHomeCard(item: PublicRankingItem, index: number): HomeStoreCard {
+  void index;
+  const categoryLabel = categoryLabels[item.category] ?? item.category;
+
+  return {
+    id: item.targetId,
+    slug: item.slug,
+    name: item.name,
+    area: storeAreaText(item.area, item.cityCode, item.city),
+    catLabel: categoryLabel,
+    category: item.category,
+    cityCode: item.cityCode ?? "",
+    img: backgroundFromUrl(item.image),
+    href: item.href || `/stores/${item.slug}`,
+    badgeText: item.sponsored ? "Nổi bật" : categoryLabel,
+    priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
+  };
+}
+
+function storeAreaText(area?: string | null, cityCode?: string | null, city?: string | null) {
+  const readableArea = area ? areaLabels[area] ?? area : "";
+  const readableCity = cityLabels[cityCode ?? ""] ?? city ?? "";
+
+  return [readableArea, readableCity].filter(Boolean).join(" · ");
+}
+
+function formatCouponValue(coupon: PublicCoupon) {
+  if (coupon.discountType === "PERCENT") return `-${coupon.discountValue}%`;
+  if (coupon.discountValue >= 1000) return `-${Math.round(coupon.discountValue / 1000)}.000đ`;
+  return `-${coupon.discountValue}đ`;
+}
+
+function mapCouponToHomeItem(coupon: PublicCoupon, index: number): HomeCouponItem {
+  void index;
+  const storeImageUrl = coupon.store.media?.[0]?.url;
+
+  return {
+    id: coupon.id,
+    title: coupon.name,
+    value: formatCouponValue(coupon),
+    place: [coupon.store.name, storeAreaText(coupon.store.district, undefined, coupon.store.city)]
+      .filter(Boolean)
+      .join(" · "),
+    img: backgroundFromUrl(storeImageUrl),
+    href: `/stores/${coupon.store.slug}`,
+  };
+}
+
+function mapHotVideoToHomeItem(video: PublicHotVideo, index: number): HomeVideoItem {
+  void index;
+  const name = [video.storeName, video.title].filter(Boolean).join(" · ");
+
+  return {
+    id: video.id,
+    name: name || "Video Hot",
+    img: backgroundFromUrl(video.url),
+    href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
+  };
+}
+
+function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
+  return {
+    id: content.id,
+    title: content.title,
+    desc: content.excerpt || "Khám phá nội dung mới từ Vietyoru.",
+    href: content.type === "BLOG" ? `/blog/${content.slug}` : `/legal/${content.slug}`,
+    icon: content.type === "BLOG" ? Newspaper : BookOpen,
   };
 }
 
@@ -551,7 +625,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
   };
   
   const mappedBanners: HomeBanner[] = useMemo(() => {
-    if (apiBanners.length === 0) return adBanners.length > 0 ? adBanners : [fallbackBanner];
+    if (apiBanners.length === 0) return [fallbackBanner];
     return apiBanners.map(b => {
       const meta = (b.metadata as any) || {};
       return {
@@ -582,7 +656,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 
   return (
     <Link
-      href={event.href || "/stores/neon-club"}
+      href={event.href || "/danh-sach-quan"}
       data-testid="home-ad-banner"
       {...swipeHandlers}
       style={{
@@ -698,7 +772,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
   );
 }
 
-function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
+function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const fallbackBanner: HomeBanner = {
     title: "Ưu đãi đêm nay",
@@ -706,7 +780,23 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
     btnText: "Xem ngay",
     img: "linear-gradient(135deg,#15151a,#2a2112)",
   };
-  const banners: HomeBanner[] = adBanners.length > 0 ? adBanners : [fallbackBanner];
+  const banners: HomeBanner[] = useMemo(() => {
+    if (!apiBanners.length) return [fallbackBanner];
+    return apiBanners.map((banner) => {
+      const meta = (banner.metadata as any) || {};
+      return {
+        title: banner.title,
+        desc: meta.description || banner.excerpt || "",
+        btnText: meta.tag || "Xem ngay",
+        href: meta.link || "/uu-dai",
+        statusLabel: meta.statusLabel || "",
+        subtitle: meta.subtitle || "",
+        img: meta.imageUrl
+          ? `linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.34)), url('${meta.imageUrl}') center/cover`
+          : "linear-gradient(135deg,#15151a,#2a2112)",
+      };
+    });
+  }, [apiBanners]);
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
@@ -722,7 +812,7 @@ function MidPageBanner({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <Link
-      href="/uu-dai"
+      href={event.href || "/uu-dai"}
       data-testid="home-mid-banner"
       {...swipeHandlers}
       style={{
@@ -889,10 +979,10 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
   );
 }
 
-function CouponCard({ item, compact = false }: { item: (typeof offers)[number]; compact?: boolean }) {
+function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?: boolean }) {
   return (
     <Link
-      href="/stores/neon-club"
+      href={item.href}
       style={{
         display: "grid",
         gridTemplateColumns: compact ? "82px 1fr auto" : "120px 1fr auto",
@@ -1053,9 +1143,9 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
   );
 }
 
-function VideoCard({ item, compact = false }: { item: (typeof hotVideos)[number]; compact?: boolean }) {
+function VideoCard({ item, compact = false }: { item: HomeVideoItem; compact?: boolean }) {
   return (
-    <Link href="/stores/neon-club" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
+    <Link href={item.href} style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Video"}
@@ -1076,7 +1166,7 @@ function ContentPlaceholderCard({
   item,
   compact = false,
 }: {
-  item: (typeof contentPlaceholders)[number];
+  item: HomeContentItem;
   compact?: boolean;
 }) {
   const Icon = item.icon;
@@ -1116,7 +1206,7 @@ function ContentPlaceholderCard({
         {item.desc}
       </p>
       <div style={{ marginTop: "12px", color: colors.gold, fontSize: "12px", fontWeight: 900 }}>
-        Xem placeholder
+        Xem chi tiết
       </div>
     </Link>
   );
@@ -1374,30 +1464,32 @@ export default function Page() {
   const [isHomeStoresLoading, setHomeStoresLoading] = useState(true);
   const [homeStoresError, setHomeStoresError] = useState("");
   const [homeBanners, setHomeBanners] = useState<CmsContentItem[]>([]);
+  const [homeCoupons, setHomeCoupons] = useState<HomeCouponItem[]>([]);
+  const [isHomeCouponsLoading, setHomeCouponsLoading] = useState(true);
+  const [homeCouponsError, setHomeCouponsError] = useState("");
+  const [castRankItems, setCastRankItems] = useState<RankedItem[]>([]);
+  const [storeRankItems, setStoreRankItems] = useState<RankedItem[]>([]);
+  const [isRankingsLoading, setRankingsLoading] = useState(true);
+  const [rankingsError, setRankingsError] = useState("");
+  const [featuredServices, setFeaturedServices] = useState<HomeStoreCard[]>([]);
+  const [isFeaturedServicesLoading, setFeaturedServicesLoading] = useState(true);
+  const [featuredServicesError, setFeaturedServicesError] = useState("");
+  const [homeVideos, setHomeVideos] = useState<HomeVideoItem[]>([]);
+  const [isHomeVideosLoading, setHomeVideosLoading] = useState(true);
+  const [homeVideosError, setHomeVideosError] = useState("");
+  const [homeContentItems, setHomeContentItems] = useState<HomeContentItem[]>([]);
+  const [isHomeContentLoading, setHomeContentLoading] = useState(true);
+  const [homeContentError, setHomeContentError] = useState("");
   const homeStoreCards = useMemo(
     () => homeStores.map(mapStoreToHomeCard),
     [homeStores],
   );
-  const storeRankItems = useMemo<RankedItem[]>(
-    () =>
-      homeStoreCards.map((store, index) => ({
-        rank: index + 1,
-        img: store.img,
-        name: store.name,
-        area: store.area,
-        href: store.href,
-      })),
-    [homeStoreCards],
-  );
   const rankList = filterRankingsByRegion(
-    activeRankTab === "quan" ? storeRankItems : (rankListCast as RankedItem[]),
+    activeRankTab === "quan" ? storeRankItems : castRankItems,
     activeRankRegion,
   );
-  const serviceSource = homeStoreCards.filter((store) =>
-    activeSvcTab === "nhahang" ? store.category === "RESTAURANT" : store.category === "MASSAGE_SPA",
-  );
-  const svc = filterServicesByRegion(serviceSource, activeServiceRegion);
-  const videoList = filterVideosByRegion(hotVideos, activeVideoRegion);
+  const svc = featuredServices;
+  const videoList = homeVideos;
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -1429,16 +1521,132 @@ export default function Page() {
       });
 
     contentApi
-      .list({ type: "BANNER" as any, status: "PUBLISHED", limit: 3 })
+      .list({ type: "BANNER", limit: 3 })
       .then((res) => {
         if (!cancelled && res.data) setHomeBanners(res.data);
       })
       .catch((e) => console.error("Failed to load banners", e));
 
+    couponApi
+      .listPublicCoupons()
+      .then((coupons) => {
+        if (!cancelled) setHomeCoupons(coupons.slice(0, 6).map(mapCouponToHomeItem));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHomeCoupons([]);
+          setHomeCouponsError("Chưa tải được coupon từ API.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHomeCouponsLoading(false);
+      });
+
+    Promise.all([
+      rankingsApi.list({ targetType: "CAST", city: "all", limit: 10 }),
+      rankingsApi.list({ targetType: "STORE", city: "all", limit: 10 }),
+    ])
+      .then(([castResponse, storeResponse]) => {
+        if (cancelled) return;
+        setCastRankItems(castResponse.data.map(mapRankingToRankedItem));
+        setStoreRankItems(storeResponse.data.map(mapRankingToRankedItem));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCastRankItems([]);
+          setStoreRankItems([]);
+          setRankingsError("Chưa tải được bảng xếp hạng từ API.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRankingsLoading(false);
+      });
+
+    Promise.all([
+      contentApi.list({ type: "BLOG", limit: 3 }),
+      contentApi.list({ type: "POLICY", limit: 3 }),
+    ])
+      .then(([blogResponse, policyResponse]) => {
+        if (cancelled) return;
+        const items = [...(blogResponse.data ?? []), ...(policyResponse.data ?? [])]
+          .slice(0, 3)
+          .map(mapContentToHomeItem);
+        setHomeContentItems(items);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHomeContentItems([]);
+          setHomeContentError("Chưa tải được nội dung CMS.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHomeContentLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const category = activeSvcTab === "nhahang" ? "RESTAURANT" : "MASSAGE_SPA";
+
+    setFeaturedServicesLoading(true);
+    setFeaturedServicesError("");
+
+    rankingsApi
+      .list({
+        targetType: "STORE",
+        city: regionToCityCode(activeServiceRegion),
+        category,
+        scope: "featured_home",
+        limit: 8,
+      })
+      .then((response) => {
+        if (!cancelled) setFeaturedServices(response.data.map(mapRankingToHomeCard));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFeaturedServices([]);
+          setFeaturedServicesError("Chưa tải được dịch vụ nổi bật từ API.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setFeaturedServicesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSvcTab, activeServiceRegion]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const cityCode = regionToCityCode(activeVideoRegion);
+
+    setHomeVideosLoading(true);
+    setHomeVideosError("");
+
+    contentApi
+      .hotVideos(cityCode)
+      .then((videos) => {
+        if (!cancelled) setHomeVideos(videos.map(mapHotVideoToHomeItem));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHomeVideos([]);
+          setHomeVideosError("Chưa tải được Video Hot từ API.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHomeVideosLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeVideoRegion]);
 
   return (
     <React.Fragment>
@@ -1472,7 +1680,13 @@ export default function Page() {
             <section style={{ marginTop: "18px" }}>
               <SectionHeading title="Coupon Hot" />
               <div style={{ display: "grid", gap: "10px" }}>
-                {offers.slice(0, 2).map((item) => <CouponCard key={item.title} item={item} compact />)}
+                {isHomeCouponsLoading ? (
+                  <HomeDataMessage text="Đang tải coupon từ API..." compact />
+                ) : homeCoupons.length ? (
+                  homeCoupons.slice(0, 2).map((item) => <CouponCard key={item.id} item={item} compact />)
+                ) : (
+                  <HomeDataMessage text={homeCouponsError || "Chưa có coupon đang hoạt động."} compact />
+                )}
               </div>
             </section>
 
@@ -1484,18 +1698,18 @@ export default function Page() {
                 onRegionChange={setActiveRankRegion}
               />
               <div style={{ display: "grid", gap: "10px" }}>
-                {activeRankTab === "quan" && isHomeStoresLoading ? (
-                  <HomeDataMessage text="Đang tải xếp hạng quán..." />
+                {isRankingsLoading ? (
+                  <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
                 ) : rankList.length ? (
                   rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)
                 ) : (
-                  <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} />
+                  <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
                 )}
               </div>
             </section>
 
             <div style={{ marginTop: "20px" }}>
-              <MidPageBanner />
+              <MidPageBanner apiBanners={homeBanners} />
             </div>
 
             <section style={{ marginTop: "22px" }}>
@@ -1509,12 +1723,12 @@ export default function Page() {
                 onRegionChange={setActiveServiceRegion}
               />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
-                {isHomeStoresLoading ? (
-                  <HomeDataMessage text="Đang tải dịch vụ từ API..." compact />
+                {isFeaturedServicesLoading ? (
+                  <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." compact />
                 ) : svc.length ? (
                   svc.slice(0, 2).map((item) => <ServiceCard key={item.slug} item={item} compact />)
                 ) : (
-                  <HomeDataMessage text={homeStoresError || "Chưa có quán phù hợp."} compact />
+                  <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} compact />
                 )}
               </div>
             </section>
@@ -1522,7 +1736,13 @@ export default function Page() {
             <section style={{ marginTop: "22px" }}>
               <SectionHeading title="Tour / Blog / Guide" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
-                {contentPlaceholders.map((item) => <ContentPlaceholderCard key={item.href} item={item} compact />)}
+                {isHomeContentLoading ? (
+                  <HomeDataMessage text="Đang tải nội dung CMS..." compact />
+                ) : homeContentItems.length ? (
+                  homeContentItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} compact />)
+                ) : (
+                  <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} compact />
+                )}
               </div>
             </section>
 
@@ -1536,7 +1756,13 @@ export default function Page() {
                 />
               </div>
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
-                {videoList.slice(0, 3).map((item) => <VideoCard key={item.name} item={item} compact />)}
+                {isHomeVideosLoading ? (
+                  <HomeDataMessage text="Đang tải Video Hot từ API..." compact />
+                ) : videoList.length ? (
+                  videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact />)
+                ) : (
+                  <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact />
+                )}
               </div>
             </section>
           </main>
@@ -1578,7 +1804,13 @@ export default function Page() {
               <div>
                 <SectionHeading title="Coupon Hot" />
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px" }}>
-                  {offers.map((item) => <CouponCard key={item.title} item={item} />)}
+                  {isHomeCouponsLoading ? (
+                    <HomeDataMessage text="Đang tải coupon từ API..." />
+                  ) : homeCoupons.length ? (
+                    homeCoupons.map((item) => <CouponCard key={item.id} item={item} />)
+                  ) : (
+                    <HomeDataMessage text={homeCouponsError || "Chưa có coupon đang hoạt động."} />
+                  )}
                 </div>
               </div>
               <div style={{ marginTop: "34px" }}>
@@ -1589,19 +1821,19 @@ export default function Page() {
                   onRegionChange={setActiveRankRegion}
                 />
                 <div style={{ display: "grid", gap: "12px" }}>
-                  {activeRankTab === "quan" && isHomeStoresLoading ? (
-                    <HomeDataMessage text="Đang tải xếp hạng quán..." />
+                  {isRankingsLoading ? (
+                    <HomeDataMessage text="Đang tải bảng xếp hạng từ API..." />
                   ) : rankList.length ? (
                     rankList.map((item) => <RankingRow key={`${activeRankTab}-${item.rank}`} item={item} />)
                   ) : (
-                    <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} />
+                    <HomeDataMessage text={rankingsError || "Chưa có dữ liệu xếp hạng."} />
                   )}
                 </div>
               </div>
             </section>
 
             <div style={{ marginTop: "34px" }}>
-              <MidPageBanner desktop />
+              <MidPageBanner desktop apiBanners={homeBanners} />
             </div>
 
             <section style={{ marginTop: "34px" }}>
@@ -1618,12 +1850,12 @@ export default function Page() {
                 onRegionChange={setActiveServiceRegion}
               />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {isHomeStoresLoading ? (
-                  <HomeDataMessage text="Đang tải dịch vụ từ API..." />
+                {isFeaturedServicesLoading ? (
+                  <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." />
                 ) : svc.length ? (
                   svc.map((item) => <ServiceCard key={item.slug} item={item} />)
                 ) : (
-                  <HomeDataMessage text={homeStoresError || "Chưa có quán phù hợp."} />
+                  <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} />
                 )}
               </div>
             </section>
@@ -1631,7 +1863,13 @@ export default function Page() {
             <section style={{ marginTop: "34px" }}>
               <SectionHeading title="Tour / Blog / Guide" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
-                {contentPlaceholders.map((item) => <ContentPlaceholderCard key={item.href} item={item} />)}
+                {isHomeContentLoading ? (
+                  <HomeDataMessage text="Đang tải nội dung CMS..." />
+                ) : homeContentItems.length ? (
+                  homeContentItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} />)
+                ) : (
+                  <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} />
+                )}
               </div>
             </section>
 
@@ -1645,7 +1883,13 @@ export default function Page() {
                 />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {videoList.map((item) => <VideoCard key={item.name} item={item} />)}
+                {isHomeVideosLoading ? (
+                  <HomeDataMessage text="Đang tải Video Hot từ API..." />
+                ) : videoList.length ? (
+                  videoList.map((item) => <VideoCard key={item.id} item={item} />)
+                ) : (
+                  <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} />
+                )}
               </div>
             </section>
 
