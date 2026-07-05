@@ -15,6 +15,7 @@ export default function AdminBookingsPage() {
 function AdminBookingsContent() {
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
+  const category = searchParams.get('category') || '';
   const [activeTab, setActiveTab] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -40,7 +41,7 @@ function AdminBookingsContent() {
     try {
       let statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<any>('/admin/bookings', { 
-        params: { status: statusParam, search: search || undefined, city: city || undefined } 
+        params: { status: statusParam, search: search || undefined, city: city || undefined, category: category || undefined } 
       });
       setBookings(res.data);
       setMeta(res.meta);
@@ -51,7 +52,7 @@ function AdminBookingsContent() {
 
   useEffect(() => {
     fetchBookings();
-  }, [activeTab, search, city]);
+  }, [activeTab, search, city, category]);
 
   const getDisplayStatus = (status: string) => {
     if (status === 'REQUESTED') return 'Mới';

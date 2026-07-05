@@ -159,6 +159,64 @@ function TopRegionFilter() {
   );
 }
 
+function TopCategoryFilter() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const category = searchParams.get('category') || '';
+  const [open, setOpen] = useState(false);
+
+  const opts = [
+    { v: '', l: 'Tất cả loại hình' },
+    { v: 'BAR', l: 'Bar' },
+    { v: 'CLUB', l: 'Club' },
+    { v: 'LOUNGE', l: 'Lounge' },
+    { v: 'GIRLS_BAR', l: 'Girls Bar' },
+    { v: 'KARAOKE', l: 'Karaoke' },
+    { v: 'MASSAGE_SPA', l: 'Massage/Spa' },
+    { v: 'RESTAURANT', l: 'Restaurant' },
+    { v: 'CASINO', l: 'Casino' }
+  ];
+
+  const curr = opts.find(o => o.v === category) || { v: '', l: 'Tất cả loại hình' };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div 
+        onClick={() => setOpen(!open)}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid rgba(212,178,106,.28)', color: '#f3f0ea', fontSize: '12.5px', borderRadius: '11px', padding: '8px 12px 8px 10px', fontWeight: 600, cursor: 'pointer', background: 'rgba(255,255,255,.02)' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span>{curr.l}</span>
+        <svg style={{ marginLeft: '4px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setOpen(false)} />
+          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#17161c', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '6px', zIndex: 100, minWidth: '160px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)' }}>
+            {opts.map(o => (
+              <div 
+                key={o.v}
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (o.v) params.set('category', o.v);
+                  else params.delete('category');
+                  router.push(pathname + '?' + params.toString());
+                  setOpen(false);
+                }}
+                style={{ padding: '9px 12px', fontSize: '13px', fontWeight: 500, color: category === o.v ? '#241a0a' : '#c5c0b6', background: category === o.v ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer', marginBottom: '2px' }}
+              >
+                {o.l}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function TopSearchBar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -320,6 +378,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Search Bar */}
           <React.Suspense fallback={<div style={{ minWidth: '300px' }} />}>
             <TopSearchBar />
+          </React.Suspense>
+
+          <React.Suspense fallback={<div />}>
+            <TopCategoryFilter />
           </React.Suspense>
 
           <React.Suspense fallback={<div />}>

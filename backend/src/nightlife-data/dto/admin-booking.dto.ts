@@ -48,6 +48,11 @@ export class AdminBookingQueryDto {
   @IsString()
   city?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by category (BAR, CLUB, etc.)' })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @ApiPropertyOptional({ description: 'Sort by (newest, oldest)' })
   @IsOptional()
   @IsString()
