@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Info, X, Check, Image as ImageIcon } from 'lucide-react';
 import { ApiError, apiClient, translateApiMessage } from '@/lib/api/client';
 import { adminPageSize } from '../components/AdminPagination';
@@ -34,6 +34,46 @@ const getStatusLabel = (status: string) => {
   return status;
 };
 
+type AdminBill = {
+  id: string;
+  billNumber?: string | null;
+  store?: string | null;
+  location?: string | null;
+  amount?: number | null;
+  date?: string | null;
+  sender?: string | null;
+  hasImage?: boolean;
+  images?: string[];
+  status: string;
+  guestType?: string | null;
+  discount?: number | null;
+  discountPercent?: number | null;
+  commissionPercent?: number | null;
+  adminCommission?: number | null;
+  points?: string | null;
+  rejectReason?: string | null;
+};
+
+type AdminBillsMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+type AdminBillsStats = {
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  totalAmountPending: number;
+};
+
+type AdminBillsResponse = {
+  data?: AdminBill[];
+  meta?: AdminBillsMeta;
+  stats?: AdminBillsStats;
+};
+
 export default function AdminBillsPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -43,12 +83,12 @@ export default function AdminBillsPage() {
   const pageParam = parseInt(searchParams.get('page') || '1');
 
   const [activeTab, setActiveTab] = useState('pending');
-  const [selectedBill, setSelectedBill] = useState<any>(null);
-  const [billsList, setBillsList] = useState<any[]>([]);
+  const [selectedBill, setSelectedBill] = useState<AdminBill | null>(null);
+  const [billsList, setBillsList] = useState<AdminBill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [meta, setMeta] = useState<any>(null);
-  const [stats, setStats] = useState<any>({
+  const [meta, setMeta] = useState<AdminBillsMeta | null>(null);
+  const [stats, setStats] = useState<AdminBillsStats>({
     pendingCount: 0,
     approvedCount: 0,
     rejectedCount: 0,
@@ -75,11 +115,11 @@ export default function AdminBillsPage() {
     goToPage(1);
   };
 
-  const fetchBills = async () => {
+  const fetchBills = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
     try {
-      const res = await apiClient<any>('/admin/bills', {
+      const res = await apiClient<AdminBillsResponse>('/admin/bills', {
         params: { status: activeTab, search, city, page: pageParam, limit: adminPageSize }
       });
       if (res && res.data) {
@@ -99,7 +139,7 @@ export default function AdminBillsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab, city, pageParam, search]);
 
   const handleApproveClick = (billId: string) => {
     setApproveBillId(billId);
@@ -151,8 +191,14 @@ export default function AdminBillsPage() {
 
 
   useEffect(() => {
-    fetchBills();
-  }, [activeTab, search, city, pageParam]);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void fetchBills();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchBills]);
 
   return (
     <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
@@ -257,6 +303,15 @@ export default function AdminBillsPage() {
       {/* TABLE */}
       <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col style={{ width: '132px' }} />
+          </colgroup>
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.borderSoft}` }}>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>MÃ BILL</th>
@@ -322,14 +377,20 @@ export default function AdminBillsPage() {
                     <span style={{ color: colors.muted, fontSize: '14px', fontWeight: 600 }}>—</span>
                   )}
                 </td>
-                <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                <td style={{ padding: '16px 24px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <span style={{ 
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '76px',
                     border: `1px solid ${colors.borderGold22}`, 
                     color: colors.gold, 
                     padding: '6px 16px', 
                     borderRadius: '20px', 
                     fontSize: '12px', 
+                    lineHeight: 1,
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
                     background: 'rgba(212,178,106,.05)'
                   }}>
                     {getStatusLabel(bill.status)}
