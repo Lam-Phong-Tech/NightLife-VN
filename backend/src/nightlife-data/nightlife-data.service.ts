@@ -103,7 +103,10 @@ import {
 } from './dto/public-discovery-query.dto';
 import { RecordProfileViewDto } from './dto/profile-view.dto';
 import { ReviewBillDto, VoidBillDto } from './dto/review-bill.dto';
-import { AdminStoreVideoQueryDto, UpdateHotVideosDto } from './dto/admin-video.dto';
+import {
+  AdminStoreVideoQueryDto,
+  UpdateHotVideosDto,
+} from './dto/admin-video.dto';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
@@ -215,6 +218,37 @@ type BookingNotificationRecord = {
   } | null;
   coupon?: { id: string; code: string; name: string } | null;
   couponIssue?: { id: string; code: string; status: string } | null;
+};
+
+type CustomerNotificationRecord = {
+  id: string;
+  status: string;
+  templateKey: string | null;
+  payload: Prisma.JsonValue | null;
+  createdAt: Date;
+  sentAt: Date | null;
+  billId: string | null;
+  bookingId: string | null;
+  store: { id: string; name: string; slug: string | null } | null;
+  booking: {
+    id: string;
+    status: string;
+    scheduledAt: Date;
+    store: { id: string; name: string; slug: string | null } | null;
+  } | null;
+  bill: {
+    id: string;
+    billNumber: string | null;
+    status: string;
+    totalVnd: number | null;
+    pointsEarned: number | null;
+    rejectReason: string | null;
+    submittedAt: Date | null;
+    reviewedAt: Date | null;
+    verifiedAt: Date | null;
+    rejectedAt: Date | null;
+    store: { id: string; name: string; slug: string | null } | null;
+  } | null;
 };
 
 type BookingChangeRequestRecord = {
@@ -810,8 +844,10 @@ export class NightlifeDataService {
       result.sort((a, b) => {
         const posA = (a.metadata as any)?.position || '';
         const posB = (b.metadata as any)?.position || '';
-        if (posA.includes('Trang chủ #1') && !posB.includes('Trang chủ #1')) return -1;
-        if (!posA.includes('Trang chủ #1') && posB.includes('Trang chủ #1')) return 1;
+        if (posA.includes('Trang chủ #1') && !posB.includes('Trang chủ #1'))
+          return -1;
+        if (!posA.includes('Trang chủ #1') && posB.includes('Trang chủ #1'))
+          return 1;
         return 0;
       });
     }
@@ -825,10 +861,12 @@ export class NightlifeDataService {
       where: {
         slug: this.normalizeContentSlug(slug),
         deletedAt: null,
-        ...(isPreview ? {} : {
-          status: 'PUBLISHED',
-          OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
-        }),
+        ...(isPreview
+          ? {}
+          : {
+              status: 'PUBLISHED',
+              OR: [{ publishedAt: null }, { publishedAt: { lte: now } }],
+            }),
       },
       select: this.contentSelect(),
     });
@@ -892,7 +930,9 @@ export class NightlifeDataService {
         where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
       });
       if (activeBannersCount >= 3) {
-        throw new BadRequestException('Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.');
+        throw new BadRequestException(
+          'Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.',
+        );
       }
     }
 
@@ -920,7 +960,13 @@ export class NightlifeDataService {
   async updateAdminContent(contentId: string, dto: UpdateAdminContentDto) {
     const existing = await this.prisma.content.findFirst({
       where: { id: contentId, deletedAt: null },
-      select: { id: true, slug: true, type: true, status: true, publishedAt: true },
+      select: {
+        id: true,
+        slug: true,
+        type: true,
+        status: true,
+        publishedAt: true,
+      },
     });
 
     if (!existing) {
@@ -944,13 +990,22 @@ export class NightlifeDataService {
           ? new Date()
           : undefined;
 
-    const nextType = dto.type !== undefined ? this.resolveContentType(dto.type, { strict: true }) : existing.type;
-    if (nextType === 'BANNER' && nextStatus === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+    const nextType =
+      dto.type !== undefined
+        ? this.resolveContentType(dto.type, { strict: true })
+        : existing.type;
+    if (
+      nextType === 'BANNER' &&
+      nextStatus === 'PUBLISHED' &&
+      existing.status !== 'PUBLISHED'
+    ) {
       const activeBannersCount = await this.prisma.content.count({
         where: { type: 'BANNER', status: 'PUBLISHED', deletedAt: null },
       });
       if (activeBannersCount >= 3) {
-        throw new BadRequestException('Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.');
+        throw new BadRequestException(
+          'Hệ thống chỉ cho phép tối đa 3 banner được hiển thị. Vui lòng ẩn bớt banner cũ trước khi đăng banner này.',
+        );
       }
     }
 
@@ -1168,12 +1223,21 @@ export class NightlifeDataService {
         where: {
           status: 'ACTIVE',
           ...(category ? { category } : {}),
-          ...(cityCode ? {
-            OR: [
-              { city: cityCode === 'hcm' ? 'Ho Chi Minh City' : cityCode === 'hn' ? 'Hanoi' : cityCode },
-              { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } }
-            ]
-          } : {}),
+          ...(cityCode
+            ? {
+                OR: [
+                  {
+                    city:
+                      cityCode === 'hcm'
+                        ? 'Ho Chi Minh City'
+                        : cityCode === 'hn'
+                          ? 'Hanoi'
+                          : cityCode,
+                  },
+                  { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
+                ],
+              }
+            : {}),
           ...(q
             ? {
                 OR: [
@@ -1237,17 +1301,32 @@ export class NightlifeDataService {
         deletedAt: null,
         status: 'ACTIVE',
         isPublic: true,
-        ...(cityCode || category ? {
-           store: {
-              ...(category ? { category } : {}),
-              ...(cityCode ? {
-                 OR: [
-                    { city: cityCode === 'hcm' ? 'Ho Chi Minh City' : cityCode === 'hn' ? 'Hanoi' : cityCode },
-                    { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } }
-                 ]
-              } : {})
-           }
-        } : {}),
+        ...(cityCode || category
+          ? {
+              store: {
+                ...(category ? { category } : {}),
+                ...(cityCode
+                  ? {
+                      OR: [
+                        {
+                          city:
+                            cityCode === 'hcm'
+                              ? 'Ho Chi Minh City'
+                              : cityCode === 'hn'
+                                ? 'Hanoi'
+                                : cityCode,
+                        },
+                        {
+                          area: {
+                            is: { ...this.buildMvpAreaCodeWhere(cityCode) },
+                          },
+                        },
+                      ],
+                    }
+                  : {}),
+              },
+            }
+          : {}),
         ...(q
           ? {
               OR: [
@@ -3704,7 +3783,9 @@ export class NightlifeDataService {
     qr?: { status: string; expiresAt: Date | string | null } | null;
   }) {
     if (['CANCELLED', 'NO_SHOW'].includes(booking.status)) {
-      throw new UnprocessableEntityException('Booking is not available for check-in');
+      throw new UnprocessableEntityException(
+        'Booking is not available for check-in',
+      );
     }
 
     if (booking.qr?.status === 'REVOKED') {
@@ -3731,8 +3812,16 @@ export class NightlifeDataService {
     store: { id: string; name: string; slug: string };
     coupon?: { id: string; code: string; name: string } | null;
     couponIssue?: { id: string; code: string; status: string } | null;
-    user?: { id: string; displayName: string | null; tier: string | null } | null;
-    guest?: { id: string; displayName: string | null; phone?: string | null } | null;
+    user?: {
+      id: string;
+      displayName: string | null;
+      tier: string | null;
+    } | null;
+    guest?: {
+      id: string;
+      displayName: string | null;
+      phone?: string | null;
+    } | null;
     qr?: {
       id: string;
       code: string;
@@ -4110,6 +4199,82 @@ export class NightlifeDataService {
         },
       },
     });
+  }
+
+  async listMemberNotifications(
+    user: AuthenticatedUser,
+    query: { limit?: string | number } = {},
+  ) {
+    const parsedLimit = Number(query.limit ?? 20);
+    const take = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 50)
+      : 20;
+    const where: Prisma.NotificationLogWhereInput = {
+      userId: user.id,
+      channel: 'IN_APP',
+      status: { not: 'CANCELLED' },
+      templateKey: { startsWith: 'customer.' },
+    };
+    const [items, unreadCount] = await Promise.all([
+      this.prisma.notificationLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        select: this.customerNotificationSelect(),
+      }),
+      this.prisma.notificationLog.count({
+        where: {
+          ...where,
+          status: { notIn: ['SENT', 'CANCELLED'] },
+        },
+      }),
+    ]);
+
+    return {
+      data: items.map((item) => this.toCustomerNotification(item)),
+      unreadCount,
+    };
+  }
+
+  async markMemberNotificationRead(
+    user: AuthenticatedUser,
+    notificationId: string,
+  ) {
+    const result = await this.prisma.notificationLog.updateMany({
+      where: {
+        id: notificationId,
+        userId: user.id,
+        channel: 'IN_APP',
+        templateKey: { startsWith: 'customer.' },
+      },
+      data: {
+        status: 'SENT',
+        sentAt: new Date(),
+      },
+    });
+
+    if (result.count === 0) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    return { id: notificationId, read: true };
+  }
+
+  async markAllMemberNotificationsRead(user: AuthenticatedUser) {
+    const result = await this.prisma.notificationLog.updateMany({
+      where: {
+        userId: user.id,
+        channel: 'IN_APP',
+        templateKey: { startsWith: 'customer.' },
+        status: { notIn: ['SENT', 'CANCELLED'] },
+      },
+      data: {
+        status: 'SENT',
+        sentAt: new Date(),
+      },
+    });
+
+    return { updatedCount: result.count };
   }
 
   listMemberBookings(userId: string) {
@@ -4516,7 +4681,9 @@ export class NightlifeDataService {
     if (!amount) {
       warnings.push('Không đọc được tổng tiền, cần nhập tay totalVnd.');
     } else if (amount < 50_000) {
-      warnings.push('Tổng tiền OCR thấp bất thường, cần kiểm tra lại bill gốc.');
+      warnings.push(
+        'Tổng tiền OCR thấp bất thường, cần kiểm tra lại bill gốc.',
+      );
     } else if (amount > 500_000_000) {
       warnings.push('Tổng tiền OCR rất lớn, cần kiểm tra lại bill gốc.');
     }
@@ -4540,10 +4707,7 @@ export class NightlifeDataService {
       (amount ? 0.45 : 0) +
       (usedAt ? 0.3 : 0) +
       (dto.text?.trim() ? 0.1 : 0);
-    const confidenceScore = Math.min(
-      0.95,
-      Math.round(confidence * 100) / 100,
-    );
+    const confidenceScore = Math.min(0.95, Math.round(confidence * 100) / 100);
 
     return {
       phase: 'P2_OCR_PREVIEW',
@@ -4665,11 +4829,15 @@ export class NightlifeDataService {
       },
     });
 
-    await this.recordCouponLifecycleEvent('coupon.issue.qr_revoked.v1', updated, {
-      actorId: user.id,
-      source: 'ADMIN_QR_COMPROMISE_RESPONSE',
-      revokedAt: now.toISOString(),
-    });
+    await this.recordCouponLifecycleEvent(
+      'coupon.issue.qr_revoked.v1',
+      updated,
+      {
+        actorId: user.id,
+        source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+        revokedAt: now.toISOString(),
+      },
+    );
 
     return this.decorateAdminCouponIssue(updated);
   }
@@ -4745,12 +4913,16 @@ export class NightlifeDataService {
       },
     });
 
-    await this.recordCouponLifecycleEvent('coupon.issue.qr_rotated.v1', updated, {
-      actorId: user.id,
-      source: 'ADMIN_QR_COMPROMISE_RESPONSE',
-      rotatedAt: now.toISOString(),
-      rotationCount,
-    });
+    await this.recordCouponLifecycleEvent(
+      'coupon.issue.qr_rotated.v1',
+      updated,
+      {
+        actorId: user.id,
+        source: 'ADMIN_QR_COMPROMISE_RESPONSE',
+        rotatedAt: now.toISOString(),
+        rotationCount,
+      },
+    );
 
     return this.decorateAdminCouponIssue(updated);
   }
@@ -4883,6 +5055,19 @@ export class NightlifeDataService {
         booking?.couponId || booking?.couponIssueId ? 'booking' : 'direct',
     });
     await this.adminNotificationService?.notifyBillSubmitted(bill);
+    await this.recordCustomerBillNotification(this.prisma, {
+      templateKey: 'customer.bill.submitted.v1',
+      userId: user.id,
+      storeId: store.id,
+      bookingId: booking?.id ?? null,
+      billId: bill.id,
+      bill,
+      payload: {
+        source: 'member_bill_submission',
+        previousStatus: null,
+        nextStatus: bill.status,
+      },
+    });
     if (couponLink.couponIssueId) {
       await this.recordCouponLifecycleEvent(
         'coupon.analytics.bill_submitted.v1',
@@ -5386,9 +5571,7 @@ export class NightlifeDataService {
                 draftContentIds: request.draftContentIds,
                 partnerUserId: onboarding?.userId ?? null,
                 partnerAccountId: onboarding?.partnerAccountId ?? null,
-                temporaryPasswordIssued: Boolean(
-                  onboarding?.temporaryPassword,
-                ),
+                temporaryPasswordIssued: Boolean(onboarding?.temporaryPassword),
               },
             }),
           ),
@@ -5603,11 +5786,12 @@ export class NightlifeDataService {
         .replace(/[\u0300-\u036f]/g, '');
 
       return (
-        Boolean(mimeType) &&
+        (Boolean(mimeType) &&
           !mimeType.startsWith('image/') &&
-          mimeType !== 'application/pdf'
-      ) || /(fake|sample|demo|test|template|mau|gia|sua-bill|bill-gia)/i.test(
-        normalizedName,
+          mimeType !== 'application/pdf') ||
+        /(fake|sample|demo|test|template|mau|gia|sua-bill|bill-gia)/i.test(
+          normalizedName,
+        )
       );
     });
 
@@ -5615,7 +5799,8 @@ export class NightlifeDataService {
       warnings.push({
         code: 'SUSPICIOUS_EVIDENCE_FILE',
         severity: 'HIGH',
-        message: 'Chứng từ bill có dấu hiệu là file mẫu/test hoặc không đúng định dạng bill.',
+        message:
+          'Chứng từ bill có dấu hiệu là file mẫu/test hoặc không đúng định dạng bill.',
         evidence: {
           mediaId: suspiciousEvidence.id,
           originalName: suspiciousEvidence.originalName ?? null,
@@ -5686,7 +5871,8 @@ export class NightlifeDataService {
         warnings.push({
           code: 'POSSIBLE_DUPLICATE_BILL',
           severity: 'HIGH',
-          message: 'Có bill khác cùng quán, cùng tổng tiền, gần cùng thời gian.',
+          message:
+            'Có bill khác cùng quán, cùng tổng tiền, gần cùng thời gian.',
           evidence: {
             duplicateBills: duplicates.map((item) => ({
               id: item.id,
@@ -6142,16 +6328,16 @@ export class NightlifeDataService {
     const loyaltyAward =
       dto.approve && nextApproveStatus === 'VERIFIED'
         ? this.buildBillLoyaltyAward(
-          revenueApproval
-            ? {
-                ...bill,
-                subtotalVnd: revenueApproval.grossVnd,
-                totalVnd: revenueApproval.netVnd,
-                paidVnd: revenueApproval.payableVnd,
-              }
-            : bill,
-          now,
-        )
+            revenueApproval
+              ? {
+                  ...bill,
+                  subtotalVnd: revenueApproval.grossVnd,
+                  totalVnd: revenueApproval.netVnd,
+                  paidVnd: revenueApproval.payableVnd,
+                }
+              : bill,
+            now,
+          )
         : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -6162,8 +6348,7 @@ export class NightlifeDataService {
               status: nextApproveStatus,
               verifiedAt: nextApproveStatus === 'VERIFIED' ? now : null,
               reviewedById: adminId,
-              verifiedById:
-                nextApproveStatus === 'VERIFIED' ? adminId : null,
+              verifiedById: nextApproveStatus === 'VERIFIED' ? adminId : null,
               reviewedAt: now,
               rejectedAt: null,
               rejectedById: null,
@@ -6230,13 +6415,12 @@ export class NightlifeDataService {
                 pmBaConfirmationReason:
                   reviewedCommissionSnapshot?.pmBaConfirmationReason ?? null,
                 pmBaConfirmed:
-                  reviewedCommissionSnapshot
-                    ?.pmBaConfirmationConfirmed ?? false,
+                  reviewedCommissionSnapshot?.pmBaConfirmationConfirmed ??
+                  false,
                 pmBaReason: pmBaReason || null,
                 loyaltyPoints: loyaltyAward?.points ?? 0,
                 loyaltyAmountVnd: loyaltyAward?.amountVnd ?? 0,
-                loyaltyExpiresAt:
-                  loyaltyAward?.expiresAt.toISOString() ?? null,
+                loyaltyExpiresAt: loyaltyAward?.expiresAt.toISOString() ?? null,
                 revenueSnapshot: revenueApproval
                   ? {
                       grossVnd: revenueApproval.grossVnd,
@@ -6275,6 +6459,33 @@ export class NightlifeDataService {
           approve: dto.approve,
         },
       });
+
+      const customerTemplateKey =
+        reviewedBill.status === 'VERIFIED'
+          ? 'customer.bill.verified.v1'
+          : reviewedBill.status === 'REJECTED'
+            ? 'customer.bill.rejected.v1'
+            : null;
+
+      if (customerTemplateKey && reviewedBill.user?.id) {
+        await this.recordCustomerBillNotification(tx, {
+          templateKey: customerTemplateKey,
+          userId: reviewedBill.user.id,
+          storeId: reviewedBill.store?.id ?? null,
+          bookingId: reviewedBill.booking?.id ?? null,
+          billId: reviewedBill.id,
+          bill: reviewedBill,
+          payload: {
+            source: 'admin_bill_review',
+            previousStatus: bill.status,
+            nextStatus: reviewedBill.status,
+            approve: dto.approve,
+            reviewedById: adminId,
+            rejectReason: reviewedBill.rejectReason ?? null,
+            pointsEarned: reviewedBill.pointsEarned ?? 0,
+          },
+        });
+      }
 
       return reviewedBill;
     });
@@ -6473,8 +6684,7 @@ export class NightlifeDataService {
     }
 
     const now = new Date();
-    const reason =
-      this.cleanText(dto.reason) ?? options.defaultReason;
+    const reason = this.cleanText(dto.reason) ?? options.defaultReason;
     const refundReference = this.cleanText(dto.refundReference);
     const selectedEarnLedger = Array.isArray(bill.pointLedgers)
       ? (bill.pointLedgers[0] ?? null)
@@ -6567,10 +6777,13 @@ export class NightlifeDataService {
 
     const resultWithRevenueAliases = this.withBillRevenueAliases(result);
 
-    await this.adminNotificationService?.notifyBillReviewed(resultWithRevenueAliases, {
-      approve: false,
-      reviewedById: adminId,
-    });
+    await this.adminNotificationService?.notifyBillReviewed(
+      resultWithRevenueAliases,
+      {
+        approve: false,
+        reviewedById: adminId,
+      },
+    );
 
     return resultWithRevenueAliases;
   }
@@ -6785,7 +6998,8 @@ export class NightlifeDataService {
       id: store.id,
       code: store.slug ?? store.id,
       name: store.name,
-      secondary: [store.city, store.district].filter(Boolean).join(' / ') || null,
+      secondary:
+        [store.city, store.district].filter(Boolean).join(' / ') || null,
     };
   }
 
@@ -7011,7 +7225,11 @@ export class NightlifeDataService {
         label: 'Bill submitted',
         count: billSubmittedCount,
       },
-      { key: 'bill_approved', label: 'Bill approved', count: billApprovedCount },
+      {
+        key: 'bill_approved',
+        label: 'Bill approved',
+        count: billApprovedCount,
+      },
       {
         key: 'commission',
         label: 'Commission',
@@ -7056,13 +7274,10 @@ export class NightlifeDataService {
         commissionAmountVnd: true,
       },
     });
-    const previousTotals = previousBills.reduce(
-      (sum, bill) => {
-        this.addRevenueReportTotals(sum, this.billRevenueReportMoney(bill));
-        return sum;
-      },
-      this.emptyRevenueReportTotals(),
-    );
+    const previousTotals = previousBills.reduce((sum, bill) => {
+      this.addRevenueReportTotals(sum, this.billRevenueReportMoney(bill));
+      return sum;
+    }, this.emptyRevenueReportTotals());
 
     return {
       previousPeriod: {
@@ -7108,10 +7323,7 @@ export class NightlifeDataService {
         reportWindow.fromDate,
         reportWindow.toDate,
       ) + 1;
-    const toDate = this.shiftRevenueReportDateKey(
-      reportWindow.fromDate,
-      -1,
-    );
+    const toDate = this.shiftRevenueReportDateKey(reportWindow.fromDate, -1);
     const fromDate = this.shiftRevenueReportDateKey(toDate, -(dayCount - 1));
 
     return {
@@ -7480,9 +7692,7 @@ export class NightlifeDataService {
     const commissionVnd = grossCommissionVnd - input.discountVnd;
     const requiresPmBaConfirmation = commissionVnd < 0;
     const flags = [
-      ...(requiresPmBaConfirmation
-        ? [NEGATIVE_COMMISSION_FLAG]
-        : []),
+      ...(requiresPmBaConfirmation ? [NEGATIVE_COMMISSION_FLAG] : []),
     ];
 
     return {
@@ -7719,7 +7929,8 @@ export class NightlifeDataService {
     ).find(
       (override) =>
         override.active &&
-        (override.couponId === coupon.id || override.couponCode === coupon.code),
+        (override.couponId === coupon.id ||
+          override.couponCode === coupon.code),
     );
 
     if (explicitOverride) {
@@ -7903,9 +8114,9 @@ export class NightlifeDataService {
       pmBaReason: string;
     },
   ) {
-    const requiresPmBaConfirmation = this.extractSnapshotFlags(snapshot).includes(
-      NEGATIVE_COMMISSION_FLAG,
-    );
+    const requiresPmBaConfirmation = this.extractSnapshotFlags(
+      snapshot,
+    ).includes(NEGATIVE_COMMISSION_FLAG);
 
     return {
       ...snapshot,
@@ -8300,7 +8511,8 @@ export class NightlifeDataService {
       }
     }
 
-    const anyAmountPattern = /(?:vnd|đ|d)?\s*([\d][\d.,\s]{4,})(?:\s*(?:vnd|đ|d))?/gi;
+    const anyAmountPattern =
+      /(?:vnd|đ|d)?\s*([\d][\d.,\s]{4,})(?:\s*(?:vnd|đ|d))?/gi;
     let anyMatch: RegExpExecArray | null;
     while ((anyMatch = anyAmountPattern.exec(normalized))) {
       const amount = this.parseBillOcrMoney(anyMatch[1] ?? '');
@@ -9918,6 +10130,155 @@ export class NightlifeDataService {
     } satisfies Prisma.BillSelect;
   }
 
+  private customerNotificationSelect() {
+    return {
+      id: true,
+      status: true,
+      templateKey: true,
+      payload: true,
+      createdAt: true,
+      sentAt: true,
+      billId: true,
+      bookingId: true,
+      store: { select: { id: true, name: true, slug: true } },
+      booking: {
+        select: {
+          id: true,
+          status: true,
+          scheduledAt: true,
+          store: { select: { id: true, name: true, slug: true } },
+        },
+      },
+      bill: {
+        select: {
+          id: true,
+          billNumber: true,
+          status: true,
+          totalVnd: true,
+          pointsEarned: true,
+          rejectReason: true,
+          submittedAt: true,
+          reviewedAt: true,
+          verifiedAt: true,
+          rejectedAt: true,
+          store: { select: { id: true, name: true, slug: true } },
+        },
+      },
+    } satisfies Prisma.NotificationLogSelect;
+  }
+
+  private toCustomerNotification(log: CustomerNotificationRecord) {
+    const payload = this.asRecord(log.payload);
+    const templateKey = log.templateKey ?? 'customer.system.update.v1';
+    const billNumber =
+      log.bill?.billNumber ??
+      (log.billId ? `#${log.billId.slice(0, 8).toUpperCase()}` : 'hóa đơn');
+    const storeName =
+      log.bill?.store?.name ??
+      log.store?.name ??
+      log.booking?.store?.name ??
+      'Vietyoru';
+    const amountLabel =
+      typeof log.bill?.totalVnd === 'number' && log.bill.totalVnd > 0
+        ? ` (${this.formatVnd(log.bill.totalVnd)})`
+        : '';
+    const pointsEarned =
+      typeof log.bill?.pointsEarned === 'number'
+        ? log.bill.pointsEarned
+        : (this.toNumber(payload?.pointsEarned) ?? 0);
+    const rejectReason =
+      log.bill?.rejectReason ??
+      (typeof payload?.rejectReason === 'string' ? payload.rejectReason : null);
+    const href = log.billId
+      ? `/gui-hoa-don?billId=${encodeURIComponent(log.billId)}`
+      : log.bookingId
+        ? `/lich-su-dat-cho?bookingId=${encodeURIComponent(log.bookingId)}`
+        : '/tai-khoan';
+
+    let title = 'Thông báo mới';
+    let body = 'Bạn có cập nhật mới từ Vietyoru.';
+    let tone: 'gold' | 'green' | 'amber' | 'danger' = 'gold';
+    let category: 'bill' | 'booking' | 'system' = 'system';
+    let actionLabel = 'Xem chi tiết';
+
+    if (templateKey === 'customer.bill.submitted.v1') {
+      title = 'Đã nhận hóa đơn của bạn';
+      body = `Hóa đơn ${billNumber} tại ${storeName}${amountLabel} đang chờ Admin duyệt.`;
+      category = 'bill';
+      actionLabel = 'Xem hóa đơn';
+    } else if (templateKey === 'customer.bill.verified.v1') {
+      title = 'Hóa đơn đã được duyệt';
+      body =
+        `Admin đã duyệt hóa đơn ${billNumber} tại ${storeName}.` +
+        (pointsEarned > 0 ? ` Bạn được cộng ${pointsEarned} điểm.` : '');
+      tone = 'green';
+      category = 'bill';
+      actionLabel = 'Xem kết quả duyệt';
+    } else if (templateKey === 'customer.bill.rejected.v1') {
+      title = 'Hóa đơn chưa được duyệt';
+      body =
+        `Admin đã từ chối hóa đơn ${billNumber} tại ${storeName}.` +
+        (rejectReason
+          ? ` Lý do: ${rejectReason}.`
+          : ' Vui lòng kiểm tra lại chứng từ.');
+      tone = 'danger';
+      category = 'bill';
+      actionLabel = 'Xem lý do';
+    } else if (templateKey.startsWith('customer.booking.')) {
+      title = 'Cập nhật lịch đặt';
+      body = `Lịch đặt tại ${storeName} vừa có cập nhật mới.`;
+      tone = 'amber';
+      category = 'booking';
+    }
+
+    return {
+      id: log.id,
+      templateKey,
+      title,
+      body,
+      actionLabel,
+      href,
+      category,
+      tone,
+      unread: log.status !== 'SENT',
+      createdAt: log.createdAt.toISOString(),
+      timeLabel: this.relativeNotificationTime(log.createdAt),
+      billId: log.billId,
+      bookingId: log.bookingId,
+      status: log.bill?.status ?? null,
+      bill: log.bill
+        ? {
+            id: log.bill.id,
+            billNumber: log.bill.billNumber,
+            status: log.bill.status,
+            totalVnd: log.bill.totalVnd,
+            pointsEarned: log.bill.pointsEarned,
+            rejectReason: log.bill.rejectReason,
+            storeName,
+          }
+        : null,
+    };
+  }
+
+  private relativeNotificationTime(value: Date) {
+    const diffMs = Date.now() - value.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diffMs < minute) return 'Vừa xong';
+    if (diffMs < hour)
+      return `${Math.max(1, Math.floor(diffMs / minute))} phút`;
+    if (diffMs < day) return `${Math.floor(diffMs / hour)} giờ`;
+    if (diffMs < 2 * day) return 'Hôm qua';
+
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(value);
+  }
+
   private async updateBookingStatusWithAudit(input: {
     booking: BookingCancelTarget;
     nextStatus: BookingStatus;
@@ -10328,7 +10689,9 @@ export class NightlifeDataService {
     const menuItems = this.buildStoreMenuPriceItems(pricingRecord);
     const menuAmounts = menuItems
       .map((item) => item.amountVnd)
-      .filter((amount): amount is number => typeof amount === 'number' && amount > 0);
+      .filter(
+        (amount): amount is number => typeof amount === 'number' && amount > 0,
+      );
     const startingFromVnd = menuAmounts.length
       ? Math.min(...menuAmounts)
       : castStartingFromVnd;
@@ -10380,7 +10743,8 @@ export class NightlifeDataService {
     const rawItems = Array.isArray(pricingRecord.items)
       ? [
           {
-            name: this.cleanNullableText(String(pricingRecord.summary ?? '')) ??
+            name:
+              this.cleanNullableText(String(pricingRecord.summary ?? '')) ??
               'Menu',
             items: pricingRecord.items,
           },
@@ -10394,9 +10758,7 @@ export class NightlifeDataService {
         this.cleanNullableText(
           String(groupRecord?.name ?? groupRecord?.label ?? ''),
         ) ?? `Nhóm ${groupIndex + 1}`;
-      const items = Array.isArray(groupRecord?.items)
-        ? groupRecord.items
-        : [];
+      const items = Array.isArray(groupRecord?.items) ? groupRecord.items : [];
 
       return items
         .map((item) => this.normalizeStoreMenuPriceItem(item, groupName))
@@ -10433,7 +10795,9 @@ export class NightlifeDataService {
     );
     const displayPrice =
       valueText ??
-      (tier && tier > 0 ? '$'.repeat(Math.min(Math.max(Math.trunc(tier), 1), 4)) : null);
+      (tier && tier > 0
+        ? '$'.repeat(Math.min(Math.max(Math.trunc(tier), 1), 4))
+        : null);
 
     return {
       label,
@@ -11898,11 +12262,7 @@ export class NightlifeDataService {
       throw new BadRequestException('storeId must be a valid UUID');
     }
 
-    await this.accessService.ensureStoreAccess(
-      user,
-      id,
-      'store.partner.view',
-    );
+    await this.accessService.ensureStoreAccess(user, id, 'store.partner.view');
 
     const store = await client.store.findFirst({
       where: { id, deletedAt: null },
@@ -12070,23 +12430,20 @@ export class NightlifeDataService {
       storeName:
         this.cleanNullableText(dto.storeName) ??
         this.cleanRequiredText(store.name, 'storeName'),
-      businessType:
-        this.cleanNullableText(dto.businessType) ?? store.category,
+      businessType: this.cleanNullableText(dto.businessType) ?? store.category,
       storeCategory:
         this.cleanNullableText(dto.storeCategory) ?? store.category,
       area: this.cleanNullableText(dto.area) ?? (storeArea || null),
       storeCity: this.cleanNullableText(dto.storeCity) ?? store.city,
       storeDistrict:
         this.cleanNullableText(dto.storeDistrict) ?? store.district,
-      storeAddress:
-        this.cleanNullableText(dto.storeAddress) ?? store.address,
+      storeAddress: this.cleanNullableText(dto.storeAddress) ?? store.address,
       phone: this.cleanNullableText(dto.phone) ?? store.phone,
       openingHours:
         this.cleanNullableText(dto.openingHours) ??
         this.cleanNullableText(String(openingRecord?.summary ?? '')),
       priceRange,
-      description:
-        this.cleanNullableText(dto.description) ?? store.description,
+      description: this.cleanNullableText(dto.description) ?? store.description,
       note: this.cleanNullableText(dto.note),
       menuSummary:
         this.cleanNullableText(dto.menuSummary) ??
@@ -12098,9 +12455,9 @@ export class NightlifeDataService {
   }
 
   private partnerListingDraftPayloadFromContent(
-    draft:
-      | Awaited<ReturnType<NightlifeDataService['findPartnerListingDraft']>>
-      | null,
+    draft: Awaited<
+      ReturnType<NightlifeDataService['findPartnerListingDraft']>
+    > | null,
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
   ) {
     const metadata = this.asRecord(draft?.metadata);
@@ -13220,7 +13577,9 @@ export class NightlifeDataService {
     }
 
     if (options.strict) {
-      throw new BadRequestException('Loại nội dung phải là blog, banner hoặc chính sách.');
+      throw new BadRequestException(
+        'Loại nội dung phải là blog, banner hoặc chính sách.',
+      );
     }
 
     return undefined;
@@ -13356,8 +13715,7 @@ export class NightlifeDataService {
         billId: input.billId ?? undefined,
         channel: 'IN_APP',
         status: 'QUEUED',
-        recipient:
-          input.recipient ?? `${input.refType}:${input.refId}`,
+        recipient: input.recipient ?? `${input.refType}:${input.refId}`,
         templateKey: input.templateKey,
         payload: this.toPrismaJson(
           this.buildMinimalSensitiveMetadata({
@@ -13369,6 +13727,56 @@ export class NightlifeDataService {
             metadata: input.payload,
           }),
         ),
+      },
+    });
+  }
+
+  private async recordCustomerBillNotification(
+    prisma: Prisma.TransactionClient | PrismaService,
+    input: {
+      templateKey:
+        | 'customer.bill.submitted.v1'
+        | 'customer.bill.verified.v1'
+        | 'customer.bill.rejected.v1';
+      userId?: string | null;
+      storeId?: string | null;
+      bookingId?: string | null;
+      billId: string;
+      bill?: {
+        id: string;
+        billNumber?: string | null;
+        status?: string | null;
+        totalVnd?: number | null;
+        pointsEarned?: number | null;
+        rejectReason?: string | null;
+        store?: { name?: string | null; slug?: string | null } | null;
+      } | null;
+      payload?: Record<string, unknown>;
+    },
+  ) {
+    if (!input.userId) return;
+
+    await prisma.notificationLog.create({
+      data: {
+        userId: input.userId,
+        storeId: input.storeId ?? undefined,
+        bookingId: input.bookingId ?? undefined,
+        billId: input.billId,
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: `user:${input.userId}`,
+        templateKey: input.templateKey,
+        payload: this.toPrismaJson({
+          ...(input.payload ?? {}),
+          billId: input.billId,
+          billNumber: input.bill?.billNumber ?? null,
+          billStatus: input.bill?.status ?? null,
+          totalVnd: input.bill?.totalVnd ?? null,
+          pointsEarned: input.bill?.pointsEarned ?? null,
+          rejectReason: input.bill?.rejectReason ?? null,
+          storeName: input.bill?.store?.name ?? null,
+          storeSlug: input.bill?.store?.slug ?? null,
+        }),
       },
     });
   }
@@ -14140,7 +14548,8 @@ export class NightlifeDataService {
     return {
       ...(await this.decorateCouponIssue(issue)),
       campaignSnapshot: this.asRecord(metadata?.campaignSnapshot) ?? null,
-      auditLogs: (await this.listCouponIssueAuditLogs([issue.id])).get(issue.id) ?? [],
+      auditLogs:
+        (await this.listCouponIssueAuditLogs([issue.id])).get(issue.id) ?? [],
     };
   }
 
@@ -14542,10 +14951,7 @@ export class NightlifeDataService {
     }
   }
 
-  private assertCouponQrTokenUsable(
-    metadata: unknown,
-    qrTokenHash?: string,
-  ) {
+  private assertCouponQrTokenUsable(metadata: unknown, qrTokenHash?: string) {
     if (!qrTokenHash) {
       return;
     }
@@ -14744,11 +15150,16 @@ export class NightlifeDataService {
         date: bill.createdAt.toISOString(),
         sender,
         hasImage: (bill as any).media && (bill as any).media.length > 0,
-        images: (bill as any).media ? (bill as any).media.map((m: any) => m.url) : [],
+        images: (bill as any).media
+          ? (bill as any).media.map((m: any) => m.url)
+          : [],
         status: bill.status,
         guestType,
         discount: bill.discountVnd || 0,
-        discountPercent: bill.totalVnd && bill.discountVnd ? Math.round((bill.discountVnd / bill.totalVnd) * 100) : 0,
+        discountPercent:
+          bill.totalVnd && bill.discountVnd
+            ? Math.round((bill.discountVnd / bill.totalVnd) * 100)
+            : 0,
         commissionPercent: bill.commissionAmountVnd
           ? Math.round((bill.commissionAmountVnd / (bill.totalVnd || 1)) * 100)
           : 0,
@@ -14797,19 +15208,26 @@ export class NightlifeDataService {
     const ExcelJS = require('exceljs');
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Bao_Cao');
-    
+
     sheet.columns = [
       { header: 'Mã Booking', key: 'id', width: 20 },
       { header: 'Số Khách', key: 'partySize', width: 15 },
       { header: 'Trạng Thái', key: 'status', width: 20 },
       { header: 'Thời Gian', key: 'time', width: 25 },
     ];
-    
-    const recentBookings = await this.prisma.booking.findMany({ take: 100, orderBy: { scheduledAt: 'desc' } }).catch(() => []);
+
+    const recentBookings = await this.prisma.booking
+      .findMany({ take: 100, orderBy: { scheduledAt: 'desc' } })
+      .catch(() => []);
     for (const b of recentBookings) {
-      sheet.addRow({ id: b.id.substring(0, 8), partySize: b.partySize || 1, status: b.status, time: b.scheduledAt });
+      sheet.addRow({
+        id: b.id.substring(0, 8),
+        partySize: b.partySize || 1,
+        status: b.status,
+        time: b.scheduledAt,
+      });
     }
-    
+
     const buffer = await workbook.xlsx.writeBuffer();
     return buffer;
   }
@@ -14833,17 +15251,37 @@ export class NightlifeDataService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const activeStores = await this.prisma.store.count({ where: { status: 'ACTIVE' as any, deletedAt: null } });
-    const activeStoresHn = await this.prisma.store.count({ where: { city: { in: ['Hanoi', 'Hà Nội', 'HN'] }, status: 'ACTIVE' as any, deletedAt: null } }).catch(() => 0);
-    const activeStoresHcm = await this.prisma.store.count({ where: { city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM'] }, status: 'ACTIVE' as any, deletedAt: null } }).catch(() => 0);
+    const activeStores = await this.prisma.store.count({
+      where: { status: 'ACTIVE' as any, deletedAt: null },
+    });
+    const activeStoresHn = await this.prisma.store
+      .count({
+        where: {
+          city: { in: ['Hanoi', 'Hà Nội', 'HN'] },
+          status: 'ACTIVE' as any,
+          deletedAt: null,
+        },
+      })
+      .catch(() => 0);
+    const activeStoresHcm = await this.prisma.store
+      .count({
+        where: {
+          city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM'] },
+          status: 'ACTIVE' as any,
+          deletedAt: null,
+        },
+      })
+      .catch(() => 0);
     const totalContents = await this.prisma.content.count();
-    const totalCasts = await this.prisma.cast.count({ where: { deletedAt: null } }).catch(() => 0);
+    const totalCasts = await this.prisma.cast
+      .count({ where: { deletedAt: null } })
+      .catch(() => 0);
 
     // Using any to bypass strict type checking for statuses we aren't 100% sure about
     const pendingBills = await this.prisma.bill
       .count({ where: { status: 'SUBMITTED' as any } })
       .catch(() => 0);
-      
+
     const pendingBillsResult = await this.prisma.bill
       .aggregate({
         _sum: { totalVnd: true } as any,
@@ -14863,16 +15301,25 @@ export class NightlifeDataService {
       where: { scheduledAt: { gte: startDate, lt: endDate } },
     });
     const todaysBookingsCompleted = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: startDate, lt: endDate }, status: 'COMPLETED' as any },
+      where: {
+        scheduledAt: { gte: startDate, lt: endDate },
+        status: 'COMPLETED' as any,
+      },
     });
     const todaysBookingsNew = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: startDate, lt: endDate }, status: 'REQUESTED' as any },
+      where: {
+        scheduledAt: { gte: startDate, lt: endDate },
+        status: 'REQUESTED' as any,
+      },
     });
 
     const monthlyRevenueResult = await this.prisma.bill
       .aggregate({
         _sum: { totalVnd: true } as any,
-        where: { status: { in: ['VERIFIED', 'PAID'] } as any, usedAt: { gte: startDate, lt: endDate } },
+        where: {
+          status: { in: ['VERIFIED', 'PAID'] } as any,
+          usedAt: { gte: startDate, lt: endDate },
+        },
       })
       .catch(() => ({ _sum: { totalVnd: 0 } }));
     const monthlyRevenue = (monthlyRevenueResult._sum as any)?.totalVnd || 0;
@@ -14880,10 +15327,14 @@ export class NightlifeDataService {
     const commissionResult = await this.prisma.bill
       .aggregate({
         _sum: { commissionAmountVnd: true } as any,
-        where: { status: { in: ['VERIFIED', 'PAID'] } as any, usedAt: { gte: startDate, lt: endDate } },
+        where: {
+          status: { in: ['VERIFIED', 'PAID'] } as any,
+          usedAt: { gte: startDate, lt: endDate },
+        },
       })
       .catch(() => ({ _sum: { commissionAmountVnd: 0 } }));
-    const commissionAmount = (commissionResult._sum as any)?.commissionAmountVnd || 0;
+    const commissionAmount =
+      (commissionResult._sum as any)?.commissionAmountVnd || 0;
 
     const revenue7Days: any[] = [];
     const daysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -14930,17 +15381,35 @@ export class NightlifeDataService {
     }));
 
     const rawTelegramLogs = await this.prisma.notificationLog.findMany({
-      where: { channel: 'TELEGRAM' as any, templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) } },
+      where: {
+        channel: 'TELEGRAM' as any,
+        templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) },
+      },
       take: 4,
       orderBy: { createdAt: 'desc' },
       include: {
-        booking: { select: { id: true, partySize: true, store: { select: { name: true } } } },
-        bill: { select: { id: true, totalVnd: true, store: { select: { name: true } } } },
-        partnerRequests: { select: { businessName: true, storeCity: true }, take: 1 },
-      }
+        booking: {
+          select: {
+            id: true,
+            partySize: true,
+            store: { select: { name: true } },
+          },
+        },
+        bill: {
+          select: {
+            id: true,
+            totalVnd: true,
+            store: { select: { name: true } },
+          },
+        },
+        partnerRequests: {
+          select: { businessName: true, storeCity: true },
+          take: 1,
+        },
+      },
     });
 
-    const telegramLogs = rawTelegramLogs.map(log => ({
+    const telegramLogs = rawTelegramLogs.map((log) => ({
       id: log.id,
       templateKey: log.templateKey,
       recipient: log.recipient,
@@ -15051,7 +15520,6 @@ export class NightlifeDataService {
     return { available: !existing };
   }
 
-
   // ==========================================
   // ADMIN CASTS
   // ==========================================
@@ -15061,7 +15529,9 @@ export class NightlifeDataService {
     return { available: !existing };
   }
 
-  async listAdminCasts(query: import('./dto/admin-store.dto').AdminStoreQueryDto) {
+  async listAdminCasts(
+    query: import('./dto/admin-store.dto').AdminStoreQueryDto,
+  ) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 50));
     const skip = (page - 1) * limit;
@@ -15075,7 +15545,7 @@ export class NightlifeDataService {
       where.OR = [
         { stageName: this.containsInsensitive(s) },
         { tags: { has: s } },
-        { store: { name: this.containsInsensitive(s) } }
+        { store: { name: this.containsInsensitive(s) } },
       ];
     }
 
@@ -15088,9 +15558,9 @@ export class NightlifeDataService {
         orderBy: { createdAt: 'desc' },
         include: {
           store: { select: { id: true, name: true } },
-          media: { select: { id: true, url: true } }
-        }
-      })
+          media: { select: { id: true, url: true } },
+        },
+      }),
     ]);
 
     return {
@@ -15101,7 +15571,9 @@ export class NightlifeDataService {
     };
   }
 
-  async createAdminCast(dto: import('./dto/admin-cast.dto').CreateAdminCastDto) {
+  async createAdminCast(
+    dto: import('./dto/admin-cast.dto').CreateAdminCastDto,
+  ) {
     let slug = this.generateSlug(dto.stageName);
     let counter = 1;
     while (!(await this.checkAdminCastSlug(slug)).available) {
@@ -15139,7 +15611,10 @@ export class NightlifeDataService {
     return newCast;
   }
 
-  async updateAdminCast(id: string, dto: import('./dto/admin-cast.dto').UpdateAdminCastDto) {
+  async updateAdminCast(
+    id: string,
+    dto: import('./dto/admin-cast.dto').UpdateAdminCastDto,
+  ) {
     await this.prisma.cast.findUniqueOrThrow({ where: { id } });
 
     const updated = await this.prisma.cast.update({
@@ -15147,12 +15622,16 @@ export class NightlifeDataService {
       data: {
         ...(dto.stageName && { stageName: dto.stageName }),
         ...(dto.storeId && { storeId: dto.storeId }),
-        ...(dto.publicHeadline !== undefined && { publicHeadline: dto.publicHeadline }),
+        ...(dto.publicHeadline !== undefined && {
+          publicHeadline: dto.publicHeadline,
+        }),
         ...(dto.bio !== undefined && { bio: dto.bio }),
         ...(dto.birthMonth !== undefined && { birthMonth: dto.birthMonth }),
         ...(dto.zodiacSign !== undefined && { zodiacSign: dto.zodiacSign }),
         ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),
-        ...(dto.measurements !== undefined && { measurements: dto.measurements }),
+        ...(dto.measurements !== undefined && {
+          measurements: dto.measurements,
+        }),
         ...(dto.languages && { languages: dto.languages }),
         ...(dto.hobbies && { hobbies: dto.hobbies }),
         ...(dto.tags && { tags: dto.tags }),
@@ -15186,12 +15665,13 @@ export class NightlifeDataService {
     address: string,
     city: string,
   ): Promise<string | undefined> {
-    const cityNames = city === 'Ho Chi Minh City' 
-      ? ['Ho Chi Minh City', 'TP.HCM', 'Hồ Chí Minh', 'HCM'] 
-      : city === 'Hanoi' 
-      ? ['Hanoi', 'Hà Nội', 'HN'] 
-      : [city];
-      
+    const cityNames =
+      city === 'Ho Chi Minh City'
+        ? ['Ho Chi Minh City', 'TP.HCM', 'Hồ Chí Minh', 'HCM']
+        : city === 'Hanoi'
+          ? ['Hanoi', 'Hà Nội', 'HN']
+          : [city];
+
     // A simple inference: look for matching district names in the address
     const areas = await this.prisma.area.findMany({
       where: { city: { in: cityNames }, status: 'ACTIVE' },
@@ -15255,10 +15735,15 @@ export class NightlifeDataService {
     id: string,
     dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
   ) {
-    const existing = await this.prisma.store.findUniqueOrThrow({ where: { id } });
+    const existing = await this.prisma.store.findUniqueOrThrow({
+      where: { id },
+    });
     let areaId: string | undefined;
     if (dto.address !== undefined || dto.city) {
-      areaId = await this.inferAreaFromAddress(dto.address || existing.address || '', dto.city || existing.city);
+      areaId = await this.inferAreaFromAddress(
+        dto.address || existing.address || '',
+        dto.city || existing.city,
+      );
     }
 
     const updated = await this.prisma.store.update({
@@ -15485,9 +15970,16 @@ export class NightlifeDataService {
     if (query.cityCode && query.cityCode !== 'all') {
       where.store = {
         OR: [
-          { city: query.cityCode === 'hcm' ? 'Ho Chi Minh City' : query.cityCode === 'hn' ? 'Hanoi' : query.cityCode },
-          { area: { is: { ...this.buildMvpAreaCodeWhere(query.cityCode) } } }
-        ]
+          {
+            city:
+              query.cityCode === 'hcm'
+                ? 'Ho Chi Minh City'
+                : query.cityCode === 'hn'
+                  ? 'Hanoi'
+                  : query.cityCode,
+          },
+          { area: { is: { ...this.buildMvpAreaCodeWhere(query.cityCode) } } },
+        ],
       };
     }
 
@@ -15510,7 +16002,7 @@ export class NightlifeDataService {
     ]);
 
     return {
-      items: items.map(item => ({
+      items: items.map((item) => ({
         id: item.id,
         url: item.url,
         title: item.originalName,
@@ -15579,10 +16071,17 @@ export class NightlifeDataService {
     }));
   }
 
-  async adminUpdateHotVideos(cityCode: string, dto: UpdateHotVideosDto, adminId: string) {
+  async adminUpdateHotVideos(
+    cityCode: string,
+    dto: UpdateHotVideosDto,
+    adminId: string,
+  ) {
     const normalizedCityCode = this.normalizeHotVideoCityCode(cityCode);
     const slug = `hot-videos-${normalizedCityCode}`;
-    const videosMeta = dto.mediaIds.map((id, index) => ({ mediaId: id, rank: index + 1 }));
+    const videosMeta = dto.mediaIds.map((id, index) => ({
+      mediaId: id,
+      rank: index + 1,
+    }));
 
     await this.prisma.content.upsert({
       where: { slug },

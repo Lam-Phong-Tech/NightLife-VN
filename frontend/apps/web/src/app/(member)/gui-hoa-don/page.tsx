@@ -1,9 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { ApiError, translateApiMessage } from "@/lib/api/client";
-import { billApi, type BillOcrPreview, type BillRecord, type BillStoreOption } from "@/lib/api/bills";
+import {
+  billApi,
+  type BillOcrPreview,
+  type BillRecord,
+  type BillStoreOption,
+} from "@/lib/api/bills";
 import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { discoveryApi } from "@/lib/api/discovery";
@@ -32,6 +38,23 @@ type FormNotice =
   | { tone: "warning" | "danger"; message: string };
 
 const moneyVnd = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
+
+const billStatusLabel = (status?: string | null) => {
+  switch (status) {
+    case "VERIFIED":
+      return "Đã duyệt";
+    case "REJECTED":
+      return "Từ chối";
+    case "SUBMITTED":
+      return "Chờ duyệt";
+    case "PAID":
+      return "Đã thanh toán";
+    case "VOIDED":
+      return "Đã hủy";
+    default:
+      return "Member";
+  }
+};
 
 const toDatetimeLocalValue = (date: Date) => {
   const localTime = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -79,6 +102,8 @@ const cleanApiMessage = (error: unknown) => {
 };
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const focusedBillId = searchParams.get("billId") || "";
   const [stores, setStores] = useState<BillStoreOption[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [couponIssues, setCouponIssues] = useState<CouponIssue[]>([]);
@@ -165,7 +190,7 @@ export default function Page() {
         setStores(storeItems);
         setBookings(bookingItems);
         setCouponIssues(couponIssueItems.filter(canAttachCouponIssueToBill));
-        setSubmittedBills(billItems.slice(0, 5));
+        setSubmittedBills(billItems);
         setStoreSlug((current) =>
           current && storeItems.some((storeItem) => storeItem.slug === current)
             ? current
@@ -222,13 +247,25 @@ export default function Page() {
     }
 
     if (selectedCouponIssue?.coupon.store?.slug) {
-      return stores.find((storeItem) => storeItem.slug === selectedCouponIssue.coupon.store?.slug) ?? null;
+      return (
+        stores.find((storeItem) => storeItem.slug === selectedCouponIssue.coupon.store?.slug) ??
+        null
+      );
     }
 
     return stores.find((storeItem) => storeItem.slug === storeSlug) ?? null;
   }, [selectedBooking, selectedCouponIssue, storeSlug, stores]);
 
   const amount = useMemo(() => parseMoneyInput(amountInput), [amountInput]);
+  const visibleSubmittedBills = useMemo(() => {
+    const topBills = submittedBills.slice(0, 5);
+    if (!focusedBillId || topBills.some((bill) => bill.id === focusedBillId)) {
+      return topBills;
+    }
+
+    const focusedBill = submittedBills.find((bill) => bill.id === focusedBillId);
+    return focusedBill ? [focusedBill, ...topBills].slice(0, 6) : topBills;
+  }, [focusedBillId, submittedBills]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
   const isUsedAtInvalid = Number.isNaN(usedAtDate.getTime());
   const isFutureUsage =
@@ -311,7 +348,7 @@ export default function Page() {
         }
       }
 
-      setSubmittedBills((current) => [bill, ...current].slice(0, 5));
+      setSubmittedBills((current) => [bill, ...current]);
       setNotice({
         tone: uploadWarning ? "warning" : "success",
         message: `Đã gửi bill ${bill.billNumber ?? bill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
@@ -352,9 +389,7 @@ export default function Page() {
             <h1>Gửi hóa đơn</h1>
             <p>Gửi bill gốc để Admin đối soát điểm, ưu đãi và công nợ với quán.</p>
           </div>
-          <div className="nl-bill-rule">
-            Trong 10 ngày
-          </div>
+          <div className="nl-bill-rule">Trong 10 ngày</div>
         </div>
 
         <div className="nl-bill-layout">
@@ -552,15 +587,18 @@ export default function Page() {
 
             <div className="nl-recent">
               <h2>Lịch sử bill</h2>
-              {submittedBills.length ? (
-                submittedBills.map((bill) => (
-                  <article key={bill.id}>
+              {visibleSubmittedBills.length ? (
+                visibleSubmittedBills.map((bill) => (
+                  <article
+                    key={bill.id}
+                    className={bill.id === focusedBillId ? "active" : undefined}
+                  >
                     <strong>{bill.billNumber ?? bill.id.slice(0, 8)}</strong>
                     <span>{bill.store?.name ?? selectedStore?.name ?? "Quán"}</span>
                     <em>
                       {moneyVnd(bill.totalVnd)} - {formatDateTime(bill.usedAt)}
                     </em>
-                    <small>Member</small>
+                    <small>{billStatusLabel(bill.status)}</small>
                   </article>
                 ))
               ) : (
@@ -870,6 +908,12 @@ export default function Page() {
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.035);
           padding: 10px;
+        }
+
+        .nl-recent article.active {
+          border-color: ${colors.gold};
+          background: rgba(212, 178, 106, 0.12);
+          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.08);
         }
 
         .nl-recent article span,
