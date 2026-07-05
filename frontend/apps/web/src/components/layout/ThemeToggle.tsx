@@ -14,11 +14,13 @@ export function ThemeToggle({ isMobile }: ThemeToggleProps) {
     try {
       const storedTheme = localStorage.getItem("vy-user-theme");
       if (storedTheme === "light" || storedTheme === "dark") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTheme(storedTheme);
       } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTheme("light");
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
@@ -37,7 +39,7 @@ export function ThemeToggle({ isMobile }: ThemeToggleProps) {
       } else {
         document.documentElement.classList.remove("vy-light");
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   };

@@ -1,0 +1,106 @@
+[TAILING] Tailing last 50 lines for [app-api.demonightlight.test9.io.vn] process (change the value with --lines option)
+/root/.pm2/logs/app-api.demonightlight.test9.io.vn-out.log last 50 lines:
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/member/notifications/:notificationId/read, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/member/bills, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills, GET} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/reports/revenue, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/commission-overrides, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/commission-overrides, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/commission-overrides/:storeId/:couponId, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/commission-overrides/:storeId/:couponId, DELETE} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/partner-requests, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/partner-requests/:requestId/review, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/coupon-issues, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/coupon-issues/:issueId/revoke-qr, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/coupon-issues/:issueId/rotate-qr, POST} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/:bookingId/cancel, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/booking-change-requests, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/booking-change-requests/:requestId/review, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/:bookingId/messages, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/:bookingId/messages, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/cancel-analytics, GET} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stores/:storeId/booking-policy, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills/auto-reverse, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills/:billId/approval-preview, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills/:billId/confirm-negative-commission, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills/:billId/void, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills/:billId/review, PATCH} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/sensitive-bills/:billId/reverse, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bills, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bookings/:bookingId/status, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/coupons, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stores, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stores/check-slug, GET} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stores, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/stores/:id, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/casts, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/casts/check-slug, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/casts, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/casts/:id, PATCH} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/bills/:id/status, PUT} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/dashboard/stats, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/layout/badges, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/dashboard/export, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCategoriesController {/admin/categories}:[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/categories, POST} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/categories, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/categories/:id, PATCH} route[39m[38;5;3m +1ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/admin/categories/:id, DELETE} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPublicCategoriesController {/categories}:[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/categories, GET} route[39m[38;5;3m +0ms[39m
+298|app-ap | [32m[Nest] 617561  - [39m07/05/2026, 10:47:14 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +150ms[39m
+
+/root/.pm2/logs/app-api.demonightlight.test9.io.vn-error.log last 50 lines:
+298|app-ap |               orderBy: {
+298|app-ap |                 createdAt: "desc"
+298|app-ap |               },
+298|app-ap |               select: {
+298|app-ap |                 id: true,
+298|app-ap |                 billNumber: true,
+298|app-ap |                 status: true,
+298|app-ap |                 submitterType: true,
+298|app-ap |                 totalVnd: true,
+298|app-ap |                 discountVnd: true,
+298|app-ap |                 commissionAmountVnd: true,
+298|app-ap |                 pointsEarned: true,
+298|app-ap |                 rejectReason: true,
+298|app-ap |                 createdAt: true,
+298|app-ap |                 submittedAt: true,
+298|app-ap |                 store: {
+298|app-ap |                   select: {
+298|app-ap |                     name: true,
+298|app-ap |                     slug: true
+298|app-ap |                   }
+298|app-ap |                 },
+298|app-ap |                 user: {
+298|app-ap |                   select: {
+298|app-ap |                     id: true,
+298|app-ap |                     displayName: true,
+298|app-ap |                     tier: true
+298|app-ap |                   }
+298|app-ap |                 },
+298|app-ap |                 guest: {
+298|app-ap |                   select: {
+298|app-ap |                     id: true,
+298|app-ap |                     displayName: true
+298|app-ap |                   }
+298|app-ap |                 }
+298|app-ap |               }
+298|app-ap |             })
+298|app-ap | 
+298|app-ap | Argument `take`: Invalid value provided. Expected Int, provided String.
+298|app-ap |     at throwValidationException [90m(/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@prisma+client@7.8.0_prisma@7.8.0_@types+react@19.2.17_react-dom@19.2.7_react@19.2.7__react@1_o762ggxoprrxx5rc4ist5a3w6a/node_modules/[4m@prisma/client[24m/src/runtime/core/errorRendering/throwValidationException.ts:46:9[90m)[39m
+298|app-ap |     at zr.handleRequestError [90m(/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@prisma+client@7.8.0_prisma@7.8.0_@types+react@19.2.17_react-dom@19.2.7_react@19.2.7__react@1_o762ggxoprrxx5rc4ist5a3w6a/node_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:211:7[90m)[39m
+298|app-ap |     at zr.handleAndLogRequestError [90m(/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@prisma+client@7.8.0_prisma@7.8.0_@types+react@19.2.17_react-dom@19.2.7_react@19.2.7__react@1_o762ggxoprrxx5rc4ist5a3w6a/node_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:183:12[90m)[39m
+298|app-ap |     at zr.request [90m(/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@prisma+client@7.8.0_prisma@7.8.0_@types+react@19.2.17_react-dom@19.2.7_react@19.2.7__react@1_o762ggxoprrxx5rc4ist5a3w6a/node_modules/[4m@prisma/client[24m/src/runtime/RequestHandler.ts:152:12[90m)[39m
+298|app-ap | [90m    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+298|app-ap |     at async a [90m(/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@prisma+client@7.8.0_prisma@7.8.0_@types+react@19.2.17_react-dom@19.2.7_react@19.2.7__react@1_o762ggxoprrxx5rc4ist5a3w6a/node_modules/[4m@prisma/client[24m/src/runtime/getPrismaClient.ts:963:24[90m)[39m
+298|app-ap |     at async Promise.all (index 0)
+298|app-ap |     at async NightlifeDataService.listAdminBills [90m(/var/www/api.demonightlight.test9.io.vn/[39msrc/nightlife-data/nightlife-data.service.ts:15189:7[90m)[39m
+298|app-ap |     at async [90m/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.27_@nestjs+common@11.1.27_class-transformer@0.5.1_class-validator@0.15.1_re_djo3labkoyby6euzbuxuwjknnu/node_modules/[4m@nestjs/core[24m/router/router-execution-context.js:47:62
+298|app-ap |     at async [90m/var/www/api.demonightlight.test9.io.vn/[39mnode_modules/[4m.pnpm[24m/@nestjs+core@11.1.27_@nestjs+common@11.1.27_class-transformer@0.5.1_class-validator@0.15.1_re_djo3labkoyby6euzbuxuwjknnu/node_modules/[4m@nestjs/core[24m/router/router-proxy.js:9:17 {
+298|app-ap |   clientVersion: [32m'7.8.0'[39m
+298|app-ap | }
+
+

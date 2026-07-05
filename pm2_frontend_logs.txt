@@ -1,0 +1,106 @@
+[TAILING] Tailing last 50 lines for [app-demonightlight.test9.io.vn] process (change the value with --lines option)
+/root/.pm2/logs/app-demonightlight.test9.io.vn-error.log last 50 lines:
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+301|app-de | Error: Internal: NoFallbackError
+301|app-de |     at o (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:1254)
+301|app-de |     at responseGenerator (.next/server/chunks/ssr/12nr_next_dist_esm_build_templates_app-page_04_p5ry.js:2:4313)
+
+/root/.pm2/logs/app-demonightlight.test9.io.vn-out.log last 50 lines:
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 212ms
+301|app-de | 
+301|app-de | > web@0.0.0 start /var/www/demonightlight.test9.io.vn/apps/web
+301|app-de | > next start
+301|app-de | 
+301|app-de | ▲ Next.js 16.2.9
+301|app-de | - Local:         http://localhost:3009
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 191ms
+301|app-de | 
+301|app-de | > web@0.0.0 start /var/www/demonightlight.test9.io.vn/apps/web
+301|app-de | > next start
+301|app-de | 
+301|app-de | ▲ Next.js 16.2.9
+301|app-de | - Local:         http://localhost:3009
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 180ms
+301|app-de | 
+301|app-de | > web@0.0.0 start /var/www/demonightlight.test9.io.vn/apps/web
+301|app-de | > next start
+301|app-de | 
+301|app-de | ▲ Next.js 16.2.9
+301|app-de | - Local:         http://localhost:3009
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 196ms
+301|app-de | 
+301|app-de | > web@0.0.0 start /var/www/demonightlight.test9.io.vn/apps/web
+301|app-de | > next start
+301|app-de | 
+301|app-de | ▲ Next.js 16.2.9
+301|app-de | - Local:         http://localhost:3009
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 188ms
+301|app-de | 
+301|app-de | > web@0.0.0 start /var/www/demonightlight.test9.io.vn/apps/web
+301|app-de | > next start
+301|app-de | 
+301|app-de | ▲ Next.js 16.2.9
+301|app-de | - Local:         http://localhost:3009
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 189ms
+301|app-de | 
+301|app-de | > web@0.0.0 start /var/www/demonightlight.test9.io.vn/apps/web
+301|app-de | > next start
+301|app-de | 
+301|app-de | ▲ Next.js 16.2.9
+301|app-de | - Local:         http://localhost:3009
+301|app-de | - Network:       http://45.119.83.233:3009
+301|app-de | ✓ Ready in 182ms
+
+
