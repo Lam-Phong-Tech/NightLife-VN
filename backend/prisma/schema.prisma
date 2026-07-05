@@ -1159,3 +1159,13 @@ model Category {
 
   @@map("categories")
 }
+
+model SystemConfig {
+  key       String   @id @db.VarChar(50)
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by") @db.Uuid
+  
+  @@map("system_configs")
+}
+

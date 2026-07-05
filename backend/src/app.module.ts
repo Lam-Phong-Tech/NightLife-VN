@@ -10,6 +10,7 @@ import { StorageModule } from './storage/storage.module';
 import { NightlifeDataModule } from './nightlife-data/nightlife-data.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { CategoriesModule } from './categories/categories.module';
+import { SystemConfigModule } from './system-config/system-config.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -23,6 +24,7 @@ import { validateEnv } from './config/env.validation';
     NightlifeDataModule,
     TelegramModule,
     CategoriesModule,
+    SystemConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],
