@@ -42,6 +42,14 @@ const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 
 const defaultHours = DAYS.reduce((acc, d) => ({ ...acc, [d]: { isOff: false, hours: '19:00 - 02:00' } }), {});
 
 export default function AdminStoresPage() {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
+      <AdminStoresContent />
+    </React.Suspense>
+  );
+}
+
+function AdminStoresContent() {
   const [stores, setStores] = useState<any[]>([]);
   const [venueSel, setVenueSel] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
