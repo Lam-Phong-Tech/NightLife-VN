@@ -6,16 +6,16 @@ import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const chatColors = {
-  bg: "#0c0c0f",
-  panel: "#121116",
-  panelTop: "#15131a",
-  text: "#f3f0ea",
-  text2: "#c5c0b6",
-  muted: "#8c8679",
-  quiet: "#6f6b62",
+  bg: "var(--vy-bg)",
+  panel: "var(--vy-surface)",
+  panelTop: "var(--vy-surface-2)",
+  text: "var(--vy-text)",
+  text2: "var(--vy-text-2)",
+  muted: "var(--vy-muted)",
+  quiet: "var(--vy-faint)",
   onGold: "#241a0a",
-  gold: "#d4b26a",
-  goldPale: "#f0dda8",
+  gold: "var(--vy-gold)",
+  goldPale: "var(--vy-gold-pale)",
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
   userGrad: "linear-gradient(135deg,#f0dda8,#d4b26a 60%,#c39f57)",
 };
@@ -108,7 +108,7 @@ function IconCircleButton({
         height: `${size}px`,
         borderRadius: "50%",
         border: 0,
-        background: "rgba(255,255,255,.06)",
+        background: "var(--vy-surface-3)",
         color: chatColors.text2,
         display: "inline-flex",
         alignItems: "center",
@@ -200,9 +200,9 @@ function ChatBubble({ message, isMobile }: { message: ChatMessage; isMobile: boo
         <div
           style={{
             ...bubbleStyle,
-            background: "rgba(255,255,255,.06)",
-            border: "1px solid rgba(255,255,255,.07)",
-            color: "#e7e1d4",
+            background: "var(--vy-surface-3)",
+            border: "1px solid var(--vy-border)",
+            color: "var(--vy-text)",
           }}
         >
           {message.text}
@@ -251,8 +251,8 @@ function ChatThread({ messages, isMobile }: { messages: ChatMessage[]; isMobile:
             fontWeight: 700,
             letterSpacing: "1.2px",
             color: chatColors.muted,
-            background: "rgba(255,255,255,.04)",
-            border: "1px solid rgba(255,255,255,.07)",
+            background: "var(--vy-surface-2)",
+            border: "1px solid var(--vy-border)",
             borderRadius: "10px",
             padding: "4px 11px",
             textTransform: "uppercase",
@@ -289,7 +289,7 @@ function ChatComposer({
         alignItems: "center",
         gap: "9px",
         padding: isMobile ? "11px 14px calc(14px + env(safe-area-inset-bottom))" : "11px 13px",
-        borderTop: "1px solid rgba(255,255,255,.07)",
+        borderTop: "1px solid var(--vy-border)",
         flex: "none",
       }}
     >
@@ -301,8 +301,8 @@ function ChatComposer({
         style={{
           flex: 1,
           minWidth: 0,
-          background: "rgba(255,255,255,.05)",
-          border: "1px solid rgba(255,255,255,.1)",
+          background: "var(--vy-surface-2)",
+          border: "1px solid var(--vy-border)",
           borderRadius: isMobile ? "22px" : "20px",
           padding: isMobile ? "11px 16px" : "10px 15px",
           fontSize: isMobile ? "13.5px" : "13px",
@@ -366,9 +366,9 @@ function DesktopSupportChatPanel({
         height: "min(498px, calc(100vh - 112px))",
         minHeight: "420px",
         background: chatColors.panel,
-        border: "1px solid rgba(212,178,106,.22)",
+        border: "1px solid var(--vy-border-gold-22)",
         borderRadius: "18px",
-        boxShadow: "0 30px 70px -22px rgba(0,0,0,.85)",
+        boxShadow: "var(--vy-shadow)",
         color: chatColors.text,
         display: "flex",
         flexDirection: "column",
@@ -382,8 +382,8 @@ function DesktopSupportChatPanel({
           alignItems: "center",
           gap: "11px",
           padding: "13px 15px",
-          borderBottom: "1px solid rgba(255,255,255,.07)",
-          background: "linear-gradient(180deg,rgba(212,178,106,.08),rgba(255,255,255,0))",
+          borderBottom: "1px solid var(--vy-border)",
+          background: "linear-gradient(180deg,var(--vy-gold-soft-bg),transparent)",
           flex: "none",
         }}
       >
@@ -461,7 +461,7 @@ function MobileSupportChatPanel({
           alignItems: "center",
           gap: "11px",
           padding: "calc(10px + env(safe-area-inset-top)) 14px 11px",
-          borderBottom: "1px solid rgba(255,255,255,.07)",
+          borderBottom: "1px solid var(--vy-border)",
           flex: "none",
         }}
       >
@@ -539,13 +539,13 @@ function SupportChatButton({
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: "50%",
-        border: `1px solid ${isOpen ? "rgba(212,178,106,.6)" : "rgba(212,178,106,.32)"}`,
+        border: `1px solid ${isOpen ? "var(--vy-border-gold-40)" : "var(--vy-border-gold-32)"}`,
         color: isOpen ? chatColors.goldPale : chatColors.gold,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        background: isMobile ? "transparent" : "rgba(255,255,255,.04)",
-        boxShadow: isOpen ? "0 0 0 3px rgba(212,178,106,.14)" : "none",
+        background: isMobile ? "transparent" : "var(--vy-surface-2)",
+        boxShadow: isOpen ? "0 0 0 3px var(--vy-gold-soft-bg)" : "none",
         cursor: "pointer",
         fontFamily: "var(--nl-font-sans)",
         padding: 0,

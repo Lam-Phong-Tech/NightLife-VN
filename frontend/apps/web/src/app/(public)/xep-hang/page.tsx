@@ -537,8 +537,8 @@ export default function Page() {
         .vyr-ranking-page {
           width: 100%;
           min-height: calc(100vh - 82px);
-          background: #0c0c0f;
-          color: #f3f0ea;
+          background: var(--vy-bg);
+          color: var(--vy-text);
           font-family: var(--nl-font-sans);
           padding: 26px 30px 48px;
         }
@@ -574,7 +574,7 @@ export default function Page() {
           border-radius: 50%;
           border: 1px solid rgba(255, 255, 255, 0.12);
           background: transparent;
-          color: #f3f0ea;
+          color: var(--vy-text);
           align-items: center;
           justify-content: center;
           padding: 0;
@@ -583,7 +583,7 @@ export default function Page() {
 
         .vyr-ranking-page h1 {
           margin: 0;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 27px;
           line-height: 1.15;
           font-weight: 700;
@@ -592,7 +592,7 @@ export default function Page() {
 
         .vyr-ranking-page p {
           margin: 4px 0 0;
-          color: #d4b26a;
+          color: var(--vy-gold);
           font-size: 13px;
           line-height: 1.3;
           font-weight: 600;
@@ -636,7 +636,7 @@ export default function Page() {
         }
 
         .vyr-ranking-segment button.is-active {
-          color: #241a0a;
+          color: var(--vy-on-gold);
           background: linear-gradient(135deg, #f0dda8, #d4b26a);
         }
 
@@ -648,7 +648,7 @@ export default function Page() {
           border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 13px;
           padding: 0 12px 0 14px;
-          color: #c5c0b6;
+          color: var(--vy-muted);
           background: transparent;
           position: relative;
           z-index: 30;
@@ -666,7 +666,7 @@ export default function Page() {
           gap: 6px;
           border: 0;
           background: transparent;
-          color: #c5c0b6;
+          color: var(--vy-muted);
           cursor: pointer;
           font: inherit;
           font-size: 13px;
@@ -682,7 +682,7 @@ export default function Page() {
         }
 
         .vyr-ranking-select.is-open .vyr-ranking-select-trigger {
-          color: #f0dda8;
+          color: var(--vy-gold-pale);
         }
 
         .vyr-ranking-select.is-open .vyr-ranking-select-trigger svg {
@@ -710,7 +710,7 @@ export default function Page() {
           border: 0;
           border-radius: 8px;
           background: transparent;
-          color: #c5c0b6;
+          color: var(--vy-muted);
           cursor: pointer;
           font: inherit;
           font-size: 13px;
@@ -724,13 +724,13 @@ export default function Page() {
         .vyr-ranking-select-menu button:hover,
         .vyr-ranking-select-menu button:focus-visible {
           background: rgba(255, 255, 255, 0.06);
-          color: #f3f0ea;
+          color: var(--vy-text);
           outline: 0;
         }
 
         .vyr-ranking-select-menu button.is-selected {
           background: linear-gradient(135deg, #f0dda8, #d4b26a);
-          color: #241a0a;
+          color: var(--vy-on-gold);
         }
 
         .vyr-ranking-list {
@@ -749,7 +749,7 @@ export default function Page() {
           border: 1px solid rgba(255, 255, 255, 0.07);
           border-radius: 16px;
           background: rgba(255, 255, 255, 0.03);
-          color: #f3f0ea;
+          color: var(--vy-text);
           padding: 15px 20px 15px 24px;
           transition:
             background 160ms ease,
@@ -786,7 +786,7 @@ export default function Page() {
           align-items: center;
           justify-content: center;
           background: linear-gradient(135deg, #26222d, #181319);
-          color: #d4b26a;
+          color: var(--vy-gold);
           font-size: 15px;
           font-weight: 900;
         }
@@ -832,7 +832,7 @@ export default function Page() {
           justify-content: center;
           border: 1px solid rgba(212, 178, 106, 0.3);
           background: rgba(212, 178, 106, 0.1);
-          color: #d4b26a;
+          color: var(--vy-gold);
           font-size: 14px;
           font-weight: 800;
           line-height: 1;
@@ -842,7 +842,7 @@ export default function Page() {
           border: 1px solid rgba(212, 178, 106, 0.32);
           border-radius: 999px;
           background: rgba(212, 178, 106, 0.12);
-          color: #f0dda8;
+          color: var(--vy-gold-pale);
           font-size: 10.5px;
           font-weight: 800;
           line-height: 1;
@@ -851,7 +851,7 @@ export default function Page() {
 
         .vyr-rank-copy strong {
           margin-top: 6px;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 20px;
           line-height: 1.15;
           font-weight: 700;
@@ -860,7 +860,7 @@ export default function Page() {
 
         .vyr-rank-copy small {
           margin-top: 3px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 13px;
           line-height: 1.3;
         }
@@ -894,7 +894,7 @@ export default function Page() {
         .vyr-rank-action.is-primary {
           border-color: rgba(212, 178, 106, 0.55);
           background: linear-gradient(135deg, #f0dda8, #d4b26a);
-          color: #241a0a;
+          color: var(--vy-on-gold);
         }
 
         .vyr-rank-action.is-disabled {
@@ -917,7 +917,7 @@ export default function Page() {
         }
 
         .vyr-ranking-state strong {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 18px;
           line-height: 1.2;
         }
@@ -936,7 +936,7 @@ export default function Page() {
           border: 0;
           border-radius: 10px;
           background: linear-gradient(135deg, #f0dda8, #d4b26a);
-          color: #241a0a;
+          color: var(--vy-on-gold);
           cursor: pointer;
           font: inherit;
           font-size: 12.5px;
@@ -1017,7 +1017,7 @@ export default function Page() {
             border: 0;
             border-radius: 0;
             box-shadow: none;
-            background: #0c0c0f;
+            background: var(--vy-bg);
           }
 
           .vyr-ranking-heading {
@@ -1082,7 +1082,7 @@ export default function Page() {
 
           .vyr-ranking-select-trigger {
             min-height: 29px;
-            color: #c5c0b6;
+            color: var(--vy-muted);
             font-size: 11.5px;
           }
 

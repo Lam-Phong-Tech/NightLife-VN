@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { Search } from 'lucide-react';
 import React from 'react';
 
 interface SearchBarProps {
@@ -22,19 +22,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         display: 'flex',
         alignItems: 'center',
         gap: '9px',
-        background: 'rgba(255,255,255,.045)',
-        border: '1px solid rgba(212,178,106,.22)',
+        background: 'var(--vy-surface-2)',
+        border: '1px solid var(--vy-border-gold-22)',
         borderRadius: '12px',
         padding: '11px 13px',
         ...style,
       }}
     >
-      <Image
-        src="https://img.icons8.com/ios/100/D4B26A/search.png"
-        width={16}
-        height={16}
-        alt="Search"
-      />
+      <Search size={16} strokeWidth={2.5} color="var(--vy-gold)" />
       <input
         value={value}
         onChange={onSearch}
@@ -43,7 +38,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           flex: '1',
           border: 'none',
           fontSize: '13px',
-          color: '#f3f0ea',
+          color: 'var(--vy-text)',
           background: 'transparent',
           outline: 'none',
           ...inputStyle,

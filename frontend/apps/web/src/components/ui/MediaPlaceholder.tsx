@@ -51,7 +51,7 @@ export function PlaceholderMedia({
 
   return (
     <div
-      className={className}
+      className={className ? `${className} nl-media-fallback` : "nl-media-fallback"}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -68,7 +68,7 @@ export function PlaceholderMedia({
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(circle at 18% 18%,rgba(212,178,106,.26),transparent 26%), radial-gradient(circle at 82% 70%,rgba(255,255,255,.08),transparent 24%)",
+            "radial-gradient(circle at 18% 18%,rgba(212,178,106,.26),transparent 26%), radial-gradient(circle at 82% 70%,var(--vy-surface-3),transparent 24%)",
           opacity: isLight ? 0.8 : 1,
         }}
       />

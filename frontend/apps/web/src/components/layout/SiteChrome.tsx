@@ -29,19 +29,20 @@ import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
 import { LanguagePicker } from "./LanguagePicker";
 import { MobileSimulator } from "./MobileSimulator";
 import { SupportChatWidget } from "./SupportChatWidget";
+import { ThemeToggle } from "./ThemeToggle";
 
 const colors = {
-  bg: "#0c0c0f",
-  navBg: "rgba(8,8,11,.95)",
-  borderGold12: "rgba(212,178,106,.18)",
-  borderGold22: "rgba(212,178,106,.22)",
-  borderGold32: "rgba(212,178,106,.32)",
-  text: "#f3f0ea",
-  text2: "#c5c0b6",
-  muted: "#8c8679",
+  bg: "var(--vy-bg)",
+  navBg: "var(--vy-nav-bg)",
+  borderGold12: "var(--vy-border-gold-12)",
+  borderGold22: "var(--vy-border-gold-22)",
+  borderGold32: "var(--vy-border-gold-32)",
+  text: "var(--vy-text)",
+  text2: "var(--vy-text-2)",
+  muted: "var(--vy-muted)",
   onGold: "#241a0a",
-  gold: "#d4b26a",
-  goldPale: "#f0dda8",
+  gold: "var(--vy-gold)",
+  goldPale: "var(--vy-gold-pale)",
   goldGrad: "linear-gradient(135deg,#fff7d7 0%,#f7d978 42%,#d5a23a 100%)",
 };
 
@@ -131,22 +132,22 @@ const noticeToneStyle: Record<NoticeTone, { background: string; border: string; 
   gold: {
     background: "rgba(212,178,106,.12)",
     border: "rgba(212,178,106,.3)",
-    color: "#e3c27e",
+    color: "var(--vy-gold-hi)",
   },
   green: {
     background: "rgba(95,191,134,.12)",
     border: "rgba(95,191,134,.3)",
-    color: "#7fd3a0",
+    color: "var(--vy-success)",
   },
   amber: {
     background: "rgba(224,164,78,.12)",
     border: "rgba(224,164,78,.3)",
-    color: "#e6b873",
+    color: "var(--vy-warn)",
   },
   danger: {
     background: "rgba(255,107,139,.12)",
     border: "rgba(255,107,139,.32)",
-    color: "#ff8aa5",
+    color: "var(--vy-error)",
   },
 };
 
@@ -1574,6 +1575,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               }}
             >
               <LanguagePicker isMobile={isMobile} />
+              <ThemeToggle isMobile={isMobile} />
 
               {/* Chat */}
               <SupportChatWidget
@@ -1635,6 +1637,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               }}
             >
               <LanguagePicker isMobile={isMobile} />
+              <ThemeToggle isMobile={isMobile} />
 
               {/* Chat */}
               <SupportChatWidget
@@ -1666,7 +1669,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                     borderRadius: "20px",
                     border: `1px solid ${colors.borderGold32}`,
                     color: colors.goldPale,
-                    background: "rgba(255,255,255,.04)",
+                    background: "var(--vy-surface-2)",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",

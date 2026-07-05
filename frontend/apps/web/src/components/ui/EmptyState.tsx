@@ -16,12 +16,12 @@ interface EmptyStateProps {
 }
 
 const colors = {
-  panel: "rgba(255,255,255,.035)",
-  border: "rgba(212,178,106,.2)",
-  text: "#f3f0ea",
-  muted: "#8c8679",
-  gold: "#d4b26a",
-  goldPale: "#f0dda8",
+  panel: "var(--vy-surface-1)",
+  border: "var(--vy-border-gold-22)",
+  text: "var(--vy-text)",
+  muted: "var(--vy-muted)",
+  gold: "var(--vy-gold)",
+  goldPale: "var(--vy-gold-pale)",
   onGold: "#241a0a",
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
@@ -122,12 +122,12 @@ const iconTileStyle: CSSProperties = {
   height: 64,
   borderRadius: 18,
   background: "linear-gradient(135deg,rgba(244,227,180,.18),rgba(168,124,60,.08))",
-  border: `1px solid rgba(212,178,106,.26)`,
+  border: `1px solid var(--vy-border-gold-32)`,
   color: colors.goldPale,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  boxShadow: "0 16px 34px -18px rgba(168,124,60,.55)",
+  boxShadow: "var(--vy-shadow)",
 };
 
 const titleStyle: CSSProperties = {

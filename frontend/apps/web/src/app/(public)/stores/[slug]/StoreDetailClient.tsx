@@ -1335,8 +1335,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       <style>{`
         .store-detail-page {
           min-height: 100vh;
-          background: #0c0c0f;
-          color: #f3f0ea;
+          background: var(--vy-bg);
+          color: var(--vy-text);
           font-family: var(--nl-font-sans);
           padding-bottom: 86px;
         }
@@ -1357,7 +1357,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           gap: 9px;
           margin-bottom: 18px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 12px;
           font-weight: 700;
         }
@@ -1369,7 +1369,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .desktop-breadcrumb strong {
-          color: #c5c0b6;
+          color: var(--vy-muted);
         }
 
         .detail-layout {
@@ -1441,7 +1441,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 1px solid rgba(212, 178, 106, .34);
           border-radius: 50%;
           background: rgba(12, 12, 15, .48);
-          color: #f3f0ea;
+          color: var(--vy-text);
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -1464,7 +1464,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 1px solid rgba(212, 178, 106, .62);
           border-radius: 50%;
           background: rgba(12, 12, 15, .42);
-          color: #f0dda8;
+          color: var(--vy-gold-pale);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1579,7 +1579,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .closed-pill {
           color: #bfb7aa;
           background: rgba(255, 255, 255, .06);
-          border: 1px solid rgba(255, 255, 255, .12);
+          border: 1px solid var(--vy-border);
         }
 
         .hero-name i,
@@ -1594,14 +1594,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .desktop-stats {
           display: flex;
           align-items: stretch;
-          border-top: 1px solid rgba(255, 255, 255, .07);
+          border-top: 1px solid var(--vy-border);
           border-bottom: 1px solid rgba(255, 255, 255, .07);
         }
 
         .quick-stats {
           display: none;
           align-items: stretch;
-          border-top: 1px solid rgba(255, 255, 255, .07);
+          border-top: 1px solid var(--vy-border);
           border-bottom: 1px solid rgba(255, 255, 255, .07);
           padding: 16px 4px 10px;
         }
@@ -1633,7 +1633,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .desktop-stats span {
           display: block;
           margin-top: 5px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 11px;
         }
 
@@ -1660,7 +1660,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .secondary-actions a {
           flex: 1;
           color: #e3c27e;
-          background: rgba(255, 255, 255, .045);
+          background: var(--vy-surface-2);
           border: 1px solid rgba(212, 178, 106, .28);
         }
 
@@ -1686,7 +1686,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .thumb-grid button.active {
-          border-color: #d4b26a;
+          border-color: var(--vy-gold);
           box-shadow: inset 0 0 0 1px rgba(212, 178, 106, .6);
         }
 
@@ -1703,13 +1703,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .mobile-gallery-head span {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 13px;
           font-weight: 900;
         }
 
         .mobile-gallery-head small {
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 11px;
           font-weight: 800;
         }
@@ -1737,7 +1737,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .mobile-gallery-rail button.active {
-          border-color: #d4b26a;
+          border-color: var(--vy-gold);
           box-shadow: inset 0 0 0 1px rgba(212, 178, 106, .72);
         }
 
@@ -1760,7 +1760,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .section-title h2 {
           margin: 0;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 21px;
           line-height: 1.08;
           font-weight: 700;
@@ -1770,7 +1770,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .section-title span {
           display: block;
           margin-top: 4px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 9px;
           font-weight: 800;
           letter-spacing: 0;
@@ -1830,7 +1830,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           overflow: hidden;
           background-size: cover;
           background-position: center;
-          color: #f0dda8;
+          color: var(--vy-gold-pale);
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -1864,7 +1864,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           left: 12px;
           right: 12px;
           bottom: 10px;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 13px;
           font-weight: 800;
           text-align: left;
@@ -1876,7 +1876,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border-radius: 8px;
           overflow: hidden;
           background: #15161a;
-          border: 1px solid rgba(212, 178, 106, .18);
+          border: 1px solid var(--vy-border-gold-12);
         }
 
         .map-block iframe {
@@ -1905,7 +1905,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 0 11px;
           border-radius: 8px;
           background: rgba(12, 12, 15, .66);
-          color: #f0dda8;
+          color: var(--vy-gold-pale);
           border: 1px solid rgba(212, 178, 106, .32);
           text-decoration: none;
           font-size: 12px;
@@ -1925,7 +1925,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .desktop-title p {
-          color: #c5c0b6;
+          color: var(--vy-muted);
         }
 
         .desktop-title p svg {
@@ -1980,13 +1980,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card-head strong {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 15px;
         }
 
         .booking-card-head small {
           margin-top: 3px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 11px;
         }
 
@@ -2002,7 +2002,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           align-items: flex-start;
           gap: 8px;
-          color: #c5c0b6;
+          color: var(--vy-muted);
           font-size: 12px;
           line-height: 1.55;
         }
@@ -2027,7 +2027,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-card label {
           display: block;
           margin: 8px 0 6px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 10px;
           font-weight: 900;
           letter-spacing: 0;
@@ -2046,7 +2046,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-content: center;
           min-height: 44px;
           padding: 7px 10px;
-          border: 1px solid rgba(255, 255, 255, .1);
+          border: 1px solid var(--vy-border);
           border-radius: 8px;
           background: rgba(12, 12, 15, .36);
         }
@@ -2063,7 +2063,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-field span {
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 10px;
           font-weight: 900;
           line-height: 1.2;
@@ -2071,7 +2071,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-field strong {
           margin-top: 4px;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 12px;
           line-height: 1.25;
         }
@@ -2083,7 +2083,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 0;
           outline: none;
           background: transparent;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 12px;
           font-weight: 800;
           line-height: 1.25;
@@ -2113,10 +2113,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .slot {
           min-height: 31px;
-          border: 1px solid rgba(255, 255, 255, .1);
+          border: 1px solid var(--vy-border);
           border-radius: 8px;
           background: rgba(12, 12, 15, .42);
-          color: #c5c0b6;
+          color: var(--vy-muted);
           padding: 0 12px;
           font-size: 12px;
           font-weight: 800;
@@ -2125,7 +2125,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .slot.active,
         .guest-stepper button {
-          color: #241a0a;
+          color: var(--vy-on-gold);
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
           border-color: transparent;
         }
@@ -2137,7 +2137,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 1px dashed rgba(212, 178, 106, .28);
           border-radius: 8px;
           color: #b7afa1;
-          background: rgba(255, 255, 255, .035);
+          background: var(--vy-surface-1);
           font-size: 12px;
           line-height: 1.45;
         }
@@ -2167,7 +2167,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .guest-stepper strong {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 12px;
         }
 
@@ -2179,7 +2179,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           border: 1px solid rgba(212, 178, 106, .2);
           border-radius: 8px;
           background: rgba(12, 12, 15, .36);
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 12px;
           font-family: inherit;
           line-height: 1.55;
@@ -2206,7 +2206,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .primary-action {
           background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
-          color: #241a0a;
+          color: var(--vy-on-gold);
           border: 0;
         }
 
@@ -2221,7 +2221,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .secondary-action {
           color: #e3c27e;
-          background: rgba(255, 255, 255, .045);
+          background: var(--vy-surface-2);
           border: 1px solid rgba(212, 178, 106, .3);
         }
 
@@ -2246,7 +2246,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .intro-copy {
-          color: #c5c0b6;
+          color: var(--vy-muted);
           font-size: 14px;
           line-height: 1.8;
         }
@@ -2297,8 +2297,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .feature-chips span:nth-child(n + 3) {
-          color: #c5c0b6;
-          background: rgba(255, 255, 255, .045);
+          color: var(--vy-muted);
+          background: var(--vy-surface-2);
           border-color: rgba(255, 255, 255, .1);
         }
 
@@ -2313,7 +2313,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 74px;
           padding: 12px;
           border-radius: 8px;
-          background: rgba(255, 255, 255, .04);
+          background: var(--vy-surface-3);
           border: 1px solid rgba(212, 178, 106, .16);
         }
 
@@ -2330,7 +2330,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .language-grid strong {
           margin-top: 6px;
-          color: #f0dda8;
+          color: var(--vy-gold-pale);
           font-size: 14px;
           line-height: 1.3;
         }
@@ -2344,7 +2344,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .cast-bubble {
           flex: 0 0 78px;
-          color: #f3f0ea;
+          color: var(--vy-text);
           text-align: center;
           text-decoration: none;
         }
@@ -2385,11 +2385,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           align-items: stretch;
           min-height: 88px;
-          border: 1px solid rgba(212, 178, 106, .22);
+          border: 1px solid var(--vy-border-gold-22);
           border-radius: 8px;
           overflow: hidden;
-          background: rgba(255, 255, 255, .035);
-          color: #f3f0ea;
+          background: var(--vy-surface-1);
+          color: var(--vy-text);
           text-decoration: none;
         }
 
@@ -2414,14 +2414,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .coupon-copy strong {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 13px;
         }
 
         .coupon-copy small {
           display: block;
           margin-top: 6px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 11px;
           line-height: 1.45;
         }
@@ -2433,7 +2433,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #d4b26a;
+          color: var(--vy-gold);
           font-size: 11px;
           font-weight: 900;
           text-transform: uppercase;
@@ -2454,13 +2454,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .menu-chips span {
           flex: none;
-          color: #c5c0b6;
-          background: rgba(255, 255, 255, .045);
+          color: var(--vy-muted);
+          background: var(--vy-surface-2);
           border-color: rgba(255, 255, 255, .1);
         }
 
         .menu-chips span.active {
-          color: #241a0a;
+          color: var(--vy-on-gold);
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
           border-color: transparent;
         }
@@ -2474,7 +2474,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           gap: 13px;
           padding: 13px 0;
-          border-bottom: 1px solid rgba(255, 255, 255, .06);
+          border-bottom: 1px solid var(--vy-border);
         }
 
         .menu-row:last-child {
@@ -2500,7 +2500,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           flex-wrap: wrap;
           gap: 7px;
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 14px;
           line-height: 1.35;
         }
@@ -2508,7 +2508,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .menu-copy em {
           border-radius: 6px;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a);
-          color: #241a0a;
+          color: var(--vy-on-gold);
           padding: 2px 6px;
           font-size: 9px;
           font-style: normal;
@@ -2519,7 +2519,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .menu-copy small {
           display: block;
           margin-top: 4px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 12px;
           line-height: 1.5;
         }
@@ -2535,7 +2535,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           margin-top: 10px;
           padding: 11px 12px;
           border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
+          background: var(--vy-surface-1);
           border: 1px solid rgba(255, 255, 255, .07);
         }
 
@@ -2552,7 +2552,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 42px;
           padding: 10px 13px;
           border-radius: 8px;
-          background: rgba(255, 255, 255, .03);
+          background: var(--vy-surface-1);
           border: 1px solid rgba(255, 255, 255, .07);
         }
 
@@ -2579,7 +2579,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 14px;
           border: 1px solid rgba(212, 178, 106, .16);
           border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
+          background: var(--vy-surface-1);
         }
 
         .empty-state > span {
@@ -2595,7 +2595,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .empty-state strong {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 14px;
         }
 
@@ -2620,8 +2620,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           overflow: hidden;
           border: 1px solid rgba(255, 255, 255, .08);
           border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
-          color: #f3f0ea;
+          background: var(--vy-surface-1);
+          color: var(--vy-text);
           text-decoration: none;
         }
 
@@ -2644,7 +2644,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .related-copy strong {
-          color: #f3f0ea;
+          color: var(--vy-text);
           font-size: 15px;
           line-height: 1.3;
         }
@@ -2658,7 +2658,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .related-copy em {
           margin-top: 4px;
-          color: #8c8679;
+          color: var(--vy-muted);
           font-size: 11px;
           font-style: normal;
           line-height: 1.35;
@@ -2963,14 +2963,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .mobile-cta div span {
-            color: #8c8679;
+            color: var(--vy-muted);
             font-size: 11px;
             font-weight: 800;
           }
 
           .mobile-cta div strong {
             margin-top: 3px;
-            color: #f3f0ea;
+            color: var(--vy-text);
             font-size: 16px;
             line-height: 1.2;
           }

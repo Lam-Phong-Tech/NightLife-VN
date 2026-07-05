@@ -24,12 +24,12 @@ export const RankingCard: React.FC<RankingCardProps> = ({ item, onClick, style }
         display: 'flex',
         alignItems: 'center',
         gap: '11px',
-        background: 'rgba(255,255,255,.045)',
-        border: '1px solid rgba(212,178,106,.22)',
+        background: 'var(--vy-surface-2)',
+        border: '1px solid var(--vy-border-gold-22)',
         borderRadius: '12px',
         padding: '9px 11px',
         cursor: 'pointer',
-        color: '#f3f0ea',
+        color: 'var(--vy-text)',
         ...style
       }}
     >
@@ -44,8 +44,8 @@ export const RankingCard: React.FC<RankingCardProps> = ({ item, onClick, style }
           justifyContent: 'center',
           fontWeight: '800',
           fontSize: '12.5px',
-          color: ranked.numColor || '#241a0a',
-          background: ranked.crown || '#d4b26a'
+          color: ranked.numColor || 'var(--vy-on-gold)',
+          background: ranked.crown || 'var(--vy-gold)'
         }}
       >
         {ranked.rank}
@@ -58,7 +58,7 @@ export const RankingCard: React.FC<RankingCardProps> = ({ item, onClick, style }
       />
       <div style={{ flex: '1', minWidth: '0' }}>
         <div style={{ fontWeight: '700', fontSize: '13px' }}>{ranked.name}</div>
-        <div style={{ fontSize: '10.5px', color: '#b6b1a6', marginTop: '1px' }}>{ranked.area}</div>
+        <div style={{ fontSize: '10.5px', color: 'var(--vy-muted)', marginTop: '1px' }}>{ranked.area}</div>
       </div>
       <span
         aria-hidden="true"
@@ -68,7 +68,7 @@ export const RankingCard: React.FC<RankingCardProps> = ({ item, onClick, style }
           flex: 'none',
           display: 'grid',
           placeItems: 'center',
-          color: 'rgba(212,178,106,.6)'
+          color: 'var(--vy-gold)'
         }}
       >
         <ChevronRight size={20} strokeWidth={2.35} />

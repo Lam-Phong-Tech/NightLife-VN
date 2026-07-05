@@ -865,8 +865,8 @@ function VenueSkeletons() {
 const venueSearchCss = `
   .venue-search-page {
     min-height: 100vh;
-    background: #0c0c0f;
-    color: #f3f0ea;
+    background: var(--vy-bg);
+    color: var(--vy-text);
     font-family: var(--nl-font-sans);
   }
 
@@ -892,7 +892,7 @@ const venueSearchCss = `
 
   .venue-search-title h1 {
     margin: 0;
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-size: 30px;
     line-height: 1.05;
     font-weight: 800;
@@ -901,7 +901,7 @@ const venueSearchCss = `
 
   .venue-search-title p {
     margin: 8px 0 0;
-    color: #8c8679;
+    color: var(--vy-muted);
     font-size: 10px;
     line-height: 1;
     font-weight: 800;
@@ -925,10 +925,10 @@ const venueSearchCss = `
   .venue-find-button,
   .venue-sort-select {
     min-height: 56px;
-    border: 1px solid rgba(212, 178, 106, .35);
+    border: 1px solid var(--vy-border-gold-32);
     border-radius: 14px;
-    background: rgba(255, 255, 255, .035);
-    color: #f0dda8;
+    background: var(--vy-surface-1);
+    color: var(--vy-gold-pale);
   }
 
   .venue-search-input {
@@ -939,7 +939,7 @@ const venueSearchCss = `
   }
 
   .venue-search-input svg {
-    color: #d4b26a;
+    color: var(--vy-gold);
     flex: none;
   }
 
@@ -949,20 +949,20 @@ const venueSearchCss = `
     border: 0;
     outline: 0;
     background: transparent;
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-size: 15px;
     font-weight: 600;
   }
 
   .venue-search-input input::placeholder {
-    color: #8c8679;
+    color: var(--vy-muted);
   }
 
   .venue-filter-icon {
     display: none;
     border: 0;
     background: transparent;
-    color: #8c8679;
+    color: var(--vy-muted);
     padding: 0;
   }
 
@@ -986,7 +986,7 @@ const venueSearchCss = `
     border: 0;
     border-radius: inherit;
     background: transparent;
-    color: #f0dda8;
+    color: var(--vy-gold-pale);
     padding: 0 16px;
     font: inherit;
     cursor: pointer;
@@ -1001,7 +1001,7 @@ const venueSearchCss = `
     gap: 3px;
     border: 0;
     background: transparent;
-    color: #8c8679;
+    color: var(--vy-muted);
     padding: 0;
     font: inherit;
     white-space: nowrap;
@@ -1011,7 +1011,7 @@ const venueSearchCss = `
   .venue-city-current {
     overflow: hidden;
     max-width: 74px;
-    color: #f0dda8;
+    color: var(--vy-gold-pale);
     text-overflow: ellipsis;
   }
 
@@ -1021,10 +1021,10 @@ const venueSearchCss = `
     top: calc(100% + 8px);
     z-index: 40;
     overflow: hidden;
-    border: 1px solid rgba(212, 178, 106, .35);
+    border: 1px solid var(--vy-border-gold-32);
     border-radius: 12px;
-    background: #141316;
-    box-shadow: 0 18px 38px rgba(0, 0, 0, .36);
+    background: var(--vy-surface-2);
+    box-shadow: var(--vy-shadow);
   }
 
   .venue-city-menu {
@@ -1044,9 +1044,9 @@ const venueSearchCss = `
     display: flex;
     align-items: center;
     border: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, .06);
+    border-bottom: 1px solid var(--vy-border);
     background: transparent;
-    color: #c5c0b6;
+    color: var(--vy-muted);
     padding: 0 14px;
     font-size: 13px;
     font-weight: 800;
@@ -1065,8 +1065,8 @@ const venueSearchCss = `
   .venue-sort-menu button:hover,
   .venue-sort-menu button:focus-visible,
   .venue-sort-menu button.is-selected {
-    background: rgba(212, 178, 106, .16);
-    color: #f0dda8;
+    background: var(--vy-gold-soft-bg);
+    color: var(--vy-gold-pale);
     outline: 0;
   }
 
@@ -1074,7 +1074,7 @@ const venueSearchCss = `
     cursor: pointer;
     border-color: transparent;
     background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-    color: #241a0a;
+    color: var(--vy-on-gold);
     font-size: 14px;
     font-weight: 900;
   }
@@ -1093,10 +1093,10 @@ const venueSearchCss = `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid rgba(255, 255, 255, .11);
+    border: 1px solid var(--vy-border);
     border-radius: 999px;
-    background: rgba(255, 255, 255, .045);
-    color: #c5c0b6;
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
     padding: 0 17px;
     font-size: 12px;
     font-weight: 800;
@@ -1107,7 +1107,7 @@ const venueSearchCss = `
   .venue-chip.is-active {
     border-color: rgba(244, 227, 180, .72);
     background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-    color: #241a0a;
+    color: var(--vy-on-gold);
   }
 
   .venue-chip:disabled {
@@ -1121,13 +1121,13 @@ const venueSearchCss = `
     justify-content: space-between;
     gap: 18px;
     margin-top: 24px;
-    color: #8c8679;
+    color: var(--vy-muted);
     font-size: 14px;
     font-weight: 600;
   }
 
   .venue-result-bar strong {
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-weight: 900;
   }
 
@@ -1135,14 +1135,14 @@ const venueSearchCss = `
     min-height: 30px;
     border: 0;
     background: transparent;
-    color: #8c8679;
+    color: var(--vy-muted);
     padding: 0;
     min-width: 128px;
   }
 
   .venue-sort-trigger strong,
   .venue-sort-trigger svg {
-    color: #d4b26a;
+    color: var(--vy-gold);
     flex: none;
   }
 
@@ -1159,12 +1159,12 @@ const venueSearchCss = `
     display: grid;
     grid-template-columns: minmax(260px, 386px) minmax(0, 1fr);
     overflow: hidden;
-    border: 1px solid rgba(212, 178, 106, .18);
+    border: 1px solid var(--vy-border-gold-12);
     border-radius: 18px;
-    background: #141316;
+    background: var(--vy-surface-2);
     color: inherit;
     text-decoration: none;
-    box-shadow: 0 18px 44px rgba(0, 0, 0, .22);
+    box-shadow: var(--vy-shadow-card);
   }
 
   .venue-card-media {
@@ -1214,7 +1214,7 @@ const venueSearchCss = `
   .venue-status.is-late {
     border-color: rgba(212, 178, 106, .36);
     background: rgba(42, 32, 16, .78);
-    color: #f0dda8;
+    color: var(--vy-gold-pale);
   }
 
   .venue-status span {
@@ -1232,7 +1232,7 @@ const venueSearchCss = `
     align-items: center;
     border-radius: 7px;
     background: #f0dda8;
-    color: #241a0a;
+    color: var(--vy-on-gold);
     padding: 0 10px;
     font-size: 11px;
     font-weight: 900;
@@ -1248,7 +1248,7 @@ const venueSearchCss = `
     border: 1px solid rgba(255, 255, 255, .28);
     border-radius: 50%;
     background: rgba(12, 12, 15, .46);
-    color: #f3f0ea;
+    color: var(--vy-text);
     backdrop-filter: blur(8px);
     cursor: pointer;
   }
@@ -1260,7 +1260,7 @@ const venueSearchCss = `
   }
 
   .venue-heart:focus-visible {
-    outline: 2px solid #f0dda8;
+    outline: 2px solid var(--vy-gold-pale);
     outline-offset: 2px;
   }
 
@@ -1286,7 +1286,7 @@ const venueSearchCss = `
   .venue-name-row h2 {
     margin: 0;
     overflow: hidden;
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-size: 22px;
     line-height: 1.1;
     font-weight: 850;
@@ -1297,7 +1297,7 @@ const venueSearchCss = `
 
   .venue-meta {
     margin: 7px 0 0;
-    color: #8c8679;
+    color: var(--vy-muted);
     font-size: 13px;
     font-weight: 700;
   }
@@ -1317,10 +1317,10 @@ const venueSearchCss = `
     min-height: 27px;
     display: inline-flex;
     align-items: center;
-    border: 1px solid rgba(255, 255, 255, .1);
+    border: 1px solid var(--vy-border);
     border-radius: 7px;
-    background: rgba(255, 255, 255, .045);
-    color: #c5c0b6;
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
     padding: 0 10px;
     font-size: 11px;
     font-weight: 800;
@@ -1339,7 +1339,7 @@ const venueSearchCss = `
     align-items: center;
     gap: 5px;
     margin-top: 8px;
-    color: #8c8679;
+    color: var(--vy-muted);
     font-size: 12px;
     font-weight: 700;
   }
@@ -1356,7 +1356,7 @@ const venueSearchCss = `
     gap: 6px;
     border-radius: 12px;
     background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-    color: #241a0a;
+    color: var(--vy-on-gold);
     font-size: 13px;
     font-weight: 950;
   }
@@ -1375,15 +1375,15 @@ const venueSearchCss = `
   .venue-empty {
     display: grid;
     gap: 8px;
-    border: 1px solid rgba(212, 178, 106, .18);
+    border: 1px solid var(--vy-border-gold-12);
     border-radius: 18px;
-    background: rgba(255, 255, 255, .035);
+    background: var(--vy-surface-1);
     padding: 28px;
-    color: #8c8679;
+    color: var(--vy-muted);
   }
 
   .venue-empty strong {
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-size: 18px;
   }
 
@@ -1438,7 +1438,7 @@ const venueSearchCss = `
     align-items: flex-end;
     justify-content: center;
     background: rgba(6, 6, 8, .68);
-    color: #f3f0ea;
+    color: var(--vy-text);
   }
 
   .venue-filter-sheet {
@@ -1468,12 +1468,12 @@ const venueSearchCss = `
     justify-content: space-between;
     gap: 16px;
     padding: 8px 18px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, .06);
+    border-bottom: 1px solid var(--vy-border);
   }
 
   .venue-filter-head h2 {
     margin: 0;
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-size: 18px;
     line-height: 1.15;
     font-weight: 850;
@@ -1492,10 +1492,10 @@ const venueSearchCss = `
     display: inline-grid;
     place-items: center;
     flex: none;
-    border: 1px solid rgba(255, 255, 255, .1);
+    border: 1px solid var(--vy-border);
     border-radius: 50%;
-    background: rgba(255, 255, 255, .035);
-    color: #f3f0ea;
+    background: var(--vy-surface-1);
+    color: var(--vy-text);
     cursor: pointer;
   }
 
@@ -1511,7 +1511,7 @@ const venueSearchCss = `
 
   .venue-filter-group h3 {
     margin: 0 0 9px;
-    color: #f3f0ea;
+    color: var(--vy-text);
     font-size: 13.5px;
     line-height: 1.2;
     font-weight: 800;
@@ -1525,10 +1525,10 @@ const venueSearchCss = `
 
   .venue-filter-group button {
     min-height: 36px;
-    border: 1px solid rgba(255, 255, 255, .1);
+    border: 1px solid var(--vy-border);
     border-radius: 16px;
-    background: rgba(255, 255, 255, .05);
-    color: #c5c0b6;
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
     padding: 8px 14px;
     font-family: var(--nl-font-sans);
     font-size: 12.5px;
@@ -1539,7 +1539,7 @@ const venueSearchCss = `
   .venue-filter-group button.is-active {
     border-color: transparent;
     background: linear-gradient(135deg, #f0dda8, #d4b26a);
-    color: #241a0a;
+    color: var(--vy-on-gold);
     font-weight: 850;
   }
 
@@ -1548,8 +1548,8 @@ const venueSearchCss = `
     grid-template-columns: minmax(0, .78fr) minmax(0, 1.82fr);
     gap: 10px;
     padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
-    border-top: 1px solid rgba(255, 255, 255, .06);
-    background: rgba(18, 17, 22, .96);
+    border-top: 1px solid var(--vy-border);
+    background: var(--vy-surface-1);
   }
 
   .venue-filter-actions button {
@@ -1566,20 +1566,20 @@ const venueSearchCss = `
     align-items: center;
     justify-content: center;
     gap: 7px;
-    border: 1px solid rgba(255, 255, 255, .1);
-    background: rgba(255, 255, 255, .035);
-    color: #c5c0b6;
+    border: 1px solid var(--vy-border);
+    background: var(--vy-surface-1);
+    color: var(--vy-muted);
   }
 
   .venue-filter-apply {
     border: 0;
     background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
-    color: #241a0a;
+    color: var(--vy-on-gold);
   }
 
   @media (max-width: 767px) {
     .venue-search-page {
-      background: #07080a;
+      background: var(--vy-bg);
     }
 
     .venue-search-shell {
@@ -1599,9 +1599,9 @@ const venueSearchCss = `
       height: 28px;
       display: inline-grid;
       place-items: center;
-      border: 1px solid rgba(255, 255, 255, .11);
+      border: 1px solid var(--vy-border);
       border-radius: 50%;
-      color: #f3f0ea;
+      color: var(--vy-text);
       background: rgba(255, 255, 255, .03);
       text-decoration: none;
       flex: none;
@@ -1719,7 +1719,7 @@ const venueSearchCss = `
       min-height: 0;
       display: block;
       border-radius: 12px;
-      background: #111114;
+      background: var(--vy-surface-2);
       box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
     }
 

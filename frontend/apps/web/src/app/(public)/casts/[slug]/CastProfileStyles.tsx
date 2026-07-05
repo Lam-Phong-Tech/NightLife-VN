@@ -3,15 +3,15 @@ export function CastProfileStyles() {
     <style>{`
       .cast-page {
         min-height: 100vh;
-        color: #f3f0ea;
+        color: var(--vy-text);
         font-family: var(--nl-font-sans);
-        background: #0c0c0f;
+        background: var(--vy-bg);
       }
 
       .cast-mobile {
         min-height: 100vh;
         padding-bottom: calc(24px + env(safe-area-inset-bottom));
-        background: #0c0c0f;
+        background: var(--vy-bg);
       }
 
       .nl-page-content:has(.cast-page) {
@@ -61,7 +61,7 @@ export function CastProfileStyles() {
         border: 1px solid rgba(212,178,106,.32);
         border-radius: 999px;
         background: rgba(12,12,15,.42);
-        color: #f3f0ea;
+        color: var(--vy-text);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -91,10 +91,10 @@ export function CastProfileStyles() {
         top: 47%;
         width: 38px;
         height: 38px;
-        border: 1px solid rgba(212,178,106,.35);
+        border: 1px solid var(--vy-border-gold-32);
         border-radius: 999px;
         background: rgba(12,12,15,.48);
-        color: #f3f0ea;
+        color: var(--vy-text);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -126,7 +126,7 @@ export function CastProfileStyles() {
         display: grid;
         place-items: center;
         background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
-        color: #241a0a;
+        color: var(--vy-on-gold);
         box-shadow: 0 16px 36px rgba(0,0,0,.34);
         border: 0;
         cursor: pointer;
@@ -154,7 +154,7 @@ export function CastProfileStyles() {
 
       .cast-rank-badge {
         background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
-        color: #241a0a;
+        color: var(--vy-on-gold);
         font-size: 10px;
         font-weight: 800;
         padding: 6px 11px 6px 9px;
@@ -240,7 +240,7 @@ export function CastProfileStyles() {
       .cast-section-heading h2 {
         margin: 0;
         flex: none;
-        color: #f3f0ea;
+        color: var(--vy-text);
         font-size: 21px;
         line-height: 1.04;
         font-weight: 650;
@@ -265,7 +265,7 @@ export function CastProfileStyles() {
       .cast-mobile-bio,
       .cast-desktop-copy {
         margin: 0;
-        color: #c5c0b6;
+        color: var(--vy-muted);
         font-size: 13px;
         line-height: 1.78;
       }
@@ -290,7 +290,7 @@ export function CastProfileStyles() {
       .cast-info-row span {
         width: 76px;
         flex: none;
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 11px;
         line-height: 1.45;
       }
@@ -319,13 +319,13 @@ export function CastProfileStyles() {
         justify-content: space-between;
         gap: 12px;
         padding: 13px 14px;
-        border-bottom: 1px solid rgba(255,255,255,.06);
+        border-bottom: 1px solid var(--vy-border);
       }
 
       .cast-schedule-grid.desktop .cast-schedule-row {
         border: 1px solid rgba(255,255,255,.07);
         border-radius: 11px;
-        background: rgba(255,255,255,.03);
+        background: var(--vy-surface-1);
       }
 
       .cast-schedule-row.is-highlight {
@@ -358,7 +358,7 @@ export function CastProfileStyles() {
       }
 
       .cast-schedule-row small {
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 11.5px;
         white-space: nowrap;
       }
@@ -384,17 +384,17 @@ export function CastProfileStyles() {
         display: flex;
         align-items: center;
         gap: 15px;
-        color: #f3f0ea;
+        color: var(--vy-text);
         text-decoration: none;
         background: linear-gradient(135deg,rgba(212,178,106,.07),rgba(255,255,255,.02));
-        border: 1px solid rgba(212,178,106,.22);
+        border: 1px solid var(--vy-border-gold-22);
         border-radius: 16px;
         padding: 14px;
       }
 
       .cast-venue-card.compact {
         gap: 13px;
-        background: rgba(255,255,255,.035);
+        background: var(--vy-surface-1);
         border-color: rgba(255,255,255,.06);
         border-radius: 14px;
         padding: 11px 13px;
@@ -430,7 +430,7 @@ export function CastProfileStyles() {
       }
 
       .cast-venue-head strong {
-        color: #f3f0ea;
+        color: var(--vy-text);
         font-size: 17px;
         font-weight: 650;
       }
@@ -458,24 +458,24 @@ export function CastProfileStyles() {
       }
 
       .cast-venue-copy small {
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 12px;
       }
 
       .cast-venue-meta {
         gap: 0;
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 12px;
       }
 
       .cast-venue-meta span {
-        color: #8c8679;
+        color: var(--vy-muted);
       }
 
       .cast-venue-action {
         flex: none;
         gap: 4px;
-        color: #241a0a;
+        color: var(--vy-on-gold);
         background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
         border-radius: 11px;
         padding: 11px 20px;
@@ -484,7 +484,7 @@ export function CastProfileStyles() {
       }
 
       .cast-venue-card.compact .cast-venue-action {
-        color: #d4b26a;
+        color: var(--vy-gold);
         background: transparent;
         padding: 0;
         font-size: 11.5px;
@@ -545,9 +545,9 @@ export function CastProfileStyles() {
       }
 
       .cast-chip.tag {
-        background: rgba(255,255,255,.05);
-        color: #c5c0b6;
-        border: 1px solid rgba(255,255,255,.1);
+        background: var(--vy-surface-2);
+        color: var(--vy-muted);
+        border: 1px solid var(--vy-border);
       }
 
       .cast-related-section.mobile .cast-related-list {
@@ -563,7 +563,7 @@ export function CastProfileStyles() {
       }
 
       .cast-related-card {
-        color: #f3f0ea;
+        color: var(--vy-text);
         text-decoration: none;
       }
 
@@ -598,7 +598,7 @@ export function CastProfileStyles() {
 
       .cast-related-copy small,
       .cast-related-copy em {
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 10.5px;
         font-style: normal;
       }
@@ -628,8 +628,8 @@ export function CastProfileStyles() {
         height: 46px;
         flex: none;
         border-radius: 13px;
-        border: 1px solid rgba(255,255,255,.1);
-        background: rgba(255,255,255,.05);
+        border: 1px solid var(--vy-border);
+        background: var(--vy-surface-2);
         color: #e0729e;
         display: inline-flex;
         align-items: center;
@@ -651,7 +651,7 @@ export function CastProfileStyles() {
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg,#f0dda8,#d4b26a 55%,#b6924a);
-        color: #241a0a;
+        color: var(--vy-on-gold);
         text-decoration: none;
         border: 0;
         text-align: center;
@@ -673,14 +673,14 @@ export function CastProfileStyles() {
 
       .cast-desktop {
         min-height: 100vh;
-        background: #0c0c0f;
+        background: var(--vy-bg);
         padding: 38px 28px 48px;
       }
 
       .cast-desktop-shell {
         max-width: 1240px;
         margin: 0 auto;
-        color: #f3f0ea;
+        color: var(--vy-text);
         background: #0e0d12;
         border: 1px solid rgba(255,255,255,.07);
         border-radius: 18px;
@@ -748,7 +748,7 @@ export function CastProfileStyles() {
       }
 
       .cast-thumb.is-active {
-        border-color: #d4b26a;
+        border-color: var(--vy-gold);
         box-shadow: 0 0 0 2px rgba(212,178,106,.18);
       }
 
@@ -762,9 +762,9 @@ export function CastProfileStyles() {
         top: 24px;
         border: 1px solid rgba(255,255,255,.08);
         border-radius: 18px;
-        background: rgba(255,255,255,.035);
+        background: var(--vy-surface-1);
         padding: 16px;
-        color: #f3f0ea;
+        color: var(--vy-text);
       }
 
       .cast-store-sidebar h2,
@@ -774,7 +774,7 @@ export function CastProfileStyles() {
       }
 
       .cast-store-sidebar p {
-        color: #c5c0b6;
+        color: var(--vy-muted);
         font-size: 13px;
         line-height: 1.55;
       }
@@ -783,7 +783,7 @@ export function CastProfileStyles() {
         min-height: 42px;
         border-radius: 12px;
         background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
-        color: #241a0a;
+        color: var(--vy-on-gold);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -805,7 +805,7 @@ export function CastProfileStyles() {
         gap: 10px;
         border-radius: 12px;
         padding: 8px;
-        background: rgba(255,255,255,.04);
+        background: var(--vy-surface-3);
       }
 
       .cast-store-sidebar .cast-related-media {
@@ -816,7 +816,7 @@ export function CastProfileStyles() {
 
       .cast-store-sidebar .cast-related-card small,
       .cast-store-sidebar .cast-related-card span {
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 11px;
       }
 
@@ -842,7 +842,7 @@ export function CastProfileStyles() {
 
       .cast-desktop-name-block p {
         margin: 10px 0 0;
-        color: #c5c0b6;
+        color: var(--vy-muted);
         font-size: 14px;
       }
 
@@ -853,8 +853,8 @@ export function CastProfileStyles() {
         width: 50px;
         height: 50px;
         border-radius: 13px;
-        border: 1px solid rgba(255,255,255,.1);
-        background: rgba(255,255,255,.04);
+        border: 1px solid var(--vy-border);
+        background: var(--vy-surface-3);
         color: #e0729e;
         display: inline-flex;
         align-items: center;
@@ -872,7 +872,7 @@ export function CastProfileStyles() {
         display: inline-flex;
         align-items: center;
         gap: 7px;
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 12px;
       }
 
@@ -881,7 +881,7 @@ export function CastProfileStyles() {
       }
 
       .cast-desktop-stat-row b {
-        color: #f3f0ea;
+        color: var(--vy-text);
         font-size: 16px;
       }
 
@@ -915,9 +915,9 @@ export function CastProfileStyles() {
         align-items: center;
         justify-content: center;
         border-radius: 13px;
-        border: 1px solid rgba(255,255,255,.1);
-        background: rgba(255,255,255,.04);
-        color: #f3f0ea;
+        border: 1px solid var(--vy-border);
+        background: var(--vy-surface-3);
+        color: var(--vy-text);
         padding: 0 22px;
         text-decoration: none;
         font-size: 14px;
@@ -929,7 +929,7 @@ export function CastProfileStyles() {
         align-items: center;
         gap: 7px;
         margin: 13px 0 0;
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 11.5px;
       }
 
@@ -952,7 +952,7 @@ export function CastProfileStyles() {
       }
 
       .cast-related-section.desktop .cast-related-card {
-        background: rgba(255,255,255,.035);
+        background: var(--vy-surface-1);
         border: 1px solid rgba(255,255,255,.06);
         border-radius: 16px;
         overflow: hidden;
@@ -974,7 +974,7 @@ export function CastProfileStyles() {
       .nl-page-content:has(.cast-page) {
         padding-left: 0 !important;
         padding-right: 0 !important;
-        background: #0c0c0f !important;
+        background: var(--vy-bg) !important;
       }
 
       .nl-page-content:has(.cast-page) .cast-page {
@@ -1005,18 +1005,18 @@ export function CastProfileStyles() {
         display: flex;
         align-items: center;
         gap: 8px;
-        color: #8c8679;
+        color: var(--vy-muted);
         font-size: 12.5px;
         margin-bottom: 20px;
       }
 
       .cast-desktop-breadcrumb a {
-        color: #8c8679;
+        color: var(--vy-muted);
         text-decoration: none;
       }
 
       .cast-desktop-breadcrumb strong {
-        color: #c5c0b6;
+        color: var(--vy-muted);
         font-weight: 600;
       }
 
@@ -1103,7 +1103,7 @@ export function CastProfileStyles() {
 
       .cast-desktop-name-block p {
         margin: 0 0 4px;
-        color: #c5c0b6;
+        color: var(--vy-muted);
         font-size: 14px;
       }
 
@@ -1111,7 +1111,7 @@ export function CastProfileStyles() {
         gap: 22px;
         margin-top: 18px;
         padding: 14px 0;
-        border-top: 1px solid rgba(255,255,255,.07);
+        border-top: 1px solid var(--vy-border);
         border-bottom: 1px solid rgba(255,255,255,.07);
       }
 
@@ -1126,7 +1126,7 @@ export function CastProfileStyles() {
       .cast-desktop-copy {
         max-width: 100%;
         margin-top: 18px;
-        color: #c5c0b6;
+        color: var(--vy-muted);
       }
 
       .cast-detail-list.desktop {
@@ -1170,7 +1170,7 @@ export function CastProfileStyles() {
         inset: 0;
         z-index: 80;
         background: #000;
-        color: #f3f0ea;
+        color: var(--vy-text);
         display: grid;
         grid-template-rows: auto 1fr auto auto;
         gap: 16px;
@@ -1200,7 +1200,7 @@ export function CastProfileStyles() {
       .cast-lightbox-nav {
         border: 1px solid rgba(255,255,255,.16);
         background: rgba(255,255,255,.08);
-        color: #f3f0ea;
+        color: var(--vy-text);
         border-radius: 999px;
         cursor: pointer;
         display: inline-flex;
@@ -1260,7 +1260,7 @@ export function CastProfileStyles() {
       }
 
       .cast-lightbox-caption strong {
-        color: #f3f0ea;
+        color: var(--vy-text);
         font-size: 14px;
       }
 

@@ -36,8 +36,20 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                try {
+                  var t = localStorage.getItem('vy-user-theme');
+                  if (!t && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
+                  if (t === 'light') document.documentElement.classList.add('vy-light');
+                } catch (e) { /* private mode */ }
+              })();
+            `,
+          }}
+        />
         <Script src="/shared.js" strategy="beforeInteractive" />
-        <Script src="/theme.js" strategy="beforeInteractive" />
         <Script src="/support.js" strategy="beforeInteractive" />
         <script
           type="application/ld+json"

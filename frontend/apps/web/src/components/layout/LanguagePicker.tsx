@@ -20,16 +20,16 @@ type LanguageOption = {
 };
 
 const colors = {
-  modalBg: "#16141b",
-  bg: "#0c0c0f",
-  border: "rgba(255,255,255,.08)",
-  borderStrong: "rgba(212,178,106,.6)",
-  rowBorder: "rgba(255,255,255,.06)",
-  text: "#f3f0ea",
-  text2: "#c5c0b6",
-  muted: "#8c8679",
-  gold: "#d4b26a",
-  goldSoft: "#e3c27e",
+  modalBg: "var(--vy-surface)",
+  bg: "var(--vy-bg)",
+  border: "var(--vy-border)",
+  borderStrong: "var(--vy-border-gold-40)",
+  rowBorder: "var(--vy-border)",
+  text: "var(--vy-text)",
+  text2: "var(--vy-text-2)",
+  muted: "var(--vy-muted)",
+  gold: "var(--vy-gold)",
+  goldSoft: "var(--vy-gold-pale)",
   onGold: "#241a0a",
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
   goldBadge: "linear-gradient(135deg,#f0dda8,#d4b26a)",
@@ -132,7 +132,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
     borderRadius: `${triggerSize / 2}px`,
     border: `1px solid ${colors.borderStrong}`,
     color: colors.goldSoft,
-    background: isMobile ? "rgba(255,255,255,.02)" : "rgba(255,255,255,.04)",
+    background: isMobile ? "var(--vy-surface-1)" : "var(--vy-surface-2)",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -157,7 +157,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         borderTop: `1px solid ${colors.border}`,
         borderRadius: "24px 24px 0 0",
         padding: "12px 18px calc(20px + env(safe-area-inset-bottom))",
-        boxShadow: "0 -18px 44px rgba(0,0,0,.55)",
+        boxShadow: "var(--vy-shadow)",
       }
     : {
         width: "min(444px, calc(100vw - 32px))",
@@ -165,7 +165,7 @@ export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
         border: `1px solid ${colors.border}`,
         borderRadius: "20px",
         padding: "24px 22px",
-        boxShadow: "0 30px 70px -20px rgba(0,0,0,.85)",
+        boxShadow: "var(--vy-shadow)",
       };
 
   return (

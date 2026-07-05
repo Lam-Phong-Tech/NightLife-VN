@@ -34,18 +34,18 @@ export function MobileSimulator() {
       </div>
 
       <main
-        className="mx-auto w-full max-w-[390px] overflow-hidden bg-[#0c0c0f]"
+        className="mx-auto w-full max-w-[390px] overflow-hidden bg-[var(--vy-bg)]"
         style={{ height: "100dvh", minHeight: "100vh" }}
       >
         {iframeSrc ? (
           <iframe
             src={iframeSrc}
-            className="block h-full w-full border-none bg-[#0c0c0f]"
+            className="block h-full w-full border-none bg-[var(--vy-bg)]"
             title="Mobile Simulator"
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#0c0c0f] text-[#8c8679]">
+          <div className="flex h-full w-full items-center justify-center bg-[var(--vy-bg)] text-[var(--vy-muted)]">
             Đang tải giả lập...
           </div>
         )}

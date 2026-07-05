@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: "Inter", "Segoe UI", Arial, system-ui, sans-serif; }
+    doc-page { color: #211e19; font-size: 13.5px; line-height: 1.62; }
+    doc-page h1 { font-size: 25px; font-weight: 900; letter-spacing: -0.4px; line-height: 1.2; margin: 0 0 4px; }
+    doc-page h2 { font-size: 16.5px; font-weight: 800; letter-spacing: -0.1px; margin: 34px 0 10px; padding: 0 0 6px 11px; border-left: 3px solid #a87c34; border-bottom: 1px solid #e8e1d0; }
+    doc-page h3 { font-size: 13.5px; font-weight: 800; margin: 20px 0 7px; }
+    doc-page p { margin: 7px 0; }
+    doc-page ul, doc-page ol { margin: 7px 0; padding-left: 22px; }
+    doc-page li { margin: 3px 0; }
+    doc-page pre { background: #17150f; color: #ece5d3; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.58; padding: 13px 15px; border-radius: 10px; overflow-x: auto; margin: 10px 0; }
+    doc-page code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.3px; background: #f2edde; border: 1px solid #e6ddc6; border-radius: 4px; padding: 0 4px; color: #6b5218; }
+    doc-page pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+    doc-page table { width: 100%; border-collapse: collapse; font-size: 11.8px; margin: 10px 0; }
+    doc-page th { padding: 6px 9px; border: 1px solid #dcd3bd; background: #f1ecdd; text-align: left; font-weight: 700; }
+    doc-page td { padding: 5px 9px; border: 1px solid #e6dfcd; vertical-align: top; }
+    doc-page table { break-inside: auto; }
+    doc-page tr { break-inside: avoid; }
+  </style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="a4" margin="0.62in" hint-size="100%,1400px">
+
+  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; border-bottom: 2px solid #a87c34; padding-bottom: 14px;">
+    <div style="min-width: 0;">
+      <div style="font-size: 10px; font-weight: 700; letter-spacing: 2.2px; color: #a87c34; text-transform: uppercase; margin-bottom: 6px;">Vietyoru · Bàn giao kỹ thuật</div>
+      <h1 data-comment-anchor="doc-title">Kế hoạch triển khai giao diện Sáng — web người dùng</h1>
+      <p style="margin: 2px 0 0; color: #57534b;">Phương án B (CSS variables) · Desktop + Mobile · Đối chiếu trực tiếp codebase <code>NightLife-VN/frontend/apps/web</code></p>
+    </div>
+    <div style="flex: none; text-align: right; font-size: 11px; color: #8c8679; line-height: 1.7;">05/07/2026<br>v1.0 · cho dev tự triển khai</div>
+  </div>
+
+  <table style="margin-top: 14px;">
+    <tbody>
+      <tr><th style="width: 30%;">Class kích hoạt</th><td><code>vy-light</code> trên <b>&lt;html&gt;</b> (documentElement) — tuyệt đối không đặt trên <code>&lt;body&gt;</code></td></tr>
+      <tr><th>Key localStorage</th><td><code>vy-user-theme</code> = <code>'light'</code> | <code>'dark'</code> (mặc định dark; tách riêng với <code>vy-admin-theme</code>)</td></tr>
+      <tr><th>Lần đầu truy cập</th><td>Theo <code>prefers-color-scheme</code> của máy; sau khi user bấm nút, lựa chọn tay luôn thắng</td></tr>
+      <tr><th>Prefix token</th><td><code>--vy-*</code> (xem §2 vì sao không dùng tên trần <code>--bg</code>, <code>--border</code>… như guide gốc)</td></tr>
+      <tr><th>Nút toggle</th><td>Tròn 39px desktop / 36px mobile, viền gold, icon mặt trời ↔ mặt trăng, đặt giữa nút ngôn ngữ VI và nút chat</td></tr>
+      <tr><th>File code kèm theo</th><td><code>handoff/01-tokens.css</code> · <code>02-layout-theme-init.tsx.txt</code> · <code>03-ThemeToggle.tsx</code> · <code>04-globals-light-fixes.css</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>1. Phạm vi &amp; chiến lược</h2>
+  <p><b>Phạm vi:</b> toàn bộ giao diện người dùng public ở cả 2 breakpoint — trang chủ, tìm quán (danh sách + chi tiết quán), cast (danh sách + hồ sơ), bảng xếp hạng, ưu đãi, blog — cùng chrome dùng chung: header sticky, footer, bottom nav mobile, drawer thông báo, toast, chat hỗ trợ, language picker, mobile simulator.</p>
+  <p><b>Chiến lược 4 phase, ship an toàn bằng cờ môi trường:</b></p>
+  <ol>
+    <li><b>P0 — Nền tảng:</b> token 2 theme vào <code>globals.css</code>, script chống chớp vào <code>layout.tsx</code>, gỡ engine <code>theme.js</code> cũ, thêm component <code>ThemeToggle</code> (ẩn sau cờ <code>NEXT_PUBLIC_LIGHT_THEME</code>).</li>
+    <li><b>P1 — Chrome chung + UI kit:</b> SiteChrome và 8 component <code>ui/</code> chuyển hết màu hardcode → token.</li>
+    <li><b>P2 — Từng trang</b> theo thứ tự lưu lượng: trang chủ → danh sách quán → chi tiết quán → danh sách cast → hồ sơ cast → xếp hạng → ưu đãi → blog.</li>
+    <li><b>P3 — Dọn <code>globals.css</code></b> (các block hardcode desktop + mobile) + QA 2 theme × 2 breakpoint → bật cờ, xóa guard.</li>
+  </ol>
+  <p>Cách chuyển đổi cơ học và ít rủi ro: codebase dùng 2 pattern màu — (a) object <code>const colors = {...}</code> đầu file rồi tham chiếu trong inline style, (b) chuỗi CSS lớn render qua <code>&lt;style&gt;{cssString}&lt;/style&gt;</code>. Cả hai chỉ cần <b>thay giá trị hex/rgba bằng chuỗi <code>var(--vy-…)</code></b> theo bảng §5 — không đổi cấu trúc JSX, không đổi layout. Phương án B giữ nguyên <code>backdrop-filter</code> (header kính mờ, drawer) và ảnh không bao giờ bị âm bản — hai điểm yếu của phương án A.</p>
+
+  <h2>2. Vì sao token phải mang prefix <code>--vy-</code></h2>
+  <p>Guide gốc đề xuất tên trần (<code>--bg</code>, <code>--border</code>, <code>--muted</code>…). Trong <code>globals.css</code> hiện tại, <code>--border</code>, <code>--muted</code>, <code>--background</code>… <b>đã bị shadcn/Tailwind v4 chiếm</b> (khối oklch + <code>@theme inline</code>, sinh utility <code>border-border</code>, <code>bg-muted</code>…). Định nghĩa đè sẽ phá form control admin. Ngoài ra còn bộ <code>--nl-*</code> legacy đang được hàng chục rule <code>!important</code> tham chiếu. Kết luận: bộ token mới dùng prefix <code>--vy-</code>, còn bộ <code>--nl-*</code> được <b>trỏ về</b> token vy (§6.2) — nhờ đó mọi rule legacy tự đổi theme mà không phải sửa từng dòng.</p>
+
+  <h2>3. Bảng token 2 theme (nguồn chân lý)</h2>
+  <p>Đầy đủ trong <code>handoff/01-tokens.css</code>. Giá trị light bám bảng B.1 của guide, mở rộng cho các tier thực tế trong code:</p>
+  <table>
+    <thead><tr><th>Token</th><th>Dark (hiện tại)</th><th>Light</th><th>Thay cho các giá trị trong code</th></tr></thead>
+    <tbody>
+      <tr><td><code>--vy-bg</code></td><td><code>#0c0c0f</code></td><td><code>#f6f4ef</code></td><td><code>#0c0c0f</code> <code>#101014</code> (nền trang)</td></tr>
+      <tr><td><code>--vy-bg-2</code></td><td><code>#0e0d12</code></td><td><code>#ffffff</code></td><td><code>#0e0d12 #0b0b0e #09090b #111015 #08080a #08080b #16141b</code></td></tr>
+      <tr><td><code>--vy-hero-grad</code></td><td>radial gold + linear tối</td><td>radial gold nhẹ + linear kem</td><td>gradient nền hero trang chủ / danh sách cast</td></tr>
+      <tr><td><code>--vy-surface</code></td><td><code>#131218</code></td><td><code>#ffffff</code></td><td><code>#131218 #141417 #141418 #111114 #18181c #19191d</code></td></tr>
+      <tr><td><code>--vy-surface-1</code></td><td><code>rgba(255,255,255,.035)</code></td><td><code>rgba(28,22,10,.03)</code></td><td>rgba trắng <code>.03 .035</code></td></tr>
+      <tr><td><code>--vy-surface-2</code></td><td><code>rgba(255,255,255,.05)</code></td><td><code>rgba(28,22,10,.045)</code></td><td>rgba trắng <code>.04 .045 .05</code></td></tr>
+      <tr><td><code>--vy-surface-3</code></td><td><code>rgba(255,255,255,.075)</code></td><td><code>rgba(28,22,10,.06)</code></td><td>rgba trắng <code>.06 .075</code></td></tr>
+      <tr><td><code>--vy-nav-bg</code></td><td><code>rgba(8,8,11,.95)</code></td><td><code>rgba(255,255,255,.94)</code></td><td>header + bottom nav kính mờ</td></tr>
+      <tr><td><code>--vy-border</code></td><td><code>rgba(255,255,255,.07)</code></td><td><code>rgba(30,24,12,.1)</code></td><td>rgba trắng <code>.06 .07 .08</code> (viền trung tính)</td></tr>
+      <tr><td><code>--vy-border-gold-12</code></td><td><code>rgba(212,178,106,.18)</code></td><td><code>rgba(150,116,52,.26)</code></td><td>gold alpha <code>.16 .18 .2</code></td></tr>
+      <tr><td><code>--vy-border-gold-22</code></td><td><code>rgba(212,178,106,.22)</code></td><td><code>rgba(150,116,52,.34)</code></td><td>gold alpha <code>.22 .25 .26 .28</code></td></tr>
+      <tr><td><code>--vy-border-gold-32</code></td><td><code>rgba(212,178,106,.32)</code></td><td><code>rgba(150,116,52,.46)</code></td><td>gold alpha <code>.3 .32 .35 .36</code></td></tr>
+      <tr><td><code>--vy-border-gold-40</code></td><td><code>rgba(212,178,106,.4)</code></td><td><code>rgba(150,116,52,.58)</code></td><td>gold alpha <code>≥ .4</code></td></tr>
+      <tr><td><code>--vy-text</code></td><td><code>#f3f0ea</code></td><td><code>#211e19</code></td><td><code>#f3f0ea #fff8e6 #f8f3e7</code></td></tr>
+      <tr><td><code>--vy-text-2</code></td><td><code>#c5c0b6</code></td><td><code>#57534b</code></td><td><code>#c5c0b6 #b6b1a6 #ddd0af</code></td></tr>
+      <tr><td><code>--vy-muted</code></td><td><code>#8c8679</code></td><td><code>#8c8679</code> (giữ)</td><td><code>#8c8679 #9b958a #c7bd9e</code></td></tr>
+      <tr><td><code>--vy-faint</code></td><td><code>#6f6b62</code></td><td><code>#a8a296</code></td><td>nav inactive, caption mờ nhất</td></tr>
+      <tr><td><code>--vy-gold</code></td><td><code>#d4b26a</code></td><td><code>#a87c34</code></td><td><code>#d4b26a</code> (icon, viền, nhãn)</td></tr>
+      <tr><td><code>--vy-gold-hi</code></td><td><code>#e3c27e</code></td><td><code>#8f6a2a</code></td><td><code>#e3c27e</code> (giá, rank, ⭐)</td></tr>
+      <tr><td><code>--vy-gold-pale</code></td><td><code>#f0dda8</code></td><td><code>#8f6a2a</code></td><td><code>#f0dda8</code> — trừ khi nằm trên ảnh (§4)</td></tr>
+      <tr><td><code>--vy-gold-icon</code></td><td><code>#d9bd84</code></td><td><code>#9c7630</code></td><td><code>#d9bd84</code> (icon category)</td></tr>
+      <tr><td><code>--vy-gold-soft-bg</code></td><td><code>rgba(212,178,106,.12)</code></td><td><code>rgba(168,124,52,.12)</code></td><td>nền fill gold nhẹ <code>.1–.16</code> (hover, badge nền)</td></tr>
+      <tr><td><code>--vy-gold-grad</code></td><td colspan="2" style="text-align: center;"><b>giữ nguyên 2 theme</b></td><td>mọi gradient gold CTA/logo (<code>#f4e3b4… #f4d989… #fff7d7…</code>)</td></tr>
+      <tr><td><code>--vy-on-gold</code></td><td colspan="2" style="text-align: center;"><code>#241a0a</code> — <b>giữ nguyên 2 theme</b></td><td><code>#241a0a #17130b</code> (chữ trên nền gold)</td></tr>
+      <tr><td><code>--vy-success / warn / error / info / pink</code></td><td><code>#7fd3a2 #e7b869 #e88b99 #8fb6e4 #e0729e</code></td><td><code>#1f8a5b #b07818 #c2455c #3d6fb0 #c2517e</code></td><td>badge trạng thái, đếm ngược, dot, tim (<code>#7fd3a0 #e6b873 #ff8aa5 #e79ab8</code> gộp vào)</td></tr>
+      <tr><td><code>--vy-shadow / --vy-shadow-card</code></td><td>bóng đen đậm</td><td>bóng nâu ấm nhạt</td><td><code>0 20px 44px…</code> / <code>0 18px 40px rgba(0,0,0,.22)</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Nguyên tắc bất biến — cái gì KHÔNG đổi theo theme</h2>
+  <p>Quy tắc ngón tay cái: <b>màu nằm trên ẢNH thì giữ nguyên; màu nằm trên NỀN trang thì token hóa.</b></p>
+  <ul>
+    <li><b>Gradient gold</b> của logo wordmark, CTA "Đặt ngay/Đặt bàn", badge VIP, thẻ membership — nhận diện thương hiệu, giữ cả 2 theme; chữ trên đó luôn <code>#241a0a</code>.</li>
+    <li><b>Scrim phủ ảnh</b> — mọi <code>rgba(12,12,15,…)</code> và gradient đen đáy ảnh quán/cast/hero: giữ nguyên để chữ trắng trên ảnh luôn đọc được (ảnh nightlife vốn tối).</li>
+    <li><b>Chữ/icon trắng nằm trên ảnh</b> (tên quán trên hero, badge "ĐANG DIỄN RA"…): giữ <code>#fff</code>/<code>#f0dda8</code>.</li>
+    <li><b>Gradient fallback hero chi tiết quán</b> (<code>store-detail.helpers.ts</code>, <code>StoreDetailHeader.tsx</code>, <code>StoreDetailClient.tsx</code>: <code>linear-gradient(135deg,#18181c…#111114)</code>) — đóng vai ảnh, trên nó có chữ trắng → giữ.</li>
+    <li><b>Nút play video</b> trang chủ (dòng ~1156: nền kem <code>rgba(243,240,234,.92)</code>, icon <code>#0c0c0f</code>) — cặp màu trên thumbnail video → giữ.</li>
+    <li><b>Khung ngoài mobile simulator</b> (<code>.nl-mobile-simulator-root</code> <code>#f6f5f2</code>) — desk xám sáng bao quanh khung điện thoại, giữ.</li>
+    <li><code>rgba(0,0,0,…)</code> bên trong gradient phủ ảnh — giữ; bóng đổ thì dùng token shadow khi tiện (không bắt buộc từng cái).</li>
+  </ul>
+
+  <h2>5. Bảng find-replace toàn cục</h2>
+  <p>Áp cho mọi file ở P1/P2 (cột "Thay cho" §3 là bản đầy đủ). Thao tác trong <code>colors</code> object là đổi <b>giá trị chuỗi</b>: <code>gold: "#d4b26a"</code> → <code>gold: "var(--vy-gold)"</code>; trong chuỗi CSS là thay trực tiếp. Sau mỗi file: search lại <code>#</code> và <code>rgba(</code> — mọi kết quả còn lại phải thuộc danh sách bất biến §4, trạng thái đặc thù, hoặc gradient gold.</p>
+
+  <h2>6. P0 — Nền tảng (4 file)</h2>
+
+  <h3>6.1 · <code>src/app/globals.css</code> — thêm token, sửa 3 chỗ</h3>
+  <ul>
+    <li>Dán toàn bộ <b>phần 1</b> của <code>handoff/01-tokens.css</code> (block <code>:root</code> + <code>html.vy-light</code>) ngay sau khối <code>@theme { … }</code>.</li>
+    <li>Xóa dòng <code>color-scheme: dark;</code> trong <code>:root</code> cũ (dòng ~22) — block token mới quản, nhờ đó scrollbar/form control hệ điều hành đổi đúng theo theme.</li>
+    <li>Sửa rule <code>body</code> (dòng ~58):</li>
+  </ul>
+  <pre>body {
+  background-color: var(--vy-bg);  /* cũ: var(--color-night-900) */
+  color: var(--vy-text);           /* cũ: #ededed */
+  font-family: var(--nl-font-sans);
+}</pre>
+
+  <h3>6.2 · <code>globals.css</code> — trỏ bộ <code>--nl-*</code> về token vy</h3>
+  <p>Thay block <code>:root { --nl-bg: #0c0c0f; … }</code> (dòng ~154) bằng <b>phần 2</b> của <code>handoff/01-tokens.css</code>. Hiệu ứng dây chuyền: <code>html, body { background: var(--nl-bg) !important }</code>, các rule remap <code>[style*="background: #fff"]</code>…, input/placeholder — tất cả tự ăn theme không cần sửa thêm.</p>
+
+  <h3>6.3 · <code>src/app/layout.tsx</code> — script chống chớp (bắt buộc)</h3>
+  <p>Thêm làm phần tử <b>đầu tiên</b> trong <code>&lt;head&gt;</code>, trước mọi <code>&lt;Script&gt;</code> — chạy trước paint nên chuyển trang không chớp màn:</p>
+  <pre>&lt;!-- Kết quả HTML phải có trong &lt;head&gt; sau khi render: --&gt;
+&lt;script&gt;
+  (function () {
+    try {
+      var t = localStorage.getItem('vy-user-theme');
+      if (!t &amp;&amp; window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
+      if (t === 'light') document.documentElement.classList.add('vy-light');
+    } catch (e) { /* private mode */ }
+  })();
+&lt;/script&gt;</pre>
+  <p>Trong <code>layout.tsx</code> viết bằng JSX qua <code>dangerouslySetInnerHTML</code> — <b>copy nguyên văn từ <code>handoff/02-layout-theme-init.tsx.txt</code></b>, không gõ tay để tránh sai ký tự escape.</p>
+
+  <h3>6.4 · Gỡ engine theme cũ <code>public/theme.js</code> (bắt buộc, tránh xung đột)</h3>
+  <p><code>theme.js</code> là engine của prototype cũ: đọc key <code>nl_theme</code>, dùng MutationObserver quét mọi <code>[style]</code> và remap hex sang bảng màu tím cũ, đồng thời set cứng nền <code>#0f0d15</code> lên <code>&lt;html&gt;/&lt;body&gt;</code> — sẽ phá theme mới với user còn <code>nl_theme='dark'</code> trong máy. Nút của nó hiện đã bị ẩn bằng CSS.</p>
+  <ol>
+    <li>Xóa dòng <code>&lt;Script src="/theme.js" strategy="beforeInteractive" /&gt;</code> trong <code>layout.tsx</code>.</li>
+    <li>Xóa file <code>public/theme.js</code>.</li>
+    <li>(Tùy chọn) bỏ rule <code>#nl-theme-btn { display: none !important; }</code> trong <code>globals.css</code>. Không cần dọn key <code>nl_theme</code> của user cũ — engine gỡ rồi thì key tự chết.</li>
+  </ol>
+
+  <h3>6.5 · File mới <code>src/components/layout/ThemeToggle.tsx</code></h3>
+  <p>Copy nguyên <code>handoff/03-ThemeToggle.tsx</code>. Spec: tròn 39px (desktop) / 36px (mobile — vùng chạm 44px đã được rule <code>.nl-site-actions</code> min-height đảm bảo), viền <code>--vy-border-gold-32</code>, icon 17px màu <code>--vy-gold</code>, hover nền <code>--vy-gold-soft-bg</code>; đang tối hiện <b>mặt trời</b>, đang sáng hiện <b>mặt trăng</b>; có <code>title</code> + <code>aria-label</code> "Chuyển giao diện sáng/tối". Component có sẵn guard <code>NEXT_PUBLIC_LIGHT_THEME !== "1" → return null</code> — thêm <code>NEXT_PUBLIC_LIGHT_THEME=1</code> vào <code>.env.local</code> khi dev, chỉ set ở production khi P2–P3 xong, sau đó xóa guard.</p>
+
+  <h3>6.6 · Gắn nút vào header — <code>SiteChrome.tsx</code> (2 vị trí)</h3>
+  <pre>// 1) Đầu file, cạnh các import layout:
+import { ThemeToggle } from "./ThemeToggle";
+
+// 2) Nhánh MOBILE — trong .nl-site-actions (~dòng 1576),
+//    thêm ngay DƯỚI dòng &lt;LanguagePicker … /&gt; hiện có:
+&lt;ThemeToggle isMobile /&gt;
+
+// 3) Nhánh DESKTOP — trong .nl-site-actions (~dòng 1637),
+//    thêm ngay DƯỚI dòng &lt;LanguagePicker … /&gt; hiện có:
+&lt;ThemeToggle /&gt;</pre>
+  <p>Đúng vị trí spec: giữa nút ngôn ngữ VI và nút chat, cả 2 breakpoint. Hàng actions dùng flex + gap sẵn nên không cần chỉnh spacing.</p>
+
+  <h2>7. P1 — Chrome dùng chung (6 file)</h2>
+
+  <h3>7.1 · <code>src/components/layout/SiteChrome.tsx</code> (nặng nhất — header, footer, bottom nav, drawer thông báo)</h3>
+  <p>Thay object <code>colors</code> (dòng ~33):</p>
+  <pre>const colors = {
+  bg: "var(--vy-bg)",
+  navBg: "var(--vy-nav-bg)",
+  borderGold12: "var(--vy-border-gold-12)",
+  borderGold22: "var(--vy-border-gold-22)",
+  borderGold32: "var(--vy-border-gold-32)",
+  text: "var(--vy-text)",
+  text2: "var(--vy-text-2)",
+  muted: "var(--vy-muted)",
+  onGold: "#241a0a",                    // giữ — chữ trên gold
+  gold: "var(--vy-gold)",
+  goldPale: "var(--vy-gold-pale)",
+  goldGrad: "linear-gradient(135deg,#fff7d7 0%,#f7d978 42%,#d5a23a 100%)", // giữ
+};</pre>
+  <p>Sau đó rà phần còn lại của file theo bảng §5, các điểm đáng chú ý:</p>
+  <ul>
+    <li><code>noticeToneStyle</code> (dòng ~130): giữ 4 nền <code>rgba(…,.12)</code>; đổi 4 giá trị <code>color</code>: <code>#e3c27e</code> → <code>var(--vy-gold-hi)</code>, <code>#7fd3a0</code> → <code>var(--vy-success)</code>, <code>#e6b873</code> → <code>var(--vy-warn)</code>, <code>#ff8aa5</code> → <code>var(--vy-error)</code>.</li>
+    <li>Nút Đăng nhập desktop: <code>rgba(255,255,255,.04)</code> → <code>var(--vy-surface-2)</code>; pill tài khoản <code>rgba(212,178,106,.1)</code> → <code>var(--vy-gold-soft-bg)</code>.</li>
+    <li>Bottom nav mobile (~dòng 1735): đã dùng <code>colors.navBg</code> → tự ăn theme; màu mục inactive nếu hardcode (<code>#6f6b62</code>) → <code>var(--vy-faint)</code>.</li>
+    <li>Wordmark gradient + <code>textShadow</code> glow giữ nguyên trong JSX — file 04 đã dịu glow khi light bằng CSS.</li>
+    <li>Nút Đăng nhập mobile nền gold-grad: giữ nguyên toàn bộ.</li>
+  </ul>
+
+  <h3>7.2 · <code>LanguagePicker.tsx</code> · <code>SupportChatWidget.tsx</code> · <code>SystemFeedback.tsx</code></h3>
+  <p>Cùng pattern <code>colors</code> object (+ <code>SystemFeedback</code> có thêm chuỗi CSS với <code>#f3f0ea</code>, <code>rgba(212,178,106,.35)</code>…) — áp bảng §5 toàn file. Đây là drawer/toast/modal <code>position: fixed</code>: với phương án B không có filter trên html nên <b>không</b> có rủi ro trôi theo cuộn — nhưng vẫn nằm trong checklist QA §11.</p>
+
+  <h3>7.3 · <code>MobileSimulator.tsx</code> — Tailwind arbitrary value</h3>
+  <p>File duy nhất dùng class thay vì inline style: đổi 3 chỗ <code>bg-[#0c0c0f]</code> → <code>bg-[var(--vy-bg)]</code> và <code>text-[#8c8679]</code> → <code>text-[var(--vy-muted)]</code>. Giữ nền desk <code>.nl-mobile-simulator-root</code> (§4). Lưu ý: simulator nhúng trang qua <b>iframe</b> — iframe có <code>documentElement</code> riêng nhưng dùng chung origin + localStorage, nên script 6.3 trong iframe tự gắn class đúng; toggle bên trong iframe hoạt động độc lập với shell ngoài.</p>
+
+  <h3>7.4 · <code>Header.tsx</code> / <code>BottomNav.tsx</code></h3>
+  <p><code>Header.tsx</code> là stub trả về <code>null</code>; header/bottom-nav thật nằm trong SiteChrome. Kiểm tra <code>BottomNav.tsx</code> — nếu cũng là stub thì bỏ qua.</p>
+
+  <h3>7.5 · UI kit <code>src/components/ui/</code> (8 file)</h3>
+  <table>
+    <thead><tr><th>File</th><th>Việc cần làm ngoài bảng §5</th></tr></thead>
+    <tbody>
+      <tr><td><code>VenueCard.tsx</code></td><td>Badge trên ảnh (<code>rgba(12,12,15,.72)</code> + chữ <code>#f0dda8</code>): <b>giữ</b> (§4). Nền card <code>rgba(255,255,255,.045)</code> → <code>var(--vy-surface-2)</code>; bỏ <code>boxShadow</code> hardcode → <code>var(--vy-shadow-card)</code>.</td></tr>
+      <tr><td><code>CastCard.tsx</code></td><td>Rà theo §5; overlay/scrim trên ảnh chân dung giữ.</td></tr>
+      <tr><td><code>CouponCard.tsx</code></td><td>Viền dashed gold + tab "LẤY MÃ": đổi qua tier border; gradient gold giữ; chữ giá → <code>var(--vy-gold-hi)</code>.</td></tr>
+      <tr><td><code>RankingCard.tsx</code></td><td><code>rgba(212,178,106,.6)</code> mũi tên → <code>var(--vy-gold)</code>; nền/viền theo §5.</td></tr>
+      <tr><td><code>SearchBar.tsx</code></td><td>Nền <code>rgba(255,255,255,.04)</code> → <code>var(--vy-surface-2)</code>; viền <code>.22</code> → tier 22; chữ + placeholder → text/muted.</td></tr>
+      <tr><td><code>EmptyState.tsx</code> · <code>LoadingSkeleton.tsx</code></td><td>Theo §5; dải shimmer <code>rgba(212,178,106,.13)</code> → <code>var(--vy-gold-soft-bg)</code>.</td></tr>
+      <tr><td><code>MediaPlaceholder.tsx</code></td><td>Đồng bộ với fix <code>.nl-media-fallback</code> trong file 04 — radial gold giữ logic, nền tối → sáng khi light.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. P2 — Từng trang (theo thứ tự triển khai)</h2>
+
+  <h3>8.1 · Trang chủ — <code>src/app/page.tsx</code> (~1.925 dòng)</h3>
+  <table>
+    <thead><tr><th>Key trong <code>colors</code></th><th>Giá trị mới</th></tr></thead>
+    <tbody>
+      <tr><td><code>shell: "#f0eee9"</code></td><td>Xóa key; 2 chỗ nền khung (dòng ~452 và ~1773 <code>background: colors.ink</code>) đổi thành <code>"var(--vy-bg)"</code></td></tr>
+      <tr><td><code>ink: "#0c0c0f"</code></td><td><b>Giữ</b> — sau bước trên chỉ còn dùng cho icon nút play trên nền kem (dòng ~1156)</td></tr>
+      <tr><td><code>line</code></td><td><code>"var(--vy-border-gold-22)"</code></td></tr>
+      <tr><td><code>gold</code> / <code>goldSoft</code></td><td><code>"var(--vy-gold)"</code> / <code>"var(--vy-gold-pale)"</code></td></tr>
+      <tr><td><code>muted: "#b6b1a6"</code></td><td><code>"var(--vy-text-2)"</code></td></tr>
+      <tr><td><code>text</code> / <code>dim</code> / <code>rose</code></td><td><code>"var(--vy-text)"</code> / <code>"var(--vy-muted)"</code> / <code>"var(--vy-pink)"</code></td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>Gradient nền hero (dòng ~459) → <code>"var(--vy-hero-grad)"</code>.</li>
+    <li>Rà hex rời còn lại theo §5. Scrim ảnh hero/card, thẻ VIP gold, ô category VIP: giữ (§4).</li>
+    <li>Tiêu đề section dùng class <code>.nl-home-section-title</code> — text-shadow đã xử lý ở file 04.</li>
+  </ul>
+
+  <h3>8.2 · Tìm quán — <code>(public)/danh-sach-quan/page.tsx</code></h3>
+  <p>Chuỗi <code>venueSearchCss</code> render qua <code>&lt;style&gt;</code> (dòng ~381): thay hex theo §5 (<code>#0c0c0f</code> d.868, <code>#111114</code> d.1722…). <b>Giữ</b> <code>backdrop-filter: blur(8px)</code> (dòng ~1252) — phương án B bảo toàn hiệu ứng kính mờ. Chip filter active nền gold-grad giữ.</p>
+
+  <h3>8.3 · Chi tiết quán — <code>(public)/stores/[slug]/</code> (3 file)</h3>
+  <ul>
+    <li><code>StoreDetailClient.tsx</code>: chuỗi CSS (<code>#0c0c0f</code> d.1338…) theo §5; gradient fallback hero (d.84) <b>giữ</b> (§4).</li>
+    <li><code>StoreDetailHeader.tsx</code> + <code>store-detail.helpers.ts</code>: chỉ chứa gradient fallback hero → <b>giữ nguyên, không sửa</b>.</li>
+    <li>Thanh CTA sticky đáy mobile (rule trong <code>globals.css</code>, xem §9): nền <code>#141417</code> → token.</li>
+  </ul>
+
+  <h3>8.4 · Danh sách cast — <code>(public)/danh-sach-cast/page.tsx</code> (~2.200+ dòng, nặng nhất)</h3>
+  <p>Chuỗi CSS lớn: gradient nền (d.942) → <code>var(--vy-hero-grad)</code>; <code>#0c0c0f</code> (d.1980, 1992, 2021, 2208) → <code>var(--vy-bg)</code>; còn lại theo §5. Ảnh chân dung + overlay: giữ. Sau khi xong, đối chiếu khối mobile <code>.cast-list-mobile</code> trong <code>globals.css</code> (§9) để không lệch màu giữa 2 nguồn.</p>
+
+  <h3>8.5 · Hồ sơ cast — <code>(public)/casts/[slug]/CastProfileStyles.tsx</code></h3>
+  <p><code>#0c0c0f</code> (d.8, 14, 676, 977 — cả bản <code>!important</code>), <code>#0e0d12</code> (d.684) → token; còn lại theo §5. Badge rank ruy băng gold-grad, avatar viền gold: gradient giữ, viền → tier. File <code>page.tsx</code>/client cùng thư mục: rà nhanh theo §5.</p>
+
+  <h3>8.6 · Xếp hạng — <code>(public)/xep-hang/page.tsx</code></h3>
+  <p>CSS trong trang: <code>#0c0c0f</code> (d.540, 1020), <code>#0e0d12</code> (d.549) → token. <b>Quan trọng:</b> bản desktop bị block <code>.nl-page-content .ranking-page</code> trong <code>globals.css</code> đè bằng <code>!important</code> — phải sửa cả block đó (§9), nếu không trang này kẹt dark.</p>
+
+  <h3>8.7 · Ưu đãi — <code>(member)/uu-dai/page.tsx</code></h3>
+  <p>Chuỗi CSS qua <code>&lt;style&gt;</code> (d.206, <code>#0c0c0f</code> d.211) theo §5. Coupon: gradient gold + dashed gold giữ cấu trúc, viền → tier; đếm ngược "sắp hết hạn" → <code>var(--vy-pink)</code>; trạng thái "Đã dùng" opacity giữ. Trang cùng cụm <code>vi-uu-dai</code>, <code>da-luu</code> nằm ở P4 (§10).</p>
+
+  <h3>8.8 · Blog — 4 file</h3>
+  <p><code>blog/page.tsx</code> (<code>#0c0c0f</code> d.83, <code>#111114</code> d.165), <code>blog/[slug]/page.tsx</code> (d.113), <code>blog/category/[slug]</code> + <code>blog/tag/[slug]</code> (mỗi file 1 dòng <code>main</code> inline <code>#0c0c0f</code>/<code>#f3f0ea</code>) → token theo §5. Thư mục <code>blog-chi-tiet</code> không chứa màu tối (khả năng là redirect) — kiểm tra rồi bỏ qua.</p>
+
+  <h2>9. P3 — Các block hardcode còn lại trong <code>globals.css</code></h2>
+  <table>
+    <thead><tr><th>Block (vị trí ~dòng)</th><th>Sửa</th></tr></thead>
+    <tbody>
+      <tr><td><code>.card, [style*="box-shadow"]</code> (~400)</td><td><code>box-shadow: var(--vy-shadow-card) !important;</code></td></tr>
+      <tr><td>Block ranking desktop <code>.nl-page-content .ranking-page…</code> (~545–640)</td><td><code>#101014</code>→<code>var(--vy-bg)</code> · <code>#141418</code>→<code>var(--vy-surface)</code> · <code>rgba(222,181,92,.22/.25)</code>→tier 22, <code>.28</code>→tier 32 · <code>#f8f3e7 #fff8e6</code>→<code>var(--vy-text)</code> · <code>#ddd0af</code>→<code>var(--vy-text-2)</code> · <code>#c7bd9e</code>→<code>var(--vy-muted)</code> · <code>#17130b</code>→<code>var(--vy-on-gold)</code> · gradient <code>#f4d989,#d1a944</code>→<code>var(--vy-gold-grad)</code> · <code>rgba(244,217,137,.25)</code>→tier 22 · <code>rgba(240,221,168,.58)</code>→<code>var(--vy-gold)</code> · shadow→<code>var(--vy-shadow-card)</code></td></tr>
+      <tr><td>Block mobile <code>.store-detail-mobile / .cast-detail-mobile / .cast-list-mobile</code> (~890–940)</td><td><code>#0c0c0f</code>→<code>var(--vy-bg)</code> · <code>#111114 #141417</code>→<code>var(--vy-surface)</code> · <code>rgba(212,178,106,.16/.18)</code>→tier 12 · CTA gold-grad + <code>#241a0a</code> giữ</td></tr>
+      <tr><td><code>.nl-media-fallback</code> (~430) + <code>.nl-home-section-title</code> (~330)</td><td>Không sửa tại chỗ — dán <code>handoff/04-globals-light-fixes.css</code> vào cuối file (override khi <code>html.vy-light</code>)</td></tr>
+      <tr><td><code>.nl-scroll-reveal</code>, animation, layout rules</td><td>Không đụng — không chứa màu</td></tr>
+    </tbody>
+  </table>
+
+  <h2>10. Thứ tự triển khai &amp; điều kiện bật công khai</h2>
+  <ol>
+    <li><b>P0</b> (6.1→6.6) — sau bước này toggle chạy được sau cờ env: nền/chữ/legacy remap đã đổi theme, các trang chưa convert sẽ loang lổ → đúng kỳ vọng ở giai đoạn này.</li>
+    <li><b>P1</b> (§7) — chrome + UI kit: mọi trang lập tức "nửa sáng" đúng phần khung.</li>
+    <li><b>P2</b> (§8) theo thứ tự 8.1→8.8 — mỗi trang xong tự QA nhanh 2 theme × 2 breakpoint.</li>
+    <li><b>P3</b> (§9) + QA đầy đủ §11.</li>
+    <li><b>P4 — khuyến nghị trước khi bật công khai:</b> bottom nav mobile trỏ thẳng tới <code>/lich-su-dat-cho</code>, <code>/tai-khoan</code>; cụm member (tài khoản, đặt chỗ, ví ưu đãi, đã lưu, hóa đơn, bảo mật + <code>booking-flow.module.css</code>) và cụm auth (<code>dang-nhap</code>, <code>quen-mat-khau</code>…) dùng cùng pattern <code>colors</code> object nên chuyển rất nhanh — làm nốt để user light không rơi vào trang dark. Sau đó: set <code>NEXT_PUBLIC_LIGHT_THEME=1</code> production, xóa guard trong <code>ThemeToggle.tsx</code>.</li>
+  </ol>
+
+  <h2>11. Checklist QA (mỗi trang, 2 theme × desktop + mobile)</h2>
+  <ul>
+    <li>[ ] Header sticky, bottom nav, drawer thông báo, toast, modal, chat <b>bám đúng viewport khi cuộn</b> — nếu trôi nghĩa là có filter đặt nhầm trên <code>body</code>.</li>
+    <li>[ ] Ảnh quán / avatar cast / video / QR giữ màu gốc; chữ trắng trên ảnh còn đọc được (scrim giữ nguyên).</li>
+    <li>[ ] Logo wordmark gold đọc được trên nền sáng; glow đã dịu (file 04).</li>
+    <li>[ ] Chữ gold nhỏ ("LẤY MÃ", giá, eyebrow) đạt tương phản ≥ 4.5:1 — token light đã dùng gold đậm <code>#a87c34</code>/<code>#8f6a2a</code>.</li>
+    <li>[ ] Badge trạng thái (Đang mở / VIP / Sắp hết hạn / Đã dùng) phân biệt được ở light.</li>
+    <li>[ ] Chuyển trang giữ theme, không chớp trắng/đen (script 6.3 đứng đầu <code>&lt;head&gt;</code>).</li>
+    <li>[ ] Lần đầu truy cập theo <code>prefers-color-scheme</code>; bấm nút rồi thì lựa chọn tay thắng vĩnh viễn.</li>
+    <li>[ ] Scrollbar + form control đổi theo <code>color-scheme</code>.</li>
+    <li>[ ] Header kính mờ / <code>backdrop-filter</code> còn hoạt động (điểm ăn tiền của phương án B).</li>
+    <li>[ ] <b>[Mobile]</b> Bottom nav nền <code>--vy-nav-bg</code> sáng, safe-area-inset đáy không hở màu nền cũ.</li>
+    <li>[ ] <b>[Mobile]</b> Các khối <code>.store-detail-mobile / .cast-list-mobile</code> không còn kẹt dark (block §9 đã sửa).</li>
+    <li>[ ] <b>[Mobile]</b> Toggle trong simulator hoạt động; khung desk ngoài giữ <code>#f6f5f2</code>.</li>
+    <li>[ ] Xếp hạng desktop không kẹt dark (block <code>!important</code> §9 đã sửa).</li>
+    <li>[ ] User có <code>nl_theme</code> cũ trong localStorage không bị màu tím legacy (theme.js đã gỡ).</li>
+  </ul>
+
+  <h2>12. Danh sách file — tổng hợp</h2>
+  <table>
+    <thead><tr><th style="width: 46%;">File</th><th>Phase</th><th>Việc</th><th>Mức</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/app/globals.css</code></td><td>P0+P3</td><td>Token 2 theme, trỏ <code>--nl-*</code>, body, 3 block hardcode, dán file 04</td><td>Nặng</td></tr>
+      <tr><td><code>src/app/layout.tsx</code></td><td>P0</td><td>Script chống chớp; bỏ <code>theme.js</code></td><td>Nhẹ</td></tr>
+      <tr><td><code>public/theme.js</code></td><td>P0</td><td><b>Xóa file</b></td><td>Nhẹ</td></tr>
+      <tr><td><code>components/layout/ThemeToggle.tsx</code></td><td>P0</td><td><b>File mới</b> (handoff 03)</td><td>Nhẹ</td></tr>
+      <tr><td><code>components/layout/SiteChrome.tsx</code></td><td>P0+P1</td><td>Gắn toggle ×2; <code>colors</code> + noticeTone + rà §5</td><td>Vừa</td></tr>
+      <tr><td><code>components/layout/LanguagePicker.tsx</code> · <code>SupportChatWidget.tsx</code> · <code>ui/SystemFeedback.tsx</code> · <code>MobileSimulator.tsx</code></td><td>P1</td><td>Bảng §5 (+ Tailwind arbitrary ở simulator)</td><td>Vừa</td></tr>
+      <tr><td><code>ui/</code>: VenueCard · CastCard · CouponCard · RankingCard · SearchBar · EmptyState · LoadingSkeleton · MediaPlaceholder</td><td>P1</td><td>Bảng §5 + ngoại lệ §7.5</td><td>Vừa</td></tr>
+      <tr><td><code>src/app/page.tsx</code></td><td>P2</td><td>§8.1 (colors object + hero + shell/ink)</td><td>Vừa</td></tr>
+      <tr><td><code>(public)/danh-sach-quan/page.tsx</code></td><td>P2</td><td>Chuỗi CSS theo §5; giữ blur</td><td>Nặng</td></tr>
+      <tr><td><code>(public)/stores/[slug]/StoreDetailClient.tsx</code> (+Header, helpers: không sửa)</td><td>P2</td><td>§8.3</td><td>Vừa</td></tr>
+      <tr><td><code>(public)/danh-sach-cast/page.tsx</code></td><td>P2</td><td>Chuỗi CSS lớn theo §5</td><td>Nặng</td></tr>
+      <tr><td><code>(public)/casts/[slug]/CastProfileStyles.tsx</code> (+page rà nhanh)</td><td>P2</td><td>§8.5</td><td>Vừa</td></tr>
+      <tr><td><code>(public)/xep-hang/page.tsx</code></td><td>P2</td><td>§8.6 — đi kèm block globals §9</td><td>Vừa</td></tr>
+      <tr><td><code>(member)/uu-dai/page.tsx</code></td><td>P2</td><td>§8.7</td><td>Vừa</td></tr>
+      <tr><td><code>blog/page.tsx</code> · <code>blog/[slug]</code> · <code>blog/category/[slug]</code> · <code>blog/tag/[slug]</code></td><td>P2</td><td>§8.8</td><td>Nhẹ</td></tr>
+      <tr><td>Cụm member + auth (~12 file cùng pattern) + <code>booking-flow.module.css</code> + <code>trang-thai-he-thong</code> + <code>tour</code> + <code>legal</code></td><td>P4</td><td>Bảng §5 — điều kiện bật công khai</td><td>Vừa</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 26px; padding: 12px 14px; background: #f8f3e6; border: 1px solid #e3d7ba; border-radius: 10px; font-size: 12px; color: #57534b;"><b style="color: #211e19;">Definition of done:</b> mỗi file convert xong, search <code>#</code> và <code>rgba(</code> trong file — mọi kết quả còn lại phải nằm trong danh sách bất biến §4 hoặc là gradient gold/scrim; toàn bộ checklist §11 pass ở 2 theme × 2 breakpoint; guard env đã xóa khỏi <code>ThemeToggle.tsx</code>.</p>
+
+</x-import>
+</x-dc>
+</body>
+</html>

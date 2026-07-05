@@ -19,7 +19,73 @@
 }
 
 :root {
-  color-scheme: dark;
+  --vy-bg: #0c0c0f;
+  --vy-bg-2: #0e0d12;
+  --vy-hero-grad: radial-gradient(ellipse at 50% -15%, rgba(212, 178, 106, 0.15) 0%, transparent 60%), linear-gradient(180deg, #18181c 0%, #111114 100%);
+  --vy-surface: #131218;
+  --vy-surface-1: rgba(255, 255, 255, 0.035);
+  --vy-surface-2: rgba(255, 255, 255, 0.05);
+  --vy-surface-3: rgba(255, 255, 255, 0.075);
+  --vy-nav-bg: rgba(8, 8, 11, 0.95);
+  --vy-border: rgba(255, 255, 255, 0.07);
+  --vy-border-gold-12: rgba(212, 178, 106, 0.18);
+  --vy-border-gold-22: rgba(212, 178, 106, 0.22);
+  --vy-border-gold-32: rgba(212, 178, 106, 0.32);
+  --vy-border-gold-40: rgba(212, 178, 106, 0.4);
+  --vy-text: #f3f0ea;
+  --vy-text-2: #c5c0b6;
+  --vy-muted: #8c8679;
+  --vy-faint: #6f6b62;
+  --vy-gold: #d4b26a;
+  --vy-gold-hi: #e3c27e;
+  --vy-gold-pale: #f0dda8;
+  --vy-gold-icon: #d9bd84;
+  --vy-gold-soft-bg: rgba(212, 178, 106, 0.12);
+  --vy-gold-grad: linear-gradient(135deg, #fff7d7 0%, #f7d978 42%, #d5a23a 100%);
+  --vy-on-gold: #241a0a;
+  --vy-success: #7fd3a2;
+  --vy-warn: #e7b869;
+  --vy-error: #e88b99;
+  --vy-info: #8fb6e4;
+  --vy-pink: #e0729e;
+  --vy-shadow: 0 20px 44px -18px rgba(0, 0, 0, 0.85);
+  --vy-shadow-card: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+html.vy-light {
+  --vy-bg: #f6f4ef;
+  --vy-bg-2: #ffffff;
+  --vy-hero-grad: radial-gradient(ellipse at 50% -15%, rgba(168, 124, 52, 0.1) 0%, transparent 60%), linear-gradient(180deg, #f6f4ef 0%, #ece9df 100%);
+  --vy-surface: #ffffff;
+  --vy-surface-1: rgba(28, 22, 10, 0.03);
+  --vy-surface-2: rgba(28, 22, 10, 0.045);
+  --vy-surface-3: rgba(28, 22, 10, 0.06);
+  --vy-nav-bg: rgba(255, 255, 255, 0.94);
+  --vy-border: rgba(30, 24, 12, 0.1);
+  --vy-border-gold-12: rgba(150, 116, 52, 0.26);
+  --vy-border-gold-22: rgba(150, 116, 52, 0.34);
+  --vy-border-gold-32: rgba(150, 116, 52, 0.46);
+  --vy-border-gold-40: rgba(150, 116, 52, 0.58);
+  --vy-text: #211e19;
+  --vy-text-2: #57534b;
+  --vy-muted: #8c8679;
+  --vy-faint: #a8a296;
+  --vy-gold: #a87c34;
+  --vy-gold-hi: #8f6a2a;
+  --vy-gold-pale: #8f6a2a;
+  --vy-gold-icon: #9c7630;
+  --vy-gold-soft-bg: rgba(168, 124, 52, 0.12);
+  --vy-success: #1f8a5b;
+  --vy-warn: #b07818;
+  --vy-error: #c2455c;
+  --vy-info: #3d6fb0;
+  --vy-pink: #c2517e;
+  --vy-shadow: 0 16px 36px -20px rgba(40, 30, 10, 0.25);
+  --vy-shadow-card: 0 16px 36px -20px rgba(40, 30, 10, 0.25);
+  color-scheme: light;
+}
+
+:root {
   --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -56,8 +122,8 @@
 }
 
 body {
-  background-color: var(--color-night-900);
-  color: #ededed;
+  background-color: var(--vy-bg);
+  color: var(--vy-text);
   font-family: var(--nl-font-sans);
 }
 
@@ -150,19 +216,19 @@ body {
   }
 }
 
-/* Premium dark/gold theme override for generated prototype pages. */
+/* Premium dark/gold theme override mapped to --vy tokens */
 :root {
-  --nl-bg: #0c0c0f;
+  --nl-bg: var(--vy-bg);
   --nl-font-sans: "Inter", "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --nl-surface: #141417;
-  --nl-surface-soft: rgba(255, 255, 255, 0.045);
-  --nl-surface-strong: rgba(255, 255, 255, 0.075);
-  --nl-border: rgba(212, 178, 106, 0.22);
-  --nl-gold: #d4b26a;
-  --nl-gold-soft: #f0dda8;
-  --nl-text: #f3f0ea;
-  --nl-muted: #b6b1a6;
-  --nl-ink: #241a0a;
+  --nl-surface: var(--vy-surface);
+  --nl-surface-soft: var(--vy-surface-2);
+  --nl-surface-strong: var(--vy-surface-3);
+  --nl-border: var(--vy-border-gold-22);
+  --nl-gold: var(--vy-gold);
+  --nl-gold-soft: var(--vy-gold-pale);
+  --nl-text: var(--vy-text);
+  --nl-muted: var(--vy-muted);
+  --nl-ink: var(--vy-on-gold);
 }
 
 html,
@@ -355,7 +421,7 @@ button[aria-label="Open Next.js Dev Tools"],
 
 .card,
 [style*="box-shadow"] {
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22) !important;
+  box-shadow: var(--vy-shadow-card) !important;
 }
 
 input,
@@ -1056,4 +1122,16 @@ textarea::placeholder {
   word-break: break-word !important;
   overflow-wrap: break-word !important;
   max-width: 100%;
+}
+
+html.vy-light .nl-media-fallback {
+  background: var(--vy-surface-2) !important;
+}
+html.vy-light .nl-media-fallback svg, html.vy-light .nl-media-fallback path {
+  color: var(--vy-gold-pale) !important;
+  fill: var(--vy-gold-pale) !important;
+  stroke: var(--vy-gold-pale) !important;
+}
+html.vy-light .nl-home-section-title {
+  text-shadow: none !important;
 }

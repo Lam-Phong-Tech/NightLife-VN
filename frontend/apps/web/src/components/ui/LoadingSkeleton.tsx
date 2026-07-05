@@ -34,8 +34,8 @@ export function HomeLoadingSkeleton({ mobile = false }: { mobile?: boolean }) {
     <main
       style={{
         minHeight: "100vh",
-        background: "#0c0c0f",
-        color: "#f3f0ea",
+        background: "var(--vy-bg)",
+        color: "var(--vy-text)",
         padding: mobile ? "16px 18px calc(96px + env(safe-area-inset-bottom))" : "34px",
         fontFamily: "var(--nl-font-sans)",
       }}
@@ -53,7 +53,7 @@ export function HomeLoadingSkeleton({ mobile = false }: { mobile?: boolean }) {
         <div className="nl-system-skeleton" style={{ height: mobile ? 182 : 240, borderRadius: 18 }} />
         <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "repeat(3, 1fr)", gap: 14 }}>
           {Array.from({ length: sections }, (_, index) => (
-            <div key={index} style={{ border: "1px solid rgba(212,178,106,.18)", borderRadius: 16, padding: 12 }}>
+            <div key={index} style={{ border: "1px solid var(--vy-border-gold-12)", borderRadius: 16, padding: 12 }}>
               <div className="nl-system-skeleton" style={{ height: mobile ? 108 : 136, borderRadius: 12 }} />
               <div className="nl-system-skeleton" style={{ ...lineStyle, width: "68%", marginTop: 12 }} />
               <div className="nl-system-skeleton" style={{ ...lineStyle, width: "44%", height: 12, marginTop: 9 }} />
@@ -72,7 +72,7 @@ function SkeletonStyle() {
       .nl-system-skeleton {
         position: relative;
         overflow: hidden;
-        background: rgba(255,255,255,.06);
+        background: var(--vy-surface-3);
       }
 
       .nl-system-skeleton::after {
@@ -80,7 +80,7 @@ function SkeletonStyle() {
         position: absolute;
         inset: 0;
         transform: translateX(-100%);
-        background: linear-gradient(90deg, transparent, rgba(212,178,106,.13), transparent);
+        background: linear-gradient(90deg, transparent, var(--vy-gold-soft-bg), transparent);
         animation: nl-system-shimmer 1.5s infinite;
       }
 
@@ -103,9 +103,9 @@ const listStyle: CSSProperties = {
 const rowStyle: CSSProperties = {
   display: "flex",
   gap: 12,
-  border: "1px solid rgba(212,178,106,.18)",
+  border: "1px solid var(--vy-border-gold-12)",
   borderRadius: 14,
-  background: "rgba(255,255,255,.035)",
+  background: "var(--vy-surface-1)",
   padding: 12,
 };
 

@@ -31,15 +31,15 @@ import { resolveClientUrl } from "@/lib/api/client";
 import { formatPriceTier } from "@/lib/price-tier";
 
 const colors = {
-  shell: "#f0eee9",
-  ink: "#0c0c0f",
-  line: "rgba(212,178,106,.22)",
-  gold: "#d4b26a",
-  goldSoft: "#f0dda8",
-  muted: "#b6b1a6",
-  text: "#f3f0ea",
-  dim: "#8c8679",
-  rose: "#e0729e",
+  shell: "var(--vy-bg)",
+  ink: "var(--vy-bg)",
+  line: "var(--vy-border-gold-22)",
+  gold: "var(--vy-gold)",
+  goldSoft: "var(--vy-gold-pale)",
+  muted: "var(--vy-muted)",
+  text: "var(--vy-text)",
+  dim: "var(--vy-faint)",
+  rose: "var(--vy-pink)",
 };
 
 const categoryItems = [
@@ -366,9 +366,9 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
   return rankVisuals[rankNumber] ?? {
     badgeBackground: item.crown ?? colors.gold,
     badgeColor: item.numColor ?? "#241a0a",
-    rowBackground: "rgba(255,255,255,.045)",
-    rowBorder: "rgba(255,255,255,.12)",
-    rowShadow: "0 16px 30px rgba(0,0,0,.14)",
+    rowBackground: "var(--vy-surface-2)",
+    rowBorder: "var(--vy-border)",
+    rowShadow: "var(--vy-shadow-card)",
     labelColor: colors.goldSoft,
   };
 }
@@ -455,10 +455,9 @@ const shellStyle: CSSProperties = {
 };
 
 const appStyle: CSSProperties = {
-  background:
-    "radial-gradient(circle at 82% 10%, rgba(212,178,106,.15), transparent 30%), linear-gradient(180deg,#0b0b0e 0%,#111114 48%,#09090b 100%)",
-  border: "1px solid rgba(255,255,255,.08)",
-  boxShadow: "0 24px 70px rgba(0,0,0,.35)",
+  background: "var(--vy-bg)",
+  border: "1px solid var(--vy-border)",
+  boxShadow: "var(--vy-shadow)",
 };
 
 const sectionTitleStyle: CSSProperties = {
@@ -534,7 +533,7 @@ const homeSectionTitleTextStyle: CSSProperties = {
 
 const pillStyle: CSSProperties = {
   border: `1px solid ${colors.line}`,
-  background: "rgba(255,255,255,.04)",
+  background: "var(--vy-surface-1)",
   color: colors.muted,
   borderRadius: "999px",
   padding: "7px 12px",
@@ -558,8 +557,8 @@ function SearchPanel() {
         gap: "12px",
         height: "48px",
         borderRadius: "14px",
-        border: "1px solid rgba(255,255,255,.12)",
-        background: "rgba(255,255,255,.04)",
+        border: "1px solid var(--vy-border)",
+        background: "var(--vy-surface-1)",
         color: colors.muted,
         padding: "0 16px",
       }}
@@ -595,10 +594,10 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
                 justifyContent: "center",
                 color: item.featured ? colors.goldSoft : colors.gold,
                 background: item.featured
-                  ? "linear-gradient(135deg,rgba(212,178,106,.34),rgba(212,178,106,.12))"
-                  : "rgba(255,255,255,.045)",
-                border: `1px solid ${item.featured ? "rgba(212,178,106,.4)" : "rgba(255,255,255,.09)"}`,
-                boxShadow: item.featured ? "0 14px 28px rgba(212,178,106,.12)" : "none",
+                  ? "var(--vy-gold-soft-bg)"
+                  : "var(--vy-surface-1)",
+                border: `1px solid ${item.featured ? "var(--vy-border-gold-32)" : "var(--vy-border)"}`,
+                boxShadow: item.featured ? "var(--vy-shadow)" : "none",
               }}
             >
               <Icon size={desktop ? 26 : 22} />
@@ -954,8 +953,8 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
         display: "block",
         overflow: "hidden",
         borderRadius: homeCardRadius,
-        background: "rgba(255,255,255,.045)",
-        border: "1px solid rgba(255,255,255,.08)",
+        background: "var(--vy-surface-2)",
+        border: "1px solid var(--vy-border)",
         color: colors.text,
       }}
     >
@@ -992,7 +991,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
         borderRadius: homeCardRadius,
         color: colors.text,
         border: `1px solid ${colors.line}`,
-        background: "rgba(255,255,255,.045)",
+        background: "var(--vy-surface-2)",
       }}
     >
       <PlaceholderMedia
@@ -1119,8 +1118,8 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
       style={{
         overflow: "hidden",
         borderRadius: homeCardRadius,
-        background: "rgba(255,255,255,.045)",
-        border: "1px solid rgba(255,255,255,.08)",
+        background: "var(--vy-surface-2)",
+        border: "1px solid var(--vy-border)",
         color: colors.text,
       }}
     >
@@ -1179,7 +1178,7 @@ function ContentPlaceholderCard({
         display: "block",
         borderRadius: homeCardRadius,
         border: `1px solid ${colors.line}`,
-        background: "rgba(255,255,255,.045)",
+        background: "var(--vy-surface-2)",
         color: colors.text,
         padding: compact ? "14px" : "18px",
       }}
@@ -1193,7 +1192,7 @@ function ContentPlaceholderCard({
           alignItems: "center",
           justifyContent: "center",
           color: colors.goldSoft,
-          background: "rgba(212,178,106,.12)",
+          background: "var(--vy-gold-soft-bg)",
           border: `1px solid ${colors.line}`,
         }}
       >
@@ -1224,7 +1223,7 @@ function HomeDataMessage({ text, compact = false }: { text: string; compact?: bo
         placeItems: "center",
         borderRadius: homeCardRadius,
         border: `1px dashed ${colors.line}`,
-        background: "rgba(255,255,255,.035)",
+        background: "var(--vy-surface-1)",
         color: colors.muted,
         fontSize: compact ? 12 : 13,
         fontWeight: 800,
@@ -1257,7 +1256,7 @@ function TabSwitch({
             borderRadius: homeMediaRadius,
             padding: "7px 14px",
             background: active === item.id ? colors.gold : "transparent",
-            color: active === item.id ? "#241a0a" : colors.muted,
+            color: active === item.id ? "var(--vy-on-gold)" : colors.muted,
             fontWeight: 800,
             fontSize: "12px",
             cursor: "pointer",
@@ -1305,7 +1304,7 @@ function RankingRegionDropdown({
           gap: "7px",
           border: `1px solid ${colors.line}`,
           borderRadius: homeCardRadius,
-          background: "rgba(255,255,255,.04)",
+          background: "var(--vy-surface-1)",
           color: colors.goldSoft,
           padding: "0 13px 0 15px",
           fontSize: "12px",
@@ -1339,8 +1338,8 @@ function RankingRegionDropdown({
             padding: "6px",
             borderRadius: "16px",
             border: `1px solid ${colors.line}`,
-            background: "linear-gradient(180deg, rgba(28,28,32,.98), rgba(14,14,17,.98))",
-            boxShadow: "0 20px 42px rgba(0,0,0,.45)",
+            background: "var(--vy-surface-1)",
+            boxShadow: "var(--vy-shadow-card)",
             backdropFilter: "blur(16px)",
           }}
         >
@@ -1365,7 +1364,7 @@ function RankingRegionDropdown({
                   gap: "10px",
                   border: 0,
                   borderRadius: "12px",
-                  background: selectedOption ? "rgba(212,178,106,.18)" : "transparent",
+                  background: selectedOption ? "var(--vy-gold-soft-bg)" : "transparent",
                   color: selectedOption ? colors.goldSoft : colors.muted,
                   padding: "0 10px",
                   fontSize: "12px",
