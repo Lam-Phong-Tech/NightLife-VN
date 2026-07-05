@@ -3721,6 +3721,76 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('shows submitted member bills in the admin pending bill queue', async () => {
+    const createdAt = new Date('2026-07-01T10:05:00.000Z');
+    prisma.bill.aggregate.mockResolvedValue({
+      _sum: { totalVnd: 1800000 },
+    } as never);
+    prisma.bill.findMany.mockResolvedValue([
+      {
+        id: 'bill-1',
+        billNumber: 'BILL-20260701-ABC12345',
+        status: 'SUBMITTED',
+        totalVnd: 1800000,
+        discountVnd: 0,
+        commissionAmountVnd: 0,
+        pointsEarned: 0,
+        rejectReason: null,
+        createdAt,
+        store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+        user: { id: 'member-1', displayName: 'Minh', tier: 'Member' },
+        guest: null,
+        booking: null,
+        media: [],
+      },
+    ] as never);
+    prisma.bill.count
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(1 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+
+    const result = await service.listAdminBills({
+      status: 'pending',
+      page: 1,
+      limit: 8,
+    });
+
+    expect(prisma.bill.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'SUBMITTED' },
+        skip: 0,
+        take: 8,
+      }),
+    );
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: 'bill-1',
+        billNumber: 'BILL-20260701-ABC12345',
+        store: 'Neon Club',
+        amount: 1800000,
+        sender: 'Minh',
+        status: 'SUBMITTED',
+      }),
+    ]);
+    expect(result.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        page: 1,
+        limit: 8,
+        totalPages: 1,
+      }),
+    );
+    expect(result.stats).toEqual(
+      expect.objectContaining({
+        pendingCount: 1,
+        approvedCount: 0,
+        rejectedCount: 0,
+        totalAmountPending: 1800000,
+      }),
+    );
+  });
+
   it('submits a member bill with a coupon issue without requiring a booking', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     prisma.store.findFirst.mockResolvedValue({

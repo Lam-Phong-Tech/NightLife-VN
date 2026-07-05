@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Info, X, Check, Image as ImageIcon } from 'lucide-react';
-import { apiClient } from '@/lib/api/client';
+import { ApiError, apiClient, translateApiMessage } from '@/lib/api/client';
 import { adminPageSize } from '../components/AdminPagination';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -46,6 +46,7 @@ export default function AdminBillsPage() {
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [billsList, setBillsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [meta, setMeta] = useState<any>(null);
   const [stats, setStats] = useState<any>({
     pendingCount: 0,
@@ -76,6 +77,7 @@ export default function AdminBillsPage() {
 
   const fetchBills = async () => {
     setIsLoading(true);
+    setLoadError('');
     try {
       const res = await apiClient<any>('/admin/bills', {
         params: { status: activeTab, search, city, page: pageParam, limit: adminPageSize }
@@ -87,6 +89,13 @@ export default function AdminBillsPage() {
       }
     } catch (e) {
       console.error(e);
+      setBillsList([]);
+      setMeta(null);
+      setLoadError(
+        e instanceof ApiError
+          ? translateApiMessage(e.message, e.status)
+          : 'Không tải được danh sách hóa đơn. Vui lòng thử lại.',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -263,6 +272,15 @@ export default function AdminBillsPage() {
             {isLoading ? (
               <tr>
                 <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Đang tải dữ liệu...</td>
+              </tr>
+            ) : loadError ? (
+              <tr>
+                <td colSpan={7} style={{ padding: '28px 32px', textAlign: 'center' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: colors.red, background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.24)', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>
+                    <Info size={16} />
+                    {loadError}
+                  </div>
+                </td>
               </tr>
             ) : billsList.length === 0 ? (
               <tr>
