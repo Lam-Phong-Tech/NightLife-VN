@@ -1657,7 +1657,7 @@ export default function Page() {
             <div style={{ marginTop: "12px" }}>
               <SearchPanel />
             </div>
-            <div style={{ padding: "0 18px", marginTop: "16px" }}>
+            <div style={{ marginTop: "16px" }}>
               <EventHero apiBanners={homeBanners} />
             </div>
             <div style={{ marginTop: "22px" }}>
