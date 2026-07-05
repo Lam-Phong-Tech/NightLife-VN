@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
 const colors = {
@@ -36,17 +36,11 @@ const emailConsentBenefits = [
 
 export default function LineEmailConsentPage() {
   const [accepted, setAccepted] = useState(false);
-  const redirectTo = useMemo(() => {
-    if (typeof window === "undefined") return "/tai-khoan";
-    return normalizeRedirect(new URLSearchParams(window.location.search).get("redirect"));
+  const [redirectTo, setRedirectTo] = useState("/tai-khoan");
+
+  useEffect(() => {
+    setRedirectTo(normalizeRedirect(new URLSearchParams(window.location.search).get("redirect")));
   }, []);
-
-  const continueWithLine = () => {
-    if (!accepted) return;
-
-    const params = new URLSearchParams({ redirect: redirectTo });
-    window.location.href = `/api/backend/auth/line/start?${params.toString()}`;
-  };
 
   return (
     <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
@@ -178,6 +172,8 @@ export default function LineEmailConsentPage() {
               Cho phép Vietyoru nhận email từ LINE để tạo hoặc đăng nhập tài khoản.
             </p>
 
+            <form method="GET" action="/api/backend/auth/line/start">
+              <input type="hidden" name="redirect" value={redirectTo} />
             <label
               style={{
                 display: "grid",
@@ -194,6 +190,9 @@ export default function LineEmailConsentPage() {
             >
               <input
                 type="checkbox"
+                name="lineEmailConsent"
+                value="accepted"
+                required
                 checked={accepted}
                 onChange={(event) => setAccepted(event.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: colors.line }}
@@ -204,24 +203,23 @@ export default function LineEmailConsentPage() {
             </label>
 
             <button
-              type="button"
-              disabled={!accepted}
-              onClick={continueWithLine}
+              type="submit"
               style={{
                 marginTop: 18,
                 width: "100%",
                 minHeight: 50,
                 border: 0,
                 borderRadius: 14,
-                background: accepted ? colors.line : "rgba(255,255,255,.12)",
-                color: accepted ? "#fff" : colors.dim,
+                background: colors.line,
+                color: "#fff",
                 fontSize: 14.5,
                 fontWeight: 950,
-                cursor: accepted ? "pointer" : "not-allowed",
+                cursor: "pointer",
               }}
             >
               Tiếp tục với LINE
             </button>
+            </form>
 
             <div
               style={{
