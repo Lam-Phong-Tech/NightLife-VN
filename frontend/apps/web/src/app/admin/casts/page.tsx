@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video } from 'lucide-react';
 import { apiClient, apiFormDataClient } from '@/lib/api/client';
+import { AdminPagination, paginateAdminItems } from '../components/AdminPagination';
 
 const colors = {
   bg: '#0f0f13',
@@ -67,10 +68,11 @@ export default function AdminCastsPage() {
   
   const [youtubeInput, setYoutubeInput] = useState('');
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchCasts = async () => {
     try {
-      const res = await apiClient<any>('/admin/casts', { params: { search: search || undefined, limit: 100 } });
+      const res = await apiClient<any>('/admin/casts', { params: { search: search || undefined, limit: 1000 } });
       setCasts(normalizeListResponse(res));
     } catch (e) {
       console.error(e);
@@ -102,6 +104,10 @@ export default function AdminCastsPage() {
     fetchStores();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeTab]);
+
   const showToast = (m: string) => {
     setToast(m);
     setTimeout(() => setToast(null), 3000);
@@ -121,6 +127,8 @@ export default function AdminCastsPage() {
     if (activeTab === 'hidden') return st === 'Ẩn';
     return true;
   });
+
+  const paginatedCasts = paginateAdminItems(filteredCasts, currentPage);
 
   const getStatusStyle = (label: string) => {
     if (label === 'Đang hiển thị') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
@@ -402,7 +410,7 @@ export default function AdminCastsPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredCasts.map((cast, idx) => {
+            {paginatedCasts.map((cast, idx) => {
               const statusLabel = getStatusLabel(cast.status, cast.isPublic);
               const statusStyle = getStatusStyle(statusLabel);
               const avatarStyle = getAvatarStyle(cast.stageName);
@@ -467,6 +475,14 @@ export default function AdminCastsPage() {
             )}
           </tbody>
         </table>
+        {filteredCasts.length > 0 && (
+          <AdminPagination
+            page={currentPage}
+            totalItems={filteredCasts.length}
+            onPageChange={setCurrentPage}
+            itemLabel="cast"
+          />
+        )}
       </div>
 
       {/* DRAWER */}

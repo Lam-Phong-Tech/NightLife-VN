@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Info, X, Check, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
+import { adminPageSize } from '../components/AdminPagination';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
@@ -62,11 +63,22 @@ export default function AdminBillsPage() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [approveBillId, setApproveBillId] = useState('');
 
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', page.toString());
+    router.push(pathname + '?' + params.toString());
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    goToPage(1);
+  };
+
   const fetchBills = async () => {
     setIsLoading(true);
     try {
       const res = await apiClient<any>('/admin/bills', {
-        params: { status: activeTab, search, city, page: pageParam }
+        params: { status: activeTab, search, city, page: pageParam, limit: adminPageSize }
       });
       if (res && res.data) {
         setBillsList(res.data);
@@ -140,7 +152,7 @@ export default function AdminBillsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
           <button 
-            onClick={() => setActiveTab('pending')}
+            onClick={() => handleTabChange('pending')}
             style={{
               background: activeTab === 'pending' ? colors.goldGrad : 'transparent',
               color: activeTab === 'pending' ? colors.onGold : colors.muted,
@@ -159,7 +171,7 @@ export default function AdminBillsPage() {
             <span style={{ fontWeight: 700 }}>{stats?.pendingCount ?? 0}</span>
           </button>
           <button 
-            onClick={() => setActiveTab('approved')}
+            onClick={() => handleTabChange('approved')}
             style={{
               background: activeTab === 'approved' ? colors.goldGrad : 'transparent',
               color: activeTab === 'approved' ? colors.onGold : colors.muted,
@@ -178,7 +190,7 @@ export default function AdminBillsPage() {
             <span style={{ fontWeight: 700 }}>{stats?.approvedCount ?? 0}</span>
           </button>
           <button 
-            onClick={() => setActiveTab('rejected')}
+            onClick={() => handleTabChange('rejected')}
             style={{
               background: activeTab === 'rejected' ? colors.goldGrad : 'transparent',
               color: activeTab === 'rejected' ? colors.onGold : colors.muted,

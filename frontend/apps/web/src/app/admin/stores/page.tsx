@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { AdminPagination, paginateAdminItems } from '../components/AdminPagination';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -92,6 +93,7 @@ function AdminStoresContent() {
   // UI states
   const [menuManage, setMenuManage] = useState(false);
   const [activeMenuGroupId, setActiveMenuGroupId] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchStores = async () => {
     try {
@@ -128,6 +130,10 @@ function AdminStoresContent() {
       })
       .catch(e => console.error(e));
   }, [selProvince]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterCity, filterCategory]);
 
   useEffect(() => {
     if (pendingAddress && wards.length > 0 && selProvince) {
@@ -522,6 +528,14 @@ function AdminStoresContent() {
     return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : url;
   };
 
+  const filteredStores = stores.filter((v: any) => {
+    if (filterCity && v.city !== filterCity) return false;
+    if (filterCategory && v.category !== filterCategory) return false;
+    if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+  const paginatedStores = paginateAdminItems(filteredStores, currentPage);
+
   return (
     <div data-screen-label="Admin · Venues" style={{ padding: '22px 26px 44px', minHeight: '100vh', background: '#0c0c0f' }}>
       
@@ -569,12 +583,7 @@ function AdminStoresContent() {
           <span>Quán</span><span>Loại hình</span><span>Khu vực</span><span>Cast</span><span>Trạng thái</span><span></span>
         </div>
         
-        {stores.filter((v: any) => {
-          if (filterCity && v.city !== filterCity) return false;
-          if (filterCategory && v.category !== filterCategory) return false;
-          if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
-          return true;
-        }).map((v: any) => {
+        {paginatedStores.map((v: any) => {
           const stMeta = getStatusMeta(v.status);
           const stStyle = getPillStyle(stMeta.style);
           const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : 'pink');
@@ -602,6 +611,17 @@ function AdminStoresContent() {
             </div>
           );
         })}
+        {filteredStores.length === 0 && (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không tìm thấy quán nào.</div>
+        )}
+        {filteredStores.length > 0 && (
+          <AdminPagination
+            page={currentPage}
+            totalItems={filteredStores.length}
+            onPageChange={setCurrentPage}
+            itemLabel="quán"
+          />
+        )}
       </div>
 
       {/* Drawer */}

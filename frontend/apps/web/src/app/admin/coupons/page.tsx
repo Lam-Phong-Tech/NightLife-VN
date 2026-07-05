@@ -2,20 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { AdminPagination, adminPageSize } from '../components/AdminPagination';
 
 export default function AdminCouponsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedCoupon, setSelectedCoupon] = useState<any | null>(null);
   const [coupons, setCoupons] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCoupons, setTotalCoupons] = useState(0);
 
   const fetchCoupons = async () => {
     try {
       const res = await apiClient<any>('/admin/coupons', {
-        params: { status: activeTab === 'all' ? undefined : activeTab }
+        params: { status: activeTab === 'all' ? undefined : activeTab, page: currentPage, limit: adminPageSize }
       });
       setCoupons(res.data);
       setStats(res.stats);
+      setTotalCoupons(res.total ?? res.data?.length ?? 0);
     } catch (e) {
       console.error(e);
     }
@@ -23,6 +27,10 @@ export default function AdminCouponsPage() {
 
   useEffect(() => {
     fetchCoupons();
+  }, [activeTab, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [activeTab]);
 
   const getStatusStyle = (status: string) => {
@@ -177,6 +185,17 @@ export default function AdminCouponsPage() {
             </div>
           );
         })}
+        {coupons.length === 0 && (
+          <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có coupon nào.</div>
+        )}
+        {coupons.length > 0 && (
+          <AdminPagination
+            page={currentPage}
+            totalItems={totalCoupons}
+            onPageChange={setCurrentPage}
+            itemLabel="coupon"
+          />
+        )}
       </div>
 
       {/* Drawer */}
