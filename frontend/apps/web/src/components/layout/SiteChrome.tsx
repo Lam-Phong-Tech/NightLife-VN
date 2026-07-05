@@ -228,7 +228,9 @@ function NotificationBellButton({
     >
       <Bell size={isMobile ? 16 : 18} strokeWidth={1.8} />
       {unreadCount > 0 ? (
-        <span
+        <i
+          className="nl-notification-count"
+          data-wide={unreadCount > 9 ? "true" : undefined}
           aria-hidden="true"
           style={{
             position: "absolute",
@@ -252,13 +254,14 @@ function NotificationBellButton({
             justifyContent: "center",
             padding: 0,
             boxSizing: "border-box",
+            fontStyle: "normal",
             overflow: "hidden",
             whiteSpace: "nowrap",
             aspectRatio: unreadCount > 9 ? undefined : "1 / 1",
           }}
         >
           {unreadCount > 9 ? "9+" : unreadCount}
-        </span>
+        </i>
       ) : null}
     </button>
   );
