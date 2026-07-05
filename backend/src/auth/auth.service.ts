@@ -138,7 +138,7 @@ export class AuthService {
   async register(dto: RegisterDto, sessionContext?: SessionContext) {
     const user = await this.usersService.createUser({
       email: dto.email,
-      password: dto.password,
+      password: dto.password.trim(),
       displayName: dto.displayName,
     });
 
@@ -148,7 +148,7 @@ export class AuthService {
   async login(dto: LoginDto, sessionContext?: SessionContext) {
     const user = await this.usersService.validateCredentials(
       dto.email,
-      dto.password,
+      dto.password.trim(),
     );
 
     return this.toAuthResponse(user, sessionContext);
@@ -161,7 +161,7 @@ export class AuthService {
   ) {
     const user = await this.usersService.validateCredentials(
       dto.email,
-      dto.password,
+      dto.password.trim(),
     );
 
     if (user.role !== role) {
@@ -437,7 +437,10 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    if (dto.password !== dto.confirmPassword) {
+    const password = dto.password.trim();
+    const confirmPassword = dto.confirmPassword.trim();
+
+    if (password !== confirmPassword) {
       throw new BadRequestException('Password confirmation does not match');
     }
 
@@ -465,7 +468,7 @@ export class AuthService {
     }
 
     const now = new Date();
-    await this.usersService.updatePassword(token.userId, dto.password);
+    await this.usersService.updatePassword(token.userId, password);
     await this.prisma.passwordResetToken.updateMany({
       where: {
         userId: token.userId,

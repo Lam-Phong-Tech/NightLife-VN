@@ -66,6 +66,7 @@ const exactMessageTranslations: Record<string, string> = {
   "couponid must match the booking couponid": "Mã coupon không khớp với booking.",
   "couponissueid must match the booking couponissueid": "Mã ưu đãi đã lưu không khớp với booking.",
   "displayname and phone are required": "Vui lòng nhập họ tên và số điện thoại.",
+  "displayname must contain letters and spaces only": "Họ tên chỉ được nhập chữ cái và khoảng trắng.",
   "file is required": "Vui lòng chọn file để tải lên.",
   "email is already registered": "Email này đã được đăng ký.",
   "google account is not active": "Tài khoản Google chưa hoạt động hoặc đã bị khóa.",

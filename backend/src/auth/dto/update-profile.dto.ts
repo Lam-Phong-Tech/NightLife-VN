@@ -12,15 +12,21 @@ import {
 const trimString = ({ value }: TransformFnParams): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
+const trimDisplayName = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value;
+
 const trimLowerEmail = ({ value }: TransformFnParams): unknown =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
 
 export class UpdateProfileDto {
   @ApiProperty({ minLength: 2, maxLength: 80, example: 'Nguyen Van A' })
-  @Transform(trimString)
+  @Transform(trimDisplayName)
   @IsString()
   @MinLength(2)
   @MaxLength(80)
+  @Matches(/^[\p{L}\s]+$/u, {
+    message: 'displayName must contain letters and spaces only',
+  })
   displayName: string;
 
   @ApiProperty({ example: 'member@nightlife.vn' })
