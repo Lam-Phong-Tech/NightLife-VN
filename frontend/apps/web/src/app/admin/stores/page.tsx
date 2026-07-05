@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -47,8 +47,10 @@ export default function AdminStoresPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const filterCity = searchParams.get('city') || '';
-  const [filterCategory, setFilterCategory] = useState('');
+  const filterCategory = searchParams.get('category') || '';
   
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
@@ -529,7 +531,12 @@ export default function AdminStoresPage() {
         </div>
         <select
           value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
+          onChange={(e) => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (e.target.value) params.set('category', e.target.value);
+            else params.delete('category');
+            router.push(`${pathname}?${params.toString()}`);
+          }}
           style={{ appearance: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer', outline: 'none' }}
         >
           <option value="" style={{ background: '#1a191f' }}>Tất cả loại hình</option>
