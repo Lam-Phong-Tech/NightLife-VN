@@ -15366,6 +15366,7 @@ export class NightlifeDataService {
       timeframe,
       storeId,
       source,
+      city,
       sortBy = 'newest',
     } = query;
     const skip = (page - 1) * limit;
@@ -15392,6 +15393,7 @@ export class NightlifeDataService {
     const where: import('@prisma/client').Prisma.BookingWhereInput = {
       ...(prismaStatus && { status: prismaStatus }),
       ...(storeId && { storeId }),
+      ...(city && { store: { city } }),
       // TODO: Filter by source when the schema supports it. Currently hardcoded.
       ...dateFilter,
       ...(search && {

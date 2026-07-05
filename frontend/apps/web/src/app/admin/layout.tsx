@@ -213,7 +213,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const getPageInfo = () => {
     if (pathname === '/admin') return { title: 'Bảng điều khiển', subtitle: 'OVERVIEW' };
-    if (pathname === '/admin/bookings') return { title: 'Booking', subtitle: 'BOOKING MANAGEMENT' };
+    if (pathname === '/admin/bookings') return { title: 'Booking', subtitle: '' };
     if (pathname === '/admin/bills') return { title: 'Duyệt hóa đơn', subtitle: 'BILL APPROVAL' };
     if (pathname === '/admin/coupons') return { title: 'Coupon & QR', subtitle: 'PROMOTIONS' };
     if (pathname === '/admin/stores') return { title: 'Quán', subtitle: 'VENUES' };
@@ -311,7 +311,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* topbar */}
         <header style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 26px', background: 'rgba(12,12,15,.86)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '2px' }}>{subtitle}</div>
+            {subtitle && <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '2px' }}>{subtitle}</div>}
             <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px' }}>{title}</div>
           </div>
           

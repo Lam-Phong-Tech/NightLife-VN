@@ -43,6 +43,11 @@ export class AdminBookingQueryDto {
   @IsString()
   source?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by city (Hanoi, Ho Chi Minh City)' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   @ApiPropertyOptional({ description: 'Sort by (newest, oldest)' })
   @IsOptional()
   @IsString()

@@ -1,9 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 
 export default function AdminBookingsPage() {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '22px 26px', color: '#8c8679' }}>Đang tải...</div>}>
+      <AdminBookingsContent />
+    </React.Suspense>
+  );
+}
+
+function AdminBookingsContent() {
+  const searchParams = useSearchParams();
+  const city = searchParams.get('city') || '';
   const [activeTab, setActiveTab] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -29,7 +40,7 @@ export default function AdminBookingsPage() {
     try {
       let statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<any>('/admin/bookings', { 
-        params: { status: statusParam, search: search || undefined } 
+        params: { status: statusParam, search: search || undefined, city: city || undefined } 
       });
       setBookings(res.data);
       setMeta(res.meta);
@@ -40,10 +51,13 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     fetchBookings();
-  }, [activeTab, search]);
+  }, [activeTab, search, city]);
 
   const getDisplayStatus = (status: string) => {
     if (status === 'REQUESTED') return 'Mới';
+    if (status === 'CONFIRMED') return 'Đã xác nhận';
+    if (status === 'CHECKED_IN') return 'Đã check-in';
+    if (status === 'NO_SHOW') return 'Không đến';
     if (status === 'COMPLETED') return 'Hoàn tất';
     if (status === 'CANCELLED') return 'Đã hủy';
     return status;
