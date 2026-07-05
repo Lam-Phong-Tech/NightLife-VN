@@ -3769,6 +3769,11 @@ describe('NightlifeDataService', () => {
         }),
         skip: 0,
         take: 8,
+        select: expect.objectContaining({
+          store: { select: { name: true, slug: true } },
+          user: { select: { id: true, displayName: true, tier: true } },
+          guest: { select: { id: true, displayName: true } },
+        }),
       }),
     );
     expect(prisma.media.findMany).toHaveBeenCalledWith({

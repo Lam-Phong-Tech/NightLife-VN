@@ -15192,17 +15192,33 @@ export class NightlifeDataService {
           skip,
           take: limit,
           orderBy,
-          include: {
-            store: true,
-            user: true,
-            guest: true,
-            booking: { include: { cast: true } },
+          select: {
+            id: true,
+            billNumber: true,
+            status: true,
+            submitterType: true,
+            totalVnd: true,
+            discountVnd: true,
+            commissionAmountVnd: true,
+            pointsEarned: true,
+            rejectReason: true,
+            createdAt: true,
+            submittedAt: true,
+            store: { select: { name: true, slug: true } },
+            user: { select: { id: true, displayName: true, tier: true } },
+            guest: { select: { id: true, displayName: true } },
           },
         }),
-        this.prisma.bill.count({ where }),
-        this.prisma.bill.count({ where: { ...where, status: 'SUBMITTED' } }),
-        this.prisma.bill.count({ where: { ...where, status: 'VERIFIED' } }),
-        this.prisma.bill.count({ where: { ...where, status: 'REJECTED' } }),
+        this.prisma.bill.count({ where }).catch(() => 0),
+        this.prisma.bill
+          .count({ where: { ...where, status: 'SUBMITTED' } })
+          .catch(() => 0),
+        this.prisma.bill
+          .count({ where: { ...where, status: 'VERIFIED' } })
+          .catch(() => 0),
+        this.prisma.bill
+          .count({ where: { ...where, status: 'REJECTED' } })
+          .catch(() => 0),
       ]);
 
     const billIds = items.map((bill) => bill.id);
@@ -15227,7 +15243,7 @@ export class NightlifeDataService {
       let sender =
         bill.user?.displayName || bill.guest?.displayName || 'Unknown';
       if (bill.user) guestType = bill.user.tier || 'Member';
-      if (bill.booking?.cast) guestType = 'Cast';
+      if (bill.submitterType === 'PARTNER') guestType = 'Partner';
 
       return {
         id: bill.id,
@@ -15235,7 +15251,7 @@ export class NightlifeDataService {
         store: bill.store?.name || 'Unknown Store',
         location: bill.store?.slug || '',
         amount: bill.totalVnd || 0,
-        date: bill.createdAt.toISOString(),
+        date: (bill.submittedAt ?? bill.createdAt).toISOString(),
         sender,
         hasImage: (mediaByBillId.get(bill.id)?.length ?? 0) > 0,
         images: mediaByBillId.get(bill.id) ?? [],
