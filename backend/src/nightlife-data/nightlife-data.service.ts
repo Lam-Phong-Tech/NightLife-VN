@@ -15151,7 +15151,9 @@ export class NightlifeDataService {
   async listAdminBills(
     query: import('./dto/admin-bill.dto').AdminBillQueryDto,
   ) {
-    const { page = 1, limit = 10, status, storeId, search, city } = query;
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 10);
+    const { status, storeId, search, city } = query;
     const skip = (page - 1) * limit;
 
     let prismaStatus: import('@prisma/client').BillStatus | undefined;
@@ -15964,9 +15966,9 @@ export class NightlifeDataService {
   async listAdminBookings(
     query: import('./dto/admin-booking.dto').AdminBookingQueryDto,
   ) {
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 10);
     const {
-      page = 1,
-      limit = 10,
       status,
       search,
       timeframe,
