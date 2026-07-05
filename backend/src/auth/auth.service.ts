@@ -522,6 +522,18 @@ export class AuthService {
     return { revoked: true };
   }
 
+  clearAuthCookies(response: Response) {
+    const options = {
+      path: '/',
+      sameSite: 'lax' as const,
+      secure: this.shouldUseSecureCookies(),
+    };
+
+    for (const name of ['auth_token', 'user_role', 'user_email', 'user_name']) {
+      response.clearCookie(name, options);
+    }
+  }
+
   private async toAuthResponse(
     user: {
       id: string;

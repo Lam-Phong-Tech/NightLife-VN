@@ -220,6 +220,13 @@ export const updateMemberProfile = (payload: UpdateProfilePayload) => {
   });
 };
 
+export const logoutCurrentUser = () => {
+  return apiClient<{ revoked: boolean }>("/auth/logout", {
+    method: "POST",
+    data: {},
+  });
+};
+
 export const requestPasswordReset = (payload: RequestPasswordResetPayload) => {
   return apiClient<PasswordResetRequestResponse>("/auth/password-reset/request", {
     method: "POST",
