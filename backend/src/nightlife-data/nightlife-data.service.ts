@@ -1751,9 +1751,10 @@ export class NightlifeDataService {
               type: 'IMAGE',
             },
             orderBy: { createdAt: 'desc' },
-            take: 1,
+            take: 8,
             select: {
               url: true,
+              purpose: true,
             },
           },
         },
@@ -1785,7 +1786,7 @@ export class NightlifeDataService {
         : null,
       latitude: this.toNumber(store.latitude),
       longitude: this.toNumber(store.longitude),
-      thumbnailUrl: store.media[0]?.url ?? null,
+      thumbnailUrl: this.resolveStoreCoverImage(store.media),
       distanceKm: this.calculateDistanceKm(
         coordinates,
         store.latitude,
@@ -1964,9 +1965,10 @@ export class NightlifeDataService {
             type: 'IMAGE',
           },
           orderBy: { createdAt: 'desc' },
-          take: 1,
+          take: 8,
           select: {
             url: true,
+            purpose: true,
           },
         },
       },
@@ -2048,7 +2050,7 @@ export class NightlifeDataService {
         city: relatedStore.city,
         district: relatedStore.district,
         area: this.mapPublicArea(relatedStore.area),
-        thumbnailUrl: relatedStore.media[0]?.url ?? null,
+        thumbnailUrl: this.resolveStoreCoverImage(relatedStore.media),
         relatedReason:
           relatedStore.area?.id && relatedStore.area.id === store.areaId
             ? 'same-area'
@@ -12127,6 +12129,23 @@ export class NightlifeDataService {
       media[0]?.url ??
       (demoStoreImageSlugs.has(slug) ? `/media/demo/stores/${slug}.jpg` : null)
     );
+  }
+
+  private resolveStoreCoverImage(
+    media: Array<{ url: string; purpose?: string | null }>,
+  ) {
+    const coverPurposes = new Set([
+      'store-hero',
+      'hero',
+      'cover',
+      'store-cover',
+      'PARTNER_LISTING_STORE',
+    ]);
+    const cover = media.find((item) =>
+      coverPurposes.has(String(item.purpose ?? '').trim()),
+    );
+
+    return cover?.url ?? media[0]?.url ?? null;
   }
 
   private resolveRankingCastImage(slug: string, media: Array<{ url: string }>) {
