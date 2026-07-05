@@ -15500,7 +15500,7 @@ export class NightlifeDataService {
         name: store.name,
         address: store.address || '',
         type: typeLabel,
-        area: store.city === 'Ho Chi Minh City' ? 'HCM' : 'HN',
+        area: (store.city === 'Ho Chi Minh City' || store.city === 'Hồ Chí Minh' || store.city === 'Há»“ ChÃ­ Minh') ? 'HCM' : 'HN',
         commission: '15%',
         casts: store._count.casts,
         status: store.status,
@@ -15895,12 +15895,21 @@ export class NightlifeDataService {
       dateFilter = { scheduledAt: { gte: startDate } };
     }
 
+    let cityCondition;
+    if (city === 'Hanoi') {
+      cityCondition = { in: ['Hanoi', 'Hà Nội'] };
+    } else if (city === 'Ho Chi Minh City') {
+      cityCondition = { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'Há»“ ChÃ­ Minh'] };
+    } else if (city) {
+      cityCondition = city;
+    }
+
     const where: import('@prisma/client').Prisma.BookingWhereInput = {
       ...(prismaStatus && { status: prismaStatus }),
       ...(storeId && { storeId }),
       ...(city || category ? {
         store: {
-          ...(city && { city }),
+          ...(city && { city: cityCondition }),
           ...(category && { category: category as import('@prisma/client').StoreCategory }),
         }
       } : {}),

@@ -70,9 +70,12 @@ export default function AdminStoresPage() {
   const [tagInput, setTagInput] = useState('');
 
   const imageUploadRef = useRef<HTMLInputElement>(null);
+  const coverImageUploadRef = useRef<HTMLInputElement>(null);
   const videoUploadRef = useRef<HTMLInputElement>(null);
   const menuImageUploadRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverImage, setCoverImage] = useState<any>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingMenuImageId, setUploadingMenuImageId] = useState<string | null>(null);
 
@@ -155,6 +158,7 @@ export default function AdminStoresPage() {
   const openNewDrawer = () => {
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
     setHoursForm(defaultHours);
+    setCoverImage(null);
     setAlbums([]);
     setVideos([]);
     const initialGroups = [
@@ -192,7 +196,9 @@ export default function AdminStoresPage() {
       status: mapStatusToEnum(st.status || 'ACTIVE')
     });
     setHoursForm(st.openingHours || defaultHours);
-    setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE') || []);
+    const cover = st.media?.find((m: any) => m.type === 'IMAGE' && m.purpose === 'store-hero');
+    setCoverImage(cover || null);
+    setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE' && m.purpose !== 'store-hero') || []);
     setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
     setTags(st.tags || []);
     
@@ -250,7 +256,7 @@ export default function AdminStoresPage() {
         tags,
         openingHours: hoursForm,
         pricingInfo: { groups: menuGroups },
-        mediaIds: [...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
+        mediaIds: [coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
       
       if (venueSel === 'new') {
@@ -374,6 +380,42 @@ export default function AdminStoresPage() {
       if (menuImageUploadRef.current) {
         menuImageUploadRef.current.value = '';
       }
+    }
+  };
+
+  const handleUploadCoverImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    if (!file) return;
+    
+    if (file.size > 15 * 1024 * 1024) {
+      showToast(`Ảnh "${file.name}" vượt quá dung lượng 15MB`);
+      if (coverImageUploadRef.current) coverImageUploadRef.current.value = '';
+      return;
+    }
+
+    try {
+      setUploadingCover(true);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', 'store-hero');
+      form.append('access', 'PUBLIC');
+      if (venueSel && venueSel !== 'new') {
+        form.append('storeId', venueSel);
+      }
+      
+      const res = await apiFormDataClient<any>('/storage/upload', form);
+      if (res && res.data && res.data.length > 0) {
+        setCoverImage(res.data[0]);
+      } else {
+        showToast('Lỗi tải lên ảnh bìa');
+      }
+    } catch (err) {
+      showToast('Có lỗi khi tải lên');
+    } finally {
+      setUploadingCover(false);
+      if (coverImageUploadRef.current) coverImageUploadRef.current.value = '';
     }
   };
 
@@ -705,6 +747,22 @@ export default function AdminStoresPage() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
                 <span>Giờ hiển thị theo từng ngày trên trang người dùng — sửa trực tiếp từng dòng, bấm nút để chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>.</span>
+              </div>
+
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Ảnh bìa (Tối đa 15MB)</div>
+              <div style={{ position: 'relative', width: '100%', height: '160px', borderRadius: '11px', background: coverImage?.url ? (coverImage.url.startsWith('linear-gradient') ? coverImage.url : `url(${resolveClientUrl(coverImage.url)}) center/cover no-repeat`) : 'rgba(255,255,255,.03)', border: '1.5px dashed rgba(212,178,106,.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px', color: '#8c8679', cursor: 'pointer', opacity: uploadingCover ? 0.5 : 1, overflow: 'hidden' }} onClick={() => coverImageUploadRef.current?.click()}>
+                {!coverImage?.url && (
+                  <>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    <span style={{ fontSize: '11px' }}>{uploadingCover ? 'Đang tải...' : 'Tải lên ảnh bìa'}</span>
+                  </>
+                )}
+                {coverImage?.url && (
+                  <span onClick={(e) => { e.stopPropagation(); setCoverImage(null); }} style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', zIndex: 10 }} title="Xóa ảnh bìa">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </span>
+                )}
+                <input type="file" accept="image/*" hidden ref={coverImageUploadRef} onChange={handleUploadCoverImage} />
               </div>
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Album ảnh</div>
