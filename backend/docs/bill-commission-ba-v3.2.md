@@ -32,17 +32,18 @@ Service charge and tax are not part of net revenue. They are carried separately 
 - Explicit override priority is higher than campaign group fallback in the ba-v3.2 commission resolver.
 - Each override update writes an `AuditLog` with before/after rule snapshot.
 
-## Reporting and BI
+## Reporting MVP scope
 
-- `GET /admin/reports/revenue` exposes `grossVnd`, `netVnd`, `payableVnd`, `commissionVnd`, and P2 breakdowns by:
+- `GET /admin/reports/revenue` exposes P0 totals by service usage date (`Bill.usedAt`):
   - day
   - store
   - campaign/coupon
-  - cast
-  - partner account
-  - area
-- Admin filters include `flag=NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED` and `flag=MISSING_ACTIVE_COMMISSION_CONFIG`.
-- Admin UI shows flag badges, approval preview, PM/BA confirm action, void/reversal action, campaign override controls, and BI breakdown panels.
+  - grossVnd, discountVnd, netVnd, payableVnd, commissionVnd
+- `netVnd` is fixed as `max(0, grossVnd - discountVnd)`. `paidVnd` maps to payable amount only.
+- MVP export is disabled by default: `ENABLE_REVENUE_EXPORT=false`, `exportEnabled=false`, `exportFormats=[]`.
+- P2 BI fields are disabled by default: `ENABLE_REVENUE_BI=false`. Partner/campaign/area/cast breakdowns, funnel, comparison, and Excel/PDF export should be reported as backlog/P2 unless the feature flag is explicitly enabled.
+- Admin filters include service usage date, store, coupon, and commission flag filters. Bill statuses counted by the report are read-only: `VERIFIED` and `PAID`.
+- Admin UI shows flag badges, approval preview, PM/BA confirm action, void/reversal action, campaign override controls, and the P0 revenue table. BI breakdown panels remain behind the P2 feature flag.
 
 ## Changelog
 
@@ -50,6 +51,7 @@ Service charge and tax are not part of net revenue. They are carried separately 
 - `2026-07-04`: Added admin approval preview endpoint and UI button.
 - `2026-07-04`: Added campaign commission override CRUD backed by active `CommissionConfig.ruleSnapshot`.
 - `2026-07-04`: Added bill void/refund endpoint with idempotent loyalty point reversal ledger.
+- `2026-07-04`: Moved revenue report export and BI dashboard behind default-off feature flags for MVP/P0 scope.
 - `2026-07-04`: Added P2 revenue report breakdowns by store/coupon/campaign/cast plus flag filters.
 - `2026-07-03`: Locked ba-v3.2 net revenue formula as `grossRevenueVnd - discountVnd`; service charge/tax live in `payableVnd`.
 
@@ -79,4 +81,5 @@ Service charge and tax are not part of net revenue. They are carried separately 
 
 - Automatic payment gateway refund reconciliation.
 - Dedicated PM/BA queue ownership and SLA reminders.
+- Revenue Excel/PDF export after MVP.
 - BI dashboard export by store/campaign/coupon/cast.

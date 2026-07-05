@@ -82,6 +82,9 @@ const colors = {
   goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
 };
 
+const ENABLE_REVENUE_EXPORT = process.env.NEXT_PUBLIC_ENABLE_REVENUE_EXPORT === "true";
+const ENABLE_REVENUE_BI = process.env.NEXT_PUBLIC_ENABLE_REVENUE_BI === "true";
+
 type AdminView =
   | "dashboard"
   | "booking"
@@ -505,15 +508,15 @@ const emptyRevenueReport: RevenueReport = {
     partnerAccountId: null,
     areaId: null,
     castId: null,
-    exportEnabled: true,
-    exportFormats: ["excel", "pdf"],
+    exportEnabled: false,
+    exportFormats: [],
   },
   meta: {
     billStatusIncluded: ["VERIFIED", "PAID"],
     timezone: "Asia/Ho_Chi_Minh",
     generatedAt: "",
-    exportEnabled: true,
-    exportFormats: ["excel", "pdf"],
+    exportEnabled: false,
+    exportFormats: [],
     formula: {
       grossVnd: "subtotalVnd",
       discountVnd: "discountVnd",
@@ -2009,6 +2012,14 @@ export default function AdminConsole({ section }: { section?: string }) {
     () => Math.max(1, ...revenueReport.days.map((day) => day.grossVnd)),
     [revenueReport.days],
   );
+  const revenueReportIncludedStatuses = revenueReport.meta?.billStatusIncluded?.length
+    ? revenueReport.meta.billStatusIncluded
+    : ["VERIFIED", "PAID"];
+  const revenueReportExportEnabled =
+    ENABLE_REVENUE_EXPORT &&
+    Boolean(revenueReport.meta?.exportEnabled) &&
+    Boolean(revenueReport.meta?.exportFormats?.length);
+  const revenueReportBiEnabled = ENABLE_REVENUE_BI;
   const revenueReportCouponOptions = useMemo(() => {
     const options = new Map<string, { id: string; code: string; name: string }>();
     couponIssues.forEach((issue) => {
@@ -4663,8 +4674,9 @@ export default function AdminConsole({ section }: { section?: string }) {
           <SectionTitle title="Report P0: ngày -> quán -> mã giảm giá" eyebrow="BILL USED AT" />
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div style={{ color: colors.text2, fontSize: 13 }}>
-              Loc theo ngay su dung dich vu (Bill.usedAt). P2 da co export Excel/PDF va BI breakdown.
+              Lọc theo ngày sử dụng dịch vụ (Bill.usedAt). MVP chỉ tính bill VERIFIED/PAID và nhóm theo ngày - quán - mã giảm giá.
             </div>
+            {revenueReportExportEnabled ? (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -4685,6 +4697,7 @@ export default function AdminConsole({ section }: { section?: string }) {
                 Export PDF
               </button>
             </div>
+            ) : null}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[
@@ -4774,6 +4787,15 @@ export default function AdminConsole({ section }: { section?: string }) {
                 ))}
               </select>
             </label>
+            <label style={{ display: "grid", gap: 6, color: colors.text2, fontSize: 12, fontWeight: 800 }}>
+              Trạng thái tính doanh thu
+              <input
+                aria-label="Revenue report status filter"
+                readOnly
+                value={revenueReportIncludedStatuses.join(" / ")}
+                style={inputStyle({ minHeight: 38, opacity: 0.82 })}
+              />
+            </label>
             <div style={{ display: "flex", alignItems: "end", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -4804,12 +4826,17 @@ export default function AdminConsole({ section }: { section?: string }) {
               fontSize: 12,
             }}
           >
-            <span>grossVnd = subtotalVnd / bill gốc</span>
-            <span>discountVnd = discountVnd</span>
-            <span>netVnd = paidVnd hoặc subtotal - discount</span>
-            <span>commissionVnd = commissionAmountVnd</span>
+            <span title={revenueReport.meta?.formula?.grossVnd ?? "subtotalVnd"}>grossVnd = subtotalVnd / bill gốc</span>
+            <span title={revenueReport.meta?.formula?.discountVnd ?? "discountVnd"}>discountVnd = discountVnd</span>
+            <span title={revenueReport.meta?.formula?.netVnd ?? "subtotalVnd - discountVnd"}>
+              netVnd = subtotalVnd - discountVnd
+            </span>
+            <span title={revenueReport.meta?.formula?.commissionVnd ?? "commissionAmountVnd"}>
+              commissionVnd = commissionAmountVnd
+            </span>
           </div>
 
+          {revenueReportBiEnabled ? (
           <div data-testid="admin-revenue-p2-dashboard" style={{ display: "grid", gap: 12 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
               {(revenueReport.funnel ?? []).map((step) => (
@@ -4950,6 +4977,7 @@ export default function AdminConsole({ section }: { section?: string }) {
               ))}
             </div>
           </div>
+          ) : null}
 
           {revenueReport.days.length ? (
             <div style={{ display: "grid", gap: 14 }}>
@@ -5116,6 +5144,7 @@ export default function AdminConsole({ section }: { section?: string }) {
         </div>
       </Panel>
 
+      {revenueReportBiEnabled ? (
       <Panel style={{ padding: 20 }}>
         <SectionTitle title="Funnel đối soát" eyebrow="BOOKING / COUPON / BILL" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,minmax(130px,1fr))", gap: 10, marginTop: 14 }}>
@@ -5157,6 +5186,7 @@ export default function AdminConsole({ section }: { section?: string }) {
           </div>
         ) : null}
       </Panel>
+      ) : null}
     </div>
   );
 

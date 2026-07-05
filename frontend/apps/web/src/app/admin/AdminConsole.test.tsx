@@ -237,19 +237,19 @@ const revenueReport = {
     partnerAccountId: null,
     areaId: null,
     castId: null,
-    exportEnabled: true,
-    exportFormats: ["excel", "pdf"],
+    exportEnabled: false,
+    exportFormats: [],
   },
   meta: {
     billStatusIncluded: ["VERIFIED", "PAID"],
     timezone: "Asia/Ho_Chi_Minh",
     generatedAt: "2026-07-03T10:00:00.000Z",
-    exportEnabled: true,
-    exportFormats: ["excel", "pdf"],
+    exportEnabled: false,
+    exportFormats: [],
     formula: {
       grossVnd: "subtotalVnd",
       discountVnd: "discountVnd",
-      netVnd: "paidVnd || subtotalVnd - discountVnd",
+      netVnd: "subtotalVnd - discountVnd",
       commissionVnd: "commissionAmountVnd",
     },
   },
@@ -528,21 +528,22 @@ describe("AdminConsole coupon issue panel", () => {
     expect(within(panel).getByText("WELCOME20")).toBeInTheDocument();
     expect(within(panel).getByText("Welcome 20%")).toBeInTheDocument();
     expect(within(panel).getByText(/grossVnd = subtotalVnd \/ bill g.c/)).toBeInTheDocument();
+    expect(within(panel).getByText(/netVnd = subtotalVnd - discountVnd/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Revenue report status filter")).toHaveValue("VERIFIED / PAID");
     expect(screen.queryByText("Export CSV")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Export revenue report Excel")).toBeInTheDocument();
-    expect(screen.getByLabelText("Export revenue report PDF")).toBeInTheDocument();
-    expect(screen.getByTestId("admin-revenue-p2-dashboard")).toBeInTheDocument();
-    expect(within(panel).getByText("Coupon/QR")).toBeInTheDocument();
-    expect(within(panel).getByText("QR scan")).toBeInTheDocument();
-    expect(within(panel).getByText("Confirm USED")).toBeInTheDocument();
-    expect(within(panel).getByText("Bill submitted")).toBeInTheDocument();
-    expect(within(panel).getByText("Bill approved")).toBeInTheDocument();
-    expect(within(panel).getByTestId("admin-bill-reversal-panel")).toBeInTheDocument();
-    expect(within(panel).getByLabelText("Auto reverse high-risk bills")).toBeInTheDocument();
-    expect(within(panel).getByLabelText("Reverse bill BILL-20260701-VERIFIED")).toBeInTheDocument();
-    expect(within(panel).getByText(/Neon Partner/)).toBeInTheDocument();
-    expect(within(panel).getByText(/District 1/)).toBeInTheDocument();
-    expect(within(panel).getByText(/Mika/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Export revenue report Excel")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Export revenue report PDF")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("admin-revenue-p2-dashboard")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Coupon/QR")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("QR scan")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Confirm USED")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Bill submitted")).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Bill approved")).not.toBeInTheDocument();
+    expect(within(panel).queryByTestId("admin-bill-reversal-panel")).not.toBeInTheDocument();
+    expect(within(panel).queryByLabelText("Auto reverse high-risk bills")).not.toBeInTheDocument();
+    expect(within(panel).queryByLabelText("Reverse bill BILL-20260701-VERIFIED")).not.toBeInTheDocument();
+    expect(within(panel).queryByText(/Neon Partner/)).not.toBeInTheDocument();
+    expect(within(panel).queryByText(/Mika/)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Revenue report from date"), {
       target: { value: "2026-07-01" },

@@ -5896,6 +5896,9 @@ export class NightlifeDataService {
     void user;
     const reportWindow = this.resolveAdminRevenueReportWindow(query);
     const { from, to } = reportWindow;
+    const exportEnabled = this.isRevenueReportExportEnabled();
+    const exportFormats = exportEnabled ? ['excel', 'pdf'] : [];
+    const revenueBiEnabled = this.isRevenueReportBiEnabled();
     const where: Prisma.BillWhereInput = {
       deletedAt: null,
       status: { in: [...REVENUE_REPORT_BILL_STATUSES] },
@@ -5904,9 +5907,11 @@ export class NightlifeDataService {
     const storeId = this.cleanText(query.storeId);
     const couponId = this.cleanText(query.couponId);
     const flag = this.cleanText(query.flag);
-    const partnerAccountId = this.cleanText(query.partnerAccountId);
-    const areaId = this.cleanText(query.areaId);
-    const castId = this.cleanText(query.castId);
+    const partnerAccountId = revenueBiEnabled
+      ? this.cleanText(query.partnerAccountId)
+      : undefined;
+    const areaId = revenueBiEnabled ? this.cleanText(query.areaId) : undefined;
+    const castId = revenueBiEnabled ? this.cleanText(query.castId) : undefined;
 
     if (storeId) {
       where.storeId = storeId;
@@ -5983,7 +5988,9 @@ export class NightlifeDataService {
 
     const totals = this.emptyRevenueReportTotals();
     const days = new Map<string, MutableRevenueReportDayNode>();
-    const breakdownMaps = this.emptyRevenueReportBreakdownMaps();
+    const breakdownMaps = revenueBiEnabled
+      ? this.emptyRevenueReportBreakdownMaps()
+      : null;
 
     for (const bill of bills) {
       if (!bill.usedAt) {
@@ -5992,36 +5999,38 @@ export class NightlifeDataService {
 
       const money = this.billRevenueReportMoney(bill);
       this.addRevenueReportTotals(totals, money);
-      this.addRevenueReportBreakdown(
-        breakdownMaps.stores,
-        this.revenueReportStoreDimension(bill.store),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.partners,
-        this.revenueReportPartnerDimension(bill.store),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.campaigns,
-        this.revenueReportCampaignDimension(bill),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.coupons,
-        this.revenueReportCampaignDimension(bill),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.areas,
-        this.revenueReportAreaDimension(bill.store),
-        money,
-      );
-      this.addRevenueReportBreakdown(
-        breakdownMaps.casts,
-        this.revenueReportCastDimension(bill),
-        money,
-      );
+      if (breakdownMaps) {
+        this.addRevenueReportBreakdown(
+          breakdownMaps.stores,
+          this.revenueReportStoreDimension(bill.store),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.partners,
+          this.revenueReportPartnerDimension(bill.store),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.campaigns,
+          this.revenueReportCampaignDimension(bill),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.coupons,
+          this.revenueReportCampaignDimension(bill),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.areas,
+          this.revenueReportAreaDimension(bill.store),
+          money,
+        );
+        this.addRevenueReportBreakdown(
+          breakdownMaps.casts,
+          this.revenueReportCastDimension(bill),
+          money,
+        );
+      }
 
       const day = this.getRevenueReportDay(
         days,
@@ -6062,15 +6071,15 @@ export class NightlifeDataService {
         partnerAccountId: partnerAccountId || null,
         areaId: areaId || null,
         castId: castId || null,
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled,
+        exportFormats,
       },
       meta: {
         billStatusIncluded: [...REVENUE_REPORT_BILL_STATUSES],
         timezone: reportWindow.timezone,
         generatedAt: new Date().toISOString(),
-        exportEnabled: true,
-        exportFormats: ['excel', 'pdf'],
+        exportEnabled,
+        exportFormats,
         formula: {
           grossVnd: 'subtotalVnd',
           discountVnd: 'discountVnd',
@@ -6108,15 +6117,31 @@ export class NightlifeDataService {
           })),
         })),
       })),
-      breakdowns: this.finalizeRevenueReportBreakdowns(breakdownMaps),
-      funnel: await this.buildRevenueReportFunnel(query, reportWindow, totals),
-      comparison: await this.buildRevenueReportComparison(
-        query,
-        reportWindow,
-        where,
-        totals,
-      ),
+      ...(breakdownMaps
+        ? {
+            breakdowns: this.finalizeRevenueReportBreakdowns(breakdownMaps),
+            funnel: await this.buildRevenueReportFunnel(
+              query,
+              reportWindow,
+              totals,
+            ),
+            comparison: await this.buildRevenueReportComparison(
+              query,
+              reportWindow,
+              where,
+              totals,
+            ),
+          }
+        : {}),
     };
+  }
+
+  private isRevenueReportExportEnabled() {
+    return process.env.ENABLE_REVENUE_EXPORT === 'true';
+  }
+
+  private isRevenueReportBiEnabled() {
+    return process.env.ENABLE_REVENUE_BI === 'true';
   }
 
   async listAdminCommissionOverrides(
