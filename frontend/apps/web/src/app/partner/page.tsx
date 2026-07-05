@@ -453,6 +453,25 @@ const fallbackMediaUrls = [
   'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=70',
 ];
 
+function cleanListingText(value?: string | null) {
+  if (!value) return '';
+
+  return value
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n\s+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'store', label: 'Thông tin quán' },
   { key: 'cast', label: 'Cast' },
@@ -498,6 +517,7 @@ const softCardStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   minHeight: '44px',
   width: '100%',
+  minWidth: 0,
   borderRadius: '11px',
   border: `1px solid ${colors.borderGold22}`,
   background: colors.surface2,
@@ -505,6 +525,8 @@ const inputStyle: React.CSSProperties = {
   padding: '0 12px',
   outline: 'none',
   font: 'inherit',
+  lineHeight: 1.35,
+  boxSizing: 'border-box',
 };
 
 function SectionHeading({
@@ -668,15 +690,29 @@ function GhostButton({
   );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({
+  label,
+  children,
+  className,
+  style,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
     <label
+      className={className}
       style={{
         display: 'grid',
         gap: '7px',
         color: colors.text2,
         fontSize: '12px',
         fontWeight: 700,
+        minWidth: 0,
+        alignContent: 'start',
+        ...style,
       }}
     >
       {label}
@@ -1167,6 +1203,7 @@ export default function PartnerPage() {
     setListingDraft({
       ...emptyListingDraft,
       ...response.draft,
+      description: cleanListingText(response.draft.description),
       pricingItems: response.draft.pricingItems?.length
         ? response.draft.pricingItems
         : fallbackPricingItems,
@@ -2269,20 +2306,20 @@ export default function PartnerPage() {
             style={inputStyle}
           />
         </FormField>
-        <FormField label="Mô tả ngắn">
+        <FormField label="Mô tả ngắn" className="partner-field-wide">
           <textarea
             value={listingDraft.description}
             onChange={(event) => updateListingField('description', event.target.value)}
             placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
-            style={{ ...inputStyle, minHeight: '104px', resize: 'vertical', padding: '12px' }}
+            style={{ ...inputStyle, minHeight: '112px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
           />
         </FormField>
-        <FormField label="Ghi chú gửi Admin">
+        <FormField label="Ghi chú gửi Admin" className="partner-field-wide">
           <textarea
             value={listingDraft.note}
             onChange={(event) => updateListingField('note', event.target.value)}
             placeholder="Ghi chú nội bộ cho Admin khi duyệt nội dung"
-            style={{ ...inputStyle, minHeight: '86px', resize: 'vertical', padding: '12px' }}
+            style={{ ...inputStyle, minHeight: '86px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
           />
         </FormField>
       </div>
@@ -2318,7 +2355,7 @@ export default function PartnerPage() {
         action={<StatusPill tone={listingReviewTone}>{listingReviewLabel}</StatusPill>}
       />
 
-      <div className="partner-listing-grid" style={{ marginBottom: '14px' }}>
+      <div className="partner-listing-toolbar">
         <FormField label="Quán cần cập nhật">
           <select
             value={listingStoreId}
@@ -2333,7 +2370,18 @@ export default function PartnerPage() {
             ))}
           </select>
         </FormField>
-        <div style={{ ...softCardStyle, padding: '12px', color: colors.text2, fontSize: '12px', lineHeight: 1.5 }}>
+        <div
+          style={{
+            ...softCardStyle,
+            minHeight: '64px',
+            padding: '12px',
+            color: colors.text2,
+            fontSize: '12px',
+            lineHeight: 1.5,
+            display: 'grid',
+            alignContent: 'center',
+          }}
+        >
           {listingNotice || 'Nhập nội dung, lưu nháp hoặc gửi Admin duyệt để public sau khi được xác nhận.'}
           {listingReview?.submittedAt ? (
             <div style={{ marginTop: '4px', color: colors.muted }}>
@@ -2371,7 +2419,7 @@ export default function PartnerPage() {
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-end',
           gap: '12px',
           flexWrap: 'wrap',
           marginTop: '18px',
@@ -2517,14 +2565,37 @@ export default function PartnerPage() {
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 12px;
         }
+        .partner-listing-grid {
+          gap: 16px 14px;
+          align-items: start;
+        }
+        .partner-listing-grid > * {
+          min-width: 0;
+        }
+        .partner-field-wide {
+          grid-column: 1 / -1;
+        }
+        .partner-listing-toolbar {
+          display: grid;
+          grid-template-columns: minmax(280px, 380px) minmax(320px, 1fr);
+          gap: 12px;
+          align-items: stretch;
+          margin-bottom: 16px;
+          max-width: 780px;
+        }
         .partner-media-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
         @media (max-width: 1180px) {
           .partner-metric-grid,
           .partner-settlement-summary,
+          .partner-listing-grid,
           .partner-store-scope-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .partner-listing-toolbar {
+            grid-template-columns: 1fr;
+            max-width: none;
           }
           .partner-overview-grid,
           .partner-scan-grid,
@@ -2558,6 +2629,7 @@ export default function PartnerPage() {
           .partner-metric-grid,
           .partner-settlement-summary,
           .partner-listing-grid,
+          .partner-listing-toolbar,
           .partner-media-grid,
           .partner-store-scope-grid {
             grid-template-columns: 1fr;
