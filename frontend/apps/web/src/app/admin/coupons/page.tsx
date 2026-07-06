@@ -407,7 +407,30 @@ export default function AdminCouponsPage() {
                 )}
               </div>
 
-              <span onClick={() => { alert('Tính năng đang phát triển'); setShowCreate(false); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', fontSize: '13px', fontWeight: 700, borderRadius: '11px', cursor: 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>
+              <span onClick={async () => {
+                try {
+                  const parsedDiscount = parseInt(discountVal.replace(/[^0-9]/g, ''), 10);
+                  const durationMap: Record<string, number> = { '7 ngày': 7, '14 ngày': 14, '30 ngày': 30, '90 ngày': 90 };
+                  const limitMap: Record<string, number | undefined> = { '100 mã': 100, '500 mã': 500, '1.000 mã': 1000, 'Không giới hạn': undefined };
+                  const usageLimit = limit === 'Tự nhập...' ? (limitCustom ? parseInt(limitCustom, 10) : undefined) : limitMap[limit];
+                  const payload = {
+                    name: fName,
+                    discountType: discountType === 'pct' ? 'PERCENT' : 'FIXED_AMOUNT',
+                    discountValue: discountType === 'amt' ? parsedDiscount * 1000 : parsedDiscount,
+                    targetStores: scope === 'all' ? [] : selectedStores,
+                    targetAudiences: [tier.toUpperCase()],
+                    durationDays: durationMap[duration] ?? 30,
+                    usageLimit,
+                  };
+                  await apiClient('/admin/global-coupons', { method: 'POST', data: payload });
+                  setShowCreate(false);
+                  setFName(''); setDiscountVal('10%'); setScope('all'); setSelectedStores([]); setTier('Member'); setDuration('30 ngày'); setLimit('500 mã'); setLimitCustom('');
+                  fetchCoupons();
+                  alert('Tạo coupon thành công!');
+                } catch (err: any) {
+                  alert(err?.message || 'Lỗi khi tạo coupon');
+                }
+              }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', fontSize: '13px', fontWeight: 700, borderRadius: '11px', cursor: 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>
                 Tạo coupon &amp; sinh QR
               </span>
 

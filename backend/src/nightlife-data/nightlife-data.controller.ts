@@ -1420,6 +1420,30 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
+    summary: 'Admin action: Create a global QR coupon (independent flow)',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/global-coupons')
+  createAdminGlobalCoupon(
+    @Body() dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
+  ) {
+    return this.nightlifeDataService.createAdminCoupon(dto);
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: List global QR coupons',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/global-coupons')
+  listAdminGlobalCoupons(
+    @Query() query: { page?: number; limit?: number; search?: string },
+  ) {
+    return this.nightlifeDataService.listAdminGlobalCoupons(query);
+  }
+
+  @ApiOperation({
     summary: 'Admin action: List stores with filters and pagination',
   })
   @Roles('ADMIN')

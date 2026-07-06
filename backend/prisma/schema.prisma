@@ -1169,3 +1169,38 @@ model SystemConfig {
   @@map("system_configs")
 }
 
+model AdminCoupon {
+  id              String       @id @default(uuid()) @db.Uuid
+  code            String       @unique
+  qrPayloadHash   String       @unique @map("qr_payload_hash")
+  name            String
+  discountType    DiscountType @map("discount_type")
+  discountValue   Int          @map("discount_value")
+  targetStores    String[]     @default([]) @map("target_stores")
+  targetAudiences String[]     @default([]) @map("target_audiences")
+  startsAt        DateTime     @map("starts_at")
+  endsAt          DateTime?    @map("ends_at")
+  usageLimit      Int?         @map("usage_limit")
+  usedCount       Int          @default(0) @map("used_count")
+  status          CouponStatus @default(ACTIVE)
+  scans           AdminCouponScan[]
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([startsAt, endsAt])
+  @@map("admin_coupons")
+}
+
+model AdminCouponScan {
+  id              String      @id @default(uuid()) @db.Uuid
+  adminCouponId   String      @map("admin_coupon_id") @db.Uuid
+  adminCoupon     AdminCoupon @relation(fields: [adminCouponId], references: [id], onDelete: Restrict)
+  storeId         String      @map("store_id") @db.Uuid
+  scannedByUserId String?     @map("scanned_by_user_id") @db.Uuid
+  scannedAt       DateTime    @default(now()) @map("scanned_at")
+
+  @@index([adminCouponId])
+  @@index([storeId])
+  @@map("admin_coupon_scans")
+}

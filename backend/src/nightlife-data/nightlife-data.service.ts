@@ -16725,4 +16725,110 @@ export class NightlifeDataService {
     const normalized = this.normalizeToken(cityCode) || 'all';
     return ['all', 'hn', 'hcm'].includes(normalized) ? normalized : 'all';
   }
+
+  // ── Admin Coupon (独立 QR flow) ──────────────────────────────────
+
+  async createAdminCoupon(
+    dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
+  ) {
+    const { randomUUID, createHash } = await import('crypto');
+
+    // Generate unique code from name
+    const baseCode = dto.name
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 10);
+    const suffix = randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
+    const code = `${baseCode}-${suffix}`;
+
+    // Generate QR payload hash
+    const qrRaw = `ADMIN_COUPON::${code}::${Date.now()}::${randomUUID()}`;
+    const qrPayloadHash = createHash('sha256').update(qrRaw).digest('hex');
+
+    const now = new Date();
+    const endsAt = new Date(now);
+    endsAt.setDate(endsAt.getDate() + dto.durationDays);
+
+    const adminCoupon = await this.prisma.adminCoupon.create({
+      data: {
+        code,
+        qrPayloadHash,
+        name: dto.name.trim(),
+        discountType: dto.discountType as any,
+        discountValue: dto.discountValue,
+        targetStores: dto.targetStores ?? [],
+        targetAudiences: dto.targetAudiences,
+        startsAt: now,
+        endsAt,
+        usageLimit: dto.usageLimit ?? null,
+        status: 'ACTIVE',
+      },
+    });
+
+    return {
+      id: adminCoupon.id,
+      code: adminCoupon.code,
+      name: adminCoupon.name,
+      discountType: adminCoupon.discountType,
+      discountValue: adminCoupon.discountValue,
+      targetStores: adminCoupon.targetStores,
+      targetAudiences: adminCoupon.targetAudiences,
+      startsAt: adminCoupon.startsAt,
+      endsAt: adminCoupon.endsAt,
+      usageLimit: adminCoupon.usageLimit,
+      usedCount: adminCoupon.usedCount,
+      qrPayload: qrPayloadHash,
+    };
+  }
+
+  async listAdminGlobalCoupons(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) {
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 10);
+    const skip = (page - 1) * limit;
+
+    const where: import('@prisma/client').Prisma.AdminCouponWhereInput = {
+      ...(query.search && {
+        OR: [
+          { code: { contains: query.search, mode: 'insensitive' as const } },
+          { name: { contains: query.search, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.adminCoupon.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.adminCoupon.count({ where }),
+    ]);
+
+    return {
+      data: items.map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        discountType: c.discountType,
+        discountValue: c.discountValue,
+        targetStores: c.targetStores,
+        targetAudiences: c.targetAudiences,
+        startsAt: c.startsAt,
+        endsAt: c.endsAt,
+        usageLimit: c.usageLimit,
+        usedCount: c.usedCount,
+        status: c.status,
+        qrPayload: c.qrPayloadHash,
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
 }

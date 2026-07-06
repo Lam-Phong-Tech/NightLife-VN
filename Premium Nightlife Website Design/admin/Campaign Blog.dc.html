@@ -309,18 +309,26 @@
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Ảnh banner</div>
-            <div style="position:relative;height:160px;border-radius:13px;overflow:hidden;border:1px dashed rgba(212,178,106,.4);background:{{ bnImgBg }};">
+            <div style="position:relative;height:{{ bnImgH }};transition:height .25s ease;border-radius:13px;overflow:hidden;border:1px dashed rgba(212,178,106,.4);background:{{ bnImgBg }};">
               <sc-if value="{{ bnNoImg }}" hint-placeholder-val="{{ true }}">
                 <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b99a55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
                   <span style="font-size:12.5px;font-weight:600;color:#cbb884;">Bấm để tải ảnh banner</span>
-                  <span style="font-size:10.5px;color:#57534b;">PNG / JPG · khuyến nghị 1920×720</span>
+                  <span style="font-size:10.5px;color:#57534b;">JPG / PNG / WebP · khuyến nghị {{ bnRatioRec }}</span>
                 </div>
               </sc-if>
               <sc-if value="{{ bnHasImg }}" hint-placeholder-val="{{ false }}">
                 <span style="position:absolute;right:11px;bottom:11px;font-size:10.5px;font-weight:700;color:#f3f0ea;background:rgba(12,12,15,.66);border:1px solid rgba(255,255,255,.22);padding:5px 11px;border-radius:8px;">Đổi ảnh</span>
               </sc-if>
               <input type="file" accept="image/*" onChange="{{ bnUpload }}" title="Tải ảnh banner" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Độ dài banner</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ bnRatios }}" as="rt" hint-placeholder-count="3"><span onClick="{{ rt.pick }}" style="{{ rt.style }}">{{ rt.label }}</span></sc-for></div>
+            <div style="display:flex;align-items:flex-start;gap:7px;margin-top:9px;font-size:10.5px;color:#8c8679;line-height:1.5;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+              <span>{{ bnRatioNote }}</span>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -334,8 +342,39 @@
             </div>
           </div>
           <div>
-            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Liên kết khi bấm</div>
-            <input value="{{ bnLink }}" onInput="{{ bnLinkSet }}" placeholder="https://… hoặc /uu-dai/happy-hour" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Liên kết tới quán <span style="color:#57534b;font-weight:600;letter-spacing:.3px;text-transform:none;">· chỉ gán 1 quán</span></div>
+            <sc-if value="{{ bnHasVen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:11px;background:rgba(212,178,106,.06);border:1px solid rgba(212,178,106,.32);border-radius:12px;padding:9px 12px 9px 9px;">
+                <span style="width:38px;height:38px;flex:none;border-radius:9px;background:{{ bnVenBg }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#241a0a;">{{ bnVenLg }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:700;color:#f3f0ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ bnVenName }}</div>
+                  <div style="font-size:10.5px;color:#8c8679;margin-top:2px;">{{ bnVenMeta }}</div>
+                </div>
+                <span style="flex:none;font-size:9px;font-weight:800;letter-spacing:.6px;color:#7fd3a2;background:rgba(95,191,134,.1);border:1px solid rgba(95,191,134,.28);padding:3.5px 8px;border-radius:6px;">ĐÃ GÁN</span>
+                <span onClick="{{ bnVenClear }}" title="Bỏ gán quán" style="width:28px;height:28px;flex:none;border-radius:8px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#e08a7e;background:rgba(224,122,110,.12);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ bnNoVen }}" hint-placeholder-val="{{ true }}">
+              <div style="position:relative;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <input value="{{ bnVenQ }}" onInput="{{ bnVenQSet }}" placeholder="Tìm quán theo tên, loại hình, khu vực…" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px 12px 37px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;margin-top:7px;">
+                <sc-for list="{{ bnVenResults }}" as="vr" hint-placeholder-count="3">
+                  <div onClick="{{ vr.pick }}" style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:7px 10px 7px 7px;cursor:pointer;" style-hover="border-color:rgba(212,178,106,.45);background:rgba(212,178,106,.05);">
+                    <span style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ vr.bg }};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#241a0a;">{{ vr.lg }}</span>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:12px;font-weight:600;color:#e8e4db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ vr.name }}</div>
+                      <div style="font-size:10px;color:#8c8679;margin-top:1px;">{{ vr.meta }}</div>
+                    </div>
+                    <span style="flex:none;font-size:10px;font-weight:700;color:#caa765;">Chọn</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ bnVenEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="text-align:center;font-size:11px;color:#57534b;padding:10px;">Không tìm thấy quán phù hợp</div>
+                </sc-if>
+              </div>
+            </sc-if>
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Trạng thái</div>
@@ -431,10 +470,10 @@ class Component extends DCLogic {
     {title:'Cách chọn Cast phù hợp cho buổi tối của bạn',cat:'Cẩm nang',date:'—',views:'—',status:'draft',img:'linear-gradient(135deg,#2e2226,#180f14)',sum:'',body:'',langs:['VI']},
   ];
   DEFBANNERS=[
-    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#3a2f22,#1a1510)',slot:'Hero chính',title:'Đêm nhạc DJ SODA · Club Lumière',pos:'Trang chủ #1',link:'/su-kien/dj-soda-club-lumiere',on:true},
-    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2a2233,#161020)',slot:'Hero phụ',title:'Sakura Lounge · Ưu đãi thành viên',pos:'Trang chủ #2',link:'/quan/sakura-lounge',on:true},
-    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#22282e,#12181e)',slot:'Ưu đãi',title:'Happy Hour −30% cuối tuần',pos:'Trang Ưu đãi',link:'/uu-dai/happy-hour',on:false},
-    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2e2226,#180f14)',slot:'Sự kiện',title:'Countdown Party 2027',pos:'Nháp',link:'',on:false},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#3a2f22,#1a1510)',slot:'Hero chính',title:'Đêm nhạc DJ SODA · Club Lumière',pos:'Trang chủ #1',venueId:'v1',on:true},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2a2233,#161020)',slot:'Hero phụ',title:'Sakura Lounge · Ưu đãi thành viên',pos:'Trang chủ #2',venueId:'v2',on:true},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#22282e,#12181e)',slot:'Ưu đãi',title:'Happy Hour −30% cuối tuần',pos:'Trang Ưu đãi',venueId:'v1',on:false},
+    {img:'linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),linear-gradient(135deg,#2e2226,#180f14)',slot:'Sự kiện',title:'Countdown Party 2027',pos:'Nháp',venueId:'',on:false},
   ];
   DEFCAMPS=[
     {deal:'−30%',name:'Happy Hour',scope:'Club Lumière',period:'01/06 – 07/07',status:'active'},
@@ -474,7 +513,7 @@ class Component extends DCLogic {
     const bn=this.state.bn; if(!bn) return;
     if(!bn.title||!bn.title.trim()){ this.showToast('Nhập tiêu đề banner'); return; }
     const a=this.bannerList().slice();
-    const rec={ title:bn.title.trim(), slot:bn.slot||'Hero chính', pos:bn.pos||'Nháp', link:bn.link||'', on:!!bn.on,
+    const rec={ title:bn.title.trim(), slot:bn.slot||'Hero chính', pos:bn.pos||'Nháp', venueId:bn.venueId||'', on:!!bn.on,
       img:bn.img||('linear-gradient(135deg,rgba(12,12,15,.2),rgba(12,12,15,.75)),'+this.GRADS[a.length%this.GRADS.length]) };
     if(bn.id!=null) a[bn.id]=rec; else a.unshift(rec);
     this.setState({banners:a,bn:null});
@@ -496,7 +535,7 @@ class Component extends DCLogic {
     const tgl=(on)=>on?'font-size:10.5px;font-weight:600;color:#7fd3a2;background:rgba(95,191,134,.12);border:1px solid rgba(95,191,134,.3);padding:4px 11px;border-radius:16px;cursor:pointer;':'font-size:10.5px;font-weight:600;color:#8c8679;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:4px 11px;border-radius:16px;cursor:pointer;';
     o.cnBanners=this.bannerList().map((b,i)=>({...b,tgl:tgl(b.on),tglLabel:b.on?'● Đang hiển thị':'○ Ẩn',
       toggle:(e)=>{ e.stopPropagation(); const a=this.bannerList().slice(); a[i]={...a[i],on:!a[i].on}; this.setState({banners:a}); this.showToast(a[i].on?'Banner đang hiển thị trên trang chủ':'Đã ẩn banner'); },
-      edit:()=>this.setState({bn:{id:i,title:b.title,slot:b.slot,pos:b.pos,link:b.link||'',img:b.img,on:b.on}})}));
+      edit:()=>this.setState({bn:{id:i,title:b.title,slot:b.slot,pos:b.pos,venueId:b.venueId||'',img:b.img,on:b.on}})}));
     const bmeta3={published:['Đã đăng','success'],draft:['Nháp','warn']};
     o.cnBlogs=this.blogList().map((p,i)=>({...p,stStyle:this.pill(bmeta3[p.status][1]),stLabel:bmeta3[p.status][0],
       edit:()=>this.setState({bf:{id:i,status:p.status,title:p.title,cat:p.cat,sum:p.sum||'',body:p.body||'',img:p.img,langs:p.langs||['VI'],views:p.views,date:p.date}})}));
@@ -606,12 +645,40 @@ class Component extends DCLogic {
       o.bnIsEdit=bn.id!=null;
       o.bnHead=bn.id!=null?'Chỉnh sửa banner':'Thêm banner';
       o.bnTitle=bn.title; o.bnTitleSet=(e)=>bupd({title:e.target.value});
-      o.bnLink=bn.link; o.bnLinkSet=(e)=>bupd({link:e.target.value});
+      const BNVEN=[
+        {id:'v1',name:'Club Lumière',type:'Club',area:'Tây Hồ, Hà Nội',lg:'CL',bg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+        {id:'v2',name:'Sakura Lounge',type:'Lounge',area:'Hoàn Kiếm, Hà Nội',lg:'SL',bg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+        {id:'v3',name:'KTV Hoàng Gia',type:'Karaoke',area:'Kim Mã, Ba Đình',lg:'KH',bg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+        {id:'v4',name:'Bar Tokyo Night',type:'Bar',area:'Ba Đình, Hà Nội',lg:'TN',bg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+        {id:'v5',name:'Akari Lounge',type:'Girls bar',area:'Tây Hồ, Hà Nội',lg:'AK',bg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+        {id:'v6',name:'Lotus Club Saigon',type:'Club',area:'Quận 1, TP.HCM',lg:'LC',bg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+        {id:'v7',name:'Zen Spa & Onsen',type:'Massage',area:'Tây Hồ, Hà Nội',lg:'ZS',bg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
+      ];
+      const bnv=BNVEN.find(v=>v.id===bn.venueId)||null;
+      o.bnHasVen=!!bnv; o.bnNoVen=!bnv;
+      o.bnVenName=bnv?bnv.name:''; o.bnVenMeta=bnv?(bnv.type+' · '+bnv.area):''; o.bnVenLg=bnv?bnv.lg:''; o.bnVenBg=bnv?bnv.bg:'';
+      o.bnVenClear=()=>bupd({venueId:''});
+      const vq=bn.vq||'';
+      o.bnVenQ=vq; o.bnVenQSet=(e)=>bupd({vq:e.target.value});
+      const vqq=vq.trim().toLowerCase();
+      const vhits=vqq?BNVEN.filter(v=>(v.name+' '+v.type+' '+v.area).toLowerCase().indexOf(vqq)>=0):BNVEN;
+      o.bnVenResults=vhits.slice(0,4).map(v=>({name:v.name,meta:v.type+' · '+v.area,lg:v.lg,bg:v.bg,pick:()=>bupd({venueId:v.id,vq:''})}));
+      o.bnVenEmpty=!!vqq&&vhits.length===0;
       o.bnSlots=['Hero chính','Hero phụ','Ưu đãi','Sự kiện'].map(s=>({label:s,style:cchip(bn.slot===s),pick:()=>bupd({slot:s})}));
       o.bnPositions=['Trang chủ #1','Trang chủ #2','Trang Ưu đãi','Nháp'].map(s=>({label:s,style:cchip(bn.pos===s),pick:()=>bupd({pos:s})}));
       o.bnOnStyle=cchip(!!bn.on); o.bnOffStyle=cchip(!bn.on);
       o.bnOn=()=>bupd({on:true}); o.bnOff=()=>bupd({on:false});
       o.bnHasImg=!!bn.img; o.bnNoImg=!bn.img; o.bnImgBg=bn.img||'rgba(12,12,15,.5)';
+      const RATIOS=[
+        {k:'tall',label:'Cao · 16:9',ratio:'16:9',rec:'1920×1080px',h:'322px'},
+        {k:'std',label:'Chuẩn · 21:9',ratio:'21:9',rec:'1920×820px',h:'245px'},
+        {k:'slim',label:'Mỏng · 4:1',ratio:'4:1',rec:'1920×480px',h:'143px'},
+      ];
+      const rcur=RATIOS.find(r=>r.k===(bn.ratio||'std'))||RATIOS[1];
+      o.bnRatios=RATIOS.map(r=>({label:r.label,style:cchip(rcur.k===r.k),pick:()=>bupd({ratio:r.k})}));
+      o.bnImgH=rcur.h;
+      o.bnRatioRec=rcur.rec+' ('+rcur.ratio+')';
+      o.bnRatioNote='Ảnh cần đúng tỷ lệ '+rcur.ratio+' — khuyến nghị '+rcur.rec+', ≤ 2MB. Ảnh sai tỷ lệ sẽ bị cắt giữa (center-crop); chữ và logo quan trọng nên đặt trong vùng 80% giữa ảnh.';
       o.bnUpload=(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>this.setState({bn:{...this.state.bn,img:'linear-gradient(135deg,rgba(12,12,15,.15),rgba(12,12,15,.6)),url('+r.result+') center/cover no-repeat'}}); r.readAsDataURL(f); };
       o.bnSaveStyle=GOLDBTN+((bn.title&&bn.title.trim())?'':'opacity:.45;');
       o.bnSaveLabel=bn.id!=null?'Lưu thay đổi':'Thêm banner';
