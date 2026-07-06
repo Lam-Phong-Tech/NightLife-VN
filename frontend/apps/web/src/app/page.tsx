@@ -667,7 +667,7 @@ function getHomeSectionTitles(config: AppearanceConfig) {
 }
 
 function isHomeHotVideosEnabled() {
-  return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS === "true";
+  return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS !== "false";
 }
 
 function getBannerBackgroundImage(value?: string | null) {
@@ -1868,7 +1868,7 @@ export default function Page() {
   const [activeRankRegion, setActiveRankRegion] = useState<ServiceRegion>("hanoi");
   const [activeSvcTab, setActiveSvcTab] = useState("nhahang");
   const [activeServiceRegion, setActiveServiceRegion] = useState<ServiceRegion>("hanoi");
-  const [activeVideoRegion, setActiveVideoRegion] = useState<ServiceRegion>("hanoi");
+  const [activeVideoRegion, setActiveVideoRegion] = useState<ServiceRegion>("all");
   const [homeStores, setHomeStores] = useState<PublicStore[]>([]);
   const [isHomeStoresLoading, setHomeStoresLoading] = useState(true);
   const [homeStoresError, setHomeStoresError] = useState("");
