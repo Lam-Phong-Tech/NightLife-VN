@@ -51,8 +51,8 @@ export const castCards: Cast[] = [
 ];
 
 export const offers: Coupon[] = [
-  { title: 'Happy Hour cuối tuần', place: 'Club Lumière · Tây Hồ', value: '-30%', expiry: 'Còn 3 ngày', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' } },
-  { title: 'Combo phòng VIP 2+1', place: 'KTV Hoàng Gia · Kim Mã', value: '2+1', expiry: 'Còn 8 ngày', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Lấy mã', btnStyle: { background: '#6d28d9', color: '#fff' } },
+  { title: 'Happy Hour cuối tuần', place: 'Club Lumière · Tây Hồ', value: '-30%', expiry: 'Còn 3 ngày', img: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Xem ưu đãi', btnStyle: { background: '#6d28d9', color: '#fff' } },
+  { title: 'Combo phòng VIP 2+1', place: 'KTV Hoàng Gia · Kim Mã', value: '2+1', expiry: 'Còn 8 ngày', img: "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Xem ưu đãi', btnStyle: { background: '#6d28d9', color: '#fff' } },
   { title: 'Spa thư giãn nửa giá', place: 'Spa Hồng Ngọc · Đống Đa', value: '-50%', expiry: 'Sắp hết', img: "url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=480&q=70') center/cover", btnLabel: 'Đã lưu ví ✓', btnStyle: { background: '#e6f7ee', color: '#177544' } }
 ];
 
@@ -102,7 +102,7 @@ export const adBanners = [
     tag: 'Quảng cáo',
     title: 'Sakura Lounge - Giảm 25% nhóm 4+',
     desc: 'Không gian Nhật Bản · Ưu đãi nhóm cuối tuần',
-    btnText: 'Nhận mã',
+    btnText: 'Xem ưu đãi',
     img: "linear-gradient(rgba(0,0,0,0.15),rgba(0,0,0,0.72)),url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80') center/cover"
   },
   {

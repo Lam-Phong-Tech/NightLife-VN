@@ -109,7 +109,7 @@ function CouponDealCard({ coupon, index }: { coupon: PublicCoupon; index: number
         </span>
         <span className="coupon-expiry">HSD {formatShortDate(coupon.endsAt)}</span>
       </span>
-      <span className="coupon-action">LẤY MÃ</span>
+      <span className="coupon-action">Xem ưu đãi</span>
     </Link>
   );
 }

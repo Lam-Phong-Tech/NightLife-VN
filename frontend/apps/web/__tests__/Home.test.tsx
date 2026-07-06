@@ -1,17 +1,21 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import Page from '../src/app/page';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   contentHotVideosMock,
   contentListMock,
+  claimGuestCouponMock,
+  claimMemberCouponMock,
   listPublicCouponsMock,
   listStoresStrictMock,
   rankingsListMock,
 } = vi.hoisted(() => ({
   contentHotVideosMock: vi.fn(),
   contentListMock: vi.fn(),
+  claimGuestCouponMock: vi.fn(),
+  claimMemberCouponMock: vi.fn(),
   listPublicCouponsMock: vi.fn(),
   listStoresStrictMock: vi.fn(),
   rankingsListMock: vi.fn(),
@@ -52,6 +56,8 @@ vi.mock('@/lib/api/content', () => ({
 
 vi.mock('@/lib/api/coupons', () => ({
   couponApi: {
+    claimGuestCoupon: claimGuestCouponMock,
+    claimMemberCoupon: claimMemberCouponMock,
     listPublicCoupons: listPublicCouponsMock,
   },
 }));
@@ -73,6 +79,7 @@ const rankingMeta = {
 describe('Home Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS;
 
     listStoresStrictMock.mockResolvedValue([
       {
@@ -294,13 +301,13 @@ describe('Home Page', () => {
       scope: 'featured_home',
       limit: 8,
     });
-    expect(contentHotVideosMock).toHaveBeenCalledWith('hn');
+    expect(contentHotVideosMock).not.toHaveBeenCalled();
 
     expect(await screen.findAllByText('API Neon Lounge')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Coupon')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Cast')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Featured Service')).not.toHaveLength(0);
-    expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
+    expect(await screen.findAllByText('Video Hot đang được chuẩn bị.')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Blog Guide')).not.toHaveLength(0);
     expect(screen.getAllByRole('link', { name: /API Neon Lounge/i })[0]).toHaveAttribute(
       'href',
@@ -309,5 +316,67 @@ describe('Home Page', () => {
     expect(document.body.textContent ?? '').not.toMatch(
       /Ã‚Â·|NhÃƒ|HÃƒ|NÃ¡Â»|tÃ¡Â»|Ã„â€˜|ChÃ†|Ã¡Âº|Ã¡Â»|Ä|Æ¯/,
     );
+  });
+
+  it('keeps the mobile home block order stable', async () => {
+    render(<Page />);
+    await screen.findAllByText(/API Night Banner/i);
+
+    const mobileShell = screen.getByTestId('home-mobile-shell');
+    const blockIds = [
+      'home-mobile-header',
+      'home-mobile-search',
+      'home-mobile-hero',
+      'home-mobile-categories',
+      'home-mobile-recommendations',
+      'home-mobile-coupons',
+      'home-mobile-ranking',
+      'home-mobile-featured',
+      'home-mobile-guide',
+      'home-mobile-video',
+    ];
+
+    const blocks = blockIds.map((id) => {
+      const block = mobileShell.querySelector(`[data-testid="${id}"]`);
+      expect(block, id).not.toBeNull();
+      return block as HTMLElement;
+    });
+
+    blocks.slice(0, -1).forEach((block, index) => {
+      expect(block.compareDocumentPosition(blocks[index + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  it('routes coupon CTAs into the store/booking flow without claiming a standalone code', async () => {
+    render(<Page />);
+    await screen.findAllByText('API Coupon');
+
+    const couponCta = screen.getAllByTestId('home-coupon-cta')[0] as HTMLAnchorElement;
+    expect(couponCta).toHaveTextContent('Xem ưu đãi');
+    expect(couponCta).toHaveAttribute('href', '/stores/api-neon-lounge');
+
+    fireEvent.click(couponCta);
+
+    expect(claimGuestCouponMock).not.toHaveBeenCalled();
+    expect(claimMemberCouponMock).not.toHaveBeenCalled();
+  });
+
+  it('does not call the Video Hot API while the homepage video flag is off', async () => {
+    render(<Page />);
+    await screen.findAllByText(/API Night Banner/i);
+
+    expect(contentHotVideosMock).not.toHaveBeenCalled();
+    expect(await screen.findAllByText('Video Hot đang được chuẩn bị.')).not.toHaveLength(0);
+  });
+
+  it('loads Video Hot from the API when the homepage video flag is enabled', async () => {
+    process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS = 'true';
+
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(contentHotVideosMock).toHaveBeenCalledWith('hn');
+    });
+    expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
   });
 });
