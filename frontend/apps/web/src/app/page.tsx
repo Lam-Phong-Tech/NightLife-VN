@@ -64,6 +64,7 @@ import {
   shouldTrackHotVideoView,
   trackHomeVenueSignal,
 } from "@/lib/analytics/home";
+import { storeImageForSlug } from "@/lib/demo-media";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -308,9 +309,52 @@ function backgroundFromUrl(value?: string | null) {
 }
 
 function storeImage(store: PublicStore, index: number) {
-  const backendImage = resolveClientUrl(store.thumbnailUrl);
-  void index;
+  const backendImage = resolveClientUrl(store.thumbnailUrl) || storeImageForSlug(store.slug, index);
   return backendImage ? `url(${JSON.stringify(backendImage)}) center/cover` : undefined;
+}
+
+function getYoutubeVideoId(value?: string | null) {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") return url.pathname.split("/").filter(Boolean)[0] ?? "";
+
+    if (host.includes("youtube.com")) {
+      const watchId = url.searchParams.get("v");
+      if (watchId) return watchId;
+
+      const parts = url.pathname.split("/").filter(Boolean);
+      const idIndex = parts.findIndex((part) => ["embed", "shorts", "live"].includes(part));
+      if (idIndex >= 0) return parts[idIndex + 1] ?? "";
+    }
+  } catch {
+    const match = value.match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([A-Za-z0-9_-]{6,})/);
+    return match?.[1] ?? "";
+  }
+
+  return "";
+}
+
+function getYoutubeThumbnail(value?: string | null) {
+  const id = getYoutubeVideoId(value);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
+}
+
+function isPlayableVideoFile(value?: string | null) {
+  if (!value) return false;
+  return /\.(mp4|webm|ogg)(?:$|[?#])/i.test(value);
+}
+
+function hotVideoThumbnail(video: PublicHotVideo, index: number) {
+  return (
+    resolveClientUrl(video.thumbnailUrl) ||
+    getYoutubeThumbnail(video.url) ||
+    resolveClientUrl(video.storeThumbnailUrl) ||
+    storeImageForSlug(video.storeSlug, index)
+  );
 }
 
 function storeAreaLabel(store: PublicStore) {
@@ -420,27 +464,27 @@ function mapCouponToHomeItem(coupon: PublicCoupon, index: number): HomeCouponIte
 }
 
 function mapHotVideoToHomeItem(video: PublicHotVideo, index: number): HomeVideoItem {
-  void index;
   const name = [video.storeName, video.title].filter(Boolean).join(" · ");
+  const thumbnail = hotVideoThumbnail(video, index);
 
   return {
     id: video.id,
     name: name || "Video Hot",
-    img: backgroundFromUrl(video.url),
+    img: backgroundFromUrl(thumbnail),
     href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
   };
 }
 
 function mapTrackedHotVideoToHomeItem(video: PublicHotVideo, index: number): HomeVideoItem {
-  void index;
   const videoUrl = resolveClientUrl(video.url);
   const name = [video.storeName, video.title].filter(Boolean).join(" · ");
+  const thumbnail = hotVideoThumbnail(video, index);
 
   return {
     id: video.id,
     name: name || "Video Hot",
-    img: backgroundFromUrl(video.url),
-    videoUrl,
+    img: backgroundFromUrl(thumbnail),
+    videoUrl: isPlayableVideoFile(videoUrl) ? videoUrl : null,
     href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
     storeSlug: video.storeSlug,
     viewCount: video.viewCount ?? 0,
