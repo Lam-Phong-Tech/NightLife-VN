@@ -91,16 +91,30 @@
         <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Giờ mở cửa theo ngày</div>
         <div style="display:flex;flex-direction:column;gap:7px;">
           <sc-for list="{{ vf.hoursRows }}" as="hd" hint-placeholder-count="7">
-            <div style="display:flex;align-items:center;gap:10px;background:{{ hd.bg }};border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 13px;">
-              <span style="width:64px;flex:none;font-size:12px;font-weight:600;color:{{ hd.dayColor }};">{{ hd.day }}</span>
-              <input value="{{ hd.val }}" onInput="{{ hd.set }}" placeholder="VD: 19:00 – 02:00" style="{{ hd.inputStyle }}">
+            <div style="display:flex;align-items:flex-start;gap:10px;background:{{ hd.bg }};border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 13px;">
+              <span style="width:50px;flex:none;font-size:12px;font-weight:600;color:{{ hd.dayColor }};line-height:28px;">{{ hd.day }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+                <sc-if value="{{ hd.isOpen }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ hd.slots }}" as="sl" hint-placeholder-count="1">
+                    <span style="display:flex;align-items:center;gap:2px;background:rgba(12,12,15,.45);border:1px solid rgba(212,178,106,.2);border-radius:8px;padding:3px 4px 3px 10px;">
+                      <input value="{{ sl.val }}" onInput="{{ sl.set }}" placeholder="08:00 – 12:00" style="width:96px;background:none;border:none;outline:none;color:#f0dda8;font-size:12.5px;font-weight:600;font-family:inherit;letter-spacing:.3px;">
+                      <sc-if value="{{ sl.overnight }}" hint-placeholder-val="{{ false }}"><span title="Khung qua đêm — kết thúc vào sáng hôm sau" style="flex:none;font-size:8.5px;font-weight:800;letter-spacing:.5px;color:#8fb6e4;background:rgba(143,182,228,.12);border:1px solid rgba(143,182,228,.3);border-radius:5px;padding:2.5px 5px;line-height:1;cursor:help;margin-right:2px;">+1</span></sc-if>
+                      <span onClick="{{ sl.del }}" title="Xóa khung giờ" style="width:19px;height:19px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#6e6a60;cursor:pointer;" style-hover="color:#e08a7e;background:rgba(224,122,110,.13);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                    </span>
+                  </sc-for>
+                  <span onClick="{{ hd.add }}" title="Thêm khung giờ trong ngày" style="display:flex;align-items:center;gap:5px;border:1.5px dashed rgba(212,178,106,.32);border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;color:#8c8679;cursor:pointer;white-space:nowrap;" style-hover="color:#caa765;border-color:rgba(212,178,106,.55);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Khung giờ</span>
+                </sc-if>
+                <sc-if value="{{ hd.closed }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;font-style:italic;color:#57534b;line-height:28px;">Nghỉ cả ngày</span>
+                </sc-if>
+              </div>
               <span onClick="{{ hd.toggle }}" style="{{ hd.offBtn }}">{{ hd.offLabel }}</span>
             </div>
           </sc-for>
         </div>
         <div style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;font-size:10.5px;color:#8c8679;line-height:1.5;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-          <span>Giờ hiển thị theo từng ngày trên trang người dùng — sửa trực tiếp từng dòng, bấm nút để chuyển <b style="color:#7fd3a2;">Mở</b> / <b style="color:#e08a7e;">Nghỉ</b>.</span>
+          <span>Một ngày có thể có nhiều khung giờ. Khung có giờ kết thúc nhỏ hơn giờ bắt đầu (VD 20:00 – 02:00) tự nhận là qua đêm, gắn nhãn <b style="color:#8fb6e4;">+1</b> — kết thúc vào sáng hôm sau. Bấm <b style="color:#caa765;">+ Khung giờ</b> để thêm ca, ✕ để xóa, nút bên phải chuyển <b style="color:#7fd3a2;">Mở</b> / <b style="color:#e08a7e;">Nghỉ</b>.</span>
         </div>
 
         <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;color:#caa765;text-transform:uppercase;margin:24px 0 12px;">Album ảnh</div>
@@ -209,7 +223,7 @@ class Component extends DCLogic {
       {id:'v4',name:'Bar Tokyo Night',logo:'TN',logoBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)',type:'Bar',city:'HN',area:'Ba Đình, Hà Nội',casts:6,status:'active',addr:'12 Đào Tấn, Ba Đình',maps:'maps.app.goo.gl/tokyonight',hours:'19:00 – 02:00'},
       {id:'v5',name:'Akari Lounge',logo:'AK',logoBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)',type:'Girls bar',city:'HN',area:'Tây Hồ, Hà Nội',casts:14,status:'active',addr:'25 Quảng An, Tây Hồ',maps:'maps.app.goo.gl/akari',hours:'20:00 – 03:00'},
       {id:'v6',name:'Lotus Club Saigon',logo:'LC',logoBg:'linear-gradient(135deg,#e79ab8,#b0607f)',type:'Club',city:'HCM',area:'Quận 1, TP.HCM',casts:11,status:'draft',addr:'6 Lê Lợi, Quận 1',maps:'maps.app.goo.gl/lotus',hours:'21:00 – 04:00'},
-      {id:'v7',name:'Zen Spa & Onsen',logo:'ZS',logoBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',type:'Massage',city:'HN',area:'Tây Hồ, Hà Nội',casts:0,status:'hidden',addr:'40 Từ Hoa, Tây Hồ',maps:'maps.app.goo.gl/zenspa',hours:'10:00 – 23:00'},
+      {id:'v7',name:'Zen Spa & Onsen',logo:'ZS',logoBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)',type:'Massage',city:'HN',area:'Tây Hồ, Hà Nội',casts:0,status:'hidden',addr:'40 Từ Hoa, Tây Hồ',maps:'maps.app.goo.gl/zenspa',hours:['08:00 – 12:00','14:00 – 18:00','20:00 – 02:00']},
     ];
     const vmeta={active:['Đang hoạt động','success'],hidden:['Đang ẩn','muted'],draft:['Nháp','warn']};
     o.vnRows=VN.map(v=>({...v,cityStyle:this.chip(v.city==='HN'?'info':'pink')+'font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:7px;',stStyle:this.pill(vmeta[v.status][1]),stLabel:vmeta[v.status][0],open:()=>this.setState({venueSel:v.id})}));
@@ -251,14 +265,23 @@ class Component extends DCLogic {
     const editV=(vsel&&vsel!=='new')?(VN.find(x=>x.id===vsel)||VN[0]):null;
     o.vf.hoursRows=DAYS.map((d,i)=>{
       const kh='vh_'+(vsel||'x')+'_'+i, kd='vd_'+(vsel||'x')+'_'+i;
-      const val=S[kh]!==undefined?S[kh]:(editV?editV.hours:'');
+      let slots=S[kh]!==undefined?S[kh]:(editV?editV.hours:'');
+      if(!Array.isArray(slots)) slots=[slots];
+      if(!slots.length) slots=[''];
       const closed=!!S[kd];
-      return {day:d,val,
-        set:(e)=>this.setState({[kh]:e.target.value}),
+      return {day:d,isOpen:!closed,closed,
+        slots:slots.map((v,j)=>{
+          const tm=(v||'').match(/(\d{1,2}):(\d{2})/g)||[];
+          const toMin=(t)=>{const a=t.split(':');return (+a[0])*60+(+a[1]);};
+          const overnight=tm.length>=2&&toMin(tm[tm.length-1])<=toMin(tm[0]);
+          return {val:v,overnight,
+            set:(e)=>{const next=slots.slice(); next[j]=e.target.value; this.setState({[kh]:next});},
+            del:()=>{const next=slots.filter((_,x)=>x!==j); this.setState({[kh]:next.length?next:['']});}};
+        }),
+        add:()=>this.setState({[kh]:slots.concat([''])}),
         toggle:()=>this.setState({[kd]:!closed}),
         bg:closed?'rgba(255,255,255,.015)':'rgba(255,255,255,.03)',
         dayColor:closed?'#57534b':'#c5c0b6',
-        inputStyle:'flex:1;background:none;border:none;outline:none;font-size:13px;font-weight:600;font-family:inherit;letter-spacing:.3px;'+(closed?'color:#57534b;text-decoration:line-through;':'color:#f0dda8;'),
         offBtn:'flex:none;font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:8px;cursor:pointer;'+(closed?'color:#e08a7e;background:rgba(224,122,110,.12);border:1px solid rgba(224,122,110,.3);':'color:#7fd3a2;background:rgba(95,191,134,.1);border:1px solid rgba(95,191,134,.25);'),
         offLabel:closed?'Nghỉ':'Mở'};
     });
