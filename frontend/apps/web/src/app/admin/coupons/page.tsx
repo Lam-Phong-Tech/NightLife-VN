@@ -12,6 +12,26 @@ export default function AdminCouponsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCoupons, setTotalCoupons] = useState(0);
 
+  const [showCreate, setShowCreate] = useState(false);
+  const [fName, setFName] = useState('');
+  const [discountType, setDiscountType] = useState('pct');
+  const [discountVal, setDiscountVal] = useState('10%');
+  const [scope, setScope] = useState('all');
+  const [selectedStores, setSelectedStores] = useState<string[]>([]);
+  const [tier, setTier] = useState('Member');
+  const [duration, setDuration] = useState('30 ngày');
+  const [limit, setLimit] = useState('500 mã');
+  const [limitCustom, setLimitCustom] = useState('');
+  const [storesList, setStoresList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (showCreate && storesList.length === 0) {
+      apiClient<any>('/admin/stores', { params: { limit: 1000 } }).then(res => {
+        if (res?.data) setStoresList(res.data);
+      });
+    }
+  }, [showCreate]);
+
   const fetchCoupons = async () => {
     try {
       const res = await apiClient<any>('/admin/coupons', {
@@ -123,9 +143,9 @@ export default function AdminCouponsPage() {
           })}
         </div>
         <div style={{ flex: 1 }}></div>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '11px', color: '#8c8679', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '9px', padding: '8px 12px' }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#5fbf86', boxShadow: '0 0 6px #5fbf86', animation: 'vpulse 2s infinite' }}></span>
-          Cron tự hủy mã hết hạn · 5 phút/lần
+        <span onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Tạo coupon
         </span>
       </div>
 
@@ -279,6 +299,122 @@ export default function AdminCouponsPage() {
           </div>
         );
       })()}
+
+      {/* Create Drawer */}
+      {showCreate && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
+          <div onClick={() => setShowCreate(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
+          <div className="scw" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '440px', maxWidth: '94vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+            <div style={{ padding: '17px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#131218', zIndex: 2 }}>
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#f3f0ea' }}>Tạo coupon mới</div>
+                <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '1.5px', color: '#8c8679', textTransform: 'uppercase', marginTop: '2px' }}>Sinh mã giảm giá + QR</div>
+              </div>
+              <span onClick={() => setShowCreate(false)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </span>
+            </div>
+            
+            <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '19px' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'stretch', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', overflow: 'hidden' }}>
+                <div style={{ flex: 1, padding: '13px 15px', minWidth: 0 }}>
+                  <div style={{ fontSize: '21px', fontWeight: 800, color: '#e3c27e' }}>{discountType === 'pct' ? '-' + discountVal : '-' + discountVal}</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fName || 'Tên ưu đãi...'}</div>
+                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{scope === 'all' ? 'Toàn hệ thống' : `${selectedStores.length} quán`} · HSD {duration}</div>
+                </div>
+                <div style={{ width: 62, flex: 'none', borderLeft: '1.5px dashed rgba(212,178,106,.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#d4b26a' }}>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
+                  <span style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.2px' }}>QR</span>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên ưu đãi</div>
+                <input value={fName} onChange={e => setFName(e.target.value)} placeholder="VD: Happy Hour tháng 7" style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mức giảm</div>
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px', marginBottom: '10px' }}>
+                  <span onClick={() => setDiscountType('pct')} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: discountType === 'pct' ? 600 : 400, color: discountType === 'pct' ? '#241a0a' : '#c5c0b6', background: discountType === 'pct' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Giảm %</span>
+                  <span onClick={() => setDiscountType('amt')} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: discountType === 'amt' ? 600 : 400, color: discountType === 'amt' ? '#241a0a' : '#c5c0b6', background: discountType === 'amt' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Giảm tiền (₫)</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(discountType === 'pct' ? ['5%', '10%', '15%', '20%', '30%', '50%'] : ['50K', '100K', '200K', '500K']).map(v => (
+                    <span key={v} onClick={() => setDiscountVal(v)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: discountVal === v ? '1px solid rgba(212,178,106,.5)' : '1px solid rgba(255,255,255,.1)', background: discountVal === v ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: discountVal === v ? '#f0dda8' : '#9b958a' }}>{v}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Phạm vi áp dụng</div>
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+                  <span onClick={() => setScope('all')} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: scope === 'all' ? 600 : 400, color: scope === 'all' ? '#241a0a' : '#c5c0b6', background: scope === 'all' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Toàn hệ thống</span>
+                  <span onClick={() => setScope('select')} style={{ flex: 1, textAlign: 'center', padding: '7px', fontSize: '12px', fontWeight: scope === 'select' ? 600 : 400, color: scope === 'select' ? '#241a0a' : '#c5c0b6', background: scope === 'select' ? 'linear-gradient(135deg,#f4e3b4,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer' }}>Chọn quán</span>
+                </div>
+                {scope === 'select' && (
+                  <>
+                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {storesList.slice(0, 5).map(v => {
+                        const checked = selectedStores.includes(v.id);
+                        return (
+                          <div key={v.id} onClick={() => setSelectedStores(p => checked ? p.filter(id => id !== v.id) : [...p, v.id])} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 13px', background: checked ? 'rgba(212,178,106,.08)' : 'rgba(255,255,255,.02)', border: checked ? '1px solid rgba(212,178,106,.4)' : '1px solid rgba(255,255,255,.05)', borderRadius: '10px', cursor: 'pointer' }}>
+                            <span style={{ width: 18, height: 18, borderRadius: 5, border: checked ? 'none' : '1.5px solid rgba(255,255,255,.15)', background: checked ? '#d4b26a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {checked && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#241a0a" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
+                            <span style={{ fontSize: '11px', color: '#8c8679' }}>{v.area}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '8px' }}>Đã chọn {selectedStores.length} quán</div>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Hạng khách áp dụng</div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['Guest', 'Member', 'VIP'].map(t => (
+                    <span key={t} onClick={() => setTier(t)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: tier === t ? '1px solid rgba(212,178,106,.5)' : '1px solid rgba(255,255,255,.1)', background: tier === t ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: tier === t ? '#f0dda8' : '#9b958a' }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Thời hạn</div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['7 ngày', '14 ngày', '30 ngày', '90 ngày'].map(d => (
+                    <span key={d} onClick={() => setDuration(d)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: duration === d ? '1px solid rgba(212,178,106,.5)' : '1px solid rgba(255,255,255,.1)', background: duration === d ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: duration === d ? '#f0dda8' : '#9b958a' }}>{d}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Giới hạn số mã</div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {['100 mã', '500 mã', '1.000 mã', 'Không giới hạn', 'Tự nhập...'].map(l => (
+                    <span key={l} onClick={() => setLimit(l)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: limit === l ? '1px solid rgba(212,178,106,.5)' : '1px solid rgba(255,255,255,.1)', background: limit === l ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: limit === l ? '#f0dda8' : '#9b958a' }}>{l}</span>
+                  ))}
+                </div>
+                {limit === 'Tự nhập...' && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '9px' }}>
+                    <input value={limitCustom} onChange={e => setLimitCustom(e.target.value)} placeholder="VD: 250" inputMode="numeric" style={{ width: '130px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', padding: '11px 14px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter',sans-serif", outline: 'none' }} />
+                    <span style={{ fontSize: '12.5px', color: '#8c8679' }}>mã · nhập số lượng tuỳ ý</span>
+                  </div>
+                )}
+              </div>
+
+              <span onClick={() => { alert('Tính năng đang phát triển'); setShowCreate(false); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', color: '#241a0a', fontSize: '13px', fontWeight: 700, borderRadius: '11px', cursor: 'pointer', boxShadow: '0 12px 24px -12px rgba(168,124,60,.6)' }}>
+                Tạo coupon &amp; sinh QR
+              </span>
+
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

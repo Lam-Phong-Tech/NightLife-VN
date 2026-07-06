@@ -529,7 +529,10 @@ function AdminStoresContent() {
   };
 
   const filteredStores = stores.filter((v: any) => {
-    if (filterCity && v.city !== filterCity) return false;
+    if (filterCity === 'Hanoi' && v.area !== 'HN') return false;
+    if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM') return false;
+    if (!filterCity && (v.area === 'HN' || v.area === 'HCM')) return false;
+    
     if (filterCategory && v.category !== filterCategory) return false;
     if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
