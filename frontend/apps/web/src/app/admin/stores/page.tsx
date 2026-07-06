@@ -768,12 +768,52 @@ function AdminStoresContent() {
                   const isOff = state.isOff;
                   const bg = isOff ? 'rgba(255,255,255,.015)' : 'rgba(255,255,255,.03)';
                   const dayColor = isOff ? '#8c8679' : '#f3f0ea';
-                  const inputStyle = isOff ? { background: 'none', border: 'none', flex: 1, color: '#57534b', fontSize: '13px', outline: 'none' } : { background: 'none', border: 'none', flex: 1, color: '#e8e4db', fontSize: '13px', outline: 'none' };
+                  
                   const offBtn = isOff ? { fontSize: '10.5px', fontWeight: 700, color: '#e08a7e', background: 'rgba(224,138,126,.1)', border: '1px solid rgba(224,138,126,.25)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' } : { fontSize: '10.5px', fontWeight: 700, color: '#7fd3a2', background: 'rgba(127,211,162,.1)', border: '1px solid rgba(127,211,162,.25)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer' };
+                  
+                  const slots = state.hours ? state.hours.split(',').map((s: string) => s.trim()) : [];
+                  if (slots.length === 0) slots.push(''); // Always at least one slot input if open
+
+                  const setSlotVal = (idx: number, val: string) => {
+                    const newSlots = [...slots];
+                    newSlots[idx] = val;
+                    updateHour(day, 'hours', newSlots.join(', '));
+                  };
+                  const addSlot = () => {
+                    updateHour(day, 'hours', [...slots, ''].join(', '));
+                  };
+                  const removeSlot = (idx: number) => {
+                    const newSlots = slots.filter((_: any, i: number) => i !== idx);
+                    updateHour(day, 'hours', newSlots.join(', '));
+                  };
+
                   return (
-                    <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: bg, border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 13px' }}>
-                      <span style={{ width: '64px', flex: 'none', fontSize: '12px', fontWeight: 600, color: dayColor }}>{day}</span>
-                      <input value={isOff ? 'Nghỉ' : state.hours} onChange={e => updateHour(day, 'hours', e.target.value)} placeholder="VD: 19:00 – 02:00" style={inputStyle} readOnly={isOff} />
+                    <div key={day} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: bg, border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 13px' }}>
+                      <span style={{ width: '50px', flex: 'none', fontSize: '12px', fontWeight: 600, color: dayColor, lineHeight: '28px' }}>{day}</span>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+                        {!isOff && slots.map((sl: string, idx: number) => {
+                          const match = sl.match(/^(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/);
+                          let overnight = false;
+                          if (match) {
+                            const open = Number(match[1]) * 60 + Number(match[2] || 0);
+                            const close = Number(match[3]) * 60 + Number(match[4] || 0);
+                            if (close <= open) overnight = true;
+                          }
+                          return (
+                            <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(12,12,15,.45)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 10px' }}>
+                              <input value={sl} onChange={e => setSlotVal(idx, e.target.value)} placeholder="08:00 – 12:00" style={{ width: '96px', background: 'none', border: 'none', outline: 'none', color: '#f0dda8', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', letterSpacing: '.3px' }} />
+                              {overnight && <span title="Khung qua đêm — kết thúc vào sáng hôm sau" style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.5px', color: '#8fb6e4', background: 'rgba(143,182,228,.12)', border: '1px solid rgba(143,182,228,.3)', borderRadius: '5px', padding: '2.5px 5px', lineHeight: 1, cursor: 'help', marginRight: '2px' }}>+1</span>}
+                              <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                            </span>
+                          );
+                        })}
+                        {!isOff && (
+                          <span onClick={addSlot} title="Thêm khung giờ trong ngày" style={{ display: 'flex', alignItems: 'center', gap: '5px', border: '1.5px dashed rgba(212,178,106,.32)', borderRadius: '8px', padding: '5px 10px', fontSize: '10.5px', fontWeight: 700, color: '#8c8679', cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseEnter={e => { e.currentTarget.style.color = '#caa765'; e.currentTarget.style.borderColor = 'rgba(212,178,106,.55)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#8c8679'; e.currentTarget.style.borderColor = 'rgba(212,178,106,.32)'; }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>Khung giờ</span>
+                        )}
+                        {isOff && (
+                          <span style={{ fontSize: '12px', fontStyle: 'italic', color: '#57534b', lineHeight: '28px' }}>Nghỉ cả ngày</span>
+                        )}
+                      </div>
                       <span onClick={() => updateHour(day, 'isOff', !isOff)} style={offBtn as any}>{isOff ? 'Nghỉ' : 'Mở'}</span>
                     </div>
                   );
@@ -781,7 +821,7 @@ function AdminStoresContent() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-                <span>Giờ hiển thị theo từng ngày trên trang người dùng — sửa trực tiếp từng dòng, bấm nút để chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>.</span>
+                <span>Một ngày có thể có nhiều khung giờ. Khung có giờ kết thúc nhỏ hơn giờ bắt đầu (VD 20:00 – 02:00) tự nhận là qua đêm, gắn nhãn <b style={{ color: '#8fb6e4' }}>+1</b> — kết thúc vào sáng hôm sau. Bấm <b style={{ color: '#caa765' }}>+ Khung giờ</b> để thêm ca, ✕ để xóa, nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>.</span>
               </div>
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Ảnh bìa (Tối đa 15MB)</div>

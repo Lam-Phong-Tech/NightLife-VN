@@ -2639,6 +2639,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('creates a Booking QR coupon issue from a guest booking and expires it from scheduledAt', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     const scheduledAt = new Date('2026-07-05T20:00:00.000Z');
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
@@ -2731,6 +2732,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('records Booking QR claim analytics and fraud signals with request context', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     const scheduledAt = new Date('2026-07-05T20:00:00.000Z');
     prisma.store.findFirst.mockResolvedValue({
       id: 'store-1',
@@ -2845,6 +2847,7 @@ describe('NightlifeDataService', () => {
   });
 
   it('raises a fraud alert when Booking QR claims burst from the same IP signal', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-01T10:00:00.000Z'));
     const scheduledAt = new Date('2026-07-05T20:00:00.000Z');
     const ipSignal = `coupon:fraud:ip:${createHash('sha256')
       .update('203.0.113.10')
