@@ -653,6 +653,7 @@ export default function AdminBillsPage() {
               }}
             >
               <option value="Ảnh mờ/không rõ">Ảnh mờ/không rõ</option>
+              <option value="Gửi nhầm quán">Gửi nhầm quán</option>
               <option value="Sai thông tin quán">Sai thông tin quán</option>
               <option value="Hóa đơn quá hạn">Hóa đơn quá hạn</option>
               <option value="Khác">Khác...</option>

@@ -200,6 +200,67 @@ describe('Bill approval API (e2e)', () => {
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
     expect(adminNotificationService.notifyBillReviewed).not.toHaveBeenCalled();
   });
+
+  it('rejects a bill through the admin API and logs audit & Telegram', async () => {
+    prisma.bill.findFirst.mockResolvedValue(submittedBill());
+    prisma.bill.update.mockResolvedValue({
+      ...submittedBill(),
+      status: 'REJECTED',
+      rejectReason: 'Gửi nhầm quán',
+      rejectedAt: new Date(),
+    });
+
+    const response = await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-api-1/review')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ approve: false, rejectReason: 'Gửi nhầm quán' })
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        id: 'bill-api-1',
+        status: 'REJECTED',
+        rejectReason: 'Gửi nhầm quán',
+      }),
+    );
+    expect(prisma.bill.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'bill-api-1' }),
+        data: expect.objectContaining({
+          status: 'REJECTED',
+          rejectReason: 'Gửi nhầm quán',
+        }),
+      }),
+    );
+    expect(adminNotificationService.notifyBillReviewed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'bill-api-1',
+        status: 'REJECTED',
+        rejectReason: 'Gửi nhầm quán',
+      }),
+      { approve: false, reviewedById: 'admin-1' },
+    );
+  });
+
+  it('returns 422 when the bill is not in a reviewable status (concurrency conflict)', async () => {
+    prisma.bill.findFirst.mockResolvedValue(submittedBill());
+    prisma.commissionConfig.findFirst.mockResolvedValue(
+      activeCommissionConfig(),
+    );
+    const prismaError = new Error('Record to update not found');
+    (prismaError as any).code = 'P2025';
+    prisma.bill.update.mockRejectedValue(prismaError);
+
+    const response = await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-api-1/review')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ approve: true })
+      .expect(422);
+
+    expect(response.body.message).toBe('Bill is not in a reviewable status');
+  });
 });
 
 function submittedBill() {

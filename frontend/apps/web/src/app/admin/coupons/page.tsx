@@ -188,13 +188,13 @@ export default function AdminCouponsPage() {
                 <div style={{ fontSize: '11px', fontWeight: 600, color: '#d4b26a', letterSpacing: '.8px', marginTop: '2px' }}>{cp.code}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
-                <span style={{ background: scopeAll ? 'rgba(212,178,106,.12)' : 'rgba(111,159,216,.12)', color: scopeAll ? '#e3c27e' : '#8fb6e4', fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px', whiteSpace: 'nowrap' }}>{scopeAll ? 'Toàn hệ thống' : \`\${cp.targetStores.length} quán\`}</span>
+                <span style={{ background: scopeAll ? 'rgba(212,178,106,.12)' : 'rgba(111,159,216,.12)', color: scopeAll ? '#e3c27e' : '#8fb6e4', fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px', whiteSpace: 'nowrap' }}>{scopeAll ? 'Toàn hệ thống' : `${cp.targetStores.length} quán`}</span>
                 <span style={{ fontSize: '11px', color: '#8c8679' }}>{(cp.targetAudiences || []).join(' · ')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: '10px' }}>
                 <span style={{ fontSize: '11px', color: '#8c8679' }}>HSD {formatTime(cp.endsAt)}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '11.5px', color: '#c5c0b6', fontWeight: 600 }}>{cp.usedCount} {cp.usageLimit ? \`/ \${cp.usageLimit}\` : 'mã đã phát'}</span>
+                  <span style={{ fontSize: '11.5px', color: '#c5c0b6', fontWeight: 600 }}>{cp.usedCount} {cp.usageLimit ? `/ ${cp.usageLimit}` : 'mã đã phát'}</span>
                   <span onClick={(e) => toggleCampaignStatus(e, cp)} style={{ fontSize: '10.5px', fontWeight: 600, color: '#9b958a', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', padding: '4px 9px', cursor: 'pointer' }}>{act ? 'Tạm dừng' : 'Chạy lại'}</span>
                 </div>
               </div>
@@ -308,15 +308,15 @@ export default function AdminCouponsPage() {
                 </div>
 
                 <div style={{ marginTop: '14px', display: 'flex', gap: '9px' }}>
-                  <span onClick={() => showToastMsg(\`Đã tải QR \${vc.code}.png\`)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Tải QR (.png)</span>
-                  <span onClick={() => { navigator.clipboard.writeText(vc.code); showToastMsg(\`Đã sao chép mã \${vc.code}\`); }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Sao chép mã</span>
+                  <span onClick={() => showToastMsg(`Đã tải QR ${vc.code}.png`)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>Tải QR (.png)</span>
+                  <span onClick={() => { navigator.clipboard.writeText(vc.code); showToastMsg(`Đã sao chép mã ${vc.code}`); }} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', border: '1px solid rgba(212,178,106,.4)', borderRadius: '11px', color: '#e3c27e', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Sao chép mã</span>
                 </div>
 
                 <div style={{ marginTop: '18px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679', flex: 'none' }}>Phạm vi</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500, textAlign: 'right' }}>{scopeFull(vc)}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Hạng khách</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{(vc.targetAudiences || []).join(' · ')}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.05)' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Hạn dùng</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{formatTime(vc.endsAt)}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Đã phát hành</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{vc.usedCount} {vc.usageLimit ? \`/ \${vc.usageLimit}\` : ''}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', padding: '10px 0' }}><span style={{ fontSize: '12.5px', color: '#8c8679' }}>Đã phát hành</span><span style={{ fontSize: '13px', color: '#f3f0ea', fontWeight: 500 }}>{vc.usedCount} {vc.usageLimit ? `/ ${vc.usageLimit}` : ''}</span></div>
                 </div>
 
                 <div style={{ marginTop: '14px', display: 'flex', gap: '9px', padding: '12px 14px', background: 'rgba(212,178,106,.06)', border: '1px solid rgba(212,178,106,.2)', borderRadius: 11 }}>

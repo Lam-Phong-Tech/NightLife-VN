@@ -6398,50 +6398,63 @@ export class NightlifeDataService {
         : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const reviewedBill = await tx.bill.update({
-        where: { id: billId },
-        data: dto.approve
-          ? {
-              status: nextApproveStatus,
-              verifiedAt: nextApproveStatus === 'VERIFIED' ? now : null,
-              reviewedById: adminId,
-              verifiedById: nextApproveStatus === 'VERIFIED' ? adminId : null,
-              reviewedAt: now,
-              rejectedAt: null,
-              rejectedById: null,
-              rejectReason: null,
-              subtotalVnd: revenueApproval?.grossVnd ?? bill.subtotalVnd,
-              discountVnd: revenueApproval?.discountVnd ?? bill.discountVnd,
-              totalVnd: revenueApproval?.netVnd ?? bill.totalVnd,
-              paidVnd: revenueApproval?.payableVnd ?? bill.paidVnd,
-              commissionAmountVnd:
-                revenueApproval?.commissionVnd ?? bill.commissionAmountVnd,
-              discountRuleSnapshot: revenueApproval
-                ? this.toPrismaJson(revenueApproval.discountRuleSnapshot)
-                : Prisma.JsonNull,
-              commissionRuleSnapshot: revenueApproval
-                ? this.toPrismaJson(
-                    reviewedCommissionSnapshot ??
-                      revenueApproval.commissionRuleSnapshot,
-                  )
-                : Prisma.JsonNull,
-              pointsEarned: loyaltyAward?.points ?? 0,
-              pointRuleSnapshot: loyaltyAward
-                ? this.toPrismaJson(loyaltyAward.ruleSnapshot)
-                : Prisma.JsonNull,
-            }
-          : {
-              status: 'REJECTED',
-              rejectedAt: now,
-              reviewedById: adminId,
-              rejectedById: adminId,
-              reviewedAt: now,
-              verifiedById: null,
-              verifiedAt: null,
-              rejectReason: dto.rejectReason ?? 'Rejected by admin review',
-            },
-        select: this.billNotificationSelect(),
-      });
+      let reviewedBill;
+      try {
+        reviewedBill = await tx.bill.update({
+          where: {
+            id: billId,
+            status: { in: ['SUBMITTED', 'PENDING_PM_BA'] },
+          },
+          data: dto.approve
+            ? {
+                status: nextApproveStatus,
+                verifiedAt: nextApproveStatus === 'VERIFIED' ? now : null,
+                reviewedById: adminId,
+                verifiedById: nextApproveStatus === 'VERIFIED' ? adminId : null,
+                reviewedAt: now,
+                rejectedAt: null,
+                rejectedById: null,
+                rejectReason: null,
+                subtotalVnd: revenueApproval?.grossVnd ?? bill.subtotalVnd,
+                discountVnd: revenueApproval?.discountVnd ?? bill.discountVnd,
+                totalVnd: revenueApproval?.netVnd ?? bill.totalVnd,
+                paidVnd: revenueApproval?.payableVnd ?? bill.paidVnd,
+                commissionAmountVnd:
+                  revenueApproval?.commissionVnd ?? bill.commissionAmountVnd,
+                discountRuleSnapshot: revenueApproval
+                  ? this.toPrismaJson(revenueApproval.discountRuleSnapshot)
+                  : Prisma.JsonNull,
+                commissionRuleSnapshot: revenueApproval
+                  ? this.toPrismaJson(
+                      reviewedCommissionSnapshot ??
+                        revenueApproval.commissionRuleSnapshot,
+                    )
+                  : Prisma.JsonNull,
+                pointsEarned: loyaltyAward?.points ?? 0,
+                pointRuleSnapshot: loyaltyAward
+                  ? this.toPrismaJson(loyaltyAward.ruleSnapshot)
+                  : Prisma.JsonNull,
+              }
+            : {
+                status: 'REJECTED',
+                rejectedAt: now,
+                reviewedById: adminId,
+                rejectedById: adminId,
+                reviewedAt: now,
+                verifiedById: null,
+                verifiedAt: null,
+                rejectReason: dto.rejectReason ?? 'Rejected by admin review',
+              },
+          select: this.billNotificationSelect(),
+        });
+      } catch (err: any) {
+        if (err.code === 'P2025') {
+          throw new UnprocessableEntityException(
+            'Bill is not in a reviewable status',
+          );
+        }
+        throw err;
+      }
 
       if (loyaltyAward) {
         await this.recordBillLoyaltyLedger(tx, loyaltyAward);
@@ -15278,11 +15291,12 @@ export class NightlifeDataService {
     });
 
     const mappedItems = items.map((bill) => {
-      let guestType = 'Khách vãng lai';
+      let guestType = 'Member';
       let sender =
-        bill.user?.displayName || bill.guest?.displayName || 'Unknown';
+        bill.user?.displayName || bill.guest?.displayName || 'Guest';
       if (bill.user) guestType = bill.user.tier || 'Member';
       if (bill.submitterType === 'PARTNER') guestType = 'Partner';
+      else if (bill.submitterType === 'MEMBER') guestType = 'Member';
 
       return {
         id: bill.id,
