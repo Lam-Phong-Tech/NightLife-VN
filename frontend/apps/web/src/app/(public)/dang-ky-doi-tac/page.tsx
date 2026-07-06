@@ -10,7 +10,6 @@ import {
   Crown,
   FileClock,
   Home,
-  ImagePlus,
   LockKeyhole,
   QrCode,
   Send,
@@ -19,7 +18,7 @@ import {
   TicketCheck,
   UsersRound,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ApiError, apiClient } from '@/lib/api/client';
 
 const colors = {
@@ -76,16 +75,6 @@ const portalItems = [
   { icon: Camera, label: 'Đăng thông tin', detail: 'Chờ Admin duyệt trước khi công khai' },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const fields = [
-  { label: 'Tên quán / cơ sở', value: 'VD: Club Lumiere', wide: true },
-  { label: 'Loại hình', value: 'Bar / Lounge', select: true },
-  { label: 'Khu vực', value: 'Ha Noi', select: true },
-  { label: 'Người liên hệ', value: 'Họ tên' },
-  { label: 'SĐT / Telegram', value: '0912 345 678' },
-  { label: 'Giới thiệu ngắn', value: 'Mô tả quán, dịch vụ nổi bật, khung giờ đông khách...', wide: true, tall: true },
-];
-
 type PartnerFormState = {
   businessName: string;
   businessType: string;
@@ -119,15 +108,20 @@ type PartnerRequestResponse = {
   };
 };
 
+type AddressOption = {
+  code: number;
+  name: string;
+};
+
 const initialPartnerForm: PartnerFormState = {
   businessName: '',
-  businessType: 'Club / Lounge',
-  area: 'Ha Noi - Tay Ho',
+  businessType: '',
+  area: '',
   storeName: '',
-  storeCategory: 'LOUNGE',
+  storeCategory: '',
   storeDescription: '',
   storeAddress: '',
-  storeCity: 'Ha Noi',
+  storeCity: '',
   storeDistrict: '',
   openingHours: '',
   menuSummary: '',
@@ -185,45 +179,6 @@ function SectionTitle({ title, en }: { title: string; en: string }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function Field({
-  label,
-  value,
-  select,
-  tall,
-}: {
-  label: string;
-  value: string;
-  select?: boolean;
-  tall?: boolean;
-}) {
-  return (
-    <div>
-      <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: colors.text2, marginBottom: '6px' }}>
-        {label}
-      </label>
-      <div
-        style={{
-          minHeight: tall ? '78px' : '44px',
-          border: `1px solid ${colors.borderGold22}`,
-          borderRadius: '11px',
-          padding: '12px 13px',
-          color: value.startsWith('VD') || value.startsWith('Họ') || value.startsWith('Mô') ? colors.muted : colors.text,
-          background: colors.surface2,
-          fontSize: '13px',
-          lineHeight: 1.45,
-          display: 'flex',
-          alignItems: tall ? 'flex-start' : 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span>{value}</span>
-        {select ? <ChevronDown size={15} color={colors.gold} /> : null}
-      </div>
-    </div>
-  );
-}
-
 function splitLines(value: string) {
   return value
     .split(/\r?\n/)
@@ -269,17 +224,23 @@ function parseCastProfiles(value: string) {
     .filter((profile) => profile.stageName);
 }
 
-function buildPartnerRequestPayload(form: PartnerFormState) {
+function buildPartnerRequestPayload(
+  form: PartnerFormState,
+  address?: { provinceName?: string; wardName?: string },
+) {
+  const storeAddressParts = [form.storeAddress.trim(), address?.wardName, address?.provinceName].filter(Boolean);
+  const area = form.area.trim() || [address?.wardName, address?.provinceName].filter(Boolean).join(' - ');
+
   return {
     businessName: form.businessName.trim(),
     businessType: optionalText(form.businessType),
-    area: optionalText(form.area),
+    area: optionalText(area),
     storeName: optionalText(form.storeName),
     storeCategory: optionalText(form.storeCategory),
     storeDescription: optionalText(form.storeDescription),
-    storeAddress: optionalText(form.storeAddress),
-    storeCity: optionalText(form.storeCity),
-    storeDistrict: optionalText(form.storeDistrict),
+    storeAddress: optionalText(storeAddressParts.length > 0 ? storeAddressParts.join(', ') : form.storeAddress),
+    storeCity: optionalText(address?.provinceName ?? form.storeCity),
+    storeDistrict: optionalText(address?.wardName ?? form.storeDistrict),
     openingHours: optionalText(form.openingHours),
     menuSummary: optionalText(form.menuSummary),
     mediaUrls: splitLines(form.mediaUrls),
@@ -294,10 +255,10 @@ function buildPartnerRequestPayload(form: PartnerFormState) {
 function inputStyle(tall = false): React.CSSProperties {
   return {
     width: '100%',
-    minHeight: tall ? '86px' : '44px',
+    minHeight: tall ? '72px' : '42px',
     border: `1px solid ${colors.borderGold22}`,
     borderRadius: '11px',
-    padding: '12px 13px',
+    padding: tall ? '10px 12px' : '10px 12px',
     color: colors.text,
     background: colors.surface2,
     fontSize: '13px',
@@ -355,7 +316,7 @@ function FormControl({
         {label}
       </label>
       {tall ? (
-        <textarea {...sharedProps} rows={4} />
+        <textarea {...sharedProps} rows={3} />
       ) : (
         <input {...sharedProps} type={type} />
       )}
@@ -363,25 +324,206 @@ function FormControl({
   );
 }
 
+function SelectControl({
+  label,
+  value,
+  onChange,
+  placeholder,
+  options,
+  required,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  options: AddressOption[];
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  const id = label.replace(/\s+/g, '-').toLowerCase();
+  const selectedLabel = options.find((option) => option.code.toString() === value)?.name ?? '';
+
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        style={{
+          display: 'block',
+          fontSize: '11.5px',
+          fontWeight: 600,
+          color: colors.text2,
+          marginBottom: '6px',
+        }}
+      >
+        {label}
+      </label>
+      <div style={{ position: 'relative' }}>
+        <select
+          id={id}
+          value={value}
+          required={required}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          style={{
+            ...inputStyle(false),
+            appearance: 'none',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            color: 'transparent',
+            paddingRight: '38px',
+            opacity: disabled ? 0.62 : 1,
+          }}
+        >
+          <option value="" style={{ color: colors.text, background: '#17161a' }}>
+            {placeholder}
+          </option>
+          {options.map((option) => (
+            <option key={option.code} value={option.code.toString()} style={{ color: colors.text, background: '#17161a' }}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+        <span
+          style={{
+            position: 'absolute',
+            left: '12px',
+            right: '36px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: selectedLabel ? colors.text : colors.muted,
+            fontSize: '13px',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            pointerEvents: 'none',
+          }}
+        >
+          {selectedLabel || placeholder}
+        </span>
+        <ChevronDown
+          size={15}
+          color={disabled ? colors.muted : colors.gold}
+          style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FormGroupTitle({ title, caption }: { title: string; caption?: string }) {
+  return (
+    <div style={{ gridColumn: '1 / -1', marginTop: '2px' }}>
+      <div style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
+        {title}
+      </div>
+      {caption ? (
+        <div style={{ marginTop: '3px', color: colors.muted, fontSize: '11.5px', lineHeight: 1.45 }}>
+          {caption}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
   const isMobile = mode === 'mobile';
   const [form, setForm] = useState<PartnerFormState>(initialPartnerForm);
+  const [provinces, setProvinces] = useState<AddressOption[]>([]);
+  const [wards, setWards] = useState<AddressOption[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedWard, setSelectedWard] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<{
     tone: 'success' | 'error';
     message: string;
   } | null>(null);
+  const selectedProvinceName = provinces.find((province) => province.code.toString() === selectedProvince)?.name ?? '';
+  const selectedWardName = wards.find((ward) => ward.code.toString() === selectedWard)?.name ?? '';
   const canSubmit = useMemo(
     () =>
       Boolean(
         form.businessName.trim() &&
+          form.storeAddress.trim() &&
+          selectedProvince &&
           form.contactName.trim() &&
           form.contactPhone.trim(),
       ),
-    [form.businessName, form.contactName, form.contactPhone],
+    [form.businessName, form.contactName, form.contactPhone, form.storeAddress, selectedProvince],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch('https://provinces.open-api.vn/api/v2/p/')
+      .then((response) => response.json())
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setProvinces(data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setProvinces([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProvince) {
+      setWards([]);
+      setSelectedWard('');
+      return;
+    }
+
+    let isMounted = true;
+
+    fetch(`https://provinces.open-api.vn/api/v2/p/${selectedProvince}?depth=2`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (isMounted) {
+          setWards(Array.isArray(data?.wards) ? data.wards : []);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setWards([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProvince]);
+
   const updateForm = (field: keyof PartnerFormState, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+  const updateProvince = (value: string) => {
+    const provinceName = provinces.find((province) => province.code.toString() === value)?.name ?? '';
+
+    setSelectedProvince(value);
+    setSelectedWard('');
+    setForm((current) => ({
+      ...current,
+      storeCity: provinceName,
+      storeDistrict: '',
+      area: provinceName,
+    }));
+  };
+  const updateWard = (value: string) => {
+    const wardName = wards.find((ward) => ward.code.toString() === value)?.name ?? '';
+
+    setSelectedWard(value);
+    setForm((current) => ({
+      ...current,
+      storeDistrict: wardName,
+      area: [wardName, selectedProvinceName].filter(Boolean).join(' - '),
+    }));
   };
   const submitPartnerRequest = async () => {
     if (!canSubmit || submitting) {
@@ -395,7 +537,10 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
       const result = await apiClient<PartnerRequestResponse>(
         '/partner-requests',
         {
-          data: buildPartnerRequestPayload(form),
+          data: buildPartnerRequestPayload(form, {
+            provinceName: selectedProvinceName,
+            wardName: selectedWardName,
+          }),
         },
       );
       setSubmitResult({
@@ -403,6 +548,9 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
         message: `Đã gửi hồ sơ ${result.id}. Admin sẽ thấy trong CMS và duyệt trước khi public.`,
       });
       setForm(initialPartnerForm);
+      setSelectedProvince('');
+      setSelectedWard('');
+      setWards([]);
     } catch (error) {
       setSubmitResult({
         tone: 'error',
@@ -538,22 +686,21 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
         <section
           style={{
             display: isMobile ? 'block' : 'grid',
-            gridTemplateColumns: isMobile ? undefined : 'minmax(0,1.12fr) minmax(500px,.88fr)',
-            gap: isMobile ? 0 : '28px',
-            padding: isMobile ? '18px 18px 0' : '32px 0 0',
+            gridTemplateColumns: isMobile ? undefined : 'minmax(0,0.92fr) minmax(520px,1.08fr)',
+            gap: isMobile ? 0 : '22px',
+            padding: isMobile ? '14px 16px 0' : '24px 0 0',
             alignItems: 'stretch',
-            minHeight: isMobile ? undefined : 'calc(100vh - 114px)',
           }}
         >
           <div
             style={{
-              minHeight: isMobile ? '360px' : 'calc(100vh - 146px)',
+              minHeight: isMobile ? '258px' : '560px',
               borderRadius: isMobile ? '18px' : '18px',
               overflow: 'hidden',
               border: `1px solid ${colors.borderGold22}`,
               background: `linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.86)), url(${heroImage}) center/cover`,
               boxShadow: '0 16px 34px -18px rgba(0,0,0,.7)',
-              padding: isMobile ? '22px' : '34px',
+              padding: isMobile ? '18px' : '28px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -659,165 +806,128 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                 borderRadius: '16px',
                 background: colors.surface1,
                 boxShadow: '0 16px 34px -18px rgba(0,0,0,.7)',
-                padding: isMobile ? '18px' : '24px',
+                padding: isMobile ? '16px' : '20px',
               }}
             >
               <SectionTitle title="Đăng ký hợp tác" en="PARTNER APPLICATION" />
-              <p style={{ margin: '0 0 18px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.65 }}>
-                Gửi thông tin cơ bản. Admin sẽ liên hệ, kiểm duyệt và cấp tài khoản đối tác khi hồ sơ phù hợp.
+              <p style={{ margin: '0 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.55 }}>
+                Điền thông tin tối thiểu để Admin kiểm duyệt và liên hệ cấp tài khoản đối tác.
               </p>
 
               <div
                 style={{
                   display: 'grid',
                   gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                  gap: '13px',
+                  gap: '11px',
                 }}
               >
+                <FormGroupTitle title="Thông tin quán" />
                 <FormControl
-                  label="Ten quan / co so"
+                  label="Tên quán / cơ sở"
                   value={form.businessName}
                   onChange={(value) => updateForm('businessName', value)}
-                  placeholder="VD: Club Lumiere"
+                  placeholder="Ví dụ: Club Lumière"
                   required
-                  wide={!isMobile}
                 />
                 <FormControl
-                  label="Ten hien thi public"
+                  label="Tên hiển thị public"
                   value={form.storeName}
                   onChange={(value) => updateForm('storeName', value)}
-                  placeholder="Neu khac ten phap ly"
+                  placeholder="Nếu khác tên pháp lý"
                 />
                 <FormControl
-                  label="Loai hinh"
+                  label="Loại hình kinh doanh"
                   value={form.businessType}
                   onChange={(value) => updateForm('businessType', value)}
-                  placeholder="Bar / Lounge / KTV"
+                  placeholder="Bar / Lounge / KTV / Spa..."
                 />
                 <FormControl
-                  label="Category CMS"
+                  label="Danh mục CMS"
                   value={form.storeCategory}
                   onChange={(value) => updateForm('storeCategory', value)}
-                  placeholder="BAR, CLUB, LOUNGE..."
+                  placeholder="Ví dụ: CLUB, LOUNGE, KARAOKE"
+                />
+
+                <FormGroupTitle title="Địa chỉ" caption="Chọn tỉnh/thành phố rồi chọn phường/xã để Admin xác nhận địa chỉ nhanh hơn." />
+                <SelectControl
+                  label="Tỉnh/Thành phố"
+                  value={selectedProvince}
+                  onChange={updateProvince}
+                  placeholder="Chọn tỉnh/thành phố"
+                  options={provinces}
+                  required
+                />
+                <SelectControl
+                  label="Phường/Xã"
+                  value={selectedWard}
+                  onChange={updateWard}
+                  placeholder={selectedProvince ? 'Chọn phường/xã' : 'Chọn tỉnh trước'}
+                  options={wards}
+                  disabled={!selectedProvince}
                 />
                 <FormControl
-                  label="Khu vuc"
-                  value={form.area}
-                  onChange={(value) => updateForm('area', value)}
-                  placeholder="Ha Noi - Tay Ho"
-                />
-                <FormControl
-                  label="Thanh pho"
-                  value={form.storeCity}
-                  onChange={(value) => updateForm('storeCity', value)}
-                  placeholder="Ha Noi"
-                />
-                <FormControl
-                  label="Dia chi"
+                  label="Số nhà, tên đường"
                   value={form.storeAddress}
                   onChange={(value) => updateForm('storeAddress', value)}
-                  placeholder="So nha, ten duong"
-                  wide={!isMobile}
+                  placeholder="Ví dụ: 12 Trần Phú"
+                  required
                 />
                 <FormControl
-                  label="Quan / huyen"
-                  value={form.storeDistrict}
-                  onChange={(value) => updateForm('storeDistrict', value)}
-                  placeholder="Tay Ho"
-                />
-                <FormControl
-                  label="Gio mo cua"
+                  label="Giờ mở cửa"
                   value={form.openingHours}
                   onChange={(value) => updateForm('openingHours', value)}
-                  placeholder="18:00 - 02:00"
+                  placeholder="Ví dụ: 18:00 - 02:00"
                 />
+
+                <FormGroupTitle title="Liên hệ" />
                 <FormControl
-                  label="Nguoi lien he"
+                  label="Người liên hệ"
                   value={form.contactName}
                   onChange={(value) => updateForm('contactName', value)}
-                  placeholder="Ho ten"
+                  placeholder="Họ và tên"
                   required
                 />
                 <FormControl
-                  label="SDT / Telegram"
+                  label="Số điện thoại / Telegram"
                   value={form.contactPhone}
                   onChange={(value) => updateForm('contactPhone', value)}
-                  placeholder="0912 345 678"
+                  placeholder="Ví dụ: 0912 345 678"
                   required
                 />
                 <FormControl
-                  label="Email"
+                  label="Email liên hệ"
                   value={form.contactEmail}
                   onChange={(value) => updateForm('contactEmail', value)}
-                  placeholder="owner@example.com"
+                  placeholder="Ví dụ: owner@example.com"
                   type="email"
                   wide={!isMobile}
                 />
+
+                <FormGroupTitle title="Bổ sung" caption="Menu, cast và album có thể cập nhật chi tiết sau khi được duyệt." />
                 <FormControl
-                  label="Mo ta quan"
+                  label="Mô tả quán"
                   value={form.storeDescription}
                   onChange={(value) => updateForm('storeDescription', value)}
-                  placeholder="Khong gian, dich vu noi bat, khung gio dong khach..."
+                  placeholder="Không gian, dịch vụ nổi bật, nhóm khách phù hợp..."
                   tall
                   wide={!isMobile}
                 />
                 <FormControl
-                  label="Menu / bang gia"
-                  value={form.menuSummary}
-                  onChange={(value) => updateForm('menuSummary', value)}
-                  placeholder="Moi goi, combo hoac bang gia mot dong."
-                  tall
-                  wide={!isMobile}
-                />
-                <FormControl
-                  label="Cast gui kem"
-                  value={form.castProfiles}
-                  onChange={(value) => updateForm('castProfiles', value)}
-                  placeholder="Moi dong: Ten | Bio | tags | ngon ngu | gia/gio | link1, link2"
-                  tall
-                  wide={!isMobile}
-                />
-                <FormControl
-                  label="Ghi chu cho Admin"
-                  value={form.note}
-                  onChange={(value) => updateForm('note', value)}
-                  placeholder="Thoi gian goi lai, yeu cau rieng..."
-                  tall
-                  wide={!isMobile}
-                />
-
-                <FormControl
-                  label="Link anh / video quan"
+                  label="Link ảnh / video quán"
                   value={form.mediaUrls}
                   onChange={(value) => updateForm('mediaUrls', value)}
-                  placeholder="Moi link mot dong: https://..."
+                  placeholder="Mỗi link một dòng: https://..."
                   tall
                   wide={!isMobile}
                 />
-
-                <div style={{ gridColumn: !isMobile ? 'span 2' : undefined }}>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 600, color: colors.text2, marginBottom: '6px' }}>
-                    Hình ảnh quán <span style={{ color: colors.muted, fontWeight: 500 }}>(tuỳ chọn)</span>
-                  </label>
-                  <div
-                    style={{
-                      minHeight: '92px',
-                      border: `1.5px dashed ${colors.borderGold40}`,
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg,rgba(244,227,180,.08),rgba(255,255,255,.03))',
-                      color: colors.gold,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <ImagePlus size={25} />
-                    <span style={{ fontSize: '12px', fontWeight: 700 }}>Tải ảnh / video lên</span>
-                  </div>
-                </div>
+                <FormControl
+                  label="Ghi chú cho Admin"
+                  value={form.note}
+                  onChange={(value) => updateForm('note', value)}
+                  placeholder="Thời gian gọi lại, yêu cầu riêng..."
+                  tall
+                  wide={!isMobile}
+                />
               </div>
 
               <div
@@ -892,150 +1002,153 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
           </div>
         </section>
 
-        <section style={{ padding: isMobile ? '22px 18px 0' : '28px 0 0' }}>
-          <SectionTitle title="Quyền lợi đối tác" en="PARTNER BENEFITS" />
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)',
-              gap: '13px',
-            }}
-          >
-            {benefits.map((item) => {
-              const Icon = item.icon;
-              return (
-                <article
-                  key={item.title}
-                  style={{
-                    border: `1px solid ${colors.borderGold12}`,
-                    borderRadius: '16px',
-                    background: colors.surface1,
-                    padding: '14px',
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: '50px',
-                      height: '50px',
-                      borderRadius: '15px',
-                      border: `1px solid ${colors.borderGold12}`,
-                      background: colors.surface2,
-                      color: colors.gold,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flex: 'none',
-                    }}
-                  >
-                    <Icon size={22} />
-                  </span>
-                  <span>
-                    <span style={{ display: 'block', color: colors.text, fontSize: '14px', fontWeight: 600 }}>{item.title}</span>
-                    <span style={{ display: 'block', marginTop: '4px', color: colors.muted, fontSize: '12px', lineHeight: 1.55 }}>
-                      {item.desc}
-                    </span>
-                  </span>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section style={{ padding: isMobile ? '22px 18px 0' : '28px 0 0' }}>
-          <SectionTitle title="Cổng quản lý" en="PORTAL MODULES" />
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)',
-              gap: '12px',
-            }}
-          >
-            {portalItems.map((item, index) => {
-              const Icon = item.icon;
-              const featured = index === 0;
-              return (
-                <article
-                  key={item.label}
-                  style={{
-                    border: `1px solid ${featured ? colors.borderGold40 : colors.borderSoft}`,
-                    borderRadius: '16px',
-                    background: featured
-                      ? 'linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.03))'
-                      : colors.surface1,
-                    padding: isMobile ? '13px' : '15px',
-                    minHeight: isMobile ? '128px' : '142px',
-                  }}
-                >
-                  <Icon size={22} color={featured ? colors.goldBright : colors.gold} />
-                  <div style={{ marginTop: '12px', color: colors.text, fontSize: '13.5px', fontWeight: 600 }}>{item.label}</div>
-                  <div style={{ marginTop: '5px', color: colors.muted, fontSize: '11.5px', lineHeight: 1.5 }}>{item.detail}</div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section style={{ padding: isMobile ? '22px 18px 26px' : '28px 0 44px' }}>
-          <div
-            style={{
-              borderRadius: '18px',
-              background: colors.goldGrad,
-              color: colors.onGold,
-              boxShadow: '0 16px 34px -16px rgba(168,124,60,.6)',
-              padding: isMobile ? '18px' : '22px 24px',
-              position: 'relative',
-              overflow: 'hidden',
-              display: isMobile ? 'block' : 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '24px',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                right: '-36px',
-                top: '-58px',
-                width: '170px',
-                height: '170px',
-                borderRadius: '50%',
-                background: 'radial-gradient(circle,rgba(255,255,255,.45),transparent 70%)',
-              }}
-            />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '15px', fontWeight: 800 }}>
-                <Crown size={20} />
-                Đối tác nổi bật
+        {!isMobile ? (
+          <>
+            <section style={{ padding: '28px 0 0' }}>
+              <SectionTitle title="Quyền lợi đối tác" en="PARTNER BENEFITS" />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3,1fr)',
+                  gap: '13px',
+                }}
+              >
+                {benefits.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <article
+                      key={item.title}
+                      style={{
+                        border: `1px solid ${colors.borderGold12}`,
+                        borderRadius: '16px',
+                        background: colors.surface1,
+                        padding: '14px',
+                        display: 'flex',
+                        gap: '12px',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '50px',
+                          height: '50px',
+                          borderRadius: '15px',
+                          border: `1px solid ${colors.borderGold12}`,
+                          background: colors.surface2,
+                          color: colors.gold,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flex: 'none',
+                        }}
+                      >
+                        <Icon size={22} />
+                      </span>
+                      <span>
+                        <span style={{ display: 'block', color: colors.text, fontSize: '14px', fontWeight: 600 }}>{item.title}</span>
+                        <span style={{ display: 'block', marginTop: '4px', color: colors.muted, fontSize: '12px', lineHeight: 1.55 }}>
+                          {item.desc}
+                        </span>
+                      </span>
+                    </article>
+                  );
+                })}
               </div>
-              <p style={{ margin: '8px 0 0', maxWidth: '620px', fontSize: '12.5px', lineHeight: 1.6, opacity: .86 }}>
-                Quán đạt hiệu quả tốt có thể nâng lên gói hiển thị VIP, xuất hiện trong đề xuất tối nay và bảng xếp hạng theo khu vực.
-              </p>
-            </div>
-            <div
-              style={{
-                position: 'relative',
-                zIndex: 1,
-                marginTop: isMobile ? '14px' : 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                minHeight: '44px',
-                borderRadius: '11px',
-                background: colors.onGold,
-                color: colors.goldPale,
-                padding: '0 16px',
-                fontSize: '13px',
-                fontWeight: 800,
-              }}
-            >
-              <Sparkles size={16} />
-              Tư vấn gói VIP
-            </div>
-          </div>
-        </section>
+            </section>
+
+            <section style={{ padding: '28px 0 0' }}>
+              <SectionTitle title="Cổng quản lý" en="PORTAL MODULES" />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4,1fr)',
+                  gap: '12px',
+                }}
+              >
+                {portalItems.map((item, index) => {
+                  const Icon = item.icon;
+                  const featured = index === 0;
+                  return (
+                    <article
+                      key={item.label}
+                      style={{
+                        border: `1px solid ${featured ? colors.borderGold40 : colors.borderSoft}`,
+                        borderRadius: '16px',
+                        background: featured
+                          ? 'linear-gradient(135deg,rgba(212,178,106,.14),rgba(255,255,255,.03))'
+                          : colors.surface1,
+                        padding: '15px',
+                        minHeight: '142px',
+                      }}
+                    >
+                      <Icon size={22} color={featured ? colors.goldBright : colors.gold} />
+                      <div style={{ marginTop: '12px', color: colors.text, fontSize: '13.5px', fontWeight: 600 }}>{item.label}</div>
+                      <div style={{ marginTop: '5px', color: colors.muted, fontSize: '11.5px', lineHeight: 1.5 }}>{item.detail}</div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section style={{ padding: '28px 0 44px' }}>
+              <div
+                style={{
+                  borderRadius: '18px',
+                  background: colors.goldGrad,
+                  color: colors.onGold,
+                  boxShadow: '0 16px 34px -16px rgba(168,124,60,.6)',
+                  padding: '22px 24px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '24px',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: '-36px',
+                    top: '-58px',
+                    width: '170px',
+                    height: '170px',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle,rgba(255,255,255,.45),transparent 70%)',
+                  }}
+                />
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontSize: '15px', fontWeight: 800 }}>
+                    <Crown size={20} />
+                    Đối tác nổi bật
+                  </div>
+                  <p style={{ margin: '8px 0 0', maxWidth: '620px', fontSize: '12.5px', lineHeight: 1.6, opacity: .86 }}>
+                    Quán đạt hiệu quả tốt có thể nâng lên gói hiển thị VIP, xuất hiện trong đề xuất tối nay và bảng xếp hạng theo khu vực.
+                  </p>
+                </div>
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    minHeight: '44px',
+                    borderRadius: '11px',
+                    background: colors.onGold,
+                    color: colors.goldPale,
+                    padding: '0 16px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                  }}
+                >
+                  <Sparkles size={16} />
+                  Tư vấn gói VIP
+                </div>
+              </div>
+            </section>
+          </>
+        ) : null}
       </div>
 
       {isMobile ? (
