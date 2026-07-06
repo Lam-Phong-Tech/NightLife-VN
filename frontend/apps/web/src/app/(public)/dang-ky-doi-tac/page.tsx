@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-  ArrowLeft,
   BadgeCheck,
   BarChart3,
   Camera,
@@ -141,28 +140,6 @@ const bottomNav = [
   { href: '/tai-khoan', label: 'Tài khoản', icon: LockKeyhole },
 ];
 
-function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <Link href="/" style={{ display: 'inline-flex', flexDirection: 'column', textDecoration: 'none' }}>
-      <span
-        style={{
-          fontSize: compact ? '23px' : '26px',
-          fontWeight: 800,
-          lineHeight: 1,
-          background: colors.goldGrad,
-          WebkitBackgroundClip: 'text',
-          color: 'transparent',
-        }}
-      >
-        Vietyoru
-      </span>
-      <span style={{ marginTop: '4px', fontSize: '8.5px', letterSpacing: '3.6px', color: colors.muted }}>
-        VIETNAM NIGHTLIFE GUIDE
-      </span>
-    </Link>
-  );
-}
-
 function SectionTitle({ title, en }: { title: string; en: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
@@ -261,7 +238,10 @@ function inputStyle(tall = false): React.CSSProperties {
     padding: tall ? '10px 12px' : '10px 12px',
     color: colors.text,
     background: colors.surface2,
+    fontFamily: "var(--nl-font-sans)",
     fontSize: '13px',
+    fontWeight: 500,
+    letterSpacing: 0,
     lineHeight: 1.45,
     outline: 'none',
     resize: tall ? 'vertical' : undefined,
@@ -372,6 +352,9 @@ function SelectControl({
             color: 'transparent',
             paddingRight: '38px',
             opacity: disabled ? 0.62 : 1,
+            fontFamily: "var(--nl-font-sans)",
+            fontWeight: 500,
+            letterSpacing: 0,
           }}
         >
           <option value="" style={{ color: colors.text, background: '#17161a' }}>
@@ -391,7 +374,10 @@ function SelectControl({
             top: '50%',
             transform: 'translateY(-50%)',
             color: selectedLabel ? colors.text : colors.muted,
+            fontFamily: "var(--nl-font-sans)",
             fontSize: '13px',
+            fontWeight: 500,
+            letterSpacing: 0,
             lineHeight: 1,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -581,114 +567,12 @@ function PartnerPageContent({ mode }: { mode: 'mobile' | 'desktop' }) {
         padding: isMobile ? '0' : '0 34px 48px',
         }}
       >
-        <header
-          style={{
-            minHeight: isMobile ? '78px' : '82px',
-            padding: isMobile ? '13px 22px 12px' : '18px 0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: isMobile ? 'wrap' : 'nowrap',
-            gap: isMobile ? '12px' : '0',
-            borderBottom: `1px solid ${colors.borderGold12}`,
-            background: colors.bg,
-            position: isMobile ? 'sticky' : 'static',
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '34px' }}>
-            {isMobile ? (
-              <Link
-                href="/"
-                aria-label="Quay lại"
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  border: `1px solid ${colors.borderGold32}`,
-                  color: colors.gold,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: colors.surface2,
-                }}
-              >
-                <ArrowLeft size={18} />
-              </Link>
-            ) : null}
-            <Logo compact={isMobile} />
-            {!isMobile ? (
-              <nav style={{ display: 'flex', gap: '22px', fontSize: '13px', color: colors.text2, fontWeight: 500 }}>
-                <Link href="/" className="lk">Trang chủ</Link>
-                <Link href="/danh-sach-quan" className="lk">Tìm quán</Link>
-                <Link href="/danh-sach-cast" className="lk">Cast</Link>
-                <Link href="/xep-hang" className="lk">Bảng xếp hạng</Link>
-                <Link href="/blog" className="lk">Blog</Link>
-              </nav>
-            ) : null}
-          </div>
-
-          <div
-            style={{
-              width: isMobile ? '100%' : 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isMobile ? 'flex-end' : 'flex-start',
-              gap: isMobile ? '8px' : '14px',
-            }}
-          >
-            <span
-              style={{
-                minHeight: '38px',
-                padding: isMobile ? '0 10px' : '0 11px',
-                borderRadius: '19px',
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontSize: isMobile ? '11.5px' : '12px',
-                fontWeight: 700,
-                background: colors.surface2,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              VI / JP
-            </span>
-            <Link
-              href="/dang-nhap-doi-tac?redirect=/partner"
-              className="lk"
-              style={{ fontSize: isMobile ? '12px' : '13px', color: colors.text2, fontWeight: 600, whiteSpace: 'nowrap' }}
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              href="/dang-ky-doi-tac"
-              style={{
-                minHeight: '38px',
-                borderRadius: '19px',
-                padding: isMobile ? '0 12px' : '0 16px',
-                background: colors.goldGrad,
-                color: colors.onGold,
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontSize: isMobile ? '12px' : '13px',
-                fontWeight: 800,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Đăng ký đối tác
-            </Link>
-          </div>
-        </header>
-
         <section
           style={{
             display: isMobile ? 'block' : 'grid',
             gridTemplateColumns: isMobile ? undefined : 'minmax(0,0.92fr) minmax(520px,1.08fr)',
             gap: isMobile ? 0 : '22px',
-            padding: isMobile ? '14px 16px 0' : '24px 0 0',
+            padding: isMobile ? '14px 16px 0' : '22px 0 0',
             alignItems: 'stretch',
           }}
         >
