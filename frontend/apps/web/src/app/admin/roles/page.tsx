@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 
 const colors = {
   bg: '#0c0c0f',
@@ -41,7 +41,7 @@ const allAcc = [
   {id:19, ini:'HO', name:'Hana Onsen', email:'partner.hana@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'}
 ];
 
-const rlCapsPartner = [
+const INIT_CAPS_PARTNER = [
   ['Xem thông tin quán','canViewPartnerStore',1,1,1,1,0],
   ['Xem mã giảm giá của quán','canViewPartnerCoupon',1,1,1,1,0],
   ['Xem & tạo hoá đơn','canReviewBill',1,0,1,1,0],
@@ -50,15 +50,21 @@ const rlCapsPartner = [
   ['Xem danh sách khách đặt bàn','canViewPartnerBooking',1,1,1,1,0],
   ['Xem danh sách hoá đơn','canViewPartnerBill',1,1,1,0,0],
 ];
-const rlCapsMgmt = [
+const INIT_CAPS_MGMT = [
   ['Xem hoá đơn nhạy cảm','canViewSensitiveBill',1,0,1,0,0],
   ['Xem báo cáo doanh thu','canViewRevenueReport',1,0,1,0,0],
 ];
-const rlCapsUser = [
+const INIT_CAPS_USER = [
   ['Xem lịch sử đặt bàn bản thân','canViewMemberBooking',1,0,0,0,1],
   ['Xem voucher / coupon bản thân','canViewMemberCoupon',1,0,0,0,1],
   ['Lấy (claim) mã ưu đãi mới','canClaimMemberCoupon',0,0,0,0,1],
 ];
+
+const Toggle = ({ on, onClick }: { on: boolean, onClick: () => void }) => (
+  <div onClick={onClick} style={{ width: 28, height: 16, borderRadius: 8, background: on ? 'rgba(212,178,106,.8)' : 'rgba(255,255,255,.1)', position: 'relative', cursor: 'pointer', margin: '0 auto', transition: 'all 0.2s' }}>
+    <div style={{ width: 12, height: 12, borderRadius: '50%', background: on ? '#241a0a' : '#8c8679', position: 'absolute', top: 2, left: on ? 14 : 2, transition: 'all 0.2s' }} />
+  </div>
+);
 
 export default function AdminRolesPage() {
   const [accQ, setAccQ] = useState('');
@@ -75,6 +81,12 @@ export default function AdminRolesPage() {
   const [afKind, setAfKind] = useState('partner');
   const [afVenue, setAfVenue] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+
+  // Matrix states
+  const [isMatrixVisible, setIsMatrixVisible] = useState(true);
+  const [capsPartner, setCapsPartner] = useState<any[]>(INIT_CAPS_PARTNER);
+  const [capsMgmt, setCapsMgmt] = useState<any[]>(INIT_CAPS_MGMT);
+  const [capsUser, setCapsUser] = useState<any[]>(INIT_CAPS_USER);
 
   // Computed data
   const S_allAcc = [...extraAccs, ...allAcc];
@@ -99,7 +111,7 @@ export default function AdminRolesPage() {
     const A='ABCDEFGHJKMNPQRSTUVWXYZ',aa='abcdefghjkmnpqrstuvwxyz',dd='23456789',ss='!@#$%&*'; 
     const pick=(s:string,n:number)=>Array.from({length:n},()=>s.charAt(Math.floor(Math.random()*s.length))); 
     const arr=pick(A,3).concat(pick(aa,4),pick(dd,3),pick(ss,2)); 
-    for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+    for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i] as string; arr[i]=arr[j] as string; arr[j]=t; }
     setAfPw(arr.join('')); setAfPwShow(true);
   };
 
@@ -111,7 +123,8 @@ export default function AdminRolesPage() {
       pink: ['rgba(231,154,184,.1)','rgba(231,154,184,.3)','#e79ab8'],
       muted: ['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']
     };
-    const c = m[kind==='admin'?'gold':kind==='operator'?'info':kind==='partner'?'success':kind==='staff'?'pink':'muted'] || m.muted;
+    const fallback = ['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a'];
+    const c = m[kind==='admin'?'gold':kind==='operator'?'info':kind==='partner'?'success':kind==='staff'?'pink':'muted'] || fallback;
     return { background: c[0], border: `1px solid ${c[1]}`, color: c[2], fontSize: '10.5px', fontWeight: 600, padding: '3px 10px', borderRadius: '7px', display: 'inline-flex' };
   };
 
@@ -120,6 +133,9 @@ export default function AdminRolesPage() {
   if(afPw.length>=10&&/[a-z]/.test(afPw)&&/[A-Z]/.test(afPw)&&/\d/.test(afPw)) psc=2;
   if(afPw.length>=12&&/[a-z]/.test(afPw)&&/[A-Z]/.test(afPw)&&/\d/.test(afPw)&&/[^A-Za-z0-9]/.test(afPw)) psc=3;
   const pOff='rgba(255,255,255,.08)', pCol=psc===1?'#e08a7e':psc===2?'#e3c27e':'#7fd3a2';
+  const afPwBar1 = psc>=1?pCol:pOff;
+  const afPwBar2 = psc>=2?pCol:pOff;
+  const afPwBar3 = psc>=3?pCol:pOff;
 
   const ok = !!(afName && afName.trim() && afEmail && afEmail.indexOf('@')>0 && afPw.length>=8);
   const handleSave = () => {
@@ -132,25 +148,38 @@ export default function AdminRolesPage() {
     };
     const nm = (afKind==='partner'&&afVenue&&afVenue.trim())?afVenue.trim():(afKind==='staff'&&afVenue&&afVenue.trim())?(afName.trim()+' · '+afVenue.trim()):afName.trim();
     const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
-    const rec = {id:Date.now(), ini, name:nm, email:afEmail.trim(), role:kmap[afKind][0], kind:afKind, last:'Vừa tạo', avaBg:kmap[afKind][1]};
+    const roleData = kmap[afKind] || ['Đối tác', 'linear-gradient(135deg,#c9a86a,#8f6b32)'];
+    const rec = {id:Date.now(), ini, name:nm, email:afEmail.trim(), role:roleData[0], kind:afKind, last:'Vừa tạo', avaBg:roleData[1]};
     setExtraAccs([rec, ...extraAccs]);
     setIsAdding(false);
-    showToast('Đã tạo tài khoản '+kmap[afKind][0]+' — đã gửi email thông báo');
+    showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
   };
 
-  const renderCapRow = (c: any[], idx: number) => {
-    const yes = '#e3c27e', no = '#413d36';
+  const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
+    const updater = (prev: any[]) => {
+      const next = [...prev];
+      next[rowIdx] = [...next[rowIdx]];
+      next[rowIdx][colIdx] = next[rowIdx][colIdx] === 1 ? 0 : 1;
+      return next;
+    };
+    if (section === 'partner') setCapsPartner(updater);
+    else if (section === 'mgmt') setCapsMgmt(updater);
+    else if (section === 'user') setCapsUser(updater);
+    showToast('Đã cập nhật cấu hình quyền');
+  };
+
+  const renderCapRow = (c: any[], idx: number, section: string) => {
     return (
       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 44px)', gap: '3px', padding: '9px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
         <span style={{ minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: '11.5px', color: '#c5c0b6' }}>{c[0]}</span>
           <span style={{ display: 'block', fontSize: '9px', color: '#57534b', fontFamily: 'ui-monospace,Menlo,monospace', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c[1]}</span>
         </span>
-        <span style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: c[2] ? yes : no }}>{c[2] ? '✓' : '—'}</span>
-        <span style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: c[3] ? yes : no }}>{c[3] ? '✓' : '—'}</span>
-        <span style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: c[4] ? yes : no }}>{c[4] ? '✓' : '—'}</span>
-        <span style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: c[5] ? yes : no }}>{c[5] ? '✓' : '—'}</span>
-        <span style={{ textAlign: 'center', fontSize: '13px', fontWeight: 700, color: c[6] ? yes : no }}>{c[6] ? '✓' : '—'}</span>
+        <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />
+        <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />
+        <Toggle on={c[4]===1} onClick={() => handleToggleCap(section, idx, 4)} />
+        <Toggle on={c[5]===1} onClick={() => handleToggleCap(section, idx, 5)} />
+        <Toggle on={c[6]===1} onClick={() => handleToggleCap(section, idx, 6)} />
       </div>
     );
   };
@@ -228,34 +257,41 @@ export default function AdminRolesPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
             <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Ma trận phân quyền</span>
             <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
-          </div>
-          
-          <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 44px)', gap: '3px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.015)', alignItems: 'center' }}>
-              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.8px', color: '#57534b', textTransform: 'uppercase' }}>Chức năng</span>
-              <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#e3c27e' }}>Admin</span>
-              <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Oper.</span>
-              <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Partner</span>
-              <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Staff</span>
-              <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>User</span>
-            </div>
-            
-            <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền đối tác · Partner / Staff</div>
-            {rlCapsPartner.map((c, i) => renderCapRow(c, i))}
-            
-            <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền quản lý / cấp cao</div>
-            {rlCapsMgmt.map((c, i) => renderCapRow(c, i))}
-            
-            <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền khách hàng · User</div>
-            {rlCapsUser.map((c, i) => renderCapRow(c, i))}
-          </div>
-          
-          <div style={{ display: 'flex', gap: '9px', marginTop: '14px', padding: '12px 14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
-            <span style={{ fontSize: '11px', color: '#cbb884', lineHeight: 1.5 }}>
-              5 vai trò theo enum <b style={{ color: '#f0dda8' }}>UserRole</b> (User · Partner · Staff · Operator · Admin) · <b style={{ color: '#f0dda8' }}>12 quyền hành động</b> (action-policy) kiểm soát chi tiết theo tài nguyên, độc lập với vai trò. Tài khoản <b style={{ color: '#f0dda8' }}>USER</b> đăng ký qua app — không tạo trong CMS.
+            <span onClick={() => setIsMatrixVisible(!isMatrixVisible)} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: 600, color: '#8c8679', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
+              {isMatrixVisible ? <><ChevronUp size={14} /> Ẩn</> : <><ChevronDown size={14} /> Hiện</>}
             </span>
           </div>
+          
+          {isMatrixVisible && (
+            <>
+              <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 44px)', gap: '3px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.015)', alignItems: 'center' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.8px', color: '#57534b', textTransform: 'uppercase' }}>Chức năng</span>
+                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#e3c27e' }}>Admin</span>
+                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Oper.</span>
+                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Partner</span>
+                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Staff</span>
+                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>User</span>
+                </div>
+                
+                <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền đối tác · Partner / Staff</div>
+                {capsPartner.map((c, i) => renderCapRow(c, i, 'partner'))}
+                
+                <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền quản lý / cấp cao</div>
+                {capsMgmt.map((c, i) => renderCapRow(c, i, 'mgmt'))}
+                
+                <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền khách hàng · User</div>
+                {capsUser.map((c, i) => renderCapRow(c, i, 'user'))}
+              </div>
+              
+              <div style={{ display: 'flex', gap: '9px', marginTop: '14px', padding: '12px 14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
+                <span style={{ fontSize: '11px', color: '#cbb884', lineHeight: 1.5 }}>
+                  5 vai trò theo enum <b style={{ color: '#f0dda8' }}>UserRole</b> (User · Partner · Staff · Operator · Admin) · <b style={{ color: '#f0dda8' }}>12 quyền hành động</b> (action-policy) kiểm soát chi tiết theo tài nguyên, độc lập với vai trò. Tài khoản <b style={{ color: '#f0dda8' }}>USER</b> đăng ký qua app — không tạo trong CMS.
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
