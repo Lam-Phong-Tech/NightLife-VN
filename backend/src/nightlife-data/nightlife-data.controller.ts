@@ -1444,6 +1444,25 @@ export class NightlifeDataController {
   }
 
   @ApiOperation({
+    summary: 'Admin action: List global QR coupon issues',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/global-coupons/issues')
+  listAdminGlobalCouponIssues(
+    @Query()
+    query: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: import('@prisma/client').CouponIssueStatus;
+      adminCouponId?: string;
+    },
+  ) {
+    return this.nightlifeDataService.listAdminGlobalCouponIssues(query);
+  }
+
+  @ApiOperation({
     summary: 'Admin action: List stores with filters and pagination',
   })
   @Roles('ADMIN')

@@ -16865,4 +16865,69 @@ export class NightlifeDataService {
       limit,
     };
   }
+
+  async listAdminGlobalCouponIssues(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: import('@prisma/client').CouponIssueStatus;
+    adminCouponId?: string;
+  }) {
+    const page = Number(query.page || 1);
+    const limit = Number(query.limit || 50);
+    const skip = (page - 1) * limit;
+
+    const where: import('@prisma/client').Prisma.AdminCouponIssueWhereInput = {
+      ...(query.status && { status: query.status }),
+      ...(query.adminCouponId && { adminCouponId: query.adminCouponId }),
+      ...(query.search && {
+        OR: [
+          { code: { contains: query.search, mode: 'insensitive' as const } },
+          { adminCoupon: { name: { contains: query.search, mode: 'insensitive' as const } } },
+        ],
+      }),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.adminCouponIssue.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          adminCoupon: {
+            select: {
+              id: true,
+              name: true,
+              discountType: true,
+              discountValue: true,
+            },
+          },
+          user: {
+            select: { id: true, displayName: true, tier: true },
+          },
+          guest: {
+            select: { id: true, displayName: true },
+          },
+          store: {
+            select: { id: true, name: true },
+          },
+          scannedBy: {
+            select: { id: true, displayName: true },
+          },
+        },
+      }),
+      this.prisma.adminCouponIssue.count({ where }),
+    ]);
+
+    return {
+      data: items.map((issue) => ({
+        ...issue,
+        metadata: this.asRecord(issue.metadata) ?? null,
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
 }

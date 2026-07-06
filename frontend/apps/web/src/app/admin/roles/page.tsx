@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff, ChevronUp, ChevronDown, Edit2, Key, Ban, RotateCcw, Trash2, AlertCircle } from 'lucide-react';
 
 const colors = {
   bg: '#0c0c0f',
@@ -18,6 +18,21 @@ const colors = {
   pink: '#f472b6',
   green: '#4ade80'
 };
+
+export type AccountRec = {
+  id: number;
+  ini: string;
+  name: string;
+  email: string;
+  role: string;
+  kind: string;
+  last: string;
+  avaBg: string;
+  key?: string;
+  disabled?: boolean;
+};
+
+export type CapRow = [string, string, number, number, number, number, number];
 
 const allAcc = [
   {id:1, ini:'A', name:'Nguyễn Admin', email:'admin@vietyoru.vn', role:'Super Admin', kind:'admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
@@ -41,7 +56,7 @@ const allAcc = [
   {id:19, ini:'HO', name:'Hana Onsen', email:'partner.hana@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'}
 ];
 
-const INIT_CAPS_PARTNER = [
+const INIT_CAPS_PARTNER: CapRow[] = [
   ['Xem thông tin quán','canViewPartnerStore',1,1,1,1,0],
   ['Xem mã giảm giá của quán','canViewPartnerCoupon',1,1,1,1,0],
   ['Xem & tạo hoá đơn','canReviewBill',1,0,1,1,0],
@@ -50,11 +65,11 @@ const INIT_CAPS_PARTNER = [
   ['Xem danh sách khách đặt bàn','canViewPartnerBooking',1,1,1,1,0],
   ['Xem danh sách hoá đơn','canViewPartnerBill',1,1,1,0,0],
 ];
-const INIT_CAPS_MGMT = [
+const INIT_CAPS_MGMT: CapRow[] = [
   ['Xem hoá đơn nhạy cảm','canViewSensitiveBill',1,0,1,0,0],
   ['Xem báo cáo doanh thu','canViewRevenueReport',1,0,1,0,0],
 ];
-const INIT_CAPS_USER = [
+const INIT_CAPS_USER: CapRow[] = [
   ['Xem lịch sử đặt bàn bản thân','canViewMemberBooking',1,0,0,0,1],
   ['Xem voucher / coupon bản thân','canViewMemberCoupon',1,0,0,0,1],
   ['Lấy (claim) mã ưu đãi mới','canClaimMemberCoupon',0,0,0,0,1],
@@ -71,7 +86,7 @@ export default function AdminRolesPage() {
   const [accRole, setAccRole] = useState('all');
   const [accPage, setAccPage] = useState(0);
   const [isAdding, setIsAdding] = useState(false);
-  const [extraAccs, setExtraAccs] = useState<any[]>([]);
+  const [extraAccs, setExtraAccs] = useState<AccountRec[]>([]);
 
   // Add form states
   const [afName, setAfName] = useState('');
@@ -82,16 +97,43 @@ export default function AdminRolesPage() {
   const [afVenue, setAfVenue] = useState('');
   const [toast, setToast] = useState<string | null>(null);
 
+  // Edit states
+  const [edOpen, setEdOpen] = useState(false);
+  const [edOrig, setEdOrig] = useState('');
+  const [edName, setEdName] = useState('');
+  const [edEmail, setEdEmail] = useState('');
+
+  // Password states
+  const [cpOpen, setCpOpen] = useState(false);
+  const [cpName, setCpName] = useState('');
+  const [cpEmail, setCpEmail] = useState('');
+  const [cpPw, setCpPw] = useState('');
+  const [cpPwShow, setCpPwShow] = useState(false);
+
+  // Delete states
+  const [hdOpen, setHdOpen] = useState(false);
+  const [hdName, setHdName] = useState('');
+  const [hdEmail, setHdEmail] = useState('');
+  const [hdKey, setHdKey] = useState('');
+
+  // Status & Edits tracking (Mocking Backend)
+  const [accStatus, setAccStatus] = useState<Record<string, boolean>>({});
+  const [accEdits, setAccEdits] = useState<Record<string, {name:string, email:string}>>({});
+  const [accGone, setAccGone] = useState<Record<string, boolean>>({});
+
   // Matrix states
   const [isMatrixVisible, setIsMatrixVisible] = useState(true);
-  const [capsPartner, setCapsPartner] = useState<any[]>(INIT_CAPS_PARTNER);
-  const [capsMgmt, setCapsMgmt] = useState<any[]>(INIT_CAPS_MGMT);
-  const [capsUser, setCapsUser] = useState<any[]>(INIT_CAPS_USER);
+  const [capsPartner, setCapsPartner] = useState<CapRow[]>(INIT_CAPS_PARTNER);
+  const [capsMgmt, setCapsMgmt] = useState<CapRow[]>(INIT_CAPS_MGMT);
+  const [capsUser, setCapsUser] = useState<CapRow[]>(INIT_CAPS_USER);
 
   // Computed data
-  const S_allAcc = [...extraAccs, ...allAcc];
+  const S_allAcc = [...extraAccs, ...allAcc].filter(a => !accGone[a.email]).map(a => {
+    const ov = accEdits[a.email];
+    return { ...a, key: a.email, name: ov?.name || a.name, email: ov?.email || a.email, disabled: !!accStatus[a.email] };
+  });
   const accF = S_allAcc.filter(a => 
-    (accRole === 'all' || a.kind === accRole) && 
+    (accRole === 'all' || (accRole === 'disabled' ? a.disabled : (!a.disabled && a.kind === accRole))) && 
     (!accQ || (a.name + ' ' + a.email).toLowerCase().includes(accQ.toLowerCase()))
   );
   
@@ -100,7 +142,7 @@ export default function AdminRolesPage() {
   const pg = Math.min(accPage, pages - 1);
   const pagedAccs = accF.slice(pg * PER, pg * PER + PER);
 
-  const roleCount = (kind: string) => kind === 'all' ? S_allAcc.length : S_allAcc.filter(a => a.kind === kind).length;
+  const roleCount = (kind: string) => kind === 'all' ? S_allAcc.length : kind === 'disabled' ? S_allAcc.filter(a => a.disabled).length : S_allAcc.filter(a => a.kind === kind).length;
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -156,10 +198,13 @@ export default function AdminRolesPage() {
   };
 
   const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
-    const updater = (prev: any[]) => {
+    const updater = (prev: CapRow[]) => {
       const next = [...prev];
-      next[rowIdx] = [...next[rowIdx]];
-      next[rowIdx][colIdx] = next[rowIdx][colIdx] === 1 ? 0 : 1;
+      const row = next[rowIdx];
+      if (!row) return next;
+      const newRow = [...row] as CapRow;
+      newRow[colIdx] = newRow[colIdx] === 1 ? 0 : 1;
+      next[rowIdx] = newRow;
       return next;
     };
     if (section === 'partner') setCapsPartner(updater);
@@ -168,7 +213,7 @@ export default function AdminRolesPage() {
     showToast('Đã cập nhật cấu hình quyền');
   };
 
-  const renderCapRow = (c: any[], idx: number, section: string) => {
+  const renderCapRow = (c: CapRow, idx: number, section: string) => {
     return (
       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 44px)', gap: '3px', padding: '9px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
         <span style={{ minWidth: 0 }}>
@@ -207,7 +252,8 @@ export default function AdminRolesPage() {
               {[
                 { id: 'all', label: 'Tất cả' }, { id: 'admin', label: 'Admin' }, 
                 { id: 'operator', label: 'Operator' }, { id: 'partner', label: 'Đối tác' }, 
-                { id: 'staff', label: 'Staff' }, { id: 'muted', label: 'Chờ kích hoạt' }
+                { id: 'staff', label: 'Staff' }, { id: 'muted', label: 'Chờ kích hoạt' },
+                { id: 'disabled', label: 'Đã vô hiệu' }
               ].map(r => (
                 <span key={r.id} onClick={() => { setAccRole(r.id); setAccPage(0); }} style={{ fontSize: '11px', fontWeight: 600, padding: '5.5px 11px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap', ...(accRole === r.id ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#9b958a', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }) }}>
                   {r.label} · {roleCount(r.id)}
@@ -218,15 +264,39 @@ export default function AdminRolesPage() {
           
           <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
             {pagedAccs.map((a, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '13px', padding: '14px 16px', borderBottom: `1px solid ${colors.borderSoft2}` }}>
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, opacity: a.disabled ? 0.55 : 1 }}>
                 <span style={{ width: '40px', height: '40px', flex: 'none', borderRadius: '11px', background: a.avaBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 700, fontSize: '15px' }}>{a.ini}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#f3f0ea' }}>{a.name}</div>
                   <div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.email}</div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', flex: 'none' }}>
                   <span style={rst(a.kind)}>{a.role}</span>
-                  <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '5px' }}>{a.last}</div>
+                  {a.disabled ? (
+                    <div style={{ fontSize: '10.5px', color: '#e88b99', marginTop: '5px' }}>Đã vô hiệu hóa</div>
+                  ) : (
+                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '5px' }}>{a.last}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '5px', flex: 'none' }}>
+                  <span onClick={() => { setEdOrig(a.email); setEdName(a.name); setEdEmail(a.email); setEdOpen(true); }} title="Sửa tên / email" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                    <Edit2 size={12} strokeWidth={1.9} />
+                  </span>
+                  <span onClick={() => { setCpName(a.name); setCpEmail(a.email); setCpPw(''); setCpPwShow(false); setCpOpen(true); }} title="Đổi mật khẩu" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                    <Key size={12} strokeWidth={1.9} />
+                  </span>
+                  {!a.disabled ? (
+                    <span onClick={() => { setAccStatus(prev => ({ ...prev, [a.key]: true })); showToast('Đã vô hiệu hóa tài khoản — có thể khôi phục bất cứ lúc nào'); }} title="Vô hiệu hóa (xóa mềm) — có thể khôi phục" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                      <Ban size={12} strokeWidth={1.9} />
+                    </span>
+                  ) : (
+                    <span onClick={() => { const st = {...accStatus}; delete st[a.key]; setAccStatus(st); showToast('Đã khôi phục tài khoản ' + a.email); }} title="Khôi phục tài khoản" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(95,191,134,.06)', border: '1px solid rgba(95,191,134,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fd3a2', cursor: 'pointer' }}>
+                      <RotateCcw size={12} strokeWidth={2} />
+                    </span>
+                  )}
+                  <span onClick={() => { setHdName(a.name); setHdEmail(a.email); setHdKey(a.key); setHdOpen(true); }} title="Xóa vĩnh viễn (xóa cứng)" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                    <Trash2 size={12} strokeWidth={1.9} />
+                  </span>
                 </div>
               </div>
             ))}
@@ -376,6 +446,151 @@ export default function AdminRolesPage() {
               <span onClick={() => setIsAdding(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
               <span onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', ...(ok ? {} : { opacity: .45 }) }}>
                 Tạo tài khoản
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {edOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 81, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '480px', maxWidth: '94vw', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Phân quyền · Tài khoản</div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>Sửa tài khoản</div>
+              </div>
+              <span onClick={() => setEdOpen(false)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
+                <X size={16} />
+              </span>
+            </div>
+            <div style={{ padding: '20px 24px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên hiển thị</div>
+                <input value={edName} onChange={e => setEdName(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Email đăng nhập</div>
+                <input value={edEmail} onChange={e => setEdEmail(e.target.value)} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+              </div>
+              {edEmail !== edOrig && (
+                <div style={{ display: 'flex', gap: '9px', padding: '11px 14px', background: 'rgba(224,164,78,.06)', border: '1px solid rgba(224,164,78,.25)', borderRadius: '11px' }}>
+                  <AlertCircle size={15} color="#e7b869" style={{ flex: 'none', marginTop: '1px' }} />
+                  <span style={{ fontSize: '11.5px', color: '#e2c9a0', lineHeight: 1.5 }}>
+                    Email là <b style={{ color: '#e7b869' }}>định danh đăng nhập</b> — đổi email sẽ gửi thư xác minh tới địa chỉ mới, tài khoản bị <b style={{ color: '#e7b869' }}>đăng xuất mọi thiết bị</b> và phải đăng nhập lại bằng email mới. Mật khẩu giữ nguyên.
+                  </span>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
+              <span style={{ flex: 1 }}></span>
+              <span onClick={() => setEdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
+              <span onClick={() => { setAccEdits(prev => ({ ...prev, [edOrig]: { name: edName, email: edEmail } })); setEdOpen(false); showToast('Đã lưu thay đổi cho ' + edName); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && edEmail.includes('@') ? 1 : 0.45, pointerEvents: edName.trim() && edEmail.includes('@') ? 'auto' : 'none' }}>
+                Lưu thay đổi
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cpOpen && (() => {
+        let cps = 0;
+        if(cpPw.length>=8) cps=1;
+        if(cpPw.length>=10&&/[a-z]/.test(cpPw)&&/[A-Z]/.test(cpPw)&&/\d/.test(cpPw)) cps=2;
+        if(cpPw.length>=12&&/[a-z]/.test(cpPw)&&/[A-Z]/.test(cpPw)&&/\d/.test(cpPw)&&/[^A-Za-z0-9]/.test(cpPw)) cps=3;
+        const cCol = cps===1?'#e08a7e':cps===2?'#e3c27e':'#7fd3a2';
+        const cb1 = cps>=1?cCol:pOff;
+        const cb2 = cps>=2?cCol:pOff;
+        const cb3 = cps>=3?cCol:pOff;
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 82, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <div style={{ width: '480px', maxWidth: '94vw', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Phân quyền · Bảo mật</div>
+                  <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>Đổi mật khẩu</div>
+                </div>
+                <span onClick={() => setCpOpen(false)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
+                  <X size={16} />
+                </span>
+              </div>
+              <div style={{ padding: '20px 24px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '10px 13px' }}>
+                  <Key size={15} color="#caa765" />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea' }}>{cpName}</div>
+                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cpEmail}</div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mật khẩu mới</div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input value={cpPw} onChange={e => setCpPw(e.target.value)} type={cpPwShow ? 'text' : 'password'} placeholder="Tối thiểu 8 ký tự" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 44px 12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none', letterSpacing: '.5px' }} />
+                      <span onClick={() => setCpPwShow(!cpPwShow)} style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                        {cpPwShow ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </span>
+                    </div>
+                    <span onClick={() => {
+                      const A='ABCDEFGHJKMNPQRSTUVWXYZ',aa='abcdefghjkmnpqrstuvwxyz',dd='23456789',ss='!@#$%&*'; 
+                      const pick=(s:string,n:number)=>Array.from({length:n},()=>s.charAt(Math.floor(Math.random()*s.length))); 
+                      const arr=pick(A,3).concat(pick(aa,4),pick(dd,3),pick(ss,2)); 
+                      for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i] as string; arr[i]=arr[j] as string; arr[j]=t; }
+                      setCpPw(arr.join('')); setCpPwShow(true);
+                    }} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#caa765', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.3)', padding: '0 14px', borderRadius: '11px', cursor: 'pointer' }}>
+                      Tạo ngẫu nhiên
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '9px' }}>
+                    <span style={{ flex: 1, height: 3, borderRadius: 3, background: cb1 }}></span>
+                    <span style={{ flex: 1, height: 3, borderRadius: 3, background: cb2 }}></span>
+                    <span style={{ flex: 1, height: 3, borderRadius: 3, background: cb3 }}></span>
+                    <span style={{ flex: 'none', minWidth: 52, textAlign: 'right', fontSize: '10.5px', fontWeight: 600, color: !cpPw ? '#57534b' : (cps===0?'#e08a7e':cCol) }}>
+                      {!cpPw ? '' : (cps===0?'Quá ngắn':cps===1?'Yếu':cps===2?'Khá':'Mạnh')}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '9px', padding: '11px 14px', background: 'rgba(224,164,78,.06)', border: '1px solid rgba(224,164,78,.25)', borderRadius: '11px' }}>
+                  <AlertCircle size={15} color="#e7b869" style={{ flex: 'none', marginTop: '1px' }} />
+                  <span style={{ fontSize: '11.5px', color: '#e2c9a0', lineHeight: 1.5 }}>
+                    Sau khi đổi, tài khoản bị <b style={{ color: '#e7b869' }}>đăng xuất khỏi mọi thiết bị</b> và phải đăng nhập lại bằng mật khẩu mới.
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
+                <span style={{ flex: 1 }}></span>
+                <span onClick={() => setCpOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
+                <span onClick={() => { setCpOpen(false); showToast('Đã đổi mật khẩu cho ' + cpName); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: cpPw.length >= 8 ? 1 : 0.45, pointerEvents: cpPw.length >= 8 ? 'auto' : 'none' }}>
+                  Đổi mật khẩu
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {hdOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 84, background: 'rgba(6,6,9,.75)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '470px', maxWidth: '94vw', background: '#141319', border: '1px solid rgba(224,105,122,.3)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ padding: '22px 24px 0', display: 'flex', gap: '13px' }}>
+              <span style={{ width: '42px', height: '42px', flex: 'none', borderRadius: '12px', background: 'rgba(224,105,122,.12)', border: '1px solid rgba(224,105,122,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={18} color="#e88b99" strokeWidth={1.9} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#f3f0ea' }}>Xóa vĩnh viễn tài khoản?</div>
+                <div style={{ fontSize: '12px', color: '#c5c0b6', marginTop: '5px' }}>
+                  <b style={{ color: '#f3f0ea' }}>{hdName}</b> · {hdEmail}
+                </div>
+              </div>
+            </div>
+            <div style={{ margin: '15px 24px 0', padding: '12px 14px', background: 'rgba(224,105,122,.07)', border: '1px solid rgba(224,105,122,.3)', borderRadius: '11px', fontSize: '11.5px', color: '#d9a1a8', lineHeight: 1.6 }}>
+              Hành động <b style={{ color: '#e88b99' }}>không thể hoàn tác</b>. Quyền truy cập bị thu hồi ngay; dữ liệu nghiệp vụ liên quan (booking, hoá đơn) được giữ lại và ẩn danh hóa. Nếu chỉ cần tạm khóa, hãy dùng <b style={{ color: '#e7b869' }}>Vô hiệu hóa (xóa mềm)</b>.
+            </div>
+            <div style={{ display: 'flex', gap: '10px', padding: '18px 24px 20px', justifyContent: 'flex-end' }}>
+              <span onClick={() => setHdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
+              <span onClick={() => { setAccGone(prev => ({ ...prev, [hdKey]: true })); setHdOpen(false); showToast('Đã xóa vĩnh viễn tài khoản ' + hdEmail); }} style={{ fontSize: '12.5px', fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#e0697a,#b64553)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer' }}>
+                Xóa vĩnh viễn
               </span>
             </div>
           </div>
