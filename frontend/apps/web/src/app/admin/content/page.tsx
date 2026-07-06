@@ -1372,20 +1372,21 @@ export default function AdminContentPage() {
                 </div>
               </div>
 
-              {editBannerId && (
-                <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                  <span onClick={() => !isDeletingBanner && handleDeleteBanner(editBannerId)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', borderRadius: '11px', fontSize: '13px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.06)', border: '1px solid rgba(224,105,122,.25)', cursor: isDeletingBanner ? 'not-allowed' : 'pointer', opacity: isDeletingBanner ? 0.6 : 1 }}>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
+              <div>
+                {editBannerId && (
+                  <span onClick={() => !isDeletingBanner && handleDeleteBanner(editBannerId)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.06)', border: '1px solid rgba(224,105,122,.25)', cursor: isDeletingBanner ? 'not-allowed' : 'pointer', opacity: isDeletingBanner ? 0.6 : 1 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     {isDeletingBanner ? 'Đang xóa...' : 'Xóa banner'}
                   </span>
-                </div>
-              )}
-
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
-              <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={!isSubmitting ? handleSaveBanner : undefined} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : (editBannerId ? 'Cập nhật' : 'Thêm banner')}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span onClick={closeDrawer} style={{ fontSize: '13px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', cursor: 'pointer' }}>Hủy</span>
+                <span onClick={!isSubmitting ? handleSaveBanner : undefined} style={{ fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>{isSubmitting ? 'Đang lưu...' : (editBannerId ? 'Cập nhật' : 'Thêm banner')}</span>
+              </div>
             </div>
           </div>
         </div>
