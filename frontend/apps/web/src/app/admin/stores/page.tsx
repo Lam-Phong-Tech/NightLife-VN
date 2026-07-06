@@ -818,22 +818,27 @@ function AdminStoresContent() {
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Video quán</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-                {videos.map((vd: any) => (
+                {videos.map((vd: any) => {
+                  const videoUrl = vd.thumb || vd.url;
+                  const isYoutube = videoUrl?.includes('youtube.com') || videoUrl?.includes('youtu.be');
+                  const metaText = vd.meta || (isYoutube ? 'YouTube' : 'Tải lên');
+                  return (
                   <div key={vd.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '12px', padding: '9px 12px 9px 9px' }}>
-                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: vd.thumb ? (vd.thumb.startsWith('linear-gradient') ? vd.thumb : `url(${resolveClientUrl(getYoutubeThumb(vd.thumb))}) center/cover no-repeat`) : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 74, height: 44, flex: 'none', borderRadius: 8, background: videoUrl ? (videoUrl.startsWith('linear-gradient') ? videoUrl : `url(${resolveClientUrl(getYoutubeThumb(videoUrl))}) center/cover no-repeat`) : g2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg>
                       </span>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vd.title || vd.url}</div>
-                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px' }}>{vd.meta || 'Tải lên'}</div>
+                      <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '2px' }}>{metaText}</div>
                     </div>
                     <span onClick={() => removeVideo(vd.id)} style={{ width: 30, height: 30, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }} title="Xóa video">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                     </span>
                   </div>
-                ))}
+                  );
+                })}
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '12px', padding: '0 12px' }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e06c75" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="#e06c75"/></svg>

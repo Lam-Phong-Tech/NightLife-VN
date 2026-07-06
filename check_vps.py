@@ -33,5 +33,5 @@ if __name__ == "__main__":
     # 2. Database check
     # 3. Prisma status
     
-    command = "pm2 logs app-api.demonightlight.test9.io.vn --lines 50 --nostream"
+    command = "cd /var/www/api.demonightlight.test9.io.vn && npx prisma migrate resolve --applied 20260625000000_init_nightlife_p0 && npx prisma migrate deploy && pnpm build && pm2 restart app-api.demonightlight.test9.io.vn"
     execute_remote_command(ip, username, password, command)
