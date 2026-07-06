@@ -436,7 +436,7 @@ export default function AdminCouponsPage() {
                 <div style={{ flex: 1, padding: '13px 15px', minWidth: 0 }}>
                   <div style={{ fontSize: '21px', fontWeight: 800, color: '#e3c27e' }}>{discountType === 'pct' ? '-' + discountVal : '-' + discountVal.replace('K', 'K ₫')}</div>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fName || 'Tên ưu đãi...'}</div>
-                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{scope === 'all' ? 'Toàn hệ thống' : \`\${selectedStores.length} quán\`} · HSD {duration}</div>
+                  <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{scope === 'all' ? 'Toàn hệ thống' : `${selectedStores.length} quán`} · HSD {duration}</div>
                 </div>
                 <div style={{ width: 62, flex: 'none', borderLeft: '1.5px dashed rgba(212,178,106,.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#d4b26a' }}>
                   <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
