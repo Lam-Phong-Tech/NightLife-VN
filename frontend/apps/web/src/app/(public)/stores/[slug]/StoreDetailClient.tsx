@@ -954,7 +954,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
                     onClick={toggleFavorite}
                   >
-                    <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+                    <Heart size={18} fill={isFavorite ? "var(--vy-favorite)" : "none"} color={isFavorite ? "var(--vy-favorite)" : "currentColor"} />
                   </IconButton>
                 </div>
               </div>
@@ -1530,10 +1530,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           bottom: 14px;
         }
 
-        .hero-name h1,
-        .desktop-title h1 {
+        .hero-name h1 {
           margin: 0;
           color: #fff;
+          line-height: 1.02;
+          letter-spacing: 0;
+        }
+
+        .desktop-title h1 {
+          margin: 0;
+          color: var(--vy-text);
           line-height: 1.02;
           letter-spacing: 0;
         }
@@ -1585,7 +1591,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-name b.closed,
         .closed-pill {
           color: #bfb7aa;
-          background: rgba(255, 255, 255, .06);
+          background: var(--vy-surface-2);
           border: 1px solid var(--vy-border);
         }
 
@@ -1602,14 +1608,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           align-items: stretch;
           border-top: 1px solid var(--vy-border);
-          border-bottom: 1px solid rgba(255, 255, 255, .07);
+          border-bottom: 1px solid var(--vy-border);
         }
 
         .quick-stats {
           display: none;
           align-items: stretch;
           border-top: 1px solid var(--vy-border);
-          border-bottom: 1px solid rgba(255, 255, 255, .07);
+          border-bottom: 1px solid var(--vy-border);
           padding: 16px 4px 10px;
         }
 
@@ -1625,13 +1631,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .quick-stats i,
         .desktop-stats div + div {
-          border-left: 1px solid rgba(255, 255, 255, .08);
+          border-left: 1px solid var(--vy-border);
         }
 
         .quick-stats strong,
         .desktop-stats strong {
           display: block;
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           font-size: 14px;
           line-height: 1.25;
         }
@@ -1790,7 +1796,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .section-title span.section-kicker-address {
           max-width: min(440px, 72vw);
-          color: #d5c9b7;
+          color: var(--vy-muted);
           font-size: 12px;
           font-weight: 700;
           line-height: 1.35;
@@ -1882,7 +1888,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 186px;
           border-radius: 8px;
           overflow: hidden;
-          background: #15161a;
+          background: var(--vy-surface-2);
           border: 1px solid var(--vy-border-gold-12);
         }
 
@@ -2055,7 +2061,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 7px 10px;
           border: 1px solid var(--vy-border);
           border-radius: 8px;
-          background: rgba(12, 12, 15, .36);
+          background: var(--vy-surface-2);
         }
 
         .booking-card label.booking-field {
@@ -2104,7 +2110,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-field input::placeholder,
         .booking-note-box::placeholder {
-          color: rgba(197, 192, 182, .62);
+          color: var(--vy-faint);
           opacity: 1;
         }
 
@@ -2122,7 +2128,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 31px;
           border: 1px solid var(--vy-border);
           border-radius: 8px;
-          background: rgba(12, 12, 15, .42);
+          background: var(--vy-surface-2);
           color: var(--vy-muted);
           padding: 0 12px;
           font-size: 12px;
@@ -2185,7 +2191,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 9px 12px;
           border: 1px solid rgba(212, 178, 106, .2);
           border-radius: 8px;
-          background: rgba(12, 12, 15, .36);
+          background: var(--vy-surface-2);
           color: var(--vy-text);
           font-size: 12px;
           font-family: inherit;
@@ -2383,7 +2389,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           gap: 4px;
           margin-top: 3px;
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           font-size: 10px;
           line-height: 1.25;
         }
@@ -2415,7 +2421,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .coupon-copy b {
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           font-size: 20px;
           margin-right: 8px;
         }
@@ -2533,7 +2539,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .menu-row > b {
           flex: none;
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           font-size: 13px;
           white-space: nowrap;
         }
@@ -2560,21 +2566,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           padding: 10px 13px;
           border-radius: 8px;
           background: var(--vy-surface-1);
-          border: 1px solid rgba(255, 255, 255, .07);
+          border: 1px solid var(--vy-border);
         }
 
         .hours-list div.today {
-          background: linear-gradient(135deg, rgba(212, 178, 106, .14), rgba(255, 255, 255, .03));
+          background: linear-gradient(135deg, rgba(212, 178, 106, .14), transparent);
           border-color: rgba(212, 178, 106, .4);
         }
 
         .hours-list span {
-          color: #e7e1d4;
+          color: var(--vy-text);
           font-size: 13px;
         }
 
         .hours-list strong {
-          color: #e3c27e;
+          color: var(--vy-gold-hi);
           font-size: 13px;
           text-align: right;
         }

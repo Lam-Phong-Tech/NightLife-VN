@@ -41,6 +41,7 @@
   --vy-gold-pale: #f0dda8;
   --vy-gold-icon: #d9bd84;
   --vy-gold-soft-bg: rgba(212, 178, 106, 0.12);
+  --vy-favorite: #d4b26a;
   --vy-gold-grad: linear-gradient(135deg, #fff7d7 0%, #f7d978 42%, #d5a23a 100%);
   --vy-on-gold: #241a0a;
   --vy-success: #7fd3a2;
@@ -75,6 +76,7 @@ html.vy-light {
   --vy-gold-pale: #8f6a2a;
   --vy-gold-icon: #9c7630;
   --vy-gold-soft-bg: rgba(168, 124, 52, 0.12);
+  --vy-favorite: #e11d48;
   --vy-success: #1f8a5b;
   --vy-warn: #b07818;
   --vy-error: #c2455c;
