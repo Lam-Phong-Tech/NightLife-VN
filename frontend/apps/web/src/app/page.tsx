@@ -1084,7 +1084,7 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
   );
 }
 
-function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?: boolean }) {
+function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; compact?: boolean }) {
   return (
     <Link
       href={item.href}
@@ -1114,6 +1114,125 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.place}</div>
       </div>
       <span style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".03em" }}>Xem ưu đãi</span>
+    </Link>
+  );
+}
+
+function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?: boolean }) {
+  const imageSize = compact ? 78 : 92;
+
+  return (
+    <Link
+      href={item.href}
+      data-testid="home-coupon-cta"
+      aria-label={`Xem ưu đãi ${item.title} tại ${item.place}`}
+      style={{
+        position: "relative",
+        display: "grid",
+        gridTemplateColumns: `${imageSize}px minmax(0, 1fr)`,
+        alignItems: "center",
+        gap: compact ? "11px" : "14px",
+        minHeight: compact ? 104 : 124,
+        padding: compact ? "11px" : "14px",
+        borderRadius: homeCardRadius,
+        color: colors.text,
+        border: "1px solid rgba(240,221,168,.18)",
+        background:
+          "linear-gradient(135deg, rgba(255,255,255,.055), rgba(255,255,255,.025) 44%, rgba(212,178,106,.075))",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,.05), 0 14px 28px rgba(0,0,0,.22)",
+        overflow: "hidden",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 18,
+          bottom: 18,
+          width: 3,
+          borderRadius: "0 999px 999px 0",
+          background: `linear-gradient(180deg, ${colors.goldSoft}, ${colors.gold})`,
+        }}
+      />
+      <PlaceholderMedia
+        src={item.img}
+        alt={item.title ?? "Coupon"}
+        label="Ảnh ưu đãi"
+        style={{
+          width: imageSize,
+          height: imageSize,
+          borderRadius: compact ? 14 : 16,
+          border: "1px solid rgba(240,221,168,.20)",
+          boxShadow: "0 10px 20px rgba(0,0,0,.25)",
+          overflow: "hidden",
+        }}
+      />
+      <div style={{ minWidth: 0, display: "grid", gap: compact ? 5 : 7 }}>
+        <span
+          style={{
+            justifySelf: "start",
+            maxWidth: "100%",
+            borderRadius: 999,
+            padding: compact ? "4px 9px" : "5px 11px",
+            color: "#241a0a",
+            background: `linear-gradient(135deg, ${colors.goldSoft}, ${colors.gold})`,
+            fontSize: compact ? "13px" : "15px",
+            lineHeight: 1,
+            fontWeight: 950,
+            boxShadow: "0 8px 18px rgba(212,178,106,.20)",
+          }}
+        >
+          {item.value}
+        </span>
+        <div
+          style={{
+            minWidth: 0,
+            fontSize: compact ? "13px" : "15px",
+            lineHeight: 1.22,
+            fontWeight: 900,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {item.title}
+        </div>
+        <div
+          style={{
+            color: colors.muted,
+            fontSize: compact ? "11px" : "12px",
+            lineHeight: 1.36,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {item.place}
+        </div>
+        <span
+          style={{
+            justifySelf: "start",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            minHeight: compact ? 26 : 30,
+            borderRadius: 999,
+            padding: compact ? "0 10px" : "0 12px",
+            color: colors.goldSoft,
+            background: "rgba(212,178,106,.12)",
+            border: "1px solid rgba(212,178,106,.22)",
+            fontSize: compact ? "11px" : "12px",
+            fontWeight: 900,
+            letterSpacing: ".01em",
+          }}
+        >
+          Xem ưu đãi
+          <ChevronRight size={compact ? 13 : 14} strokeWidth={2.6} />
+        </span>
+      </div>
     </Link>
   );
 }
