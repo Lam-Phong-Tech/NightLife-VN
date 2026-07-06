@@ -80,8 +80,8 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     <main
       style={{
         minHeight: "100vh",
-        background: "#0c0c0f",
-        color: "#f3f0ea",
+        background: "var(--vy-bg)",
+        color: "var(--vy-text)",
         padding: "clamp(22px, 5vw, 56px) clamp(16px, 5vw, 48px)",
       }}
     >
@@ -96,7 +96,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
             <p
               style={{
                 margin: 0,
-                color: "#d4b26a",
+                color: "var(--vy-gold)",
                 fontSize: "12px",
                 fontWeight: 800,
                 letterSpacing: "1.8px",
@@ -121,7 +121,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               style={{
                 maxWidth: "680px",
                 margin: "16px 0 0",
-                color: "#c5c0b6",
+                color: "var(--vy-text-2)",
                 fontSize: "16px",
                 lineHeight: 1.7,
               }}
@@ -147,10 +147,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               placeholder="Tìm bài viết..."
               style={{
                 minHeight: "42px",
-                border: "1px solid rgba(212,178,106,.22)",
+                border: "1px solid var(--vy-border-gold-22)",
                 borderRadius: "8px",
-                background: "rgba(255,255,255,.045)",
-                color: "#f3f0ea",
+                background: "var(--vy-surface-2)",
+                color: "var(--vy-text)",
                 padding: "0 13px",
               }}
             />
@@ -160,10 +160,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               defaultValue={params.tag ?? ""}
               style={{
                 minHeight: "42px",
-                border: "1px solid rgba(212,178,106,.22)",
+                border: "1px solid var(--vy-border-gold-22)",
                 borderRadius: "8px",
-                background: "#111114",
-                color: "#f3f0ea",
+                background: "var(--vy-surface)",
+                color: "var(--vy-text)",
                 padding: "0 12px",
               }}
             >
@@ -180,8 +180,8 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 minHeight: "42px",
                 border: 0,
                 borderRadius: "8px",
-                background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
-                color: "#241a0a",
+                background: "var(--vy-gold-grad)",
+                color: "var(--vy-on-gold)",
                 padding: "0 18px",
                 fontWeight: 900,
                 cursor: "pointer",
@@ -211,13 +211,13 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 whiteSpace: "nowrap",
                 textDecoration: "none",
                 ...(!params.category ? {
-                  border: "1px solid rgba(212,178,106,.58)",
-                  background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
-                  color: "#241a0a",
+                  border: "1px solid var(--vy-gold)",
+                  background: "var(--vy-gold-grad)",
+                  color: "var(--vy-on-gold)",
                 } : {
-                  border: "1px solid rgba(255,255,255,.1)",
-                  background: "rgba(255,255,255,.045)",
-                  color: "#dcd6ca",
+                  border: "1px solid var(--vy-border)",
+                  background: "var(--vy-surface-2)",
+                  color: "var(--vy-text-2)",
                 })
               }}
             >
@@ -239,13 +239,13 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                     whiteSpace: "nowrap",
                     textDecoration: "none",
                     ...(isActive ? {
-                      border: "1px solid rgba(212,178,106,.58)",
-                      background: "linear-gradient(135deg,#f0dda8,#d4b26a)",
-                      color: "#241a0a",
+                      border: "1px solid var(--vy-gold)",
+                      background: "var(--vy-gold-grad)",
+                      color: "var(--vy-on-gold)",
                     } : {
-                      border: "1px solid rgba(255,255,255,.1)",
-                      background: "rgba(255,255,255,.045)",
-                      color: "#dcd6ca",
+                      border: "1px solid var(--vy-border)",
+                      background: "var(--vy-surface-2)",
+                      color: "var(--vy-text-2)",
                     })
                   }}
                 >
@@ -265,12 +265,12 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               gridTemplateColumns: "minmax(0, 1.08fr) minmax(300px, .92fr)",
               gap: "0",
               marginTop: "28px",
-              border: "1px solid rgba(212,178,106,.24)",
+              border: "1px solid var(--vy-border-gold-22)",
               borderRadius: "8px",
               overflow: "hidden",
               color: "inherit",
               textDecoration: "none",
-              background: "rgba(255,255,255,.04)",
+              background: "var(--vy-surface-1)",
             }}
           >
             <span
@@ -293,7 +293,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.5))",
+                  background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.6))",
                 }}
               />
             </span>
@@ -303,8 +303,8 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                   display: "inline-flex",
                   borderRadius: "999px",
                   padding: "6px 10px",
-                  color: "#241a0a",
-                  background: "#f0dda8",
+                  color: "var(--vy-on-gold)",
+                  background: "var(--vy-gold-pale)",
                   fontSize: "11px",
                   fontWeight: 900,
                 }}
@@ -322,7 +322,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               >
                 {featuredPost.title}
               </h2>
-              <p style={{ margin: "14px 0 0", color: "#c5c0b6", fontSize: "15px", lineHeight: 1.7 }}>
+              <p style={{ margin: "14px 0 0", color: "var(--vy-text-2)", fontSize: "15px", lineHeight: 1.7 }}>
                 {featuredPost.description}
               </p>
               <div
@@ -332,7 +332,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                   flexWrap: "wrap",
                   alignItems: "center",
                   marginTop: "22px",
-                  color: "#8c8679",
+                  color: "var(--vy-muted)",
                   fontSize: "12.5px",
                   fontWeight: 700,
                 }}
@@ -340,7 +340,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 <span>{formatDate(featuredPost.publishedAt)}</span>
                 <span aria-hidden="true">·</span>
                 <span>{featuredPost.readTime}</span>
-                <span style={{ marginLeft: "auto", color: "#f0dda8" }}>Đọc tiếp</span>
+                <span style={{ marginLeft: "auto", color: "var(--vy-gold-pale)" }}>Đọc tiếp</span>
               </div>
             </article>
           </Link>
@@ -362,10 +362,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
               style={{
                 color: "inherit",
                 textDecoration: "none",
-                border: "1px solid rgba(255,255,255,.1)",
+                border: "1px solid var(--vy-border)",
                 borderRadius: "8px",
                 overflow: "hidden",
-                background: "rgba(255,255,255,.035)",
+                background: "var(--vy-surface-1)",
               }}
             >
               <span
@@ -387,21 +387,21 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                   style={{
                     position: "absolute",
                     inset: 0,
-                    background: "linear-gradient(180deg,rgba(12,12,15,.05),rgba(12,12,15,.45))",
+                    background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.6))",
                   }}
                 />
               </span>
               <article style={{ padding: "16px" }}>
-                <span style={{ color: "#d4b26a", fontSize: "11px", fontWeight: 900 }}>
+                <span style={{ color: "var(--vy-gold)", fontSize: "11px", fontWeight: 900 }}>
                   {post.category}
                 </span>
                 <h2 style={{ margin: "8px 0 0", fontSize: "18px", lineHeight: 1.3, fontWeight: 850 }}>
                   {post.title}
                 </h2>
-                <p style={{ margin: "8px 0 0", color: "#b6b1a6", fontSize: "13.5px", lineHeight: 1.55 }}>
+                <p style={{ margin: "8px 0 0", color: "var(--vy-text-2)", fontSize: "13.5px", lineHeight: 1.55 }}>
                   {post.description}
                 </p>
-                <div style={{ marginTop: "14px", color: "#8c8679", fontSize: "12px", fontWeight: 700 }}>
+                <div style={{ marginTop: "14px", color: "var(--vy-muted)", fontSize: "12px", fontWeight: 700 }}>
                   {formatDate(post.publishedAt)} · {post.readTime}
                 </div>
               </article>
@@ -413,10 +413,10 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           <div
             style={{
               marginTop: "18px",
-              border: "1px dashed rgba(212,178,106,.26)",
+              border: "1px dashed var(--vy-border-gold-22)",
               borderRadius: "8px",
               padding: "24px",
-              color: "#c5c0b6",
+              color: "var(--vy-text-2)",
               textAlign: "center",
             }}
           >
