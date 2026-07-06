@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
+  NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -122,11 +124,10 @@ const authCookieMaxAgeMs = 24 * 60 * 60 * 1000;
 const oauthCookieMaxAgeMs = 10 * 60 * 1000;
 const passwordResetTtlMs = 15 * 60 * 1000;
 const passwordResetTtlMinutes = 15;
-const passwordResetRequestMessage =
-  'Nếu email tồn tại, mã xác nhận đã được gửi và có hiệu lực trong 15 phút.';
-
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
@@ -362,12 +363,12 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + passwordResetTtlMs);
     const user = await this.usersService.findByEmail(email);
     const response = {
-      message: passwordResetRequestMessage,
+      message: 'Mã xác nhận đã được gửi tới email và có hiệu lực trong 15 phút.',
       expiresInMinutes: passwordResetTtlMinutes,
     };
 
     if (!user || user.deletedAt || user.status !== 'ACTIVE') {
-      return response;
+      throw new NotFoundException('Password reset account not found');
     }
 
     const code = this.generatePasswordResetCode();
@@ -388,13 +389,16 @@ export class AuthService {
         code,
         expiresAt,
       });
-    } catch {
+    } catch (error) {
       await this.prisma.passwordResetToken.update({
         where: { id: token.id },
         data: { usedAt: now },
       });
+      this.logger.error(
+        `Password reset email failed for ${this.maskEmailForLog(user.email)}: ${this.errorMessage(error)}`,
+      );
       throw new ServiceUnavailableException(
-        'Password reset email is not configured',
+        'Password reset email could not be sent',
       );
     }
 
@@ -863,6 +867,26 @@ export class AuthService {
       this.configService.get<string>('JWT_SECRET') ||
       'nightlife-password-reset-local-secret'
     );
+  }
+
+  private errorMessage(error: unknown) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return String(error);
+  }
+
+  private maskEmailForLog(email: string) {
+    const [name = '', domain = ''] = email.split('@');
+    if (!domain) {
+      return '***';
+    }
+
+    const visibleName =
+      name.length <= 2 ? `${name[0] ?? '*'}***` : `${name.slice(0, 2)}***`;
+
+    return `${visibleName}@${domain}`;
   }
 
   private setAuthCookies(response: Response, authResponse: AuthCookiePayload) {
