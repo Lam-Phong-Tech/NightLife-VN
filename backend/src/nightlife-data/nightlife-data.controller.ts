@@ -134,6 +134,8 @@ import {
 import { NightlifeDataService } from './nightlife-data.service';
 import {
   AdminStoreVideoQueryDto,
+  PublicHomeContentQueryDto,
+  PublicHotVideoInteractionDto,
   UpdateHotVideosDto,
 } from './dto/admin-video.dto';
 
@@ -168,6 +170,40 @@ export class NightlifeDataController {
   @Get('content/hot-videos/:cityCode')
   listPublicHotVideos(@Param('cityCode') cityCode: string) {
     return this.nightlifeDataService.listPublicHotVideos(cityCode);
+  }
+
+  @Get('content/recommendations')
+  listPublicHomeRecommendations(@Query() query: PublicHomeContentQueryDto) {
+    return this.nightlifeDataService.listPublicHomeRecommendations(query);
+  }
+
+  @Get('content/tours')
+  listPublicTours(@Query() query: PublicHomeContentQueryDto) {
+    return this.nightlifeDataService.listPublicTours(query);
+  }
+
+  @Post('content/hot-videos/:mediaId/view')
+  trackPublicHotVideoView(
+    @Param('mediaId') mediaId: string,
+    @Body() dto: PublicHotVideoInteractionDto,
+  ) {
+    return this.nightlifeDataService.trackPublicHotVideoInteraction(
+      mediaId,
+      'view',
+      dto,
+    );
+  }
+
+  @Post('content/hot-videos/:mediaId/like')
+  trackPublicHotVideoLike(
+    @Param('mediaId') mediaId: string,
+    @Body() dto: PublicHotVideoInteractionDto,
+  ) {
+    return this.nightlifeDataService.trackPublicHotVideoInteraction(
+      mediaId,
+      'like',
+      dto,
+    );
   }
 
   @Roles('ADMIN')

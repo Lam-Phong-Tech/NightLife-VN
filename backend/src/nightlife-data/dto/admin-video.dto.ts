@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class AdminStoreVideoQueryDto {
   @ApiPropertyOptional()
@@ -34,4 +41,51 @@ export class UpdateHotVideosDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds: string[];
+}
+
+export class PublicHomeContentQueryDto {
+  @ApiPropertyOptional({ example: 'hn' })
+  @IsOptional()
+  @IsString()
+  cityCode?: string;
+
+  @ApiPropertyOptional({ example: 'LOUNGE,CLUB' })
+  @IsOptional()
+  @IsString()
+  categories?: string;
+
+  @ApiPropertyOptional({ example: 'moonlight-bar,neon-club' })
+  @IsOptional()
+  @IsString()
+  storeSlugs?: string;
+
+  @ApiPropertyOptional({ default: 8, maximum: 24 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  limit?: number = 8;
+}
+
+export class PublicHotVideoInteractionDto {
+  @ApiPropertyOptional({ example: 'home_video' })
+  @IsOptional()
+  @IsString()
+  source?: string;
+
+  @ApiPropertyOptional({ example: 'mobile_home' })
+  @IsOptional()
+  @IsString()
+  surface?: string;
+
+  @ApiPropertyOptional({ example: 'anon_abc123' })
+  @IsOptional()
+  @IsString()
+  anonymousId?: string;
+
+  @ApiPropertyOptional({ example: 'moonlight-bar' })
+  @IsOptional()
+  @IsString()
+  storeSlug?: string;
 }

@@ -50,9 +50,103 @@ export type PublicHotVideo = {
   storeSlug?: string | null;
   href?: string | null;
   createdAt?: string;
+  viewCount?: number;
+  likeCount?: number;
+};
+
+export type PublicHomeRecommendation = {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description?: string | null;
+  city: string;
+  cityCode?: string;
+  district?: string | null;
+  area?: {
+    id: string;
+    code: string;
+    name: string;
+    city: string;
+    district?: string | null;
+    cityCode?: string;
+  } | null;
+  thumbnailUrl?: string | null;
+  href: string;
+  score: number;
+  reason: string;
+  signals?: {
+    viewCount?: number;
+    bookingCount?: number;
+    hasActiveCoupon?: boolean;
+  };
+  activeCoupon?: {
+    id: string;
+    name: string;
+    discountType: string;
+    discountValue: number;
+  } | null;
+};
+
+export type PublicTourItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  cityCode: "all" | "hn" | "hcm" | string;
+  area: string;
+  durationHours: number;
+  priceFromVnd: number;
+  href: string;
+  thumbnailUrl?: string | null;
+  stops: Array<{
+    order: number;
+    id: string;
+    name: string;
+    slug: string;
+    category: string;
+    description?: string | null;
+    city: string;
+    district?: string | null;
+    area?: {
+      id: string;
+      code: string;
+      name: string;
+      city: string;
+      district?: string | null;
+      cityCode?: string;
+    } | null;
+    thumbnailUrl?: string | null;
+    href: string;
+    activeCouponName?: string | null;
+  }>;
+};
+
+export type PublicHomeContentParams = {
+  cityCode?: "all" | "hn" | "hcm" | string;
+  categories?: string;
+  storeSlugs?: string;
+  limit?: number;
+};
+
+export type PublicHotVideoMetric = {
+  recorded: boolean;
+  mediaId: string;
+  viewCount: number;
+  likeCount: number;
 };
 
 const toParams = (params: PublicCmsContentListParams | AdminCmsContentListParams = {}) => {
+  const searchParams: Record<string, string> = {};
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    searchParams[key] = String(value);
+  });
+
+  return searchParams;
+};
+
+const toHomeContentParams = (params: PublicHomeContentParams = {}) => {
   const searchParams: Record<string, string> = {};
 
   Object.entries(params).forEach(([key, value]) => {
@@ -73,6 +167,30 @@ export const contentApi = {
   },
   hotVideos: (cityCode: "all" | "hn" | "hcm") =>
     apiClient<PublicHotVideo[]>(`/content/hot-videos/${encodeURIComponent(cityCode)}`),
+  recommendations: (params?: PublicHomeContentParams) =>
+    apiClient<PublicHomeRecommendation[]>("/content/recommendations", {
+      params: toHomeContentParams(params),
+    }),
+  tours: (params?: PublicHomeContentParams) =>
+    apiClient<PublicTourItem[]>("/content/tours", {
+      params: toHomeContentParams(params),
+    }),
+  trackHotVideoView: (
+    mediaId: string,
+    payload?: { source?: string; surface?: string; anonymousId?: string; storeSlug?: string | null },
+  ) =>
+    apiClient<PublicHotVideoMetric>(`/content/hot-videos/${encodeURIComponent(mediaId)}/view`, {
+      method: "POST",
+      data: payload ?? {},
+    }),
+  trackHotVideoLike: (
+    mediaId: string,
+    payload?: { source?: string; surface?: string; anonymousId?: string; storeSlug?: string | null },
+  ) =>
+    apiClient<PublicHotVideoMetric>(`/content/hot-videos/${encodeURIComponent(mediaId)}/like`, {
+      method: "POST",
+      data: payload ?? {},
+    }),
   adminList: (params?: AdminCmsContentListParams) =>
     apiClient<CmsContentItem[]>("/admin/contents", { params: toParams(params) }),
   adminCreate: (payload: Partial<CmsContentItem>) =>
