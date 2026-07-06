@@ -110,6 +110,11 @@ export default function AdminContentPage() {
   const [bannerStatusLabel, setBannerStatusLabel] = useState('');
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerDescription, setBannerDescription] = useState('');
+  const [bannerAspect, setBannerAspect] = useState('21/9');
+  const [bannerStoreSearch, setBannerStoreSearch] = useState('');
+  const [bannerStoreResults, setBannerStoreResults] = useState<any[]>([]);
+  const [bannerLinkedStore, setBannerLinkedStore] = useState<any | null>(null);
+  const [isDeletingBanner, setIsDeletingBanner] = useState(false);
 
   const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
   const [isManagingTags, setIsManagingTags] = useState(false);
@@ -477,7 +482,33 @@ export default function AdminContentPage() {
     setBannerStatusLabel(meta.statusLabel || '');
     setBannerSubtitle(meta.subtitle || '');
     setBannerDescription(meta.description || '');
+    setBannerAspect(meta.aspect || '21/9');
+    setBannerLinkedStore(meta.linkedStore || null);
     setIsAdding('banner');
+  };
+
+  const handleDeleteBanner = async (bannerId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa banner này?')) return;
+    try {
+      setIsDeletingBanner(true);
+      await contentApi.adminDelete(bannerId);
+      fetchBanners();
+      closeDrawer();
+    } catch (err) {
+      console.error(err);
+      alert('Lỗi khi xóa banner');
+    } finally {
+      setIsDeletingBanner(false);
+    }
+  };
+
+  const searchBannerStores = async (q: string) => {
+    setBannerStoreSearch(q);
+    if (!q.trim()) { setBannerStoreResults([]); return; }
+    try {
+      const res = await apiClient<any>('/admin/stores', { params: { search: q, limit: 6 } });
+      if (res?.data) setBannerStoreResults(res.data);
+    } catch (e) { console.error(e); }
   };
 
   const closeDrawer = () => {
@@ -499,6 +530,10 @@ export default function AdminContentPage() {
     setBannerTag('');
     setBannerPos('Trang chủ #1');
     setBannerStatus('Đang hiển thị');
+    setBannerAspect('21/9');
+    setBannerLinkedStore(null);
+    setBannerStoreSearch('');
+    setBannerStoreResults([]);
   };
 
   const handleSaveBanner = async () => {
@@ -533,11 +568,13 @@ export default function AdminContentPage() {
         metadata: {
           tag: bannerTag,
           position: bannerPos,
-          link: bannerLink,
+          link: bannerLinkedStore ? `/quan/${bannerLinkedStore.slug}` : bannerLink,
+          linkedStore: bannerLinkedStore ? { id: bannerLinkedStore.id, name: bannerLinkedStore.name, slug: bannerLinkedStore.slug, category: bannerLinkedStore.category, area: bannerLinkedStore.area } : null,
           imageUrl: finalImageUrl,
           statusLabel: bannerStatusLabel,
           subtitle: bannerSubtitle,
-          description: bannerDescription
+          description: bannerDescription,
+          aspect: bannerAspect
         }
       };
 
@@ -1257,8 +1294,54 @@ export default function AdminContentPage() {
               </div>
 
               <div>
-                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>LIÊN KẾT KHI BẤM</div>
-                <input value={bannerLink} onChange={e => setBannerLink(e.target.value)} placeholder="https://... hoặc /uu-dai/happy-hour" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 16px', color: '#f3f0ea', fontSize: '14px', fontWeight: 500, fontFamily: 'inherit', outline: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase' }}>LIÊN KẾT TỚI QUÁN</div>
+                  <span style={{ fontSize: '10px', color: '#57534b' }}>· chỉ gán 1 quán</span>
+                </div>
+                {bannerLinkedStore ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.3)', borderRadius: '11px' }}>
+                    <span style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg,#d4b26a,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#241a0a', flex: 'none' }}>{(bannerLinkedStore.name || '').substring(0, 2).toUpperCase()}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bannerLinkedStore.name}</div>
+                      <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{bannerLinkedStore.category} · {bannerLinkedStore.area}</div>
+                    </div>
+                    <span onClick={() => { setBannerLinkedStore(null); setBannerLink(''); }} style={{ fontSize: '11px', fontWeight: 600, color: '#e88b99', cursor: 'pointer', padding: '4px 10px', borderRadius: '8px', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.25)' }}>Bỏ chọn</span>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px', marginBottom: '8px' }}>
+                      <Search size={14} style={{ color: '#8c8679', flex: 'none' }} />
+                      <input value={bannerStoreSearch} onChange={e => searchBannerStores(e.target.value)} placeholder="Tìm quán theo tên, loại hình, khu vực..." style={{ flex: 1, background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '13px', outline: 'none' }} />
+                    </div>
+                    {bannerStoreResults.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+                        {bannerStoreResults.map((s: any) => (
+                          <div key={s.id} onClick={() => { setBannerLinkedStore(s); setBannerLink(`/quan/${s.slug}`); setBannerStoreSearch(''); setBannerStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
+                            <span style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg,#caa765,#8c6e3a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#241a0a', flex: 'none' }}>{(s.name || '').substring(0, 2).toUpperCase()}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
+                              <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {s.area}</div>
+                            </div>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#cbb884' }}>Chọn</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>ĐỘ DÀI BANNER</div>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  {[{ label: 'Cao · 16:9', value: '16/9' }, { label: 'Chuẩn · 21:9', value: '21/9' }, { label: 'Mỏng · 4:1', value: '4/1' }].map(opt => (
+                    <span key={opt.value} onClick={() => setBannerAspect(opt.value)} style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '9px', cursor: 'pointer', border: bannerAspect === opt.value ? '1px solid rgba(212,178,106,.5)' : '1px solid rgba(255,255,255,.1)', background: bannerAspect === opt.value ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,.03)', color: bannerAspect === opt.value ? '#f0dda8' : '#9b958a', fontWeight: bannerAspect === opt.value ? 700 : 500 }}>{opt.label}</span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', padding: '9px 12px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '10px', fontSize: '11px', color: '#8c8679', lineHeight: 1.5, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '14px', lineHeight: 1, flex: 'none', marginTop: '1px' }}>ⓘ</span>
+                  <span>Ảnh cần đúng tỷ lệ {bannerAspect === '16/9' ? '16:9' : bannerAspect === '21/9' ? '21:9' : '4:1'} — khuyến nghị {bannerAspect === '16/9' ? '1920×1080px' : bannerAspect === '21/9' ? '1920×820px' : '1920×480px'}, ≤ 2MB. Ảnh sai tỷ lệ sẽ bị cắt giữa (center-crop); chữ và logo quan trọng nên đặt trong vùng 80% giữa ảnh.</span>
+                </div>
               </div>
 
               <div>
@@ -1288,6 +1371,15 @@ export default function AdminContentPage() {
                   </span>
                 </div>
               </div>
+
+              {editBannerId && (
+                <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                  <span onClick={() => !isDeletingBanner && handleDeleteBanner(editBannerId)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', borderRadius: '11px', fontSize: '13px', fontWeight: 600, color: '#e88b99', background: 'rgba(224,105,122,.06)', border: '1px solid rgba(224,105,122,.25)', cursor: isDeletingBanner ? 'not-allowed' : 'pointer', opacity: isDeletingBanner ? 0.6 : 1 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    {isDeletingBanner ? 'Đang xóa...' : 'Xóa banner'}
+                  </span>
+                </div>
+              )}
 
             </div>
             
