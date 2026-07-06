@@ -16029,9 +16029,13 @@ export class NightlifeDataService {
       }),
     };
 
-    const orderBy = {
-      scheduledAt: sortBy === 'oldest' ? 'asc' : 'desc',
-    } as any;
+    let orderBy: any;
+    if (status === 'completed' || status === 'cancelled') {
+      orderBy = { scheduledAt: sortBy === 'oldest' ? 'asc' : 'desc' };
+    } else {
+      // Cho tab 'Tất cả' và 'Mới', ưu tiên những booking vừa được gửi tới
+      orderBy = { createdAt: sortBy === 'oldest' ? 'asc' : 'desc' };
+    }
 
     const [items, total, newCount, completedCount, cancelledCount] =
       await Promise.all([
