@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Bell,
+  CalendarCheck,
   CalendarDays,
   CheckCheck,
   Home,
@@ -19,6 +20,11 @@ import { usePathname } from "next/navigation";
 import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import {
+  DEFAULT_APPEARANCE_CONFIG,
+  getAppearanceConfig,
+  type AppearanceItem,
+} from "@/lib/api/appearance";
 import {
   notificationApi,
   type MemberNotification,
@@ -76,6 +82,45 @@ const bottomNav = [
   { href: "/lich-su-dat-cho", label: "Lịch đặt", icon: CalendarDays },
   { href: "/tai-khoan", label: "Tài khoản", icon: UserRound },
 ];
+
+type BottomNavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+const bottomNavHrefById: Record<string, string> = {
+  n1: "/",
+  n2: "/danh-sach-cast",
+  n3: "/uu-dai",
+  n4: "/lich-su-dat-cho",
+  n5: "/tai-khoan",
+};
+
+const bottomNavIconMap: Record<string, LucideIcon> = {
+  account: UserRound,
+  calendar: CalendarDays,
+  calcheck: CalendarCheck,
+  home: Home,
+  search: Search,
+  ticket: Ticket,
+  user: UserRound,
+};
+
+function mapAppearanceNavItem(item: AppearanceItem, index: number): BottomNavItem {
+  const fallback = bottomNav[index] ?? bottomNav[0] ?? {
+    href: "/",
+    label: "Trang chủ",
+    icon: Home,
+  };
+  const defaultConfig = DEFAULT_APPEARANCE_CONFIG.nav[index] ?? DEFAULT_APPEARANCE_CONFIG.nav[0];
+
+  return {
+    href: bottomNavHrefById[item.id] ?? (defaultConfig ? bottomNavHrefById[defaultConfig.id] : undefined) ?? fallback.href,
+    label: item.label || fallback.label,
+    icon: bottomNavIconMap[item.icon] ?? fallback.icon,
+  };
+}
 
 const footerGroups = [
   {
@@ -1090,6 +1135,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
   const [isMobile, setIsMobile] = useState(false);
   const [shouldSimulate, setShouldSimulate] = useState(false);
+  const [appearanceBottomNav, setAppearanceBottomNav] = useState<BottomNavItem[]>(bottomNav);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -1157,6 +1203,26 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getAppearanceConfig()
+      .then((config) => {
+        if (!cancelled) {
+          setAppearanceBottomNav(config.nav.map(mapAppearanceNavItem));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAppearanceBottomNav(bottomNav);
+        }
+      });
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -1745,7 +1811,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           }}
           className="nl-mobile-bottom-nav"
         >
-          {bottomNav.map((item) => {
+          {appearanceBottomNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
             return (
