@@ -32,6 +32,9 @@ const genericStatusMessages: Record<number, string> = {
 };
 
 const exactMessageTranslations: Record<string, string> = {
+  "password reset account not found": "Email chưa được đăng ký hoặc tài khoản chưa hoạt động.",
+  "password reset email could not be sent":
+    "Chưa gửi được mã xác nhận qua email. Vui lòng thử lại sau hoặc liên hệ Admin.",
   "account is not active": "Tài khoản chưa hoạt động hoặc đã bị khóa.",
   "booking change request not found": "Không tìm thấy yêu cầu đổi lịch booking.",
   "booking not found": "Không tìm thấy booking.",

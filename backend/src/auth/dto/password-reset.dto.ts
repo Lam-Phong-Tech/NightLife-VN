@@ -79,8 +79,7 @@ export class ResetPasswordDto {
 
 export class PasswordResetRequestResponseDto {
   @ApiProperty({
-    example:
-      'Nếu email tồn tại, mã xác nhận đã được gửi và có hiệu lực trong 15 phút.',
+    example: 'Mã xác nhận đã được gửi tới email và có hiệu lực trong 15 phút.',
   })
   message: string;
 

@@ -546,6 +546,64 @@ describe('AuthService', () => {
     });
   });
 
+  it('does not pretend to send a password reset code for an unknown account', async () => {
+    usersService.findByEmail.mockResolvedValue(null);
+
+    await expect(
+      service.requestPasswordReset({ email: 'missing@nightlife.vn' }),
+    ).rejects.toThrow('Password reset account not found');
+
+    expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
+    expect(
+      emailNotificationService.sendPasswordResetCodeEmail,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the reset token when password reset email delivery fails', async () => {
+    const member = {
+      ...user,
+      id: 'member-reset-email-fail',
+      email: 'member@nightlife.vn',
+      displayName: 'Reset Member',
+      role: 'USER',
+      tier: 'FREE',
+      status: 'ACTIVE',
+      deletedAt: null,
+    };
+    const tokenRecord = {
+      id: 'reset-token-email-fail',
+      userId: member.id,
+      email: member.email,
+      codeHash: 'hash',
+      resetTokenHash: null,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      verifiedAt: null,
+      usedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: member,
+    };
+
+    usersService.findByEmail.mockResolvedValue(member as never);
+    prisma.passwordResetToken.create.mockResolvedValue(tokenRecord as never);
+    prisma.passwordResetToken.update.mockResolvedValue({
+      ...tokenRecord,
+      usedAt: new Date(),
+    } as never);
+    emailNotificationService.sendPasswordResetCodeEmail.mockRejectedValue(
+      new Error('SMTP unavailable'),
+    );
+
+    await expect(
+      service.requestPasswordReset({ email: member.email }),
+    ).rejects.toThrow('Password reset email could not be sent');
+
+    expect(prisma.passwordResetToken.update).toHaveBeenCalledWith({
+      where: { id: tokenRecord.id },
+      data: { usedAt: expect.any(Date) },
+    });
+  });
+
   it('sends, verifies, and completes a password reset within 15 minutes', async () => {
     const member = {
       ...user,
@@ -594,7 +652,7 @@ describe('AuthService', () => {
       service.requestPasswordReset({ email: ' Member@Nightlife.vn ' }),
     ).resolves.toEqual({
       message:
-        'Nếu email tồn tại, mã xác nhận đã được gửi và có hiệu lực trong 15 phút.',
+        'Mã xác nhận đã được gửi tới email và có hiệu lực trong 15 phút.',
       expiresInMinutes: 15,
     });
 
