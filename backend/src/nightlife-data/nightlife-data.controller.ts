@@ -1414,14 +1414,67 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/coupons')
   listAdminCoupons(
-    @Query() query: import('./dto/admin-coupon.dto').AdminCouponQueryDto,
+    @Query() query: { page?: number; limit?: number; search?: string },
   ) {
-    return this.nightlifeDataService.listAdminCoupons(query);
+    return this.nightlifeDataService.listAdminGlobalCoupons(query);
   }
 
   @ApiOperation({
-    summary: 'Admin action: Create a global QR coupon (independent flow)',
+    summary: 'Admin action: Create a coupon',
   })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('admin/coupons')
+  createAdminCoupon(
+    @Body() dto: import('./dto/create-admin-coupon.dto').CreateAdminCouponDto,
+  ) {
+    return this.nightlifeDataService.createAdminCoupon(dto);
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: Update a coupon',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/coupons/:id')
+  updateAdminCoupon(
+    @Param('id') id: string,
+    @Body() dto: import('./dto/update-admin-coupon.dto').UpdateAdminCouponDto,
+  ) {
+    return this.nightlifeDataService.updateAdminCoupon(id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: Delete a coupon',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('admin/coupons/:id')
+  deleteAdminCoupon(@Param('id') id: string) {
+    return this.nightlifeDataService.deleteAdminCoupon(id);
+  }
+
+  @ApiOperation({
+    summary: 'Admin action: List coupon issues',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/coupons/issues')
+  listAdminCampaignCouponIssues(
+    @Query()
+    query: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: import('@prisma/client').CouponIssueStatus;
+      adminCouponId?: string;
+    },
+  ) {
+    return this.nightlifeDataService.listAdminGlobalCouponIssues(query);
+  }
+
+  // --- LEGACY COMPATIBILITY ALIASES ---
+
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('admin/global-coupons')
@@ -1431,9 +1484,6 @@ export class NightlifeDataController {
     return this.nightlifeDataService.createAdminCoupon(dto);
   }
 
-  @ApiOperation({
-    summary: 'Admin action: List global QR coupons',
-  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/global-coupons')
@@ -1443,9 +1493,6 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listAdminGlobalCoupons(query);
   }
 
-  @ApiOperation({
-    summary: 'Admin action: List global QR coupon issues',
-  })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/global-coupons/issues')

@@ -43,7 +43,7 @@ export default function AdminCouponsPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const res = await apiClient<any>('/admin/global-coupons', {
+      const res = await apiClient<any>('/admin/coupons', {
         params: { page: 1, limit: 100 } // Get all recent campaigns
       });
       if (res?.data) setCampaigns(res.data);
@@ -56,7 +56,7 @@ export default function AdminCouponsPage() {
     try {
       const statusMap: Record<string, string> = { holding: 'ISSUED', used: 'USED', expired: 'EXPIRED' };
       const statusParam = activeTab === 'all' ? undefined : statusMap[activeTab];
-      const res = await apiClient<any>('/admin/global-coupons/issues', {
+      const res = await apiClient<any>('/admin/coupons/issues', {
         params: { status: statusParam, page: currentPage, limit: adminPageSize }
       });
       if (res?.data) {
@@ -82,10 +82,17 @@ export default function AdminCouponsPage() {
 
   const toggleCampaignStatus = async (e: React.MouseEvent, c: any) => {
     e.stopPropagation();
-    // This is a mock toggle since the backend API for pausing might not exist yet
-    // but we update local state for the UI effect
-    setCampaigns(prev => prev.map(x => x.id === c.id ? { ...x, status: c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' } : x));
-    showToastMsg(c.status === 'ACTIVE' ? `Đã tạm dừng chiến dịch ${c.code}` : `Chiến dịch ${c.code} đang chạy lại`);
+    try {
+      const newStatus = c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+      await apiClient(`/admin/coupons/${c.id}`, {
+        method: 'PATCH',
+        data: { status: newStatus }
+      });
+      setCampaigns(prev => prev.map(x => x.id === c.id ? { ...x, status: newStatus } : x));
+      showToastMsg(c.status === 'ACTIVE' ? `Đã tạm dừng chiến dịch ${c.code}` : `Chiến dịch ${c.code} đang chạy lại`);
+    } catch (err: any) {
+      showToastMsg(err?.message || 'Không thể cập nhật trạng thái');
+    }
   };
 
   const formatCode = (c: any) => c.code ? c.code.toUpperCase() : 'UNKNOWN';
@@ -316,6 +323,27 @@ export default function AdminCouponsPage() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: 1 }}><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>
                   <span style={{ fontSize: '11.5px', color: '#cbb884', lineHeight: 1.5 }}>In hoặc chia sẻ QR này tại quán / campaign. Khách quét → nhận coupon theo hạng; nhân viên quán quét lại để xác nhận sử dụng.</span>
                 </div>
+
+                <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '20px' }}>
+                  <span 
+                    onClick={async () => {
+                      if (confirm(`Bạn có chắc chắn muốn xóa chiến dịch ${vc.code}?`)) {
+                        try {
+                          await apiClient(`/admin/coupons/${vc.id}`, { method: 'DELETE' });
+                          setSelectedCampaign(null);
+                          fetchCampaigns();
+                          showToastMsg(`Đã xóa thành công chiến dịch ${vc.code}`);
+                        } catch (err: any) {
+                          showToastMsg(err?.message || 'Không thể xóa chiến dịch');
+                        }
+                      }
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', background: 'rgba(235,94,85,.1)', border: '1px solid rgba(235,94,85,.3)', borderRadius: '11px', color: '#eb5e55', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                    Xóa chiến dịch (Soft Delete)
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -516,7 +544,7 @@ export default function AdminCouponsPage() {
                     durationDays: durationMap[duration] ?? 30,
                     usageLimit,
                   };
-                  await apiClient('/admin/global-coupons', { method: 'POST', data: payload });
+                  await apiClient('/admin/coupons', { method: 'POST', data: payload });
                   setShowCreate(false);
                   setFName(''); setDiscountVal('10%'); setScope('all'); setSelectedStores([]); setTiers(['Guest','Member','VIP']); setDuration('30 ngày'); setLimit('500 mã'); setLimitCustom('');
                   fetchCampaigns();

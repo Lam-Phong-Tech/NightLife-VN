@@ -16826,6 +16826,7 @@ export class NightlifeDataService {
     const skip = (page - 1) * limit;
 
     const where: import('@prisma/client').Prisma.AdminCouponWhereInput = {
+      deletedAt: null,
       ...(query.search && {
         OR: [
           { code: { contains: query.search, mode: 'insensitive' as const } },
@@ -16865,6 +16866,71 @@ export class NightlifeDataService {
       limit,
     };
   }
+
+  async updateAdminCoupon(
+    id: string,
+    dto: import('./dto/update-admin-coupon.dto').UpdateAdminCouponDto,
+  ) {
+    const coupon = await this.prisma.adminCoupon.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!coupon) {
+      throw new NotFoundException('Admin coupon not found');
+    }
+
+    const updateData: import('@prisma/client').Prisma.AdminCouponUpdateInput = {};
+
+    if (dto.name !== undefined) updateData.name = dto.name.trim();
+    if (dto.discountType !== undefined) updateData.discountType = dto.discountType;
+    if (dto.discountValue !== undefined) updateData.discountValue = dto.discountValue;
+    if (dto.targetStores !== undefined) updateData.targetStores = dto.targetStores;
+    if (dto.targetAudiences !== undefined) updateData.targetAudiences = dto.targetAudiences;
+    if (dto.usageLimit !== undefined) updateData.usageLimit = dto.usageLimit;
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.startsAt !== undefined) updateData.startsAt = new Date(dto.startsAt);
+    if (dto.endsAt !== undefined) updateData.endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
+
+    const updated = await this.prisma.adminCoupon.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      id: updated.id,
+      code: updated.code,
+      name: updated.name,
+      discountType: updated.discountType,
+      discountValue: updated.discountValue,
+      targetStores: updated.targetStores,
+      targetAudiences: updated.targetAudiences,
+      startsAt: updated.startsAt,
+      endsAt: updated.endsAt,
+      usageLimit: updated.usageLimit,
+      usedCount: updated.usedCount,
+      status: updated.status,
+      qrPayload: updated.qrPayloadHash,
+    };
+  }
+
+  async deleteAdminCoupon(id: string) {
+    const coupon = await this.prisma.adminCoupon.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!coupon) {
+      throw new NotFoundException('Admin coupon not found');
+    }
+
+    await this.prisma.adminCoupon.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        status: 'DELETED',
+      },
+    });
+
+    return { success: true };
+  }
+
 
   async listAdminGlobalCouponIssues(query: {
     page?: number;
