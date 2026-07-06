@@ -32,6 +32,7 @@ const ALLOWED_MIME_TYPES = new Set([
 type RequestWithUser = express.Request & {
   user: {
     id: string;
+    role: string;
   };
 };
 
@@ -129,6 +130,7 @@ export class StorageController {
   ) {
     return this.storageService.saveLocalFile(file, {
       ownerId: request.user.id,
+      userRole: request.user.role,
       purpose,
       access,
       storeId,
@@ -160,6 +162,7 @@ export class StorageController {
     }
     return this.storageService.saveExternalUrl(url, {
       ownerId: request.user.id,
+      userRole: request.user.role,
       purpose,
       access,
       storeId,

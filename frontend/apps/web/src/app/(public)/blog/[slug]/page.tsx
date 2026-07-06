@@ -110,8 +110,8 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
     <main
       style={{
         minHeight: "100vh",
-        background: "#0c0c0f",
-        color: "#f3f0ea",
+        background: "var(--vy-bg)",
+        color: "var(--vy-text)",
         padding: "clamp(20px, 5vw, 54px) clamp(16px, 5vw, 48px)",
       }}
     >
@@ -121,12 +121,12 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
       />
 
       <article style={{ maxWidth: "980px", margin: "0 auto" }}>
-        <nav style={{ marginBottom: "18px", color: "#8c8679", fontSize: "13px", fontWeight: 700 }}>
-          <Link href="/" style={{ color: "#8c8679", textDecoration: "none" }}>
+        <nav style={{ marginBottom: "18px", color: "var(--vy-muted)", fontSize: "13px", fontWeight: 700 }}>
+          <Link href="/" style={{ color: "var(--vy-muted)", textDecoration: "none" }}>
             Trang chủ
           </Link>
           <span aria-hidden="true"> / </span>
-          <Link href="/blog" style={{ color: "#d4b26a", textDecoration: "none" }}>
+          <Link href="/blog" style={{ color: "var(--vy-gold)", textDecoration: "none" }}>
             Blog
           </Link>
         </nav>
@@ -138,9 +138,9 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
                 display: "inline-flex",
                 borderRadius: "999px",
                 padding: "6px 11px",
-                background: "rgba(212,178,106,.14)",
-                border: "1px solid rgba(212,178,106,.32)",
-                color: "#f0dda8",
+                background: "var(--vy-gold-soft-bg)",
+                border: "1px solid var(--vy-border-gold-32)",
+                color: "var(--vy-gold-pale)",
                 fontSize: "11px",
                 fontWeight: 900,
               }}
@@ -176,7 +176,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
           >
             {post.title}
           </h1>
-          <p style={{ maxWidth: "760px", margin: "16px 0 0", color: "#c5c0b6", fontSize: "17px", lineHeight: 1.72 }}>
+          <p style={{ maxWidth: "760px", margin: "16px 0 0", color: "var(--vy-text-2)", fontSize: "17px", lineHeight: 1.72 }}>
             {post.description}
           </p>
           <div
@@ -185,7 +185,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
               gap: "10px",
               flexWrap: "wrap",
               marginTop: "16px",
-              color: "#8c8679",
+              color: "var(--vy-muted)",
               fontSize: "12.5px",
               fontWeight: 800,
             }}
@@ -204,7 +204,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
             minHeight: "clamp(260px, 48vw, 500px)",
             marginTop: "26px",
             borderRadius: "8px",
-            border: "1px solid rgba(212,178,106,.22)",
+            border: "1px solid var(--vy-border-gold-22)",
             overflow: "hidden",
           }}
         >
@@ -221,7 +221,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
             style={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(180deg,rgba(12,12,15,.04),rgba(12,12,15,.48))",
+              background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.6))",
             }}
           />
         </div>
@@ -243,7 +243,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
                   {section.heading}
                 </h2>
                 <div 
-                  style={{ margin: "10px 0 0", color: "#d7d0c3", fontSize: "16px", lineHeight: 1.85 }}
+                  style={{ margin: "10px 0 0", color: "var(--vy-text-2)", fontSize: "16px", lineHeight: 1.85 }}
                   dangerouslySetInnerHTML={{ __html: section.body }}
                   className="nl-blog-body"
                 />
@@ -253,11 +253,11 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
             <aside
               style={{
                 marginTop: "30px",
-                border: "1px solid rgba(212,178,106,.26)",
+                border: "1px solid var(--vy-border-gold-22)",
                 borderRadius: "8px",
                 padding: "18px",
-                background: "rgba(212,178,106,.08)",
-                color: "#efe4c9",
+                background: "var(--vy-gold-soft-bg)",
+                color: "var(--vy-gold-pale)",
                 lineHeight: 1.65,
               }}
             >
@@ -272,10 +272,10 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
             style={{
               position: "sticky",
               top: "110px",
-              border: "1px solid rgba(255,255,255,.1)",
+              border: "1px solid var(--vy-border)",
               borderRadius: "8px",
               padding: "16px",
-              background: "rgba(255,255,255,.035)",
+              background: "var(--vy-surface-1)",
             }}
           >
             <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 900 }}>Bài liên quan</h2>
@@ -315,7 +315,7 @@ export default async function BlogDetailPage({ params, searchParams }: PageProps
                     <strong style={{ display: "block", fontSize: "13px", lineHeight: 1.35 }}>
                       {item.title}
                     </strong>
-                    <small style={{ display: "block", marginTop: "4px", color: "#8c8679", fontWeight: 700 }}>
+                    <small style={{ display: "block", marginTop: "4px", color: "var(--vy-muted)", fontWeight: 700 }}>
                       {item.readTime}
                     </small>
                   </span>

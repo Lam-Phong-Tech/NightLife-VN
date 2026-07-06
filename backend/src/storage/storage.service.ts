@@ -22,6 +22,7 @@ type UploadedFile = {
 
 type SaveLocalFileOptions = {
   ownerId: string;
+  userRole?: string;
   purpose?: string;
   access?: 'PUBLIC' | 'PROTECTED';
   storeId?: string;
@@ -58,6 +59,48 @@ export class StorageService implements OnModuleInit {
     );
   }
 
+  async validateUploadPermissions(options: SaveLocalFileOptions) {
+    if (!options.userRole) return;
+
+    if (options.userRole === 'ADMIN' || options.userRole === 'OPERATOR') {
+      return;
+    }
+
+    if (options.userRole === 'USER') {
+      if (options.access === 'PUBLIC' || options.storeId || options.castId || options.contentId) {
+        throw new ForbiddenException('Users are only allowed to upload protected bill evidence.');
+      }
+      return;
+    }
+
+    if (options.userRole === 'PARTNER') {
+      if (options.storeId) {
+        const store = await this.prisma.store.findUnique({
+          where: { id: options.storeId },
+          select: { ownerId: true },
+        });
+        if (!store || store.ownerId !== options.ownerId) {
+          throw new ForbiddenException('You do not have permission to upload for this store.');
+        }
+      }
+
+      if (options.castId) {
+        const cast = await this.prisma.cast.findUnique({
+          where: { id: options.castId },
+          include: { store: { select: { ownerId: true } } },
+        });
+        if (!cast || !cast.store || cast.store.ownerId !== options.ownerId) {
+          throw new ForbiddenException('You do not have permission to upload for this cast.');
+        }
+      }
+      return;
+    }
+
+    if (options.access === 'PUBLIC' || options.storeId || options.castId || options.contentId) {
+      throw new ForbiddenException('Upload permission denied.');
+    }
+  }
+
   async saveLocalFile(
     file: UploadedFile | undefined,
     options: SaveLocalFileOptions,
@@ -65,6 +108,8 @@ export class StorageService implements OnModuleInit {
     if (!file) {
       throw new BadRequestException('File is required');
     }
+
+    await this.validateUploadPermissions(options);
 
     const storageKey = file.filename;
     const webBaseUrl = this.configService.get<string>('WEB_BASE_URL');
@@ -105,6 +150,8 @@ export class StorageService implements OnModuleInit {
   ) {
     const storageKey = `ext-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const access = this.resolveAccess(options.access);
+
+    await this.validateUploadPermissions(options);
 
     let mimeType = 'application/octet-stream';
     let type: MediaType = MediaType.OTHER;
