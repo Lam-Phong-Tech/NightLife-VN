@@ -2324,7 +2324,7 @@ export default function Page() {
               <div>
                 <SearchPanel />
               </div>
-              <div style={{ gridColumn: "span 12" }}>
+              <div style={{ gridColumn: "span 12", marginTop: "16px" }}>
                 <EventHero desktop apiBanners={homeBanners} />
               </div>
             </div>

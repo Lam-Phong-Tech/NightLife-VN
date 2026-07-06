@@ -99,11 +99,6 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         countColor: '#f3f0ea'
       },
       { 
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20V4M20 20H4"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>, 
-        label: 'Báo cáo doanh thu', 
-        href: '/admin/reports' 
-      },
-      { 
         icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>, 
         label: 'Phân quyền', 
         href: '/admin/roles' 
@@ -328,7 +323,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/ranking') return { title: 'Ranking', subtitle: 'RANKING' };
     if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: 'CONTENT' };
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
-    if (pathname === '/admin/reports') return { title: 'Báo cáo doanh thu', subtitle: 'REVENUE' };
+
     if (pathname === '/admin/roles') return { title: 'Phân quyền', subtitle: 'ROLES & PERMISSIONS' };
     return { title: 'Admin', subtitle: 'CMS' };
   };
@@ -336,7 +331,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { title, subtitle } = getPageInfo();
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
       
       {/* ============ SIDEBAR ============ */}
       <aside className="scw" style={{ width: sidebarOpen ? '250px' : '0px', flex: 'none', position: 'sticky', top: 0, height: '100vh', overflowX: 'hidden', overflowY: sidebarOpen ? 'auto' : 'hidden', background: '#100f14', borderRight: sidebarOpen ? '1px solid rgba(255,255,255,.06)' : 'none', transition: 'width 0.3s ease', display: 'flex', flexDirection: 'column' }}>
