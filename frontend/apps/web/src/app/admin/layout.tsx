@@ -280,6 +280,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [badges, setBadges] = useState({ pendingBills: 0, pendingCasts: 0, pendingPartners: 0 });
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     try {
@@ -338,76 +339,78 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
       
       {/* ============ SIDEBAR ============ */}
-      <aside className="scw" style={{ width: '250px', flex: 'none', position: 'sticky', top: 0, height: '100vh', overflow: 'auto', background: '#100f14', borderRight: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column' }}>
-        {/* brand */}
-        <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div data-noinvert style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>Vietyoru</div>
-            <div style={{ fontSize: '7.5px', letterSpacing: '3px', color: '#8c8679', marginTop: '3px', textTransform: 'uppercase' }}>Admin Console · CMS</div>
+      <aside className="scw" style={{ width: sidebarOpen ? '250px' : '0px', flex: 'none', position: 'sticky', top: 0, height: '100vh', overflowX: 'hidden', overflowY: sidebarOpen ? 'auto' : 'hidden', background: '#100f14', borderRight: sidebarOpen ? '1px solid rgba(255,255,255,.06)' : 'none', transition: 'width 0.3s ease', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '250px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+          {/* brand */}
+          <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div data-noinvert style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>Vietyoru</div>
+              <div style={{ fontSize: '7.5px', letterSpacing: '3px', color: '#8c8679', marginTop: '3px', textTransform: 'uppercase' }}>Admin Console · CMS</div>
+            </div>
+            <span data-noinvert style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '4px 8px', borderRadius: '6px' }}>ADMIN</span>
           </div>
-          <span data-noinvert style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '4px 8px', borderRadius: '6px' }}>ADMIN</span>
-        </div>
 
-        <nav style={{ flex: 1, padding: '6px 12px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {navGroups.map(group => (
-            <React.Fragment key={group.title}>
-              <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1.8px', color: '#57534b', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
-                {group.title}
-              </div>
-              {group.items.map(item => {
-                const isActive = pathname === item.href;
-                const isHovered = hoveredLink === item.href;
-                let overrideCount = item.count;
-                if (item.href === '/admin/bills') overrideCount = badges.pendingBills || undefined;
-                if (item.href === '/admin/casts') overrideCount = badges.pendingCasts || undefined;
-                if (item.href === '/admin/partners') overrideCount = badges.pendingPartners || undefined;
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onMouseEnter={() => setHoveredLink(item.href)}
-                    onMouseLeave={() => setHoveredLink(null)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '11px',
-                      padding: '10px 12px',
-                      borderRadius: '11px',
-                      cursor: 'pointer',
-                      color: isActive ? '#f3f0ea' : '#8c8679',
-                      fontSize: '13.5px',
-                      fontWeight: isActive ? 600 : 500,
-                      background: isActive ? 'rgba(255,255,255,.08)' : (isHovered ? 'rgba(255,255,255,.04)' : 'transparent'),
-                      textDecoration: 'none'
-                    }}
-                  >
-                    {React.cloneElement(item.icon as React.ReactElement<{ color?: string }>, {
-                      color: isActive ? '#d4b26a' : 'currentColor',
-                    })}
-                    <span style={{ flex: 1 }}>{item.label}</span>
-                    {overrideCount ? (
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: item.countColor, background: item.countBg, borderRadius: '9px', minWidth: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>
-                        {overrideCount}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </React.Fragment>
-          ))}
-        </nav>
+          <nav style={{ flex: 1, padding: '6px 12px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {navGroups.map(group => (
+              <React.Fragment key={group.title}>
+                <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1.8px', color: '#57534b', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
+                  {group.title}
+                </div>
+                {group.items.map(item => {
+                  const isActive = pathname === item.href;
+                  const isHovered = hoveredLink === item.href;
+                  let overrideCount = item.count;
+                  if (item.href === '/admin/bills') overrideCount = badges.pendingBills || undefined;
+                  if (item.href === '/admin/casts') overrideCount = badges.pendingCasts || undefined;
+                  if (item.href === '/admin/partners') overrideCount = badges.pendingPartners || undefined;
+                  
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onMouseEnter={() => setHoveredLink(item.href)}
+                      onMouseLeave={() => setHoveredLink(null)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '11px',
+                        padding: '10px 12px',
+                        borderRadius: '11px',
+                        cursor: 'pointer',
+                        color: isActive ? '#f3f0ea' : '#8c8679',
+                        fontSize: '13.5px',
+                        fontWeight: isActive ? 600 : 500,
+                        background: isActive ? 'rgba(255,255,255,.08)' : (isHovered ? 'rgba(255,255,255,.04)' : 'transparent'),
+                        textDecoration: 'none'
+                      }}
+                    >
+                      {React.cloneElement(item.icon as React.ReactElement<{ color?: string }>, {
+                        color: isActive ? '#d4b26a' : 'currentColor',
+                      })}
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      {overrideCount ? (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: item.countColor, background: item.countBg, borderRadius: '9px', minWidth: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>
+                          {overrideCount}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </nav>
 
-        {/* account */}
-        <div style={{ margin: '8px 12px 14px', padding: '11px 12px', borderRadius: '13px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span data-noinvert style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>A</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Nguyễn Admin</div>
-            <div style={{ fontSize: '10px', color: '#8c8679' }}>Super Admin</div>
+          {/* account */}
+          <div style={{ margin: '8px 12px 14px', padding: '11px 12px', borderRadius: '13px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span data-noinvert style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>A</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Nguyễn Admin</div>
+              <div style={{ fontSize: '10px', color: '#8c8679' }}>Super Admin</div>
+            </div>
+            <button onClick={() => { clearAuthSession(); window.location.href = '/admin/dang-nhap'; }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg>
+            </button>
           </div>
-          <button onClick={() => { clearAuthSession(); window.location.href = '/admin/dang-nhap'; }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg>
-          </button>
         </div>
       </aside>
 
@@ -416,6 +419,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* topbar */}
         <header style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 26px', background: 'rgba(12,12,15,.86)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+          <span onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? 'Ẩn menu' : 'Hiện menu'} style={{ width: '39px', height: '39px', flex: 'none', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#d4b26a', border: '1px solid rgba(212,178,106,.28)', transition: 'background 0.2s', background: 'rgba(255,255,255,.02)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+            </svg>
+          </span>
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {subtitle && <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '2px' }}>{subtitle}</div>}
             <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px' }}>{title}</div>

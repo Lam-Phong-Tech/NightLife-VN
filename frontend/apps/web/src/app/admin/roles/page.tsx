@@ -284,12 +284,7 @@ export default function AdminRolesPage() {
                 {capsUser.map((c, i) => renderCapRow(c, i, 'user'))}
               </div>
               
-              <div style={{ display: 'flex', gap: '9px', marginTop: '14px', padding: '12px 14px', background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '12px' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
-                <span style={{ fontSize: '11px', color: '#cbb884', lineHeight: 1.5 }}>
-                  5 vai trò theo enum <b style={{ color: '#f0dda8' }}>UserRole</b> (User · Partner · Staff · Operator · Admin) · <b style={{ color: '#f0dda8' }}>12 quyền hành động</b> (action-policy) kiểm soát chi tiết theo tài nguyên, độc lập với vai trò. Tài khoản <b style={{ color: '#f0dda8' }}>USER</b> đăng ký qua app — không tạo trong CMS.
-                </span>
-              </div>
+
             </>
           )}
         </div>
