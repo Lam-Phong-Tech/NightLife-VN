@@ -22,6 +22,7 @@ const MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
+  'image/svg+xml',
   'image/webp',
   'image/gif',
   'video/mp4',
@@ -105,7 +106,7 @@ export class StorageController {
         if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
           callback(
             new BadRequestException(
-              'Unsupported file type. Upload image, video, or PDF files only.',
+              'Unsupported file type. Upload image, SVG, video, or PDF files only.',
             ),
             false,
           );

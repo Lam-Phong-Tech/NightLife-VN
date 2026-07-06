@@ -92,6 +92,7 @@ const categoryItems = [
 type HomeCategoryItem = {
   label: string;
   icon: LucideIcon;
+  iconUrl?: string;
   href: string;
   featured?: boolean;
 };
@@ -133,6 +134,11 @@ const categoryHrefById: Record<string, string> = {
   q8: "/dang-nhap",
 };
 
+function appearanceIconUrl(icon?: string) {
+  if (!icon || (!/^(https?:|\/|data:image\/)/i.test(icon) && !icon.startsWith("storage/"))) return undefined;
+  return resolveClientUrl(icon) || icon;
+}
+
 function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCategoryItem {
   const fallback = categoryItems[index] ?? categoryItems[0] ?? {
     label: "Tìm quán",
@@ -143,6 +149,7 @@ function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCatego
   return {
     label: item.label || fallback.label,
     icon: appearanceIconMap[item.icon] ?? fallback.icon,
+    iconUrl: appearanceIconUrl(item.icon),
     href: categoryHrefById[item.id] ?? fallback.href,
     featured: item.id === "q8" || item.icon === "star" || ("featured" in fallback && Boolean(fallback.featured)),
   };
@@ -845,7 +852,17 @@ function CategoryGrid({
                 boxShadow: item.featured ? "var(--vy-shadow)" : "none",
               }}
             >
-              <Icon size={desktop ? 26 : 22} />
+              {item.iconUrl ? (
+                <img
+                  src={item.iconUrl}
+                  alt=""
+                  width={desktop ? 26 : 22}
+                  height={desktop ? 26 : 22}
+                  style={{ display: "block", objectFit: "contain" }}
+                />
+              ) : (
+                <Icon size={desktop ? 26 : 22} />
+              )}
             </span>
             <div style={{ marginTop: "8px", color: colors.text, fontSize: desktop ? "13px" : "12px" }}>
               {item.label}

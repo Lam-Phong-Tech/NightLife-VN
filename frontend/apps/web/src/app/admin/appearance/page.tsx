@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 
 const ICONS: Record<string, string> = {
   pin: '<path d="M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/>',
@@ -70,6 +70,12 @@ const getSvgUri = (k: string, color: string) => {
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 };
 
+const isCustomIcon = (icon?: string) =>
+  Boolean(icon && (/^(https?:|\/|data:image\/)/i.test(icon) || icon.startsWith('storage/')));
+
+const getIconSrc = (icon: string, color: string) =>
+  isCustomIcon(icon) ? (resolveClientUrl(icon) || icon) : getSvgUri(icon, color);
+
 export default function AppearancePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,6 +89,8 @@ export default function AppearancePage() {
   const [drawer, setDrawer] = useState<{group: 'quick' | 'nav', id: string} | null>(null);
   const [logoOpen, setLogoOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const iconUploadInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadConfig() {
@@ -180,6 +188,44 @@ export default function AppearancePage() {
       }
     };
 
+    const uploadIconFile = async (file?: File) => {
+      if (!file) return;
+
+      const fileName = file.name.toLowerCase();
+      const isSvg = file.type === 'image/svg+xml' || fileName.endsWith('.svg');
+      const isPng = file.type === 'image/png' || fileName.endsWith('.png');
+      if (!isSvg && !isPng) {
+        showToast('Chỉ nhận file SVG hoặc PNG.');
+        return;
+      }
+
+      if (file.size > 30 * 1024) {
+        showToast('Icon tối đa 30 KB.');
+        return;
+      }
+
+      try {
+        setUploadingIcon(true);
+        const form = new FormData();
+        form.append('file', file);
+        form.append('purpose', 'APPEARANCE_ICON');
+        form.append('access', 'PUBLIC');
+        const res = await apiFormDataClient<{ url?: string }>('/storage/upload', form);
+        if (!res?.url) {
+          showToast('Không lấy được URL icon sau khi tải lên.');
+          return;
+        }
+        setIcon(res.url);
+        showToast('Đã tải icon lên. Bấm Lưu thay đổi để áp dụng.');
+      } catch (err) {
+        console.error(err);
+        showToast(err instanceof Error ? err.message : 'Tải icon thất bại.');
+      } finally {
+        setUploadingIcon(false);
+        if (iconUploadInputRef.current) iconUploadInputRef.current.value = '';
+      }
+    };
+
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
         <div onClick={() => setDrawer(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
@@ -198,7 +244,7 @@ export default function AppearancePage() {
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', padding: '13px 15px' }}>
               <span style={{ width: '58px', height: '58px', flex: 'none', borderRadius: '16px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={getSvgUri(it.icon, '#e3c27e')} width={26} height={26} alt="" />
+                <img src={getIconSrc(it.icon, '#e3c27e')} width={26} height={26} alt="" style={{ objectFit: 'contain' }} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '6px' }}>Tên hiển thị</div>
@@ -230,9 +276,27 @@ export default function AppearancePage() {
 
             <div>
               <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '9px' }}>Hoặc tải icon riêng</div>
-              <div onClick={() => showToast('Bản demo — khi nối backend sẽ nhận file kéo thả tại đây')} style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '20px', textAlign: 'center', cursor: 'pointer' }}>
+              <input
+                ref={iconUploadInputRef}
+                type="file"
+                accept=".svg,.png,image/svg+xml,image/png"
+                style={{ display: 'none' }}
+                onChange={(event) => uploadIconFile(event.target.files?.[0])}
+              />
+              <div
+                onClick={() => !uploadingIcon && iconUploadInputRef.current?.click()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'copy';
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (!uploadingIcon) uploadIconFile(event.dataTransfer.files?.[0]);
+                }}
+                style={{ border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '20px', textAlign: 'center', cursor: uploadingIcon ? 'wait' : 'pointer', opacity: uploadingIcon ? .65 : 1 }}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
-                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>Kéo thả file .svg / .png vào đây</div>
+                <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#e3c27e', marginTop: '6px' }}>{uploadingIcon ? 'Đang tải icon...' : 'Kéo thả file .svg / .png vào đây'}</div>
                 <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '3px' }}>hoặc bấm để chọn từ máy</div>
               </div>
             </div>
@@ -399,7 +463,7 @@ export default function AppearancePage() {
             {quick.map(t => (
               <div key={t.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '52px', height: '52px', borderRadius: '15px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(212,178,106,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getSvgUri(t.icon, '#d4b26a')} width={22} height={22} alt="" />
+                  <img src={getIconSrc(t.icon, '#d4b26a')} width={22} height={22} alt="" style={{ objectFit: 'contain' }} />
                 </span>
                 <span style={{ fontSize: '11px', color: '#c5c0b6', whiteSpace: 'nowrap' }}>{t.label}</span>
               </div>
@@ -415,7 +479,7 @@ export default function AppearancePage() {
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'quick', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getSvgUri(r.icon, '#e3c27e')} width={19} height={19} alt="" />
+                  <img src={getIconSrc(r.icon, '#e3c27e')} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
@@ -443,7 +507,7 @@ export default function AppearancePage() {
               const fw = i === 0 ? 700 : 500;
               return (
                 <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <img src={getSvgUri(t.icon, lc)} width={20} height={20} alt="" style={{ display: 'block' }} />
+                  <img src={getIconSrc(t.icon, lc)} width={20} height={20} alt="" style={{ display: 'block', objectFit: 'contain' }} />
                   <span style={{ fontSize: '9.5px', fontWeight: fw, color: lc, whiteSpace: 'nowrap' }}>{t.label}</span>
                 </div>
               );
@@ -459,7 +523,7 @@ export default function AppearancePage() {
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'nav', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getSvgUri(r.icon, '#e3c27e')} width={19} height={19} alt="" />
+                  <img src={getIconSrc(r.icon, '#e3c27e')} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
