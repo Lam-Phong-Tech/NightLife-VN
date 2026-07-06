@@ -546,10 +546,10 @@ export default function Page() {
         .vyr-ranking-shell {
           width: min(100%, 1180px);
           margin: 0 auto;
-          background: #0e0d12;
-          border: 1px solid rgba(255, 255, 255, 0.07);
+          background: var(--vy-surface);
+          border: 1px solid var(--vy-border);
           border-radius: 18px;
-          box-shadow: 0 30px 70px -34px rgba(0, 0, 0, 0.7);
+          box-shadow: var(--vy-shadow-card);
           padding: 26px 30px 32px;
         }
 
@@ -572,7 +572,7 @@ export default function Page() {
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          border: 1px solid var(--vy-border);
           background: transparent;
           color: var(--vy-text);
           align-items: center;
@@ -614,8 +614,8 @@ export default function Page() {
           display: flex;
           align-items: center;
           gap: 6px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--vy-surface-2);
+          border: 1px solid var(--vy-border);
           border-radius: 13px;
           padding: 4px;
         }
@@ -625,7 +625,7 @@ export default function Page() {
           border: 0;
           border-radius: 9px;
           background: transparent;
-          color: #b6b1a6;
+          color: var(--vy-muted);
           cursor: pointer;
           font: inherit;
           font-size: 12.5px;
@@ -645,7 +645,7 @@ export default function Page() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          border: 1px solid var(--vy-border);
           border-radius: 13px;
           padding: 0 12px 0 14px;
           color: var(--vy-muted);
@@ -655,7 +655,7 @@ export default function Page() {
         }
 
         .vyr-ranking-select > svg {
-          color: #c9a86a;
+          color: var(--vy-gold);
           flex: none;
         }
 
@@ -677,8 +677,8 @@ export default function Page() {
         }
 
         .vyr-ranking-select.is-open {
-          border-color: rgba(212, 178, 106, 0.34);
-          background: rgba(212, 178, 106, 0.07);
+          border-color: var(--vy-border-gold-32);
+          background: var(--vy-gold-soft-bg);
         }
 
         .vyr-ranking-select.is-open .vyr-ranking-select-trigger {
@@ -695,10 +695,10 @@ export default function Page() {
           right: 0;
           min-width: 132px;
           padding: 5px;
-          border: 1px solid rgba(212, 178, 106, 0.26);
+          border: 1px solid var(--vy-border-gold-32);
           border-radius: 12px;
-          background: #15131a;
-          box-shadow: 0 18px 44px rgba(0, 0, 0, 0.52);
+          background: var(--vy-surface);
+          box-shadow: var(--vy-shadow-card);
           z-index: 90;
         }
 
@@ -723,7 +723,7 @@ export default function Page() {
 
         .vyr-ranking-select-menu button:hover,
         .vyr-ranking-select-menu button:focus-visible {
-          background: rgba(255, 255, 255, 0.06);
+          background: var(--vy-surface-2);
           color: var(--vy-text);
           outline: 0;
         }
@@ -746,9 +746,9 @@ export default function Page() {
           display: flex;
           align-items: center;
           gap: 18px;
-          border: 1px solid rgba(255, 255, 255, 0.07);
+          border: 1px solid var(--vy-border);
           border-radius: 16px;
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--vy-surface-1);
           color: var(--vy-text);
           padding: 15px 20px 15px 24px;
           transition:
@@ -759,16 +759,12 @@ export default function Page() {
 
         .vyr-rank-row:hover {
           transform: translateY(-1px);
-          background: rgba(255, 255, 255, 0.045);
-          border-color: rgba(212, 178, 106, 0.28);
+          background: var(--vy-surface-2);
+          border-color: var(--vy-border-gold-32);
         }
 
         .vyr-rank-row.is-top-rank {
-          background: linear-gradient(
-            135deg,
-            rgba(212, 178, 106, 0.13),
-            rgba(255, 255, 255, 0.025)
-          );
+          background: var(--vy-gold-soft-bg);
         }
 
         .vyr-rank-avatar {
@@ -785,7 +781,7 @@ export default function Page() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #26222d, #181319);
+          background: var(--vy-surface-2);
           color: var(--vy-gold);
           font-size: 15px;
           font-weight: 900;
@@ -830,8 +826,8 @@ export default function Page() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(212, 178, 106, 0.3);
-          background: rgba(212, 178, 106, 0.1);
+          border: 1px solid var(--vy-border-gold-32);
+          background: var(--vy-gold-soft-bg);
           color: var(--vy-gold);
           font-size: 14px;
           font-weight: 800;
@@ -839,9 +835,9 @@ export default function Page() {
         }
 
         .vyr-sponsored {
-          border: 1px solid rgba(212, 178, 106, 0.32);
+          border: 1px solid var(--vy-border-gold-32);
           border-radius: 999px;
-          background: rgba(212, 178, 106, 0.12);
+          background: var(--vy-gold-soft-bg);
           color: var(--vy-gold-pale);
           font-size: 10.5px;
           font-weight: 800;
@@ -879,10 +875,10 @@ export default function Page() {
           align-items: center;
           justify-content: center;
           gap: 6px;
-          border: 1px solid rgba(212, 178, 106, 0.25);
+          border: 1px solid var(--vy-border-gold-22);
           border-radius: 10px;
-          background: rgba(212, 178, 106, 0.08);
-          color: #efd491;
+          background: var(--vy-gold-soft-bg);
+          color: var(--vy-gold-pale);
           font-size: 12.5px;
           font-weight: 800;
           line-height: 1;
@@ -908,10 +904,10 @@ export default function Page() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          border: 1px dashed rgba(212, 178, 106, 0.26);
+          border: 1px dashed var(--vy-border-gold-32);
           border-radius: 16px;
-          background: rgba(255, 255, 255, 0.025);
-          color: #9c9488;
+          background: var(--vy-surface-1);
+          color: var(--vy-muted);
           text-align: center;
           padding: 26px;
         }
@@ -959,9 +955,9 @@ export default function Page() {
           border: 0;
           background: linear-gradient(
             90deg,
-            rgba(255, 255, 255, 0.05),
-            rgba(255, 255, 255, 0.11),
-            rgba(255, 255, 255, 0.05)
+            var(--vy-surface-1),
+            var(--vy-surface-3),
+            var(--vy-surface-1)
           );
           background-size: 220% 100%;
           animation: vyrSkeleton 1.2s ease-in-out infinite;
