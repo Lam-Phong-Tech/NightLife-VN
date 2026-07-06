@@ -122,6 +122,7 @@ type HomeBanner = {
   href?: string | null;
   statusLabel?: string | null;
   subtitle?: string | null;
+  hasImage?: boolean;
 };
 
 type HomeStoreCard = {
@@ -477,7 +478,7 @@ const homeBannerAutoDelayMs = 7200;
 const homeBannerSlideTransition = "transform 960ms cubic-bezier(.22,.78,.22,1), opacity 960ms ease";
 
 function getBannerBackgroundImage(value?: string | null) {
-  return value?.replace(/\s+center\/cover\s*$/i, "") || "linear-gradient(135deg,#15151a,#2a2112)";
+  return value?.replace(/\s+center\/cover\s*$/i, "") || "var(--vy-hero-grad)";
 }
 
 function getBannerSlideTransform(index: number, activeIndex: number) {
@@ -507,7 +508,7 @@ function BannerMediaSlides({
               position: "absolute",
               inset: 0,
               borderRadius: "inherit",
-              backgroundColor: "#15151a",
+              backgroundColor: "var(--vy-surface)",
               backgroundImage: renderOnlyActiveBanner ? undefined : getBannerBackgroundImage(banner.img),
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
@@ -618,15 +619,17 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
     title: "Sự kiện đêm nay",
     desc: "Đặt bàn VIP từ 2.500.000đ",
     btnText: "Đặt ngay",
-    img: "linear-gradient(135deg,#15151a,#2a2112)",
+    img: "var(--vy-hero-grad)",
     statusLabel: "HOT",
     subtitle: "NightLife-VN",
+    hasImage: false,
   };
   
   const mappedBanners: HomeBanner[] = useMemo(() => {
     if (apiBanners.length === 0) return [fallbackBanner];
     return apiBanners.map(b => {
       const meta = (b.metadata as any) || {};
+      const hasImage = !!meta.imageUrl;
       return {
         title: b.title,
         desc: meta.description || "",
@@ -634,7 +637,8 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
         href: meta.link || "#",
         statusLabel: meta.statusLabel || "",
         subtitle: meta.subtitle || "",
-        img: meta.imageUrl ? `linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.76) 100%), url('${meta.imageUrl}')` : "linear-gradient(135deg,#15151a,#2a2112)",
+        img: hasImage ? `linear-gradient(180deg,rgba(0,0,0,0.05) 0%,rgba(0,0,0,0.76) 100%), url('${meta.imageUrl}')` : "var(--vy-hero-grad)",
+        hasImage,
       };
     });
   }, [apiBanners]);
@@ -667,13 +671,13 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
         flexDirection: "column",
         justifyContent: "flex-end",
         padding: desktop ? "34px" : "18px 18px 42px",
-        color: "#fff",
-        boxShadow: "0 22px 42px rgba(0,0,0,.36)",
+        color: event.hasImage ? "#fff" : "var(--vy-text)",
+        boxShadow: event.hasImage ? "0 22px 42px rgba(0,0,0,.36)" : "var(--vy-shadow-card)",
         touchAction: "pan-y",
       }}
     >
       <BannerMediaSlides activeBanner={activeBanner} banners={banners} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />
+      {event.hasImage && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))" }} />}
       <div key={event.title} style={{ position: "relative", zIndex: 1, animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
         {event.statusLabel && (
           <span
@@ -682,7 +686,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
               alignItems: "center",
               gap: "7px",
               borderRadius: "999px",
-              background: "rgba(12,12,15,.62)",
+              background: event.hasImage ? "rgba(12,12,15,.62)" : "var(--vy-surface-2)",
               color: colors.goldSoft,
               border: `1px solid ${colors.line}`,
               padding: "5px 11px",
