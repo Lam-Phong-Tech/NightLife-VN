@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   contentHotVideosMock,
   contentListMock,
+  contentRecommendationsMock,
+  contentToursMock,
+  trackHotVideoLikeMock,
+  trackHotVideoViewMock,
   claimGuestCouponMock,
   claimMemberCouponMock,
   listPublicCouponsMock,
@@ -14,6 +18,10 @@ const {
 } = vi.hoisted(() => ({
   contentHotVideosMock: vi.fn(),
   contentListMock: vi.fn(),
+  contentRecommendationsMock: vi.fn(),
+  contentToursMock: vi.fn(),
+  trackHotVideoLikeMock: vi.fn(),
+  trackHotVideoViewMock: vi.fn(),
   claimGuestCouponMock: vi.fn(),
   claimMemberCouponMock: vi.fn(),
   listPublicCouponsMock: vi.fn(),
@@ -51,6 +59,10 @@ vi.mock('@/lib/api/content', () => ({
   contentApi: {
     list: contentListMock,
     hotVideos: contentHotVideosMock,
+    recommendations: contentRecommendationsMock,
+    tours: contentToursMock,
+    trackHotVideoLike: trackHotVideoLikeMock,
+    trackHotVideoView: trackHotVideoViewMock,
   },
 }));
 
@@ -79,6 +91,7 @@ const rankingMeta = {
 describe('Home Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     delete process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS;
 
     listStoresStrictMock.mockResolvedValue([
@@ -252,8 +265,58 @@ describe('Home Page', () => {
         storeSlug: 'api-neon-lounge',
         href: '/stores/api-neon-lounge',
         createdAt: now,
+        viewCount: 7,
+        likeCount: 2,
       },
     ]);
+    contentRecommendationsMock.mockResolvedValue([
+      {
+        id: 'store-api-1',
+        name: 'API Neon Lounge',
+        slug: 'api-neon-lounge',
+        category: 'LOUNGE',
+        city: 'Ha Noi',
+        cityCode: 'hn',
+        district: 'Tay Ho',
+        area: { id: 'area-1', code: 'hn-tay-ho', name: 'Tay Ho', city: 'Ha Noi', cityCode: 'hn' },
+        thumbnailUrl: 'https://example.com/api-neon.jpg',
+        href: '/stores/api-neon-lounge',
+        score: 120,
+        reason: 'Theo loai hinh ban hay xem',
+        signals: { viewCount: 3, bookingCount: 1, hasActiveCoupon: true },
+        activeCoupon: null,
+      },
+    ]);
+    contentToursMock.mockResolvedValue([
+      {
+        id: 'tour-api-1',
+        title: 'API Tour Night',
+        subtitle: 'API tour subtitle',
+        cityCode: 'hn',
+        area: 'Ha Noi',
+        durationHours: 4,
+        priceFromVnd: 1200000,
+        href: '/tour',
+        thumbnailUrl: 'https://example.com/tour.jpg',
+        stops: [
+          {
+            order: 1,
+            id: 'store-api-1',
+            name: 'API Neon Lounge',
+            slug: 'api-neon-lounge',
+            category: 'LOUNGE',
+            city: 'Ha Noi',
+            district: 'Tay Ho',
+            area: { id: 'area-1', code: 'hn-tay-ho', name: 'Tay Ho', city: 'Ha Noi', cityCode: 'hn' },
+            thumbnailUrl: 'https://example.com/api-neon.jpg',
+            href: '/stores/api-neon-lounge',
+            activeCouponName: null,
+          },
+        ],
+      },
+    ]);
+    trackHotVideoViewMock.mockResolvedValue({ recorded: true, mediaId: 'video-api-1', viewCount: 8, likeCount: 2 });
+    trackHotVideoLikeMock.mockResolvedValue({ recorded: true, mediaId: 'video-api-1', viewCount: 8, likeCount: 3 });
   });
 
   it('renders featured event content from the backend CMS API', async () => {

@@ -105,6 +105,8 @@ import { RecordProfileViewDto } from './dto/profile-view.dto';
 import { ReviewBillDto, VoidBillDto } from './dto/review-bill.dto';
 import {
   AdminStoreVideoQueryDto,
+  PublicHomeContentQueryDto,
+  PublicHotVideoInteractionDto,
   UpdateHotVideosDto,
 } from './dto/admin-video.dto';
 
@@ -16088,6 +16090,486 @@ export class NightlifeDataService {
     };
   }
 
+  async listPublicHomeRecommendations(query: PublicHomeContentQueryDto = {}) {
+    const cityCode = this.normalizeHotVideoCityCode(query.cityCode ?? 'all');
+    const limit = this.resolvePublicHomeLimit(query.limit, 8, 16);
+    const preferredCategories = this.parsePublicHomeCategories(
+      query.categories,
+    );
+    const preferredSlugs = this.parsePublicHomeSlugs(query.storeSlugs);
+    const now = new Date();
+    const since = new Date(now.getTime() - 30 * DAY_MS);
+    const activeCouponWhere = this.buildActiveCouponWhere(now);
+
+    const viewedStores = preferredSlugs.length
+      ? await this.prisma.store.findMany({
+          where: {
+            slug: { in: preferredSlugs },
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+          select: {
+            slug: true,
+            category: true,
+            areaId: true,
+          },
+        })
+      : [];
+    const behaviorCategories = new Set<StoreCategory>([
+      ...preferredCategories,
+      ...viewedStores.map((store) => store.category),
+    ]);
+    const behaviorAreaIds = new Set(
+      viewedStores
+        .map((store) => store.areaId)
+        .filter((areaId): areaId is string => Boolean(areaId)),
+    );
+
+    const stores = await this.prisma.store.findMany({
+      where: {
+        ...this.buildPublicStoreWhere(
+          { city: cityCode === 'all' ? undefined : cityCode },
+          { includeTextSearch: false },
+        ),
+        ...(preferredSlugs.length ? { slug: { notIn: preferredSlugs } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Math.max(limit * 4, 24),
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        description: true,
+        city: true,
+        district: true,
+        areaId: true,
+        area: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            city: true,
+            district: true,
+          },
+        },
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 6,
+          select: {
+            url: true,
+            purpose: true,
+          },
+        },
+        coupons: {
+          where: activeCouponWhere,
+          orderBy: { startsAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            name: true,
+            discountType: true,
+            discountValue: true,
+          },
+        },
+      },
+    });
+
+    const storeIds = stores.map((store) => store.id);
+    const [viewGroups, bookingGroups] = storeIds.length
+      ? await Promise.all([
+          this.prisma.auditLog.groupBy({
+            by: ['targetId'],
+            where: {
+              action: 'PROFILE_VIEW_RECORDED',
+              targetType: 'STORE',
+              targetId: { in: storeIds },
+              createdAt: { gte: since },
+            },
+            _count: { _all: true },
+          }),
+          this.prisma.booking.groupBy({
+            by: ['storeId'],
+            where: {
+              storeId: { in: storeIds },
+              deletedAt: null,
+              createdAt: { gte: since },
+            },
+            _count: { _all: true },
+          }),
+        ])
+      : [[], []];
+    const viewCountByStore = new Map(
+      viewGroups.map((group) => [group.targetId, group._count._all]),
+    );
+    const bookingCountByStore = new Map(
+      bookingGroups.map((group) => [group.storeId, group._count._all]),
+    );
+
+    return stores
+      .map((store, index) => {
+        const viewCount = viewCountByStore.get(store.id) ?? 0;
+        const bookingCount = bookingCountByStore.get(store.id) ?? 0;
+        const reasons: string[] = [];
+        let score = 100 - index;
+
+        if (behaviorCategories.has(store.category)) {
+          score += 36;
+          reasons.push('Theo loai hinh ban hay xem');
+        }
+
+        if (store.areaId && behaviorAreaIds.has(store.areaId)) {
+          score += 24;
+          reasons.push('Gan khu vuc ban quan tam');
+        }
+
+        if (store.coupons.length) {
+          score += 18;
+          reasons.push('Dang co uu dai');
+        }
+
+        if (viewCount > 0) {
+          score += Math.min(viewCount, 20);
+        }
+
+        if (bookingCount > 0) {
+          score += Math.min(bookingCount * 2, 24);
+        }
+
+        return {
+          id: store.id,
+          name: store.name,
+          slug: store.slug,
+          category: store.category,
+          description: store.description,
+          city: store.city,
+          cityCode: store.area?.code
+            ? this.cityCodeFromAreaCode(store.area.code)
+            : this.normalizeCityCode(store.city),
+          district: store.district,
+          area: this.mapPublicArea(store.area),
+          thumbnailUrl: this.resolveStoreCoverImage(store.media),
+          href: `/stores/${store.slug}`,
+          score,
+          reason:
+            reasons[0] ??
+            (bookingCount > 0
+              ? 'Nhieu lich dat gan day'
+              : 'Dang duoc goi y tren Vietyoru'),
+          signals: {
+            viewCount,
+            bookingCount,
+            hasActiveCoupon: store.coupons.length > 0,
+          },
+          activeCoupon: store.coupons[0]
+            ? {
+                id: store.coupons[0].id,
+                name: store.coupons[0].name,
+                discountType: store.coupons[0].discountType,
+                discountValue: store.coupons[0].discountValue,
+              }
+            : null,
+        };
+      })
+      .sort((left, right) => right.score - left.score)
+      .slice(0, limit);
+  }
+
+  async listPublicTours(query: PublicHomeContentQueryDto = {}) {
+    const cityCode = this.normalizeHotVideoCityCode(query.cityCode ?? 'all');
+    const limit = this.resolvePublicHomeLimit(query.limit, 3, 6);
+    const preferredCategories = this.parsePublicHomeCategories(
+      query.categories,
+    );
+    const stores = await this.prisma.store.findMany({
+      where: this.buildPublicStoreWhere(
+        { city: cityCode === 'all' ? undefined : cityCode },
+        { includeTextSearch: false },
+      ),
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        description: true,
+        city: true,
+        district: true,
+        area: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            city: true,
+            district: true,
+          },
+        },
+        media: {
+          where: {
+            deletedAt: null,
+            access: 'PUBLIC',
+            status: 'READY',
+            type: 'IMAGE',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 4,
+          select: {
+            url: true,
+            purpose: true,
+          },
+        },
+        coupons: {
+          where: this.buildActiveCouponWhere(new Date()),
+          orderBy: { startsAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const plans: Array<{
+      id: string;
+      title: string;
+      subtitle: string;
+      categories: StoreCategory[];
+      durationHours: number;
+      priceFromVnd: number;
+    }> = [
+      {
+        id: 'dinner-club',
+        title: 'Dinner & Club Night',
+        subtitle: 'An toi, lounge va club cuoi dem',
+        categories: ['RESTAURANT', 'LOUNGE', 'CLUB'],
+        durationHours: 4,
+        priceFromVnd: 1200000,
+      },
+      {
+        id: 'bar-hopping',
+        title: 'Bar Hopping VIP',
+        subtitle: 'Cocktail, bar va ban nhom noi bat',
+        categories: ['BAR', 'LOUNGE', 'CLUB'],
+        durationHours: 5,
+        priceFromVnd: 1800000,
+      },
+      {
+        id: 'relax-late',
+        title: 'Spa & Late Supper',
+        subtitle: 'Thu gian truoc khi hen dem',
+        categories: ['MASSAGE_SPA', 'RESTAURANT', 'BAR'],
+        durationHours: 3,
+        priceFromVnd: 900000,
+      },
+    ];
+    const usedStoreIds = new Set<string>();
+    const preferredSet = new Set(preferredCategories);
+
+    return plans
+      .map((plan, planIndex) => {
+        const stops = plan.categories
+          .map((category) => {
+            const exact = stores.find(
+              (store) =>
+                store.category === category && !usedStoreIds.has(store.id),
+            );
+            if (exact) return exact;
+
+            return stores.find((store) => !usedStoreIds.has(store.id));
+          })
+          .filter((store): store is (typeof stores)[number] => Boolean(store))
+          .slice(0, 3);
+
+        stops.forEach((store) => usedStoreIds.add(store.id));
+
+        if (!stops.length) {
+          return null;
+        }
+
+        const cityLabel =
+          stops[0].area?.city ??
+          stops[0].city ??
+          (cityCode === 'hcm' ? 'Ho Chi Minh City' : 'Ha Noi');
+        const personalizedBoost = stops.some((store) =>
+          preferredSet.has(store.category),
+        );
+
+        return {
+          id: `${plan.id}-${cityCode}-${planIndex + 1}`,
+          title: plan.title,
+          subtitle: personalizedBoost
+            ? `${plan.subtitle} theo so thich gan day`
+            : plan.subtitle,
+          cityCode,
+          area: cityLabel,
+          durationHours: plan.durationHours,
+          priceFromVnd: plan.priceFromVnd,
+          href: '/tour',
+          thumbnailUrl: this.resolveStoreCoverImage(stops[0].media),
+          stops: stops.map((store, index) => ({
+            order: index + 1,
+            id: store.id,
+            name: store.name,
+            slug: store.slug,
+            category: store.category,
+            description: store.description,
+            city: store.city,
+            district: store.district,
+            area: this.mapPublicArea(store.area),
+            thumbnailUrl: this.resolveStoreCoverImage(store.media),
+            href: `/stores/${store.slug}`,
+            activeCouponName: store.coupons[0]?.name ?? null,
+          })),
+        };
+      })
+      .filter((tour): tour is NonNullable<typeof tour> => Boolean(tour))
+      .slice(0, limit);
+  }
+
+  async trackPublicHotVideoInteraction(
+    mediaId: string,
+    type: 'view' | 'like',
+    dto: PublicHotVideoInteractionDto = {},
+  ) {
+    const normalizedMediaId = this.cleanText(mediaId);
+    if (!this.isUuid(normalizedMediaId)) {
+      throw new BadRequestException('mediaId must be a valid id');
+    }
+
+    const media = await this.prisma.media.findFirst({
+      where: {
+        id: normalizedMediaId,
+        deletedAt: null,
+        access: 'PUBLIC',
+        status: 'READY',
+        type: 'VIDEO',
+      },
+      select: {
+        id: true,
+        storeId: true,
+        store: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!media) {
+      throw new NotFoundException('hot video not found');
+    }
+
+    await this.prisma.auditLog.create({
+      data: {
+        action:
+          type === 'like'
+            ? 'content.hot_video.like'
+            : 'content.hot_video.view',
+        targetType: 'MEDIA',
+        targetId: media.id,
+        metadata: this.toPrismaJson({
+          source: this.cleanText(dto.source) || 'home_video',
+          surface: this.cleanText(dto.surface) || 'home',
+          anonymousId: this.cleanText(dto.anonymousId) || null,
+          storeId: media.storeId,
+          storeName: media.store?.name ?? null,
+          storeSlug:
+            this.cleanText(dto.storeSlug) || media.store?.slug || null,
+        }),
+      },
+    });
+
+    const metrics = await this.getPublicHotVideoMetrics([media.id]);
+    return {
+      recorded: true,
+      mediaId: media.id,
+      ...(metrics.get(media.id) ?? { viewCount: 0, likeCount: 0 }),
+    };
+  }
+
+  private resolvePublicHomeLimit(
+    value: number | undefined,
+    defaultValue: number,
+    maxValue: number,
+  ) {
+    const limit = Number(value ?? defaultValue);
+    if (!Number.isFinite(limit)) {
+      return defaultValue;
+    }
+
+    return Math.min(Math.max(Math.trunc(limit), 1), maxValue);
+  }
+
+  private parsePublicHomeCategories(value?: string | null): StoreCategory[] {
+    const categories = this.cleanText(value)
+      .split(',')
+      .map((item) => this.normalizeCategory(item))
+      .filter((item): item is StoreCategory => Boolean(item));
+
+    return Array.from(new Set(categories)).slice(0, 8);
+  }
+
+  private parsePublicHomeSlugs(value?: string | null) {
+    const slugs = this.cleanText(value)
+      .split(',')
+      .map((item) => this.normalizeToken(item))
+      .filter(Boolean);
+
+    return Array.from(new Set(slugs)).slice(0, 12);
+  }
+
+  private async getPublicHotVideoMetrics(mediaIds: string[]) {
+    const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)));
+    const metrics = new Map(
+      uniqueIds.map((id) => [id, { viewCount: 0, likeCount: 0 }]),
+    );
+
+    if (!uniqueIds.length) {
+      return metrics;
+    }
+
+    const [views, likes] = await Promise.all([
+      this.prisma.auditLog.groupBy({
+        by: ['targetId'],
+        where: {
+          action: 'content.hot_video.view',
+          targetType: 'MEDIA',
+          targetId: { in: uniqueIds },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.auditLog.groupBy({
+        by: ['targetId'],
+        where: {
+          action: 'content.hot_video.like',
+          targetType: 'MEDIA',
+          targetId: { in: uniqueIds },
+        },
+        _count: { _all: true },
+      }),
+    ]);
+
+    views.forEach((group) => {
+      const item = metrics.get(group.targetId);
+      if (item) item.viewCount = group._count._all;
+    });
+    likes.forEach((group) => {
+      const item = metrics.get(group.targetId);
+      if (item) item.likeCount = group._count._all;
+    });
+
+    return metrics;
+  }
+
   async adminListStoreVideos(query: AdminStoreVideoQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 50;
@@ -16191,6 +16673,9 @@ export class NightlifeDataService {
     const sortedMedias = mediaIds
       .map((id) => medias.find((media) => media.id === id))
       .filter((media) => !!media);
+    const metrics = await this.getPublicHotVideoMetrics(
+      sortedMedias.map((media) => media!.id),
+    );
 
     return sortedMedias.map((item) => ({
       id: item!.id,
@@ -16200,6 +16685,8 @@ export class NightlifeDataService {
       storeSlug: item!.store?.slug,
       href: item!.store?.slug ? `/stores/${item!.store.slug}` : null,
       createdAt: item!.createdAt,
+      viewCount: metrics.get(item!.id)?.viewCount ?? 0,
+      likeCount: metrics.get(item!.id)?.likeCount ?? 0,
     }));
   }
 

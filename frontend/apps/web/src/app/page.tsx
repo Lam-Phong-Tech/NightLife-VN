@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Crown,
+  Eye,
   Heart,
   MapPin,
   Newspaper,
@@ -24,11 +25,25 @@ import {
 
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 import { discoveryApi, type PublicStore } from "@/lib/api/discovery";
-import { contentApi, type CmsContentItem, type PublicHotVideo } from "@/lib/api/content";
+import {
+  contentApi,
+  type CmsContentItem,
+  type PublicHomeRecommendation,
+  type PublicHotVideo,
+  type PublicTourItem,
+} from "@/lib/api/content";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
 import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
 import { resolveClientUrl } from "@/lib/api/client";
 import { formatPriceTier } from "@/lib/price-tier";
+import {
+  getHomeAnonymousId,
+  getHomeBehaviorSignals,
+  hasLikedHotVideo,
+  rememberHotVideoLike,
+  shouldTrackHotVideoView,
+  trackHomeVenueSignal,
+} from "@/lib/analytics/home";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -165,7 +180,12 @@ type HomeVideoItem = {
   id: string;
   name: string;
   img?: string;
+  videoUrl?: string | null;
   href: string;
+  storeSlug?: string | null;
+  viewCount?: number;
+  likeCount?: number;
+  liked?: boolean;
 };
 
 type HomeContentItem = {
@@ -240,6 +260,28 @@ function mapStoreToHomeCard(store: PublicStore, index: number): HomeStoreCard {
   };
 }
 
+function mapRecommendationToHomeCard(item: PublicHomeRecommendation, index: number): HomeStoreCard {
+  const categoryLabel = categoryLabels[item.category] ?? item.category;
+  const areaName = item.area?.name ?? item.district ?? "";
+  const readableArea = areaLabels[areaName] ?? areaName;
+  const readableCity = cityLabels[item.cityCode ?? ""] ?? item.city;
+  const activeCouponName = item.activeCoupon?.name;
+
+  return {
+    id: item.id,
+    slug: item.slug,
+    name: item.name,
+    area: [readableArea, readableCity].filter(Boolean).join(" · "),
+    catLabel: categoryLabel,
+    category: item.category,
+    cityCode: item.cityCode ?? "",
+    img: backgroundFromUrl(item.thumbnailUrl),
+    href: item.href || `/stores/${item.slug}`,
+    badgeText: activeCouponName || item.reason || (index < 2 ? "Gợi ý hợp gu" : categoryLabel),
+    priceLabel: formatPriceTier(categoryPrices[item.category] ?? "từ 900.000đ"),
+  };
+}
+
 function mapRankingToRankedItem(item: PublicRankingItem): RankedItem {
   return {
     rank: item.rank,
@@ -307,6 +349,39 @@ function mapHotVideoToHomeItem(video: PublicHotVideo, index: number): HomeVideoI
     name: name || "Video Hot",
     img: backgroundFromUrl(video.url),
     href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
+  };
+}
+
+function mapTrackedHotVideoToHomeItem(video: PublicHotVideo, index: number): HomeVideoItem {
+  void index;
+  const videoUrl = resolveClientUrl(video.url);
+  const name = [video.storeName, video.title].filter(Boolean).join(" · ");
+
+  return {
+    id: video.id,
+    name: name || "Video Hot",
+    img: backgroundFromUrl(video.url),
+    videoUrl,
+    href: video.href || (video.storeSlug ? `/stores/${video.storeSlug}` : "/danh-sach-quan"),
+    storeSlug: video.storeSlug,
+    viewCount: video.viewCount ?? 0,
+    likeCount: video.likeCount ?? 0,
+    liked: hasLikedHotVideo(video.id),
+  };
+}
+
+function mapTourToHomeItem(tour: PublicTourItem): HomeContentItem {
+  const stopText = tour.stops
+    .slice(0, 2)
+    .map((stop) => stop.name)
+    .join(" · ");
+
+  return {
+    id: tour.id,
+    title: tour.title,
+    desc: stopText || tour.subtitle,
+    href: tour.href || "/tour",
+    icon: MapPin,
   };
 }
 
@@ -971,6 +1046,14 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
   return (
     <Link
       href={item.href}
+      onClick={() =>
+        trackHomeVenueSignal({
+          storeId: item.id,
+          storeSlug: item.slug,
+          category: item.category,
+          source: "home_recommendation",
+        })
+      }
       style={{
         minWidth: compact ? "162px" : "0",
         display: "block",
@@ -1167,7 +1250,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
   );
 }
 
-function VideoCard({ item, compact = false }: { item: HomeVideoItem; compact?: boolean }) {
+function LegacyVideoCard({ item, compact = false }: { item: HomeVideoItem; compact?: boolean }) {
   return (
     <Link href={item.href} style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
       <PlaceholderMedia
@@ -1183,6 +1266,82 @@ function VideoCard({ item, compact = false }: { item: HomeVideoItem; compact?: b
       </PlaceholderMedia>
       <div style={{ marginTop: "9px", fontSize: "13px", fontWeight: 800 }}>{item.name.split("·")[0]}</div>
     </Link>
+  );
+}
+
+function VideoCard({
+  item,
+  compact = false,
+  onLike,
+}: {
+  item: HomeVideoItem;
+  compact?: boolean;
+  onLike?: (item: HomeVideoItem) => void;
+}) {
+  const title = item.name.split(" · ")[0] || item.name;
+
+  return (
+    <div style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
+      <PlaceholderMedia
+        src={item.img}
+        alt={item.name ?? "Video"}
+        label="Video"
+        style={{ height: compact ? "104px" : "148px", borderRadius: homeCardRadius, position: "relative", overflow: "hidden" }}
+      >
+        <Link href={item.href} aria-label={item.name} style={{ position: "absolute", inset: 0, color: "inherit" }}>
+          {item.videoUrl ? (
+            <video
+              src={item.videoUrl}
+              muted
+              loop
+              playsInline
+              autoPlay
+              preload="metadata"
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            />
+          ) : null}
+          <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(12,12,15,.04),rgba(12,12,15,.44))" }} />
+          <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(243,240,234,.92)", color: colors.ink }}>
+            <Play size={17} fill={colors.ink} />
+          </span>
+        </Link>
+        <button
+          type="button"
+          aria-label={item.liked ? "Đã thích video" : "Thích video"}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onLike?.(item);
+          }}
+          style={{
+            position: "absolute",
+            right: 9,
+            top: 9,
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
+            border: "1px solid rgba(240,221,168,.28)",
+            background: "rgba(12,12,15,.62)",
+            color: item.liked ? colors.rose : colors.goldSoft,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <Heart size={17} fill={item.liked ? "currentColor" : "none"} />
+        </button>
+      </PlaceholderMedia>
+      <Link href={item.href} style={{ color: colors.text, textDecoration: "none" }}>
+        <div style={{ marginTop: "9px", fontSize: "13px", fontWeight: 850, lineHeight: 1.25 }}>{title}</div>
+      </Link>
+      <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: 10, color: colors.muted, fontSize: "11px", fontWeight: 800 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Eye size={13} /> {item.viewCount ?? 0}
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Heart size={13} fill={item.liked ? colors.rose : "none"} /> {item.likeCount ?? 0}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -1487,6 +1646,9 @@ export default function Page() {
   const [homeStores, setHomeStores] = useState<PublicStore[]>([]);
   const [isHomeStoresLoading, setHomeStoresLoading] = useState(true);
   const [homeStoresError, setHomeStoresError] = useState("");
+  const [homeRecommendations, setHomeRecommendations] = useState<HomeStoreCard[]>([]);
+  const [isHomeRecommendationsLoading, setHomeRecommendationsLoading] = useState(true);
+  const [homeRecommendationsError, setHomeRecommendationsError] = useState("");
   const [homeBanners, setHomeBanners] = useState<CmsContentItem[]>([]);
   const [homeCoupons, setHomeCoupons] = useState<HomeCouponItem[]>([]);
   const [isHomeCouponsLoading, setHomeCouponsLoading] = useState(true);
@@ -1503,11 +1665,17 @@ export default function Page() {
   const [isHomeVideosLoading, setHomeVideosLoading] = useState(homeHotVideosEnabled);
   const [homeVideosError, setHomeVideosError] = useState("");
   const [homeContentItems, setHomeContentItems] = useState<HomeContentItem[]>([]);
+  const [homeTours, setHomeTours] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
   const [homeContentError, setHomeContentError] = useState("");
   const homeStoreCards = useMemo(
     () => homeStores.map(mapStoreToHomeCard),
     [homeStores],
+  );
+  const recommendedCards = homeRecommendations.length ? homeRecommendations : homeStoreCards;
+  const guideItems = useMemo(
+    () => [...homeTours, ...homeContentItems].slice(0, 3),
+    [homeTours, homeContentItems],
   );
   const rankList = filterRankingsByRegion(
     activeRankTab === "quan" ? storeRankItems : castRankItems,
@@ -1529,6 +1697,7 @@ export default function Page() {
 
   useEffect(() => {
     let cancelled = false;
+    const behaviorSignals = getHomeBehaviorSignals();
 
     discoveryApi
       .listStoresStrict({ city: "all", limit: 24, sort: "priority" })
@@ -1543,6 +1712,26 @@ export default function Page() {
       })
       .finally(() => {
         if (!cancelled) setHomeStoresLoading(false);
+      });
+
+    contentApi
+      .recommendations({
+        cityCode: "all",
+        limit: 8,
+        categories: behaviorSignals.categories.join(","),
+        storeSlugs: behaviorSignals.storeSlugs.join(","),
+      })
+      .then((items) => {
+        if (!cancelled) setHomeRecommendations(items.map(mapRecommendationToHomeCard));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHomeRecommendations([]);
+          setHomeRecommendationsError("Chưa tải được gợi ý cá nhân hóa.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHomeRecommendationsLoading(false);
       });
 
     contentApi
@@ -1588,11 +1777,18 @@ export default function Page() {
       });
 
     Promise.all([
+      contentApi.tours({
+        cityCode: "all",
+        limit: 2,
+        categories: behaviorSignals.categories.join(","),
+        storeSlugs: behaviorSignals.storeSlugs.join(","),
+      }),
       contentApi.list({ type: "BLOG", limit: 3 }),
       contentApi.list({ type: "POLICY", limit: 3 }),
     ])
-      .then(([blogResponse, policyResponse]) => {
+      .then(([tourResponse, blogResponse, policyResponse]) => {
         if (cancelled) return;
+        setHomeTours(tourResponse.map(mapTourToHomeItem));
         const items = [...(blogResponse.data ?? []), ...(policyResponse.data ?? [])]
           .slice(0, 3)
           .map(mapContentToHomeItem);
@@ -1666,7 +1862,7 @@ export default function Page() {
     contentApi
       .hotVideos(cityCode)
       .then((videos) => {
-        if (!cancelled) setHomeVideos(videos.map(mapHotVideoToHomeItem));
+        if (!cancelled) setHomeVideos(videos.map(mapTrackedHotVideoToHomeItem));
       })
       .catch(() => {
         if (!cancelled) {
@@ -1682,6 +1878,65 @@ export default function Page() {
       cancelled = true;
     };
   }, [activeVideoRegion, homeHotVideosEnabled]);
+
+  useEffect(() => {
+    if (!homeHotVideosEnabled || !homeVideos.length) return;
+
+    const anonymousId = getHomeAnonymousId();
+
+    homeVideos.slice(0, 4).forEach((item) => {
+      if (!shouldTrackHotVideoView(item.id)) return;
+
+      contentApi
+        .trackHotVideoView(item.id, {
+          source: "home_video",
+          surface: "homepage",
+          anonymousId,
+          storeSlug: item.storeSlug,
+        })
+        .then((metric) => {
+          setHomeVideos((current) =>
+            current.map((video) =>
+              video.id === item.id
+                ? { ...video, viewCount: metric.viewCount, likeCount: metric.likeCount }
+                : video,
+            ),
+          );
+        })
+        .catch(() => undefined);
+    });
+  }, [homeHotVideosEnabled, homeVideos]);
+
+  const handleHotVideoLike = (item: HomeVideoItem) => {
+    if (item.liked) return;
+
+    rememberHotVideoLike(item.id);
+    setHomeVideos((current) =>
+      current.map((video) =>
+        video.id === item.id
+          ? { ...video, liked: true, likeCount: (video.likeCount ?? 0) + 1 }
+          : video,
+      ),
+    );
+
+    contentApi
+      .trackHotVideoLike(item.id, {
+        source: "home_video",
+        surface: "homepage",
+        anonymousId: getHomeAnonymousId(),
+        storeSlug: item.storeSlug,
+      })
+      .then((metric) => {
+        setHomeVideos((current) =>
+          current.map((video) =>
+            video.id === item.id
+              ? { ...video, viewCount: metric.viewCount, likeCount: metric.likeCount, liked: true }
+              : video,
+          ),
+        );
+      })
+      .catch(() => undefined);
+  };
 
   return (
     <React.Fragment>
@@ -1704,12 +1959,12 @@ export default function Page() {
             <section data-testid="home-mobile-recommendations" style={{ marginTop: "24px" }}>
               <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "6px" }}>
-                {isHomeStoresLoading ? (
+                {isHomeRecommendationsLoading && isHomeStoresLoading ? (
                   <HomeDataMessage text="Đang tải quán từ API..." compact />
-                ) : homeStoreCards.length ? (
-                  homeStoreCards.slice(0, 3).map((item) => <VenueMiniCard key={item.slug} item={item} compact />)
+                ) : recommendedCards.length ? (
+                  recommendedCards.slice(0, 3).map((item) => <VenueMiniCard key={item.slug} item={item} compact />)
                 ) : (
-                  <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} compact />
+                  <HomeDataMessage text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."} compact />
                 )}
               </div>
             </section>
@@ -1775,8 +2030,8 @@ export default function Page() {
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
                 {isHomeContentLoading ? (
                   <HomeDataMessage text="Đang tải nội dung CMS..." compact />
-                ) : homeContentItems.length ? (
-                  homeContentItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} compact />)
+                ) : guideItems.length ? (
+                  guideItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} compact />)
                 ) : (
                   <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} compact />
                 )}
@@ -1798,7 +2053,7 @@ export default function Page() {
                 ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." compact />
                 ) : videoList.length ? (
-                  videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact />)
+                  videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact onLike={handleHotVideoLike} />)
                 ) : (
                   <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} compact />
                 )}
@@ -1829,12 +2084,12 @@ export default function Page() {
             <section style={{ marginTop: "34px" }}>
               <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {isHomeStoresLoading ? (
+                {isHomeRecommendationsLoading && isHomeStoresLoading ? (
                   <HomeDataMessage text="Đang tải quán từ API..." />
-                ) : homeStoreCards.length ? (
-                  homeStoreCards.slice(0, 4).map((item) => <VenueMiniCard key={item.slug} item={item} />)
+                ) : recommendedCards.length ? (
+                  recommendedCards.slice(0, 4).map((item) => <VenueMiniCard key={item.slug} item={item} />)
                 ) : (
-                  <HomeDataMessage text={homeStoresError || "Chưa có quán từ backend."} />
+                  <HomeDataMessage text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."} />
                 )}
               </div>
             </section>
@@ -1904,8 +2159,8 @@ export default function Page() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
                 {isHomeContentLoading ? (
                   <HomeDataMessage text="Đang tải nội dung CMS..." />
-                ) : homeContentItems.length ? (
-                  homeContentItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} />)
+                ) : guideItems.length ? (
+                  guideItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} />)
                 ) : (
                   <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} />
                 )}
@@ -1927,7 +2182,7 @@ export default function Page() {
                 ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." />
                 ) : videoList.length ? (
-                  videoList.map((item) => <VideoCard key={item.id} item={item} />)
+                  videoList.map((item) => <VideoCard key={item.id} item={item} onLike={handleHotVideoLike} />)
                 ) : (
                   <HomeDataMessage text={homeVideosError || "Chưa có Video Hot cho khu vực này."} />
                 )}
