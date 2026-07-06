@@ -302,9 +302,9 @@ export default function AdminContentPage() {
   const fetchStoreVideos = async (query: string, page: number, region?: string) => {
     try {
       setIsSearchingVideo(true);
-      const cityCode = region === 'Hà Nội' ? 'hn' : (region === 'TP. Hồ Chí Minh' ? 'hcm' : 'all');
+      const cityCode = region === 'Hà Nội' ? 'hn' : (region === 'TP. Hồ Chí Minh' ? 'hcm' : 'other');
       const data = await apiClient<any>('/admin/media/store-videos', {
-        params: { search: query, page, limit: 10, ...(cityCode !== 'all' && { cityCode }) }
+        params: { search: query, page, limit: 10, cityCode }
       });
       setSearchVideos(data?.items || []);
       setSearchVideoTotalPages(data?.totalPages || 1);

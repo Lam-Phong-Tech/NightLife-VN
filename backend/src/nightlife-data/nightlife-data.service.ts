@@ -16583,19 +16583,25 @@ export class NightlifeDataService {
     };
 
     if (query.cityCode && query.cityCode !== 'all') {
-      where.store = {
-        OR: [
-          {
-            city:
-              query.cityCode === 'hcm'
-                ? 'Ho Chi Minh City'
-                : query.cityCode === 'hn'
-                  ? 'Hanoi'
-                  : query.cityCode,
-          },
-          { area: { is: { ...this.buildMvpAreaCodeWhere(query.cityCode) } } },
-        ],
-      };
+      if (query.cityCode === 'other') {
+        where.store = {
+          city: { notIn: ['Hanoi', 'Ho Chi Minh City'] },
+        };
+      } else {
+        where.store = {
+          OR: [
+            {
+              city:
+                query.cityCode === 'hcm'
+                  ? 'Ho Chi Minh City'
+                  : query.cityCode === 'hn'
+                    ? 'Hanoi'
+                    : query.cityCode,
+            },
+            { area: { is: { ...this.buildMvpAreaCodeWhere(query.cityCode) } } },
+          ],
+        };
+      }
     }
 
     if (query.search) {
