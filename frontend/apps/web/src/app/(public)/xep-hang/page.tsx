@@ -33,31 +33,31 @@ type SelectOption<T extends string> = {
 const rankTones = [
   {
     badge: "linear-gradient(135deg,#f4e3b4,#d4b26a)",
-    text: "#e3c27e",
+    text: "var(--vy-gold-hi)",
     icon: "#5a4413",
     topBorder: "rgba(212,178,106,.34)",
   },
   {
     badge: "linear-gradient(135deg,#e8e8ee,#b8b8c4)",
-    text: "#b9b4ab",
+    text: "var(--vy-text-2)",
     icon: "#4a4a52",
     topBorder: undefined,
   },
   {
     badge: "linear-gradient(135deg,#f0c08a,#cf8f55)",
-    text: "#d8a571",
+    text: "var(--vy-warn)",
     icon: "#5a3a18",
     topBorder: undefined,
   },
   {
     badge: "linear-gradient(135deg,#86e0a8,#4cae78)",
-    text: "#7fcf9e",
+    text: "var(--vy-success)",
     icon: "#16402a",
     topBorder: undefined,
   },
   {
     badge: "linear-gradient(135deg,#9db4ff,#6b86e6)",
-    text: "#9db0e8",
+    text: "var(--vy-info)",
     icon: "#1a2350",
     topBorder: undefined,
   },

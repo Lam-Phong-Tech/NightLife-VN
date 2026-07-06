@@ -25,10 +25,6 @@ export function ThemeToggle({ isMobile }: ThemeToggleProps) {
     }
   }, []);
 
-  if (process.env.NEXT_PUBLIC_LIGHT_THEME !== "1") {
-    return null;
-  }
-
   const toggleTheme = () => {
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
