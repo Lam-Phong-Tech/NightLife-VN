@@ -34,7 +34,7 @@ export default function AdminCouponsPage() {
 
   const fetchCoupons = async () => {
     try {
-      const res = await apiClient<any>('/admin/coupons', {
+      const res = await apiClient<any>('/admin/global-coupons', {
         params: { status: activeTab === 'all' ? undefined : activeTab, page: currentPage, limit: adminPageSize }
       });
       setCoupons(res.data);
