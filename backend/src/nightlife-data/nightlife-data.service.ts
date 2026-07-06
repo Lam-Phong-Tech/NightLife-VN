@@ -1139,7 +1139,8 @@ export class NightlifeDataService {
             cityCode,
             category,
           });
-    const allowFallback = scope === 'global';
+    const allowFallback =
+      scope === 'global' && process.env.ENABLE_RANKING_FALLBACK === 'true';
     const fallbackItems =
       allowFallback && rankedItems.length < limit
         ? await this.loadRankingFallbackItems(targetType, {

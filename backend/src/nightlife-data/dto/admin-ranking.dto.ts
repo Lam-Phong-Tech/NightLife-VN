@@ -79,7 +79,7 @@ export class CreateAdminRankingConfigDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(5, { message: 'Ranking P0 chỉ hỗ trợ Top 1-5' })
   pinRank?: number | null;
 
   @IsOptional()
@@ -145,7 +145,7 @@ export class UpdateAdminRankingConfigDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(5, { message: 'Ranking P0 chỉ hỗ trợ Top 1-5' })
   pinRank?: number | null;
 
   @IsOptional()
