@@ -41,9 +41,11 @@ export default function RootLayout({
             __html: `
               (function () {
                 try {
-                  var t = localStorage.getItem('vy-user-theme');
-                  if (!t && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
-                  if (t === 'light') document.documentElement.classList.add('vy-light');
+                  var isAdmin = window.location.pathname.startsWith('/admin');
+                  var key = isAdmin ? 'vy-admin-theme' : 'vy-user-theme';
+                  var t = localStorage.getItem(key);
+                  if (!isAdmin && !t && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
+                  if (t === 'light') document.documentElement.classList.add(isAdmin ? 'vy-admin-light' : 'vy-light');
                 } catch (e) { /* private mode */ }
               })();
             `,

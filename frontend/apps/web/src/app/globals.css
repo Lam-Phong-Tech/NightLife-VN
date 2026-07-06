@@ -1137,3 +1137,16 @@ html.vy-light .nl-media-fallback svg, html.vy-light .nl-media-fallback path {
 html.vy-light .nl-home-section-title {
   text-shadow: none !important;
 }
+
+/* --- Admin Console Light Mode (Filter Invert) --- */
+html.vy-admin-light {
+  filter: invert(1) hue-rotate(180deg);
+  background: #0c0c0f; /* Keep dark background, it will invert to light */
+}
+
+/* Revert elements that should not invert */
+html.vy-admin-light img,
+html.vy-admin-light video,
+html.vy-admin-light [data-noinvert] {
+  filter: invert(1) hue-rotate(180deg);
+}
