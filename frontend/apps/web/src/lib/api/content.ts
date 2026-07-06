@@ -46,8 +46,10 @@ export type PublicHotVideo = {
   id: string;
   url: string;
   title?: string | null;
+  thumbnailUrl?: string | null;
   storeName?: string | null;
   storeSlug?: string | null;
+  storeThumbnailUrl?: string | null;
   href?: string | null;
   createdAt?: string;
   viewCount?: number;
