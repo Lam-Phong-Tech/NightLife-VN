@@ -293,8 +293,8 @@ function SavedCard({
 
 const savedPageCss = `
   .saved-page {
-    background: #0c0c0f;
-    color: #f3f0ea;
+    background: var(--vy-bg);
+    color: var(--vy-text);
     font-family: var(--nl-font-sans);
     padding: 22px 18px 18px;
   }

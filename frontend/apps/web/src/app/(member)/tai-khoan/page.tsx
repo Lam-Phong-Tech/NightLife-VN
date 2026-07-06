@@ -19,19 +19,19 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
 const colors = {
-  bg: "#0c0c0f",
-  panel: "rgba(255,255,255,.045)",
-  panelStrong: "rgba(255,255,255,.07)",
-  border: "rgba(212,178,106,.22)",
-  borderStrong: "rgba(212,178,106,.34)",
-  text: "#f3f0ea",
-  muted: "#b6b1a6",
-  dim: "#8c8679",
-  gold: "#d4b26a",
-  goldPale: "#f0dda8",
-  onGold: "#241a0a",
-  danger: "#ff6b8b",
-  goldGrad: "linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)",
+  bg: "var(--vy-bg)",
+  panel: "var(--vy-surface-2)",
+  panelStrong: "var(--vy-surface-3)",
+  border: "var(--vy-border-gold-22)",
+  borderStrong: "var(--vy-border-gold-32)",
+  text: "var(--vy-text)",
+  muted: "var(--vy-muted)",
+  dim: "var(--vy-faint)",
+  gold: "var(--vy-gold)",
+  goldPale: "var(--vy-gold-pale)",
+  onGold: "var(--vy-on-gold)",
+  danger: "var(--vy-error)",
+  goldGrad: "var(--vy-gold-grad)",
 };
 
 const defaultPointTarget = 250;
