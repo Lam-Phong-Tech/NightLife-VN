@@ -25,6 +25,7 @@ import {
   getAppearanceConfig,
   type AppearanceItem,
 } from "@/lib/api/appearance";
+import { resolveClientUrl } from "@/lib/api/client";
 import {
   notificationApi,
   type MemberNotification,
@@ -87,6 +88,7 @@ type BottomNavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
+  iconUrl?: string;
 };
 
 const bottomNavHrefById: Record<string, string> = {
@@ -107,6 +109,11 @@ const bottomNavIconMap: Record<string, LucideIcon> = {
   user: UserRound,
 };
 
+function appearanceIconUrl(icon?: string) {
+  if (!icon || (!/^(https?:|\/|data:image\/)/i.test(icon) && !icon.startsWith("storage/"))) return undefined;
+  return resolveClientUrl(icon) || icon;
+}
+
 function mapAppearanceNavItem(item: AppearanceItem, index: number): BottomNavItem {
   const fallback = bottomNav[index] ?? bottomNav[0] ?? {
     href: "/",
@@ -119,6 +126,7 @@ function mapAppearanceNavItem(item: AppearanceItem, index: number): BottomNavIte
     href: bottomNavHrefById[item.id] ?? (defaultConfig ? bottomNavHrefById[defaultConfig.id] : undefined) ?? fallback.href,
     label: item.label || fallback.label,
     icon: bottomNavIconMap[item.icon] ?? fallback.icon,
+    iconUrl: appearanceIconUrl(item.icon),
   };
 }
 
@@ -1285,7 +1293,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    void refreshMemberNotifications();
+    queueMicrotask(() => {
+      void refreshMemberNotifications();
+    });
     if (!showCustomerNotifications) return;
 
     const interval = window.setInterval(() => {
@@ -1297,7 +1307,9 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isNotificationOpen) {
-      void refreshMemberNotifications();
+      queueMicrotask(() => {
+        void refreshMemberNotifications();
+      });
     }
   }, [isNotificationOpen, refreshMemberNotifications]);
 
@@ -1834,7 +1846,11 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                   touchAction: "manipulation",
                 }}
               >
-                <Icon size={21} />
+                {item.iconUrl ? (
+                  <img src={item.iconUrl} alt="" width={21} height={21} style={{ display: "block", objectFit: "contain" }} />
+                ) : (
+                  <Icon size={21} />
+                )}
                 <span>{item.label}</span>
               </Link>
             );
