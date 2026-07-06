@@ -125,6 +125,19 @@ type HomeBanner = {
   hasImage?: boolean;
 };
 
+type HomeBannerMetadata = {
+  description?: string;
+  tag?: string;
+  link?: string;
+  statusLabel?: string;
+  subtitle?: string;
+  imageUrl?: string;
+};
+
+function getHomeBannerMetadata(content: CmsContentItem): HomeBannerMetadata {
+  return content.metadata ?? {};
+}
+
 type HomeStoreCard = {
   id: string;
   slug: string;
@@ -477,6 +490,12 @@ const homeBannerAutoDelayMs = 7200;
 
 const homeBannerSlideTransition = "transform 960ms cubic-bezier(.22,.78,.22,1), opacity 960ms ease";
 
+const homeHotVideosPlaceholderText = "Video Hot đang được chuẩn bị.";
+
+function isHomeHotVideosEnabled() {
+  return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS === "true";
+}
+
 function getBannerBackgroundImage(value?: string | null) {
   return value?.replace(/\s+center\/cover\s*$/i, "") || "var(--vy-hero-grad)";
 }
@@ -615,7 +634,7 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
 
 function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const [activeBanner, setActiveBanner] = useState(0);
-  const fallbackBanner: HomeBanner = {
+  const fallbackBanner = useMemo<HomeBanner>(() => ({
     title: "Sự kiện đêm nay",
     desc: "Đặt bàn VIP từ 2.500.000đ",
     btnText: "Đặt ngay",
@@ -623,12 +642,12 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
     statusLabel: "HOT",
     subtitle: "NightLife-VN",
     hasImage: false,
-  };
+  }), []);
   
   const mappedBanners: HomeBanner[] = useMemo(() => {
     if (apiBanners.length === 0) return [fallbackBanner];
     return apiBanners.map(b => {
-      const meta = (b.metadata as any) || {};
+      const meta = getHomeBannerMetadata(b);
       const hasImage = !!meta.imageUrl;
       return {
         title: b.title,
@@ -641,7 +660,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
         hasImage,
       };
     });
-  }, [apiBanners]);
+  }, [apiBanners, fallbackBanner]);
 
   const banners: HomeBanner[] = mappedBanners;
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
@@ -777,16 +796,16 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 
 function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
   const [activeBanner, setActiveBanner] = useState(0);
-  const fallbackBanner: HomeBanner = {
+  const fallbackBanner = useMemo<HomeBanner>(() => ({
     title: "Ưu đãi đêm nay",
     desc: "Lướt để xem thêm ưu đãi và sự kiện nổi bật.",
     btnText: "Xem ngay",
     img: "linear-gradient(135deg,#15151a,#2a2112)",
-  };
+  }), []);
   const banners: HomeBanner[] = useMemo(() => {
     if (!apiBanners.length) return [fallbackBanner];
     return apiBanners.map((banner) => {
-      const meta = (banner.metadata as any) || {};
+      const meta = getHomeBannerMetadata(banner);
       return {
         title: banner.title,
         desc: meta.description || banner.excerpt || "",
@@ -799,7 +818,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
           : "linear-gradient(135deg,#15151a,#2a2112)",
       };
     });
-  }, [apiBanners]);
+  }, [apiBanners, fallbackBanner]);
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
@@ -986,6 +1005,8 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
   return (
     <Link
       href={item.href}
+      data-testid="home-coupon-cta"
+      aria-label={`Xem ưu đãi ${item.title} tại ${item.place}`}
       style={{
         display: "grid",
         gridTemplateColumns: compact ? "82px 1fr auto" : "120px 1fr auto",
@@ -1009,7 +1030,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
         <div style={{ marginTop: "2px", fontSize: "14px", fontWeight: 800 }}>{item.title}</div>
         <div style={{ marginTop: "4px", color: colors.muted, fontSize: "12px" }}>{item.place}</div>
       </div>
-      <span style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".08em" }}>LẤY MÃ</span>
+      <span style={{ color: colors.rose, fontSize: compact ? "11px" : "12px", fontWeight: 900, letterSpacing: ".03em" }}>Xem ưu đãi</span>
     </Link>
   );
 }
@@ -1477,8 +1498,9 @@ export default function Page() {
   const [featuredServices, setFeaturedServices] = useState<HomeStoreCard[]>([]);
   const [isFeaturedServicesLoading, setFeaturedServicesLoading] = useState(true);
   const [featuredServicesError, setFeaturedServicesError] = useState("");
+  const homeHotVideosEnabled = isHomeHotVideosEnabled();
   const [homeVideos, setHomeVideos] = useState<HomeVideoItem[]>([]);
-  const [isHomeVideosLoading, setHomeVideosLoading] = useState(true);
+  const [isHomeVideosLoading, setHomeVideosLoading] = useState(homeHotVideosEnabled);
   const [homeVideosError, setHomeVideosError] = useState("");
   const [homeContentItems, setHomeContentItems] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
@@ -1595,8 +1617,12 @@ export default function Page() {
     let cancelled = false;
     const category = activeSvcTab === "nhahang" ? "RESTAURANT" : "MASSAGE_SPA";
 
-    setFeaturedServicesLoading(true);
-    setFeaturedServicesError("");
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setFeaturedServicesLoading(true);
+        setFeaturedServicesError("");
+      }
+    });
 
     rankingsApi
       .list({
@@ -1625,11 +1651,17 @@ export default function Page() {
   }, [activeSvcTab, activeServiceRegion]);
 
   useEffect(() => {
+    if (!homeHotVideosEnabled) return;
+
     let cancelled = false;
     const cityCode = regionToCityCode(activeVideoRegion);
 
-    setHomeVideosLoading(true);
-    setHomeVideosError("");
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setHomeVideosLoading(true);
+        setHomeVideosError("");
+      }
+    });
 
     contentApi
       .hotVideos(cityCode)
@@ -1649,25 +1681,27 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [activeVideoRegion]);
+  }, [activeVideoRegion, homeHotVideosEnabled]);
 
   return (
     <React.Fragment>
       <div className="block md:hidden" style={shellStyle}>
-        <div style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
-          <HeaderBar />
+        <div data-testid="home-mobile-shell" style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
+          <div data-testid="home-mobile-header">
+            <HeaderBar />
+          </div>
           <main style={{ padding: "0 18px 0" }}>
-            <div style={{ marginTop: "12px" }}>
+            <div data-testid="home-mobile-search" style={{ marginTop: "12px" }}>
               <SearchPanel />
             </div>
-            <div style={{ marginTop: "16px" }}>
+            <div data-testid="home-mobile-hero" style={{ marginTop: "16px" }}>
               <EventHero apiBanners={homeBanners} />
             </div>
-            <div style={{ marginTop: "22px" }}>
+            <div data-testid="home-mobile-categories" style={{ marginTop: "22px" }}>
               <CategoryGrid />
             </div>
 
-            <section style={{ marginTop: "24px" }}>
+            <section data-testid="home-mobile-recommendations" style={{ marginTop: "24px" }}>
               <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "6px" }}>
                 {isHomeStoresLoading ? (
@@ -1680,7 +1714,7 @@ export default function Page() {
               </div>
             </section>
 
-            <section style={{ marginTop: "18px" }}>
+            <section data-testid="home-mobile-coupons" style={{ marginTop: "18px" }}>
               <SectionHeading title="Coupon Hot" />
               <div style={{ display: "grid", gap: "10px" }}>
                 {isHomeCouponsLoading ? (
@@ -1693,7 +1727,7 @@ export default function Page() {
               </div>
             </section>
 
-            <section style={{ marginTop: "22px" }}>
+            <section data-testid="home-mobile-ranking" style={{ marginTop: "22px" }}>
               <RankingSectionHeader
                 activeTab={activeRankTab}
                 onTabChange={setActiveRankTab}
@@ -1715,7 +1749,7 @@ export default function Page() {
               <MidPageBanner apiBanners={homeBanners} />
             </div>
 
-            <section style={{ marginTop: "22px" }}>
+            <section data-testid="home-mobile-featured" style={{ marginTop: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Dịch vụ nổi bật</h2>
               </div>
@@ -1736,7 +1770,7 @@ export default function Page() {
               </div>
             </section>
 
-            <section style={{ marginTop: "22px" }}>
+            <section data-testid="home-mobile-guide" style={{ marginTop: "22px" }}>
               <SectionHeading title="Tour / Blog / Guide" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
                 {isHomeContentLoading ? (
@@ -1749,7 +1783,7 @@ export default function Page() {
               </div>
             </section>
 
-            <section style={{ marginTop: "22px", paddingBottom: "22px" }}>
+            <section data-testid="home-mobile-video" style={{ marginTop: "22px", paddingBottom: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
                 <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Video Hot</h2>
                 <RankingRegionDropdown
@@ -1759,7 +1793,9 @@ export default function Page() {
                 />
               </div>
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
-                {isHomeVideosLoading ? (
+                {!homeHotVideosEnabled ? (
+                  <HomeDataMessage text={homeHotVideosPlaceholderText} compact />
+                ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." compact />
                 ) : videoList.length ? (
                   videoList.slice(0, 3).map((item) => <VideoCard key={item.id} item={item} compact />)
@@ -1886,7 +1922,9 @@ export default function Page() {
                 />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                {isHomeVideosLoading ? (
+                {!homeHotVideosEnabled ? (
+                  <HomeDataMessage text={homeHotVideosPlaceholderText} />
+                ) : isHomeVideosLoading ? (
                   <HomeDataMessage text="Đang tải Video Hot từ API..." />
                 ) : videoList.length ? (
                   videoList.map((item) => <VideoCard key={item.id} item={item} />)

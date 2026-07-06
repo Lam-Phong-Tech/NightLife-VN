@@ -72,13 +72,13 @@ const faqs: FAQItem[] = Array(5).fill({
     </div>
 
     {/* section: 3 bước nhanh */}
-    <div style={{"padding":"20px 18px 6px","fontWeight":"700","fontSize":"15px"}}>Lấy mã &amp; tích điểm — 3 bước</div>
+    <div style={{"padding":"20px 18px 6px","fontWeight":"700","fontSize":"15px"}}>Xem ưu đãi &amp; đặt bàn — 3 bước</div>
     <div style={{"padding":"0 18px 4px","display":"flex","flexDirection":"column","gap":"9px"}}>
       <div style={{"background":"#fff","borderRadius":"14px","padding":"14px","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"flex","alignItems":"flex-start","gap":"12px"}}>
         <span style={{"width":"32px","height":"32px","borderRadius":"10px","flex":"none","background":"#6d28d9","color":"#fff","display":"flex","alignItems":"center","justifyContent":"center","fontWeight":"800","fontSize":"14px"}}>1</span>
         <div style={{"paddingTop":"3px"}}>
-          <div style={{"fontWeight":"600","fontSize":"13px"}}>Chọn coupon &amp; &quot;Lấy mã&quot;</div>
-          <div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"3px"}}>Mã được lưu tự động vào ví của bạn.</div>
+          <div style={{"fontWeight":"600","fontSize":"13px"}}>Chọn ưu đãi &amp; mở trang quán</div>
+          <div style={{"fontSize":"11.5px","color":"#8a879a","marginTop":"3px"}}>Ưu đãi được gắn khi bạn gửi yêu cầu đặt bàn.</div>
         </div>
       </div>
       <div style={{"background":"#fff","borderRadius":"14px","padding":"14px","boxShadow":"0 3px 12px rgba(40,20,60,.06)","display":"flex","alignItems":"flex-start","gap":"12px"}}>
