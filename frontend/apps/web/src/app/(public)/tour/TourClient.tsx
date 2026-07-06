@@ -70,10 +70,7 @@ export function TourClient() {
 
   return (
     <section style={{ maxWidth: 1180, margin: "0 auto" }}>
-      <p style={{ margin: 0, color: "#d4b26a", fontSize: 12, fontWeight: 850, letterSpacing: "1.8px", textTransform: "uppercase" }}>
-        Tour thật theo dữ liệu quán
-      </p>
-      <h1 style={{ margin: "8px 0 0", maxWidth: 780, fontSize: "clamp(34px, 6vw, 58px)", lineHeight: 1.04, fontWeight: 950 }}>
+      <h1 style={{ margin: 0, maxWidth: 780, fontSize: "clamp(34px, 6vw, 58px)", lineHeight: 1.04, fontWeight: 950 }}>
         Lịch trình nightlife theo khu vực
       </h1>
       <p style={{ maxWidth: 720, margin: "16px 0 0", color: "#c5c0b6", fontSize: 16, lineHeight: 1.75 }}>
