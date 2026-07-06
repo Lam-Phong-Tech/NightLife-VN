@@ -120,43 +120,66 @@ function TopRegionFilter() {
   const [open, setOpen] = useState(false);
 
   const opts = [
-    { v: '', l: 'Tất cả KV' },
-    { v: 'Hanoi', l: 'HN' },
-    { v: 'Ho Chi Minh City', l: 'HCM' }
+    { v: 'Hanoi', label: 'Hà Nội', short: 'HN', sub: 'Các quán tại Hà Nội' },
+    { v: 'Ho Chi Minh City', label: 'TP. Hồ Chí Minh', short: 'HCM', sub: 'Các quán tại TP. HCM' },
+    { v: '', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Các tỉnh thành khác ngoài Hà Nội và TP. HCM' }
   ];
 
-  const curr = opts.find(o => o.v === city) || { v: '', l: 'Tất cả KV' };
+  const curr = opts.find(o => o.v === city) || { v: '', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Các tỉnh thành khác ngoài Hà Nội và TP. HCM' };
 
   return (
     <div style={{ position: 'relative' }}>
       <div 
         onClick={() => setOpen(!open)}
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid rgba(212,178,106,.28)', color: '#f3f0ea', fontSize: '12.5px', borderRadius: '11px', padding: '8px 12px 8px 10px', fontWeight: 600, cursor: 'pointer', background: 'rgba(255,255,255,.02)' }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', borderRadius: '11px', padding: '8px 13px', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap',
+          color: open ? '#f0dda8' : '#c5c0b6',
+          border: open ? '1px solid rgba(212,178,106,.6)' : '1px solid rgba(212,178,106,.28)',
+          background: open ? 'rgba(212,178,106,.1)' : 'rgba(255,255,255,.02)'
+        }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
-        <span>{curr.l}</span>
-        <svg style={{ marginLeft: '4px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+        {curr.short}
+        <svg style={{ marginLeft: '4px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </div>
 
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setOpen(false)} />
-          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#17161c', border: '1px solid rgba(255,255,255,.08)', borderRadius: '12px', padding: '6px', zIndex: 100, minWidth: '140px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)' }}>
-            {opts.map(o => (
-              <div 
-                key={o.v}
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams.toString());
-                  if (o.v) params.set('city', o.v);
-                  else params.delete('city');
-                  router.push(pathname + '?' + params.toString());
-                  setOpen(false);
-                }}
-                style={{ padding: '9px 12px', fontSize: '13px', fontWeight: 500, color: city === o.v ? '#241a0a' : '#c5c0b6', background: city === o.v ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'transparent', borderRadius: '8px', cursor: 'pointer', marginBottom: '2px' }}
-              >
-                {o.l}
-              </div>
-            ))}
+          <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#15141a', border: '1px solid rgba(212,178,106,.24)', borderRadius: '15px', zIndex: 100, width: '248px', boxShadow: '0 34px 70px -24px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 15px 9px', fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+              Khu vực dữ liệu
+            </div>
+            {opts.map(o => {
+              const isActive = city === o.v;
+              return (
+                <div 
+                  key={o.v}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    if (o.v) params.set('city', o.v);
+                    else params.delete('city');
+                    router.push(pathname + '?' + params.toString());
+                    setOpen(false);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 15px', cursor: 'pointer', color: isActive ? '#f0dda8' : '#c5c0b6', background: isActive ? 'rgba(212,178,106,.08)' : 'transparent' }}
+                  onMouseEnter={(e) => { if(!isActive) e.currentTarget.style.background = 'rgba(212,178,106,.07)'; }}
+                  onMouseLeave={(e) => { if(!isActive) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{o.label}</div>
+                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '1px' }}>{o.sub}</div>
+                  </div>
+                  {isActive && (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e3c27e" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  )}
+                </div>
+              );
+            })}
+            <div style={{ padding: '10px 15px', background: 'rgba(255,255,255,.02)', borderTop: '1px solid rgba(255,255,255,.05)', fontSize: '10px', color: '#8c8679', lineHeight: 1.5 }}>
+              Số liệu &amp; danh sách trên trang admin lọc theo khu vực này.
+            </div>
           </div>
         </>
       )}
