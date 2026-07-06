@@ -1216,6 +1216,7 @@ export class NightlifeDataService {
   ) {
     const targetType = this.resolveRankingTargetType(query.targetType);
     const cityCode = this.normalizeCityCode(query.city, { strict: true });
+    const isAll = query.city?.toLowerCase() === 'all';
     const category =
       this.resolveAdminRankingCategory(query.category) ?? undefined;
     const q = this.cleanText(query.q);
@@ -1240,7 +1241,15 @@ export class NightlifeDataService {
                   { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
                 ],
               }
-            : {}),
+            : isAll
+              ? {
+                  NOT: [
+                    { city: { in: ['Hanoi', 'Ho Chi Minh City'] } },
+                    { area: { is: { code: { startsWith: 'hn-' } } } },
+                    { area: { is: { code: { startsWith: 'hcm-' } } } },
+                  ],
+                }
+              : {}),
           ...(q
             ? {
                 OR: [
@@ -1326,10 +1335,28 @@ export class NightlifeDataService {
                         },
                       ],
                     }
-                  : {}),
+                  : isAll
+                    ? {
+                        NOT: [
+                          { city: { in: ['Hanoi', 'Ho Chi Minh City'] } },
+                          { area: { is: { code: { startsWith: 'hn-' } } } },
+                          { area: { is: { code: { startsWith: 'hcm-' } } } },
+                        ],
+                      }
+                    : {}),
               },
             }
-          : {}),
+          : isAll
+            ? {
+                store: {
+                  NOT: [
+                    { city: { in: ['Hanoi', 'Ho Chi Minh City'] } },
+                    { area: { is: { code: { startsWith: 'hn-' } } } },
+                    { area: { is: { code: { startsWith: 'hcm-' } } } },
+                  ],
+                },
+              }
+            : {}),
         ...(q
           ? {
               OR: [
