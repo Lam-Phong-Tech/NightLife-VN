@@ -465,51 +465,92 @@ export default function AdminPartnersPage() {
               </div>
             </Section>
 
-            <Section title="Ảnh gửi kèm">
-              {selectedRequest.mediaUrls?.length ? (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 16 }}>
-                  {selectedRequest.mediaUrls.slice(0, 8).map((url, index) => (
-                    <a
-                      key={`${url}-${index}`}
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: "block",
-                        aspectRatio: "1",
-                        borderRadius: 12,
-                        overflow: "hidden",
-                        background: colors.surface1,
-                        border: `1px solid ${colors.borderSoft}`,
-                      }}
-                    >
-                      <img
-                        src={url}
-                        alt={`Ảnh đối tác ${index + 1}`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      />
-                    </a>
-                  ))}
+            {(() => {
+              const media = selectedRequest.mediaUrls || [];
+              const isVideo = (url: string) => /\.(mp4|webm|ogg)$/i.test(url) || url.includes('youtube.com') || url.includes('youtu.be');
+              const videos = media.filter(isVideo);
+              const images = media.filter(url => !isVideo(url));
+              const cover = images[0];
+              const album = images.slice(1);
+              
+              return (
+                <div style={{ marginBottom: 30 }}>
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>Ảnh bìa</div>
+                    <div style={{ aspectRatio: '21/9', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', position: 'relative', overflow: 'hidden' }}>
+                      {cover ? (
+                        <a href={cover} target="_blank" rel="noreferrer">
+                          <img src={cover} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </a>
+                      ) : (
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: colors.muted, fontSize: 13 }}>Chưa có ảnh bìa</span>
+                      )}
+                      <span style={{ position: 'absolute', top: 8, left: 8, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.8, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 8px', borderRadius: 5 }}>BÌA</span>
+                    </div>
+                  </div>
+                  
+                  {album.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>
+                        Ảnh album <span style={{ color: '#57534b' }}>· {album.length} ảnh</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+                        {album.map((url, i) => (
+                          <a key={i} href={url} target="_blank" rel="noreferrer" style={{ aspectRatio: '4/3', borderRadius: 10, background: 'linear-gradient(135deg,#2a2620,#1a1814)', overflow: 'hidden', display: 'block' }}>
+                            <img src={url} alt={`Album ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {videos.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>
+                        Video gửi kèm <span style={{ color: '#57534b' }}>· {videos.length} video</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {videos.map((url, i) => {
+                          const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+                          const title = isYoutube ? 'Tour không gian quán' : url.split('/').pop() || 'Video';
+                          return (
+                            <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 11, padding: '8px 12px 8px 8px', textDecoration: 'none' }}>
+                              <div style={{ width: 62, height: 38, flex: 'none', borderRadius: 7, background: isYoutube ? 'linear-gradient(135deg,#241f2a,#181420)' : 'linear-gradient(135deg,#20262a,#141a1e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg>
+                                </span>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: '#e8e4db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+                                <div style={{ fontSize: 10.5, color: isYoutube ? '#8fb6e4' : '#8c8679', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{url.length > 50 ? url.substring(0, 47) + '...' : url}</div>
+                              </div>
+                              {isYoutube ? (
+                                <span style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.7, color: '#e88b99', background: 'rgba(224,105,122,.1)', border: '1px solid rgba(224,105,122,.3)', padding: '3.5px 8px', borderRadius: 6 }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.9-.5-5.6c-.3-1-1.1-1.8-2.1-2C18.6 4 12 4 12 4s-6.6 0-8.4.4c-1 .2-1.8 1-2.1 2C1 8.1 1 12 1 12s0 3.9.5 5.6c.3 1 1.1 1.8 2.1 2 1.8.4 8.4.4 8.4.4s6.6 0 8.4-.4c-1 0 0 0 0 0 1-.2 1.8-1 2.1-2 .5-1.7.5-5.6.5-5.6zM9.8 15.5v-7l6.2 3.5-6.2 3.5z"/></svg>
+                                  LINK YOUTUBE
+                                </span>
+                              ) : (
+                                <span style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 5, fontSize: 8.5, fontWeight: 800, letterSpacing: 0.7, color: '#caa765', background: 'rgba(212,178,106,.1)', border: '1px solid rgba(212,178,106,.3)', padding: '3.5px 8px', borderRadius: 6 }}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17V5M6 11l6-6 6 6"/></svg>
+                                  TẢI LÊN
+                                </span>
+                              )}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 16, display: 'flex', gap: 9, padding: '11px 14px', background: 'rgba(111,159,216,.05)', border: '1px solid rgba(111,159,216,.18)', borderRadius: 11 }}>
+                    <Info size={15} color="#8fb6e4" style={{ flex: 'none', marginTop: 1 }} />
+                    <span style={{ fontSize: 11, color: '#a9c4e6', lineHeight: 1.5 }}>
+                      MVP không yêu cầu giấy phép KD. Duyệt → Admin nhập thông tin quán (tạo hồ sơ nháp) rồi bổ sung giá/giờ/ảnh.
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div
-                  style={{
-                    minHeight: 118,
-                    borderRadius: 12,
-                    border: `1px dashed ${colors.borderGold22}`,
-                    display: "grid",
-                    placeItems: "center",
-                    color: colors.muted,
-                    fontSize: 13,
-                  }}
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                    <ImageIcon size={18} />
-                    Chưa có ảnh gửi kèm
-                  </span>
-                </div>
-              )}
-            </Section>
+              );
+            })()}
 
             {selectedRequest.reviewReason ? (
               <Section title="Lý do review">

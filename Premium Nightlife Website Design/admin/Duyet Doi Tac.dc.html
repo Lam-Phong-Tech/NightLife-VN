@@ -70,12 +70,37 @@
                 <div><div style="font-size:11px;color:#8c8679;margin-bottom:5px;">Địa chỉ</div><div style="font-size:13.5px;color:#f3f0ea;font-weight:500;">{{ pd.addr }}</div></div>
               </div>
               <div style="margin-top:18px;"><div style="font-size:11px;color:#8c8679;margin-bottom:7px;">Giới thiệu quán</div><div style="font-size:12.5px;color:#c5c0b6;line-height:1.65;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 15px;">{{ pd.desc }}</div></div>
-              <div style="margin-top:16px;"><div style="font-size:11px;color:#8c8679;margin-bottom:8px;">Ảnh gửi kèm</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+              <div style="margin-top:16px;"><div style="font-size:11px;color:#8c8679;margin-bottom:8px;">Ảnh bìa</div>
+                <div style="aspect-ratio:21/9;border-radius:10px;background:linear-gradient(135deg,#2a2620,#1a1814);position:relative;overflow:hidden;">
+                  <span style="position:absolute;top:8px;left:8px;font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:3px 8px;border-radius:5px;">BÌA</span>
+                </div>
+              </div>
+              <div style="margin-top:16px;"><div style="font-size:11px;color:#8c8679;margin-bottom:8px;">Ảnh album <span style="color:#57534b;">· 4 ảnh</span></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
                 <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#2a2620,#1a1814);"></div>
                 <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#241f2a,#181420);"></div>
                 <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#20262a,#141a1e);"></div>
                 <div style="aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#2a2224,#1a1416);"></div>
               </div></div>
+              <div style="margin-top:16px;"><div style="font-size:11px;color:#8c8679;margin-bottom:8px;">Video gửi kèm <span style="color:#57534b;">· 2 video</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 12px 8px 8px;">
+                    <div style="width:62px;height:38px;flex:none;border-radius:7px;background:linear-gradient(135deg,#241f2a,#181420);display:flex;align-items:center;justify-content:center;"><span style="width:20px;height:20px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;"><svg width="8" height="8" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg></span></div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:12px;font-weight:600;color:#e8e4db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tour không gian quán</div>
+                      <div style="font-size:10.5px;color:#8fb6e4;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">youtube.com/watch?v=lC9xF2…</div>
+                    </div>
+                    <span style="flex:none;display:flex;align-items:center;gap:5px;font-size:8.5px;font-weight:800;letter-spacing:.7px;color:#e88b99;background:rgba(224,105,122,.1);border:1px solid rgba(224,105,122,.3);padding:3.5px 8px;border-radius:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.9-.5-5.6c-.3-1-1.1-1.8-2.1-2C18.6 4 12 4 12 4s-6.6 0-8.4.4c-1 .2-1.8 1-2.1 2C1 8.1 1 12 1 12s0 3.9.5 5.6c.3 1 1.1 1.8 2.1 2 1.8.4 8.4.4 8.4.4s6.6 0 8.4-.4c-1 0 0 0 0 0 1-.2 1.8-1 2.1-2 .5-1.7.5-5.6.5-5.6zM9.8 15.5v-7l6.2 3.5-6.2 3.5z"/></svg>LINK YOUTUBE</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px 12px 8px 8px;">
+                    <div style="width:62px;height:38px;flex:none;border-radius:7px;background:linear-gradient(135deg,#20262a,#141a1e);display:flex;align-items:center;justify-content:center;"><span style="width:20px;height:20px;border-radius:50%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;"><svg width="8" height="8" viewBox="0 0 24 24" fill="#f3f0ea"><path d="M8 5v14l11-7z"/></svg></span></div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:12px;font-weight:600;color:#e8e4db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">minibar-khong-gian.mp4</div>
+                      <div style="font-size:10.5px;color:#8c8679;margin-top:2px;">48 MB · 1:24</div>
+                    </div>
+                    <span style="flex:none;display:flex;align-items:center;gap:5px;font-size:8.5px;font-weight:800;letter-spacing:.7px;color:#caa765;background:rgba(212,178,106,.1);border:1px solid rgba(212,178,106,.3);padding:3.5px 8px;border-radius:6px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V5M6 11l6-6 6 6"/></svg>TẢI LÊN</span>
+                  </div>
+                </div>
+              </div>
               <div style="margin-top:16px;display:flex;gap:9px;padding:11px 14px;background:rgba(111,159,216,.05);border:1px solid rgba(111,159,216,.18);border-radius:11px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8fb6e4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.01"/></svg>
                 <span style="font-size:11px;color:#a9c4e6;line-height:1.5;">MVP không yêu cầu giấy phép KD. Duyệt → Admin nhập thông tin quán (tạo hồ sơ nháp) rồi bổ sung giá/giờ/ảnh.</span>
