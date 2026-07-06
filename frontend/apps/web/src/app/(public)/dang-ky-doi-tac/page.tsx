@@ -46,6 +46,8 @@ const colors = {
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
 };
 
+const fieldFontFamily = 'Inter, "Segoe UI", Arial, system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+
 const heroImage =
   'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1400&q=80';
 
@@ -238,9 +240,9 @@ function inputStyle(tall = false): React.CSSProperties {
     padding: tall ? '10px 12px' : '10px 12px',
     color: colors.text,
     background: colors.surface2,
-    fontFamily: "var(--nl-font-sans)",
+    fontFamily: fieldFontFamily,
     fontSize: '13px',
-    fontWeight: 500,
+    fontWeight: 400,
     letterSpacing: 0,
     lineHeight: 1.45,
     outline: 'none',
@@ -350,10 +352,12 @@ function SelectControl({
             appearance: 'none',
             cursor: disabled ? 'not-allowed' : 'pointer',
             color: 'transparent',
+            WebkitTextFillColor: 'transparent',
+            textShadow: 'none',
             paddingRight: '38px',
             opacity: disabled ? 0.62 : 1,
-            fontFamily: "var(--nl-font-sans)",
-            fontWeight: 500,
+            fontFamily: fieldFontFamily,
+            fontWeight: 400,
             letterSpacing: 0,
           }}
         >
@@ -373,12 +377,12 @@ function SelectControl({
             right: '36px',
             top: '50%',
             transform: 'translateY(-50%)',
-            color: selectedLabel ? colors.text : colors.muted,
-            fontFamily: "var(--nl-font-sans)",
+            color: selectedLabel ? colors.text2 : colors.muted,
+            fontFamily: fieldFontFamily,
             fontSize: '13px',
-            fontWeight: 500,
+            fontWeight: 400,
             letterSpacing: 0,
-            lineHeight: 1,
+            lineHeight: 1.25,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
