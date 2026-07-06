@@ -15613,7 +15613,7 @@ export class NightlifeDataService {
         name: store.name,
         address: store.address || '',
         type: typeLabel,
-        area: (store.city === 'Ho Chi Minh City' || store.city === 'Hồ Chí Minh' || store.city === 'Há»“ ChÃ­ Minh') ? 'HCM' : 'HN',
+        area: (store.city === 'Ho Chi Minh City' || store.city === 'Hồ Chí Minh' || store.city === 'Há»“ ChÃ­ Minh') ? 'HCM' : (store.city === 'Hanoi' || store.city === 'Hà Nội' || store.city === 'Ha Noi') ? 'HN' : 'Tổng hợp',
         commission: '15%',
         casts: store._count.casts,
         status: store.status,

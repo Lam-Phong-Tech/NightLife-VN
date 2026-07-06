@@ -586,7 +586,7 @@ function AdminStoresContent() {
         {paginatedStores.map((v: any) => {
           const stMeta = getStatusMeta(v.status);
           const stStyle = getPillStyle(stMeta.style);
-          const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : 'pink');
+          const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : (v.area === 'HCM' ? 'pink' : 'gold'));
           
           return (
             <div 
