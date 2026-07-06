@@ -15176,7 +15176,14 @@ export class NightlifeDataService {
       }),
     };
 
-    const orderBy = { createdAt: 'desc' } as any;
+    let orderBy: any;
+    if (status === 'pending') {
+      // Hóa đơn chờ duyệt: Xếp cũ nhất lên trên (FIFO) để tránh bị trôi hóa đơn cũ, đảm bảo duyệt lần lượt
+      orderBy = { createdAt: 'asc' };
+    } else {
+      // Hóa đơn đã duyệt/từ chối: Xếp mới nhất lên trên để tra cứu lịch sử dễ dàng
+      orderBy = { createdAt: 'desc' };
+    }
 
     const totalPendingAmountRes = await this.prisma.bill
       .aggregate({
