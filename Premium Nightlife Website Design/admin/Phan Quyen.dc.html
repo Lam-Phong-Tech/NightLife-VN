@@ -39,6 +39,15 @@
               <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
               <span onClick="{{ rlAdd }}" style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);padding:7px 13px;border-radius:9px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Thêm</span>
             </div>
+            <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:12px;">
+              <div style="position:relative;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8c8679" stroke-width="2" stroke-linecap="round" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <input value="{{ accQ }}" onInput="{{ accQSet }}" placeholder="Tìm theo tên hoặc email…" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:10px 14px 10px 37px;color:#f3f0ea;font-size:12.5px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <sc-for list="{{ accRoles }}" as="rf" hint-placeholder-count="5"><span onClick="{{ rf.pick }}" style="{{ rf.style }}">{{ rf.label }}</span></sc-for>
+              </div>
+            </div>
             <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
               <sc-for list="{{ rlAccounts }}" as="a" hint-placeholder-count="5">
                 <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
@@ -47,6 +56,16 @@
                   <div style="text-align:right;"><span style="{{ a.roleStyle }}">{{ a.role }}</span><div style="font-size:10.5px;color:#8c8679;margin-top:5px;">{{ a.last }}</div></div>
                 </div>
               </sc-for>
+              <sc-if value="{{ accEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:28px;text-align:center;font-size:12px;color:#57534b;">Không tìm thấy tài khoản phù hợp</div>
+              </sc-if>
+              <div style="display:flex;align-items:center;gap:5px;padding:10px 16px;background:rgba(255,255,255,.015);">
+                <span style="font-size:11px;color:#8c8679;">{{ accRangeLabel }}</span>
+                <span style="flex:1;"></span>
+                <span onClick="{{ accPrev }}" style="{{ accPrevStyle }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></span>
+                <sc-for list="{{ accPages }}" as="pg" hint-placeholder-count="3"><span onClick="{{ pg.go }}" style="{{ pg.style }}">{{ pg.n }}</span></sc-for>
+                <span onClick="{{ accNext }}" style="{{ accNextStyle }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </div>
             </div>
           </div>
 
@@ -56,24 +75,51 @@
               <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,178,106,.4),transparent);"></span>
             </div>
             <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
-              <div style="display:grid;grid-template-columns:1.6fr 56px 66px 66px;gap:6px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);align-items:center;">
+              <div style="display:grid;grid-template-columns:1.4fr repeat(5,44px);gap:3px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);align-items:center;">
                 <span style="font-size:10px;font-weight:700;letter-spacing:.8px;color:#57534b;text-transform:uppercase;">Chức năng</span>
-                <span style="text-align:center;font-size:10.5px;font-weight:700;color:#e3c27e;">Admin</span>
-                <span style="text-align:center;"><div style="font-size:10.5px;font-weight:700;color:#c5c0b6;">Operator</div><div style="font-size:7.5px;font-weight:700;color:#8c8679;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 4px;display:inline-block;margin-top:2px;">P1</div></span>
-                <span style="text-align:center;font-size:10.5px;font-weight:700;color:#c5c0b6;">Partner</span>
+                <span style="text-align:center;font-size:9.5px;font-weight:700;color:#e3c27e;">Admin</span>
+                <span style="text-align:center;font-size:9.5px;font-weight:700;color:#c5c0b6;">Oper.</span>
+                <span style="text-align:center;font-size:9.5px;font-weight:700;color:#c5c0b6;">Partner</span>
+                <span style="text-align:center;font-size:9.5px;font-weight:700;color:#c5c0b6;">Staff</span>
+                <span style="text-align:center;font-size:9.5px;font-weight:700;color:#c5c0b6;">User</span>
               </div>
-              <sc-for list="{{ rlCaps }}" as="c" hint-placeholder-count="10">
-                <div style="display:grid;grid-template-columns:1.6fr 56px 66px 66px;gap:6px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">
-                  <span style="font-size:12px;color:#c5c0b6;">{{ c.name }}</span>
-                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.aCol }};">{{ c.aTxt }}</span>
-                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.oCol }};">{{ c.oTxt }}</span>
-                  <span style="text-align:center;font-size:14px;font-weight:700;color:{{ c.pCol }};">{{ c.pTxt }}</span>
+              <div style="padding:8px 16px 7px;background:rgba(212,178,106,.04);font-size:9px;font-weight:700;letter-spacing:1.1px;color:#caa765;text-transform:uppercase;">Quyền đối tác · Partner / Staff</div>
+              <sc-for list="{{ rlCapsPartner }}" as="c" hint-placeholder-count="7">
+                <div style="display:grid;grid-template-columns:1.4fr repeat(5,44px);gap:3px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">
+                  <span style="min-width:0;"><span style="display:block;font-size:11.5px;color:#c5c0b6;">{{ c.name }}</span><span style="display:block;font-size:9px;color:#57534b;font-family:ui-monospace,Menlo,monospace;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.code }}</span></span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.aCol }};">{{ c.aTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.oCol }};">{{ c.oTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.pCol }};">{{ c.pTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.sCol }};">{{ c.sTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.uCol }};">{{ c.uTxt }}</span>
+                </div>
+              </sc-for>
+              <div style="padding:8px 16px 7px;background:rgba(212,178,106,.04);font-size:9px;font-weight:700;letter-spacing:1.1px;color:#caa765;text-transform:uppercase;">Quyền quản lý / cấp cao</div>
+              <sc-for list="{{ rlCapsMgmt }}" as="c" hint-placeholder-count="2">
+                <div style="display:grid;grid-template-columns:1.4fr repeat(5,44px);gap:3px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">
+                  <span style="min-width:0;"><span style="display:block;font-size:11.5px;color:#c5c0b6;">{{ c.name }}</span><span style="display:block;font-size:9px;color:#57534b;font-family:ui-monospace,Menlo,monospace;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.code }}</span></span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.aCol }};">{{ c.aTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.oCol }};">{{ c.oTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.pCol }};">{{ c.pTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.sCol }};">{{ c.sTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.uCol }};">{{ c.uTxt }}</span>
+                </div>
+              </sc-for>
+              <div style="padding:8px 16px 7px;background:rgba(212,178,106,.04);font-size:9px;font-weight:700;letter-spacing:1.1px;color:#caa765;text-transform:uppercase;">Quyền khách hàng · User</div>
+              <sc-for list="{{ rlCapsUser }}" as="c" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:1.4fr repeat(5,44px);gap:3px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;">
+                  <span style="min-width:0;"><span style="display:block;font-size:11.5px;color:#c5c0b6;">{{ c.name }}</span><span style="display:block;font-size:9px;color:#57534b;font-family:ui-monospace,Menlo,monospace;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.code }}</span></span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.aCol }};">{{ c.aTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.oCol }};">{{ c.oTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.pCol }};">{{ c.pTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.sCol }};">{{ c.sTxt }}</span>
+                  <span style="text-align:center;font-size:13px;font-weight:700;color:{{ c.uCol }};">{{ c.uTxt }}</span>
                 </div>
               </sc-for>
             </div>
             <div style="display:flex;gap:9px;margin-top:14px;padding:12px 14px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:12px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>
-              <span style="font-size:11px;color:#cbb884;line-height:1.5;">MVP (P0): <b style="color:#f0dda8;">Admin</b> toàn quyền · <b style="color:#f0dda8;">Partner</b> chỉ đăng nhập + quét QR + xác nhận check-in. Vai trò <b style="color:#f0dda8;">Operator</b> mở rộng ở P1.</span>
+              <span style="font-size:11px;color:#cbb884;line-height:1.5;">5 vai trò theo enum <b style="color:#f0dda8;">UserRole</b> (User · Partner · Staff · Operator · Admin) · <b style="color:#f0dda8;">12 quyền hành động</b> (action-policy) kiểm soát chi tiết theo tài nguyên, độc lập với vai trò. Tài khoản <b style="color:#f0dda8;">USER</b> đăng ký qua app — không tạo trong CMS.</span>
             </div>
           </div>
         </div>
@@ -101,6 +147,25 @@
             <input value="{{ afEmail }}" onInput="{{ afEmailSet }}" placeholder="ten@vietyoru.vn" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
           </div>
           <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Mật khẩu</div>
+            <div style="display:flex;gap:8px;">
+              <div style="position:relative;flex:1;">
+                <input value="{{ afPw }}" onInput="{{ afPwSet }}" type="{{ afPwType }}" placeholder="Tối thiểu 8 ký tự" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 44px 12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;letter-spacing:.5px;" style-focus="border-color:rgba(212,178,106,.55);">
+                <span onClick="{{ afPwToggle }}" title="Hiện / ẩn mật khẩu" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#f3f0ea;">
+                  <sc-if value="{{ afPwHidden }}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></sc-if>
+                  <sc-if value="{{ afPwShown }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a20 20 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a20 20 0 0 1-4.13 4.87M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg></sc-if>
+                </span>
+              </div>
+              <span onClick="{{ afPwGen }}" style="flex:none;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#caa765;background:rgba(212,178,106,.08);border:1px solid rgba(212,178,106,.3);padding:0 14px;border-radius:11px;cursor:pointer;" style-hover="background:rgba(212,178,106,.14);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M21 8a9 9 0 1 0 .5 4"/></svg>Tạo ngẫu nhiên</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:9px;">
+              <span style="flex:1;height:3px;border-radius:3px;background:{{ afPwBar1 }};"></span>
+              <span style="flex:1;height:3px;border-radius:3px;background:{{ afPwBar2 }};"></span>
+              <span style="flex:1;height:3px;border-radius:3px;background:{{ afPwBar3 }};"></span>
+              <span style="flex:none;min-width:52px;text-align:right;font-size:10.5px;font-weight:600;color:{{ afPwStrengthCol }};">{{ afPwStrength }}</span>
+            </div>
+          </div>
+          <div>
             <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Vai trò</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;"><sc-for list="{{ afKinds }}" as="k" hint-placeholder-count="3"><span onClick="{{ k.pick }}" style="{{ k.style }}">{{ k.label }}</span></sc-for></div>
             <div style="font-size:11px;color:#57534b;margin-top:8px;line-height:1.5;">{{ afRoleHint }}</div>
@@ -113,13 +178,13 @@
           </sc-if>
           <div style="display:flex;gap:9px;padding:11px 14px;background:rgba(212,178,106,.05);border:1px solid rgba(212,178,106,.2);border-radius:11px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4b26a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 8h8M8 11h5"/></svg>
-            <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Hệ thống sẽ gửi <b style="color:#f0dda8;">email mời kích hoạt</b> — tài khoản ở trạng thái "Chờ kích hoạt" đến khi đặt mật khẩu.</span>
+            <span style="font-size:11.5px;color:#cbb884;line-height:1.5;">Tài khoản đăng nhập bằng <b style="color:#f0dda8;">email &amp; mật khẩu vừa đặt</b> — hệ thống gửi email thông báo kèm hướng dẫn. Nên yêu cầu đổi mật khẩu ở lần đăng nhập đầu.</span>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);flex:none;background:rgba(12,12,15,.35);">
           <span style="flex:1;"></span>
           <span onClick="{{ afClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
-          <span onClick="{{ afSave }}" style="{{ afSaveStyle }}">Tạo &amp; gửi lời mời</span>
+          <span onClick="{{ afSave }}" style="{{ afSaveStyle }}">Tạo tài khoản</span>
         </div>
       </div>
     </div>
@@ -137,33 +202,72 @@
 class Component extends DCLogic {
   state = { toast:null };
   showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
-  chip(kind){ const m={info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
+  chip(kind){ const m={info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],pink:['rgba(231,154,184,.1)','rgba(231,154,184,.3)','#e79ab8'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
 
   renderVals(){
     const S=this.state, o={ toast:S.toast };
-    o.rlAdd=()=>this.setState({af:{name:'',email:'',kind:'partner',venue:''}});
-    const rst=(kind)=>this.chip(kind==='admin'?'gold':kind==='operator'?'info':'muted')+'font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:7px;display:inline-flex;';
-    o.rlAccounts=(S.accExtra||[]).concat([
+    o.rlAdd=()=>this.setState({af:{name:'',email:'',kind:'partner',venue:'',pw:'',pwShow:false}});
+    const rst=(kind)=>this.chip(kind==='admin'?'gold':kind==='operator'?'info':kind==='partner'?'success':kind==='staff'?'pink':'muted')+'font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:7px;display:inline-flex;';
+    const allAcc=(S.accExtra||[]).concat([
       {ini:'A',name:'Nguyễn Admin',email:'admin@vietyoru.vn',role:'Super Admin',kind:'admin',last:'● Đang online',avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
       {ini:'O',name:'Trần Vận Hành',email:'operator@vietyoru.vn',role:'Operator',kind:'operator',last:'2 giờ trước',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {ini:'LH',name:'Lê Thu Hà',email:'ha.le@vietyoru.vn',role:'Operator',kind:'operator',last:'Hôm qua',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {ini:'LT',name:'Lễ tân · Club Lumière',email:'staff.lumiere1@vietyoru.vn',role:'Staff',kind:'staff',last:'10 phút trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {ini:'PV',name:'Phục vụ · Sakura Lounge',email:'staff.sakura2@vietyoru.vn',role:'Staff',kind:'staff',last:'1 giờ trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
       {ini:'CL',name:'Club Lumière',email:'partner.lumiere@vietyoru.vn',role:'Đối tác',kind:'partner',last:'15 phút trước',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
       {ini:'SL',name:'Sakura Lounge',email:'partner.sakura@vietyoru.vn',role:'Đối tác',kind:'partner',last:'1 ngày trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {ini:'AK',name:'Akari Lounge',email:'partner.akari@vietyoru.vn',role:'Đối tác',kind:'partner',last:'30 phút trước',avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+      {ini:'TN',name:'Bar Tokyo Night',email:'partner.tokyonight@vietyoru.vn',role:'Đối tác',kind:'partner',last:'3 giờ trước',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {ini:'DK',name:'Dragon KTV',email:'partner.dragon@vietyoru.vn',role:'Đối tác',kind:'partner',last:'6 giờ trước',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {ini:'SB',name:'Sky Bar 20',email:'partner.skybar@vietyoru.vn',role:'Đối tác',kind:'partner',last:'Hôm qua',avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+      {ini:'GH',name:'The Gin House',email:'partner.ginhouse@vietyoru.vn',role:'Đối tác',kind:'partner',last:'4 ngày trước',avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
+      {ini:'MK',name:'Moonlight KTV',email:'partner.moonlight@vietyoru.vn',role:'Đối tác',kind:'partner',last:'5 ngày trước',avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+      {ini:'NB',name:'Neon Bar Saigon',email:'partner.neon@vietyoru.vn',role:'Đối tác',kind:'partner',last:'1 tuần trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+      {ini:'LC',name:'Lotus Club Saigon',email:'partner.lotus@vietyoru.vn',role:'Đối tác',kind:'partner',last:'2 ngày trước',avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
       {ini:'KH',name:'KTV Hoàng Gia',email:'partner.hoanggia@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-    ]).map(a=>({...a,roleStyle:rst(a.kind)}));
+      {ini:'ZS',name:'Zen Spa & Onsen',email:'partner.zenspa@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+      {ini:'BN',name:'Blue Note Lounge',email:'partner.bluenote@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+      {ini:'HO',name:'Hana Onsen',email:'partner.hana@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+    ]);
+    const accQ=(S.accQ||''), accQq=accQ.trim().toLowerCase(), accRole=S.accRole||'all';
+    const fchip=(a)=>'font-size:11px;font-weight:600;padding:5.5px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);');
+    o.accRoles=[['all','Tất cả'],['admin','Admin'],['operator','Operator'],['partner','Đối tác'],['staff','Staff'],['muted','Chờ kích hoạt']].map(r=>{
+      const n=r[0]==='all'?allAcc.length:allAcc.filter(a=>a.kind===r[0]).length;
+      return {label:r[1]+' · '+n,style:fchip(accRole===r[0]),pick:()=>this.setState({accRole:r[0],accPage:0})};
+    });
+    o.accQ=accQ; o.accQSet=(e)=>this.setState({accQ:e.target.value,accPage:0});
+    const accF=allAcc.filter(a=>(accRole==='all'||a.kind===accRole)&&(!accQq||(a.name+' '+a.email).toLowerCase().indexOf(accQq)>=0));
+    const PER=6, pages=Math.max(1,Math.ceil(accF.length/PER)), pg=Math.min(S.accPage||0,pages-1);
+    o.rlAccounts=accF.slice(pg*PER,pg*PER+PER).map(a=>({...a,roleStyle:rst(a.kind)}));
+    o.accEmpty=accF.length===0;
+    o.accRangeLabel=accF.length?('Hiển thị '+(pg*PER+1)+'–'+Math.min((pg+1)*PER,accF.length)+' / '+accF.length+' tài khoản'):'0 tài khoản';
+    const pbtn=(dis)=>'width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;'+(dis?'opacity:.3;pointer-events:none;':'');
+    o.accPrev=()=>this.setState({accPage:Math.max(0,pg-1)}); o.accPrevStyle=pbtn(pg===0);
+    o.accNext=()=>this.setState({accPage:Math.min(pages-1,pg+1)}); o.accNextStyle=pbtn(pg>=pages-1);
+    o.accPages=Array.from({length:pages},(_,i)=>({n:i+1,go:()=>this.setState({accPage:i}),
+      style:'width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;'+(i===pg?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);')}));
     const yes='#e3c27e', no='#413d36', mark=(v)=>v?'✓':'—';
-    const CAPS=[
-      ['Đăng nhập hệ thống',1,1,1],
-      ['CRUD quán & cast',1,1,0],
-      ['Duyệt / quản lý booking',1,1,0],
-      ['Duyệt hóa đơn & đối soát',1,0,0],
-      ['Điều khiển ranking',1,1,0],
-      ['Campaign / banner / blog',1,1,0],
-      ['Báo cáo doanh thu',1,0,0],
-      ['Quét mã QR của khách',1,0,1],
-      ['Xác nhận khách check-in',1,0,1],
-      ['Phân quyền tài khoản',1,0,0],
-    ];
-    o.rlCaps=CAPS.map(c=>({name:c[0], aTxt:mark(c[1]), aCol:c[1]?yes:no, oTxt:mark(c[2]), oCol:c[2]?yes:no, pTxt:mark(c[3]), pCol:c[3]?yes:no}));
+    const mkCap=(c)=>({name:c[0],code:c[1],
+      aTxt:mark(c[2]),aCol:c[2]?yes:no, oTxt:mark(c[3]),oCol:c[3]?yes:no, pTxt:mark(c[4]),pCol:c[4]?yes:no,
+      sTxt:mark(c[5]),sCol:c[5]?yes:no, uTxt:mark(c[6]),uCol:c[6]?yes:no});
+    o.rlCapsPartner=[
+      ['Xem thông tin quán','canViewPartnerStore',1,1,1,1,0],
+      ['Xem mã giảm giá của quán','canViewPartnerCoupon',1,1,1,1,0],
+      ['Xem & tạo hoá đơn','canReviewBill',1,0,1,1,0],
+      ['Quét mã QR giảm giá','canScanCoupon',1,0,1,1,0],
+      ['Xác nhận khách check-in','canConfirmCheckIn',1,0,1,1,0],
+      ['Xem danh sách khách đặt bàn','canViewPartnerBooking',1,1,1,1,0],
+      ['Xem danh sách hoá đơn','canViewPartnerBill',1,1,1,0,0],
+    ].map(mkCap);
+    o.rlCapsMgmt=[
+      ['Xem hoá đơn nhạy cảm','canViewSensitiveBill',1,0,1,0,0],
+      ['Xem báo cáo doanh thu','canViewRevenueReport',1,0,1,0,0],
+    ].map(mkCap);
+    o.rlCapsUser=[
+      ['Xem lịch sử đặt bàn bản thân','canViewMemberBooking',1,0,0,0,1],
+      ['Xem voucher / coupon bản thân','canViewMemberCoupon',1,0,0,0,1],
+      ['Lấy (claim) mã ưu đãi mới','canClaimMemberCoupon',0,0,0,0,1],
+    ].map(mkCap);
     const cchip=(a)=>'font-size:11.5px;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer;white-space:nowrap;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);');
     const af=S.af;
     o.afOpen=!!af;
@@ -172,20 +276,33 @@ class Component extends DCLogic {
       o.afStop=(e)=>e.stopPropagation(); o.afClose=()=>this.setState({af:null});
       o.afName=af.name; o.afNameSet=(e)=>aupd({name:e.target.value});
       o.afEmail=af.email; o.afEmailSet=(e)=>aupd({email:e.target.value});
-      o.afKinds=[['admin','Super Admin'],['operator','Operator'],['partner','Đối tác quán']].map(k=>({label:k[1],style:cchip(af.kind===k[0]),pick:()=>aupd({kind:k[0]})}));
-      o.afIsPartner=af.kind==='partner';
+      const pw=af.pw||'';
+      o.afPw=pw; o.afPwSet=(e)=>aupd({pw:e.target.value});
+      o.afPwType=af.pwShow?'text':'password'; o.afPwHidden=!af.pwShow; o.afPwShown=!!af.pwShow;
+      o.afPwToggle=()=>aupd({pwShow:!af.pwShow});
+      o.afPwGen=()=>{ const A='ABCDEFGHJKMNPQRSTUVWXYZ',aa='abcdefghjkmnpqrstuvwxyz',dd='23456789',ss='!@#$%&*'; const pick=(s,n)=>Array.from({length:n},()=>s.charAt(Math.floor(Math.random()*s.length))); const arr=pick(A,3).concat(pick(aa,4),pick(dd,3),pick(ss,2)); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; } aupd({pw:arr.join(''),pwShow:true}); };
+      let psc=0;
+      if(pw.length>=8) psc=1;
+      if(pw.length>=10&&/[a-z]/.test(pw)&&/[A-Z]/.test(pw)&&/\d/.test(pw)) psc=2;
+      if(pw.length>=12&&/[a-z]/.test(pw)&&/[A-Z]/.test(pw)&&/\d/.test(pw)&&/[^A-Za-z0-9]/.test(pw)) psc=3;
+      const pOff='rgba(255,255,255,.08)', pCol=psc===1?'#e08a7e':psc===2?'#e3c27e':'#7fd3a2';
+      o.afPwBar1=psc>=1?pCol:pOff; o.afPwBar2=psc>=2?pCol:pOff; o.afPwBar3=psc>=3?pCol:pOff;
+      o.afPwStrength=!pw?'':(psc===0?'Quá ngắn':psc===1?'Yếu':psc===2?'Khá':'Mạnh');
+      o.afPwStrengthCol=!pw?'#57534b':(psc===0?'#e08a7e':pCol);
+      o.afKinds=[['admin','Admin'],['operator','Operator'],['partner','Đối tác (chủ quán)'],['staff','Staff (NV quán)']].map(k=>({label:k[1],style:cchip(af.kind===k[0]),pick:()=>aupd({kind:k[0]})}));
+      o.afIsPartner=af.kind==='partner'||af.kind==='staff';
       o.afVenue=af.venue; o.afVenueSet=(e)=>aupd({venue:e.target.value});
-      o.afRoleHint=af.kind==='admin'?'Toàn quyền hệ thống — cân nhắc kỹ khi cấp quyền này.':af.kind==='operator'?'Vận hành nội dung, booking & ranking (mở rộng ở P1).':'Chỉ đăng nhập, quét QR của khách & xác nhận check-in tại quán.';
-      const ok=!!(af.name&&af.name.trim()&&af.email&&af.email.indexOf('@')>0);
+      o.afRoleHint=af.kind==='admin'?'ADMIN — quản trị cấp cao nhất, toàn quyền quản lý hệ thống. Cân nhắc kỹ khi cấp.':af.kind==='operator'?'OPERATOR — nhân viên vận hành: hỗ trợ, kiểm duyệt nội dung, CSKH.':af.kind==='partner'?'PARTNER — chủ quán / quản lý cơ sở: toàn bộ quyền đối tác của quán mình.':'STAFF — nhân viên quán (lễ tân, phục vụ): xác nhận booking, quét mã QR, xác nhận check-in.';
+      const ok=!!(af.name&&af.name.trim()&&af.email&&af.email.indexOf('@')>0&&pw.length>=8);
       o.afSaveStyle='display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 19px;border-radius:10px;cursor:pointer;'+(ok?'':'opacity:.45;');
       o.afSave=()=>{
-        if(!ok){ this.showToast(!af.name||!af.name.trim()?'Nhập tên hiển thị':'Nhập email hợp lệ'); return; }
-        const kmap={admin:['Super Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)']};
-        const nm=(af.kind==='partner'&&af.venue&&af.venue.trim())?af.venue.trim():af.name.trim();
+        if(!ok){ this.showToast(!af.name||!af.name.trim()?'Nhập tên hiển thị':(!af.email||af.email.indexOf('@')<=0)?'Nhập email hợp lệ':'Mật khẩu tối thiểu 8 ký tự'); return; }
+        const kmap={admin:['Super Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)'],staff:['Staff','linear-gradient(135deg,#e79ab8,#b0607f)']};
+        const nm=(af.kind==='partner'&&af.venue&&af.venue.trim())?af.venue.trim():(af.kind==='staff'&&af.venue&&af.venue.trim())?(af.name.trim()+' · '+af.venue.trim()):af.name.trim();
         const ini=nm.split(' ').filter(Boolean).map(w=>w.charAt(0)).join('').slice(-2).toUpperCase();
-        const rec={ini,name:nm,email:af.email.trim(),role:'Chờ kích hoạt',kind:'muted',realRole:kmap[af.kind][0],last:'Vừa tạo · đã gửi lời mời',avaBg:kmap[af.kind][1]};
+        const rec={ini,name:nm,email:af.email.trim(),role:kmap[af.kind][0],kind:af.kind,last:'Vừa tạo',avaBg:kmap[af.kind][1]};
         this.setState({accExtra:[rec].concat(S.accExtra||[]),af:null});
-        this.showToast('Đã tạo tài khoản '+kmap[af.kind][0]+' & gửi email mời');
+        this.showToast('Đã tạo tài khoản '+kmap[af.kind][0]+' — đã gửi email thông báo');
       };
     }
     return o;
