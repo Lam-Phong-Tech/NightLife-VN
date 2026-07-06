@@ -227,6 +227,7 @@ type HomeBannerMetadata = {
   statusLabel?: string;
   subtitle?: string;
   imageUrl?: string;
+  position?: string;
 };
 
 function getHomeBannerMetadata(content: CmsContentItem): HomeBannerMetadata {
@@ -1956,6 +1957,8 @@ export default function Page() {
     () => [...homeTours, ...homeContentItems].slice(0, 3),
     [homeTours, homeContentItems],
   );
+  const heroBanners = useMemo(() => homeBanners.filter(b => getHomeBannerMetadata(b).position === "Trang chủ #1" || !getHomeBannerMetadata(b).position), [homeBanners]);
+  const midBanners = useMemo(() => homeBanners.filter(b => getHomeBannerMetadata(b).position === "Trang chủ #2"), [homeBanners]);
   const rankList = filterRankingsByRegion(
     activeRankTab === "quan" ? storeRankItems : castRankItems,
     activeRankRegion,
@@ -2030,7 +2033,7 @@ export default function Page() {
       });
 
     contentApi
-      .list({ type: "BANNER", limit: 3 })
+      .list({ type: "BANNER", limit: 10 })
       .then((res) => {
         if (!cancelled && res.data) setHomeBanners(res.data);
       })
@@ -2245,7 +2248,7 @@ export default function Page() {
               <SearchPanel />
             </div>
             <div data-testid="home-mobile-hero" style={{ marginTop: "16px" }}>
-              <EventHero apiBanners={homeBanners} />
+              <EventHero apiBanners={heroBanners} />
             </div>
             <div data-testid="home-mobile-categories" style={{ marginTop: "22px" }}>
               <CategoryGrid items={homeCategoryItems} />
@@ -2297,7 +2300,7 @@ export default function Page() {
             </section>
 
             <div style={{ marginTop: "20px" }}>
-              <MidPageBanner apiBanners={homeBanners} />
+              <MidPageBanner apiBanners={midBanners} />
             </div>
 
             <section data-testid="home-mobile-featured" style={{ marginTop: "22px" }}>
@@ -2369,7 +2372,7 @@ export default function Page() {
                 <SearchPanel />
               </div>
               <div style={{ gridColumn: "span 12", marginTop: "16px" }}>
-                <EventHero desktop apiBanners={homeBanners} />
+                <EventHero desktop apiBanners={heroBanners} />
               </div>
             </div>
 
@@ -2424,7 +2427,7 @@ export default function Page() {
             </section>
 
             <div style={{ marginTop: "34px" }}>
-              <MidPageBanner desktop apiBanners={homeBanners} />
+              <MidPageBanner desktop apiBanners={midBanners} />
             </div>
 
             <section style={{ marginTop: "34px" }}>
