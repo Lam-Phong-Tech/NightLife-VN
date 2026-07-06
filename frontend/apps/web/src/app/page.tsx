@@ -3,24 +3,37 @@
 import React, { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  Bell,
   BookOpen,
+  CalendarCheck,
   CalendarDays,
+  Camera,
   ChevronDown,
   ChevronRight,
   Crown,
   Eye,
+  Gem,
+  Gift,
   Heart,
+  Home,
+  Map,
   MapPin,
+  Martini,
+  Mic,
+  Music,
   Newspaper,
   Play,
+  QrCode,
   Search,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Ticket,
   Trophy,
   UserRound,
   Utensils,
   Waves,
+  type LucideIcon,
 } from "lucide-react";
 
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
@@ -35,6 +48,13 @@ import {
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
 import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
 import { resolveClientUrl } from "@/lib/api/client";
+import {
+  DEFAULT_APPEARANCE_CONFIG,
+  findAppearanceTitle,
+  getAppearanceConfig,
+  type AppearanceConfig,
+  type AppearanceItem,
+} from "@/lib/api/appearance";
 import { formatPriceTier } from "@/lib/price-tier";
 import {
   getHomeAnonymousId,
@@ -67,6 +87,65 @@ const categoryItems = [
   { label: "Nhà hàng", icon: Utensils, href: "/danh-sach-quan" },
   { label: "VIP", icon: Star, href: "/dang-nhap", featured: true },
 ];
+
+type HomeCategoryItem = {
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  featured?: boolean;
+};
+
+const appearanceIconMap: Record<string, LucideIcon> = {
+  account: UserRound,
+  bell: Bell,
+  calendar: CalendarDays,
+  calcheck: CalendarCheck,
+  camera: Camera,
+  crown: Crown,
+  dining: Utensils,
+  gem: Gem,
+  gift: Gift,
+  heart: Heart,
+  home: Home,
+  map: Map,
+  martini: Martini,
+  mic: Mic,
+  music: Music,
+  pin: MapPin,
+  qr: QrCode,
+  search: Search,
+  sparkle: Sparkles,
+  star: Star,
+  ticket: Ticket,
+  user: UserRound,
+  waves: Waves,
+};
+
+const categoryHrefById: Record<string, string> = {
+  q1: "/danh-sach-quan",
+  q2: "/danh-sach-cast",
+  q3: "/uu-dai",
+  q4: "/danh-sach-quan",
+  q5: "/xep-hang",
+  q6: "/danh-sach-quan?category=MASSAGE_SPA",
+  q7: "/danh-sach-quan?category=RESTAURANT",
+  q8: "/dang-nhap",
+};
+
+function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCategoryItem {
+  const fallback = categoryItems[index] ?? categoryItems[0] ?? {
+    label: "Tìm quán",
+    icon: MapPin,
+    href: "/danh-sach-quan",
+  };
+
+  return {
+    label: item.label || fallback.label,
+    icon: appearanceIconMap[item.icon] ?? fallback.icon,
+    href: categoryHrefById[item.id] ?? fallback.href,
+    featured: item.id === "q8" || item.icon === "star" || ("featured" in fallback && Boolean(fallback.featured)),
+  };
+}
 
 const serviceTabs = [
   { id: "nhahang", label: "Nhà hàng" },
@@ -567,6 +646,26 @@ const homeBannerSlideTransition = "transform 960ms cubic-bezier(.22,.78,.22,1), 
 
 const homeHotVideosPlaceholderText = "Video Hot đang được chuẩn bị.";
 
+const homeSectionTitleFallbacks = {
+  recommend: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t1", "Đề xuất tối nay"),
+  coupon: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t2", "Coupon Hot"),
+  ranking: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t3", "Bảng xếp hạng"),
+  featured: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t4", "Dịch vụ nổi bật"),
+  video: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t5", "Video Hot"),
+  guide: findAppearanceTitle(DEFAULT_APPEARANCE_CONFIG.titles, "t6", "Tour · Blog · Guide"),
+};
+
+function getHomeSectionTitles(config: AppearanceConfig) {
+  return {
+    recommend: findAppearanceTitle(config.titles, "t1", homeSectionTitleFallbacks.recommend),
+    coupon: findAppearanceTitle(config.titles, "t2", homeSectionTitleFallbacks.coupon),
+    ranking: findAppearanceTitle(config.titles, "t3", homeSectionTitleFallbacks.ranking),
+    featured: findAppearanceTitle(config.titles, "t4", homeSectionTitleFallbacks.featured),
+    video: findAppearanceTitle(config.titles, "t5", homeSectionTitleFallbacks.video),
+    guide: findAppearanceTitle(config.titles, "t6", homeSectionTitleFallbacks.guide),
+  };
+}
+
 function isHomeHotVideosEnabled() {
   return process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS === "true";
 }
@@ -665,7 +764,13 @@ function SearchPanel() {
   );
 }
 
-function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
+function CategoryGrid({
+  desktop = false,
+  items = categoryItems,
+}: {
+  desktop?: boolean;
+  items?: HomeCategoryItem[];
+}) {
   return (
     <div
       style={{
@@ -674,7 +779,7 @@ function CategoryGrid({ desktop = false }: { desktop?: boolean }) {
         gap: desktop ? "14px" : "15px 18px",
       }}
     >
-      {categoryItems.map((item) => {
+      {items.map((item) => {
         const Icon = item.icon;
         return (
           <Link key={item.label} href={item.href} style={{ color: colors.text, textAlign: "center" }}>
@@ -1726,11 +1831,13 @@ function ServiceFilterControls({
 }
 
 function RankingSectionHeader({
+  title = homeSectionTitleFallbacks.ranking,
   activeTab,
   onTabChange,
   activeRegion,
   onRegionChange,
 }: {
+  title?: string;
   activeTab: string;
   onTabChange: (value: string) => void;
   activeRegion: ServiceRegion;
@@ -1740,7 +1847,7 @@ function RankingSectionHeader({
     <div style={{ display: "grid", gap: "12px", marginBottom: "13px" }}>
       <div style={{ display: "flex", alignItems: "end", gap: "13px" }}>
         <div style={{ minWidth: 0, flex: "none" }}>
-          <h2 className="nl-home-section-title" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>Bảng xếp hạng</h2>
+          <h2 className="nl-home-section-title" style={{ ...homeSectionTitleTextStyle, lineHeight: 1.08, fontWeight: 950 }}>{title}</h2>
         </div>
       </div>
 
@@ -1783,10 +1890,19 @@ export default function Page() {
   const [homeVideos, setHomeVideos] = useState<HomeVideoItem[]>([]);
   const [isHomeVideosLoading, setHomeVideosLoading] = useState(homeHotVideosEnabled);
   const [homeVideosError, setHomeVideosError] = useState("");
+  const [homeAppearance, setHomeAppearance] = useState<AppearanceConfig>(DEFAULT_APPEARANCE_CONFIG);
   const [homeContentItems, setHomeContentItems] = useState<HomeContentItem[]>([]);
   const [homeTours, setHomeTours] = useState<HomeContentItem[]>([]);
   const [isHomeContentLoading, setHomeContentLoading] = useState(true);
   const [homeContentError, setHomeContentError] = useState("");
+  const homeCategoryItems = useMemo(
+    () => homeAppearance.quick.map(mapAppearanceQuickItem),
+    [homeAppearance.quick],
+  );
+  const homeSectionTitles = useMemo(
+    () => getHomeSectionTitles(homeAppearance),
+    [homeAppearance],
+  );
   const homeStoreCards = useMemo(
     () => homeStores.map(mapStoreToHomeCard),
     [homeStores],
@@ -1811,6 +1927,22 @@ export default function Page() {
 
     return () => {
       style.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getAppearanceConfig()
+      .then((config) => {
+        if (!cancelled) setHomeAppearance(config);
+      })
+      .catch(() => {
+        if (!cancelled) setHomeAppearance(DEFAULT_APPEARANCE_CONFIG);
+      });
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -2072,11 +2204,11 @@ export default function Page() {
               <EventHero apiBanners={homeBanners} />
             </div>
             <div data-testid="home-mobile-categories" style={{ marginTop: "22px" }}>
-              <CategoryGrid />
+              <CategoryGrid items={homeCategoryItems} />
             </div>
 
             <section data-testid="home-mobile-recommendations" style={{ marginTop: "24px" }}>
-              <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
+              <SectionHeading title={homeSectionTitles.recommend} action="Xem tất cả" />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "6px" }}>
                 {isHomeRecommendationsLoading && isHomeStoresLoading ? (
                   <HomeDataMessage text="Đang tải quán từ API..." compact />
@@ -2089,7 +2221,7 @@ export default function Page() {
             </section>
 
             <section data-testid="home-mobile-coupons" style={{ marginTop: "18px" }}>
-              <SectionHeading title="Coupon Hot" />
+              <SectionHeading title={homeSectionTitles.coupon} />
               <div style={{ display: "grid", gap: "10px" }}>
                 {isHomeCouponsLoading ? (
                   <HomeDataMessage text="Đang tải coupon từ API..." compact />
@@ -2103,6 +2235,7 @@ export default function Page() {
 
             <section data-testid="home-mobile-ranking" style={{ marginTop: "22px" }}>
               <RankingSectionHeader
+                title={homeSectionTitles.ranking}
                 activeTab={activeRankTab}
                 onTabChange={setActiveRankTab}
                 activeRegion={activeRankRegion}
@@ -2125,7 +2258,7 @@ export default function Page() {
 
             <section data-testid="home-mobile-featured" style={{ marginTop: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Dịch vụ nổi bật</h2>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.featured}</h2>
               </div>
               <ServiceFilterControls
                 activeTab={activeSvcTab}
@@ -2145,7 +2278,7 @@ export default function Page() {
             </section>
 
             <section data-testid="home-mobile-guide" style={{ marginTop: "22px" }}>
-              <SectionHeading title="Tour / Blog / Guide" />
+              <SectionHeading title={homeSectionTitles.guide} />
               <div className="hscroll" style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px" }}>
                 {isHomeContentLoading ? (
                   <HomeDataMessage text="Đang tải nội dung CMS..." compact />
@@ -2159,7 +2292,7 @@ export default function Page() {
 
             <section data-testid="home-mobile-video" style={{ marginTop: "22px", paddingBottom: "22px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "12px" }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Video Hot</h2>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
                 <RankingRegionDropdown
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
@@ -2197,11 +2330,11 @@ export default function Page() {
             </div>
 
             <div style={{ marginTop: "28px" }}>
-              <CategoryGrid desktop />
+              <CategoryGrid desktop items={homeCategoryItems} />
             </div>
 
             <section style={{ marginTop: "34px" }}>
-              <SectionHeading title="Đề xuất tối nay" action="Xem tất cả" />
+              <SectionHeading title={homeSectionTitles.recommend} action="Xem tất cả" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {isHomeRecommendationsLoading && isHomeStoresLoading ? (
                   <HomeDataMessage text="Đang tải quán từ API..." />
@@ -2215,7 +2348,7 @@ export default function Page() {
 
             <section style={{ marginTop: "34px" }}>
               <div>
-                <SectionHeading title="Coupon Hot" />
+                <SectionHeading title={homeSectionTitles.coupon} />
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px" }}>
                   {isHomeCouponsLoading ? (
                     <HomeDataMessage text="Đang tải coupon từ API..." />
@@ -2228,6 +2361,7 @@ export default function Page() {
               </div>
               <div style={{ marginTop: "34px" }}>
                 <RankingSectionHeader
+                  title={homeSectionTitles.ranking}
                   activeTab={activeRankTab}
                   onTabChange={setActiveRankTab}
                   activeRegion={activeRankRegion}
@@ -2253,7 +2387,7 @@ export default function Page() {
               <div style={{ ...sectionTitleStyle, marginBottom: 0 }}>
                 <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>
                   <Trophy size={24} color={colors.gold} />
-                  Dịch vụ nổi bật
+                  {homeSectionTitles.featured}
                 </h2>
               </div>
               <ServiceFilterControls
@@ -2274,7 +2408,7 @@ export default function Page() {
             </section>
 
             <section style={{ marginTop: "34px" }}>
-              <SectionHeading title="Tour / Blog / Guide" />
+              <SectionHeading title={homeSectionTitles.guide} />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
                 {isHomeContentLoading ? (
                   <HomeDataMessage text="Đang tải nội dung CMS..." />
@@ -2288,7 +2422,7 @@ export default function Page() {
 
             <section style={{ marginTop: "34px" }}>
               <div style={{ ...sectionTitleStyle, marginBottom: "14px" }}>
-                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>Video Hot</h2>
+                <h2 className="nl-home-section-title" style={homeSectionTitleTextStyle}>{homeSectionTitles.video}</h2>
                 <RankingRegionDropdown
                   active={activeVideoRegion}
                   onChange={setActiveVideoRegion}
