@@ -1,0 +1,91 @@
+NIGHTLIFE VIETNAM
+BIÊN BẢN CHỐT YÊU CẦU SAU DEMO / CUSTOMER REVIEW
+Phiên bản dùng để khách hàng review và xác nhận phạm vi thay đổi sau buổi demo
+
+
+Mục tiêu tài liệu
+Ghi rõ phiên bản hiện tại khách hàng đang review sau buổi demo.
+Tổng hợp các tính năng đã demo, các điểm đã xác nhận, các tính năng cần bổ sung và các giao diện cần chỉnh sửa.
+Tách bạch phạm vi thay đổi trước bản beta, phạm vi sau beta và các nội dung cần khách xác nhận thêm.
+Làm tài liệu căn cứ để các bên thống nhất phạm vi, ưu tiên, kế hoạch review và checklist nghiệm thu tiếp theo.
+
+Mục lục nội dung
+1. Tóm tắt điều hành
+2. Nguồn đầu vào và baseline nghiệp vụ
+3. Phiên bản hiện tại khách hàng đang review
+4. Phạm vi tính năng đã demo
+5. Nội dung đã confirm với khách hàng
+6. Tính năng cần bổ sung / thay đổi sau cuộc họp
+7. Giao diện cần chỉnh sửa
+8. Phạm vi thay đổi và không thay đổi
+9. Điều kiện bàn giao bản beta cho khách review
+10. Danh sách pending cần khách xác nhận
+11. Rủi ro, giới hạn và lưu ý vận hành
+12. Checklist hành động sau cuộc họp
+13. Xác nhận của các bên
+1. Tóm tắt điều hành
+Sau buổi demo/review, khách hàng đánh giá tổng thể giao diện và luồng chính ở mức tích cực, không ghi nhận blocker nghiệp vụ lớn tại thời điểm họp. Tuy nhiên, bản hiện tại vẫn là bản demo/beta candidate, chưa phải bản nghiệm thu chính thức. Trước khi gửi khách sử dụng thử, cần hoàn thiện kiểm thử nội bộ, sửa lỗi đăng nhập LINE, rà soát media/thumbnail và cấu hình tài khoản đúng vai trò.
+
+2. Nguồn đầu vào và baseline nghiệp vụ
+
+2.1. Baseline nghiệp vụ đang áp dụng
+MVP chỉ có một luồng chính: Booking kèm QR ưu đãi. QR sinh sau khi booking thành công và gắn với booking tương ứng.
+Guest nhập email bắt buộc, nhận QR qua email. Member/VIP đăng nhập thì hệ thống tự điền thông tin từ hồ sơ.
+Mức giảm theo hạng khách: Guest 5%, Member 8%, VIP 10%; mức giảm snapshot tại thời điểm tạo booking.
+Cast chỉ là thông tin mong muốn/tham chiếu trong booking, không giữ lịch cast và không cam kết cast khả dụng.
+Guest/khách vãng lai không gửi bill trong MVP; chỉ Member/VIP hoặc chủ quán/Partner có thể gửi bill. Member/VIP gửi bill là tùy chọn.
+Admin CMS quản lý nội dung quán/cast, booking, QR, bill, ranking, banner/campaign, blog và báo cáo cơ bản.
+Lưu ý kiểm soát scope:
+Các yêu cầu mới phát sinh sau demo cần được phân loại rõ về ưu tiên, tác động nghiệp vụ, trải nghiệm người dùng, vận hành và nghiệm thu trước khi đưa vào kế hoạch triển khai chính thức.
+3. Phiên bản hiện tại khách hàng đang review
+
+3.1. Nguyên tắc bàn giao tài khoản cho khách
+Cấp tài khoản Admin/Employee/Partner theo đúng phạm vi cần review, không dùng tài khoản Super Admin cho khách hàng.
+Tất cả thao tác xóa trên tài khoản Admin/Employee nên áp dụng xóa mềm để đảm bảo truy vết và khôi phục khi cần.
+Dữ liệu khách nhập trong quá trình review không được dùng để thử nghiệm phá dữ liệu; mọi kiểm thử nội bộ phải thực hiện trên môi trường nhân bản riêng.
+4. Phạm vi tính năng đã demo
+
+5. Nội dung đã confirm với khách hàng
+Các điểm dưới đây được hiểu là nội dung đã trao đổi và được khách hàng đồng ý/không phản đối trong buổi review. Những mục còn cần quyết định về phase hoặc effort được tách riêng ở mục Pending.
+
+6. Tính năng cần bổ sung / thay đổi sau cuộc họp
+Bảng này là danh sách Change Request/Improvement để PM/BA đưa vào Jira. Cột “Đề xuất phase” là khuyến nghị BA, cần khách xác nhận nếu muốn thay đổi ưu tiên.
+
+6.1. Làm rõ riêng cho CR-01 - Coupon/QR tặng thủ công P0+
+CR-01 được xếp P0+ sau cuộc họp vì đây là nhu cầu khách hàng đã nêu trực tiếp: Admin có thể tạo coupon/QR ưu đãi riêng để tặng khách quen, người quen, đối tác hoặc phục vụ chiến dịch marketing. Nội dung dưới đây chỉ chốt phạm vi nghiệp vụ, hành vi sử dụng và trải nghiệm vận hành; không đưa chi tiết kỹ thuật triển khai vào tài liệu gửi khách.
+
+7. Giao diện cần chỉnh sửa
+
+8. Phạm vi thay đổi và không thay đổi
+8.1. Phạm vi thay đổi đề xuất trước khi gửi bản beta
+Hoàn thiện CR-01 Coupon/QR tặng thủ công ở mức P0+ theo phạm vi nghiệp vụ đã chốt trong tài liệu này.
+Fix đăng nhập LINE/live và chạy lại test đăng nhập Google/LINE.
+Thay bộ icon điều hướng/trang chủ bản đầu để tăng chất lượng visual.
+Rà soát nội dung media: ảnh quán/cast, thumbnail video, banner, blog, nội dung tiếng Nhật cơ bản.
+Chuẩn hóa cấu hình số điện thoại CTA và khung giờ booking trong Admin.
+Cấp tài khoản beta theo vai trò phù hợp; không cấp Super Admin.
+Tạo môi trường nhân bản riêng cho kiểm thử nội bộ trước khi khách bắt đầu nhập dữ liệu review.
+8.2. Phạm vi thay đổi sau beta / cần xác nhận thêm
+Tối ưu báo cáo/đối soát nâng cao cho Coupon/QR tặng sau khi P0+ ổn định.
+CMS cho phép khách tự thay icon hoặc chọn icon từ thư viện chuẩn.
+CMS upload logo tự động hoàn chỉnh nếu ngoài phạm vi team hỗ trợ bằng file thiết kế.
+Cấu hình banner/advertising nâng cao: nhiều placement, giá quảng cáo, lịch chạy, báo cáo hiệu quả.
+Chuyển đổi theme ban ngày/ban đêm.
+8.3. Phạm vi không thay đổi so với BA v3.2
+Không thêm payment online/POS/order/đặt món trên web vào MVP.
+Không chuyển sang mô hình giữ lịch cast; cast vẫn là thông tin mong muốn để Admin điều phối offline.
+Không mở Guest gửi bill trong MVP; nếu Guest muốn gửi bill/tích điểm thì cần đăng ký/đăng nhập Member.
+Không thay đổi rule mức giảm Guest/Member/VIP đã chốt nếu khách chưa có xác nhận mới.
+Không cấp Super Admin cho khách trong giai đoạn beta review.
+9. Điều kiện bàn giao bản beta cho khách review
+
+9.1. Thông tin cần bổ sung khi gửi beta
+
+10. Rủi ro, giới hạn và lưu ý vận hành
+
+11. Checklist hành động sau cuộc họp
+
+12. Xác nhận của các bên
+Bảng xác nhận dưới đây dùng để chốt rằng các bên đã review tài liệu và đồng ý với phạm vi/phân loại thay đổi. Các mục Pending chỉ được đưa vào kế hoạch triển khai khi có xác nhận riêng.
+
+Phụ lục A - Mapping nhanh với tài liệu BA v3.2

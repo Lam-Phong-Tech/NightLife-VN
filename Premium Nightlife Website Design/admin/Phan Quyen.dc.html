@@ -50,10 +50,17 @@
             </div>
             <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;">
               <sc-for list="{{ rlAccounts }}" as="a" hint-placeholder-count="5">
-                <div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);">
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);opacity:{{ a.op }};">
                   <span style="width:40px;height:40px;flex:none;border-radius:11px;background:{{ a.avaBg }};display:flex;align-items:center;justify-content:center;color:#241a0a;font-weight:700;font-size:15px;">{{ a.ini }}</span>
                   <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#f3f0ea;">{{ a.name }}</div><div style="font-size:11px;color:#57534b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ a.email }}</div></div>
-                  <div style="text-align:right;"><span style="{{ a.roleStyle }}">{{ a.role }}</span><div style="font-size:10.5px;color:#8c8679;margin-top:5px;">{{ a.last }}</div></div>
+                  <div style="text-align:right;flex:none;"><span style="{{ a.roleStyle }}">{{ a.role }}</span><sc-if value="{{ a.isDisabled }}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:#e88b99;margin-top:5px;">Đã vô hiệu hóa</div></sc-if></div>
+                  <div style="display:flex;gap:5px;flex:none;">
+                    <span onClick="{{ a.edBtn }}" title="Sửa tên / email" style="width:27px;height:27px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#f0dda8;border-color:rgba(212,178,106,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+                    <span onClick="{{ a.pwBtn }}" title="Đổi mật khẩu" style="width:27px;height:27px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#f0dda8;border-color:rgba(212,178,106,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3-3.5 3.5z"/></svg></span>
+                    <sc-if value="{{ a.isActive }}" hint-placeholder-val="{{ true }}"><span onClick="{{ a.disable }}" title="Vô hiệu hóa (xóa mềm) — có thể khôi phục" style="width:27px;height:27px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#e7b869;border-color:rgba(224,164,78,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.5 5.5l13 13"/></svg></span></sc-if>
+                    <sc-if value="{{ a.isDisabled }}" hint-placeholder-val="{{ false }}"><span onClick="{{ a.restore }}" title="Khôi phục tài khoản" style="width:27px;height:27px;flex:none;border-radius:8px;background:rgba(95,191,134,.06);border:1px solid rgba(95,191,134,.25);display:flex;align-items:center;justify-content:center;color:#7fd3a2;cursor:pointer;" style-hover="background:rgba(95,191,134,.14);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v6h6"/><path d="M3.5 9a9 9 0 1 1 1.2 6"/></svg></span></sc-if>
+                    <span onClick="{{ a.hardDel }}" title="Xóa vĩnh viễn (xóa cứng)" style="width:27px;height:27px;flex:none;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#e88b99;border-color:rgba(224,105,122,.4);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>
+                  </div>
                 </div>
               </sc-for>
               <sc-if value="{{ accEmpty }}" hint-placeholder-val="{{ false }}">
@@ -190,6 +197,110 @@
     </div>
   </sc-if>
 
+  <sc-if value="{{ edOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ edClose }}" style="position:fixed;inset:0;z-index:81;background:rgba(6,6,9,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ edStop }}" style="width:480px;max-width:94vw;background:#141319;border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.07);">
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Phân quyền · Tài khoản</div>
+            <div style="font-size:17px;font-weight:700;color:#f3f0ea;margin-top:3px;">Sửa tài khoản</div>
+          </div>
+          <span onClick="{{ edClose }}" style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div style="padding:20px 24px 22px;display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Tên hiển thị</div>
+            <input value="{{ edName }}" onInput="{{ edNameSet }}" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:14px;font-weight:600;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Email đăng nhập</div>
+            <input value="{{ edEmail }}" onInput="{{ edEmailSet }}" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;" style-focus="border-color:rgba(212,178,106,.55);">
+          </div>
+          <sc-if value="{{ edEmailChanged }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:9px;padding:11px 14px;background:rgba(224,164,78,.06);border:1px solid rgba(224,164,78,.25);border-radius:11px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e7b869" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><path d="M12 9v4M12 16.5v.01"/><path d="M10.3 3.8L2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0z"/></svg>
+              <span style="font-size:11.5px;color:#e2c9a0;line-height:1.5;">Email là <b style="color:#e7b869;">định danh đăng nhập</b> — đổi email sẽ gửi thư xác minh tới địa chỉ mới, tài khoản bị <b style="color:#e7b869;">đăng xuất mọi thiết bị</b> và phải đăng nhập lại bằng email mới. Mật khẩu giữ nguyên.</span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);background:rgba(12,12,15,.35);">
+          <span style="flex:1;"></span>
+          <span onClick="{{ edClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ edSave }}" style="{{ edSaveStyle }}">Lưu thay đổi</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ cpOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ cpClose }}" style="position:fixed;inset:0;z-index:82;background:rgba(6,6,9,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ cpStop }}" style="width:480px;max-width:94vw;background:#141319;border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.07);">
+          <div style="flex:1;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:#8c8679;text-transform:uppercase;">Phân quyền · Bảo mật</div>
+            <div style="font-size:17px;font-weight:700;color:#f3f0ea;margin-top:3px;">Đổi mật khẩu</div>
+          </div>
+          <span onClick="{{ cpClose }}" style="width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9b958a;cursor:pointer;" style-hover="color:#f3f0ea;border-color:rgba(255,255,255,.2);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+        </div>
+        <div style="padding:20px 24px 22px;display:flex;flex-direction:column;gap:16px;">
+          <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:10px 13px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#caa765" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <div style="min-width:0;"><div style="font-size:12.5px;font-weight:600;color:#f3f0ea;">{{ cpName }}</div><div style="font-size:10.5px;color:#8c8679;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cpEmail }}</div></div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:.9px;color:#8c8679;text-transform:uppercase;margin-bottom:8px;">Mật khẩu mới</div>
+            <div style="display:flex;gap:8px;">
+              <div style="position:relative;flex:1;">
+                <input value="{{ cpPw }}" onInput="{{ cpPwSet }}" type="{{ cpPwType }}" placeholder="Tối thiểu 8 ký tự" style="width:100%;background:rgba(12,12,15,.55);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:12px 44px 12px 15px;color:#f3f0ea;font-size:13px;font-family:inherit;outline:none;letter-spacing:.5px;" style-focus="border-color:rgba(212,178,106,.55);">
+                <span onClick="{{ cpPwToggle }}" title="Hiện / ẩn mật khẩu" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8c8679;cursor:pointer;" style-hover="color:#f3f0ea;">
+                  <sc-if value="{{ cpPwHidden }}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></sc-if>
+                  <sc-if value="{{ cpPwShown }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a20 20 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a20 20 0 0 1-4.13 4.87M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg></sc-if>
+                </span>
+              </div>
+              <span onClick="{{ cpPwGen }}" style="flex:none;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#caa765;background:rgba(212,178,106,.08);border:1px solid rgba(212,178,106,.3);padding:0 14px;border-radius:11px;cursor:pointer;" style-hover="background:rgba(212,178,106,.14);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M21 8a9 9 0 1 0 .5 4"/></svg>Tạo ngẫu nhiên</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:9px;">
+              <span style="flex:1;height:3px;border-radius:3px;background:{{ cpPwBar1 }};"></span>
+              <span style="flex:1;height:3px;border-radius:3px;background:{{ cpPwBar2 }};"></span>
+              <span style="flex:1;height:3px;border-radius:3px;background:{{ cpPwBar3 }};"></span>
+              <span style="flex:none;min-width:52px;text-align:right;font-size:10.5px;font-weight:600;color:{{ cpPwStrengthCol }};">{{ cpPwStrength }}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:9px;padding:11px 14px;background:rgba(224,164,78,.06);border:1px solid rgba(224,164,78,.25);border-radius:11px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e7b869" stroke-width="1.8" stroke-linecap="round" style="flex:none;margin-top:1px;"><path d="M12 9v4M12 16.5v.01"/><path d="M10.3 3.8L2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0z"/></svg>
+            <span style="font-size:11.5px;color:#e2c9a0;line-height:1.5;">Sau khi đổi, tài khoản bị <b style="color:#e7b869;">đăng xuất khỏi mọi thiết bị</b> và phải đăng nhập lại bằng mật khẩu mới.</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid rgba(255,255,255,.07);background:rgba(12,12,15,.35);">
+          <span style="flex:1;"></span>
+          <span onClick="{{ cpClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ cpSave }}" style="{{ cpSaveStyle }}">Đổi mật khẩu</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hdOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ hdClose }}" style="position:fixed;inset:0;z-index:84;background:rgba(6,6,9,.75);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:24px;">
+      <div onClick="{{ hdStop }}" style="width:470px;max-width:94vw;background:#141319;border:1px solid rgba(224,105,122,.3);border-radius:18px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:vrise .25s ease;overflow:hidden;">
+        <div style="padding:22px 24px 0;display:flex;gap:13px;">
+          <span style="width:42px;height:42px;flex:none;border-radius:12px;background:rgba(224,105,122,.12);border:1px solid rgba(224,105,122,.3);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e88b99" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>
+          <div style="min-width:0;">
+            <div style="font-size:16px;font-weight:700;color:#f3f0ea;">Xóa vĩnh viễn tài khoản?</div>
+            <div style="font-size:12px;color:#c5c0b6;margin-top:5px;"><b style="color:#f3f0ea;">{{ hdName }}</b> · {{ hdEmail }}</div>
+          </div>
+        </div>
+        <div style="margin:15px 24px 0;padding:12px 14px;background:rgba(224,105,122,.07);border:1px solid rgba(224,105,122,.3);border-radius:11px;font-size:11.5px;color:#d9a1a8;line-height:1.6;">
+          Hành động <b style="color:#e88b99;">không thể hoàn tác</b>. Quyền truy cập bị thu hồi ngay; dữ liệu nghiệp vụ liên quan (booking, hoá đơn) được giữ lại và ẩn danh hóa. Nếu chỉ cần tạm khóa, hãy dùng <b style="color:#e7b869;">Vô hiệu hóa (xóa mềm)</b>.
+        </div>
+        <div style="display:flex;gap:10px;padding:18px 24px 20px;justify-content:flex-end;">
+          <span onClick="{{ hdClose }}" style="font-size:12.5px;font-weight:600;color:#9b958a;padding:10px 16px;border-radius:10px;cursor:pointer;" style-hover="color:#f3f0ea;">Hủy</span>
+          <span onClick="{{ hdConfirm }}" style="font-size:12.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#e0697a,#b64553);padding:10px 18px;border-radius:10px;cursor:pointer;" style-hover="filter:brightness(1.1);">Xóa vĩnh viễn</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:10px;background:#17161c;border:1px solid rgba(212,178,106,.3);color:#f3f0ea;font-size:13.5px;font-weight:500;padding:13px 22px;border-radius:12px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:vrise .25s ease;">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7fd3a2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{ toast }}
@@ -202,6 +313,8 @@
 class Component extends DCLogic {
   state = { toast:null };
   showToast(m){ this.setState({ toast:m }); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:null}),2600); }
+  genPw(){ const A='ABCDEFGHJKMNPQRSTUVWXYZ',aa='abcdefghjkmnpqrstuvwxyz',dd='23456789',ss='!@#$%&*'; const pick=(s,n)=>Array.from({length:n},()=>s.charAt(Math.floor(Math.random()*s.length))); const arr=pick(A,3).concat(pick(aa,4),pick(dd,3),pick(ss,2)); for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; } return arr.join(''); }
+  pwMeter(pw){ let psc=0; if(pw.length>=8) psc=1; if(pw.length>=10&&/[a-z]/.test(pw)&&/[A-Z]/.test(pw)&&/\d/.test(pw)) psc=2; if(pw.length>=12&&/[a-z]/.test(pw)&&/[A-Z]/.test(pw)&&/\d/.test(pw)&&/[^A-Za-z0-9]/.test(pw)) psc=3; const off='rgba(255,255,255,.08)', col=psc===1?'#e08a7e':psc===2?'#e3c27e':'#7fd3a2'; return { b1:psc>=1?col:off, b2:psc>=2?col:off, b3:psc>=3?col:off, label:!pw?'':(psc===0?'Quá ngắn':psc===1?'Yếu':psc===2?'Khá':'Mạnh'), labelCol:!pw?'#57534b':(psc===0?'#e08a7e':col) }; }
   chip(kind){ const m={info:['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],gold:['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],success:['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],pink:['rgba(231,154,184,.1)','rgba(231,154,184,.3)','#e79ab8'],muted:['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']}; const c=m[kind]||m.muted; return 'background:'+c[0]+';border:1px solid '+c[1]+';color:'+c[2]+';'; }
 
   renderVals(){
@@ -229,16 +342,24 @@ class Component extends DCLogic {
       {ini:'BN',name:'Blue Note Lounge',email:'partner.bluenote@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
       {ini:'HO',name:'Hana Onsen',email:'partner.hana@vietyoru.vn',role:'Chờ kích hoạt',kind:'muted',last:'Chưa kích hoạt',avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
     ]);
+    const accGone=S.accGone||{}, accSt=S.accStatus||{}, accEd=S.accEdits||{};
+    const allAcc2=allAcc.filter(a=>!accGone[a.email]).map(a=>{ const ov=accEd[a.email]||{}; return {...a,key:a.email,name:ov.name||a.name,email:ov.email||a.email,disabled:!!accSt[a.email]}; });
     const accQ=(S.accQ||''), accQq=accQ.trim().toLowerCase(), accRole=S.accRole||'all';
     const fchip=(a)=>'font-size:11px;font-weight:600;padding:5.5px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;'+(a?'color:#241a0a;background:linear-gradient(135deg,#f0dda8,#d4b26a);':'color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);');
-    o.accRoles=[['all','Tất cả'],['admin','Admin'],['operator','Operator'],['partner','Đối tác'],['staff','Staff'],['muted','Chờ kích hoạt']].map(r=>{
-      const n=r[0]==='all'?allAcc.length:allAcc.filter(a=>a.kind===r[0]).length;
+    o.accRoles=[['all','Tất cả'],['admin','Admin'],['operator','Operator'],['partner','Đối tác'],['staff','Staff'],['muted','Chờ kích hoạt'],['disabled','Đã vô hiệu']].map(r=>{
+      const n=r[0]==='all'?allAcc2.length:r[0]==='disabled'?allAcc2.filter(a=>a.disabled).length:allAcc2.filter(a=>a.kind===r[0]).length;
       return {label:r[1]+' · '+n,style:fchip(accRole===r[0]),pick:()=>this.setState({accRole:r[0],accPage:0})};
     });
     o.accQ=accQ; o.accQSet=(e)=>this.setState({accQ:e.target.value,accPage:0});
-    const accF=allAcc.filter(a=>(accRole==='all'||a.kind===accRole)&&(!accQq||(a.name+' '+a.email).toLowerCase().indexOf(accQq)>=0));
+    const accF=allAcc2.filter(a=>(accRole==='all'||(accRole==='disabled'?a.disabled:a.kind===accRole))&&(!accQq||(a.name+' '+a.email).toLowerCase().indexOf(accQq)>=0));
     const PER=6, pages=Math.max(1,Math.ceil(accF.length/PER)), pg=Math.min(S.accPage||0,pages-1);
-    o.rlAccounts=accF.slice(pg*PER,pg*PER+PER).map(a=>({...a,roleStyle:rst(a.kind)}));
+    o.rlAccounts=accF.slice(pg*PER,pg*PER+PER).map(a=>({...a,roleStyle:rst(a.kind),
+      op:a.disabled?'0.55':'1', isActive:!a.disabled, isDisabled:a.disabled,
+      edBtn:()=>this.setState({ed:{orig:a.key,name:a.name,email:a.email}}),
+      pwBtn:()=>this.setState({cp:{name:a.name,email:a.email,pw:'',pwShow:false}}),
+      disable:()=>{ this.setState({accStatus:{...accSt,[a.key]:true}}); this.showToast('Đã vô hiệu hóa tài khoản — có thể khôi phục bất cứ lúc nào'); },
+      restore:()=>{ const n={...accSt}; delete n[a.key]; this.setState({accStatus:n}); this.showToast('Đã khôi phục tài khoản '+a.email); },
+      hardDel:()=>this.setState({hd:{name:a.name,email:a.email,key:a.key}})}));
     o.accEmpty=accF.length===0;
     o.accRangeLabel=accF.length?('Hiển thị '+(pg*PER+1)+'–'+Math.min((pg+1)*PER,accF.length)+' / '+accF.length+' tài khoản'):'0 tài khoản';
     const pbtn=(dis)=>'width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#9b958a;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;'+(dis?'opacity:.3;pointer-events:none;':'');
@@ -304,6 +425,44 @@ class Component extends DCLogic {
         this.setState({accExtra:[rec].concat(S.accExtra||[]),af:null});
         this.showToast('Đã tạo tài khoản '+kmap[af.kind][0]+' — đã gửi email thông báo');
       };
+    }
+    const ed=S.ed;
+    o.edOpen=!!ed;
+    if(ed){
+      const eupd=(p)=>this.setState({ed:{...this.state.ed,...p}});
+      o.edStop=(e)=>e.stopPropagation(); o.edClose=()=>this.setState({ed:null});
+      o.edName=ed.name; o.edNameSet=(e)=>eupd({name:e.target.value});
+      o.edEmail=ed.email; o.edEmailSet=(e)=>eupd({email:e.target.value});
+      o.edEmailChanged=ed.email.trim()!==ed.orig;
+      const eok=!!(ed.name&&ed.name.trim()&&ed.email&&ed.email.indexOf('@')>0);
+      o.edSaveStyle='display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 19px;border-radius:10px;cursor:pointer;'+(eok?'':'opacity:.45;');
+      o.edSave=()=>{ if(!eok){ this.showToast(!ed.name||!ed.name.trim()?'Nhập tên hiển thị':'Nhập email hợp lệ'); return; }
+        this.setState({accEdits:{...accEd,[ed.orig]:{name:ed.name.trim(),email:ed.email.trim()}},ed:null});
+        this.showToast(ed.email.trim()!==ed.orig?'Đã lưu — thư xác minh đã gửi tới email mới':'Đã cập nhật tài khoản'); };
+    }
+    const cp=S.cp;
+    o.cpOpen=!!cp;
+    if(cp){
+      const cpupd=(p)=>this.setState({cp:{...this.state.cp,...p}});
+      o.cpStop=(e)=>e.stopPropagation(); o.cpClose=()=>this.setState({cp:null});
+      o.cpName=cp.name; o.cpEmail=cp.email;
+      const cpw=cp.pw||'';
+      o.cpPw=cpw; o.cpPwSet=(e)=>cpupd({pw:e.target.value});
+      o.cpPwType=cp.pwShow?'text':'password'; o.cpPwHidden=!cp.pwShow; o.cpPwShown=!!cp.pwShow;
+      o.cpPwToggle=()=>cpupd({pwShow:!cp.pwShow});
+      o.cpPwGen=()=>cpupd({pw:this.genPw(),pwShow:true});
+      const cm2=this.pwMeter(cpw);
+      o.cpPwBar1=cm2.b1; o.cpPwBar2=cm2.b2; o.cpPwBar3=cm2.b3; o.cpPwStrength=cm2.label; o.cpPwStrengthCol=cm2.labelCol;
+      const cok=cpw.length>=8;
+      o.cpSaveStyle='display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#241a0a;background:linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);padding:10px 19px;border-radius:10px;cursor:pointer;'+(cok?'':'opacity:.45;');
+      o.cpSave=()=>{ if(!cok){ this.showToast('Mật khẩu tối thiểu 8 ký tự'); return; } this.setState({cp:null}); this.showToast('Đã đổi mật khẩu cho '+cp.email); };
+    }
+    const hd=S.hd;
+    o.hdOpen=!!hd;
+    if(hd){
+      o.hdStop=(e)=>e.stopPropagation(); o.hdClose=()=>this.setState({hd:null});
+      o.hdName=hd.name; o.hdEmail=hd.email;
+      o.hdConfirm=()=>{ this.setState({accGone:{...accGone,[hd.email]:true},hd:null}); this.showToast('Đã xóa vĩnh viễn tài khoản '+hd.email); };
     }
     return o;
   }

@@ -290,6 +290,8 @@ model User {
   couponIssues                  CouponIssue[]          @relation("CouponIssueUser")
   issuedCoupons                 CouponIssue[]          @relation("CouponIssueIssuer")
   scannedCoupons                CouponIssue[]          @relation("CouponIssueScanner")
+  adminCouponIssues             AdminCouponIssue[]     @relation("AdminCouponIssueUser")
+  scannedAdminCoupons           AdminCouponIssue[]     @relation("AdminCouponIssueScanner")
   media                         Media[]                @relation("MediaOwner")
   contents                      Content[]
   notifications                 NotificationLog[]
@@ -326,12 +328,13 @@ model Guest {
   bookings              Booking[]
   bills                 Bill[]
   couponIssues          CouponIssue[]
+  adminCouponIssues     AdminCouponIssue[]
   notifications         NotificationLog[]
   bookingChangeRequests BookingChangeRequest[]
   bookingChatMessages   BookingChatMessage[]
   createdAt             DateTime               @default(now()) @map("created_at")
   updatedAt             DateTime               @updatedAt @map("updated_at")
-  deletedAt             DateTime?              @map("deleted_at")
+  deletedAt                     DateTime?              @map("deleted_at")
 
   @@index([convertedUserId])
   @@index([phone])
@@ -492,6 +495,7 @@ model Store {
   bookings                   Booking[]
   bookingQrs                 BookingQr[]
   coupons                    Coupon[]
+  adminCouponIssues          AdminCouponIssue[]
   bills                      Bill[]
   commissionConfigs          CommissionConfig[]
   media                      Media[]
@@ -1184,6 +1188,7 @@ model AdminCoupon {
   usedCount       Int          @default(0) @map("used_count")
   status          CouponStatus @default(ACTIVE)
   scans           AdminCouponScan[]
+  issues          AdminCouponIssue[]
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
@@ -1203,4 +1208,35 @@ model AdminCouponScan {
   @@index([adminCouponId])
   @@index([storeId])
   @@map("admin_coupon_scans")
+}
+
+model AdminCouponIssue {
+  id              String            @id @default(uuid()) @db.Uuid
+  adminCouponId   String            @map("admin_coupon_id") @db.Uuid
+  userId          String?           @map("user_id") @db.Uuid
+  guestId         String?           @map("guest_id") @db.Uuid
+  storeId         String?           @map("store_id") @db.Uuid
+  scannedByUserId String?           @map("scanned_by_user_id") @db.Uuid
+  adminCoupon     AdminCoupon       @relation(fields: [adminCouponId], references: [id], onDelete: Restrict)
+  user            User?             @relation("AdminCouponIssueUser", fields: [userId], references: [id], onDelete: SetNull)
+  guest           Guest?            @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  store           Store?             @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  scannedBy       User?             @relation("AdminCouponIssueScanner", fields: [scannedByUserId], references: [id], onDelete: SetNull)
+  code            String            @unique
+  qrPayloadHash   String            @unique @map("qr_payload_hash")
+  status          CouponIssueStatus @default(ISSUED)
+  expiresAt       DateTime?         @map("expires_at")
+  usedAt          DateTime?         @map("used_at")
+  revokedAt       DateTime?         @map("revoked_at")
+  metadata        Json?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@index([adminCouponId])
+  @@index([userId])
+  @@index([guestId])
+  @@index([storeId])
+  @@index([scannedByUserId])
+  @@index([status])
+  @@map("admin_coupon_issues")
 }
