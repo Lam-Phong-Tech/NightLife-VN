@@ -63,7 +63,9 @@ The backend deploy workflow now gates schema changes as follows:
 1. Create a backend deploy snapshot before `rsync`.
 2. Preserve `.env`, `uploads`, and `public/uploads` during `rsync`.
 3. Read `DATABASE_URL` from VPS `.env` without sourcing or executing the file.
-4. Run `backend/scripts/backup-uat.sh`.
+4. Run `backend/scripts/backup-uat.sh`; if the demo/UAT database does not exist
+   yet, the workflow creates the empty database first and records
+   `database_created_before_backup=true` in the manifest.
 5. Print backup evidence to the GitHub Actions log:
    - `nightlife-*-manifest.txt`
    - `nightlife-*-sha256.txt`

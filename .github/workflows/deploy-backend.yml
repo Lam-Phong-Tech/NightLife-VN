@@ -189,7 +189,7 @@ jobs:
             pnpm exec prisma generate
 
             chmod +x scripts/backup-uat.sh
-            BACKUP_ROOT="$BACKUP_ROOT" STORAGE_PATHS="$BACKUP_STORAGE_PATHS" scripts/backup-uat.sh
+            CREATE_DATABASE_IF_MISSING=true BACKUP_ROOT="$BACKUP_ROOT" STORAGE_PATHS="$BACKUP_STORAGE_PATHS" scripts/backup-uat.sh
             LATEST_MANIFEST="$(ls -t "$BACKUP_ROOT"/nightlife-*-manifest.txt | head -n 1)"
             LATEST_STAMP="$(basename "$LATEST_MANIFEST" | sed -E 's/^nightlife-([0-9]{8}-[0-9]{6})-manifest\.txt$/\1/')"
             LATEST_CHECKSUMS="$BACKUP_ROOT/nightlife-$LATEST_STAMP-sha256.txt"

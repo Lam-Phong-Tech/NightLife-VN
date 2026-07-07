@@ -10,6 +10,8 @@ set -Eeuo pipefail
 #   RESTORE_SANITY_DATABASE_URL=postgresql://...
 #   PG_BACKUP_DATABASE_URL=postgresql://...  # override when DATABASE_URL has Prisma-only params
 #   PG_BACKUP_SCHEMA=public
+#   CREATE_DATABASE_IF_MISSING=true
+#   PG_MAINTENANCE_DATABASE=postgres
 
 : "${DATABASE_URL:?DATABASE_URL is required for pg_dump backup}"
 
@@ -18,6 +20,9 @@ STORAGE_PATHS="${STORAGE_PATHS:-uploads public/uploads}"
 RETENTION_COUNT="${RETENTION_COUNT:-7}"
 TIME_ZONE="${TZ:-Asia/Bangkok}"
 PRISMA_ONLY_DATABASE_URL_PARAMS="${PRISMA_ONLY_DATABASE_URL_PARAMS:-schema connection_limit pool_timeout pgbouncer}"
+CREATE_DATABASE_IF_MISSING="${CREATE_DATABASE_IF_MISSING:-false}"
+PG_MAINTENANCE_DATABASE="${PG_MAINTENANCE_DATABASE:-postgres}"
+PG_DATABASE_CREATED="false"
 STAMP="$(TZ="$TIME_ZONE" date +%Y%m%d-%H%M%S)"
 
 sanitize_database_url_for_pg_tools() {
@@ -70,6 +75,53 @@ sanitize_database_url_for_pg_tools "$DATABASE_URL"
 PG_DATABASE_URL="${PG_BACKUP_DATABASE_URL:-$SANITIZED_DATABASE_URL}"
 PG_SCHEMA="${PG_BACKUP_SCHEMA:-$SANITIZED_DATABASE_SCHEMA}"
 
+extract_pg_url_parts() {
+  local input_url="$1"
+  PG_URL_QUERY=""
+  PG_URL_NO_QUERY="$input_url"
+  if [[ "$input_url" == *\?* ]]; then
+    PG_URL_QUERY="?${input_url#*\?}"
+    PG_URL_NO_QUERY="${input_url%%\?*}"
+  fi
+  PG_TARGET_DATABASE="${PG_URL_NO_QUERY##*/}"
+  PG_SERVER_URL_PREFIX="${PG_URL_NO_QUERY%/*}"
+}
+
+ensure_database_exists() {
+  [ "$CREATE_DATABASE_IF_MISSING" = "true" ] || return 0
+  command -v psql >/dev/null 2>&1 || {
+    echo "psql is required when CREATE_DATABASE_IF_MISSING=true" >&2
+    exit 1
+  }
+
+  extract_pg_url_parts "$PG_DATABASE_URL"
+  if [ -z "$PG_TARGET_DATABASE" ] || [ "$PG_SERVER_URL_PREFIX" = "$PG_URL_NO_QUERY" ]; then
+    echo "Cannot determine target database name from PG_DATABASE_URL" >&2
+    exit 1
+  fi
+  if ! [[ "$PG_TARGET_DATABASE" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    echo "Refusing to auto-create unsafe database name: $PG_TARGET_DATABASE" >&2
+    exit 1
+  fi
+
+  if psql -X -v ON_ERROR_STOP=1 -Atqc 'SELECT 1' "$PG_DATABASE_URL" >/dev/null 2>&1; then
+    echo "Target database exists for backup: $PG_TARGET_DATABASE"
+    return 0
+  fi
+
+  local maintenance_url="$PG_SERVER_URL_PREFIX/$PG_MAINTENANCE_DATABASE$PG_URL_QUERY"
+  local exists
+  exists="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT 1 FROM pg_database WHERE datname = '$PG_TARGET_DATABASE';" "$maintenance_url" || true)"
+  if [ "$exists" = "1" ]; then
+    echo "Target database $PG_TARGET_DATABASE exists but direct connection failed; pg_dump will report the database error." >&2
+    return 0
+  fi
+
+  echo "Target database $PG_TARGET_DATABASE does not exist; creating it before backup."
+  psql -X -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$PG_TARGET_DATABASE\"" "$maintenance_url"
+  PG_DATABASE_CREATED="true"
+}
+
 if ! [[ "$RETENTION_COUNT" =~ ^[0-9]+$ ]]; then
   echo "RETENTION_COUNT must be a number" >&2
   exit 1
@@ -99,6 +151,7 @@ command -v sha256sum >/dev/null 2>&1 || {
   exit 1
 }
 
+ensure_database_exists
 mkdir -p "$BACKUP_ROOT"
 
 DB_BACKUP="$BACKUP_ROOT/nightlife-db-$STAMP.dump"
@@ -151,6 +204,7 @@ fi
   echo "backup_root=$BACKUP_ROOT"
   echo "database_backup=$DB_BACKUP"
   echo "database_backup_bytes=$(wc -c < "$DB_BACKUP")"
+  echo "database_created_before_backup=$PG_DATABASE_CREATED"
   echo "database_schema=${PG_SCHEMA:-all}"
   echo "prisma_url_params_stripped=$PRISMA_ONLY_DATABASE_URL_PARAMS"
   echo "database_restore_list=$DB_LIST"
