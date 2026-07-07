@@ -8,6 +8,8 @@ set -Eeuo pipefail
 #   STORAGE_PATHS="uploads public/uploads"
 #   RETENTION_COUNT=7
 #   RESTORE_SANITY_DATABASE_URL=postgresql://...
+#   PG_BACKUP_DATABASE_URL=postgresql://...  # override when DATABASE_URL has Prisma-only params
+#   PG_BACKUP_SCHEMA=public
 
 : "${DATABASE_URL:?DATABASE_URL is required for pg_dump backup}"
 
@@ -15,7 +17,58 @@ BACKUP_ROOT="${BACKUP_ROOT:-./backups}"
 STORAGE_PATHS="${STORAGE_PATHS:-uploads public/uploads}"
 RETENTION_COUNT="${RETENTION_COUNT:-7}"
 TIME_ZONE="${TZ:-Asia/Bangkok}"
+PRISMA_ONLY_DATABASE_URL_PARAMS="${PRISMA_ONLY_DATABASE_URL_PARAMS:-schema connection_limit pool_timeout pgbouncer}"
 STAMP="$(TZ="$TIME_ZONE" date +%Y%m%d-%H%M%S)"
+
+sanitize_database_url_for_pg_tools() {
+  local input_url="$1"
+  SANITIZED_DATABASE_URL="$input_url"
+  SANITIZED_DATABASE_SCHEMA=""
+
+  if [[ "$input_url" != *\?* ]]; then
+    return
+  fi
+
+  local base="${input_url%%\?*}"
+  local query="${input_url#*\?}"
+  local old_ifs="$IFS"
+  local part key kept_query
+  local query_parts=()
+  local kept_parts=()
+
+  IFS='&'
+  read -r -a query_parts <<< "$query"
+  IFS="$old_ifs"
+
+  for part in "${query_parts[@]}"; do
+    key="${part%%=*}"
+    if [ "$key" = "schema" ]; then
+      if [[ "$part" == *=* ]]; then
+        SANITIZED_DATABASE_SCHEMA="${part#*=}"
+      fi
+      continue
+    fi
+
+    case " $PRISMA_ONLY_DATABASE_URL_PARAMS " in
+      *" $key "*) continue ;;
+    esac
+
+    kept_parts+=("$part")
+  done
+
+  if [ "${#kept_parts[@]}" -gt 0 ]; then
+    IFS='&'
+    kept_query="${kept_parts[*]}"
+    IFS="$old_ifs"
+    SANITIZED_DATABASE_URL="$base?$kept_query"
+  else
+    SANITIZED_DATABASE_URL="$base"
+  fi
+}
+
+sanitize_database_url_for_pg_tools "$DATABASE_URL"
+PG_DATABASE_URL="${PG_BACKUP_DATABASE_URL:-$SANITIZED_DATABASE_URL}"
+PG_SCHEMA="${PG_BACKUP_SCHEMA:-$SANITIZED_DATABASE_SCHEMA}"
 
 if ! [[ "$RETENTION_COUNT" =~ ^[0-9]+$ ]]; then
   echo "RETENTION_COUNT must be a number" >&2
@@ -56,7 +109,12 @@ MANIFEST="$BACKUP_ROOT/nightlife-$STAMP-manifest.txt"
 CHECKSUMS="$BACKUP_ROOT/nightlife-$STAMP-sha256.txt"
 
 echo "Creating database backup: $DB_BACKUP"
-pg_dump --format=custom --no-owner --no-privileges --file "$DB_BACKUP" "$DATABASE_URL"
+pg_dump_args=(--format=custom --no-owner --no-privileges --file "$DB_BACKUP")
+if [ -n "$PG_SCHEMA" ]; then
+  echo "Using database schema for backup: $PG_SCHEMA"
+  pg_dump_args+=(--schema "$PG_SCHEMA")
+fi
+pg_dump "${pg_dump_args[@]}" "$PG_DATABASE_URL"
 test -s "$DB_BACKUP"
 pg_restore --list "$DB_BACKUP" > "$DB_LIST"
 test -s "$DB_LIST"
@@ -80,7 +138,9 @@ fi
 
 if [ -n "${RESTORE_SANITY_DATABASE_URL:-}" ]; then
   echo "Running optional restore sanity check against RESTORE_SANITY_DATABASE_URL"
-  pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$RESTORE_SANITY_DATABASE_URL" "$DB_BACKUP"
+  sanitize_database_url_for_pg_tools "$RESTORE_SANITY_DATABASE_URL"
+  RESTORE_DATABASE_URL="${PG_RESTORE_DATABASE_URL:-$SANITIZED_DATABASE_URL}"
+  pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$RESTORE_DATABASE_URL" "$DB_BACKUP"
 fi
 
 {
@@ -91,6 +151,8 @@ fi
   echo "backup_root=$BACKUP_ROOT"
   echo "database_backup=$DB_BACKUP"
   echo "database_backup_bytes=$(wc -c < "$DB_BACKUP")"
+  echo "database_schema=${PG_SCHEMA:-all}"
+  echo "prisma_url_params_stripped=$PRISMA_ONLY_DATABASE_URL_PARAMS"
   echo "database_restore_list=$DB_LIST"
   echo "database_restore_list_bytes=$(wc -c < "$DB_LIST")"
   if [ "$storage_found" -eq 1 ]; then
