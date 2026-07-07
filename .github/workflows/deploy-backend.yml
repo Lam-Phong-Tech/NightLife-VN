@@ -144,10 +144,39 @@ jobs:
             }
 
             cd "$BACKEND_DIR"
+            read_env_var() {
+              env_key="$1"
+              env_file="${2:-.env}"
+              awk -v key="$env_key" '
+                /^[[:space:]]*(#|$)/ { next }
+                {
+                  line=$0
+                  sub(/\r$/, "", line)
+                  sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+                  pattern="^[[:space:]]*" key "[[:space:]]*="
+                  if (line ~ pattern) {
+                    sub(pattern, "", line)
+                    sub(/^[[:space:]]+/, "", line)
+                    sub(/[[:space:]]+$/, "", line)
+                    quote=sprintf("%c", 39)
+                    if (substr(line, 1, 1) != "\"" && substr(line, 1, 1) != quote) {
+                      sub(/[[:space:]]+#.*$/, "", line)
+                    }
+                    if ((substr(line, 1, 1) == "\"" && substr(line, length(line), 1) == "\"") || (substr(line, 1, 1) == quote && substr(line, length(line), 1) == quote)) {
+                      line=substr(line, 2, length(line) - 2)
+                    }
+                    print line
+                    found=1
+                    exit
+                  }
+                }
+                END { if (!found) exit 1 }
+              ' "$env_file"
+            }
+
             if [ -f .env ]; then
-              set -a
-              . ./.env
-              set +a
+              DATABASE_URL="$(read_env_var DATABASE_URL .env || true)"
+              export DATABASE_URL
             fi
             if [ -z "${DATABASE_URL:-}" ]; then
               echo "::error::DATABASE_URL is required in $BACKEND_DIR/.env before backup and migration."
