@@ -1,0 +1,3 @@
+﻿Command: nest build
+Result: passed
+Scope: migration fix for admin_coupons tables
