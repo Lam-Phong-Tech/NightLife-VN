@@ -286,6 +286,86 @@ jobs:
               [ "$users_count" -gt 0 ] 2>/dev/null && [ "$stores_count" -gt 0 ] 2>/dev/null
             }
 
+            baseline_legacy_migrations_if_schema_matches() {
+              pg_db_url="$(database_url_for_pg_tools "$DATABASE_URL")"
+              migration_table_exists="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;" "$pg_db_url" 2>/dev/null || echo f)"
+              failed_migrations=""
+              if [ "$migration_table_exists" = "t" ]; then
+                failed_migrations="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT migration_name FROM public._prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL ORDER BY started_at, migration_name;" "$pg_db_url" 2>/dev/null || true)"
+              fi
+
+              needs_baseline=false
+              baseline_marked=""
+              if [ -n "$failed_migrations" ] || [ "$migration_table_exists" != "t" ]; then
+                needs_baseline=true
+              fi
+
+              for migration_path in prisma/migrations/*; do
+                [ -d "$migration_path" ] || continue
+                migration_name="$(basename "$migration_path")"
+                case "$migration_name" in
+                  *[!A-Za-z0-9_]*)
+                    echo "::error::Unsafe migration directory name: $migration_name"
+                    exit 1
+                    ;;
+                esac
+                if [ "$migration_table_exists" = "t" ]; then
+                  is_applied="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT 1 FROM public._prisma_migrations WHERE migration_name = '$migration_name' AND finished_at IS NOT NULL AND rolled_back_at IS NULL LIMIT 1;" "$pg_db_url" 2>/dev/null || true)"
+                  if [ "$is_applied" != "1" ]; then
+                    needs_baseline=true
+                  fi
+                fi
+              done
+
+              if [ "$needs_baseline" != "true" ]; then
+                MIGRATION_BASELINE_APPLIED="false"
+                MIGRATION_BASELINE_REASON="history_already_clean"
+                MIGRATION_BASELINE_MARKED="none"
+                return 0
+              fi
+
+              echo "Migration history needs a guarded baseline before migrate deploy."
+              if [ -n "$failed_migrations" ]; then
+                echo "Failed migration rows detected:"
+                printf '%s\n' "$failed_migrations"
+              fi
+
+              diff_log="/tmp/nightlife-migrate-diff-$DEPLOY_STAMP.txt"
+              set +e
+              pnpm exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code > "$diff_log" 2>&1
+              diff_status=$?
+              set -e
+              if [ "$diff_status" -ne 0 ]; then
+                echo "::error::Cannot baseline migration history because live DB schema differs from prisma/schema.prisma or diff failed. Exit code: $diff_status"
+                sed -n '1,160p' "$diff_log" || true
+                exit 1
+              fi
+
+              echo "Prisma schema diff is empty; marking existing legacy schema migrations as applied."
+              for migration_path in prisma/migrations/*; do
+                [ -d "$migration_path" ] || continue
+                migration_name="$(basename "$migration_path")"
+                if [ "$migration_table_exists" = "t" ]; then
+                  is_applied="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT 1 FROM public._prisma_migrations WHERE migration_name = '$migration_name' AND finished_at IS NOT NULL AND rolled_back_at IS NULL LIMIT 1;" "$pg_db_url" 2>/dev/null || true)"
+                else
+                  is_applied=""
+                fi
+                if [ "$is_applied" != "1" ]; then
+                  pnpm exec prisma migrate resolve --applied "$migration_name"
+                  if [ -z "$baseline_marked" ]; then
+                    baseline_marked="$migration_name"
+                  else
+                    baseline_marked="$baseline_marked,$migration_name"
+                  fi
+                  migration_table_exists="t"
+                fi
+              done
+
+              MIGRATION_BASELINE_APPLIED="true"
+              MIGRATION_BASELINE_REASON="schema_matches_datamodel"
+              MIGRATION_BASELINE_MARKED="${baseline_marked:-none}"
+            }
+
             if [ -f .env ]; then
               DATABASE_URL="$(read_env_var DATABASE_URL .env || true)"
               export DATABASE_URL
@@ -306,6 +386,9 @@ jobs:
             DATABASE_REPOINT_BACKUP="none"
             DEMO_UAT_DATABASE_NAME="${DEMO_UAT_DATABASE_NAME:-backend_db}"
             DATABASE_DATA_COUNTS="$(nightlife_table_counts "$DATABASE_URL" || true)"
+            MIGRATION_BASELINE_APPLIED="false"
+            MIGRATION_BASELINE_REASON="not_run"
+            MIGRATION_BASELINE_MARKED="none"
 
             if nightlife_counts_ready "$DATABASE_DATA_COUNTS"; then
               echo "Demo/UAT database is ready: db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
@@ -370,6 +453,7 @@ jobs:
             fi
             echo "::endgroup::"
 
+            baseline_legacy_migrations_if_schema_matches
             pnpm exec prisma migrate deploy
             export PORT="$BACKEND_PORT"
             pm2 restart "$BACKEND_PM2_NAME" --update-env 2>/dev/null || pm2 start dist/src/main.js --name "$BACKEND_PM2_NAME" --update-env
@@ -410,6 +494,9 @@ jobs:
               echo "database_repointed_to=$DATABASE_REPOINTED_TO"
               echo "database_repoint_env_backup=$DATABASE_REPOINT_BACKUP"
               echo "database_data_counts_users_stores_areas=$DATABASE_DATA_COUNTS"
+              echo "migration_baseline_applied=$MIGRATION_BASELINE_APPLIED"
+              echo "migration_baseline_reason=$MIGRATION_BASELINE_REASON"
+              echo "migration_baseline_marked=$MIGRATION_BASELINE_MARKED"
               echo "backup_root=$BACKUP_ROOT"
               echo "backup_manifest=$LATEST_MANIFEST"
               echo "backup_checksum=$LATEST_CHECKSUMS"
