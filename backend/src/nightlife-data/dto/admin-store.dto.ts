@@ -1,4 +1,14 @@
-import { IsOptional, IsString, IsInt, Min, IsEnum, IsArray, IsObject, IsNotEmpty } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsEnum,
+  IsArray,
+  IsObject,
+  IsNotEmpty,
+  ValidateIf,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { StoreCategory, StoreStatus } from '@prisma/client';
 
@@ -22,6 +32,10 @@ export class AdminStoreQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  includeDeleted?: string;
 }
 
 export class CreateAdminStoreDto {
@@ -71,6 +85,10 @@ export class CreateAdminStoreDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
+  @ValidateIf((_, value) => value !== undefined && value !== null)
+  @IsString()
+  partnerAccountId?: string | null;
 }
 
 export class UpdateAdminStoreDto {
@@ -123,4 +141,14 @@ export class UpdateAdminStoreDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
+  @ValidateIf((_, value) => value !== undefined && value !== null)
+  @IsString()
+  partnerAccountId?: string | null;
+}
+
+export class LinkAdminStorePartnerAccountDto {
+  @ValidateIf((_, value) => value !== undefined && value !== null)
+  @IsString()
+  partnerAccountId?: string | null;
 }

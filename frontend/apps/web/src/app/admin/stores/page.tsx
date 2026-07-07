@@ -17,6 +17,7 @@ const getStatusMeta = (status: string) => {
   if (status === 'DRAFT' || status === 'draft' || status === 'Nháp') return { label: 'Nháp', style: 'warn' };
   if (status === 'SUSPENDED' || status === 'hidden' || status === 'Đang ẩn') return { label: 'Đang ẩn', style: 'muted' };
   if (status === 'PENDING_REVIEW') return { label: 'Chờ duyệt', style: 'info' };
+  if (status === 'DELETED') return { label: 'Đã xóa mềm', style: 'error' };
   return { label: status, style: 'muted' };
 };
 
@@ -52,8 +53,10 @@ export default function AdminStoresPage() {
 
 function AdminStoresContent() {
   const [stores, setStores] = useState<any[]>([]);
+  const [partnerAccounts, setPartnerAccounts] = useState<any[]>([]);
   const [venueSel, setVenueSel] = useState<string | null>(null);
   const [isDraftStore, setIsDraftStore] = useState(false);
+  const [partnerLinkEditing, setPartnerLinkEditing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const searchParams = useSearchParams();
@@ -64,6 +67,7 @@ function AdminStoresContent() {
   
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
+  const [partnerAccountId, setPartnerAccountId] = useState('');
   const [hoursForm, setHoursForm] = useState<any>(defaultHours);
   const [slugStatus, setSlugStatus] = useState<string>(''); // '', 'checking', 'ok', 'error'
 
@@ -98,7 +102,7 @@ function AdminStoresContent() {
 
   const fetchStores = async () => {
     try {
-      const res = await apiClient<any>('/admin/stores', { params: { limit: 1000 } });
+      const res = await apiClient<any>('/admin/stores', { params: { limit: 1000, includeDeleted: 'true' } });
       if (res && res.data) {
         setStores(res.data);
       }
@@ -107,8 +111,20 @@ function AdminStoresContent() {
     }
   };
 
+  const fetchPartnerAccounts = async () => {
+    try {
+      const res = await apiClient<any>('/admin/partner-accounts');
+      if (res && Array.isArray(res.data)) {
+        setPartnerAccounts(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchStores();
+    fetchPartnerAccounts();
     fetch('https://provinces.open-api.vn/api/v2/p/')
       .then(res => res.json())
       .then(data => {
@@ -171,6 +187,7 @@ function AdminStoresContent() {
   const closeDrawer = () => {
     setVenueSel(null);
     setIsDraftStore(false);
+    setPartnerLinkEditing(false);
   };
 
   const createStoreDraft = async () => {
@@ -206,6 +223,8 @@ function AdminStoresContent() {
     setSelWard('');
     setStreetAddress('');
     setPendingAddress('');
+    setPartnerAccountId('');
+    setPartnerLinkEditing(false);
     try {
       const draft = await createStoreDraft();
       setVenueSel(draft.id);
@@ -221,6 +240,7 @@ function AdminStoresContent() {
       if (s === 'Đang hoạt động' || s === 'active' || s === 'ACTIVE') return 'ACTIVE';
       if (s === 'Đang ẩn' || s === 'hidden' || s === 'SUSPENDED') return 'SUSPENDED';
       if (s === 'Nháp' || s === 'draft' || s === 'DRAFT') return 'DRAFT';
+      if (s === 'DELETED') return 'SUSPENDED';
       return 'ACTIVE';
     };
 
@@ -240,6 +260,8 @@ function AdminStoresContent() {
     setAlbums(st.media?.filter((m: any) => m.type === 'IMAGE' && m.purpose !== 'store-hero') || []);
     setVideos(st.media?.filter((m: any) => m.type === 'VIDEO') || []);
     setTags(st.tags || []);
+    setPartnerAccountId(st.partnerAccountId || st.partnerAccount?.id || '');
+    setPartnerLinkEditing(false);
     
     const fullAddress = st.address || '';
     const matchedProv = provinces.find(p => fullAddress.includes(p.name));
@@ -303,6 +325,7 @@ function AdminStoresContent() {
         address: finalAddress,
         city: finalCity,
         tags,
+        partnerAccountId: partnerAccountId || null,
         openingHours: hoursForm,
         pricingInfo: { groups: menuGroups },
         mediaIds: [coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
@@ -555,6 +578,48 @@ function AdminStoresContent() {
     if (!url) return '';
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})/);
     return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : url;
+  };
+
+  const selectedStore = venueSel ? stores.find((item: any) => item.id === venueSel) : null;
+  const isSelectedDeleted = Boolean(selectedStore?.isDeleted || selectedStore?.deletedAt || selectedStore?.status === 'DELETED');
+  const linkedPartnerAccount = partnerAccountId
+    ? partnerAccounts.find((item: any) => item.id === partnerAccountId) || selectedStore?.partnerAccount
+    : null;
+  const selectedPartnerStatus = linkedPartnerAccount?.status === 'ACTIVE'
+    ? { label: 'Hoạt động', kind: 'success' }
+    : linkedPartnerAccount?.status === 'SUSPENDED'
+      ? { label: 'Tạm khóa', kind: 'error' }
+      : linkedPartnerAccount?.status
+        ? { label: linkedPartnerAccount.status, kind: 'warn' }
+        : { label: 'Chưa liên kết', kind: 'muted' };
+
+  const handleSoftDeleteStore = async () => {
+    if (!venueSel || !selectedStore) return;
+    if (!window.confirm('Xóa mềm quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.')) return;
+
+    try {
+      await apiClient(`/admin/stores/${venueSel}`, { method: 'DELETE' });
+      showToast('Đã xóa mềm quán');
+      closeDrawer();
+      fetchStores();
+      fetchPartnerAccounts();
+    } catch (err: any) {
+      showToast(err.message || 'Không thể xóa mềm quán');
+    }
+  };
+
+  const handleRestoreStore = async () => {
+    if (!venueSel || !selectedStore) return;
+
+    try {
+      await apiClient(`/admin/stores/${venueSel}/restore`, { method: 'PATCH' });
+      showToast('Đã khôi phục quán');
+      closeDrawer();
+      fetchStores();
+      fetchPartnerAccounts();
+    } catch (err: any) {
+      showToast(err.message || 'Không thể khôi phục quán');
+    }
   };
 
   const filteredStores = stores.filter((v: any) => {
@@ -1019,9 +1084,63 @@ function AdminStoresContent() {
                 <span onClick={() => updateForm('status', 'SUSPENDED')} style={seg(formData.status === 'SUSPENDED')}>Đang ẩn</span>
                 <span onClick={() => updateForm('status', 'DRAFT')} style={seg(formData.status === 'DRAFT')}>Nháp</span>
               </div>
+
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Tài khoản quản trị đối tác</div>
+              {linkedPartnerAccount ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.09)', borderRadius: '13px', padding: '12px 13px' }}>
+                  <span style={{ width: 42, height: 42, flex: 'none', borderRadius: '12px', background: 'linear-gradient(135deg,#c9a86a,#8f6b32)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>{linkedPartnerAccount.initials || linkedPartnerAccount.name?.substring(0, 2)?.toUpperCase()}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedPartnerAccount.name || linkedPartnerAccount.businessName}</span>
+                      <span style={{ ...getPillStyle(selectedPartnerStatus.kind), flex: 'none', padding: '3px 8px', fontSize: '9.5px', textTransform: 'uppercase' } as any}>{selectedPartnerStatus.label}</span>
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedPartnerAccount.email || 'Chưa có email'} · vai trò Đối tác</div>
+                  </div>
+                  <span onClick={() => setPartnerLinkEditing(!partnerLinkEditing)} title="Sửa tài khoản liên kết" style={{ width: 32, height: 32, flex: 'none', borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  </span>
+                  <span onClick={() => { setPartnerAccountId(''); setPartnerLinkEditing(true); }} title="Gỡ liên kết tài khoản" style={{ width: 32, height: 32, flex: 'none', borderRadius: 9, background: 'rgba(232,139,153,.08)', border: '1px solid rgba(232,139,153,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e88b99', cursor: 'pointer' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8l5 5M22 8l-5 5"/></svg>
+                  </span>
+                </div>
+              ) : (
+                <div onClick={() => setPartnerLinkEditing(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1.5px dashed rgba(212,178,106,.35)', borderRadius: '13px', padding: '14px', color: '#8c8679', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+                  Liên kết tài khoản quản trị
+                </div>
+              )}
+
+              {partnerLinkEditing && (
+                <div style={{ marginTop: '10px', background: 'rgba(12,12,15,.45)', border: '1px solid rgba(212,178,106,.25)', borderRadius: '12px', padding: '12px' }}>
+                  <div style={{ fontSize: '11.5px', color: '#8c8679', marginBottom: '6px' }}>Chọn tài khoản đối tác</div>
+                  <select value={partnerAccountId} onChange={(e) => setPartnerAccountId(e.target.value)} style={{ ...inputS, appearance: 'none', cursor: 'pointer' }}>
+                    <option value="" style={optS}>Không liên kết tài khoản</option>
+                    {partnerAccounts.map((account: any) => (
+                      <option key={account.id} value={account.id} style={optS}>{account.name || account.businessName} · {account.email || account.status}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.8px', color: '#8c8679', lineHeight: 1.55 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '2px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
+                <span>Mỗi quán chỉ liên kết đúng 1 tài khoản Đối tác. Khi quán bị <b style={{ color: '#e88b99' }}>xóa mềm</b>, quyền truy cập của tài khoản này sẽ tạm khóa; khôi phục quán sẽ mở lại quyền.</span>
+              </div>
             </div>
 
             <div style={{ position: 'sticky', bottom: 0, padding: '15px 26px', background: '#131218', borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', gap: '10px' }}>
+              {selectedStore && !isSelectedDeleted && (
+                <span onClick={handleSoftDeleteStore} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 700, color: '#e88b99', background: 'rgba(224,105,122,.08)', border: '1px solid rgba(224,105,122,.32)', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+                  Xóa mềm
+                </span>
+              )}
+              {selectedStore && isSelectedDeleted && (
+                <span onClick={handleRestoreStore} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 700, color: '#7fd3a2', background: 'rgba(95,191,134,.08)', border: '1px solid rgba(95,191,134,.3)', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v6h6"/><path d="M3.5 9a9 9 0 1 1 1.2 6"/></svg>
+                  Khôi phục
+                </span>
+              )}
               <span onClick={closeDrawer} style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#c5c0b6', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', padding: '13px 22px', borderRadius: '11px', cursor: 'pointer' }}>Hủy</span>
               <span onClick={saveStore} style={{ flex: 1, textAlign: 'center', fontSize: '13px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '13px', borderRadius: '11px', cursor: 'pointer' }}>Lưu quán</span>
             </div>

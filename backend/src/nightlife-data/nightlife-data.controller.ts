@@ -1526,6 +1526,18 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listAdminStores(query);
   }
 
+  @ApiOperation({
+    summary: 'Admin action: List partner accounts for store linking',
+  })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/partner-accounts')
+  listAdminPartnerAccounts(
+    @Query() query: { search?: string; status?: string },
+  ) {
+    return this.nightlifeDataService.listAdminPartnerAccounts(query);
+  }
+
   @ApiOperation({ summary: 'Admin action: Check if a store slug is available' })
   @ApiOkResponse({
     schema: {
@@ -1560,6 +1572,34 @@ export class NightlifeDataController {
     @Body() dto: import('./dto/admin-store.dto').UpdateAdminStoreDto,
   ) {
     return this.nightlifeDataService.updateAdminStore(id, dto);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Link or unlink store partner account' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/stores/:id/partner-account')
+  linkAdminStorePartnerAccount(
+    @Param('id') id: string,
+    @Body()
+    dto: import('./dto/admin-store.dto').LinkAdminStorePartnerAccountDto,
+  ) {
+    return this.nightlifeDataService.linkAdminStorePartnerAccount(id, dto);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Soft delete a store' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('admin/stores/:id')
+  softDeleteAdminStore(@Param('id') id: string) {
+    return this.nightlifeDataService.softDeleteAdminStore(id);
+  }
+
+  @ApiOperation({ summary: 'Admin action: Restore a soft-deleted store' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/stores/:id/restore')
+  restoreAdminStore(@Param('id') id: string) {
+    return this.nightlifeDataService.restoreAdminStore(id);
   }
 
   // ==========================================

@@ -15973,6 +15973,9 @@ export class NightlifeDataService {
     const limit = Math.max(1, Number(query.limit) || 10);
     const skip = (page - 1) * limit;
     const { type, search } = query;
+    const includeDeleted = ['1', 'true', 'yes', 'all'].includes(
+      String(query.includeDeleted ?? '').toLowerCase(),
+    );
 
     let prismaCategory: import('@prisma/client').StoreCategory | undefined;
     if (type && type !== 'all') {
@@ -15988,6 +15991,7 @@ export class NightlifeDataService {
     }
 
     const where: import('@prisma/client').Prisma.StoreWhereInput = {
+      ...(includeDeleted ? {} : { deletedAt: null }),
       ...(prismaCategory && { category: prismaCategory }),
       ...(search && {
         OR: [
@@ -16006,6 +16010,20 @@ export class NightlifeDataService {
         include: {
           _count: { select: { casts: true } },
           media: true,
+          partnerAccount: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  displayName: true,
+                  phone: true,
+                  status: true,
+                  deletedAt: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.store.count({ where }),
@@ -16036,7 +16054,10 @@ export class NightlifeDataService {
               : 'Tổng hợp',
         commission: '15%',
         casts: store._count.casts,
-        status: store.status,
+        status: store.deletedAt ? 'DELETED' : store.status,
+        isDeleted: Boolean(store.deletedAt),
+        partnerAccountId: store.partnerAccountId,
+        partnerAccount: this.mapAdminPartnerAccount(store.partnerAccount),
       };
     });
 
@@ -16045,6 +16066,96 @@ export class NightlifeDataService {
       total,
       page,
       limit,
+    };
+  }
+
+  async listAdminPartnerAccounts(query: { search?: string; status?: string }) {
+    const search = this.cleanText(query.search);
+    const status = this.cleanText(query.status);
+    const allowedStatuses = [
+      'PENDING_REVIEW',
+      'ACTIVE',
+      'SUSPENDED',
+      'CLOSED',
+      'DELETED',
+    ];
+
+    const where: Prisma.PartnerAccountWhereInput = {
+      deletedAt: null,
+      ...(status && allowedStatuses.includes(status)
+        ? { status: status as any }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { businessName: this.containsInsensitive(search) },
+              { contactName: this.containsInsensitive(search) },
+              { contactEmail: this.containsInsensitive(search) },
+              { user: { email: this.containsInsensitive(search) } },
+            ],
+          }
+        : {}),
+    };
+
+    const accounts = await this.prisma.partnerAccount.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            phone: true,
+            status: true,
+            deletedAt: true,
+          },
+        },
+        _count: { select: { stores: true } },
+      },
+    });
+
+    return {
+      data: accounts.map((account) => {
+        const mapped = this.mapAdminPartnerAccount(account)!;
+        return {
+          ...mapped,
+          storeCount: account._count.stores,
+        };
+      }),
+    };
+  }
+
+  private mapAdminPartnerAccount(account: any) {
+    if (!account) {
+      return null;
+    }
+
+    const name =
+      account.contactName ||
+      account.user?.displayName ||
+      account.businessName ||
+      'Tài khoản đối tác';
+    const email = account.contactEmail || account.user?.email || '';
+    const initials = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(-2)
+      .map((part: string) => part.charAt(0).toUpperCase())
+      .join('');
+
+    return {
+      id: account.id,
+      userId: account.userId,
+      businessName: account.businessName,
+      contactName: account.contactName,
+      name,
+      email,
+      phone: account.contactPhone || account.user?.phone || null,
+      role: 'Đối tác',
+      status: account.status,
+      userStatus: account.user?.status ?? null,
+      initials: initials || name.substring(0, 2).toUpperCase(),
     };
   }
 
@@ -16280,6 +16391,12 @@ export class NightlifeDataService {
       },
     });
 
+    if (dto.partnerAccountId !== undefined) {
+      return this.linkAdminStorePartnerAccount(newStore.id, {
+        partnerAccountId: dto.partnerAccountId,
+      });
+    }
+
     return newStore;
   }
 
@@ -16341,7 +16458,256 @@ export class NightlifeDataService {
       },
     });
 
+    if (dto.partnerAccountId !== undefined) {
+      return this.linkAdminStorePartnerAccount(id, {
+        partnerAccountId: dto.partnerAccountId,
+      });
+    }
+
     return updated;
+  }
+
+  async linkAdminStorePartnerAccount(
+    id: string,
+    dto: import('./dto/admin-store.dto').LinkAdminStorePartnerAccountDto,
+  ) {
+    const partnerAccountId = this.cleanText(dto.partnerAccountId) || null;
+
+    return this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          partnerAccountId: true,
+          deletedAt: true,
+        },
+      });
+
+      if (!store) {
+        throw new NotFoundException('Store not found');
+      }
+
+      if (partnerAccountId) {
+        await this.ensureAdminPartnerAccount(tx, partnerAccountId);
+      }
+
+      if (
+        store.partnerAccountId &&
+        store.partnerAccountId !== partnerAccountId
+      ) {
+        await this.syncStorePartnerAccess(
+          tx,
+          id,
+          store.partnerAccountId,
+          false,
+        );
+      }
+
+      await tx.store.update({
+        where: { id },
+        data: { partnerAccountId },
+      });
+
+      if (partnerAccountId) {
+        await this.syncStorePartnerAccess(
+          tx,
+          id,
+          partnerAccountId,
+          !store.deletedAt,
+        );
+      }
+
+      return this.findAdminStoreForResponse(tx, id);
+    });
+  }
+
+  async softDeleteAdminStore(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.findUnique({
+        where: { id },
+        select: { id: true, partnerAccountId: true },
+      });
+
+      if (!store) {
+        throw new NotFoundException('Store not found');
+      }
+
+      await tx.store.update({
+        where: { id },
+        data: {
+          status: 'DELETED',
+          deletedAt: new Date(),
+        },
+      });
+
+      if (store.partnerAccountId) {
+        await this.syncStorePartnerAccess(
+          tx,
+          id,
+          store.partnerAccountId,
+          false,
+        );
+      }
+
+      return this.findAdminStoreForResponse(tx, id);
+    });
+  }
+
+  async restoreAdminStore(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.findUnique({
+        where: { id },
+        select: { id: true, partnerAccountId: true },
+      });
+
+      if (!store) {
+        throw new NotFoundException('Store not found');
+      }
+
+      await tx.store.update({
+        where: { id },
+        data: {
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+      });
+
+      if (store.partnerAccountId) {
+        await this.syncStorePartnerAccess(
+          tx,
+          id,
+          store.partnerAccountId,
+          true,
+        );
+      }
+
+      return this.findAdminStoreForResponse(tx, id);
+    });
+  }
+
+  private async ensureAdminPartnerAccount(
+    client: NightlifePrismaClient,
+    partnerAccountId: string,
+  ) {
+    const account = await client.partnerAccount.findFirst({
+      where: { id: partnerAccountId, deletedAt: null },
+      select: { id: true },
+    });
+
+    if (!account) {
+      throw new BadRequestException('Partner account not found');
+    }
+  }
+
+  private async syncStorePartnerAccess(
+    client: NightlifePrismaClient,
+    storeId: string,
+    partnerAccountId: string,
+    isActive: boolean,
+  ) {
+    const account = await client.partnerAccount.findUnique({
+      where: { id: partnerAccountId },
+      select: { id: true, userId: true },
+    });
+
+    if (!account) {
+      return;
+    }
+
+    await client.partnerAccount.update({
+      where: { id: account.id },
+      data: { status: isActive ? 'ACTIVE' : 'SUSPENDED' },
+    });
+
+    if (isActive) {
+      await client.storePermission.upsert({
+        where: {
+          userId_storeId: {
+            userId: account.userId,
+            storeId,
+          },
+        },
+        update: {
+          permissions: this.partnerStorePermissionKeys(),
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        create: {
+          userId: account.userId,
+          storeId,
+          permissions: this.partnerStorePermissionKeys(),
+          status: 'ACTIVE',
+        },
+      });
+      return;
+    }
+
+    await client.storePermission.updateMany({
+      where: {
+        userId: account.userId,
+        storeId,
+      },
+      data: { status: 'INACTIVE' },
+    });
+  }
+
+  private async findAdminStoreForResponse(
+    client: NightlifePrismaClient,
+    id: string,
+  ) {
+    const store = await client.store.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { casts: true } },
+        media: true,
+        partnerAccount: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                displayName: true,
+                phone: true,
+                status: true,
+                deletedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!store) {
+      throw new NotFoundException('Store not found');
+    }
+
+    let typeLabel = store.category as string;
+    if (store.category === 'GIRLS_BAR') typeLabel = 'Girls bar';
+    else if (store.category === 'MASSAGE_SPA') typeLabel = 'Massage';
+    else typeLabel = typeLabel.charAt(0) + typeLabel.slice(1).toLowerCase();
+
+    return {
+      ...store,
+      initials: store.name.substring(0, 2).toUpperCase(),
+      address: store.address || '',
+      type: typeLabel,
+      area:
+        store.city === 'Ho Chi Minh City' ||
+        store.city === 'Hồ Chí Minh' ||
+        store.city === 'HCM'
+          ? 'HCM'
+          : store.city === 'Hanoi' ||
+              store.city === 'Hà Nội' ||
+              store.city === 'Ha Noi'
+            ? 'HN'
+            : 'Tổng hợp',
+      commission: '15%',
+      casts: store._count.casts,
+      status: store.deletedAt ? 'DELETED' : store.status,
+      isDeleted: Boolean(store.deletedAt),
+      partnerAccountId: store.partnerAccountId,
+      partnerAccount: this.mapAdminPartnerAccount(store.partnerAccount),
+    };
   }
 
   async listAdminCoupons(
