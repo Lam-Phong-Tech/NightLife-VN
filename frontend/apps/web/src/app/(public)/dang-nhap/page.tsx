@@ -632,6 +632,7 @@ export default function Page() {
           <div style={{ width: "100%", maxWidth: 430 }}>
             <Link
               href="/"
+              className="nl-login-back"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -657,6 +658,7 @@ export default function Page() {
               }}
             >
               <div
+                className="nl-login-tabs"
                 style={{
                   display: "flex",
                   background: colors.panelStrong,
@@ -669,10 +671,10 @@ export default function Page() {
                 <Tab active={isReg} label="Đăng ký" onClick={() => switchMode(true)} />
               </div>
 
-              <h2 style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>
+              <h2 className="nl-login-title" style={{ marginTop: 24, fontSize: 26, lineHeight: 1.12, fontWeight: 900 }}>
                 {title}
               </h2>
-              <p style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
+              <p className="nl-login-subtitle" style={{ marginTop: 8, color: colors.muted, fontSize: 13.5, lineHeight: 1.6 }}>
                 {subtitle}
               </p>
 
@@ -757,6 +759,7 @@ export default function Page() {
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
                     <Link
                       href={`/quen-mat-khau${email.trim() ? `?email=${encodeURIComponent(normalizeEmail(email))}` : ""}`}
+                      className="nl-forgot-link"
                       style={{
                         color: colors.goldPale,
                         fontSize: 12.5,
@@ -794,6 +797,7 @@ export default function Page() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
+                  className="nl-login-submit"
                   style={{
                     border: 0,
                     borderRadius: 14,
@@ -842,6 +846,71 @@ export default function Page() {
         </section>
       </div>
       <style jsx global>{`
+        html.vy-light .nl-login-page {
+          background:
+            radial-gradient(circle at 70% 12%, rgba(212, 178, 106, 0.16), transparent 32%),
+            linear-gradient(180deg, #fffaf1 0%, #f6f0e5 54%, #efe6d8 100%) !important;
+          color: #241a0a !important;
+        }
+
+        html.vy-light .nl-login-page .nl-login-form-section {
+          background:
+            radial-gradient(circle at 20% 18%, rgba(212, 178, 106, 0.14), transparent 30%),
+            linear-gradient(180deg, rgba(255, 250, 241, 0.96), rgba(246, 239, 226, 0.94)) !important;
+        }
+
+        html.vy-light .nl-login-page .nl-login-card {
+          border-color: rgba(150, 116, 52, 0.24) !important;
+          background: rgba(255, 255, 255, 0.82) !important;
+          box-shadow: 0 26px 70px -44px rgba(65, 45, 16, 0.48) !important;
+        }
+
+        html.vy-light .nl-login-page .nl-login-tabs,
+        html.vy-light .nl-login-page .nl-field-box,
+        html.vy-light .nl-login-page .nl-social-button {
+          border-color: rgba(150, 116, 52, 0.2) !important;
+          background: rgba(255, 255, 255, 0.72) !important;
+          color: #241a0a !important;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 16px 38px -34px rgba(65, 45, 16, 0.44) !important;
+        }
+
+        html.vy-light .nl-login-page .nl-login-tab:not(.is-active) {
+          color: #756a59 !important;
+        }
+
+        html.vy-light .nl-login-page .nl-login-title,
+        html.vy-light .nl-login-page .nl-field-input,
+        html.vy-light .nl-login-page .nl-social-button {
+          color: #241a0a !important;
+        }
+
+        html.vy-light .nl-login-page .nl-login-back,
+        html.vy-light .nl-login-page .nl-login-subtitle,
+        html.vy-light .nl-login-page .nl-field-label {
+          color: #6f6658 !important;
+        }
+
+        html.vy-light .nl-login-page .nl-field-input::placeholder {
+          color: #928776 !important;
+          opacity: 1 !important;
+        }
+
+        html.vy-light .nl-login-page .nl-field-box:focus-within {
+          border-color: rgba(150, 116, 52, 0.56) !important;
+          box-shadow: 0 0 0 3px rgba(150, 116, 52, 0.13) !important;
+        }
+
+        html.vy-light .nl-login-page .nl-field-icon,
+        html.vy-light .nl-login-page .nl-field-action,
+        html.vy-light .nl-login-page .nl-forgot-link {
+          color: #8f6a2a !important;
+        }
+
+        html.vy-light .nl-login-page .nl-social-button:hover:not(:disabled) {
+          border-color: rgba(150, 116, 52, 0.42) !important;
+          background: rgba(255, 255, 255, 0.9) !important;
+        }
+
         @media (max-width: 767px) {
           .nl-login-page {
             overflow-x: hidden;
@@ -877,6 +946,10 @@ export default function Page() {
             border-radius: 16px !important;
             background: rgba(255, 255, 255, 0.055) !important;
           }
+
+          html.vy-light .nl-login-page .nl-login-card {
+            background: rgba(255, 255, 255, 0.82) !important;
+          }
         }
       `}</style>
     </main>
@@ -888,6 +961,7 @@ function Tab({ active, label, onClick }: { active: boolean; label: string; onCli
     <button
       type="button"
       onClick={onClick}
+      className={`nl-login-tab${active ? " is-active" : ""}`}
       style={{
         flex: 1,
         border: 0,
@@ -935,8 +1009,9 @@ function Field({
 }) {
   return (
     <label style={{ display: "grid", gap: 7 }}>
-      <span style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}>{label}</span>
+      <span className="nl-field-label" style={{ color: colors.muted, fontSize: 12.5, fontWeight: 800 }}>{label}</span>
       <span
+        className="nl-field-box"
         style={{
           height: 48,
           display: "flex",
@@ -949,7 +1024,7 @@ function Field({
           color: colors.text,
         }}
       >
-        {icon ? <span style={{ color: colors.gold, display: "inline-flex" }}>{icon}</span> : null}
+        {icon ? <span className="nl-field-icon" style={{ color: colors.gold, display: "inline-flex" }}>{icon}</span> : null}
         <input
           name={name}
           type={type}
@@ -961,6 +1036,7 @@ function Field({
           required={required}
           minLength={minLength}
           maxLength={maxLength}
+          className="nl-field-input"
           style={{
             flex: 1,
             minWidth: 0,
@@ -972,7 +1048,7 @@ function Field({
           }}
         />
         {action ? (
-          <span style={{ color: colors.gold, display: "inline-flex" }}>{action}</span>
+          <span className="nl-field-action" style={{ color: colors.gold, display: "inline-flex" }}>{action}</span>
         ) : null}
       </span>
     </label>
@@ -998,6 +1074,7 @@ function SocialButton({
       aria-label={`Đăng nhập bằng ${label}`}
       onClick={onClick}
       disabled={disabled}
+      className="nl-social-button"
       style={{
         minHeight: 46,
         display: "inline-flex",
