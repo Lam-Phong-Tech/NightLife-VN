@@ -1968,6 +1968,168 @@ const castSearchCss = `
   flex: 1;
 }
 
+html.vy-light .cast-search-page {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(212, 178, 106, 0.18), transparent 30%),
+    linear-gradient(180deg, #fffaf1 0%, #f7f2e8 52%, #efe7db 100%);
+  color: var(--vy-text);
+}
+
+html.vy-light .cast-hero {
+  border-color: rgba(150, 116, 52, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(246, 238, 219, 0.88));
+  box-shadow: 0 24px 70px -42px rgba(84, 62, 25, 0.34);
+}
+
+html.vy-light .cast-hero p,
+html.vy-light .cast-results-head,
+html.vy-light .cast-dropdown-label,
+html.vy-light .cast-suggestion-empty,
+html.vy-light .cast-suggestion-split button {
+  color: #716756;
+}
+
+html.vy-light .cast-search-input,
+html.vy-light .cast-dropdown-trigger,
+html.vy-light .cast-chip,
+html.vy-light .cast-card,
+html.vy-light .cast-suggestions,
+html.vy-light .cast-filter-sheet,
+html.vy-light .cast-toggle-row,
+html.vy-light .cast-sheet-group button,
+html.vy-light .cast-suggestion-tags button {
+  border-color: rgba(150, 116, 52, 0.2);
+  background: rgba(255, 255, 255, 0.78);
+  color: #6f6658;
+}
+
+html.vy-light .cast-search-input,
+html.vy-light .cast-dropdown-trigger,
+html.vy-light .cast-chip,
+html.vy-light .cast-card,
+html.vy-light .cast-suggestions {
+  box-shadow: 0 18px 42px -32px rgba(68, 48, 18, 0.42);
+}
+
+html.vy-light .cast-search-input input,
+html.vy-light .cast-dropdown-trigger b,
+html.vy-light .cast-results-head b,
+html.vy-light .cast-suggestion-searchline span,
+html.vy-light .cast-suggestion-row b,
+html.vy-light .cast-sheet-head h2,
+html.vy-light .cast-sheet-group h3,
+html.vy-light .cast-range-preview > div,
+html.vy-light .cast-toggle-row span {
+  color: #241a0a;
+}
+
+html.vy-light .cast-search-input input::placeholder {
+  color: #8d8272;
+}
+
+html.vy-light .cast-input-clear {
+  background: rgba(150, 116, 52, 0.12);
+  color: #7a705f;
+}
+
+html.vy-light .cast-dropdown.is-open .cast-dropdown-trigger,
+html.vy-light .cast-search-input.is-focused {
+  border-color: rgba(150, 116, 52, 0.56);
+  box-shadow: 0 0 0 3px rgba(150, 116, 52, 0.13);
+}
+
+html.vy-light .cast-dropdown-menu {
+  border-color: rgba(150, 116, 52, 0.22);
+  background: #fffaf1;
+  box-shadow: 0 24px 58px -32px rgba(62, 42, 16, 0.44);
+}
+
+html.vy-light .cast-dropdown-option:hover,
+html.vy-light .cast-dropdown-option:focus-visible {
+  background: rgba(212, 178, 106, 0.16);
+  color: #241a0a;
+}
+
+html.vy-light .cast-filter-chip b {
+  background: rgba(150, 116, 52, 0.14);
+  color: #7b5a18;
+}
+
+html.vy-light .cast-card {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+html.vy-light .cast-card:first-child {
+  border-color: rgba(150, 116, 52, 0.34);
+}
+
+html.vy-light .cast-card-body {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+html.vy-light .cast-language-pill,
+html.vy-light .cast-suggestion-tags.is-gold button {
+  border-color: rgba(150, 116, 52, 0.24);
+  background: rgba(212, 178, 106, 0.14);
+  color: #77591f;
+}
+
+html.vy-light .cast-like-count,
+html.vy-light .cast-card-foot small,
+html.vy-light .cast-suggestion-row small,
+html.vy-light .cast-suggestion-label,
+html.vy-light .cast-suggestion-split,
+html.vy-light .cast-sheet-head p,
+html.vy-light .cast-sheet-group h3 span,
+html.vy-light .cast-range-preview small {
+  color: #766c5b;
+}
+
+html.vy-light .cast-card-foot b,
+html.vy-light .cast-rating,
+html.vy-light .cast-sort-select .cast-dropdown-trigger b,
+html.vy-light .cast-suggestions mark,
+html.vy-light .cast-range-preview > div b {
+  color: #8f6a2a;
+}
+
+html.vy-light .cast-suggestion-searchline,
+html.vy-light .cast-suggestion-row,
+html.vy-light .cast-sheet-head,
+html.vy-light .cast-sheet-actions {
+  border-color: rgba(150, 116, 52, 0.12);
+}
+
+html.vy-light .cast-suggestion-row > svg {
+  color: #a79d8c;
+}
+
+html.vy-light .cast-sheet-backdrop {
+  background: rgba(35, 27, 14, 0.34);
+}
+
+html.vy-light .cast-filter-sheet {
+  background: #fffaf1;
+  box-shadow: 0 -20px 52px -28px rgba(62, 42, 16, 0.42);
+}
+
+html.vy-light .cast-sheet-handle,
+html.vy-light .cast-range-preview > i,
+html.vy-light .cast-toggle-row button {
+  background: rgba(150, 116, 52, 0.16);
+}
+
+html.vy-light .cast-sheet-head button,
+html.vy-light .cast-reset-button {
+  border-color: rgba(150, 116, 52, 0.18);
+  background: rgba(255, 255, 255, 0.76);
+  color: #6f6658;
+}
+
+html.vy-light .cast-sheet-actions {
+  background: rgba(255, 250, 241, 0.92);
+}
+
 @media (max-width: 1040px) {
   .cast-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
