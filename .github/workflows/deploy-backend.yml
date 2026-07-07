@@ -93,10 +93,13 @@ jobs:
           KNOWN_HOSTS="$HOME/.ssh/known_hosts"
           ssh-keyscan -T 30 -p "$SSH_PORT" -H "$SSH_HOST" >> "$KNOWN_HOSTS" || echo "::warning::ssh-keyscan khong lay duoc host key, tiep tuc voi StrictHostKeyChecking=accept-new."
           SSH_CMD="ssh -i $HOME/.ssh/id_rsa -p $SSH_PORT -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$KNOWN_HOSTS -o ConnectTimeout=30 -o ServerAliveInterval=15"
-          $SSH_CMD "$USER@$SSH_HOST" "mkdir -p /var/www/api.demonightlight.test9.io.vn"
-          rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:/var/www/api.demonightlight.test9.io.vn"
+          DEPLOY_DIR="/var/www/api.demonightlight.test9.io.vn"
+          SNAPSHOT_ROOT="/var/www/releases/api.demonightlight.test9.io.vn"
+          SNAPSHOT_STAMP="$(TZ=Asia/Bangkok date +%Y%m%d-%H%M%S)"
+          $SSH_CMD "$USER@$SSH_HOST" "set -e; mkdir -p '$DEPLOY_DIR' '$SNAPSHOT_ROOT'; if [ -d '$DEPLOY_DIR' ] && [ -n \"\$(find '$DEPLOY_DIR' -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)\" ]; then snapshot='$SNAPSHOT_ROOT/backend-$SNAPSHOT_STAMP.tgz'; tar -czf \"\$snapshot\" --exclude='./node_modules' --exclude='./.git' -C '$DEPLOY_DIR' .; echo \"\$snapshot\" > '$SNAPSHOT_ROOT/latest-backend-snapshot.txt'; echo \"Created backend deploy snapshot: \$snapshot\"; else echo 'No previous backend deployment to snapshot.'; fi"
+          rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:$DEPLOY_DIR"
 
-      - name: Restart PM2 & Update DB
+      - name: Backup, Migrate, Restart PM2 & Smoke
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -104,13 +107,141 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT || '22' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /var/www/api.demonightlight.test9.io.vn
+            set -e
+            DEPLOY_STAMP="$(TZ=Asia/Bangkok date +%Y%m%d-%H%M%S)"
+            BACKEND_DIR="/var/www/api.demonightlight.test9.io.vn"
+            FRONTEND_DIR="/var/www/demonightlight.test9.io.vn"
+            SNAPSHOT_ROOT="/var/www/releases/api.demonightlight.test9.io.vn"
+            BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/nightlife/demo-uat}"
+            BACKUP_STORAGE_PATHS="${BACKUP_STORAGE_PATHS:-uploads public/uploads}"
+            PUBLIC_FRONTEND_URL="${PUBLIC_FRONTEND_URL:-https://demonightlight.test9.io.vn}"
+            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://api.demonightlight.test9.io.vn}"
+            BACKEND_PM2_NAME="app-api.demonightlight.test9.io.vn"
+            BACKEND_PORT="3012"
+            FRONTEND_PORT="3009"
+            EVIDENCE_DIR="$BACKEND_DIR/deploy-evidence"
+            SMOKE_RESULTS="/tmp/nightlife-smoke-$DEPLOY_STAMP.txt"
+            : > "$SMOKE_RESULTS"
+
+            check_url() {
+              check_name="$1"
+              check_url="$2"
+              check_code="000"
+              check_output="/tmp/nightlife-${check_name}-$DEPLOY_STAMP.out"
+              for i in $(seq 1 20); do
+                check_code="$(curl -k -L -sS -o "$check_output" -w "%{http_code}" "$check_url" || true)"
+                case "$check_code" in
+                  2*|3*)
+                    echo "$check_name=$check_code $check_url" | tee -a "$SMOKE_RESULTS"
+                    return 0
+                    ;;
+                esac
+                sleep 2
+              done
+              echo "::error::$check_name health check failed. URL: $check_url Status: $check_code"
+              cat "$check_output" 2>/dev/null || true
+              return 1
+            }
+
+            cd "$BACKEND_DIR"
+            if [ -f .env ]; then
+              set -a
+              . ./.env
+              set +a
+            fi
+            if [ -z "${DATABASE_URL:-}" ]; then
+              echo "::error::DATABASE_URL is required in $BACKEND_DIR/.env before backup and migration."
+              exit 1
+            fi
+
+            mkdir -p "$EVIDENCE_DIR" "$BACKUP_ROOT"
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
             pnpm install --prod --no-frozen-lockfile || pnpm install --prod
-            npx prisma generate
-            npx prisma db push --accept-data-loss
-            export PORT=3012
-            pm2 restart app-api.demonightlight.test9.io.vn --update-env 2>/dev/null || pm2 start dist/src/main.js --name "app-api.demonightlight.test9.io.vn" --update-env
+            pnpm exec prisma generate
+
+            chmod +x scripts/backup-uat.sh
+            BACKUP_ROOT="$BACKUP_ROOT" STORAGE_PATHS="$BACKUP_STORAGE_PATHS" scripts/backup-uat.sh
+            LATEST_MANIFEST="$(ls -t "$BACKUP_ROOT"/nightlife-*-manifest.txt | head -n 1)"
+            LATEST_STAMP="$(basename "$LATEST_MANIFEST" | sed -E 's/^nightlife-([0-9]{8}-[0-9]{6})-manifest\.txt$/\1/')"
+            LATEST_CHECKSUMS="$BACKUP_ROOT/nightlife-$LATEST_STAMP-sha256.txt"
+            LATEST_DB_DUMP="$BACKUP_ROOT/nightlife-db-$LATEST_STAMP.dump"
+            LATEST_DB_LIST="$LATEST_DB_DUMP.list"
+            LATEST_STORAGE_ARCHIVE="$BACKUP_ROOT/nightlife-storage-$LATEST_STAMP.tgz"
+            LATEST_STORAGE_SKIPPED="$BACKUP_ROOT/nightlife-storage-$LATEST_STAMP.skipped"
+            test -s "$LATEST_MANIFEST"
+            test -s "$LATEST_CHECKSUMS"
+            test -s "$LATEST_DB_DUMP"
+            test -s "$LATEST_DB_LIST"
+
+            echo "::group::NightLife backup evidence"
+            echo "Backup manifest: $LATEST_MANIFEST"
+            cat "$LATEST_MANIFEST"
+            echo "Backup checksums: $LATEST_CHECKSUMS"
+            cat "$LATEST_CHECKSUMS"
+            echo "DB dump size:"
+            ls -lh "$LATEST_DB_DUMP"
+            echo "pg_restore --list output:"
+            sed -n '1,120p' "$LATEST_DB_LIST"
+            if [ -s "$LATEST_STORAGE_ARCHIVE" ]; then
+              echo "Storage archive size:"
+              ls -lh "$LATEST_STORAGE_ARCHIVE"
+            else
+              echo "Storage archive skipped:"
+              cat "$LATEST_STORAGE_SKIPPED"
+            fi
+            echo "::endgroup::"
+
+            pnpm exec prisma migrate deploy
+            export PORT="$BACKEND_PORT"
+            pm2 restart "$BACKEND_PM2_NAME" --update-env 2>/dev/null || pm2 start dist/src/main.js --name "$BACKEND_PM2_NAME" --update-env
             pm2 save
-            ok=0; for i in $(seq 1 20); do if curl -fsS http://127.0.0.1:3012/areas >/dev/null; then ok=1; break; fi; sleep 2; done; if [ "$ok" != 1 ]; then echo "::error::Backend API khong tra loi /areas tren cong 3012 sau ~40s."; pm2 logs app-api.demonightlight.test9.io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
-            booking_status=000; for i in $(seq 1 10); do booking_status=$(curl -sS -o /tmp/nightlife-backend-booking-check.json -w "%{http_code}" -X POST http://127.0.0.1:3012/bookings -H 'Content-Type: application/json' -d '{}' || true); if [ "$booking_status" = "400" ]; then break; fi; sleep 2; done; if [ "$booking_status" != "400" ]; then echo "::error::Backend POST /bookings chua tra validation 400. Status: $booking_status"; cat /tmp/nightlife-backend-booking-check.json 2>/dev/null || true; pm2 logs app-api.demonightlight.test9.io.vn --lines 80 --nostream 2>/dev/null; exit 1; fi
+            check_url backend_areas_local "http://127.0.0.1:$BACKEND_PORT/areas"
+            check_url backend_areas_public "$PUBLIC_BACKEND_URL/areas"
+
+            booking_status=000; for i in $(seq 1 10); do booking_status=$(curl -sS -o /tmp/nightlife-backend-booking-check.json -w "%{http_code}" -X POST "http://127.0.0.1:$BACKEND_PORT/bookings" -H 'Content-Type: application/json' -d '{}' || true); if [ "$booking_status" = "400" ]; then break; fi; sleep 2; done; if [ "$booking_status" != "400" ]; then echo "::error::Backend POST /bookings chua tra validation 400. Status: $booking_status"; cat /tmp/nightlife-backend-booking-check.json 2>/dev/null || true; pm2 logs "$BACKEND_PM2_NAME" --lines 80 --nostream 2>/dev/null; exit 1; fi
+            echo "backend_booking_validation=400 http://127.0.0.1:$BACKEND_PORT/bookings" | tee -a "$SMOKE_RESULTS"
+
+            if [ -d "$FRONTEND_DIR" ]; then
+              check_url frontend_home_local "http://127.0.0.1:$FRONTEND_PORT/"
+              check_url frontend_admin_local "http://127.0.0.1:$FRONTEND_PORT/admin"
+              check_url frontend_partner_local "http://127.0.0.1:$FRONTEND_PORT/partner"
+              check_url frontend_home_public "$PUBLIC_FRONTEND_URL/"
+              check_url frontend_admin_public "$PUBLIC_FRONTEND_URL/admin"
+              check_url frontend_partner_public "$PUBLIC_FRONTEND_URL/partner"
+            else
+              echo "frontend_health=skipped missing $FRONTEND_DIR" | tee -a "$SMOKE_RESULTS"
+            fi
+
+            RELEASE_NOTE="$EVIDENCE_DIR/nightlife-$DEPLOY_STAMP-release.txt"
+            LATEST_BACKEND_SNAPSHOT="$(cat "$SNAPSHOT_ROOT/latest-backend-snapshot.txt" 2>/dev/null || true)"
+            {
+              echo "nightlife_release_timestamp=$DEPLOY_STAMP"
+              echo "commit_sha=${{ github.sha }}"
+              echo "env_profile=demo-uat"
+              echo "frontend_url=$PUBLIC_FRONTEND_URL"
+              echo "backend_url=$PUBLIC_BACKEND_URL"
+              echo "backend_path=$BACKEND_DIR"
+              echo "frontend_path=$FRONTEND_DIR"
+              echo "backend_port=$BACKEND_PORT"
+              echo "frontend_port=$FRONTEND_PORT"
+              echo "backend_pm2=$BACKEND_PM2_NAME"
+              echo "backup_root=$BACKUP_ROOT"
+              echo "backup_manifest=$LATEST_MANIFEST"
+              echo "backup_checksum=$LATEST_CHECKSUMS"
+              echo "backup_db_dump=$LATEST_DB_DUMP"
+              echo "backup_restore_list=$LATEST_DB_LIST"
+              if [ -s "$LATEST_STORAGE_ARCHIVE" ]; then
+                echo "backup_storage=$LATEST_STORAGE_ARCHIVE"
+              else
+                echo "backup_storage=$LATEST_STORAGE_SKIPPED"
+              fi
+              echo "backend_snapshot=${LATEST_BACKEND_SNAPSHOT:-none}"
+              echo "rollback_backend=tar -xzf ${LATEST_BACKEND_SNAPSHOT:-<snapshot.tgz>} -C $BACKEND_DIR && cd $BACKEND_DIR && pnpm install --prod --no-frozen-lockfile && PORT=$BACKEND_PORT pm2 restart $BACKEND_PM2_NAME --update-env"
+              echo "rollback_database=pg_restore --clean --if-exists --no-owner --no-privileges --dbname <postgres-url-without-prisma-query-params> $LATEST_DB_DUMP"
+              echo "smoke_results:"
+              cat "$SMOKE_RESULTS"
+            } > "$RELEASE_NOTE"
+
+            echo "::group::NightLife deploy release evidence"
+            cat "$RELEASE_NOTE"
+            echo "::endgroup::"
