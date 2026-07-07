@@ -817,6 +817,144 @@ export default function Page() {
           line-height: 1.6;
         }
 
+        html.vy-light .coupon-page {
+          background:
+            radial-gradient(circle at 18% 0%, rgba(168, 124, 52, .1), transparent 32%),
+            radial-gradient(circle at 84% 12%, rgba(194, 81, 126, .08), transparent 30%),
+            #f6f4ef;
+          color: #211e19;
+        }
+
+        html.vy-light .coupon-hero {
+          border-color: rgba(150, 116, 52, .28);
+          background:
+            linear-gradient(115deg, rgba(255, 255, 255, .94), rgba(246, 244, 239, .9)),
+            url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76");
+          background-position: center;
+          background-size: cover;
+          box-shadow: 0 22px 54px -34px rgba(40, 30, 10, .34);
+        }
+
+        html.vy-light .coupon-hero::before {
+          background: linear-gradient(90deg, rgba(255, 255, 255, .92), rgba(246, 244, 239, .78) 50%, rgba(246, 244, 239, .62));
+        }
+
+        html.vy-light .back-link,
+        html.vy-light .panel-eyebrow,
+        html.vy-light .filter-list b,
+        html.vy-light .note-card,
+        html.vy-light .coupon-place svg {
+          color: #8f6a2a;
+        }
+
+        html.vy-light h1,
+        html.vy-light .featured-card strong,
+        html.vy-light .panel-head span,
+        html.vy-light .result-head strong,
+        html.vy-light .coupon-title,
+        html.vy-light .empty-state h2 {
+          color: #211e19;
+        }
+
+        html.vy-light .coupon-hero p,
+        html.vy-light .featured-card p,
+        html.vy-light .note-card p,
+        html.vy-light .coupon-place,
+        html.vy-light .empty-state p {
+          color: #6f675c;
+        }
+
+        html.vy-light .hero-search {
+          border-color: rgba(150, 116, 52, .34);
+          background: rgba(255, 255, 255, .82);
+          color: #8f6a2a;
+          box-shadow: 0 16px 30px -26px rgba(40, 30, 10, .38);
+        }
+
+        html.vy-light .hero-search input {
+          color: #211e19;
+        }
+
+        html.vy-light .hero-search input::placeholder {
+          color: #8c8679;
+        }
+
+        html.vy-light .panel-card,
+        html.vy-light .result-head,
+        html.vy-light .coupon-card,
+        html.vy-light .empty-state {
+          border-color: rgba(150, 116, 52, .28);
+          background: rgba(255, 255, 255, .82);
+          box-shadow: 0 18px 40px -34px rgba(40, 30, 10, .32);
+        }
+
+        html.vy-light .featured-card {
+          background:
+            linear-gradient(155deg, rgba(168, 124, 52, .18), rgba(255, 255, 255, .84) 52%, rgba(194, 81, 126, .08)),
+            rgba(255, 255, 255, .82);
+        }
+
+        html.vy-light .panel-head b,
+        html.vy-light .coupon-meta span,
+        html.vy-light .filter-list button.active,
+        html.vy-light .result-head button,
+        html.vy-light .empty-state button {
+          background: rgba(168, 124, 52, .12);
+          color: #8f6a2a;
+        }
+
+        html.vy-light .filter-list button {
+          border-color: rgba(30, 24, 12, .1);
+          background: rgba(28, 22, 10, .035);
+          color: #57534b;
+        }
+
+        html.vy-light .filter-list button.active {
+          border-color: rgba(150, 116, 52, .46);
+          color: #211e19;
+        }
+
+        html.vy-light .coupon-card {
+          background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(246, 244, 239, .78));
+          color: #211e19;
+        }
+
+        html.vy-light .coupon-card:hover {
+          border-color: rgba(150, 116, 52, .52);
+          background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(168, 124, 52, .12));
+        }
+
+        html.vy-light .coupon-image {
+          border-color: rgba(150, 116, 52, .22);
+        }
+
+        html.vy-light .coupon-image-shade {
+          background: linear-gradient(180deg, transparent 32%, rgba(246, 244, 239, .16));
+        }
+
+        html.vy-light .coupon-copy strong {
+          color: #8f6a2a;
+        }
+
+        html.vy-light .coupon-meta span {
+          color: #8f6a2a;
+        }
+
+        html.vy-light .result-head span {
+          color: #8c8679;
+        }
+
+        html.vy-light .result.error {
+          border-color: rgba(194, 69, 92, .34);
+          background: rgba(194, 69, 92, .08);
+          color: #9f263a;
+        }
+
+        html.vy-light .coupon-skeleton {
+          background: linear-gradient(90deg, rgba(28, 22, 10, .035), rgba(168, 124, 52, .16), rgba(28, 22, 10, .035));
+          background-size: 220% 100%;
+        }
+
         @keyframes shimmer {
           0% { background-position: 100% 0; }
           100% { background-position: -100% 0; }
