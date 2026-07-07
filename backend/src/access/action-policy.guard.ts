@@ -42,6 +42,32 @@ export class ActionPolicyGuard implements CanActivate {
       return this.accessService.canReviewBill(user, request.params?.billId);
     }
 
+    if (policy === 'canPreviewBillApproval') {
+      return this.accessService.canPreviewBillApproval(
+        user,
+        request.params?.billId,
+      );
+    }
+
+    if (policy === 'canApproveBill') {
+      return this.accessService.canApproveBill(user, request.params?.billId);
+    }
+
+    if (policy === 'canConfirmBillPmBa') {
+      return this.accessService.canConfirmBillPmBa(
+        user,
+        request.params?.billId,
+      );
+    }
+
+    if (policy === 'canVoidBill') {
+      return this.accessService.canVoidBill(user, request.params?.billId);
+    }
+
+    if (policy === 'canReverseBill') {
+      return this.accessService.canReverseBill(user, request.params?.billId);
+    }
+
     if (policy === 'canScanCoupon') {
       return this.accessService.canScanCoupon(user, {
         code: request.params?.code,

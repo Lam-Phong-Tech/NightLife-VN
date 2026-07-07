@@ -58,7 +58,11 @@ describe('RBAC matrix (e2e)', () => {
     rotateAdminCouponIssueQrToken: jest.fn(),
     listMemberBookings: jest.fn(),
     listSensitiveBillsForAdmin: jest.fn(),
+    previewSensitiveBillApproval: jest.fn(),
     reviewSensitiveBill: jest.fn(),
+    voidSensitiveBill: jest.fn(),
+    reverseSensitiveBill: jest.fn(),
+    autoReverseSensitiveBills: jest.fn(),
   };
   const accessService = {
     canViewPartnerStore: jest.fn(),
@@ -68,6 +72,11 @@ describe('RBAC matrix (e2e)', () => {
     canScanCoupon: jest.fn(),
     canConfirmCheckIn: jest.fn(),
     canReviewBill: jest.fn(),
+    canPreviewBillApproval: jest.fn(),
+    canApproveBill: jest.fn(),
+    canConfirmBillPmBa: jest.fn(),
+    canVoidBill: jest.fn(),
+    canReverseBill: jest.fn(),
     canViewSensitiveBill: jest.fn(),
     canViewMemberBooking: jest.fn(),
     canViewMemberCoupon: jest.fn(),
@@ -137,6 +146,26 @@ describe('RBAC matrix (e2e)', () => {
       id: 'bill-1',
       status: 'VERIFIED',
     });
+    nightlifeDataService.previewSensitiveBillApproval.mockResolvedValue({
+      billId: 'bill-1',
+      netRevenueVnd: 1840000,
+      payableVnd: 1990000,
+      commissionAmountVnd: 80000,
+    });
+    nightlifeDataService.voidSensitiveBill.mockResolvedValue({
+      id: 'bill-1',
+      status: 'VOIDED',
+    });
+    nightlifeDataService.reverseSensitiveBill.mockResolvedValue({
+      id: 'bill-1',
+      status: 'VOIDED',
+    });
+    nightlifeDataService.autoReverseSensitiveBills.mockResolvedValue({
+      mode: 'DRY_RUN',
+      candidateCount: 0,
+      reversedCount: 0,
+      candidates: [],
+    });
     accessService.canViewPartnerStore.mockResolvedValue(true);
     accessService.canViewPartnerCoupon.mockResolvedValue(true);
     accessService.canViewPartnerBooking.mockResolvedValue(true);
@@ -144,6 +173,11 @@ describe('RBAC matrix (e2e)', () => {
     accessService.canScanCoupon.mockResolvedValue(true);
     accessService.canConfirmCheckIn.mockResolvedValue(true);
     accessService.canReviewBill.mockResolvedValue(true);
+    accessService.canPreviewBillApproval.mockResolvedValue(true);
+    accessService.canApproveBill.mockResolvedValue(true);
+    accessService.canConfirmBillPmBa.mockResolvedValue(true);
+    accessService.canVoidBill.mockResolvedValue(true);
+    accessService.canReverseBill.mockResolvedValue(true);
     accessService.canViewSensitiveBill.mockResolvedValue(true);
     accessService.canViewMemberBooking.mockResolvedValue(true);
     accessService.canViewMemberCoupon.mockResolvedValue(true);
@@ -401,6 +435,18 @@ describe('RBAC matrix (e2e)', () => {
       .expect(403);
   });
 
+  it('does not expose the legacy operator bill review route', async () => {
+    await request(app.getHttpServer())
+      .patch('/operator/bills/bill-1/review')
+      .set('x-test-role', 'OPERATOR')
+      .set('x-test-user-id', 'operator-1')
+      .send({ approve: true })
+      .expect(404);
+
+    expect(accessService.canReviewBill).not.toHaveBeenCalled();
+    expect(nightlifeDataService.reviewSensitiveBill).not.toHaveBeenCalled();
+  });
+
   it('returns 403 when a partner calls admin sensitive bills', async () => {
     await request(app.getHttpServer())
       .get('/admin/sensitive-bills')
@@ -424,6 +470,69 @@ describe('RBAC matrix (e2e)', () => {
       .set('x-test-user-id', 'admin-1')
       .send({ approve: true })
       .expect(404);
+
+    expect(accessService.canApproveBill).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'missing-bill',
+    );
+    expect(accessService.canReviewBill).not.toHaveBeenCalled();
+  });
+
+  it('protects admin bill preview, PM/BA confirm, void, and reversal with separated policies', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/sensitive-bills/bill-1/approval-preview')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-1/confirm-negative-commission')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ reason: 'PM/BA confirmed loss leader campaign.' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-1/void')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ reason: 'Refund confirmed by store.' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-1/reverse')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ reason: 'Duplicate bill confirmed.' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/admin/sensitive-bills/auto-reverse')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ execute: false, limit: 5 })
+      .expect(201);
+
+    expect(accessService.canPreviewBillApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'bill-1',
+    );
+    expect(accessService.canConfirmBillPmBa).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'bill-1',
+    );
+    expect(accessService.canVoidBill).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'bill-1',
+    );
+    expect(accessService.canReverseBill).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'bill-1',
+    );
+    expect(accessService.canReverseBill).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      undefined,
+    );
   });
 
   it('returns 400 when rejecting a bill without rejectReason', async () => {

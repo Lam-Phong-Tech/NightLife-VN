@@ -31,6 +31,7 @@ Service charge and tax are not part of net revenue. They are carried separately 
 - Overrides are persisted inside the active store `CommissionConfig.ruleSnapshot` as `campaignCommissionOverrides` and mirrored into `campaignCommissionRates` for rule calculation.
 - Explicit override priority is higher than campaign group fallback in the ba-v3.2 commission resolver.
 - Each override update writes an `AuditLog` with before/after rule snapshot.
+- QA should treat commission override CRUD as a separate follow-up task from NLF-44 bill approval; NLF-44 only depends on reading the snapshot rates during bill approval.
 
 ## Reporting MVP scope
 
@@ -57,14 +58,14 @@ Service charge and tax are not part of net revenue. They are carried separately 
 
 ## Runtime evidence checklist
 
-- Backend: `pnpm exec prisma generate` passed on 2026-07-03.
-- Backend: `pnpm test --runInBand` passed on 2026-07-03 with 9 suites and 116 tests.
-- Backend: `pnpm build` passed on 2026-07-03.
-- Backend e2e: `pnpm exec jest --config ./test/jest-e2e.json test/bill-approval.e2e-spec.ts --runInBand` passed on 2026-07-03 with 2 tests.
-- Backend e2e full: `pnpm exec jest --config ./test/jest-e2e.json --runInBand` passed on 2026-07-03 with 8 suites passed, 1 skipped, 49 tests passed, 1 skipped.
-- Frontend: `pnpm exec eslint src/app/admin/AdminConsole.tsx` passed on 2026-07-03.
-- Frontend: `pnpm build --webpack` passed on 2026-07-03.
-- Frontend: `pnpm check-types` is blocked by existing unrelated errors in `src/app/admin/layout.tsx` and `src/app/admin/stores/page.tsx`.
+- Backend: `pnpm exec prisma generate` passed on 2026-07-07.
+- Backend: `pnpm test --runInBand` passed on 2026-07-07 with 9 suites and 140 tests.
+- Backend: `pnpm exec jest --config ./test/jest-e2e.json --runInBand` passed on 2026-07-07 with 8 suites passed, 1 skipped, 55 tests passed, 2 skipped.
+- Backend: `pnpm build` passed on 2026-07-07.
+- Backend targeted e2e: `pnpm exec jest --config ./test/jest-e2e.json test/bill-approval.e2e-spec.ts --runInBand --detectOpenHandles` passed on 2026-07-07 with 5 tests covering approval math, missing config, negative commission pending, and PM/BA confirmation.
+- Frontend: `pnpm exec vitest run src/app/admin/AdminConsole.test.tsx --testTimeout=20000` passed on 2026-07-07 with 4 tests.
+- Frontend: `pnpm check-types` passed on 2026-07-07.
+- Frontend: `pnpm build` passed on 2026-07-07.
 - API/screenshot evidence after approve should show:
   - `subtotalVnd`
   - `discountVnd`

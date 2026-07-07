@@ -3009,11 +3009,15 @@ export default function AdminConsole({ section }: { section?: string }) {
           <span>Quán</span>
           <span>Khách</span>
           <span>Liên kết</span>
-          <span>Tổng tiền</span>
+          <span>Doanh thu</span>
           <span>Duyệt</span>
         </div>
         {orderedSensitiveBills.slice(0, activeView === "bill" ? 12 : 6).map((bill) => {
           const preview = billPreviews[bill.id];
+          const grossAmount =
+            bill.grossRevenueVnd ?? bill.subtotalVnd ?? bill.totalVnd ?? 0;
+          const netAmount = bill.netRevenueVnd ?? bill.totalVnd ?? grossAmount;
+          const payableAmount = bill.payableVnd ?? bill.paidVnd ?? netAmount;
 
           return (
             <div
@@ -3082,14 +3086,14 @@ export default function AdminConsole({ section }: { section?: string }) {
             </span>
             <span>
               <span style={{ display: "block", color: colors.text, fontWeight: 800 }}>
-                Net {formatMoney(bill.netRevenueVnd ?? bill.totalVnd)}
+                Gross {formatMoney(grossAmount)}
               </span>
-              {(bill.payableVnd ?? bill.paidVnd) &&
-              (bill.payableVnd ?? bill.paidVnd) !== (bill.netRevenueVnd ?? bill.totalVnd) ? (
-                <span style={{ display: "block", marginTop: 3, color: colors.text2, fontSize: 11 }}>
-                  Payable {formatMoney(bill.payableVnd ?? bill.paidVnd)}
-                </span>
-              ) : null}
+              <span style={{ display: "block", marginTop: 3, color: colors.text, fontWeight: 800 }}>
+                Net {formatMoney(netAmount)}
+              </span>
+              <span style={{ display: "block", marginTop: 3, color: colors.text2, fontSize: 11 }}>
+                Payable {formatMoney(payableAmount)}
+              </span>
               {typeof bill.commissionAmountVnd === "number" ? (
                 <span style={{ display: "block", marginTop: 3, color: colors.muted, fontSize: 11 }}>
                   Commission {formatMoney(bill.commissionAmountVnd)}

@@ -76,22 +76,27 @@ export class AccessService {
   }
 
   async canReviewBill(user: AuthenticatedUser, billId?: string) {
-    if (!(await this.hasRolePermission(user, 'bill.review'))) {
-      return false;
-    }
+    return this.canAccessBillAction(user, billId, 'bill.review');
+  }
 
-    if (!billId || this.hasPlatformStoreAccess(user)) {
-      return true;
-    }
+  async canPreviewBillApproval(user: AuthenticatedUser, billId?: string) {
+    return this.canAccessBillAction(user, billId, 'bill.approval.preview');
+  }
 
-    const bill = await this.prisma.bill.findFirst({
-      where: { id: billId, deletedAt: null },
-      select: { storeId: true },
-    });
+  async canApproveBill(user: AuthenticatedUser, billId?: string) {
+    return this.canAccessBillAction(user, billId, 'bill.approve');
+  }
 
-    return bill
-      ? this.hasStoreAccess(user, bill.storeId, 'bill.review')
-      : false;
+  async canConfirmBillPmBa(user: AuthenticatedUser, billId?: string) {
+    return this.canAccessBillAction(user, billId, 'bill.pm_ba.confirm');
+  }
+
+  async canVoidBill(user: AuthenticatedUser, billId?: string) {
+    return this.canAccessBillAction(user, billId, 'bill.void');
+  }
+
+  async canReverseBill(user: AuthenticatedUser, billId?: string) {
+    return this.canAccessBillAction(user, billId, 'bill.reverse');
   }
 
   async canScanCoupon(
@@ -258,6 +263,29 @@ export class AccessService {
     const storeIds = await this.getAccessibleStoreIds(user, permissionKey);
 
     return storeIds === undefined || storeIds.includes(storeId);
+  }
+
+  private async canAccessBillAction(
+    user: AuthenticatedUser,
+    billId: string | undefined,
+    permissionKey: string,
+  ) {
+    if (!(await this.hasRolePermission(user, permissionKey))) {
+      return false;
+    }
+
+    if (!billId || this.hasPlatformStoreAccess(user)) {
+      return true;
+    }
+
+    const bill = await this.prisma.bill.findFirst({
+      where: { id: billId, deletedAt: null },
+      select: { storeId: true },
+    });
+
+    return bill
+      ? this.hasStoreAccess(user, bill.storeId, permissionKey)
+      : false;
   }
 
   private roleKeyFor(user: AuthenticatedUser) {

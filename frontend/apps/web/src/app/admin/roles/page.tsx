@@ -182,7 +182,7 @@ export default function AdminRolesPage() {
   const ok = !!(afName && afName.trim() && afEmail && afEmail.indexOf('@')>0 && afPw.length>=8);
   const handleSave = () => {
     if(!ok) { showToast(!afName||!afName.trim()?'Nhập tên hiển thị':(!afEmail||afEmail.indexOf('@')<=0)?'Nhập email hợp lệ':'Mật khẩu tối thiểu 8 ký tự'); return; }
-    const kmap: Record<string, string[]> = {
+    const kmap: Record<string, [string, string]> = {
       admin:['Super Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],
       operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],
       partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)'],

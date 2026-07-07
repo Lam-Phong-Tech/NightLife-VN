@@ -114,13 +114,26 @@ describe('AccessService', () => {
     ).resolves.toBe(true);
   });
 
-  it('treats operator as a separate platform-wide operational role', async () => {
+  it('checks separated bill approval permissions with platform-wide admin scope', async () => {
     prisma.rolePermission.findFirst.mockResolvedValue({ id: 'rp-1' });
 
     await expect(
-      service.canReviewBill({ id: 'operator-1', role: 'OPERATOR' }, 'bill-1'),
+      service.canApproveBill({ id: 'admin-1', role: 'ADMIN' }, 'bill-1'),
     ).resolves.toBe(true);
 
+    expect(prisma.rolePermission.findFirst).toHaveBeenCalledWith({
+      where: {
+        role: {
+          key: 'admin',
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        permission: {
+          key: 'bill.approve',
+        },
+      },
+      select: { id: true },
+    });
     expect(prisma.bill.findFirst).not.toHaveBeenCalled();
   });
 });

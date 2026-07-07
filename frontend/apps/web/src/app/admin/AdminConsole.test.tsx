@@ -156,6 +156,13 @@ const sensitiveBills = [
     billNumber: "BILL-20260701-ABC12345",
     status: "SUBMITTED",
     submitterType: "PARTNER",
+    subtotalVnd: 2000000,
+    discountVnd: 160000,
+    serviceChargeVnd: 100000,
+    taxVnd: 50000,
+    grossRevenueVnd: 2000000,
+    netRevenueVnd: 1840000,
+    payableVnd: 1990000,
     totalVnd: 1800000,
     paidVnd: 1800000,
     commissionAmountVnd: 180000,
@@ -449,6 +456,9 @@ describe("AdminConsole coupon issue panel", () => {
     const panel = await screen.findByTestId("admin-sensitive-bills-panel");
     await within(panel).findByText("BILL-20260701-ABC12345");
     expect(within(panel).getByText(/booking/i)).toBeInTheDocument();
+    expect(within(panel).getByText("Gross 2.000.000đ")).toBeInTheDocument();
+    expect(within(panel).getByText("Net 1.840.000đ")).toBeInTheDocument();
+    expect(within(panel).getByText("Payable 1.990.000đ")).toBeInTheDocument();
     expect(within(panel).getByText("Chủ quán")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Booking ID filter"), {
@@ -570,6 +580,38 @@ describe("AdminConsole coupon issue panel", () => {
             storeId: "store-1",
             couponId: "coupon-1",
           },
+        }),
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText("Revenue report commission flag"), {
+      target: { value: "NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED" },
+    });
+    fireEvent.click(screen.getByLabelText("Apply revenue report date filters"));
+
+    await waitFor(() => {
+      expect(mocks.apiClient).toHaveBeenCalledWith(
+        "/admin/reports/revenue",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            flag: "NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED",
+          }),
+        }),
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText("Revenue report commission flag"), {
+      target: { value: "MISSING_ACTIVE_COMMISSION_CONFIG" },
+    });
+    fireEvent.click(screen.getByLabelText("Apply revenue report date filters"));
+
+    await waitFor(() => {
+      expect(mocks.apiClient).toHaveBeenCalledWith(
+        "/admin/reports/revenue",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            flag: "MISSING_ACTIVE_COMMISSION_CONFIG",
+          }),
         }),
       );
     });

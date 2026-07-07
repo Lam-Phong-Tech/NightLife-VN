@@ -41,12 +41,36 @@ describe('Route/action contract coverage (e2e)', () => {
         },
         { method: 'GET', route: '/admin/coupon-issues' },
         { method: 'GET', route: '/operator/bills' },
+        {
+          method: 'GET',
+          route: '/admin/sensitive-bills/:billId/approval-preview',
+        },
+        {
+          method: 'PATCH',
+          route: '/admin/sensitive-bills/:billId/review',
+        },
+        {
+          method: 'PATCH',
+          route: '/admin/sensitive-bills/:billId/confirm-negative-commission',
+        },
+        {
+          method: 'PATCH',
+          route: '/admin/sensitive-bills/:billId/void',
+        },
       ]),
     );
     expect(implementedRoutes).toEqual(expect.arrayContaining(contractRoutes));
     expect(implementedRoutes).not.toContainEqual({
       method: 'PATCH',
       route: '/member/bookings/:bookingId',
+    });
+    expect(contractRoutes).not.toContainEqual({
+      method: 'PATCH',
+      route: '/operator/bills/:billId/review',
+    });
+    expect(implementedRoutes).not.toContainEqual({
+      method: 'PATCH',
+      route: '/operator/bills/:billId/review',
     });
     expect(contract).toContain('Route/action contract v1.1');
     expect(contract).toContain('role":"OPERATOR"');

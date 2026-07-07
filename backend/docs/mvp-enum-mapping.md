@@ -7,7 +7,7 @@ This document pins the NightLife MVP enum meanings so DEV/TEST can use the same 
 - `USER`: member account. Membership tier is stored separately in `User.tier`.
 - `PARTNER`: store partner account.
 - `OPERATOR`: operational reviewer account. `POST /auth/login/operator` authenticates this role.
-- `STAFF`: internal support staff role. It is separate from `OPERATOR` and does not pass operator bill-review routes by default.
+- `STAFF`: internal support staff role. It is separate from `OPERATOR`; bill approval is standardized on Admin CMS routes.
 - `ADMIN`: platform administrator.
 
 ## Action Policies
@@ -20,7 +20,12 @@ Routes use role checks plus action policies for scoped business permissions:
 - `canViewPartnerBill`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
 - `canScanCoupon`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
 - `canConfirmCheckIn`: `ADMIN`, `OPERATOR`, and scoped `PARTNER`.
-- `canReviewBill`: `ADMIN` and `OPERATOR`.
+- `canReviewBill`: legacy compatibility policy; Admin CMS review routes use the separated bill approval policies below.
+- `canPreviewBillApproval`: `ADMIN`, for `GET /admin/sensitive-bills/:billId/approval-preview`.
+- `canApproveBill`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/review`.
+- `canConfirmBillPmBa`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/confirm-negative-commission`.
+- `canVoidBill`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/void`.
+- `canReverseBill`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/reverse` and `POST /admin/sensitive-bills/auto-reverse`.
 - `canViewSensitiveBill`: `ADMIN` for admin queue access.
 - `canViewMemberBooking`, `canViewMemberCoupon`, and `canClaimMemberCoupon`: authenticated member own-resource actions.
 

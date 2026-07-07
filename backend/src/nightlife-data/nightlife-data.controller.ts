@@ -782,23 +782,6 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listOperatorBills(request.user);
   }
 
-  @ReviewSensitiveBillContract()
-  @ActionPolicy('canReviewBill')
-  @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
-  @Patch('operator/bills/:billId/review')
-  reviewSensitiveBillAsOperator(
-    @Req() request: RequestWithUser,
-    @Param('billId') billId: string,
-    @Body() dto: ReviewBillDto,
-  ) {
-    return this.nightlifeDataService.reviewSensitiveBill(
-      request.user.id,
-      billId,
-      dto,
-    );
-  }
-
   @CreateMemberBookingContract()
   @Roles('USER')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1261,7 +1244,7 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Bill P2: auto-reverse high-risk duplicate or fake bills',
   })
-  @ActionPolicy('canReviewBill')
+  @ActionPolicy('canReverseBill')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('admin/sensitive-bills/auto-reverse')
@@ -1278,7 +1261,7 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Admin action: preview bill approval before changing status',
   })
-  @ActionPolicy('canReviewBill')
+  @ActionPolicy('canPreviewBillApproval')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/sensitive-bills/:billId/approval-preview')
@@ -1296,7 +1279,7 @@ export class NightlifeDataController {
     summary:
       'Admin action: confirm a negative commission bill after PM/BA review',
   })
-  @ActionPolicy('canReviewBill')
+  @ActionPolicy('canConfirmBillPmBa')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/sensitive-bills/:billId/confirm-negative-commission')
@@ -1319,7 +1302,7 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Admin action: void or refund a reviewed bill and reverse points',
   })
-  @ActionPolicy('canReviewBill')
+  @ActionPolicy('canVoidBill')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/sensitive-bills/:billId/void')
@@ -1336,7 +1319,7 @@ export class NightlifeDataController {
   }
 
   @ReviewSensitiveBillContract()
-  @ActionPolicy('canReviewBill')
+  @ActionPolicy('canApproveBill')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/sensitive-bills/:billId/review')
@@ -1355,7 +1338,7 @@ export class NightlifeDataController {
   @ApiOperation({
     summary: 'Bill P2: reverse an approved bill and related loyalty impact',
   })
-  @ActionPolicy('canReviewBill')
+  @ActionPolicy('canReverseBill')
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/sensitive-bills/:billId/reverse')

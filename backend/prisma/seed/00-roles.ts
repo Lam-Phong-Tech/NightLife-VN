@@ -72,8 +72,44 @@ const PERMISSIONS = [
   {
     key: 'bill.review',
     name: 'Review bill',
-    description: 'Approve or reject submitted bills',
-    roleKeys: ['admin', 'operator'],
+    description:
+      'Legacy bill review permission kept for compatibility; Admin CMS routes use the separated approval permissions.',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'bill.approval.preview',
+    name: 'Preview bill approval',
+    description:
+      'Preview gross, discount, net, payable, commission, and loyalty impact before approval',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'bill.approve',
+    name: 'Approve or reject bill',
+    description:
+      'Approve or reject submitted bills through the Admin sensitive bill review route',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'bill.pm_ba.confirm',
+    name: 'Confirm PM/BA bill approval',
+    description:
+      'Confirm PM/BA reason for negative-commission bills before final verification',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'bill.void',
+    name: 'Void reviewed bill',
+    description:
+      'Void or refund a reviewed bill and reverse the related loyalty ledger when needed',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'bill.reverse',
+    name: 'Reverse approved bill',
+    description:
+      'Reverse approved bills manually or through the high-risk auto reversal workflow',
+    roleKeys: ['admin'],
   },
   {
     key: 'bill.sensitive.view',

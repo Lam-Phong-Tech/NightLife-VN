@@ -66,6 +66,8 @@ describe('Bill approval API (e2e)', () => {
   };
   const accessService = {
     canReviewBill: jest.fn(),
+    canApproveBill: jest.fn(),
+    canConfirmBillPmBa: jest.fn(),
   };
   const adminNotificationService = {
     notifyBillReviewed: jest.fn(),
@@ -77,6 +79,8 @@ describe('Bill approval API (e2e)', () => {
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     accessService.canReviewBill.mockResolvedValue(true);
+    accessService.canApproveBill.mockResolvedValue(true);
+    accessService.canConfirmBillPmBa.mockResolvedValue(true);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [NightlifeDataController],
@@ -159,6 +163,11 @@ describe('Bill approval API (e2e)', () => {
         flags: [],
       }),
     );
+    expect(accessService.canApproveBill).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'bill-api-1',
+    );
+    expect(accessService.canReviewBill).not.toHaveBeenCalled();
     expect(prisma.bill.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -199,6 +208,69 @@ describe('Bill approval API (e2e)', () => {
     expect(prisma.bill.update).not.toHaveBeenCalled();
     expect(prisma.auditLog.create).not.toHaveBeenCalled();
     expect(adminNotificationService.notifyBillReviewed).not.toHaveBeenCalled();
+  });
+
+  it('moves negative commission to PM/BA pending and verifies after confirmation reason', async () => {
+    prisma.bill.findFirst
+      .mockResolvedValueOnce(submittedBill())
+      .mockResolvedValueOnce(pendingNegativeCommissionBill());
+    prisma.commissionConfig.findFirst.mockResolvedValue(
+      activeCommissionConfig(6),
+    );
+    prisma.bill.update
+      .mockResolvedValueOnce(pendingNegativeCommissionBill())
+      .mockResolvedValueOnce(verifiedNegativeCommissionBill());
+
+    const pendingResponse = await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-api-1/review')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ approve: true })
+      .expect(200);
+
+    expect(pendingResponse.body).toEqual(
+      expect.objectContaining({
+        id: 'bill-api-1',
+        status: 'PENDING_PM_BA',
+        commissionAmountVnd: -40000,
+      }),
+    );
+    expect(pendingResponse.body.commissionRuleSnapshot).toEqual(
+      expect.objectContaining({
+        flags: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
+        requiresPmBaConfirmation: true,
+      }),
+    );
+    expect(adminNotificationService.notifyBillReviewed).not.toHaveBeenCalled();
+
+    const confirmedResponse = await request(app.getHttpServer())
+      .patch('/admin/sensitive-bills/bill-api-1/confirm-negative-commission')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ reason: 'PM/BA confirmed July launch loss leader.' })
+      .expect(200);
+
+    expect(confirmedResponse.body).toEqual(
+      expect.objectContaining({
+        id: 'bill-api-1',
+        status: 'VERIFIED',
+        commissionAmountVnd: -40000,
+      }),
+    );
+    expect(confirmedResponse.body.commissionRuleSnapshot).toEqual(
+      expect.objectContaining({
+        flags: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
+        pmBaConfirmationReason: 'PM/BA confirmed July launch loss leader.',
+        pmBaConfirmationConfirmed: true,
+      }),
+    );
+    expect(accessService.canConfirmBillPmBa).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+      'bill-api-1',
+    );
+    expect(adminNotificationService.notifyBillReviewed).toHaveBeenCalledTimes(
+      1,
+    );
   });
 
   it('rejects a bill through the admin API and logs audit & Telegram', async () => {
@@ -314,11 +386,11 @@ function submittedBill() {
   };
 }
 
-function activeCommissionConfig() {
+function activeCommissionConfig(commissionValue = 12) {
   return {
     id: 'commission-api-1',
     commissionType: 'PERCENT',
-    commissionValue: 12,
+    commissionValue,
     minBillVnd: null,
     ruleSnapshot: {
       formula: 'Admin commission = gross x (12% - customer discount %)',
@@ -353,6 +425,45 @@ function reviewedBill() {
       payableVnd: 1990000,
       commissionAmountVnd: 80000,
       flags: [],
+    },
+  };
+}
+
+function pendingNegativeCommissionBill() {
+  return {
+    ...reviewedBill(),
+    status: 'PENDING_PM_BA',
+    verifiedAt: null,
+    verifiedById: null,
+    commissionAmountVnd: -40000,
+    commissionRuleSnapshot: {
+      version: 'ba-v3.2',
+      grossRevenueVnd: 2000000,
+      netRevenueVnd: 1840000,
+      payableVnd: 1990000,
+      commissionAmountVnd: -40000,
+      flags: ['NEGATIVE_COMMISSION_PM_BA_CONFIRMATION_REQUIRED'],
+      requiresPmBaConfirmation: true,
+      pmBaConfirmationReason: null,
+      pmBaConfirmationConfirmed: false,
+    },
+  };
+}
+
+function verifiedNegativeCommissionBill() {
+  return {
+    ...pendingNegativeCommissionBill(),
+    status: 'VERIFIED',
+    verifiedAt: new Date('2026-07-03T10:00:00.000Z'),
+    verifiedById: 'admin-1',
+    commissionRuleSnapshot: {
+      ...(pendingNegativeCommissionBill().commissionRuleSnapshot as Record<
+        string,
+        unknown
+      >),
+      status: 'VERIFIED',
+      pmBaConfirmationReason: 'PM/BA confirmed July launch loss leader.',
+      pmBaConfirmationConfirmed: true,
     },
   };
 }

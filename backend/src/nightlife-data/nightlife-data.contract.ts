@@ -2224,7 +2224,7 @@ export function ReviewSensitiveBillContract() {
     ApiOperation({
       summary: 'Admin action: review a sensitive bill',
       description:
-        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN/OPERATOR depending on route) + ActionPolicy(canReviewBill). Writes AuditLog beforeJson/afterJson snapshots. Negative commission approval moves to PENDING_PM_BA until PM/BA confirmation reason is provided; verified/rejected notifications are only sent for final VERIFIED/REJECTED outcomes.',
+        'Auth guard: JwtAuthGuard + RolesGuard(ADMIN) + ActionPolicy(canApproveBill). Writes AuditLog beforeJson/afterJson snapshots. Negative commission approval moves to PENDING_PM_BA until PM/BA confirmation reason is provided; verified/rejected notifications are only sent for final VERIFIED/REJECTED outcomes.',
     }),
     ApiParam({ name: 'billId', example: 'bill_01' }),
     ApiBody({ type: ReviewBillDto }),
