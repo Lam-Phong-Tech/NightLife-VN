@@ -1,15 +1,18 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, ValidateIf } from 'class-validator';
 
 export enum BillStatusUpdateEnum {
   VERIFIED = 'VERIFIED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
 }
 
 export class UpdateBillStatusDto {
   @IsEnum(BillStatusUpdateEnum)
   status: BillStatusUpdateEnum;
 
-  @IsOptional()
+  @ValidateIf(
+    (dto: UpdateBillStatusDto) => dto.status === BillStatusUpdateEnum.REJECTED,
+  )
+  @IsNotEmpty()
   @IsString()
   reason?: string;
 }

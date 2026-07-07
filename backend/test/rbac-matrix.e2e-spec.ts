@@ -60,9 +60,13 @@ describe('RBAC matrix (e2e)', () => {
     listSensitiveBillsForAdmin: jest.fn(),
     previewSensitiveBillApproval: jest.fn(),
     reviewSensitiveBill: jest.fn(),
+    updateAdminBillStatus: jest.fn(),
     voidSensitiveBill: jest.fn(),
     reverseSensitiveBill: jest.fn(),
     autoReverseSensitiveBills: jest.fn(),
+    autoBillFraudReversal: jest.fn(),
+    exportAdminQaAuditTrail: jest.fn(),
+    getAdminUatDashboard: jest.fn(),
   };
   const accessService = {
     canViewPartnerStore: jest.fn(),
@@ -146,6 +150,10 @@ describe('RBAC matrix (e2e)', () => {
       id: 'bill-1',
       status: 'VERIFIED',
     });
+    nightlifeDataService.updateAdminBillStatus.mockResolvedValue({
+      id: 'bill-1',
+      status: 'VERIFIED',
+    });
     nightlifeDataService.previewSensitiveBillApproval.mockResolvedValue({
       billId: 'bill-1',
       netRevenueVnd: 1840000,
@@ -165,6 +173,24 @@ describe('RBAC matrix (e2e)', () => {
       candidateCount: 0,
       reversedCount: 0,
       candidates: [],
+    });
+    nightlifeDataService.autoBillFraudReversal.mockResolvedValue({
+      billId: 'bill-1',
+      mode: 'DRY_RUN',
+      reversed: false,
+      riskLevel: 'LOW',
+    });
+    nightlifeDataService.exportAdminQaAuditTrail.mockResolvedValue({
+      total: 0,
+      rows: [],
+      csv: 'id,createdAt,module,action,actorId,targetType,targetId,metadata',
+    });
+    nightlifeDataService.getAdminUatDashboard.mockResolvedValue({
+      total: 0,
+      byModule: {},
+      byPriority: {},
+      dailyTrend: {},
+      sla: { targetsHours: { P0: 4, P1: 24, P2: 72 }, openItems: [] },
     });
     accessService.canViewPartnerStore.mockResolvedValue(true);
     accessService.canViewPartnerCoupon.mockResolvedValue(true);
@@ -357,9 +383,7 @@ describe('RBAC matrix (e2e)', () => {
         statusLabel: 'Đã sử dụng',
       })
       .mockRejectedValueOnce(
-        new UnprocessableEntityException(
-          'Coupon issue has already been used',
-        ),
+        new UnprocessableEntityException('Coupon issue has already been used'),
       );
 
     const claimResponse = await request(app.getHttpServer())
@@ -544,6 +568,88 @@ describe('RBAC matrix (e2e)', () => {
       .expect(400);
 
     expect(nightlifeDataService.reviewSensitiveBill).not.toHaveBeenCalled();
+  });
+
+  it('approves a bill through the admin status alias', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/bills/bill-1/status')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ status: 'VERIFIED' })
+      .expect(200);
+
+    expect(nightlifeDataService.updateAdminBillStatus).toHaveBeenCalledWith(
+      'bill-1',
+      { status: 'VERIFIED' },
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+    );
+  });
+
+  it('rejects a bill through the admin status alias when reason is present', async () => {
+    nightlifeDataService.updateAdminBillStatus.mockResolvedValueOnce({
+      id: 'bill-1',
+      status: 'REJECTED',
+      rejectReason: 'Invoice total does not match upload.',
+    });
+
+    await request(app.getHttpServer())
+      .patch('/admin/bills/bill-1/status')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({
+        status: 'REJECTED',
+        reason: 'Invoice total does not match upload.',
+      })
+      .expect(200);
+
+    expect(nightlifeDataService.updateAdminBillStatus).toHaveBeenCalledWith(
+      'bill-1',
+      {
+        status: 'REJECTED',
+        reason: 'Invoice total does not match upload.',
+      },
+      expect.objectContaining({ id: 'admin-1', role: 'ADMIN' }),
+    );
+  });
+
+  it('returns 400 when the admin status alias rejects a bill without reason', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/bills/bill-1/status')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ status: 'REJECTED' })
+      .expect(400);
+
+    expect(nightlifeDataService.updateAdminBillStatus).not.toHaveBeenCalled();
+  });
+
+  it('runs P2 fraud reversal, QA audit trail, and UAT dashboard endpoints', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/bills/bill-1/fraud-reversal')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .send({ dryRun: true, reason: 'Duplicate bill signal' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/admin/qa/audit-trail?module=bill&days=7&format=csv')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/admin/qa/uat-dashboard?days=7')
+      .set('x-test-role', 'ADMIN')
+      .set('x-test-user-id', 'admin-1')
+      .expect(200);
+
+    expect(nightlifeDataService.autoBillFraudReversal).toHaveBeenCalledWith(
+      'admin-1',
+      'bill-1',
+      { dryRun: true, reason: 'Duplicate bill signal' },
+    );
+    expect(nightlifeDataService.exportAdminQaAuditTrail).toHaveBeenCalled();
+    expect(nightlifeDataService.getAdminUatDashboard).toHaveBeenCalled();
   });
 
   it('returns 410 before legacy public coupon usage-limit checks', async () => {

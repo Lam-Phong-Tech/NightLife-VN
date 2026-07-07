@@ -1,0 +1,3 @@
+﻿Command: nest build
+Result: passed
+Note: Prisma Client was regenerated from the current schema before this build.
