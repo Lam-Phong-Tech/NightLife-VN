@@ -1448,9 +1448,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .detail-layout {
           display: grid;
-          grid-template-columns: 512px minmax(0, 1fr);
+          grid-template-columns: minmax(0, 512px) minmax(0, 1fr);
           gap: 34px;
           align-items: start;
+          min-width: 0;
         }
 
         .media-column,
@@ -1460,7 +1461,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .info-column {
           display: grid;
+          grid-template-columns: minmax(0, 1fr);
           gap: 12px;
+          width: 100%;
+          max-width: 100%;
+          overflow: hidden;
         }
 
         .hero-panel {
@@ -2038,13 +2043,29 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
           padding: 12px 16px;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .booking-card-form {
           display: grid;
+          grid-template-columns: minmax(0, 1fr);
           gap: 0;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
           margin: 0;
+        }
+
+        .booking-card *,
+        .booking-card *::before,
+        .booking-card *::after {
+          box-sizing: border-box;
+          min-width: 0;
         }
 
         .booking-card-head {
@@ -2189,6 +2210,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: flex;
           flex-wrap: wrap;
           gap: 7px;
+          width: 100%;
+          max-width: 100%;
         }
 
         .slot {
@@ -2314,6 +2337,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card .primary-action {
+          width: 100%;
+          max-width: 100%;
+          padding: 0 12px;
+          text-align: center;
+          white-space: normal;
           min-height: 40px;
         }
 
@@ -2329,11 +2357,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-muted);
           font-size: 14px;
           line-height: 1.8;
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .desktop-about-inline {
           display: grid;
+          grid-template-columns: minmax(0, 1fr);
           gap: 12px;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
         }
 
         .desktop-about-inline .intro-copy {
@@ -2360,6 +2395,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           flex-wrap: wrap;
           gap: 8px;
           margin-top: 14px;
+          max-width: 100%;
         }
 
         .feature-chips span,
