@@ -80,6 +80,11 @@ import {
   ReverseBillDto,
 } from './dto/bill-p2.dto';
 import {
+  AdminQaAuditTrailQueryDto,
+  AdminUatDashboardQueryDto,
+  AutoBillFraudReversalDto,
+} from './dto/qa-p2.dto';
+import {
   AdminCommissionOverrideQueryDto,
   CreateCommissionOverrideDto,
   UpdateCommissionOverrideDto,
@@ -315,6 +320,15 @@ type CancelAnalyticsMetric = Record<string, unknown> & {
 type BookingRateLimitBucket = {
   count: number;
   resetAt: number;
+};
+
+type BugTrendEvent = {
+  id: string;
+  module: string;
+  priority: 'P0' | 'P1' | 'P2';
+  status: 'OPEN' | 'CLOSED';
+  createdAt: Date;
+  label: string;
 };
 
 type CouponClaimContext = {
@@ -6699,6 +6713,234 @@ export class NightlifeDataService {
     };
   }
 
+  async autoBillFraudReversal(
+    adminId: string,
+    billId: string,
+    dto: AutoBillFraudReversalDto = {},
+  ) {
+    const bill = await this.prisma.bill.findFirst({
+      where: { id: billId, deletedAt: null },
+      select: {
+        id: true,
+        billNumber: true,
+        status: true,
+        storeId: true,
+        totalVnd: true,
+        usedAt: true,
+        store: { select: { id: true, name: true, slug: true } },
+        booking: { select: { id: true, scheduledAt: true } },
+        coupon: { select: { id: true, code: true, minSpendVnd: true } },
+        couponIssue: { select: { id: true, code: true, status: true } },
+        media: {
+          select: {
+            id: true,
+            access: true,
+            originalName: true,
+            mimeType: true,
+          },
+        },
+      },
+    });
+
+    if (!bill) {
+      throw new NotFoundException('Bill not found');
+    }
+
+    const warnings = await this.buildBillFraudWarnings(bill);
+    const highRiskWarnings = warnings.filter(
+      (warning) => warning.severity === 'HIGH',
+    );
+    const riskLevel = highRiskWarnings.length
+      ? 'HIGH'
+      : warnings.some((warning) => warning.severity === 'MEDIUM')
+        ? 'MEDIUM'
+        : 'LOW';
+    const reason =
+      this.cleanText(dto.reason) ||
+      'Auto fraud reversal from QA/UAT round 1 risk signals';
+    const analysis = {
+      billId: bill.id,
+      billNumber: bill.billNumber ?? null,
+      status: bill.status,
+      riskLevel,
+      warningCodes: warnings.map((warning) => warning.code),
+      warnings,
+    };
+
+    if (dto.dryRun || riskLevel !== 'HIGH') {
+      return {
+        ...analysis,
+        mode: 'DRY_RUN',
+        reversed: false,
+        reason,
+      };
+    }
+
+    const reversedBill = await this.applySensitiveBillReversal(
+      adminId,
+      billId,
+      { reason },
+      {
+        action: 'bill.reversal',
+        defaultReason: reason,
+      },
+    );
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: 'bill.fraud.auto_reversal',
+        targetType: 'Bill',
+        targetId: billId,
+        metadata: this.toPrismaJson({
+          reason,
+          riskLevel,
+          warningCodes: analysis.warningCodes,
+          warnings,
+        }),
+      },
+    });
+
+    return {
+      ...analysis,
+      mode: 'EXECUTED',
+      reversed: true,
+      reason,
+      bill: reversedBill,
+    };
+  }
+
+  async exportAdminQaAuditTrail(
+    _admin: AuthenticatedUser,
+    query: AdminQaAuditTrailQueryDto = {},
+  ) {
+    const days = this.resolveAnalyticsDays(query.days ?? 14);
+    const module = query.module ?? 'all';
+    const from = new Date(Date.now() - days * DAY_MS);
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        createdAt: { gte: from },
+        ...(module === 'all'
+          ? {}
+          : { OR: this.auditTrailModuleFilters(module) }),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+      select: {
+        id: true,
+        actorId: true,
+        action: true,
+        targetType: true,
+        targetId: true,
+        metadata: true,
+        createdAt: true,
+      },
+    });
+    const rows = logs.map((log) => ({
+      id: log.id,
+      createdAt: log.createdAt.toISOString(),
+      module: this.auditActionModule(log.action, log.targetType),
+      action: log.action,
+      actorId: log.actorId ?? null,
+      targetType: log.targetType,
+      targetId: log.targetId,
+      metadata: log.metadata ?? null,
+    }));
+
+    return {
+      filters: { days, module, from: from.toISOString() },
+      total: rows.length,
+      rows,
+      csv: query.format === 'csv' ? this.auditTrailRowsToCsv(rows) : undefined,
+    };
+  }
+
+  async getAdminUatDashboard(
+    _admin: AuthenticatedUser,
+    query: AdminUatDashboardQueryDto = {},
+  ) {
+    const days = this.resolveAnalyticsDays(query.days ?? 14);
+    const from = new Date(Date.now() - days * DAY_MS);
+    const [auditLogs, failedNotifications] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where: { createdAt: { gte: from } },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+        select: {
+          id: true,
+          action: true,
+          targetType: true,
+          targetId: true,
+          metadata: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.notificationLog.findMany({
+        where: {
+          createdAt: { gte: from },
+          status: { notIn: ['SENT', 'CANCELLED'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: {
+          id: true,
+          templateKey: true,
+          channel: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+    const bugEvents = [
+      ...auditLogs
+        .map((log) => this.auditLogToBugEvent(log))
+        .filter((event): event is BugTrendEvent => Boolean(event)),
+      ...failedNotifications.map(
+        (log) =>
+          ({
+            id: log.id,
+            module: 'admin',
+            priority: 'P1',
+            status: 'OPEN',
+            createdAt: log.createdAt,
+            label: log.templateKey ?? `${log.channel}.${log.status}`,
+          }) satisfies BugTrendEvent,
+      ),
+    ];
+    const now = Date.now();
+    const slaTargetsHours = { P0: 4, P1: 24, P2: 72 } as const;
+    const openItems = bugEvents
+      .filter((event) => event.status === 'OPEN')
+      .map((event) => {
+        const ageHours =
+          Math.round(((now - event.createdAt.getTime()) / 3_600_000) * 10) / 10;
+        return {
+          id: event.id,
+          module: event.module,
+          priority: event.priority,
+          label: event.label,
+          createdAt: event.createdAt.toISOString(),
+          ageHours,
+          breached: ageHours > slaTargetsHours[event.priority],
+        };
+      });
+
+    return {
+      filters: { days, from: from.toISOString() },
+      total: bugEvents.length,
+      byModule: this.groupBugEvents(bugEvents, (event) => event.module),
+      byPriority: this.groupBugEvents(bugEvents, (event) => event.priority),
+      dailyTrend: this.groupBugEvents(bugEvents, (event) =>
+        event.createdAt.toISOString().slice(0, 10),
+      ),
+      sla: {
+        targetsHours: slaTargetsHours,
+        openItems,
+        breachedCount: openItems.filter((item) => item.breached).length,
+      },
+    };
+  }
+
   async voidSensitiveBill(adminId: string, billId: string, dto: VoidBillDto) {
     return this.applySensitiveBillReversal(adminId, billId, dto, {
       action: 'bill.review.void',
@@ -10011,6 +10253,142 @@ export class NightlifeDataService {
     }
 
     return days;
+  }
+
+  private auditTrailModuleFilters(
+    module: Exclude<NonNullable<AdminQaAuditTrailQueryDto['module']>, 'all'>,
+  ): Prisma.AuditLogWhereInput[] {
+    const filters: Record<string, Prisma.AuditLogWhereInput[]> = {
+      booking: [
+        { action: { contains: 'booking', mode: 'insensitive' } },
+        { targetType: { equals: 'Booking', mode: 'insensitive' } },
+      ],
+      coupon: [
+        { action: { contains: 'coupon', mode: 'insensitive' } },
+        { targetType: { contains: 'Coupon', mode: 'insensitive' } },
+      ],
+      bill: [
+        { action: { contains: 'bill', mode: 'insensitive' } },
+        { targetType: { equals: 'Bill', mode: 'insensitive' } },
+      ],
+      admin: [
+        { action: { contains: 'admin', mode: 'insensitive' } },
+        { action: { contains: 'ranking', mode: 'insensitive' } },
+        { targetType: { equals: 'RankingConfig', mode: 'insensitive' } },
+      ],
+      partner: [
+        { action: { contains: 'partner', mode: 'insensitive' } },
+        { targetType: { contains: 'Partner', mode: 'insensitive' } },
+      ],
+    };
+
+    return filters[module] ?? [];
+  }
+
+  private auditActionModule(action: string, targetType: string) {
+    const value = `${action} ${targetType}`.toLowerCase();
+    if (value.includes('booking')) return 'booking';
+    if (value.includes('coupon')) return 'coupon';
+    if (value.includes('bill')) return 'bill';
+    if (value.includes('partner')) return 'partner';
+    return 'admin';
+  }
+
+  private auditTrailRowsToCsv(
+    rows: Array<{
+      id: string;
+      createdAt: string;
+      module: string;
+      action: string;
+      actorId: string | null;
+      targetType: string;
+      targetId: string;
+      metadata: unknown;
+    }>,
+  ) {
+    const headers = [
+      'id',
+      'createdAt',
+      'module',
+      'action',
+      'actorId',
+      'targetType',
+      'targetId',
+      'metadata',
+    ];
+    const escapeCsv = (value: unknown) =>
+      `"${String(
+        typeof value === 'object' && value !== null
+          ? JSON.stringify(value)
+          : (value ?? ''),
+      ).replace(/"/g, '""')}"`;
+
+    return [
+      headers.join(','),
+      ...rows.map((row) =>
+        headers
+          .map((header) => escapeCsv(row[header as keyof typeof row]))
+          .join(','),
+      ),
+    ].join('\n');
+  }
+
+  private auditLogToBugEvent(log: {
+    id: string;
+    action: string;
+    targetType: string;
+    targetId: string;
+    metadata: unknown;
+    createdAt: Date;
+  }): BugTrendEvent | null {
+    const action = log.action.toLowerCase();
+    const module = this.auditActionModule(log.action, log.targetType);
+    if (action.includes('fraud') || action.includes('auto_reversal')) {
+      return {
+        id: log.id,
+        module,
+        priority: 'P1',
+        status: action.includes('resolved') ? 'CLOSED' : 'OPEN',
+        createdAt: log.createdAt,
+        label: log.action,
+      };
+    }
+
+    if (
+      action.includes('reject') ||
+      action.includes('void') ||
+      action.includes('reversal')
+    ) {
+      return {
+        id: log.id,
+        module,
+        priority: 'P2',
+        status: 'CLOSED',
+        createdAt: log.createdAt,
+        label: log.action,
+      };
+    }
+
+    return null;
+  }
+
+  private groupBugEvents(
+    events: BugTrendEvent[],
+    keyFn: (event: BugTrendEvent) => string,
+  ) {
+    return events.reduce<Record<string, { total: number; open: number }>>(
+      (acc, event) => {
+        const key = keyFn(event);
+        const current = acc[key] ?? { total: 0, open: 0 };
+        current.total += 1;
+        if (event.status === 'OPEN') {
+          current.open += 1;
+        }
+        acc[key] = current;
+        return acc;
+      },
+      {},
+    );
   }
 
   private addCancelAnalyticsMetric(
@@ -15284,8 +15662,7 @@ export class NightlifeDataService {
 
     const mappedItems = items.map((bill) => {
       let guestType = 'Member';
-      let sender =
-        bill.user?.displayName || bill.guest?.displayName || 'Guest';
+      let sender = bill.user?.displayName || bill.guest?.displayName || 'Guest';
       if (bill.user) guestType = bill.user.tier || 'Member';
       if (bill.submitterType === 'PARTNER') guestType = 'Partner';
       else if (bill.submitterType === 'MEMBER') guestType = 'Member';
@@ -15647,7 +16024,16 @@ export class NightlifeDataService {
         name: store.name,
         address: store.address || '',
         type: typeLabel,
-        area: (store.city === 'Ho Chi Minh City' || store.city === 'Hồ Chí Minh' || store.city === 'Há»“ ChÃ­ Minh') ? 'HCM' : (store.city === 'Hanoi' || store.city === 'Hà Nội' || store.city === 'Ha Noi') ? 'HN' : 'Tổng hợp',
+        area:
+          store.city === 'Ho Chi Minh City' ||
+          store.city === 'Hồ Chí Minh' ||
+          store.city === 'Há»“ ChÃ­ Minh'
+            ? 'HCM'
+            : store.city === 'Hanoi' ||
+                store.city === 'Hà Nội' ||
+                store.city === 'Ha Noi'
+              ? 'HN'
+              : 'Tổng hợp',
         commission: '15%',
         casts: store._count.casts,
         status: store.status,
@@ -16079,7 +16465,9 @@ export class NightlifeDataService {
     if (city === 'Hanoi') {
       cityCondition = { in: ['Hanoi', 'Hà Nội'] };
     } else if (city === 'Ho Chi Minh City') {
-      cityCondition = { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'Há»“ ChÃ­ Minh'] };
+      cityCondition = {
+        in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'Há»“ ChÃ­ Minh'],
+      };
     } else if (city) {
       cityCondition = city;
     }
@@ -16087,12 +16475,16 @@ export class NightlifeDataService {
     const where: import('@prisma/client').Prisma.BookingWhereInput = {
       ...(prismaStatus && { status: prismaStatus }),
       ...(storeId && { storeId }),
-      ...(city || category ? {
-        store: {
-          ...(city && { city: cityCondition }),
-          ...(category && { category: category as import('@prisma/client').StoreCategory }),
-        }
-      } : {}),
+      ...(city || category
+        ? {
+            store: {
+              ...(city && { city: cityCondition }),
+              ...(category && {
+                category: category as import('@prisma/client').StoreCategory,
+              }),
+            },
+          }
+        : {}),
       // TODO: Filter by source when the schema supports it. Currently hardcoded.
       ...dateFilter,
       ...(search && {
@@ -16538,9 +16930,7 @@ export class NightlifeDataService {
     await this.prisma.auditLog.create({
       data: {
         action:
-          type === 'like'
-            ? 'content.hot_video.like'
-            : 'content.hot_video.view',
+          type === 'like' ? 'content.hot_video.like' : 'content.hot_video.view',
         targetType: 'MEDIA',
         targetId: media.id,
         metadata: this.toPrismaJson({
@@ -16549,8 +16939,7 @@ export class NightlifeDataService {
           anonymousId: this.cleanText(dto.anonymousId) || null,
           storeId: media.storeId,
           storeName: media.store?.name ?? null,
-          storeSlug:
-            this.cleanText(dto.storeSlug) || media.store?.slug || null,
+          storeSlug: this.cleanText(dto.storeSlug) || media.store?.slug || null,
         }),
       },
     });
@@ -16917,17 +17306,24 @@ export class NightlifeDataService {
       throw new NotFoundException('Admin coupon not found');
     }
 
-    const updateData: import('@prisma/client').Prisma.AdminCouponUpdateInput = {};
+    const updateData: import('@prisma/client').Prisma.AdminCouponUpdateInput =
+      {};
 
     if (dto.name !== undefined) updateData.name = dto.name.trim();
-    if (dto.discountType !== undefined) updateData.discountType = dto.discountType;
-    if (dto.discountValue !== undefined) updateData.discountValue = dto.discountValue;
-    if (dto.targetStores !== undefined) updateData.targetStores = dto.targetStores;
-    if (dto.targetAudiences !== undefined) updateData.targetAudiences = dto.targetAudiences;
+    if (dto.discountType !== undefined)
+      updateData.discountType = dto.discountType;
+    if (dto.discountValue !== undefined)
+      updateData.discountValue = dto.discountValue;
+    if (dto.targetStores !== undefined)
+      updateData.targetStores = dto.targetStores;
+    if (dto.targetAudiences !== undefined)
+      updateData.targetAudiences = dto.targetAudiences;
     if (dto.usageLimit !== undefined) updateData.usageLimit = dto.usageLimit;
     if (dto.status !== undefined) updateData.status = dto.status;
-    if (dto.startsAt !== undefined) updateData.startsAt = new Date(dto.startsAt);
-    if (dto.endsAt !== undefined) updateData.endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
+    if (dto.startsAt !== undefined)
+      updateData.startsAt = new Date(dto.startsAt);
+    if (dto.endsAt !== undefined)
+      updateData.endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
 
     const updated = await this.prisma.adminCoupon.update({
       where: { id },
@@ -16970,7 +17366,6 @@ export class NightlifeDataService {
     return { success: true };
   }
 
-
   async listAdminGlobalCouponIssues(query: {
     page?: number;
     limit?: number;
@@ -16988,7 +17383,11 @@ export class NightlifeDataService {
       ...(query.search && {
         OR: [
           { code: { contains: query.search, mode: 'insensitive' as const } },
-          { adminCoupon: { name: { contains: query.search, mode: 'insensitive' as const } } },
+          {
+            adminCoupon: {
+              name: { contains: query.search, mode: 'insensitive' as const },
+            },
+          },
         ],
       }),
     };

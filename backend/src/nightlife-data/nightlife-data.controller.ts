@@ -126,6 +126,12 @@ import {
   ReviewBillDto,
   VoidBillDto,
 } from './dto/review-bill.dto';
+import { UpdateBillStatusDto } from './dto/update-bill-status.dto';
+import {
+  AdminQaAuditTrailQueryDto,
+  AdminUatDashboardQueryDto,
+  AutoBillFraudReversalDto,
+} from './dto/qa-p2.dto';
 import {
   AdminCommissionOverrideQueryDto,
   CreateCommissionOverrideDto,
@@ -1354,6 +1360,22 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canReverseBill')
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
+  @Post('admin/bills/:billId/fraud-reversal')
+  autoBillFraudReversal(
+    @Req() request: RequestWithUser,
+    @Param('billId') billId: string,
+    @Body() dto: AutoBillFraudReversalDto,
+  ) {
+    return this.nightlifeDataService.autoBillFraudReversal(
+      request.user.id,
+      billId,
+      dto,
+    );
+  }
+
   @ApiOperation({
     summary: 'Admin action: List bookings with filters and pagination',
   })
@@ -1593,11 +1615,27 @@ export class NightlifeDataController {
   @ApiOperation({ summary: 'Admin action: Approve or reject a bill' })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('admin/bills/:id/status')
+  async updateAdminBillStatusAlias(
+    @Req() request: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateBillStatusDto,
+  ) {
+    return this.nightlifeDataService.updateAdminBillStatus(
+      id,
+      dto,
+      request.user as any,
+    );
+  }
+
+  @ApiOperation({ summary: 'Admin action: Approve or reject a bill' })
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Put('admin/bills/:id/status')
   async updateAdminBillStatus(
     @Req() request: RequestWithUser,
     @Param('id') id: string,
-    @Body() dto: import('./dto/update-bill-status.dto').UpdateBillStatusDto,
+    @Body() dto: UpdateBillStatusDto,
   ) {
     return this.nightlifeDataService.updateAdminBillStatus(
       id,
@@ -1612,6 +1650,29 @@ export class NightlifeDataController {
   @Get('admin/dashboard/stats')
   async getAdminDashboardStats(@Query('timeframe') timeframe?: string) {
     return this.nightlifeDataService.getAdminDashboardStats(timeframe);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/qa/audit-trail')
+  exportAdminQaAuditTrail(
+    @Req() request: RequestWithUser,
+    @Query() query: AdminQaAuditTrailQueryDto,
+  ) {
+    return this.nightlifeDataService.exportAdminQaAuditTrail(
+      request.user,
+      query,
+    );
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('admin/qa/uat-dashboard')
+  getAdminUatDashboard(
+    @Req() request: RequestWithUser,
+    @Query() query: AdminUatDashboardQueryDto,
+  ) {
+    return this.nightlifeDataService.getAdminUatDashboard(request.user, query);
   }
 
   @Roles('ADMIN')

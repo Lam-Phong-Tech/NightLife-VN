@@ -1,0 +1,5 @@
+Test Suites: 1 passed, 1 total
+Tests:       16 passed, 16 total
+Snapshots:   0 total
+Time:        10.274 s
+Ran all test suites matching rbac-matrix.e2e-spec.ts.

@@ -1,0 +1,11 @@
+Test Suites: 1 passed, 1 total
+Tests:       20 passed, 20 total
+Snapshots:   0 total
+Time:        8.947 s, estimated 9 s
+Ran all test suites matching rbac-matrix.e2e-spec.ts.
+[33m[Nest] 12544  - [39m07/07/2026, 4:00:57 PM [33m   WARN[39m [38;5;3m[NightlifeDataService] [39m[33mPartner request Telegram delivery failed: Telegram down[39m
+Test Suites: 1 passed, 1 total
+Tests:       95 passed, 95 total
+Snapshots:   0 total
+Time:        8.26 s
+Ran all test suites matching src\nightlife-data\nightlife-data.service.spec.ts.
