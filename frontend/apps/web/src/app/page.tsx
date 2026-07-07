@@ -545,7 +545,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
         "linear-gradient(135deg, rgba(254,240,138,.27), rgba(212,178,106,.15) 42%, rgba(255,255,255,.06))",
       rowBorder: "rgba(240,221,168,.58)",
       rowShadow: "0 0 0 1px rgba(254,240,138,.13) inset, 0 22px 48px rgba(234,179,8,.24), 0 16px 30px rgba(0,0,0,.24)",
-      labelColor: "#fef3c7",
+      labelColor: "#8a5a00",
     },
     2: {
       badgeBackground: "linear-gradient(140deg, #f8fafc, #94a3b8)",
@@ -554,7 +554,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
         "linear-gradient(135deg, rgba(226,232,240,.25), rgba(148,163,184,.14) 42%, rgba(255,255,255,.06))",
       rowBorder: "rgba(226,232,240,.46)",
       rowShadow: "0 0 0 1px rgba(226,232,240,.10) inset, 0 22px 48px rgba(148,163,184,.22), 0 16px 30px rgba(0,0,0,.24)",
-      labelColor: "#e2e8f0",
+      labelColor: "#475569",
     },
     3: {
       badgeBackground: "linear-gradient(140deg, #fed7aa, #b45309)",
@@ -563,7 +563,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
         "linear-gradient(135deg, rgba(251,146,60,.24), rgba(180,83,9,.14) 42%, rgba(255,255,255,.06))",
       rowBorder: "rgba(251,146,60,.46)",
       rowShadow: "0 0 0 1px rgba(251,146,60,.10) inset, 0 22px 48px rgba(180,83,9,.22), 0 16px 30px rgba(0,0,0,.24)",
-      labelColor: "#fed7aa",
+      labelColor: "#9a3412",
     },
     4: {
       badgeBackground: "linear-gradient(140deg, #a7f3d0, #22c55e)",
@@ -571,7 +571,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBackground: "rgba(255,255,255,.045)",
       rowBorder: "rgba(255,255,255,.12)",
       rowShadow: "0 16px 30px rgba(0,0,0,.14)",
-      labelColor: colors.goldSoft,
+      labelColor: "#047857",
     },
     5: {
       badgeBackground: "linear-gradient(140deg, #bfdbfe, #3b82f6)",
@@ -579,7 +579,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
       rowBackground: "rgba(255,255,255,.045)",
       rowBorder: "rgba(255,255,255,.12)",
       rowShadow: "0 16px 30px rgba(0,0,0,.14)",
-      labelColor: colors.goldSoft,
+      labelColor: "#1d4ed8",
     },
   };
 
@@ -589,7 +589,7 @@ function getRankingVisual(rankNumber: number, item: RankedItem) {
     rowBackground: "var(--vy-surface-2)",
     rowBorder: "var(--vy-border)",
     rowShadow: "var(--vy-shadow-card)",
-    labelColor: colors.goldSoft,
+    labelColor: "#8a5a00",
   };
 }
 
@@ -1480,7 +1480,7 @@ function RankingRow({ item }: { item: RankedItem }) {
           >
             {hasCrown ? <Crown size={18} fill="currentColor" strokeWidth={2.4} /> : <span style={{ fontSize: "13px", fontWeight: 950 }}>{item.rank}</span>}
           </span>
-          <span style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: isPodium ? "0 6px 16px rgba(0,0,0,.36)" : "none" }}>
+          <span style={{ color: rankingVisual.labelColor, fontSize: isPodium ? "12px" : "11px", fontWeight: 950, letterSpacing: ".08em", textTransform: "uppercase", textShadow: "0 1px 0 rgba(255,255,255,.65)" }}>
             Top {item.rank}
           </span>
         </div>
