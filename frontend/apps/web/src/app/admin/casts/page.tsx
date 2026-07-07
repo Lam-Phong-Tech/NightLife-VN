@@ -190,6 +190,30 @@ export default function AdminCastsPage() {
     setIsAddingCast(false);
   };
 
+  const createCastDraft = async () => {
+    if (!formData.storeId) {
+      showToast('Vui lòng chọn quán trực thuộc trước khi tải media');
+      return null;
+    }
+
+    const draft = await apiClient<any>('/admin/casts', {
+      method: 'POST',
+      data: {
+        stageName: formData.stageName?.trim() || `Draft cast ${Date.now()}`,
+        storeId: formData.storeId,
+        isPublic: false,
+        status: 'DRAFT',
+      },
+    });
+    setSelectedCast(draft);
+    return draft.id;
+  };
+
+  const ensureCastUploadScope = async () => {
+    if (selectedCast?.id) return selectedCast.id;
+    return createCastDraft();
+  };
+
   const saveCast = async () => {
     try {
       if (!formData.stageName || formData.stageName.trim() === '') {
@@ -208,7 +232,10 @@ export default function AdminCastsPage() {
         mediaIds: [avatarImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
 
-      if (isAddingCast) {
+      if (isAddingCast && selectedCast) {
+        await apiClient(`/admin/casts/${selectedCast.id}`, { method: 'PATCH', data: payload });
+        showToast('ÄÃ£ táº¡o Cast má»›i!');
+      } else if (isAddingCast) {
         await apiClient('/admin/casts', { method: 'POST', data: payload });
         showToast('Đã tạo Cast mới!');
       } else if (selectedCast) {
@@ -231,6 +258,9 @@ export default function AdminCastsPage() {
       form.append('file', file);
       form.append('purpose', 'CAST_PHOTO');
       form.append('access', 'PUBLIC');
+      const castId = await ensureCastUploadScope();
+      if (!castId) return;
+      form.append('castId', castId);
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
@@ -271,11 +301,14 @@ export default function AdminCastsPage() {
         form.append('file', file);
         form.append('purpose', 'CAST_PHOTO');
         form.append('access', 'PUBLIC');
+        const castId = await ensureCastUploadScope();
+        if (!castId) return null;
+        form.append('castId', castId);
         return apiFormDataClient<any>('/storage/upload', form);
       });
 
       const results = await Promise.all(uploadPromises);
-      const newAlbums = results.filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'IMAGE' }));
+      const newAlbums = results.filter(Boolean).filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'IMAGE' }));
       
       if (newAlbums.length > 0) {
         setAlbums(prev => [...prev, ...newAlbums]);
@@ -300,11 +333,14 @@ export default function AdminCastsPage() {
         form.append('file', file);
         form.append('purpose', 'CAST_VIDEO');
         form.append('access', 'PUBLIC');
+        const castId = await ensureCastUploadScope();
+        if (!castId) return null;
+        form.append('castId', castId);
         return apiFormDataClient<any>('/storage/upload', form);
       });
 
       const results = await Promise.all(uploadPromises);
-      const newVideos = results.filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'VIDEO' }));
+      const newVideos = results.filter(Boolean).filter(res => res && res.id).map(res => ({ id: res.id, url: res.url, type: 'VIDEO' }));
       
       if (newVideos.length > 0) {
         setVideos(prev => [...prev, ...newVideos]);

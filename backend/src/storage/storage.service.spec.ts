@@ -10,6 +10,18 @@ describe('StorageService', () => {
       create: jest.fn(),
       findUnique: jest.fn(),
     },
+    bill: {
+      findFirst: jest.fn(),
+    },
+    booking: {
+      findFirst: jest.fn(),
+    },
+    cast: {
+      findUnique: jest.fn(),
+    },
+    content: {
+      findFirst: jest.fn(),
+    },
   } as unknown as jest.Mocked<PrismaService>;
 
   const configService = {
@@ -47,6 +59,7 @@ describe('StorageService', () => {
 
     await service.saveLocalFile(file, {
       ownerId: 'owner-1',
+      userRole: 'ADMIN',
       access: 'PUBLIC',
       storeId: 'store-1',
       castId: 'cast-1',
@@ -80,9 +93,14 @@ describe('StorageService', () => {
 
   it('stores bill evidence uploads as protected media linked to the bill', async () => {
     prisma.media.create.mockResolvedValue({ id: 'media-bill-1' });
+    prisma.bill.findFirst.mockResolvedValue({
+      userId: 'member-1',
+      submittedByUserId: null,
+    });
 
     await service.saveLocalFile(file, {
       ownerId: 'member-1',
+      userRole: 'USER',
       billId: 'bill-1',
       purpose: 'bill-evidence',
       access: 'PROTECTED',
@@ -95,6 +113,172 @@ describe('StorageService', () => {
         purpose: 'bill-evidence',
         access: MediaAccess.PROTECTED,
         url: 'http://localhost:3001/storage/files/stored-image',
+      }),
+    });
+  });
+
+  it('rejects user public uploads', async () => {
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'member-1',
+        userRole: 'USER',
+        access: 'PUBLIC',
+        billId: 'bill-1',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.media.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects user protected uploads without bill or booking scope', async () => {
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'member-1',
+        userRole: 'USER',
+        access: 'PROTECTED',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.media.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects user uploads for another user bill', async () => {
+    prisma.bill.findFirst.mockResolvedValue({
+      userId: 'member-2',
+      submittedByUserId: null,
+    });
+
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'member-1',
+        userRole: 'USER',
+        access: 'PROTECTED',
+        billId: 'bill-1',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows user protected uploads for an owned booking', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-booking-1' });
+    prisma.booking.findFirst.mockResolvedValue({ userId: 'member-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'member-1',
+      userRole: 'USER',
+      access: 'PROTECTED',
+      bookingId: 'booking-1',
+    });
+
+    expect(prisma.media.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ownerId: 'member-1',
+        bookingId: 'booking-1',
+        access: MediaAccess.PROTECTED,
+      }),
+    });
+  });
+
+  it('rejects partner public uploads without store, cast, or content scope', async () => {
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'partner-1',
+        userRole: 'PARTNER',
+        access: 'PUBLIC',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.media.create).not.toHaveBeenCalled();
+  });
+
+  it('checks partner store uploads through AccessService', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-store-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'partner-1',
+      userRole: 'PARTNER',
+      access: 'PUBLIC',
+      storeId: 'store-1',
+    });
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+    );
+  });
+
+  it('rejects partner uploads for stores outside their scope', async () => {
+    accessService.ensureStoreAccess.mockRejectedValueOnce(
+      new ForbiddenException('You cannot access data for this store'),
+    );
+
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'partner-1',
+        userRole: 'PARTNER',
+        access: 'PUBLIC',
+        storeId: 'store-2',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.media.create).not.toHaveBeenCalled();
+  });
+
+  it('resolves partner cast uploads to cast store scope', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-cast-1' });
+    prisma.cast.findUnique.mockResolvedValue({ storeId: 'store-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'partner-1',
+      userRole: 'PARTNER',
+      access: 'PUBLIC',
+      castId: 'cast-1',
+    });
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+    );
+  });
+
+  it('resolves partner content uploads to content store scope', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-content-1' });
+    prisma.content.findFirst.mockResolvedValue({ storeId: 'store-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'partner-1',
+      userRole: 'PARTNER',
+      access: 'PROTECTED',
+      contentId: 'content-1',
+    });
+
+    expect(accessService.ensureStoreAccess).toHaveBeenCalledWith(
+      { id: 'partner-1', role: 'PARTNER' },
+      'store-1',
+    );
+  });
+
+  it('rejects admin public orphan uploads', async () => {
+    await expect(
+      service.saveLocalFile(file, {
+        ownerId: 'admin-1',
+        userRole: 'ADMIN',
+        access: 'PUBLIC',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.media.create).not.toHaveBeenCalled();
+  });
+
+  it('allows admin public uploads for allowed global banner purpose', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-banner-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'admin-1',
+      userRole: 'ADMIN',
+      access: 'PUBLIC',
+      purpose: 'BANNER_GLOBAL',
+    });
+
+    expect(prisma.media.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ownerId: 'admin-1',
+        access: MediaAccess.PUBLIC,
+        purpose: 'BANNER_GLOBAL',
       }),
     });
   });

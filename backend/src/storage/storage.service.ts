@@ -37,6 +37,8 @@ type StorageUser = {
   role?: string;
 };
 
+const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set(['BANNER_GLOBAL']);
+
 @Injectable()
 export class StorageService implements OnModuleInit {
   constructor(
@@ -62,41 +64,115 @@ export class StorageService implements OnModuleInit {
   async validateUploadPermissions(options: SaveLocalFileOptions) {
     if (!options.userRole) return;
 
+    const access = this.resolveAccess(options.access);
+    const storeId = this.cleanOptionalId(options.storeId);
+    const castId = this.cleanOptionalId(options.castId);
+    const bookingId = this.cleanOptionalId(options.bookingId);
+    const billId = this.cleanOptionalId(options.billId);
+    const contentId = this.cleanOptionalId(options.contentId);
+    const hasScopedPublicTarget = Boolean(storeId || castId || contentId);
+    const isGlobalPublicUpload =
+      options.purpose !== undefined &&
+      GLOBAL_PUBLIC_UPLOAD_PURPOSES.has(options.purpose);
+
     if (options.userRole === 'ADMIN' || options.userRole === 'OPERATOR') {
+      if (
+        access === MediaAccess.PUBLIC &&
+        !hasScopedPublicTarget &&
+        !isGlobalPublicUpload
+      ) {
+        throw new ForbiddenException(
+          'Public uploads must be linked to a store, cast, content, or allowed global purpose.',
+        );
+      }
       return;
     }
 
     if (options.userRole === 'USER') {
-      if (options.access === 'PUBLIC' || options.storeId || options.castId || options.contentId) {
-        throw new ForbiddenException('Users are only allowed to upload protected bill evidence.');
+      if (access !== MediaAccess.PROTECTED || storeId || castId || contentId) {
+        throw new ForbiddenException(
+          'Users are only allowed to upload protected bill evidence.',
+        );
+      }
+
+      if (!billId && !bookingId) {
+        throw new ForbiddenException(
+          'Protected user uploads must be linked to a bill or booking.',
+        );
+      }
+
+      if (billId) {
+        const bill = await this.prisma.bill.findFirst({
+          where: { id: billId, deletedAt: null },
+          select: { userId: true, submittedByUserId: true },
+        });
+        if (
+          !bill ||
+          (bill.userId !== options.ownerId &&
+            bill.submittedByUserId !== options.ownerId)
+        ) {
+          throw new ForbiddenException(
+            'You do not have permission to upload for this bill.',
+          );
+        }
+      }
+
+      if (bookingId) {
+        const booking = await this.prisma.booking.findFirst({
+          where: { id: bookingId, deletedAt: null },
+          select: { userId: true },
+        });
+        if (!booking || booking.userId !== options.ownerId) {
+          throw new ForbiddenException(
+            'You do not have permission to upload for this booking.',
+          );
+        }
       }
       return;
     }
 
     if (options.userRole === 'PARTNER') {
-      if (options.storeId) {
-        const store = await this.prisma.store.findUnique({
-          where: { id: options.storeId },
-          select: { ownerId: true },
-        });
-        if (!store || store.ownerId !== options.ownerId) {
-          throw new ForbiddenException('You do not have permission to upload for this store.');
-        }
+      const user = { id: options.ownerId, role: options.userRole };
+
+      if (access === MediaAccess.PUBLIC && !hasScopedPublicTarget) {
+        throw new ForbiddenException(
+          'Partner public uploads must be linked to a store, cast, or content.',
+        );
       }
 
-      if (options.castId) {
+      if (storeId) {
+        await this.accessService.ensureStoreAccess(user, storeId);
+      }
+
+      if (castId) {
         const cast = await this.prisma.cast.findUnique({
-          where: { id: options.castId },
-          include: { store: { select: { ownerId: true } } },
+          where: { id: castId },
+          select: { storeId: true },
         });
-        if (!cast || !cast.store || cast.store.ownerId !== options.ownerId) {
-          throw new ForbiddenException('You do not have permission to upload for this cast.');
+        if (!cast) {
+          throw new ForbiddenException(
+            'You do not have permission to upload for this cast.',
+          );
         }
+        await this.accessService.ensureStoreAccess(user, cast.storeId);
+      }
+
+      if (contentId) {
+        const content = await this.prisma.content.findFirst({
+          where: { id: contentId, deletedAt: null },
+          select: { storeId: true },
+        });
+        if (!content?.storeId) {
+          throw new ForbiddenException(
+            'You do not have permission to upload for this content.',
+          );
+        }
+        await this.accessService.ensureStoreAccess(user, content.storeId);
       }
       return;
     }
 
-    if (options.access === 'PUBLIC' || options.storeId || options.castId || options.contentId) {
+    if (access === MediaAccess.PUBLIC || storeId || castId || contentId) {
       throw new ForbiddenException('Upload permission denied.');
     }
   }
@@ -121,15 +197,16 @@ export class StorageService implements OnModuleInit {
       defaultPublicBase,
     );
     const access = this.resolveAccess(options.access);
+    const relationIds = this.cleanRelationIds(options);
 
     return this.prisma.media.create({
       data: {
         ownerId: options.ownerId,
-        storeId: options.storeId,
-        castId: options.castId,
-        bookingId: options.bookingId,
-        billId: options.billId,
-        contentId: options.contentId,
+        storeId: relationIds.storeId,
+        castId: relationIds.castId,
+        bookingId: relationIds.bookingId,
+        billId: relationIds.billId,
+        contentId: relationIds.contentId,
         storageKey,
         originalName: file.originalname,
         mimeType: file.mimetype,
@@ -152,6 +229,7 @@ export class StorageService implements OnModuleInit {
     const access = this.resolveAccess(options.access);
 
     await this.validateUploadPermissions(options);
+    const relationIds = this.cleanRelationIds(options);
 
     let mimeType = 'application/octet-stream';
     let type: MediaType = MediaType.OTHER;
@@ -163,11 +241,11 @@ export class StorageService implements OnModuleInit {
     return this.prisma.media.create({
       data: {
         ownerId: options.ownerId,
-        storeId: options.storeId,
-        castId: options.castId,
-        bookingId: options.bookingId,
-        billId: options.billId,
-        contentId: options.contentId,
+        storeId: relationIds.storeId,
+        castId: relationIds.castId,
+        bookingId: relationIds.bookingId,
+        billId: relationIds.billId,
+        contentId: relationIds.contentId,
         storageKey,
         originalName: url,
         mimeType,
@@ -272,5 +350,19 @@ export class StorageService implements OnModuleInit {
     }
 
     throw new BadRequestException('access must be PUBLIC or PROTECTED');
+  }
+
+  private cleanOptionalId(value?: string) {
+    return value?.trim() || undefined;
+  }
+
+  private cleanRelationIds(options: SaveLocalFileOptions) {
+    return {
+      storeId: this.cleanOptionalId(options.storeId),
+      castId: this.cleanOptionalId(options.castId),
+      bookingId: this.cleanOptionalId(options.bookingId),
+      billId: this.cleanOptionalId(options.billId),
+      contentId: this.cleanOptionalId(options.contentId),
+    };
   }
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Plus, X, Search, ChevronRight, Eye, Calendar, MapPin, Tag as TagIcon, Layout, AlignLeft, Image as ImageIcon, Settings, Pencil } from 'lucide-react';
+import { Plus, X, Search, Eye, Image as ImageIcon, Settings, Pencil } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
@@ -27,43 +27,12 @@ const colors = {
   gold: '#d4b26a',
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
   green: '#4ade80',
-  blue: '#60a5fa',
 };
 
-const mockCampaigns = [
-  { id: '1', discount: '-30%', name: 'Happy Hour', apply: 'Club Lumière', time: '01/06 - 07/07', status: 'Đang chạy' },
-  { id: '2', discount: '-10%', name: 'VIP độc quyền', apply: 'Akari Lounge', time: '15/06 - 15/07', status: 'Đang chạy' },
-  { id: '3', discount: '-5%', name: 'Ưu đãi khách mới', apply: 'Toàn hệ thống', time: 'Luôn áp dụng', status: 'Đang chạy' },
-  { id: '4', discount: '2+1', name: 'Combo phòng VIP', apply: 'KTV Hoàng Gia', time: '01/07 - 31/07', status: 'Đã lên lịch' },
-  { id: '5', discount: '-20%', name: 'Tết Trung Thu', apply: 'Toàn hệ thống', time: '01/09 - 17/09', status: 'Đã kết thúc' },
-];
-
-const mockBlogs = [
-  { id: '1', title: 'Top 5 club sôi động nhất Hà Nội 2026', cat: 'Cẩm nang', date: '28/06/2026', views: '2.4k', status: 'Đã đăng', color: '#33261a' },
-  { id: '2', title: 'Hướng dẫn khách Nhật đặt bàn nightlife an toàn', cat: 'Hướng dẫn', date: '25/08/2026', views: '1.8k', status: 'Đã đăng', color: '#271932' },
-  { id: '3', title: 'Văn hóa Karaoke & KTV tại Việt Nam', cat: 'Blog', date: '--', views: '--', status: 'Nháp', color: '#1a2328' },
-  { id: '4', title: 'Cách chọn Cast phù hợp cho buổi tối của bạn', cat: 'Cẩm nang', date: '--', views: '--', status: 'Nháp', color: '#321921' },
-];
-
-const mockFeatured = [
-  { id: '1', img: '#2c1e16', badge: 'HOT', name: 'Combo Sinh Nhật VIP', sub: 'Opera Spa Hải Phòng', labels: ['Đặt bàn nhanh', 'Mới'] },
-  { id: '2', img: '#1a1d24', name: 'Gói Private Party', sub: 'Club Lumière', labels: ['Không nhãn'] },
-];
-
-const mockVideos = [
-  { id: '1', venue: 'Club Lumière', title: 'Tour không gian quán', dur: '01:24', rank: '1', color: '#2a2215' },
-  { id: '2', venue: 'Sakura Lounge', title: 'Dessert & cocktail signature', dur: '00:38', rank: '2', color: '#1a1824' },
-  { id: '3', venue: 'Akari Lounge', title: 'Đêm nhạc acoustic cuối tuần', dur: '00:52', rank: '3', color: '#1b1e22' },
-];
-
-const mockVideoSearch = [
-  { id: '4', venue: 'KTV Hoàng Gia', title: 'Phòng VIP tổng thống · 01:05', color: '#271b20' },
-  { id: '5', venue: 'Bar Tokyo Night', title: 'Quầy bar signature · 00:44', color: '#1a221f' },
-];
 
 export default function AdminContentPage() {
   const [activeTab, setActiveTab] = useState<'banner' | 'featured' | 'video' | 'blog'>('banner');
-  const [isAdding, setIsAdding] = useState<'banner' | 'featured' | 'video' | 'blog' | null>(null);
+  const [isAdding, setIsAdding] = useState<'banner' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
   const [editBannerId, setEditBannerId] = useState<string | null>(null);
   const [blogTitle, setBlogTitle] = useState('');
@@ -426,12 +395,6 @@ export default function AdminContentPage() {
     }
   };
 
-  const getCampaignStatusStyle = (status: string) => {
-    if (status === 'Đang chạy') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
-    if (status === 'Đã lên lịch') return { color: colors.blue, border: `1px solid rgba(96,165,250,0.3)` };
-    return { color: colors.muted, border: `1px solid ${colors.borderSoft}` };
-  };
-
   const getBannerStatusStyle = (status: string) => {
     if (status === 'Đang hiển thị') return { color: colors.green, border: `1px solid rgba(74,222,128,0.3)` };
     return { color: colors.muted, border: `1px solid ${colors.borderSoft}` };
@@ -521,7 +484,7 @@ export default function AdminContentPage() {
       if (bannerImageFile) {
         const form = new FormData();
         form.append('file', bannerImageFile);
-        form.append('purpose', 'BANNER');
+        form.append('purpose', 'BANNER_GLOBAL');
         form.append('access', 'PUBLIC');
         try {
           const res = await apiFormDataClient<any>('/storage/upload', form);
@@ -580,11 +543,29 @@ export default function AdminContentPage() {
       setIsSubmitting(true);
       let finalImageUrl = coverImage && !coverImage.startsWith('blob:') ? coverImage : null;
 
-      if (coverImageFile) {
+      let targetBlogId = editBlogId;
+      if (coverImageFile && !targetBlogId) {
+        const draft = await contentApi.adminCreate({
+          type: 'BLOG' as const,
+          title: blogTitle,
+          status: 'DRAFT',
+          excerpt: blogExcerpt,
+          body: blogContent,
+          metadata: {
+            category: blogCategory,
+            language: blogLanguage,
+          },
+        });
+        targetBlogId = draft.id;
+        setEditBlogId(draft.id);
+      }
+
+      if (coverImageFile && targetBlogId) {
         const form = new FormData();
         form.append('file', coverImageFile);
         form.append('purpose', 'BLOG_COVER');
         form.append('access', 'PUBLIC');
+        form.append('contentId', targetBlogId);
         
         try {
           const res = await apiFormDataClient<any>('/storage/upload', form);
@@ -610,8 +591,8 @@ export default function AdminContentPage() {
         }
       };
 
-      if (editBlogId) {
-        await contentApi.adminUpdate(editBlogId, payload);
+      if (targetBlogId) {
+        await contentApi.adminUpdate(targetBlogId, payload);
       } else {
         await contentApi.adminCreate(payload);
       }
@@ -635,48 +616,6 @@ export default function AdminContentPage() {
     setBlogContent(blog.body || '');
     setCoverImage((blog.metadata as any)?.image || null);
     setIsAdding('blog');
-  };
-
-  const renderDrawerContent = () => {
-    if (isAdding === 'featured') {
-      return (
-        <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', alignItems: 'center' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '16px', background: colors.surface1, border: `1px dashed ${colors.borderSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.muted }}>
-              <TagIcon size={24} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <input type="text" placeholder="Tên Campaign (VD: Happy Hour)" style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '24px', fontWeight: 700, outline: 'none', marginBottom: '8px' }} />
-              <input type="text" placeholder="% Giảm giá hoặc loại KM" style={{ width: '100%', background: 'transparent', border: 'none', color: colors.gold, fontSize: '15px', fontWeight: 700, outline: 'none' }} />
-            </div>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
-              <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}><Calendar size={14} /> Thời gian áp dụng</div>
-              <input type="text" placeholder="VD: 01/06 - 07/07" style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 600, outline: 'none' }} />
-            </div>
-            <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
-              <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}><MapPin size={14} /> Quán áp dụng</div>
-              <select style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 600, outline: 'none', cursor: 'pointer' }}>
-                <option value="" disabled selected hidden>Chọn quán...</option>
-                <option>Toàn hệ thống</option>
-                <option>Club Lumière</option>
-                <option>Akari Lounge</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (isAdding === 'banner') {
-      return null; // Rendered as Modal instead
-    }
-
-    if (isAdding === 'blog') {
-      return null;
-    }
   };
 
   return (
@@ -741,6 +680,9 @@ export default function AdminContentPage() {
               setShowVideoToast(true);
               setTimeout(() => setShowVideoToast(false), 3000);
               const searchInput = document.getElementById('video-search-input');
+              if (searchInput) searchInput.focus();
+            } else if (activeTab === 'featured') {
+              const searchInput = document.getElementById('featured-search-input');
               if (searchInput) searchInput.focus();
             } else {
               setIsAdding(activeTab);
@@ -935,7 +877,7 @@ export default function AdminContentPage() {
           <div style={{ background: 'rgba(212,178,106,.05)', border: '1px solid rgba(212,178,106,.26)', borderRadius: '14px', padding: '14px', marginTop: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'rgba(12,12,15,.5)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '10px 14px' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-              <input value={searchFeaturedQuery} onChange={e => setSearchFeaturedQuery(e.target.value)} placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
+              <input id="featured-search-input" value={searchFeaturedQuery} onChange={e => setSearchFeaturedQuery(e.target.value)} placeholder="Tìm quán để thêm vào mục nổi bật…" style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '210px', overflowY: 'auto' }}>
               {isSearchingFeatured ? (
@@ -1089,46 +1031,6 @@ export default function AdminContentPage() {
           </div>
         </div>
       )}
-
-      {/* ADD DRAWER */}
-      <div style={{
-        position: 'fixed', top: 0, right: (isAdding && isAdding !== 'blog' && isAdding !== 'banner') ? 0 : '-520px', bottom: 0, width: '520px',
-        background: colors.bg, borderLeft: `1px solid ${colors.borderSoft}`,
-        boxShadow: (isAdding && isAdding !== 'blog' && isAdding !== 'banner') ? '-10px 0 30px rgba(0,0,0,0.5)' : 'none',
-        transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 100,
-        display: 'flex', flexDirection: 'column'
-      }}>
-        {isAdding && isAdding !== 'blog' && isAdding !== 'banner' && (
-          <>
-            <div style={{ padding: '24px', borderBottom: `1px solid ${colors.borderSoft}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', color: colors.gold, textTransform: 'uppercase' }}>
-                THÊM MỚI {isAdding}
-              </div>
-              <button onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: '8px', background: colors.surface2, color: colors.muted, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <X size={16} />
-              </button>
-            </div>
-
-            {renderDrawerContent()}
-
-            <div style={{ padding: '24px', borderTop: `1px solid ${colors.borderSoft}`, display: 'flex', gap: '16px' }}>
-              <button style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                background: colors.goldGrad, color: colors.onGold, border: 'none', height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer'
-              }}>
-                Lưu {isAdding}
-              </button>
-              <button onClick={closeDrawer} style={{
-                width: '80px', background: 'transparent', color: colors.text, border: `1px solid ${colors.borderSoft}`,
-                height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
-              }}>
-                Hủy
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-
       {/* NEW BANNER MODAL */}
       {isAdding === 'banner' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(6,6,9,.72)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>

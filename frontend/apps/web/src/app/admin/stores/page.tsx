@@ -53,6 +53,7 @@ export default function AdminStoresPage() {
 function AdminStoresContent() {
   const [stores, setStores] = useState<any[]>([]);
   const [venueSel, setVenueSel] = useState<string | null>(null);
+  const [isDraftStore, setIsDraftStore] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const searchParams = useSearchParams();
@@ -169,9 +170,24 @@ function AdminStoresContent() {
 
   const closeDrawer = () => {
     setVenueSel(null);
+    setIsDraftStore(false);
   };
 
-  const openNewDrawer = () => {
+  const createStoreDraft = async () => {
+    const draftName = `Draft store ${Date.now()}`;
+    return apiClient<any>('/admin/stores', {
+      method: 'POST',
+      data: {
+        name: draftName,
+        category: 'CLUB',
+        city: 'Ho Chi Minh City',
+        address: 'Draft address',
+        status: 'DRAFT',
+      },
+    });
+  };
+
+  const openNewDrawer = async () => {
     setFormData({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
     setHoursForm(defaultHours);
     setCoverImage(null);
@@ -190,7 +206,14 @@ function AdminStoresContent() {
     setSelWard('');
     setStreetAddress('');
     setPendingAddress('');
-    setVenueSel('new');
+    try {
+      const draft = await createStoreDraft();
+      setVenueSel(draft.id);
+      setIsDraftStore(true);
+      fetchStores();
+    } catch (err: any) {
+      showToast('Không thể tạo bản nháp quán: ' + (err.message || 'Lỗi không xác định'));
+    }
   };
 
   const openEditDrawer = (st: any) => {
@@ -240,6 +263,16 @@ function AdminStoresContent() {
     setMenuGroups(groups);
     setActiveMenuGroupId(groups[0]?.id || '');
     setVenueSel(st.id);
+    setIsDraftStore(false);
+  };
+
+  const ensureStoreUploadScope = async () => {
+    if (venueSel && venueSel !== 'new') return venueSel;
+
+    const draft = await createStoreDraft();
+    setVenueSel(draft.id);
+    setIsDraftStore(true);
+    return draft.id;
   };
 
   const saveStore = async () => {
@@ -294,6 +327,7 @@ function AdminStoresContent() {
         await apiClient(`/admin/stores/${venueSel}`, { method: 'PATCH', data: payload });
         showToast('Đã lưu thay đổi!');
       }
+      setIsDraftStore(false);
       closeDrawer();
       fetchStores();
     } catch (e: any) {
@@ -319,9 +353,7 @@ function AdminStoresContent() {
       form.append('file', file);
       form.append('purpose', 'STORE_VIDEO');
       form.append('access', 'PUBLIC');
-      if (venueSel && venueSel !== 'new') {
-        form.append('storeId', venueSel);
-      }
+      form.append('storeId', await ensureStoreUploadScope());
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
@@ -361,7 +393,7 @@ function AdminStoresContent() {
           url,
           purpose: 'STORE_VIDEO',
           access: 'PUBLIC',
-          storeId: venueSel && venueSel !== 'new' ? venueSel : undefined
+          storeId: await ensureStoreUploadScope()
         }
       });
       if (res && res.id) {
@@ -383,6 +415,7 @@ function AdminStoresContent() {
       form.append('file', file);
       form.append('purpose', 'STORE_MENU_ITEM');
       form.append('access', 'PUBLIC');
+      form.append('storeId', await ensureStoreUploadScope());
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.url) {
@@ -417,9 +450,7 @@ function AdminStoresContent() {
       form.append('file', file);
       form.append('purpose', 'store-hero');
       form.append('access', 'PUBLIC');
-      if (venueSel && venueSel !== 'new') {
-        form.append('storeId', venueSel);
-      }
+      form.append('storeId', await ensureStoreUploadScope());
       
       const res = await apiFormDataClient<any>('/storage/upload', form);
       if (res && res.id) {
@@ -461,9 +492,7 @@ function AdminStoresContent() {
         form.append('file', file);
         form.append('purpose', 'STORE_GALLERY');
         form.append('access', 'PUBLIC');
-        if (venueSel && venueSel !== 'new') {
-          form.append('storeId', venueSel);
-        }
+        form.append('storeId', await ensureStoreUploadScope());
         
         const res = await apiFormDataClient<any>('/storage/upload', form);
         if (res && res.id) {

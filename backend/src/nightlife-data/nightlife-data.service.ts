@@ -15662,8 +15662,11 @@ export class NightlifeDataService {
     };
   }
 
-  async checkAdminStoreSlug(slug: string) {
+  async checkAdminStoreSlug(slug: string, excludeId?: string) {
     const existing = await this.prisma.store.findUnique({ where: { slug } });
+    if (existing && existing.id === excludeId) {
+      return { available: true };
+    }
     return { available: !existing };
   }
 
@@ -15671,8 +15674,11 @@ export class NightlifeDataService {
   // ADMIN CASTS
   // ==========================================
 
-  async checkAdminCastSlug(slug: string) {
+  async checkAdminCastSlug(slug: string, excludeId?: string) {
     const existing = await this.prisma.cast.findUnique({ where: { slug } });
+    if (existing && existing.id === excludeId) {
+      return { available: true };
+    }
     return { available: !existing };
   }
 
@@ -15762,12 +15768,25 @@ export class NightlifeDataService {
     id: string,
     dto: import('./dto/admin-cast.dto').UpdateAdminCastDto,
   ) {
-    await this.prisma.cast.findUniqueOrThrow({ where: { id } });
+    const existing = await this.prisma.cast.findUniqueOrThrow({ where: { id } });
+    let slug: string | undefined;
+    if (
+      dto.stageName &&
+      dto.stageName !== existing.stageName &&
+      existing.status === 'DRAFT'
+    ) {
+      slug = this.generateSlug(dto.stageName);
+      let counter = 1;
+      while (!(await this.checkAdminCastSlug(slug, id)).available) {
+        slug = `${this.generateSlug(dto.stageName)}-${counter++}`;
+      }
+    }
 
     const updated = await this.prisma.cast.update({
       where: { id },
       data: {
         ...(dto.stageName && { stageName: dto.stageName }),
+        ...(slug && { slug }),
         ...(dto.storeId && { storeId: dto.storeId }),
         ...(dto.publicHeadline !== undefined && {
           publicHeadline: dto.publicHeadline,
@@ -15885,6 +15904,19 @@ export class NightlifeDataService {
     const existing = await this.prisma.store.findUniqueOrThrow({
       where: { id },
     });
+    let slug: string | undefined;
+    if (
+      dto.name &&
+      dto.name !== existing.name &&
+      existing.status === 'DRAFT'
+    ) {
+      slug = this.generateSlug(dto.name);
+      let counter = 1;
+      while (!(await this.checkAdminStoreSlug(slug, id)).available) {
+        slug = `${this.generateSlug(dto.name)}-${counter++}`;
+      }
+    }
+
     let areaId: string | undefined;
     if (dto.address !== undefined || dto.city) {
       areaId = await this.inferAreaFromAddress(
@@ -15897,6 +15929,7 @@ export class NightlifeDataService {
       where: { id },
       data: {
         ...(dto.name && { name: dto.name }),
+        ...(slug && { slug }),
         ...(dto.category && { category: dto.category }),
         ...(dto.city && { city: dto.city }),
         ...(dto.address && { address: dto.address }),
