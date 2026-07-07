@@ -174,6 +174,118 @@ jobs:
               ' "$env_file"
             }
 
+            write_env_var() {
+              env_key="$1"
+              env_value="$2"
+              env_file="${3:-.env}"
+              tmp_file="$(mktemp)"
+              escaped_value="$(printf '%s' "$env_value" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+              awk -v key="$env_key" -v value="$escaped_value" '
+                BEGIN { written=0 }
+                {
+                  line=$0
+                  check=line
+                  sub(/\r$/, "", check)
+                  sub(/^[[:space:]]*export[[:space:]]+/, "", check)
+                  pattern="^[[:space:]]*" key "[[:space:]]*="
+                  if (check ~ pattern) {
+                    print key "=\"" value "\""
+                    written=1
+                  } else {
+                    print line
+                  }
+                }
+                END {
+                  if (!written) {
+                    print key "=\"" value "\""
+                  }
+                }
+              ' "$env_file" > "$tmp_file"
+              chmod --reference="$env_file" "$tmp_file" 2>/dev/null || true
+              mv "$tmp_file" "$env_file"
+            }
+
+            extract_database_name_from_url() {
+              input_url="$1"
+              url_no_query="$input_url"
+              case "$input_url" in
+                *\?*) url_no_query="${input_url%%\?*}" ;;
+              esac
+              printf '%s\n' "${url_no_query##*/}"
+            }
+
+            replace_database_name_in_url() {
+              input_url="$1"
+              new_database="$2"
+              url_no_query="$input_url"
+              url_query=""
+              case "$input_url" in
+                *\?*)
+                  url_no_query="${input_url%%\?*}"
+                  url_query="?${input_url#*\?}"
+                  ;;
+              esac
+              printf '%s/%s%s\n' "${url_no_query%/*}" "$new_database" "$url_query"
+            }
+
+            database_url_for_pg_tools() {
+              input_url="$1"
+              url_no_query="$input_url"
+              url_query=""
+              case "$input_url" in
+                *\?*)
+                  url_no_query="${input_url%%\?*}"
+                  url_query="${input_url#*\?}"
+                  ;;
+              esac
+              if [ -z "$url_query" ]; then
+                printf '%s\n' "$input_url"
+                return 0
+              fi
+
+              old_ifs="$IFS"
+              IFS="&"
+              set -- $url_query
+              IFS="$old_ifs"
+              kept_query=""
+              for query_part in "$@"; do
+                query_key="${query_part%%=*}"
+                case " schema connection_limit pool_timeout pgbouncer " in
+                  *" $query_key "*) continue ;;
+                esac
+                if [ -z "$kept_query" ]; then
+                  kept_query="$query_part"
+                else
+                  kept_query="$kept_query&$query_part"
+                fi
+              done
+
+              if [ -n "$kept_query" ]; then
+                printf '%s?%s\n' "$url_no_query" "$kept_query"
+              else
+                printf '%s\n' "$url_no_query"
+              fi
+            }
+
+            nightlife_table_counts() {
+              db_url="$(database_url_for_pg_tools "$1")"
+              psql -X -v ON_ERROR_STOP=1 -Atqc 'SELECT 1' "$db_url" >/dev/null 2>&1 || return 1
+              has_tables="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT concat_ws(',', to_regclass('public.users') IS NOT NULL, to_regclass('public.stores') IS NOT NULL, to_regclass('public.areas') IS NOT NULL);" "$db_url" 2>/dev/null)" || return 1
+              [ "$has_tables" = "t,t,t" ] || return 2
+              psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT concat_ws(',', (SELECT COUNT(*) FROM public.users), (SELECT COUNT(*) FROM public.stores), (SELECT COUNT(*) FROM public.areas));" "$db_url" 2>/dev/null
+            }
+
+            nightlife_counts_ready() {
+              counts="$1"
+              old_ifs="$IFS"
+              IFS=","
+              set -- $counts
+              IFS="$old_ifs"
+              users_count="${1:-0}"
+              stores_count="${2:-0}"
+              [ "$users_count" -gt 0 ] 2>/dev/null && [ "$stores_count" -gt 0 ] 2>/dev/null
+            }
+
             if [ -f .env ]; then
               DATABASE_URL="$(read_env_var DATABASE_URL .env || true)"
               export DATABASE_URL
@@ -183,13 +295,51 @@ jobs:
               exit 1
             fi
 
+            command -v psql >/dev/null 2>&1 || {
+              echo "::error::psql is required to verify demo/UAT database before backup."
+              exit 1
+            }
+
+            DATABASE_REPOINTED="false"
+            DATABASE_REPOINTED_FROM="$(extract_database_name_from_url "$DATABASE_URL")"
+            DATABASE_REPOINTED_TO="$DATABASE_REPOINTED_FROM"
+            DATABASE_REPOINT_BACKUP="none"
+            DEMO_UAT_DATABASE_NAME="${DEMO_UAT_DATABASE_NAME:-backend_db}"
+            DATABASE_DATA_COUNTS="$(nightlife_table_counts "$DATABASE_URL" || true)"
+
+            if nightlife_counts_ready "$DATABASE_DATA_COUNTS"; then
+              echo "Demo/UAT database is ready: db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
+            else
+              CANDIDATE_DATABASE_URL="$(replace_database_name_in_url "$DATABASE_URL" "$DEMO_UAT_DATABASE_NAME")"
+              CANDIDATE_COUNTS=""
+              if [ "$DATABASE_REPOINTED_FROM" != "$DEMO_UAT_DATABASE_NAME" ]; then
+                CANDIDATE_COUNTS="$(nightlife_table_counts "$CANDIDATE_DATABASE_URL" || true)"
+              fi
+
+              if nightlife_counts_ready "$CANDIDATE_COUNTS"; then
+                DATABASE_REPOINT_BACKUP=".env.pre-db-repoint-$DEPLOY_STAMP"
+                cp .env "$DATABASE_REPOINT_BACKUP"
+                write_env_var DATABASE_URL "$CANDIDATE_DATABASE_URL" .env
+                DATABASE_URL="$CANDIDATE_DATABASE_URL"
+                export DATABASE_URL
+                DATABASE_REPOINTED="true"
+                DATABASE_REPOINTED_TO="$DEMO_UAT_DATABASE_NAME"
+                DATABASE_DATA_COUNTS="$CANDIDATE_COUNTS"
+                echo "Repointed demo/UAT DATABASE_URL from db=$DATABASE_REPOINTED_FROM to db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
+                echo "Previous .env backup: $BACKEND_DIR/$DATABASE_REPOINT_BACKUP"
+              else
+                echo "::error::Cannot safely repoint demo/UAT database. Current db=$DATABASE_REPOINTED_FROM counts(users,stores,areas)=${DATABASE_DATA_COUNTS:-unavailable}; candidate db=$DEMO_UAT_DATABASE_NAME counts(users,stores,areas)=${CANDIDATE_COUNTS:-unavailable}. Refusing to create or deploy against an empty database."
+                exit 1
+              fi
+            fi
+
             mkdir -p "$EVIDENCE_DIR" "$BACKUP_ROOT"
             corepack enable 2>/dev/null || sudo corepack enable 2>/dev/null || true
             pnpm install --prod --no-frozen-lockfile || pnpm install --prod
             pnpm exec prisma generate
 
             chmod +x scripts/backup-uat.sh
-            CREATE_DATABASE_IF_MISSING=true BACKUP_ROOT="$BACKUP_ROOT" STORAGE_PATHS="$BACKUP_STORAGE_PATHS" scripts/backup-uat.sh
+            CREATE_DATABASE_IF_MISSING=false BACKUP_ROOT="$BACKUP_ROOT" STORAGE_PATHS="$BACKUP_STORAGE_PATHS" scripts/backup-uat.sh
             LATEST_MANIFEST="$(ls -t "$BACKUP_ROOT"/nightlife-*-manifest.txt | head -n 1)"
             LATEST_STAMP="$(basename "$LATEST_MANIFEST" | sed -E 's/^nightlife-([0-9]{8}-[0-9]{6})-manifest\.txt$/\1/')"
             LATEST_CHECKSUMS="$BACKUP_ROOT/nightlife-$LATEST_STAMP-sha256.txt"
@@ -254,6 +404,12 @@ jobs:
               echo "backend_port=$BACKEND_PORT"
               echo "frontend_port=$FRONTEND_PORT"
               echo "backend_pm2=$BACKEND_PM2_NAME"
+              echo "database_name=$DATABASE_REPOINTED_TO"
+              echo "database_repointed=$DATABASE_REPOINTED"
+              echo "database_repointed_from=$DATABASE_REPOINTED_FROM"
+              echo "database_repointed_to=$DATABASE_REPOINTED_TO"
+              echo "database_repoint_env_backup=$DATABASE_REPOINT_BACKUP"
+              echo "database_data_counts_users_stores_areas=$DATABASE_DATA_COUNTS"
               echo "backup_root=$BACKUP_ROOT"
               echo "backup_manifest=$LATEST_MANIFEST"
               echo "backup_checksum=$LATEST_CHECKSUMS"

@@ -63,19 +63,24 @@ The backend deploy workflow now gates schema changes as follows:
 1. Create a backend deploy snapshot before `rsync`.
 2. Preserve `.env`, `uploads`, and `public/uploads` during `rsync`.
 3. Read `DATABASE_URL` from VPS `.env` without sourcing or executing the file.
-4. Run `backend/scripts/backup-uat.sh`; if the demo/UAT database does not exist
-   yet, the workflow creates the empty database first and records
-   `database_created_before_backup=true` in the manifest.
-5. Print backup evidence to the GitHub Actions log:
+4. Verify the configured demo/UAT database has NightLife data in `users` and
+   `stores`. If it is empty, the workflow checks the known previous demo DB
+   `backend_db`; when that DB is reachable and populated, it backs up `.env` and
+   rewrites only the database name in `DATABASE_URL` to `backend_db`.
+5. If neither the configured DB nor `backend_db` has the required data, the
+   workflow stops before backup/migration. It must not create an empty DB for
+   UAT evidence.
+6. Run `backend/scripts/backup-uat.sh` against the verified DB.
+7. Print backup evidence to the GitHub Actions log:
    - `nightlife-*-manifest.txt`
    - `nightlife-*-sha256.txt`
    - DB `.dump` size
    - `pg_restore --list` output
    - storage `.tgz` size or `.skipped` reason
-6. Run `pnpm exec prisma migrate deploy`.
-7. Restart backend PM2 process.
-8. Run backend, frontend, admin, and partner smoke checks.
-9. Write the deploy evidence file under `deploy-evidence/`.
+8. Run `pnpm exec prisma migrate deploy`.
+9. Restart backend PM2 process.
+10. Run backend, frontend, admin, and partner smoke checks.
+11. Write the deploy evidence file under `deploy-evidence/`.
 
 `npx prisma db push --accept-data-loss` is no longer used by the VPS deploy
 workflow.
@@ -94,6 +99,7 @@ workflow log or VPS `deploy-evidence` file:
 | Storage archive | `/var/backups/nightlife/demo-uat/nightlife-storage-<timestamp>.tgz` |
 | Storage skipped reason | `/var/backups/nightlife/demo-uat/nightlife-storage-<timestamp>.skipped` |
 | Release note | `/var/www/api.demonightlight.test9.io.vn/deploy-evidence/nightlife-<timestamp>-release.txt` |
+| DB repoint proof | `database_name`, `database_repointed`, and `database_data_counts_users_stores_areas` in the release note |
 
 ## Smoke Checks
 
