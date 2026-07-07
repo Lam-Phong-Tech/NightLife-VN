@@ -5,7 +5,7 @@
 - Public data source: `GET /rankings`.
 - Admin CMS control: `GET /admin/rankings`, `POST /admin/rankings`, `PATCH /admin/rankings/:rankingId`, `DELETE /admin/rankings/:rankingId`.
 - Admin target picker: `GET /admin/rankings/options?targetType=CAST|STORE&city=all|hn|hcm&category=...`.
-- Manual ranking fields: `targetType`, `targetId`, `cityCode`, `areaId`, `category`, `scope`, `pinRank`, `manualScore`, `sponsored`, `startsAt`, `endsAt`, `status`, `reason`.
+- Manual ranking fields: `targetType`, `targetId`, `cityCode`, `areaId`, `category`, `scope`, `pinRank`, `manualScore`, `sponsored`, `startsAt`, `endsAt`, `status`.
 - Duplicate pin protection: partial unique indexes on non-deleted pinned configs:
   - `targetType + cityCode + scope + pinRank` when category is null.
   - `targetType + cityCode + category + scope + pinRank` when category is set.

@@ -652,7 +652,6 @@ type AdminRankingConfigRecord = {
   manualScore: number;
   pinRank: number | null;
   sponsored: boolean;
-  reason: string | null;
   status: string;
   startsAt: Date | null;
   endsAt: Date | null;
@@ -1463,7 +1462,6 @@ export class NightlifeDataService {
           pinRank,
           manualScore,
           sponsored: dto.sponsored ?? false,
-          reason: this.cleanText(dto.reason ?? undefined) || null,
           status: (dto.status ?? 'ACTIVE') as RankingConfigStatus,
           startsAt,
           endsAt,
@@ -1597,9 +1595,6 @@ export class NightlifeDataService {
             ? { manualScore: dto.manualScore }
             : {}),
           ...(dto.sponsored !== undefined ? { sponsored: dto.sponsored } : {}),
-          ...(dto.reason !== undefined
-            ? { reason: this.cleanText(dto.reason ?? undefined) || null }
-            : {}),
           ...(dto.status !== undefined
             ? { status: dto.status as RankingConfigStatus }
             : {}),
@@ -11543,7 +11538,6 @@ export class NightlifeDataService {
       manualScore: config.manualScore,
       pinRank: config.pinRank ?? null,
       sponsored: config.sponsored,
-      reason: config.reason ?? null,
       status: config.status,
       startsAt: this.toAuditIso(config.startsAt),
       endsAt: this.toAuditIso(config.endsAt),
@@ -11563,7 +11557,6 @@ export class NightlifeDataService {
       manualScore: true,
       pinRank: true,
       sponsored: true,
-      reason: true,
       status: true,
       startsAt: true,
       endsAt: true,
@@ -11606,7 +11599,6 @@ export class NightlifeDataService {
         manualScore: config.manualScore,
         pinRank: config.pinRank,
         sponsored: config.sponsored,
-        reason: config.reason,
         status: config.status,
         startsAt: config.startsAt,
         endsAt: config.endsAt,

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import {
   DndContext,
@@ -29,6 +30,55 @@ interface RankingItem {
   avatar: string;
   sponsored: boolean;
 }
+
+type RankingCityTab = 'HN' | 'HCM' | 'ALL';
+type AdminRankingCategory =
+  | 'BAR'
+  | 'CLUB'
+  | 'LOUNGE'
+  | 'GIRLS_BAR'
+  | 'KARAOKE'
+  | 'MASSAGE_SPA'
+  | 'RESTAURANT'
+  | 'CASINO';
+
+const RANKING_CATEGORIES = new Set<AdminRankingCategory>([
+  'BAR',
+  'CLUB',
+  'LOUNGE',
+  'GIRLS_BAR',
+  'KARAOKE',
+  'MASSAGE_SPA',
+  'RESTAURANT',
+  'CASINO',
+]);
+
+const cityParamToTab = (value?: string | null): RankingCityTab => {
+  const token = (value || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+  if (['hn', 'hanoi', 'ha-noi'].includes(token)) return 'HN';
+  if (['hcm', 'tphcm', 'tp-hcm', 'ho-chi-minh', 'ho-chi-minh-city', 'saigon', 'sai-gon'].includes(token)) return 'HCM';
+  return 'ALL';
+};
+
+const tabToCityCode = (tab: RankingCityTab) => {
+  if (tab === 'HN') return 'hn';
+  if (tab === 'HCM') return 'hcm';
+  return 'all';
+};
+
+const tabToTopbarCityParam = (tab: RankingCityTab) => {
+  if (tab === 'HN') return 'Hanoi';
+  if (tab === 'HCM') return 'Ho Chi Minh City';
+  return '';
+};
+
+const normalizeRankingCategory = (value?: string | null): AdminRankingCategory | undefined => {
+  const normalized = (value || '').trim().toUpperCase();
+  if (!normalized || normalized === 'ALL') return undefined;
+  return RANKING_CATEGORIES.has(normalized as AdminRankingCategory)
+    ? (normalized as AdminRankingCategory)
+    : undefined;
+};
 
 function SortableRankingItem(props: { 
   item: RankingItem; 
@@ -62,14 +112,20 @@ function SortableRankingItem(props: {
 
   const rowBg = index === 0 ? 'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))' : 'rgba(255,255,255,.025)';
   const rowBd = index === 0 ? 'rgba(212,178,106,.34)' : 'rgba(255,255,255,.06)';
-  
-  // Removed sponsorship badge and button styles
+  const sponsorColor = item.sponsored ? '#241a0a' : '#8c8679';
+  const sponsorBg = item.sponsored ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)';
+  const sponsorBorder = item.sponsored ? '1px solid rgba(212,178,106,.7)' : '1px solid rgba(255,255,255,.08)';
 
   const onRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     if(window.confirm('Bạn có chắc chắn muốn gỡ '+item.name+' khỏi bảng xếp hạng không?')) {
       removeItem(item.id);
     }
+  };
+
+  const onToggleSponsor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleSponsor(item.id);
   };
 
   return (
@@ -115,9 +171,27 @@ function SortableRankingItem(props: {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontWeight: 600, fontSize: '14.5px', color: '#f3f0ea' }}>{item.name}</span>
+          {item.sponsored && (
+            <span style={{ flex: 'none', fontSize: '10px', fontWeight: 800, letterSpacing: '.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '3px 7px', borderRadius: '7px' }}>
+              Tài trợ
+            </span>
+          )}
         </div>
         <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2px' }}>{item.desc}</div>
       </div>
+
+      <button
+        type="button"
+        onClick={onToggleSponsor}
+        title={item.sponsored ? 'Tắt tài trợ' : 'Bật tài trợ'}
+        aria-pressed={item.sponsored}
+        aria-label={item.sponsored ? `Tắt tài trợ ${item.name}` : `Bật tài trợ ${item.name}`}
+        style={{ width: '30px', height: '30px', flex: 'none', borderRadius: '9px', background: sponsorBg, border: sponsorBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', color: sponsorColor, cursor: 'pointer', padding: 0 }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill={item.sponsored ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.1 8.3 22 9.3 17 14.2 18.2 21 12 17.8 5.8 21 7 14.2 2 9.3 8.9 8.3 12 2" />
+        </svg>
+      </button>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
         <span onClick={() => moveItem(index, 'up')} style={{ width: '26px', height: '22px', borderRadius: '6px', background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
@@ -135,8 +209,12 @@ function SortableRankingItem(props: {
   );
 }
 
-export default function AdminRankingsPage() {
-  const [activeTab, setActiveTab] = useState('HN');
+function AdminRankingsClient() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = cityParamToTab(searchParams.get('city'));
+  const activeCategory = normalizeRankingCategory(searchParams.get('category'));
   const [casts, setCasts] = useState<RankingItem[]>([]);
   const [stores, setStores] = useState<RankingItem[]>([]);
   
@@ -148,16 +226,24 @@ export default function AdminRankingsPage() {
   const [storeSearch, setStoreSearch] = useState('');
   const [storeOptions, setStoreOptions] = useState<any[]>([]);
 
-  const [auditNote, setAuditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
 
-  const fetchOptions = async (type: 'CAST' | 'STORE') => {
+  const updateCityTab = (tab: RankingCityTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const city = tabToTopbarCityParam(tab);
+    if (city) params.set('city', city);
+    else params.delete('city');
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const fetchOptions = useCallback(async (type: 'CAST' | 'STORE') => {
     try {
-      const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
+      const cityCode = tabToCityCode(activeTab);
       const res = await apiClient<any>('/admin/rankings/options', {
-        params: { targetType: type, city: cityCode, limit: 100 }
+        params: { targetType: type, city: cityCode, category: activeCategory, limit: 100 }
       });
       const items = Array.isArray(res) ? res : (res?.data || []);
       if (type === 'CAST') setCastOptions(items);
@@ -165,7 +251,7 @@ export default function AdminRankingsPage() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [activeCategory, activeTab]);
 
   const filteredCastOptions = castOptions.filter(opt => 
     !casts.find(c => c.targetId === opt.id) &&
@@ -218,13 +304,13 @@ export default function AdminRankingsPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const fetchRankings = async () => {
+  const fetchRankings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
+      const cityCode = tabToCityCode(activeTab);
       
       const res = await apiClient<any>('/admin/rankings', {
-        params: { city: cityCode }
+        params: { city: cityCode, category: activeCategory }
       });
       
       const castItems: RankingItem[] = [];
@@ -254,12 +340,22 @@ export default function AdminRankingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeCategory, activeTab]);
 
   useEffect(() => {
-    fetchRankings();
-    setDeletedItemIds([]);
-  }, [activeTab]);
+    void Promise.resolve().then(async () => {
+      await fetchRankings();
+      setDeletedItemIds([]);
+    });
+  }, [fetchRankings]);
+
+  useEffect(() => {
+    if (!showAddCast && !showAddStore) return;
+    void Promise.resolve().then(() => {
+      if (showAddCast) void fetchOptions('CAST');
+      if (showAddStore) void fetchOptions('STORE');
+    });
+  }, [activeCategory, activeTab, fetchOptions, showAddCast, showAddStore]);
 
   const handleDragEndCasts = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -314,7 +410,7 @@ export default function AdminRankingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const cityCode = activeTab === 'ALL' ? 'all' : activeTab.toLowerCase();
+      const cityCode = tabToCityCode(activeTab);
       
       for (const id of deletedItemIds) {
         await apiClient(`/admin/rankings/${id}`, { method: 'DELETE' });
@@ -330,18 +426,19 @@ export default function AdminRankingsPage() {
               targetId: cast.targetId,
               targetType: 'CAST',
               cityCode: cityCode,
+              category: activeCategory,
               pinRank: i + 1,
-              sponsored: cast.sponsored,
-              reason: 'Cập nhật Ranking'
+              sponsored: cast.sponsored
             }
           });
         } else {
           await apiClient(`/admin/rankings/${cast.id}`, {
             method: 'PATCH',
             data: {
+              cityCode: cityCode,
+              category: activeCategory,
               pinRank: i + 1,
-              sponsored: cast.sponsored,
-              reason: 'Cập nhật Ranking'
+              sponsored: cast.sponsored
             }
           });
         }
@@ -357,18 +454,19 @@ export default function AdminRankingsPage() {
               targetId: store.targetId,
               targetType: 'STORE',
               cityCode: cityCode,
+              category: activeCategory,
               pinRank: i + 1,
-              sponsored: store.sponsored,
-              reason: 'Cập nhật Ranking'
+              sponsored: store.sponsored
             }
           });
         } else {
           await apiClient(`/admin/rankings/${store.id}`, {
             method: 'PATCH',
             data: {
+              cityCode: cityCode,
+              category: activeCategory,
               pinRank: i + 1,
-              sponsored: store.sponsored,
-              reason: auditNote
+              sponsored: store.sponsored
             }
           });
         }
@@ -399,9 +497,9 @@ export default function AdminRankingsPage() {
     <div style={{ padding: '22px 26px 44px', maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
-          <span onClick={() => setActiveTab('HN')} style={getTabStyle('HN')}>Hà Nội</span>
-          <span onClick={() => setActiveTab('HCM')} style={getTabStyle('HCM')}>TP. Hồ Chí Minh</span>
-          <span onClick={() => setActiveTab('ALL')} style={getTabStyle('ALL')}>Tổng hợp</span>
+          <span onClick={() => updateCityTab('HN')} style={getTabStyle('HN')}>Hà Nội</span>
+          <span onClick={() => updateCityTab('HCM')} style={getTabStyle('HCM')}>TP. Hồ Chí Minh</span>
+          <span onClick={() => updateCityTab('ALL')} style={getTabStyle('ALL')}>Tổng hợp</span>
         </div>
         <div style={{ flex: 1 }}></div>
         <span style={{ fontSize: '11.5px', color: '#8c8679' }}>Kéo · dùng mũi tên để đổi thứ hạng</span>
@@ -527,5 +625,13 @@ export default function AdminRankingsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function AdminRankingsPage() {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '22px 26px', color: '#8c8679' }}>Đang tải dữ liệu xếp hạng...</div>}>
+      <AdminRankingsClient />
+    </React.Suspense>
   );
 }

@@ -95,11 +95,6 @@ export class CreateAdminRankingConfigDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(240)
-  reason?: string | null;
-
-  @IsOptional()
-  @IsString()
   @IsIn(['ACTIVE', 'PAUSED', 'EXPIRED'])
   status?: string;
 
@@ -158,11 +153,6 @@ export class UpdateAdminRankingConfigDto {
   @IsOptional()
   @IsBoolean()
   sponsored?: boolean;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(240)
-  reason?: string | null;
 
   @IsOptional()
   @IsString()

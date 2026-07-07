@@ -19,7 +19,6 @@ export type AdminRankingConfig = {
   manualScore: number;
   pinRank?: number | null;
   sponsored: boolean;
-  reason?: string | null;
   status: "ACTIVE" | "PAUSED" | "EXPIRED" | "DELETED";
   startsAt?: string | null;
   endsAt?: string | null;
@@ -51,7 +50,6 @@ export type AdminRankingFormPayload = {
   status?: "ACTIVE" | "PAUSED" | "EXPIRED";
   startsAt?: string | null;
   endsAt?: string | null;
-  reason?: string | null;
 };
 
 export type AdminRankingQuery = {
@@ -103,6 +101,5 @@ function normalizePayload(payload: AdminRankingFormPayload) {
   if (!result.pinRank) delete result.pinRank;
   if (!result.startsAt) delete result.startsAt;
   if (!result.endsAt) delete result.endsAt;
-  if (!result.reason) delete result.reason;
   return result;
 }

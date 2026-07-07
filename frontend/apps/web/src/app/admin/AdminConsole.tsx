@@ -427,7 +427,6 @@ type RankingFormState = {
   status: "ACTIVE" | "PAUSED" | "EXPIRED";
   startsAt: string;
   endsAt: string;
-  reason: string;
 };
 
 type ContentFormState = {
@@ -730,7 +729,6 @@ const defaultRankingForm: RankingFormState = {
   status: "ACTIVE",
   startsAt: "",
   endsAt: "",
-  reason: "",
 };
 
 const defaultContentForm: ContentFormState = {
@@ -2701,7 +2699,6 @@ export default function AdminConsole({ section }: { section?: string }) {
       status: ranking.status === "DELETED" ? "EXPIRED" : ranking.status,
       startsAt: formatDateInput(ranking.startsAt),
       endsAt: formatDateInput(ranking.endsAt),
-      reason: ranking.reason ?? "",
     });
     setRankingStatusMessage(`Đang sửa ${ranking.targetName}.`);
   };
@@ -2718,7 +2715,6 @@ export default function AdminConsole({ section }: { section?: string }) {
       manualScore: rankingForm.manualScore ? Number(rankingForm.manualScore) : 0,
       startsAt: rankingForm.startsAt || null,
       endsAt: rankingForm.endsAt || null,
-      reason: rankingForm.reason || null,
     };
 
     setRankingSavingId(editingRankingId ?? "new");
@@ -4356,14 +4352,6 @@ export default function AdminConsole({ section }: { section?: string }) {
             Tài trợ
           </label>
 
-          <Field label="Lý do" wide>
-            <textarea
-              value={rankingForm.reason}
-              onChange={(event) => setRankingForm((current) => ({ ...current, reason: event.target.value }))}
-              rows={3}
-              style={inputStyle({ padding: 12, minHeight: 92, resize: "vertical" })}
-            />
-          </Field>
 
           <div style={{ gridColumn: "1 / -1", display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button

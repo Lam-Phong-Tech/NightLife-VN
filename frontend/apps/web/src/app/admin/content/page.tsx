@@ -258,33 +258,6 @@ export default function AdminContentPage() {
     }
   };
 
-  const handleToggleFeaturedLabel = async (item: AdminRankingConfig, label: string) => {
-    try {
-      let currentLabels = item.reason ? item.reason.split(',') : [];
-      if (label === 'Không nhãn') {
-        currentLabels = [];
-      } else {
-        // Loại bỏ 'Không nhãn' (mặc định nếu rỗng thì là Không nhãn)
-        if (currentLabels.includes(label)) {
-          currentLabels = currentLabels.filter(l => l !== label);
-        } else {
-          currentLabels.push(label);
-        }
-      }
-      
-      const newReason = currentLabels.join(',');
-      await adminRankingsApi.update(item.id, {
-        targetType: 'STORE',
-        targetId: item.targetId,
-        cityCode: item.cityCode,
-        reason: newReason
-      });
-      await fetchFeaturedItems();
-    } catch (err) {
-      console.error(err);
-      alert('Không thể cập nhật nhãn.');
-    }
-  };
 
   const fetchHotVideos = async (region: string) => {
     const code = region === 'Tổng hợp' ? 'all' : region === 'Hà Nội' ? 'hn' : 'hcm';
@@ -925,7 +898,7 @@ export default function AdminContentPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '14px' }}>
             {featuredItems.map((item, idx) => {
-              const labels = item.reason ? item.reason.split(',') : [];
+              const labels: string[] = [];
               return (
                 <div key={item.id} style={{ display: 'flex', gap: '13px', background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '15px', padding: '12px' }}>
                   <div style={{ width: '92px', height: '76px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.05)', position: 'relative', overflow: 'hidden' }}>
@@ -940,9 +913,7 @@ export default function AdminContentPage() {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#f3f0ea', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetName}</div>
                     <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.targetArea || item.targetCity} · {item.targetCategory}</div>
                     <div style={{ display: 'flex', gap: '4px', marginTop: '9px', flexWrap: 'wrap' }}>
-                      <span onClick={() => handleToggleFeaturedLabel(item, 'Không nhãn')} style={{ cursor: 'pointer', fontSize: '9px', fontWeight: labels.length === 0 ? 700 : 600, padding: '3px 8px', borderRadius: '6px', background: labels.length === 0 ? '#f0dda8' : 'rgba(255,255,255,.05)', color: labels.length === 0 ? '#241a0a' : '#c5c0b6' }}>Không nhãn</span>
-                      <span onClick={() => handleToggleFeaturedLabel(item, 'Đặt bàn nhanh')} style={{ cursor: 'pointer', fontSize: '9px', fontWeight: labels.includes('Đặt bàn nhanh') ? 700 : 600, padding: '3px 8px', borderRadius: '6px', background: labels.includes('Đặt bàn nhanh') ? '#f0dda8' : 'rgba(255,255,255,.05)', color: labels.includes('Đặt bàn nhanh') ? '#241a0a' : '#c5c0b6' }}>Đặt bàn nhanh</span>
-                      <span onClick={() => handleToggleFeaturedLabel(item, 'Mới')} style={{ cursor: 'pointer', fontSize: '9px', fontWeight: labels.includes('Mới') ? 700 : 600, padding: '3px 8px', borderRadius: '6px', background: labels.includes('Mới') ? '#f0dda8' : 'rgba(255,255,255,.05)', color: labels.includes('Mới') ? '#241a0a' : '#c5c0b6' }}>Mới</span>
+                      <span style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#f0dda8', color: '#241a0a' }}>Không nhãn</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
