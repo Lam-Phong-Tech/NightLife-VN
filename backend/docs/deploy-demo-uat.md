@@ -16,7 +16,7 @@ backup files, smoke-test results, and rollback command for the deploy run.
 | Item | Demo/UAT value |
 | --- | --- |
 | Frontend URL | `https://demonightlight.test9.io.vn` |
-| Backend URL | `https://api.demonightlight.test9.io.vn` |
+| Backend URL | `https://demonightlight.test9.io.vn/api/backend` |
 | Backend deploy path | `/var/www/api.demonightlight.test9.io.vn` |
 | Frontend deploy path | `/var/www/demonightlight.test9.io.vn` |
 | Backend PM2 process | `app-api.demonightlight.test9.io.vn` |
@@ -102,7 +102,7 @@ The backend deploy workflow checks these endpoints after PM2 restart:
 | Check | URL |
 | --- | --- |
 | Backend local areas | `http://127.0.0.1:3012/areas` |
-| Backend public areas | `https://api.demonightlight.test9.io.vn/areas` |
+| Backend public areas | `https://demonightlight.test9.io.vn/api/backend/areas` |
 | Booking validation | `POST http://127.0.0.1:3012/bookings` expects `400` for `{}` |
 | Frontend local homepage | `http://127.0.0.1:3009/` |
 | Frontend local admin | `http://127.0.0.1:3009/admin` |

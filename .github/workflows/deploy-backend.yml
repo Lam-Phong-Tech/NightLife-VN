@@ -115,7 +115,7 @@ jobs:
             BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/nightlife/demo-uat}"
             BACKUP_STORAGE_PATHS="${BACKUP_STORAGE_PATHS:-uploads public/uploads}"
             PUBLIC_FRONTEND_URL="${PUBLIC_FRONTEND_URL:-https://demonightlight.test9.io.vn}"
-            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://api.demonightlight.test9.io.vn}"
+            PUBLIC_BACKEND_URL="${PUBLIC_BACKEND_URL:-https://demonightlight.test9.io.vn/api/backend}"
             BACKEND_PM2_NAME="app-api.demonightlight.test9.io.vn"
             BACKEND_PORT="3012"
             FRONTEND_PORT="3009"
