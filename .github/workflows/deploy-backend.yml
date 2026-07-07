@@ -332,7 +332,7 @@ jobs:
 
               diff_log="/tmp/nightlife-migrate-diff-$DEPLOY_STAMP.txt"
               set +e
-              pnpm exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code > "$diff_log" 2>&1
+              pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code > "$diff_log" 2>&1
               diff_status=$?
               set -e
               if [ "$diff_status" -ne 0 ]; then
