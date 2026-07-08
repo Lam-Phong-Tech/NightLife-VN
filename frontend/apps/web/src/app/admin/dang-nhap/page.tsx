@@ -70,9 +70,10 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)", padding: '34px' }}>
-      <div style={{ minHeight: 'calc(100vh - 68px)', display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(430px,.9fr)', gap: '28px' }}>
+    <main className="nl-admin-login-page" style={{ minHeight: '100vh', background: colors.bg, color: colors.text, fontFamily: "var(--nl-font-sans)", padding: '34px' }}>
+      <div className="nl-admin-login-layout" style={{ minHeight: 'calc(100vh - 68px)', display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(430px,.9fr)', gap: '28px' }}>
         <section
+          className="nl-admin-login-hero"
           style={{
             border: `1px solid ${colors.borderGold22}`,
             borderRadius: '18px',
@@ -118,7 +119,7 @@ export default function AdminLoginPage() {
             <p style={{ margin: '14px 0 0', maxWidth: '520px', color: colors.text2, fontSize: '13.5px', lineHeight: 1.7 }}>
               Quản lý quán, cast, đặt chỗ, hóa đơn, ưu đãi, ranking và báo cáo vận hành trong cùng một nơi.
             </p>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '22px', flexWrap: 'wrap' }}>
+            <div className="nl-admin-login-badges" style={{ display: 'flex', gap: '12px', marginTop: '22px', flexWrap: 'wrap' }}>
               {[
                 { icon: ShieldCheck, text: 'Bảo mật vai trò admin' },
                 { icon: BarChart3, text: 'Theo dõi realtime' },
@@ -151,6 +152,7 @@ export default function AdminLoginPage() {
         </section>
 
         <section
+          className="nl-admin-login-card"
           style={{
             alignSelf: 'center',
             border: `1px solid ${colors.borderGold22}`,
@@ -240,6 +242,7 @@ export default function AdminLoginPage() {
           {message ? <div style={{ marginTop: '12px', color: colors.neonPink, fontSize: '12px' }}>{message}</div> : null}
 
           <button
+            className="nl-admin-login-submit"
             type="button"
             onClick={submit}
             disabled={isSubmitting}

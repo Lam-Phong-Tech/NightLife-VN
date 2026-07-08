@@ -1417,6 +1417,117 @@ textarea::placeholder {
   }
 }
 
+/* Admin login responsive layout. Desktop keeps the inline prototype layout. */
+@media (max-width: 1023px) {
+  .nl-admin-login-page {
+    min-height: 100dvh !important;
+    padding: 22px !important;
+  }
+
+  .nl-admin-login-layout {
+    min-height: calc(100dvh - 44px) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px !important;
+  }
+
+  .nl-admin-login-hero,
+  .nl-admin-login-card {
+    width: 100% !important;
+  }
+
+  .nl-admin-login-hero {
+    min-height: 360px;
+  }
+
+  .nl-admin-login-hero h1 {
+    max-width: 680px !important;
+    font-size: 38px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .nl-admin-login-page {
+    padding: 14px !important;
+    overflow-x: hidden;
+  }
+
+  .nl-admin-login-layout {
+    min-height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .nl-admin-login-card {
+    order: 1;
+    align-self: stretch !important;
+    padding: 18px !important;
+    border-radius: 14px !important;
+  }
+
+  .nl-admin-login-hero {
+    order: 2;
+    min-height: 0;
+    padding: 22px !important;
+    border-radius: 14px !important;
+    gap: 42px;
+  }
+
+  .nl-admin-login-hero h1 {
+    margin-top: 16px !important;
+    font-size: 28px !important;
+    line-height: 1.12 !important;
+  }
+
+  .nl-admin-login-hero p {
+    font-size: 12.5px !important;
+    line-height: 1.6 !important;
+  }
+
+  .nl-admin-login-badges {
+    gap: 8px !important;
+    margin-top: 16px !important;
+  }
+
+  .nl-admin-login-badges > span {
+    min-height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+
+  .nl-admin-login-card h2 {
+    font-size: 19px !important;
+  }
+
+  .nl-admin-login-card input,
+  .nl-admin-login-submit {
+    min-height: 46px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .nl-admin-login-page {
+    padding: 10px !important;
+  }
+
+  .nl-admin-login-card,
+  .nl-admin-login-hero {
+    padding: 16px !important;
+  }
+
+  .nl-admin-login-card > div:first-child {
+    gap: 10px !important;
+  }
+
+  .nl-admin-login-card > div:first-child > div:last-child {
+    display: none !important;
+  }
+
+  .nl-admin-login-hero h1 {
+    font-size: 25px !important;
+  }
+}
+
 /* Override rich text inline styles for blog body */
 .nl-blog-body * {
   background-color: transparent !important;
