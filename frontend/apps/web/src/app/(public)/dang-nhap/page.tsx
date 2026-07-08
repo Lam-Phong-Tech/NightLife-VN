@@ -606,6 +606,7 @@ export default function Page() {
               MEMBER ACCESS
             </span>
             <h1
+              className="nl-login-visual-title"
               style={{
                 marginTop: 18,
                 maxWidth: 560,
@@ -857,6 +858,12 @@ export default function Page() {
           background:
             radial-gradient(circle at 20% 18%, rgba(212, 178, 106, 0.14), transparent 30%),
             linear-gradient(180deg, rgba(255, 250, 241, 0.96), rgba(246, 239, 226, 0.94)) !important;
+        }
+
+        .nl-login-page .nl-login-visual-title,
+        html.vy-light .nl-login-page .nl-login-visual-title {
+          color: #fffaf1 !important;
+          text-shadow: 0 18px 42px rgba(0, 0, 0, 0.55) !important;
         }
 
         html.vy-light .nl-login-page .nl-login-card {

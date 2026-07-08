@@ -796,6 +796,7 @@ function SearchPanel() {
   return (
     <Link
       href="/danh-sach-quan"
+      className="nl-home-search-panel"
       data-testid="home-search-panel"
       style={{
         display: "flex",
@@ -834,8 +835,9 @@ function CategoryGrid({
       {items.map((item) => {
         const Icon = item.icon;
         return (
-          <Link key={item.label} href={item.href} style={{ color: colors.text, textAlign: "center" }}>
+          <Link key={item.label} href={item.href} className="nl-home-category-link" style={{ color: colors.text, textAlign: "center" }}>
             <span
+              className="nl-home-category-icon"
               style={{
                 width: desktop ? "64px" : "54px",
                 height: desktop ? "64px" : "54px",
@@ -921,6 +923,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
   return (
     <Link
       href={event.href || "/danh-sach-quan"}
+      className="nl-home-hero"
       data-testid="home-ad-banner"
       {...swipeHandlers}
       style={{
@@ -1213,6 +1216,7 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
   return (
     <Link
       href={item.href}
+      className="nl-home-card nl-home-venue-card"
       onClick={() =>
         trackHomeVenueSignal({
           storeId: item.id,
@@ -1255,6 +1259,7 @@ function LegacyCouponCard({ item, compact = false }: { item: HomeCouponItem; com
   return (
     <Link
       href={item.href}
+      className="nl-home-card nl-home-legacy-coupon-card"
       data-testid="home-coupon-cta"
       aria-label={`Xem ưu đãi ${item.title} tại ${item.place}`}
       style={{
@@ -1291,6 +1296,7 @@ function CouponCard({ item, compact = false }: { item: HomeCouponItem; compact?:
   return (
     <Link
       href={item.href}
+      className="nl-home-card nl-home-coupon-card"
       data-testid="home-coupon-cta"
       aria-label={`Xem ưu đãi ${item.title} tại ${item.place}`}
       style={{
@@ -1419,6 +1425,7 @@ function RankingRow({ item }: { item: RankedItem }) {
   return (
     <Link
       href={item.href ?? "/xep-hang"}
+      className="nl-home-ranking-row"
       aria-label={`Xem chi tiết ${item.name ?? "mục xếp hạng"}`}
       style={{
         display: "grid",
@@ -1509,6 +1516,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
   return (
     <Link
       href={item.href}
+      className="nl-home-card nl-home-service-card"
       style={{
         overflow: "hidden",
         borderRadius: homeCardRadius,
@@ -1523,7 +1531,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
         label="Ảnh dịch vụ"
         style={{ height: compact ? "92px" : "132px", position: "relative" }}
       >
-        <span style={{ position: "absolute", top: 10, left: 10, ...pillStyle, background: "rgba(12,12,15,.66)", color: colors.goldSoft }}>
+        <span className="nl-home-media-pill" style={{ position: "absolute", top: 10, left: 10, ...pillStyle, background: "rgba(12,12,15,.66)", color: colors.goldSoft }}>
           {item.badgeText}
         </span>
       </PlaceholderMedia>
@@ -1538,7 +1546,7 @@ function ServiceCard({ item, compact = false }: { item: HomeStoreCard; compact?:
 
 function LegacyVideoCard({ item, compact = false }: { item: HomeVideoItem; compact?: boolean }) {
   return (
-    <Link href={item.href} style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
+    <Link href={item.href} className="nl-home-video-card" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Video"}
@@ -1567,7 +1575,7 @@ function VideoCard({
   const title = item.name.split(" · ")[0] || item.name;
 
   return (
-    <div style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
+    <div className="nl-home-video-card" style={{ minWidth: compact ? "166px" : "0", color: colors.text }}>
       <PlaceholderMedia
         src={item.img}
         alt={item.name ?? "Video"}
@@ -1643,6 +1651,7 @@ function ContentPlaceholderCard({
   return (
     <Link
       href={item.href}
+      className="nl-home-card nl-home-content-card"
       style={{
         minWidth: compact ? "172px" : "0",
         display: "block",
@@ -1684,6 +1693,7 @@ function ContentPlaceholderCard({
 function HomeDataMessage({ text, compact = false }: { text: string; compact?: boolean }) {
   return (
     <div
+      className="nl-home-data-message"
       style={{
         minHeight: compact ? 92 : 118,
         width: "100%",
@@ -1716,7 +1726,7 @@ function TabSwitch({
   onChange: (value: string) => void;
 }) {
   return (
-    <div style={{ display: "flex", gap: "6px", border: `1px solid ${colors.line}`, borderRadius: homeCardRadius, padding: "4px", background: "rgba(255,255,255,.035)" }}>
+    <div className="nl-home-tab-switch" style={{ display: "flex", gap: "6px", border: `1px solid ${colors.line}`, borderRadius: homeCardRadius, padding: "4px", background: "rgba(255,255,255,.035)" }}>
       {items.map((item) => (
         <button
           key={item.id}
@@ -1763,6 +1773,7 @@ function RankingRegionDropdown({
     >
       <button
         type="button"
+        className="nl-home-region-trigger"
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
@@ -1798,6 +1809,7 @@ function RankingRegionDropdown({
       {open ? (
         <div
           role="listbox"
+          className="nl-home-region-menu"
           aria-label={ariaLabel}
           style={{
             position: "absolute",
@@ -2255,7 +2267,7 @@ export default function Page() {
 
   return (
     <React.Fragment>
-      <div className="block md:hidden" style={shellStyle}>
+      <div className="block md:hidden nl-home-page nl-home-page-mobile" style={shellStyle}>
         <div data-testid="home-mobile-shell" style={{ maxWidth: "430px", minHeight: "100vh", margin: "0 auto", ...appStyle }}>
           <div data-testid="home-mobile-header">
             <HeaderBar />
@@ -2380,7 +2392,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="hidden md:block" style={{ ...shellStyle, background: colors.ink }}>
+      <div className="hidden md:block nl-home-page nl-home-page-desktop" style={{ ...shellStyle, background: colors.ink }}>
         <div style={{ width: "100%", minHeight: "100vh", ...appStyle, border: 0, boxShadow: "none" }}>
           <HeaderBar desktop />
           <main style={{ padding: "10px 50px 44px" }}>

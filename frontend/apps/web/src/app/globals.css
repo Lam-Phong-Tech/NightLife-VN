@@ -54,19 +54,19 @@
 }
 
 html.vy-light {
-  --vy-bg: #f6f4ef;
-  --vy-bg-2: #ffffff;
-  --vy-hero-grad: radial-gradient(ellipse at 50% -15%, rgba(168, 124, 52, 0.1) 0%, transparent 60%), linear-gradient(180deg, #f6f4ef 0%, #ece9df 100%);
-  --vy-surface: #ffffff;
-  --vy-surface-1: rgba(28, 22, 10, 0.03);
-  --vy-surface-2: rgba(28, 22, 10, 0.045);
-  --vy-surface-3: rgba(28, 22, 10, 0.06);
-  --vy-nav-bg: rgba(255, 255, 255, 0.94);
-  --vy-border: rgba(30, 24, 12, 0.1);
-  --vy-border-gold-12: rgba(150, 116, 52, 0.26);
-  --vy-border-gold-22: rgba(150, 116, 52, 0.34);
-  --vy-border-gold-32: rgba(150, 116, 52, 0.46);
-  --vy-border-gold-40: rgba(150, 116, 52, 0.58);
+  --vy-bg: #f3eee5;
+  --vy-bg-2: #fffaf2;
+  --vy-hero-grad: radial-gradient(ellipse at 16% -10%, rgba(212, 178, 106, 0.2) 0%, transparent 44%), radial-gradient(ellipse at 90% 0%, rgba(224, 114, 158, 0.08) 0%, transparent 38%), linear-gradient(180deg, #fffaf1 0%, #efe7da 100%);
+  --vy-surface: rgba(255, 255, 255, 0.92);
+  --vy-surface-1: rgba(255, 255, 255, 0.66);
+  --vy-surface-2: rgba(255, 255, 255, 0.8);
+  --vy-surface-3: rgba(242, 231, 211, 0.76);
+  --vy-nav-bg: rgba(255, 252, 244, 0.94);
+  --vy-border: rgba(91, 65, 20, 0.12);
+  --vy-border-gold-12: rgba(150, 116, 52, 0.18);
+  --vy-border-gold-22: rgba(150, 116, 52, 0.28);
+  --vy-border-gold-32: rgba(150, 116, 52, 0.38);
+  --vy-border-gold-40: rgba(150, 116, 52, 0.5);
   --vy-text: #211e19;
   --vy-text-2: #57534b;
   --vy-muted: #8c8679;
@@ -75,15 +75,15 @@ html.vy-light {
   --vy-gold-hi: #8f6a2a;
   --vy-gold-pale: #8f6a2a;
   --vy-gold-icon: #9c7630;
-  --vy-gold-soft-bg: rgba(168, 124, 52, 0.12);
+  --vy-gold-soft-bg: rgba(168, 124, 52, 0.14);
   --vy-favorite: #e11d48;
   --vy-success: #1f8a5b;
   --vy-warn: #b07818;
   --vy-error: #c2455c;
   --vy-info: #3d6fb0;
   --vy-pink: #c2517e;
-  --vy-shadow: 0 16px 36px -20px rgba(40, 30, 10, 0.25);
-  --vy-shadow-card: 0 16px 36px -20px rgba(40, 30, 10, 0.25);
+  --vy-shadow: 0 20px 48px -28px rgba(80, 55, 18, 0.4);
+  --vy-shadow-card: 0 18px 44px -32px rgba(80, 55, 18, 0.34);
   color-scheme: light;
 }
 
@@ -1136,6 +1136,194 @@ html.vy-light .nl-media-fallback svg, html.vy-light .nl-media-fallback path {
 }
 html.vy-light .nl-home-section-title {
   text-shadow: none !important;
+}
+
+html.vy-light,
+html.vy-light body,
+html.vy-light .nl-page-content {
+  background: var(--vy-bg) !important;
+  color: var(--vy-text) !important;
+}
+
+html.vy-light body {
+  background-image: var(--vy-hero-grad) !important;
+  background-attachment: fixed !important;
+}
+
+html.vy-light .nl-home-page,
+html.vy-light .nl-home-page > div {
+  background: transparent !important;
+  color: var(--vy-text) !important;
+}
+
+html.vy-light .nl-home-search-panel,
+html.vy-light .nl-home-tab-switch,
+html.vy-light .nl-home-region-trigger,
+html.vy-light .nl-home-region-menu {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: var(--vy-border-gold-22) !important;
+  color: var(--vy-text) !important;
+  box-shadow: 0 16px 34px -30px rgba(80, 55, 18, 0.42) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+html.vy-light .nl-home-hero {
+  border: 1px solid rgba(150, 116, 52, 0.24) !important;
+  box-shadow: 0 28px 58px -34px rgba(80, 55, 18, 0.55) !important;
+}
+
+html.vy-light .nl-home-card,
+html.vy-light .nl-home-data-message {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(250, 244, 232, 0.8)) !important;
+  border-color: rgba(150, 116, 52, 0.2) !important;
+  color: var(--vy-text) !important;
+  box-shadow: var(--vy-shadow-card) !important;
+}
+
+html.vy-light .nl-home-coupon-card,
+html.vy-light .nl-home-legacy-coupon-card {
+  background:
+    linear-gradient(90deg, rgba(168, 124, 52, 0.14), transparent 3px),
+    linear-gradient(135deg, #fffdf7 0%, #fbf3e4 56%, rgba(212, 178, 106, 0.18) 100%) !important;
+  border-color: rgba(150, 116, 52, 0.22) !important;
+}
+
+html.vy-light .nl-home-service-card,
+html.vy-light .nl-home-content-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 236, 219, 0.72)) !important;
+}
+
+html.vy-light .nl-home-ranking-row {
+  box-shadow: 0 18px 42px -34px rgba(80, 55, 18, 0.45) !important;
+}
+
+html.vy-light .nl-home-category-icon {
+  background: rgba(255, 255, 255, 0.76) !important;
+  border-color: rgba(150, 116, 52, 0.2) !important;
+  box-shadow: 0 16px 30px -28px rgba(80, 55, 18, 0.42) !important;
+}
+
+html.vy-light .nl-home-category-link,
+html.vy-light .nl-home-video-card,
+html.vy-light .nl-home-video-card a {
+  color: var(--vy-text) !important;
+}
+
+html.vy-light .nl-home-media-pill {
+  background: rgba(255, 250, 241, 0.86) !important;
+  border-color: rgba(150, 116, 52, 0.22) !important;
+  color: var(--vy-gold-hi) !important;
+}
+
+html.vy-light .nl-page-content .ranking-page {
+  background: transparent !important;
+  color: var(--vy-text) !important;
+}
+
+html.vy-light .nl-page-content .ranking-tabs,
+html.vy-light .nl-page-content .ranking-filters button,
+html.vy-light .nl-page-content a.ranking-row {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: var(--vy-border-gold-22) !important;
+  color: var(--vy-text) !important;
+  box-shadow: var(--vy-shadow-card) !important;
+}
+
+html.vy-light .nl-page-content .rank-copy strong {
+  color: var(--vy-text) !important;
+}
+
+html.vy-light .nl-page-content .rank-copy small {
+  color: var(--vy-muted) !important;
+}
+
+html.vy-light .nl-page-content .rank-arrow {
+  color: rgba(150, 116, 52, 0.62) !important;
+}
+
+html.vy-light .nl-page-content .ranking-tabs button,
+html.vy-light .nl-page-content .ranking-filters button {
+  color: var(--vy-muted) !important;
+}
+
+html.vy-light .nl-page-content .ranking-tabs button.active,
+html.vy-light .nl-page-content .ranking-filters button.active {
+  color: var(--vy-on-gold) !important;
+}
+
+@media (max-width: 767px) {
+  html.vy-light .store-detail-mobile,
+  html.vy-light .cast-detail-mobile,
+  html.vy-light .cast-list-mobile {
+    background: var(--vy-bg) !important;
+    color: var(--vy-text) !important;
+  }
+
+  html.vy-light .store-detail-mobile > div,
+  html.vy-light .cast-detail-mobile > div,
+  html.vy-light .cast-list-mobile > div {
+    background: var(--vy-surface) !important;
+    color: var(--vy-text) !important;
+    border-color: var(--vy-border-gold-12) !important;
+    box-shadow: var(--vy-shadow-card) !important;
+  }
+
+  html.vy-light .store-detail-mobile > div > div,
+  html.vy-light .cast-detail-mobile > div > div,
+  html.vy-light .cast-list-mobile > div > div {
+    border-color: var(--vy-border-gold-12) !important;
+  }
+
+  html.vy-light .cast-list-mobile > div > div:first-child,
+  html.vy-light .cast-list-mobile > div > div:nth-child(2),
+  html.vy-light .cast-detail-mobile > div > div:not(:first-child) {
+    background: rgba(255, 255, 255, 0.78) !important;
+    color: var(--vy-text) !important;
+  }
+
+  html.vy-light .store-detail-mobile > div > div:last-child,
+  html.vy-light .cast-detail-mobile > div > div:last-child {
+    background: rgba(255, 250, 241, 0.96) !important;
+    border-top-color: var(--vy-border-gold-22) !important;
+  }
+}
+
+html.vy-light .nl-reset-auth-page {
+  background: var(--vy-bg) !important;
+  color: var(--vy-text) !important;
+}
+
+html.vy-light .nl-reset-auth-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 250, 241, 0.62), rgba(243, 238, 229, 0.94)),
+    url("https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1400&q=80") center/cover !important;
+}
+
+html.vy-light .nl-reset-auth-card {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-color: rgba(150, 116, 52, 0.24) !important;
+  box-shadow: 0 26px 70px -44px rgba(65, 45, 16, 0.48) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+html.vy-light .nl-reset-auth-label {
+  color: #6f6658 !important;
+}
+
+html.vy-light .nl-reset-auth-field {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(150, 116, 52, 0.2) !important;
+  color: #8f6a2a !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 16px 38px -34px rgba(65, 45, 16, 0.44) !important;
+}
+
+html.vy-light .nl-reset-auth-input {
+  color: #241a0a !important;
+}
+
+html.vy-light .nl-reset-auth-input::placeholder {
+  color: #928776 !important;
+  opacity: 1 !important;
 }
 
 /* --- Admin Console Light Mode (Filter Invert) --- */

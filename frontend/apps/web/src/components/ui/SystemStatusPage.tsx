@@ -320,6 +320,41 @@ const statusStyles = `
     font-size: 12px;
   }
 
+  html.vy-light .nl-system-status-page {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(212,178,106,.2), transparent 34%),
+      linear-gradient(180deg, #fffaf1 0%, #f3eee5 58%, #efe7da 100%);
+    color: #241a0a;
+  }
+
+  html.vy-light .nl-system-status-hero {
+    width: min(760px, 100%);
+    border: 1px solid rgba(150,116,52,.18);
+    border-radius: 28px;
+    background: rgba(255,255,255,.72);
+    box-shadow: 0 26px 70px -44px rgba(65,45,16,.48);
+    padding: 42px 28px;
+  }
+
+  html.vy-light .nl-system-status-hero h1 {
+    color: #241a0a;
+  }
+
+  html.vy-light .nl-system-status-hero p {
+    color: #6f6658;
+  }
+
+  html.vy-light .nl-system-status-search,
+  html.vy-light .nl-system-status-secondary {
+    border-color: rgba(150,116,52,.22);
+    background: rgba(255,255,255,.76);
+    color: #8f6a2a;
+  }
+
+  html.vy-light .nl-system-status-incident {
+    color: #8c806d;
+  }
+
   @media (max-width: 767px) {
     .nl-system-status-page {
       min-height: calc(100vh - 56px);

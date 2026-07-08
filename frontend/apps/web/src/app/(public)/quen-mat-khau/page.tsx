@@ -145,8 +145,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main style={{ minHeight: "100dvh", background: colors.bg, color: colors.text }}>
+    <main className="nl-reset-auth-page" style={{ minHeight: "100dvh", background: colors.bg, color: colors.text }}>
       <section
+        className="nl-reset-auth-shell"
         style={{
           minHeight: "100dvh",
           display: "flex",
@@ -176,6 +177,7 @@ export default function ForgotPasswordPage() {
           </Link>
 
           <div
+            className="nl-reset-auth-card"
             style={{
               border: `1px solid ${colors.border}`,
               background: colors.panel,
@@ -328,9 +330,10 @@ function Field({
   maxLength?: number;
 }) {
   return (
-    <label style={{ display: "grid", gap: 7, color: colors.muted, fontSize: 12, fontWeight: 850 }}>
+    <label className="nl-reset-auth-label" style={{ display: "grid", gap: 7, color: colors.muted, fontSize: 12, fontWeight: 850 }}>
       {label}
       <span
+        className="nl-reset-auth-field"
         style={{
           display: "grid",
           gridTemplateColumns: icon ? "22px minmax(0,1fr)" : "minmax(0,1fr)",
@@ -345,6 +348,7 @@ function Field({
       >
         {icon}
         <input
+          className="nl-reset-auth-input"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
