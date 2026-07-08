@@ -249,7 +249,7 @@ function TopSearchBar() {
   useEffect(() => { setVal(searchParams.get('search') || ''); }, [searchParams]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '100px', padding: '8px 16px', gap: '8px', minWidth: '300px' }}>
+    <div className="nl-admin-top-search" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '100px', padding: '8px 16px', gap: '8px', minWidth: '300px' }}>
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
       <input 
         type="text" 
@@ -275,7 +275,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [badges, setBadges] = useState({ pendingBills: 0, pendingCasts: 0, pendingPartners: 0 });
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobileSidebar, setIsMobileSidebar] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
+  );
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? !window.matchMedia('(max-width: 767px)').matches : true,
+  );
 
   useEffect(() => {
     try {
@@ -285,6 +290,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         document.documentElement.classList.toggle('vy-admin-light', storedTheme === 'light');
       }
     } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleSidebarModeChange = (event: MediaQueryListEvent) => {
+      setIsMobileSidebar(event.matches);
+      if (event.matches) setSidebarOpen(false);
+    };
+
+    mediaQuery.addEventListener('change', handleSidebarModeChange);
+    return () => mediaQuery.removeEventListener('change', handleSidebarModeChange);
   }, []);
 
   const toggleTheme = () => {
@@ -331,11 +347,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { title, subtitle } = getPageInfo();
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
+    <div className="nl-admin-shell" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0c0c0f', color: '#f3f0ea', fontFamily: "'Inter', sans-serif", WebkitFontSmoothing: 'antialiased' }}>
       
       {/* ============ SIDEBAR ============ */}
-      <aside className="scw" style={{ width: sidebarOpen ? '250px' : '0px', flex: 'none', position: 'sticky', top: 0, height: '100vh', overflowX: 'hidden', overflowY: sidebarOpen ? 'auto' : 'hidden', background: '#100f14', borderRight: sidebarOpen ? '1px solid rgba(255,255,255,.06)' : 'none', transition: 'width 0.3s ease', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ width: '250px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {isMobileSidebar && sidebarOpen && (
+        <button
+          aria-label="Đóng menu admin"
+          className="nl-admin-sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+          type="button"
+        />
+      )}
+      <aside className={`scw nl-admin-sidebar ${sidebarOpen ? 'is-open' : 'is-closed'}`} style={{ width: sidebarOpen ? '250px' : '0px', flex: 'none', position: 'sticky', top: 0, height: '100vh', overflowX: 'hidden', overflowY: sidebarOpen ? 'auto' : 'hidden', background: '#100f14', borderRight: sidebarOpen ? '1px solid rgba(255,255,255,.06)' : 'none', transition: 'width 0.3s ease', display: 'flex', flexDirection: 'column' }}>
+        <div className="nl-admin-sidebar-inner" style={{ width: '250px', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
           {/* brand */}
           <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -363,6 +387,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={() => { if (isMobileSidebar) setSidebarOpen(false); }}
                       onMouseEnter={() => setHoveredLink(item.href)}
                       onMouseLeave={() => setHoveredLink(null)}
                       style={{
@@ -410,35 +435,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* ============ MAIN ============ */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div className="nl-admin-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
 
         {/* topbar */}
-        <header style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 26px', background: 'rgba(12,12,15,.86)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-          <span onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? 'Ẩn menu' : 'Hiện menu'} style={{ width: '39px', height: '39px', flex: 'none', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#d4b26a', border: '1px solid rgba(212,178,106,.28)', transition: 'background 0.2s', background: 'rgba(255,255,255,.02)' }}>
+        <header className="nl-admin-topbar" style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 26px', background: 'rgba(12,12,15,.86)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+          <span className="nl-admin-menu-button" onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? 'Ẩn menu' : 'Hiện menu'} style={{ width: '39px', height: '39px', flex: 'none', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#d4b26a', border: '1px solid rgba(212,178,106,.28)', transition: 'background 0.2s', background: 'rgba(255,255,255,.02)' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
               <line x1="9" y1="3" x2="9" y2="21" />
             </svg>
           </span>
-          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className="nl-admin-title" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {subtitle && <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '2px' }}>{subtitle}</div>}
             <div style={{ fontSize: '19px', fontWeight: 700, color: '#f3f0ea', letterSpacing: '.1px' }}>{title}</div>
           </div>
           
-          <div style={{ flex: 1 }}></div>
+          <div className="nl-admin-topbar-spacer" style={{ flex: 1 }}></div>
 
-          {/* Search Bar */}
-          <React.Suspense fallback={<div style={{ minWidth: '300px' }} />}>
-            <TopSearchBar />
-          </React.Suspense>
+          <div className="nl-admin-topbar-controls">
+            {/* Search Bar */}
+            <React.Suspense fallback={<div style={{ minWidth: '300px' }} />}>
+              <TopSearchBar />
+            </React.Suspense>
 
-          <React.Suspense fallback={<div />}>
-            <TopCategoryFilter />
-          </React.Suspense>
+            <React.Suspense fallback={<div />}>
+              <TopCategoryFilter />
+            </React.Suspense>
 
-          <React.Suspense fallback={<div />}>
-            <TopRegionFilter />
-          </React.Suspense>
+            <React.Suspense fallback={<div />}>
+              <TopRegionFilter />
+            </React.Suspense>
+          </div>
           
           <span onClick={toggleTheme} title={theme === 'light' ? 'Chuyển giao diện tối' : 'Chuyển giao diện sáng'} style={{ width: '39px', height: '39px', flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#d4b26a', border: '1px solid rgba(212,178,106,.28)', transition: 'background 0.2s' }}>
             {theme === 'dark' ? (
@@ -459,7 +486,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* content */}
-        <div className="scw" style={{ flex: 1, overflow: 'auto' }}>
+        <div className="scw nl-admin-content-scroll" style={{ flex: 1, overflow: 'auto' }}>
           {children}
         </div>
       </div>

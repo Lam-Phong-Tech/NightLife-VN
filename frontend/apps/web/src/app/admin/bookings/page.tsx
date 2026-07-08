@@ -100,11 +100,11 @@ function AdminBookingsContent() {
   };
 
   return (
-    <div data-screen-label="Admin · Booking" style={{ padding: '22px 26px 44px' }}>
+    <div className="nl-admin-page" data-screen-label="Admin · Booking" style={{ padding: '22px 26px 44px' }}>
       
       {/* Filters */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
+      <div className="nl-admin-list-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div className="nl-admin-tabs" style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
           {[
             { id: 'all', label: 'Tất cả', count: meta.all },
             { id: 'new', label: 'Mới', count: meta.new },
@@ -134,7 +134,7 @@ function AdminBookingsContent() {
           })}
         </div>
         <div style={{ flex: 1 }}></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '220px' }}>
+        <div className="nl-admin-inline-search" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '220px' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.9" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
           <input 
             type="text" 
@@ -150,8 +150,8 @@ function AdminBookingsContent() {
       </div>
 
       {/* Table */}
-      <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+      <div className="nl-admin-data-list" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span>Mã</span><span>Khách</span><span>Quán - Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
         {bookings.map(b => {
@@ -161,6 +161,7 @@ function AdminBookingsContent() {
             <div 
               key={b.id} 
               onClick={() => setSelectedBooking(b)} 
+              className="nl-admin-table-row nl-admin-booking-row"
               style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -197,7 +198,7 @@ function AdminBookingsContent() {
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
             <div onClick={() => setSelectedBooking(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
-            <div className="scw" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '428px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+            <div className="scw nl-admin-drawer" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '428px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Booking · BK-{bk.id.slice(0,4).toUpperCase()}</div>

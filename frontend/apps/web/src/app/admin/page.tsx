@@ -129,9 +129,9 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
+    <div className="nl-admin-page nl-admin-dashboard" data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
       {/* welcome + range */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className="nl-admin-dashboard-head" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700, color: '#f3f0ea' }}>Chào buổi tối, Admin 🌙</div>
           <div style={{ fontSize: '13px', color: '#8c8679', marginTop: '4px' }}>
@@ -185,7 +185,7 @@ export default function AdminDashboardPage() {
       {stats && (
         <>
           {/* stats grids */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+          <div className="nl-admin-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '24px' }}>
         <div style={{ background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}><span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d9bd84' }}><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18"/></svg></span></div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#f3f0ea', marginTop: '12px', letterSpacing: '-.5px' }}>{activeStores}</div>
@@ -234,7 +234,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* two columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '18px', marginTop: '20px', alignItems: 'start' }}>
+      <div className="nl-admin-dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1.55fr 1fr', gap: '18px', marginTop: '20px', alignItems: 'start' }}>
 
         {/* LEFT */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -244,7 +244,7 @@ export default function AdminDashboardPage() {
               <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Cần xử lý ngay</span>
               <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg,rgba(212,178,106,.4),transparent)' }}></span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div className="nl-admin-action-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
               <Link href="/admin/bills" style={{ textDecoration: 'none', background: 'rgba(224,164,78,.07)', border: '1px solid rgba(224,164,78,.24)', borderRadius: '14px', padding: '14px', cursor: 'pointer', display: 'block' }}>
                 <div style={{ fontSize: '24px', fontWeight: 800, color: '#e7b869' }}>{pendingBills}</div>
                 <div style={{ fontSize: '12px', color: '#c5c0b6', fontWeight: 500, marginTop: '2px' }}>Hóa đơn chờ duyệt</div>
@@ -271,7 +271,7 @@ export default function AdminDashboardPage() {
               <Link href="/admin/bookings" style={{ fontSize: '11.5px', color: '#9b958a', cursor: 'pointer', textDecoration: 'none' }}>Xem tất cả</Link>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr .7fr 1fr', gap: '10px', fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#57534b', textTransform: 'uppercase', padding: '0 4px 10px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <div className="nl-admin-recent-head" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr .7fr 1fr', gap: '10px', fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#57534b', textTransform: 'uppercase', padding: '0 4px 10px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
                 <span>Khách</span><span>Quán · Cast</span><span>Giờ</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
               </div>
               {stats?.recentBookings?.map((b, idx, arr) => {
@@ -288,7 +288,7 @@ export default function AdminDashboardPage() {
                 }
 
                 return (
-                  <div key={b.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr .7fr 1fr', gap: '10px', alignItems: 'center', padding: '12px 4px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,.04)', fontSize: '13px' }}>
+                  <div className="nl-admin-recent-row" key={b.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr .7fr 1fr', gap: '10px', alignItems: 'center', padding: '12px 4px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,.04)', fontSize: '13px' }}>
                     <div><div style={{ color: '#f3f0ea', fontWeight: 500 }}>{b.customerName}</div><div style={{ fontSize: '10.5px', color: '#57534b' }}>{b.partySize} khách · Telegram</div></div>
                     <div style={{ color: '#c5c0b6' }}>{b.store.name}<div style={{ fontSize: '10.5px', color: '#8c8679' }}>{b.cast ? `Cast: ${b.cast.stageName}` : 'Không cast'}</div></div>
                     <div style={{ color: '#8c8679', fontSize: '12px' }}>{new Date(b.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>

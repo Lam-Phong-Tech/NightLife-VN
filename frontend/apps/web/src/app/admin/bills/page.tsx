@@ -201,11 +201,11 @@ export default function AdminBillsPage() {
   }, [fetchBills]);
 
   return (
-    <div style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
+    <div className="nl-admin-page nl-admin-bills-page" style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
       
       {/* TOP FILTERS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
+      <div className="nl-admin-list-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div className="nl-admin-tabs" style={{ display: 'flex', background: colors.surface1, borderRadius: '8px', padding: '4px', border: `1px solid ${colors.borderSoft}` }}>
           <button 
             onClick={() => handleTabChange('pending')}
             style={{
@@ -301,8 +301,8 @@ export default function AdminBillsPage() {
       </div>
 
       {/* TABLE */}
-      <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="nl-admin-data-list nl-admin-bill-table-wrap" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
+        <table className="nl-admin-bill-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <colgroup>
             <col />
             <col />

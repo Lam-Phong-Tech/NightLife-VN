@@ -132,7 +132,7 @@ export default function AdminCouponsPage() {
   };
 
   return (
-    <div data-screen-label="Admin · Coupons" style={{ padding: '22px 26px 44px', minHeight: '100%', background: '#0c0c0f' }}>
+    <div className="nl-admin-page nl-admin-coupons-page" data-screen-label="Admin · Coupons" style={{ padding: '22px 26px 44px', minHeight: '100%', background: '#0c0c0f' }}>
       <style>{`
         @keyframes vpulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
         @keyframes vrise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -142,7 +142,7 @@ export default function AdminCouponsPage() {
       `}</style>
 
       {/* Top Stats - Mocked for visual similarity */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '18px' }}>
+      <div className="nl-admin-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '18px' }}>
         <div style={{ background: 'rgba(111,159,216,.07)', border: '1px solid rgba(111,159,216,.22)', borderRadius: '14px', padding: '15px 16px' }}>
           <div style={{ fontSize: '24px', fontWeight: 800, color: '#8fb6e4' }}>{issues.filter(i => i.status === 'ISSUED').length + 15}</div>
           <div style={{ fontSize: '11.5px', color: '#c5c0b6', marginTop: '2px' }}>Đang giữ chỗ</div>
@@ -173,7 +173,7 @@ export default function AdminCouponsPage() {
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '14px', marginBottom: '26px' }}>
+      <div className="nl-admin-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '14px', marginBottom: '26px' }}>
         {campaigns.map(cp => {
           const act = cp.status === 'ACTIVE';
           const scopeAll = !cp.targetStores || cp.targetStores.length === 0;
@@ -239,7 +239,7 @@ export default function AdminCouponsPage() {
       </div>
 
       <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span>Mã coupon</span><span>Ưu đãi</span><span>Quán áp dụng</span><span>Hạng</span><span>Hạn dùng</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
         {issues.map((c: any) => {
@@ -251,6 +251,7 @@ export default function AdminCouponsPage() {
           return (
             <div 
               key={c.id} onClick={() => setSelectedIssue(c)} 
+              className="nl-admin-table-row nl-admin-coupon-row"
               style={{ 
                 display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', alignItems: 'center', 
                 padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', 
@@ -284,7 +285,7 @@ export default function AdminCouponsPage() {
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 72 }}>
             <div onClick={() => setSelectedCampaign(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
-            <div className="scw" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '412px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+            <div className="scw nl-admin-drawer" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '412px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
               <div style={{ padding: '19px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Chiến dịch coupon</div>
                 <span onClick={() => setSelectedCampaign(null)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
@@ -362,7 +363,7 @@ export default function AdminCouponsPage() {
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
             <div onClick={() => setSelectedIssue(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
-            <div className="scw" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '412px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+            <div className="scw nl-admin-drawer" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '412px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
               <div style={{ padding: '19px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Coupon / QR</div>
                 <span onClick={() => setSelectedIssue(null)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c5c0b6', cursor: 'pointer' }}>
@@ -419,7 +420,7 @@ export default function AdminCouponsPage() {
       {showCreate && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
           <div onClick={() => setShowCreate(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,9,.6)', backdropFilter: 'blur(2px)' }}></div>
-          <div className="scw" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '440px', maxWidth: '94vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
+          <div className="scw nl-admin-drawer" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '440px', maxWidth: '94vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
             <div style={{ padding: '17px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#131218', zIndex: 2 }}>
               <div>
                 <div style={{ fontSize: '15px', fontWeight: 700, color: '#f3f0ea' }}>Tạo coupon mới</div>
