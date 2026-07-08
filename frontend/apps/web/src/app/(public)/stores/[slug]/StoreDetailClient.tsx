@@ -586,7 +586,7 @@ function BookingCard({
           )}
         </div>
 
-        <label>Ghi chú tuỳ chọn</label>
+        <label className="booking-note-label">Ghi chú tuỳ chọn</label>
         <textarea
           className="booking-note-box"
           value={note}
@@ -597,10 +597,11 @@ function BookingCard({
         {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
 
         <button
-          type="submit"
+          type="button"
           data-testid="store-booking-cta-sidebar"
           className="primary-action full"
           disabled={isSubmitting}
+          onClick={onSubmit}
         >
           <CalendarDays size={18} />
           {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}
@@ -2085,6 +2086,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           text-transform: none;
         }
 
+        .booking-card label.booking-note-label {
+          margin: 10px 0 7px;
+        }
+
         .booking-field span,
         .booking-field strong {
           display: block;
@@ -2205,6 +2210,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: block;
           width: 100%;
           min-height: 52px;
+          max-height: 110px;
+          margin-bottom: 12px;
           padding: 9px 12px;
           border: 1px solid rgba(212, 178, 106, .2);
           border-radius: 8px;
@@ -2213,7 +2220,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-size: 12px;
           font-family: inherit;
           line-height: 1.55;
-          resize: vertical;
+          resize: none;
           outline: none;
         }
 
@@ -2266,10 +2273,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-card .primary-action {
           width: 100%;
           max-width: 100%;
+          position: relative;
+          z-index: 2;
+          flex: none;
           padding: 0 12px;
           text-align: center;
           white-space: normal;
           min-height: 40px;
+          pointer-events: auto;
         }
 
         .booking-card .secondary-action {
