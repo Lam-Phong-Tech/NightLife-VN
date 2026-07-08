@@ -108,7 +108,7 @@ export class CreateBookingDto {
   @Transform(trimLowerEmail)
   @IsOptional()
   @IsEmail()
-  @MaxLength(160)
+  @MaxLength(254)
   email?: string;
 
   @ApiPropertyOptional({

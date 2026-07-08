@@ -31,6 +31,14 @@ import {
   buildScheduledAtFromBookingSlot,
   normalizeStoreOpeningHours,
 } from "@/lib/booking-time-slots";
+import {
+  bookingValidationLimits,
+  normalizeBookingDisplayName,
+  normalizeBookingEmail,
+  normalizeBookingNote,
+  sanitizeBookingDisplayNameInput,
+  validateBookingFormFields,
+} from "@/lib/booking-validation";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -74,15 +82,7 @@ const nationalityLabels: Record<string, string> = {
   vi: "Việt Nam",
 };
 
-const bookingDateWindowDays = 14;
-const maxBookingGuests = 50;
-const minBookingNameLength = 2;
-const maxBookingNameLength = 80;
-const maxBookingEmailLength = 160;
-const maxBookingNoteLength = 300;
-const bookingEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const bookingEmailDomainLabelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
-const bookingDisplayNamePattern = /^[\p{L}\s]+$/u;
+const { bookingDateWindowDays, maxGuests: maxBookingGuests } = bookingValidationLimits;
 
 const emptyMediaBackground =
   "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
@@ -218,117 +218,6 @@ const getMaxBookingDate = () => {
   const date = new Date();
   date.setDate(date.getDate() + bookingDateWindowDays);
   return toDateInputValue(date);
-};
-
-const normalizeBookingDisplayName = (value: string) => value.trim().replace(/\s+/g, " ");
-const sanitizeBookingDisplayNameInput = (value: string) =>
-  value.replace(/[^\p{L}\s]/gu, "").replace(/\s{2,}/g, " ");
-const normalizeBookingEmail = (value: string) => value.trim().toLowerCase();
-
-function validateBookingEmail(value: string) {
-  if (!value) {
-    return "Vui lòng nhập email.";
-  }
-
-  if (value.length > maxBookingEmailLength) {
-    return `Email tối đa ${maxBookingEmailLength} ký tự.`;
-  }
-
-  const atParts = value.split("@");
-  if (atParts.length !== 2) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  const [localPart, domainPart] = atParts;
-
-  if (!localPart) {
-    return "Phần trước dấu @ không được để trống.";
-  }
-
-  if (localPart.length > 64) {
-    return "Phần trước dấu @ không được vượt quá 64 ký tự.";
-  }
-
-  if (!domainPart) {
-    return "Phần sau dấu @ không được để trống.";
-  }
-
-  if (domainPart.length > 253) {
-    return "Phần sau dấu @ không được vượt quá 253 ký tự.";
-  }
-
-  const domainLabels = domainPart.split(".");
-
-  if (domainLabels.length < 2 || domainLabels.some((label) => !label)) {
-    return "Phần sau dấu @ phải là tên miền hợp lệ, ví dụ gmail.com.";
-  }
-
-  if (domainLabels.some((label) => label.length > 63)) {
-    return "Mỗi phần của tên miền sau dấu @ không được vượt quá 63 ký tự.";
-  }
-
-  if (!domainLabels.every((label) => bookingEmailDomainLabelPattern.test(label))) {
-    return "Tên miền sau dấu @ chỉ được gồm chữ, số, dấu gạch ngang và không bắt đầu/kết thúc bằng dấu gạch ngang.";
-  }
-
-  if (!bookingEmailPattern.test(value)) {
-    return "Email chưa đúng định dạng.";
-  }
-
-  return "";
-}
-
-const validateStoreBookingForm = ({
-  displayName,
-  email,
-  guestCount,
-  bookingDate,
-  note,
-}: {
-  displayName: string;
-  email: string;
-  guestCount: number;
-  bookingDate: string;
-  note: string;
-}) => {
-  if (displayName.length < minBookingNameLength) {
-    return `Vui lòng nhập họ tên từ ${minBookingNameLength} ký tự.`;
-  }
-
-  if (displayName.length > maxBookingNameLength) {
-    return `Họ tên tối đa ${maxBookingNameLength} ký tự.`;
-  }
-
-  if (!bookingDisplayNamePattern.test(displayName)) {
-    return "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
-  }
-
-  const emailValidationMessage = validateBookingEmail(email);
-  if (emailValidationMessage) {
-    return emailValidationMessage;
-  }
-
-  if (!bookingEmailPattern.test(email)) {
-    return "Vui lòng nhập email hợp lệ.";
-  }
-
-  if (email.length > maxBookingEmailLength) {
-    return `Email tối đa ${maxBookingEmailLength} ký tự.`;
-  }
-
-  if (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > maxBookingGuests) {
-    return `Số người chỉ được từ 1 đến ${maxBookingGuests}.`;
-  }
-
-  if (bookingDate < getTodayDate() || bookingDate > getMaxBookingDate()) {
-    return `Ngày đặt bàn chỉ được chọn từ hôm nay đến ${bookingDateWindowDays} ngày tới.`;
-  }
-
-  if (note.length > maxBookingNoteLength) {
-    return `Ghi chú tối đa ${maxBookingNoteLength} ký tự.`;
-  }
-
-  return "";
 };
 
 function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
@@ -628,7 +517,6 @@ function BookingCard({
               onChange={(event) => onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value))}
               placeholder="Vui lòng nhập họ tên"
               autoComplete="name"
-              maxLength={maxBookingNameLength}
             />
           </label>
           <label className="booking-field booking-input-field">
@@ -640,7 +528,6 @@ function BookingCard({
               placeholder="Vui lòng nhập email"
               autoComplete="email"
               inputMode="email"
-              maxLength={maxBookingEmailLength}
             />
           </label>
           <div className="booking-field">
@@ -705,7 +592,6 @@ function BookingCard({
           value={note}
           onChange={(event) => onNoteChange(event.target.value)}
           placeholder="Vui lòng nhập ghi chú nếu có"
-          maxLength={maxBookingNoteLength}
         />
 
         {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
@@ -965,14 +851,28 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
     const displayName = normalizeBookingDisplayName(guestName);
     const normalizedEmail = normalizeBookingEmail(email);
-    const trimmedNote = note.trim();
+    const trimmedNote = normalizeBookingNote(note);
+    const scheduledAt = buildScheduledAtFromBookingSlot(
+      selectedDate.iso,
+      selectedTime,
+      normalizedOpeningHours ?? store.openingHours,
+    );
 
-    const validationError = validateStoreBookingForm({
+    setGuestName(displayName);
+    setEmail(normalizedEmail);
+    setNote(trimmedNote);
+
+    const validationError = validateBookingFormFields({
+      availableTimes: timeOptions,
+      bookingDate: selectedDate.iso,
+      bookingTime: selectedTime,
       displayName,
       email: normalizedEmail,
       guestCount,
-      bookingDate: selectedDate.iso,
+      maxDate: getMaxBookingDate(),
       note: trimmedNote,
+      scheduledAt,
+      todayDate: getTodayDate(),
     });
 
     if (validationError) {
@@ -984,11 +884,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       storeSlug: store.slug,
       displayName,
       email: normalizedEmail,
-      scheduledAt: buildScheduledAtFromBookingSlot(
-        selectedDate.iso,
-        selectedTime,
-        normalizedOpeningHours ?? store.openingHours,
-      ),
+      scheduledAt,
       partySize: guestCount,
       ...(trimmedNote ? { note: trimmedNote } : {}),
     };

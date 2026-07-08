@@ -23,17 +23,17 @@ import {
   buildScheduledAtFromBookingSlot,
   fallbackBookingTimeSlots,
 } from "@/lib/booking-time-slots";
+import {
+  bookingValidationLimits,
+  normalizeBookingDisplayName,
+  normalizeBookingEmail,
+  normalizeBookingNote,
+  sanitizeBookingDisplayNameInput,
+  validateBookingFormFields,
+} from "@/lib/booking-validation";
 import styles from "../booking-flow.module.css";
 
-const bookingDateWindowDays = 14;
-const maxGuests = 50;
-const minNameLength = 2;
-const maxNameLength = 80;
-const maxEmailLength = 160;
-const maxNoteLength = 300;
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const displayNamePattern = /^[\p{L}\s]+$/u;
-const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
+const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
 
 type BookingContext = {
   storeSlug?: string;
@@ -76,93 +76,6 @@ const clampBookingDate = (value?: string | null) => {
   if (value < today) return today;
   if (value > maxDate) return maxDate;
   return value;
-};
-
-const normalizeDisplayName = (value: string) => value.trim().replace(/\s+/g, " ");
-const normalizeEmail = (value: string) => value.trim().toLowerCase();
-const normalizeNote = (value: string) => value.trim();
-
-const validateBookingForm = ({
-  displayName,
-  email,
-  guests,
-  bookingDate,
-  bookingTime,
-  availableTimes,
-  scheduledAt,
-  note,
-}: {
-  displayName: string;
-  email: string;
-  guests: number;
-  bookingDate: string;
-  bookingTime: string;
-  availableTimes: string[];
-  scheduledAt: string;
-  note: string;
-}) => {
-  if (!displayName) {
-    return "Vui lòng nhập họ tên.";
-  }
-
-  if (displayName.length < minNameLength) {
-    return `Vui lòng nhập họ tên từ ${minNameLength} ký tự.`;
-  }
-
-  if (displayName.length > maxNameLength) {
-    return `Họ tên tối đa ${maxNameLength} ký tự.`;
-  }
-
-  if (!displayNamePattern.test(displayName)) {
-    return "Họ tên chỉ được nhập chữ cái và khoảng trắng.";
-  }
-
-  if (!email) {
-    return "Vui lòng nhập email.";
-  }
-
-  if (!emailPattern.test(email)) {
-    return "Vui lòng nhập email hợp lệ.";
-  }
-
-  if (email.length > maxEmailLength) {
-    return `Email tối đa ${maxEmailLength} ký tự.`;
-  }
-
-  if (!Number.isInteger(guests) || guests < 1 || guests > maxGuests) {
-    return `Số người chỉ được từ 1 đến ${maxGuests}.`;
-  }
-
-  if (!dateInputPattern.test(bookingDate) || Number.isNaN(new Date(`${bookingDate}T00:00:00`).getTime())) {
-    return "Ngày đặt bàn không hợp lệ.";
-  }
-
-  if (bookingDate < getTodayDate() || bookingDate > getMaxBookingDate()) {
-    return `Ngày đặt bàn chỉ được chọn từ hôm nay đến ${bookingDateWindowDays} ngày tới.`;
-  }
-
-  if (!bookingTime) {
-    return "Vui lòng chọn khung giờ.";
-  }
-
-  if (!availableTimes.includes(bookingTime)) {
-    return "Khung giờ đã chọn không còn khả dụng.";
-  }
-
-  const scheduledDate = new Date(scheduledAt);
-  if (Number.isNaN(scheduledDate.getTime())) {
-    return "Khung giờ đặt chỗ không hợp lệ.";
-  }
-
-  if (scheduledDate.getTime() <= Date.now()) {
-    return "Khung giờ đặt chỗ phải ở tương lai.";
-  }
-
-  if (note.length > maxNoteLength) {
-    return `Ghi chú tối đa ${maxNoteLength} ký tự.`;
-  }
-
-  return "";
 };
 
 const parseRequestedMode = (value: string | null) => {
@@ -396,9 +309,9 @@ export default function Page() {
 
   const submit = async () => {
     setErrorMessage("");
-    const displayName = normalizeDisplayName(guestName);
-    const normalizedEmail = normalizeEmail(email);
-    const trimmedNote = normalizeNote(note);
+    const displayName = normalizeBookingDisplayName(guestName);
+    const normalizedEmail = normalizeBookingEmail(email);
+    const trimmedNote = normalizeBookingNote(note);
 
     if (!bookingTime) {
       setErrorMessage("Quán không có khung giờ đặt bàn trong ngày này.");
@@ -416,15 +329,17 @@ export default function Page() {
       storeOpeningHours,
     );
 
-    const validationError = validateBookingForm({
+    const validationError = validateBookingFormFields({
       displayName,
       email: normalizedEmail,
-      guests,
+      guestCount: guests,
       bookingDate,
       bookingTime,
       availableTimes: bookingTimeOptions,
+      maxDate: getMaxBookingDate(),
       scheduledAt,
       note: trimmedNote,
+      todayDate: getTodayDate(),
     });
 
     setGuestName(displayName);
@@ -545,9 +460,8 @@ export default function Page() {
               <TextField
                 label="Họ tên"
                 value={guestName}
-                onChange={setGuestName}
+                onChange={(value) => setGuestName(sanitizeBookingDisplayNameInput(value))}
                 placeholder="Vui lòng nhập họ tên"
-                maxLength={maxNameLength}
                 icon={<UserRound size={16} />}
               />
 
@@ -620,7 +534,6 @@ export default function Page() {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Vui lòng nhập ghi chú nếu có"
-                  maxLength={maxNoteLength}
                   className={styles.noteArea}
                 />
               </label>
@@ -710,14 +623,12 @@ function TextField({
   onChange,
   placeholder,
   icon,
-  maxLength,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   icon?: React.ReactNode;
-  maxLength?: number;
 }) {
   return (
     <label className={styles.field}>
@@ -729,7 +640,6 @@ function TextField({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          maxLength={maxLength}
           className={styles.input}
         />
       </span>
@@ -748,7 +658,6 @@ function EmailField({ value, onChange }: { value: string; onChange: (value: stri
           value={value}
           placeholder="Vui lòng nhập email"
           onChange={(event) => onChange(event.target.value)}
-          maxLength={maxEmailLength}
           autoComplete="email"
           inputMode="email"
           className={styles.input}

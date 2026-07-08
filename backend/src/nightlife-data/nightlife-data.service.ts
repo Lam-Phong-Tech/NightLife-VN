@@ -8691,10 +8691,11 @@ export class NightlifeDataService {
       );
     }
 
-    if (email && email.length > 160) {
-      throw new BadRequestException(
-        'email must be shorter than or equal to 160 characters',
-      );
+    if (email) {
+      const emailError = this.validateBookingEmail(email);
+      if (emailError) {
+        throw new BadRequestException(emailError);
+      }
     }
 
     if (phone && !/^[0-9+\-\s().]{8,20}$/.test(phone)) {
@@ -13663,6 +13664,58 @@ export class NightlifeDataService {
 
   private cleanEmail(value?: string | null) {
     return this.cleanText(value).toLowerCase();
+  }
+
+  private validateBookingEmail(value: string) {
+    if (value.length > 254) {
+      return 'email must be shorter than or equal to 254 characters';
+    }
+
+    const atParts = value.split('@');
+    if (atParts.length !== 2) {
+      return 'email must be valid';
+    }
+
+    const [localPart, domainPart] = atParts;
+
+    if (!localPart) {
+      return 'email local part is required';
+    }
+
+    if (localPart.length > 64) {
+      return 'email local part must be shorter than or equal to 64 characters';
+    }
+
+    if (!domainPart) {
+      return 'email domain is required';
+    }
+
+    if (domainPart.length > 253) {
+      return 'email domain must be shorter than or equal to 253 characters';
+    }
+
+    const domainLabels = domainPart.split('.');
+    if (domainLabels.length < 2 || domainLabels.some((label) => !label)) {
+      return 'email domain must be valid';
+    }
+
+    if (domainLabels.some((label) => label.length > 63)) {
+      return 'email domain labels must be shorter than or equal to 63 characters';
+    }
+
+    if (
+      !domainLabels.every((label) =>
+        /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label),
+      )
+    ) {
+      return 'email domain must contain only letters, numbers, and hyphens';
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)) {
+      return 'email must be valid';
+    }
+
+    return '';
   }
 
   private errorMessage(error: unknown) {
