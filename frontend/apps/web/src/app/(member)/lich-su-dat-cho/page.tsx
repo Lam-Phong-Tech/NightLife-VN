@@ -45,6 +45,9 @@ const missingGuestRescheduleIdentityMessage =
   "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua LINE OA hoặc Mail để đổi lịch.";
 const missingGuestContactIdentityMessage =
   "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua LINE OA hoặc Mail.";
+const maxRescheduleReasonLength = 300;
+const minRescheduleReasonLength = 5;
+const reasonContentPattern = /[\p{L}\p{N}]/u;
 
 const thumbnails = {
   Mới: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=72')",
@@ -95,6 +98,67 @@ const toDateTimeInputValue = (value: string) => {
   return localDate.toISOString().slice(0, 16);
 };
 
+const normalizeRescheduleReason = (value: string) => value.trim().replace(/\s+/g, " ");
+
+const validateRescheduleRequest = ({
+  booking,
+  rescheduleAt,
+  reason,
+}: {
+  booking: BookingRecord;
+  rescheduleAt: string;
+  reason: string;
+}) => {
+  const normalizedReason = normalizeRescheduleReason(reason);
+
+  if (!rescheduleAt.trim()) {
+    return "Vui lòng chọn ngày giờ mới.";
+  }
+
+  const requestedDate = new Date(rescheduleAt);
+  if (!Number.isFinite(requestedDate.getTime())) {
+    return "Ngày giờ mới không hợp lệ. Vui lòng kiểm tra lại.";
+  }
+
+  if (requestedDate.getTime() <= Date.now()) {
+    return "Ngày giờ mới phải ở tương lai.";
+  }
+
+  const currentDate = new Date(booking.scheduledAt);
+  if (
+    Number.isFinite(currentDate.getTime()) &&
+    currentDate.toISOString().slice(0, 16) === requestedDate.toISOString().slice(0, 16)
+  ) {
+    return "Ngày giờ mới phải khác lịch đặt hiện tại.";
+  }
+
+  if (!canCancelBooking(booking)) {
+    return supportCancelMessage;
+  }
+
+  if (!normalizedReason) {
+    return "Vui lòng nhập lý do đổi lịch.";
+  }
+
+  if (normalizedReason.length < minRescheduleReasonLength) {
+    return `Lý do đổi lịch tối thiểu ${minRescheduleReasonLength} ký tự.`;
+  }
+
+  if (normalizedReason.length > maxRescheduleReasonLength) {
+    return `Lý do đổi lịch tối đa ${maxRescheduleReasonLength} ký tự.`;
+  }
+
+  if (!reasonContentPattern.test(normalizedReason)) {
+    return "Lý do đổi lịch cần có chữ hoặc số.";
+  }
+
+  if (/[<>]/.test(normalizedReason)) {
+    return "Lý do đổi lịch không được chứa ký tự < hoặc >.";
+  }
+
+  return "";
+};
+
 const rebookHref = (booking: BookingRecord) => {
   const params = new URLSearchParams({
     ...(booking.store?.slug ? { storeSlug: booking.store.slug } : {}),
@@ -136,7 +200,9 @@ export default function Page() {
   const [cancelReason, setCancelReason] = useState("");
   const [pendingRescheduleBooking, setPendingRescheduleBooking] = useState<BookingRecord | null>(null);
   const [rescheduleAt, setRescheduleAt] = useState("");
+  const [rescheduleMinAt, setRescheduleMinAt] = useState("");
   const [rescheduleReason, setRescheduleReason] = useState("");
+  const [rescheduleError, setRescheduleError] = useState("");
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [chatBooking, setChatBooking] = useState<BookingRecord | null>(null);
   const [chatMessages, setChatMessages] = useState<BookingChatMessage[]>([]);
@@ -367,7 +433,9 @@ export default function Page() {
     setMessage("");
     setPendingRescheduleBooking(booking);
     setRescheduleAt(toDateTimeInputValue(booking.scheduledAt));
+    setRescheduleMinAt(toDateTimeInputValue(new Date(Date.now() + 60 * 1000).toISOString()));
     setRescheduleReason("");
+    setRescheduleError("");
   };
 
   const closeRescheduleDialog = () => {
@@ -377,7 +445,9 @@ export default function Page() {
 
     setPendingRescheduleBooking(null);
     setRescheduleAt("");
+    setRescheduleMinAt("");
     setRescheduleReason("");
+    setRescheduleError("");
   };
 
   const submitRescheduleRequest = async () => {
@@ -388,34 +458,45 @@ export default function Page() {
 
     const guestPhone = booking.guest?.phone?.trim() ?? "";
     const useMemberApi = shouldUseMemberBookingApi(booking);
-    const requestedDate = new Date(rescheduleAt);
-    if (!Number.isFinite(requestedDate.getTime())) {
-      setMessage("Chọn ngày giờ mới hợp lệ trước khi gửi yêu cầu.");
+    const validationError = validateRescheduleRequest({
+      booking,
+      rescheduleAt,
+      reason: rescheduleReason,
+    });
+
+    if (validationError) {
+      setRescheduleError(validationError);
       return;
     }
 
     if (!useMemberApi && !guestPhone) {
+      setRescheduleError(missingGuestRescheduleIdentityMessage);
       setMessage(missingGuestRescheduleIdentityMessage);
       return;
     }
 
+    const requestedDate = new Date(rescheduleAt);
+    const normalizedReason = normalizeRescheduleReason(rescheduleReason);
     setReschedulingId(booking.id);
+    setRescheduleError("");
     setMessage("");
 
     try {
       const payload = {
         scheduledAt: requestedDate.toISOString(),
-        ...(rescheduleReason.trim() ? { reason: rescheduleReason.trim() } : {}),
+        reason: normalizedReason,
       };
       await (useMemberApi
         ? bookingApi.requestMemberReschedule(booking.id, payload)
         : bookingApi.requestGuestReschedule(booking.id, { ...payload, phone: guestPhone }));
       setPendingRescheduleBooking(null);
       setRescheduleAt("");
+      setRescheduleMinAt("");
       setRescheduleReason("");
+      setRescheduleError("");
       setMessage("Đã gửi yêu cầu đổi lịch. Admin sẽ xác nhận trước khi cập nhật booking.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không gửi được yêu cầu đổi lịch.");
+      setRescheduleError(error instanceof Error ? error.message : "Không gửi được yêu cầu đổi lịch.");
     } finally {
       setReschedulingId(null);
     }
@@ -639,7 +720,12 @@ export default function Page() {
               <input
                 type="datetime-local"
                 value={rescheduleAt}
-                onChange={(event) => setRescheduleAt(event.target.value)}
+                min={rescheduleMinAt}
+                onChange={(event) => {
+                  setRescheduleAt(event.target.value);
+                  setRescheduleError("");
+                }}
+                aria-invalid={Boolean(rescheduleError)}
                 className={styles.dialogInput}
               />
             </label>
@@ -647,13 +733,18 @@ export default function Page() {
               <span>Lý do đổi lịch</span>
               <textarea
                 value={rescheduleReason}
-                onChange={(event) => setRescheduleReason(event.target.value)}
+                onChange={(event) => {
+                  setRescheduleReason(event.target.value);
+                  setRescheduleError("");
+                }}
                 placeholder="Ví dụ: đổi ngày đi, muốn khung giờ muộn hơn..."
-                maxLength={300}
+                maxLength={maxRescheduleReasonLength}
                 rows={4}
+                aria-invalid={Boolean(rescheduleError)}
                 className={styles.dialogTextArea}
               />
             </label>
+            {rescheduleError ? <div className={styles.errorMessage}>{rescheduleError}</div> : null}
             <div className={styles.dialogActions}>
               <button
                 type="button"
