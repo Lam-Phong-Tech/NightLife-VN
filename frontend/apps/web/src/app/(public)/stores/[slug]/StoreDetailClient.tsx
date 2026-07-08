@@ -866,7 +866,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setNote(trimmedNote);
 
     const validationError = validateBookingFormFields({
-      availableTimes: timeOptions,
+      availableTimes: bookingTimeOptions,
       bookingDate: selectedDate.iso,
       bookingTime: selectedTime,
       displayName,
