@@ -3015,6 +3015,17 @@ export class NightlifeDataService {
     });
 
     await this.adminNotificationService?.notifyBookingCreated(booking);
+    await this.notifyBookingCustomerTemplate(
+      booking,
+      'customer.booking.created.v1',
+      {
+        scheduledAt: this.toAuditIso(booking.scheduledAt),
+        partySize: booking.partySize ?? null,
+        storeName: booking.store?.name ?? null,
+        storeSlug: booking.store?.slug ?? null,
+        castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
+      },
+    );
 
     return booking;
   }
@@ -10694,6 +10705,12 @@ export class NightlifeDataService {
       tone = 'danger';
       category = 'bill';
       actionLabel = 'Xem lý do';
+    } else if (templateKey === 'customer.booking.created.v1') {
+      title = 'Đã gửi yêu cầu đặt bàn';
+      body = `Lịch đặt tại ${storeName} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
+      tone = 'amber';
+      category = 'booking';
+      actionLabel = 'Xem lịch đặt';
     } else if (templateKey.startsWith('customer.booking.')) {
       title = 'Cập nhật lịch đặt';
       body = `Lịch đặt tại ${storeName} vừa có cập nhật mới.`;

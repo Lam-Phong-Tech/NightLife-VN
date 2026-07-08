@@ -27,6 +27,7 @@ import {
 } from "@/lib/api/appearance";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
+  memberNotificationsRefreshEvent,
   notificationApi,
   type MemberNotification,
   type MemberNotificationCategory,
@@ -1307,11 +1308,18 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     });
     if (!showCustomerNotifications) return;
 
+    const handleRefresh = () => {
+      void refreshMemberNotifications();
+    };
     const interval = window.setInterval(() => {
       void refreshMemberNotifications();
     }, 60_000);
+    window.addEventListener(memberNotificationsRefreshEvent, handleRefresh);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener(memberNotificationsRefreshEvent, handleRefresh);
+    };
   }, [refreshMemberNotifications, showCustomerNotifications]);
 
   useEffect(() => {

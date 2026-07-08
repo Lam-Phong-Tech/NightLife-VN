@@ -34,6 +34,16 @@ export type MemberNotificationsResponse = {
   unreadCount: number;
 };
 
+export const memberNotificationsRefreshEvent = "nightlife:member-notifications:refresh";
+
+export const requestMemberNotificationsRefresh = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new Event(memberNotificationsRefreshEvent));
+};
+
 export const notificationApi = {
   listMemberNotifications: (limit = 20) =>
     apiClient<MemberNotificationsResponse>("/member/notifications", {

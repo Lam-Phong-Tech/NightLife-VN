@@ -16,6 +16,7 @@ import {
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { getCastDetail } from "@/lib/api/cast-detail";
+import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { getStoreDetail } from "@/lib/api/store-detail";
 import {
   buildBookingTimeSlots,
@@ -464,6 +465,9 @@ export default function Page() {
         : await bookingApi.createGuestBooking(payload);
 
       rememberLastBooking(booking);
+      if (isMemberMode) {
+        requestMemberNotificationsRefresh();
+      }
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt chỗ.";

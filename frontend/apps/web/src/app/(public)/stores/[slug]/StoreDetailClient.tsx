@@ -23,7 +23,9 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { apiClient } from "@/lib/api/client";
+import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
+import { getAuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
@@ -774,6 +776,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [guestName, setGuestName] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [isMemberBooking, setIsMemberBooking] = useState(false);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [bookingErrorMessage, setBookingErrorMessage] = useState("");
   const [isFavorite, setIsFavorite] = useState(() => isFavoriteStore(store.slug));
@@ -782,6 +785,26 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     () => personalizeRelatedStores(store.relatedStores),
     [store.relatedStores],
   );
+
+  useEffect(() => {
+    const authUser = getAuthUser();
+    const isMemberAccount = authUser?.role?.toUpperCase() === "USER";
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setIsMemberBooking(isMemberAccount);
+
+      if (isMemberAccount) {
+        setGuestName((current) => current || authUser?.displayName || authUser?.email || "");
+        setEmail((current) => current || authUser?.email || "");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     void apiClient<{ recorded: boolean }>("/analytics/profile-view", {
@@ -973,9 +996,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     try {
       setIsBookingSubmitting(true);
       trackBookingClick("desktop-booking-card");
-      const booking = await bookingApi.createGuestBooking(payload);
+      const currentUser = getAuthUser();
+      const shouldUseMemberBooking =
+        isMemberBooking && currentUser?.role?.toUpperCase() === "USER";
+      const booking = shouldUseMemberBooking
+        ? await bookingApi.createMemberBooking(payload)
+        : await bookingApi.createGuestBooking(payload);
 
-      rememberLastBooking(booking);
+      rememberLastBooking(booking, shouldUseMemberBooking ? undefined : { guestHistory: true });
+      if (shouldUseMemberBooking) {
+        requestMemberNotificationsRefresh();
+      }
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt bàn.";

@@ -1660,6 +1660,28 @@ describe('NightlifeDataService', () => {
     prisma.booking.create.mockResolvedValue({
       id: 'booking-1',
       status: 'REQUESTED',
+      storeId: 'store-1',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 2,
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      cast: {
+        id: 'cast-1',
+        slug: 'yuna-neon',
+        stageName: 'Yuna',
+        publicAlias: 'Yuna',
+      },
+      user: {
+        id: 'member-1',
+        email: 'member@example.com',
+        displayName: 'Member',
+        tier: 'FREE',
+      },
+      guest: {
+        id: 'guest-1',
+        displayName: 'Minh Nguyen',
+        phone: '+84907654321',
+        email: 'member@example.com',
+      },
     });
 
     await service.createMemberBooking(
@@ -1714,6 +1736,18 @@ describe('NightlifeDataService', () => {
         status: 'REQUESTED',
       }),
     );
+    expect(prisma.notificationLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 'member-1',
+        guestId: 'guest-1',
+        storeId: 'store-1',
+        bookingId: 'booking-1',
+        channel: 'IN_APP',
+        status: 'QUEUED',
+        recipient: 'member-1',
+        templateKey: 'customer.booking.created.v1',
+      }),
+    });
   });
 
   it('cancels a member booking and sends the admin alert', async () => {
