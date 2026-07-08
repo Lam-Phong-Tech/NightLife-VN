@@ -21,8 +21,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
-import { apiClient } from "@/lib/api/client";
+import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
+import { ApiError, apiClient, getAuthToken } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
@@ -843,6 +843,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       time: selectedTime,
     });
   const submitDesktopBooking = async () => {
+    if (isBookingSubmitting) return;
+
     setBookingErrorMessage("");
 
     if (!selectedTime) {
@@ -895,13 +897,28 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       trackBookingClick("desktop-booking-card");
       const currentUser = getAuthUser();
       const shouldUseMemberBooking =
-        isMemberBooking && currentUser?.role?.toUpperCase() === "USER";
-      const booking = shouldUseMemberBooking
-        ? await bookingApi.createMemberBooking(payload)
-        : await bookingApi.createGuestBooking(payload);
+        isMemberBooking && currentUser?.role?.toUpperCase() === "USER" && Boolean(getAuthToken());
 
-      rememberLastBooking(booking, shouldUseMemberBooking ? undefined : { guestHistory: true });
+      let booking: BookingRecord;
+      let savedAsMemberBooking = false;
+
       if (shouldUseMemberBooking) {
+        try {
+          booking = await bookingApi.createMemberBooking(payload);
+          savedAsMemberBooking = true;
+        } catch (error) {
+          if (!(error instanceof ApiError) || (error.status !== 401 && error.status !== 403)) {
+            throw error;
+          }
+
+          booking = await bookingApi.createGuestBooking(payload);
+        }
+      } else {
+        booking = await bookingApi.createGuestBooking(payload);
+      }
+
+      rememberLastBooking(booking, savedAsMemberBooking ? undefined : { guestHistory: true });
+      if (savedAsMemberBooking) {
         requestMemberNotificationsRefresh();
       }
       router.push(`/xac-nhan?bookingId=${booking.id}`);
