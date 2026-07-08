@@ -89,6 +89,7 @@ type BottomNavItem = {
   label: string;
   icon: LucideIcon;
   iconUrl?: string;
+  color?: string;
 };
 
 const bottomNavHrefById: Record<string, string> = {
@@ -127,6 +128,7 @@ function mapAppearanceNavItem(item: AppearanceItem, index: number): BottomNavIte
     label: item.label || fallback.label,
     icon: bottomNavIconMap[item.icon] ?? fallback.icon,
     iconUrl: appearanceIconUrl(item.icon),
+    color: item.color,
   };
 }
 
@@ -1826,12 +1828,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           {appearanceBottomNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
+            const activeColor = item.color || colors.gold;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 style={{
-                  color: active ? colors.gold : "#6f6b62",
+                  color: active ? activeColor : "#6f6b62",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -1839,7 +1842,11 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                   gap: "4px",
                   minHeight: "54px",
                   borderRadius: "14px",
-                  background: active ? "rgba(212,178,106,.1)" : "transparent",
+                  background: active
+                    ? item.color
+                      ? `color-mix(in srgb, ${item.color} 18%, transparent)`
+                      : "rgba(212,178,106,.1)"
+                    : "transparent",
                   textDecoration: "none",
                   fontSize: "9.5px",
                   fontWeight: active ? 700 : 500,

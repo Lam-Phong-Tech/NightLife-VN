@@ -4,6 +4,7 @@ export type AppearanceItem = {
   id: string;
   label: string;
   icon: string;
+  color?: string;
 };
 
 export type AppearanceTitle = {
@@ -27,6 +28,11 @@ export type AppearanceConfig = {
 type AppearanceConfigResponse = {
   data?: Partial<AppearanceConfig> | null;
 };
+
+const normalizeAppearanceColor = (value?: string) =>
+  typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value.trim())
+    ? value.trim().toUpperCase()
+    : undefined;
 
 export const DEFAULT_APPEARANCE_CONFIG: AppearanceConfig = {
   quick: [
@@ -70,6 +76,7 @@ const mergeAppearanceItems = (
       id: item?.id || fallbackItem.id,
       label: item?.label?.trim() || fallbackItem.label,
       icon: item?.icon?.trim() || fallbackItem.icon,
+      color: normalizeAppearanceColor(item?.color) || normalizeAppearanceColor(fallbackItem.color),
     };
   });
 

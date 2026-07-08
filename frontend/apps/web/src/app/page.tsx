@@ -93,6 +93,7 @@ type HomeCategoryItem = {
   label: string;
   icon: LucideIcon;
   iconUrl?: string;
+  color?: string;
   href: string;
   featured?: boolean;
 };
@@ -150,6 +151,7 @@ function mapAppearanceQuickItem(item: AppearanceItem, index: number): HomeCatego
     label: item.label || fallback.label,
     icon: appearanceIconMap[item.icon] ?? fallback.icon,
     iconUrl: appearanceIconUrl(item.icon),
+    color: item.color,
     href: categoryHrefById[item.id] ?? fallback.href,
     featured: item.id === "q8" || item.icon === "star" || ("featured" in fallback && Boolean(fallback.featured)),
   };
@@ -834,6 +836,9 @@ function CategoryGrid({
     >
       {items.map((item) => {
         const Icon = item.icon;
+        const accentColor = item.color || (item.featured ? colors.goldSoft : colors.gold);
+        const customColorSurface = item.color ? `color-mix(in srgb, ${item.color} 14%, var(--vy-surface-1))` : undefined;
+        const customColorBorder = item.color ? `color-mix(in srgb, ${item.color} 44%, var(--vy-border))` : undefined;
         return (
           <Link key={item.label} href={item.href} className="nl-home-category-link" style={{ color: colors.text, textAlign: "center" }}>
             <span
@@ -846,12 +851,16 @@ function CategoryGrid({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: item.featured ? colors.goldSoft : colors.gold,
+                color: accentColor,
                 background: item.featured
                   ? "var(--vy-gold-soft-bg)"
-                  : "var(--vy-surface-1)",
-                border: `1px solid ${item.featured ? "var(--vy-border-gold-32)" : "var(--vy-border)"}`,
-                boxShadow: item.featured ? "var(--vy-shadow)" : "none",
+                  : customColorSurface || "var(--vy-surface-1)",
+                border: `1px solid ${item.featured ? "var(--vy-border-gold-32)" : customColorBorder || "var(--vy-border)"}`,
+                boxShadow: item.featured
+                  ? "var(--vy-shadow)"
+                  : item.color
+                    ? `0 12px 28px -22px ${item.color}`
+                    : "none",
               }}
             >
               {item.iconUrl ? (

@@ -30,7 +30,23 @@ const ICONS: Record<string, string> = {
   qr: '<rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><path d="M13.5 13.5h3v3h-3zM17.5 17.5h3v3h-3z"/>'
 };
 
-const DEFAULT_STATE = {
+type AppearanceIconItem = {
+  id: string;
+  label: string;
+  icon: string;
+  color?: string;
+};
+
+type AppearanceState = {
+  quick: AppearanceIconItem[];
+  nav: AppearanceIconItem[];
+  titles: { id: string; key: string; label: string }[];
+  brand: { name: string; tagline: string };
+};
+
+const DEFAULT_ICON_COLOR = '#d4b26a';
+
+const DEFAULT_STATE: AppearanceState = {
   quick: [
     { id: 'q1', label: 'Tìm quán', icon: 'pin' },
     { id: 'q2', label: 'Tìm Cast', icon: 'user' },
@@ -58,8 +74,6 @@ const DEFAULT_STATE = {
   ],
   brand: { name: 'Vietyoru', tagline: 'VIETNAM NIGHTLIFE GUIDE' }
 };
-
-type AppearanceState = typeof DEFAULT_STATE;
 type AppearanceConfigResponse = {
   data?: Partial<AppearanceState> | null;
 };
@@ -75,6 +89,186 @@ const isCustomIcon = (icon?: string) =>
 
 const getIconSrc = (icon: string, color: string) =>
   isCustomIcon(icon) ? (resolveClientUrl(icon) || icon) : getSvgUri(icon, color);
+
+const normalizeIconColor = (value?: string) =>
+  typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value.trim())
+    ? value.trim().toUpperCase()
+    : undefined;
+
+const expandHexColor = (value: string) => {
+  const hex = value.trim().replace('#', '');
+  if (/^[0-9a-f]{3}$/i.test(hex)) {
+    return `#${hex.split('').map((char) => `${char}${char}`).join('')}`.toUpperCase();
+  }
+  if (/^[0-9a-f]{6}$/i.test(hex)) return `#${hex}`.toUpperCase();
+  if (/^[0-9a-f]{8}$/i.test(hex)) return `#${hex.slice(0, 6)}`.toUpperCase();
+  return undefined;
+};
+
+const rgbToHex = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+
+const hexToRgb = (hex: string) => {
+  const normalized = expandHexColor(hex);
+  if (!normalized) return null;
+  return {
+    r: parseInt(normalized.slice(1, 3), 16),
+    g: parseInt(normalized.slice(3, 5), 16),
+    b: parseInt(normalized.slice(5, 7), 16),
+  };
+};
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const rgb = hexToRgb(hex);
+  return rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})` : `rgba(212, 178, 106, ${alpha})`;
+};
+
+const cssColorNames: Record<string, string> = {
+  black: '#000000',
+  white: '#FFFFFF',
+  red: '#FF0000',
+  green: '#008000',
+  blue: '#0000FF',
+  yellow: '#FFFF00',
+  orange: '#FFA500',
+  purple: '#800080',
+  pink: '#FFC0CB',
+  cyan: '#00FFFF',
+  magenta: '#FF00FF',
+  gold: '#D4AF37',
+  gray: '#808080',
+  grey: '#808080',
+};
+
+const parseCssColor = (value?: string) => {
+  if (!value) return undefined;
+  const raw = value.trim().toLowerCase();
+  if (!raw || raw === 'none' || raw === 'transparent' || raw === 'currentcolor' || raw === 'inherit' || raw.startsWith('url(')) {
+    return undefined;
+  }
+  if (raw.startsWith('#')) return expandHexColor(raw);
+  const rgbMatch = raw.match(/rgba?\(([^)]+)\)/);
+  if (rgbMatch) {
+    const parts = rgbMatch[1].split(',').map((part) => part.trim());
+    if (parts.length >= 3) {
+      const alpha = parts[3] === undefined ? 1 : Number(parts[3]);
+      if (Number.isFinite(alpha) && alpha <= 0.05) return undefined;
+      const [r, g, b] = parts.map((part) => Number(part.replace('%', '')));
+      if ([r, g, b].every(Number.isFinite)) return rgbToHex(r, g, b);
+    }
+  }
+  return cssColorNames[raw];
+};
+
+const scoreIconColor = (hex: string) => {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const max = Math.max(rgb.r, rgb.g, rgb.b);
+  const min = Math.min(rgb.r, rgb.g, rgb.b);
+  const saturation = max === 0 ? 0 : (max - min) / max;
+  const lightness = (max + min) / 510;
+  const contrastPenalty = lightness < 0.06 || lightness > 0.94 ? 0.45 : 1;
+  return (0.35 + saturation * 1.9) * contrastPenalty;
+};
+
+const chooseDominantColor = (colors: string[]) => {
+  const counts = new Map<string, number>();
+  colors.forEach((color) => {
+    const normalized = expandHexColor(color);
+    if (!normalized) return;
+    counts.set(normalized, (counts.get(normalized) || 0) + 1);
+  });
+  let best = DEFAULT_ICON_COLOR;
+  let bestScore = 0;
+  counts.forEach((count, color) => {
+    const score = count * scoreIconColor(color);
+    if (score > bestScore) {
+      best = color;
+      bestScore = score;
+    }
+  });
+  return best;
+};
+
+const extractSvgDominantColor = async (file: File) => {
+  const text = await file.text();
+  const colors: string[] = [];
+  const attributePattern = /\b(?:fill|stroke|stop-color|color)\s*=\s*["']([^"']+)["']/gi;
+  const stylePattern = /\b(?:fill|stroke|stop-color|color)\s*:\s*([^;"'}]+)/gi;
+  const colorPattern = /#[0-9a-f]{3,8}\b|rgba?\([^)]+\)/gi;
+
+  const collect = (value?: string) => {
+    const parsed = parseCssColor(value);
+    if (parsed) colors.push(parsed);
+  };
+
+  for (const match of text.matchAll(attributePattern)) collect(match[1]);
+  for (const match of text.matchAll(stylePattern)) collect(match[1]);
+  for (const match of text.matchAll(colorPattern)) collect(match[0]);
+
+  return chooseDominantColor(colors);
+};
+
+const extractPngDominantColor = (file: File) =>
+  new Promise<string>((resolve) => {
+    if (typeof document === 'undefined') {
+      resolve(DEFAULT_ICON_COLOR);
+      return;
+    }
+
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+
+    image.onload = () => {
+      try {
+        const size = 72;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          resolve(DEFAULT_ICON_COLOR);
+          return;
+        }
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(image, 0, 0, size, size);
+        const data = ctx.getImageData(0, 0, size, size).data;
+        const samples: string[] = [];
+        for (let i = 0; i < data.length; i += 16) {
+          const alpha = data[i + 3];
+          if (alpha < 80) continue;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const quantized = [r, g, b].map((value) => Math.round(value / 24) * 24);
+          samples.push(rgbToHex(quantized[0], quantized[1], quantized[2]));
+        }
+        resolve(chooseDominantColor(samples));
+      } catch (err) {
+        console.error('Failed to read icon color', err);
+        resolve(DEFAULT_ICON_COLOR);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(DEFAULT_ICON_COLOR);
+    };
+
+    image.src = url;
+  });
+
+const detectIconDominantColor = (file: File) => {
+  const fileName = file.name.toLowerCase();
+  if (file.type === 'image/svg+xml' || fileName.endsWith('.svg')) return extractSvgDominantColor(file);
+  if (file.type === 'image/png' || fileName.endsWith('.png')) return extractPngDominantColor(file);
+  return Promise.resolve(DEFAULT_ICON_COLOR);
+};
+
+const getItemIconColor = (item: AppearanceIconItem, fallback = DEFAULT_ICON_COLOR) =>
+  normalizeIconColor(item.color) || fallback;
 
 export default function AppearancePage() {
   const [loading, setLoading] = useState(true);
@@ -128,7 +322,7 @@ export default function AppearancePage() {
 
   const showToast = (m: string) => setToast(m);
 
-  const saved = JSON.parse(savedState) as typeof DEFAULT_STATE;
+  const saved = JSON.parse(savedState) as AppearanceState;
   const brandChanged = JSON.stringify(brand) !== JSON.stringify(saved.brand);
   const brandInitial = (brand.name || 'V').trim().charAt(0).toUpperCase();
 
@@ -136,8 +330,8 @@ export default function AppearancePage() {
   const dirty = currentStateStr !== savedState;
 
   let changedCount = 0;
-  quick.forEach((it, i) => { const sv = saved.quick[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label) changedCount++; });
-  nav.forEach((it, i) => { const sv = saved.nav[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label) changedCount++; });
+  quick.forEach((it, i) => { const sv = saved.quick[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label || normalizeIconColor(sv.color) !== normalizeIconColor(it.color)) changedCount++; });
+  nav.forEach((it, i) => { const sv = saved.nav[i]; if (!sv || sv.icon !== it.icon || sv.label !== it.label || normalizeIconColor(sv.color) !== normalizeIconColor(it.color)) changedCount++; });
   titles.forEach((t, i) => { const sv = saved.titles[i]; if (!sv || sv.label !== t.label) changedCount++; });
   if (brandChanged) changedCount++;
 
@@ -180,11 +374,13 @@ export default function AppearancePage() {
         setNav(prev => prev.map(x => x.id === it.id ? { ...x, label: val } : x));
       }
     };
-    const setIcon = (k: string) => {
+    const setIcon = (k: string, color?: string) => {
+      const nextColor = normalizeIconColor(color);
+      const nextValue = nextColor ? { icon: k, color: nextColor } : { icon: k, color: undefined };
       if (drawer.group === 'quick') {
-        setQuick(prev => prev.map(x => x.id === it.id ? { ...x, icon: k } : x));
+        setQuick(prev => prev.map(x => x.id === it.id ? { ...x, ...nextValue } : x));
       } else {
-        setNav(prev => prev.map(x => x.id === it.id ? { ...x, icon: k } : x));
+        setNav(prev => prev.map(x => x.id === it.id ? { ...x, ...nextValue } : x));
       }
     };
 
@@ -206,6 +402,7 @@ export default function AppearancePage() {
 
       try {
         setUploadingIcon(true);
+        const dominantColor = await detectIconDominantColor(file);
         const form = new FormData();
         form.append('file', file);
         form.append('purpose', 'APPEARANCE_ICON');
@@ -215,8 +412,8 @@ export default function AppearancePage() {
           showToast('Không lấy được URL icon sau khi tải lên.');
           return;
         }
-        setIcon(res.url);
-        showToast('Đã tải icon lên. Bấm Lưu thay đổi để áp dụng.');
+        setIcon(res.url, dominantColor);
+        showToast(`Đã tải icon lên và tự nhận màu ${dominantColor}. Bấm Lưu thay đổi để áp dụng.`);
       } catch (err) {
         console.error(err);
         showToast(err instanceof Error ? err.message : 'Tải icon thất bại.');
@@ -225,6 +422,8 @@ export default function AppearancePage() {
         if (iconUploadInputRef.current) iconUploadInputRef.current.value = '';
       }
     };
+
+    const previewColor = getItemIconColor(it, '#e3c27e');
 
     return (
       <div style={{ position: 'fixed', inset: 0, zIndex: 70 }}>
@@ -243,12 +442,16 @@ export default function AppearancePage() {
           </div>
           <div style={{ padding: '20px 24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(212,178,106,.22)', borderRadius: '14px', padding: '13px 15px' }}>
-              <span style={{ width: '58px', height: '58px', flex: 'none', borderRadius: '16px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(212,178,106,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={getIconSrc(it.icon, '#e3c27e')} width={26} height={26} alt="" style={{ objectFit: 'contain' }} />
+              <span style={{ width: '58px', height: '58px', flex: 'none', borderRadius: '16px', background: hexToRgba(previewColor, .12), border: `1px solid ${hexToRgba(previewColor, .46)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 14px 26px -22px ${previewColor}` }}>
+                <img src={getIconSrc(it.icon, previewColor)} width={26} height={26} alt="" style={{ objectFit: 'contain' }} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.3px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '6px' }}>Tên hiển thị</div>
                 <input value={it.label} onChange={setLabel} maxLength={16} style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '10px', padding: '10px 12px', color: '#f3f0ea', fontSize: '13.5px', fontFamily: "'Inter', sans-serif", outline: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '8px', color: '#8c8679', fontSize: '10.5px', fontWeight: 600 }}>
+                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: previewColor, boxShadow: `0 0 0 3px ${hexToRgba(previewColor, .14)}` }}></span>
+                  Màu icon: <b style={{ color: '#f0dda8' }}>{previewColor}</b>
+                </div>
               </div>
             </div>
 
@@ -463,7 +666,7 @@ export default function AppearancePage() {
             {quick.map(t => (
               <div key={t.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <span style={{ width: '52px', height: '52px', borderRadius: '15px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(212,178,106,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getIconSrc(t.icon, '#d4b26a')} width={22} height={22} alt="" style={{ objectFit: 'contain' }} />
+                  <img src={getIconSrc(t.icon, getItemIconColor(t))} width={22} height={22} alt="" style={{ objectFit: 'contain' }} />
                 </span>
                 <span style={{ fontSize: '11px', color: '#c5c0b6', whiteSpace: 'nowrap' }}>{t.label}</span>
               </div>
@@ -475,11 +678,11 @@ export default function AppearancePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
           {quick.map((r, i) => {
             const sv = saved.quick[i];
-            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label;
+            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label || normalizeIconColor(sv.color) !== normalizeIconColor(r.color);
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'quick', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getIconSrc(r.icon, '#e3c27e')} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
+                  <img src={getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
@@ -507,7 +710,7 @@ export default function AppearancePage() {
               const fw = i === 0 ? 700 : 500;
               return (
                 <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <img src={getIconSrc(t.icon, lc)} width={20} height={20} alt="" style={{ display: 'block', objectFit: 'contain' }} />
+                  <img src={getIconSrc(t.icon, getItemIconColor(t, lc))} width={20} height={20} alt="" style={{ display: 'block', objectFit: 'contain' }} />
                   <span style={{ fontSize: '9.5px', fontWeight: fw, color: lc, whiteSpace: 'nowrap' }}>{t.label}</span>
                 </div>
               );
@@ -519,11 +722,11 @@ export default function AppearancePage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
           {nav.map((r, i) => {
             const sv = saved.nav[i];
-            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label;
+            const changed = !sv || sv.icon !== r.icon || sv.label !== r.label || normalizeIconColor(sv.color) !== normalizeIconColor(r.color);
             return (
               <div key={r.id} onClick={() => setDrawer({ group: 'nav', id: r.id })} style={{ display: 'flex', alignItems: 'center', gap: '11px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '10px 12px', cursor: 'pointer' }}>
                 <span style={{ width: '38px', height: '38px', flex: 'none', borderRadius: '11px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={getIconSrc(r.icon, '#e3c27e')} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
+                  <img src={getIconSrc(r.icon, getItemIconColor(r, '#e3c27e'))} width={19} height={19} alt="" style={{ objectFit: 'contain' }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>
