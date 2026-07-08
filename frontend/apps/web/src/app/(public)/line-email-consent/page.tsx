@@ -43,8 +43,9 @@ export default function LineEmailConsentPage() {
   }, []);
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+    <main className="nl-line-consent-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
       <section
+        className="nl-line-consent-shell"
         style={{
           maxWidth: 1040,
           margin: "0 auto",
@@ -54,6 +55,7 @@ export default function LineEmailConsentPage() {
         }}
       >
         <Link
+          className="nl-line-consent-back"
           href="/dang-nhap"
           style={{
             display: "inline-flex",
@@ -164,17 +166,18 @@ export default function LineEmailConsentPage() {
               >
                 <ShieldCheck size={26} />
               </div>
-              <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12, fontWeight: 950 }}>
+              <h2 className="nl-line-consent-title" style={{ margin: 0, fontSize: 23, lineHeight: 1.12, fontWeight: 950 }}>
                 Chia sẻ email qua LINE
               </h2>
             </div>
-            <p style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.58 }}>
+            <p className="nl-line-consent-copy" style={{ marginTop: 10, color: colors.muted, fontSize: 13.5, lineHeight: 1.58 }}>
               Cho phép Vietyoru nhận email từ LINE để tạo hoặc đăng nhập tài khoản.
             </p>
 
-            <form method="GET" action="/api/backend/auth/line/start">
+            <form className="nl-line-consent-form" method="GET" action="/api/backend/auth/line/start">
               <input type="hidden" name="redirect" value={redirectTo} />
             <label
+              className="nl-line-consent-check"
               style={{
                 display: "grid",
                 marginTop: 18,
@@ -197,12 +200,13 @@ export default function LineEmailConsentPage() {
                 onChange={(event) => setAccepted(event.target.checked)}
                 style={{ width: 18, height: 18, marginTop: 2, accentColor: colors.line }}
               />
-              <span style={{ color: colors.text, fontSize: 13.5, lineHeight: 1.52, fontWeight: 780 }}>
+              <span className="nl-line-consent-check-copy" style={{ color: colors.text, fontSize: 13.5, lineHeight: 1.52, fontWeight: 780 }}>
                 Tôi đồng ý chia sẻ email từ LINE cho Vietyoru.
               </span>
             </label>
 
             <button
+              className="nl-line-consent-submit"
               type="submit"
               style={{
                 marginTop: 18,
@@ -222,6 +226,7 @@ export default function LineEmailConsentPage() {
             </form>
 
             <div
+              className="nl-line-consent-benefits"
               style={{
                 display: "grid",
                 gap: 9,
@@ -233,16 +238,16 @@ export default function LineEmailConsentPage() {
               }}
             >
               {emailConsentBenefits.map((item) => (
-                <div key={item} style={{ display: "flex", gap: 9, color: colors.muted, fontSize: 12.8, lineHeight: 1.45 }}>
+                <div className="nl-line-consent-benefit-row" key={item} style={{ display: "flex", gap: 9, color: colors.muted, fontSize: 12.8, lineHeight: 1.45 }}>
                   <CheckCircle2 size={16} color={colors.line} style={{ flex: "none", marginTop: 1 }} />
                   <span>{item}</span>
                 </div>
               ))}
             </div>
 
-            <p style={{ marginTop: 12, color: colors.dim, fontSize: 12, lineHeight: 1.55 }}>
+            <p className="nl-line-consent-policy" style={{ marginTop: 12, color: colors.dim, fontSize: 12, lineHeight: 1.55 }}>
               Xem thêm tại{" "}
-              <Link href="/legal" style={{ color: colors.goldPale, fontWeight: 900 }}>
+              <Link className="nl-line-consent-policy-link" href="/legal" style={{ color: colors.goldPale, fontWeight: 900 }}>
                 Chính sách bảo mật
               </Link>
               .
@@ -252,6 +257,67 @@ export default function LineEmailConsentPage() {
       </section>
 
       <style jsx global>{`
+        html.vy-light .nl-line-consent-page {
+          background:
+            radial-gradient(circle at 18% 0%, rgba(212, 178, 106, 0.16), transparent 34%),
+            linear-gradient(180deg, #fffaf1 0%, #f5efe5 54%, #efe7da 100%) !important;
+          color: #241a0a !important;
+        }
+
+        html.vy-light .nl-line-consent-back {
+          color: #6f6658 !important;
+        }
+
+        html.vy-light .nl-line-consent-hero {
+          border-color: rgba(150, 116, 52, 0.24) !important;
+          box-shadow: 0 26px 70px -44px rgba(65, 45, 16, 0.55) !important;
+        }
+
+        html.vy-light .nl-line-consent-hero-title {
+          color: #fffaf1 !important;
+          text-shadow: 0 18px 42px rgba(0, 0, 0, 0.58) !important;
+        }
+
+        html.vy-light .nl-line-consent-hero-copy {
+          color: rgba(255, 250, 241, 0.82) !important;
+        }
+
+        html.vy-light .nl-line-consent-card {
+          background: rgba(255, 255, 255, 0.84) !important;
+          border-color: rgba(150, 116, 52, 0.26) !important;
+          box-shadow: 0 26px 70px -44px rgba(65, 45, 16, 0.5) !important;
+          backdrop-filter: blur(18px) saturate(1.08);
+        }
+
+        html.vy-light .nl-line-consent-title,
+        html.vy-light .nl-line-consent-check-copy {
+          color: #241a0a !important;
+        }
+
+        html.vy-light .nl-line-consent-copy,
+        html.vy-light .nl-line-consent-benefit-row,
+        html.vy-light .nl-line-consent-policy {
+          color: #6f6658 !important;
+        }
+
+        html.vy-light .nl-line-consent-check,
+        html.vy-light .nl-line-consent-benefits {
+          background: rgba(255, 255, 255, 0.72) !important;
+          border-color: rgba(150, 116, 52, 0.22) !important;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.72),
+            0 16px 38px -34px rgba(65, 45, 16, 0.48) !important;
+        }
+
+        html.vy-light .nl-line-consent-check:has(input:checked) {
+          background: rgba(6, 199, 85, 0.1) !important;
+          border-color: rgba(6, 199, 85, 0.34) !important;
+        }
+
+        html.vy-light .nl-line-consent-policy-link {
+          color: #8f6a2a !important;
+        }
+
         @media (max-width: 767px) {
           .nl-line-consent-layout {
             grid-template-columns: 1fr !important;
