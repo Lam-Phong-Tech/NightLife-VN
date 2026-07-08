@@ -37,7 +37,10 @@ type StorageUser = {
   role?: string;
 };
 
-const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set(['BANNER_GLOBAL']);
+const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set([
+  'APPEARANCE_ICON',
+  'BANNER_GLOBAL',
+]);
 
 @Injectable()
 export class StorageService implements OnModuleInit {

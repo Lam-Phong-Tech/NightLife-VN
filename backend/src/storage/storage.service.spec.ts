@@ -283,6 +283,25 @@ describe('StorageService', () => {
     });
   });
 
+  it('allows admin public uploads for appearance icons', async () => {
+    prisma.media.create.mockResolvedValue({ id: 'media-appearance-icon-1' });
+
+    await service.saveLocalFile(file, {
+      ownerId: 'admin-1',
+      userRole: 'ADMIN',
+      access: 'PUBLIC',
+      purpose: 'APPEARANCE_ICON',
+    });
+
+    expect(prisma.media.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ownerId: 'admin-1',
+        access: MediaAccess.PUBLIC,
+        purpose: 'APPEARANCE_ICON',
+      }),
+    });
+  });
+
   it('blocks protected media for another user', async () => {
     prisma.media.findUnique.mockResolvedValue({
       access: MediaAccess.PROTECTED,
