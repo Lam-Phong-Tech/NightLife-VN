@@ -20,6 +20,7 @@ import { resolveClientUrl } from "@/lib/api/client";
 import { storeImageForSlug } from "@/lib/demo-media";
 import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
+import { sortBySearchRelevance } from "@/lib/search-relevance";
 
 type Coordinates = {
   lat: number;
@@ -266,14 +267,28 @@ export default function Page() {
 
   const venues = useMemo(
     () =>
-      stores
+      sortBySearchRelevance(stores, query, (store) => ({
+        primary: [store.name],
+        secondary: [
+          store.category,
+          categoryLabels[store.category],
+          store.description,
+          store.address,
+          store.area?.name,
+          store.area?.code,
+          store.district,
+          store.city,
+          store.cityCode,
+          store.slug,
+        ],
+      }))
         .map(toVenueView)
         .filter((venue) => !ratingOnly || venue.rating >= 4.5)
         .filter(
           (venue) =>
             !openNow || venue.statusLabel.includes("Đang") || venue.statusLabel.includes("Mở"),
         ),
-    [openNow, ratingOnly, stores],
+    [openNow, query, ratingOnly, stores],
   );
 
   const cityLabel = cityLabels[city] ?? "Việt Nam";

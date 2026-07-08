@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
-  Clock3,
   Heart,
   History,
   Languages,
@@ -26,11 +25,17 @@ import {
 } from "@/lib/api/discovery";
 import { castImageForSlug } from "@/lib/demo-media";
 import { readFavoriteCastSlugs, writeFavoriteCast } from "@/lib/member-favorites";
+import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { PlaceholderMedia } from "@/components/ui/MediaPlaceholder";
 
 type PriceRange = "" | "under400" | "400600" | "6001000" | "over1000";
+
+type Coordinates = {
+  lat: number;
+  lng: number;
+};
 
 type Option = {
   value: string;
@@ -141,9 +146,11 @@ export default function Page() {
   const [storeSlug, setStoreSlug] = useState("");
   const [priceRange, setPriceRange] = useState<PriceRange>("");
   const [sort, setSort] = useState<DiscoverySort>("newest");
+  const [coords, setCoords] = useState<Coordinates | null>(null);
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [isSearchFocused, setSearchFocused] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>([]);
   const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(() => readFavoriteCastSlugs());
@@ -180,7 +187,9 @@ export default function Page() {
           area,
           category,
           language,
+          lat: coords?.lat,
           limit: 60,
+          lng: coords?.lng,
           sort,
           hasActiveCoupon,
         })
@@ -202,7 +211,7 @@ export default function Page() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, hasActiveCoupon, language, query, sort]);
+  }, [area, category, city, coords, hasActiveCoupon, language, query, sort]);
 
   useEffect(() => {
     if (!isFilterOpen) return;
@@ -247,21 +256,44 @@ export default function Page() {
 
   const visibleCasts = useMemo(
     () =>
-      casts
-        .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
-        .filter((cast) => matchesPriceRange(priceRange, cast.hourlyRateVnd)),
-    [casts, priceRange, storeSlug],
+      sortBySearchRelevance(
+        casts
+          .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
+          .filter((cast) => matchesPriceRange(priceRange, cast.hourlyRateVnd)),
+        query,
+        (cast) => ({
+          primary: [cast.name, cast.publicAlias, cast.stageName],
+          secondary: [
+            cast.publicHeadline,
+            cast.store.name,
+            cast.store.category,
+            cast.store.area?.name,
+            cast.store.district,
+            cast.store.city,
+            cast.languages.join(" "),
+            cast.tags.join(" "),
+          ],
+        }),
+      ),
+    [casts, priceRange, query, storeSlug],
   );
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
   const cityLabel = city ? (cityLabels[city] ?? city) : "Việt Nam";
-  const sortLabel = sortOptions.find((option) => option.value === sort)?.label ?? "Mới nhất";
+  const effectiveSortOptions = useMemo(
+    () =>
+      sortOptions.map((option) =>
+        option.value === "nearest" && isLocating ? { ...option, label: "Đang lấy vị trí" } : option,
+      ),
+    [isLocating],
+  );
   const activeFilterCount = [
     area,
     category,
     language,
     storeSlug,
     priceRange,
+    sort !== "newest",
     hasActiveCoupon,
   ].filter(Boolean).length;
   const showSuggestions = isSearchFocused && query.trim().length > 0;
@@ -280,6 +312,40 @@ export default function Page() {
     setCity(nextCity);
     setArea("");
     setStoreSlug("");
+    setSort((current) => (current === "nearest" && !coords ? "newest" : current));
+  };
+
+  const requestNearby = () => {
+    if (!navigator.geolocation) {
+      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setSort("nearest");
+        setIsLocating(false);
+      },
+      () => {
+        setError("Chưa lấy được vị trí hiện tại.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  const handleSortChange = (nextSort: DiscoverySort) => {
+    if (nextSort === "nearest" && !coords) {
+      requestNearby();
+      return;
+    }
+
+    setSort(nextSort);
   };
 
   const setPopularKeyword = (keyword: string) => {
@@ -447,9 +513,9 @@ export default function Page() {
               ariaLabel="Chọn sắp xếp"
               className="cast-sort-select"
               label="Sắp xếp:"
-              options={sortOptions}
+              options={effectiveSortOptions}
               value={sort}
-              onChange={(value) => setSort(value as DiscoverySort)}
+              onChange={(value) => handleSortChange(value as DiscoverySort)}
             />
           </div>
 
@@ -485,7 +551,8 @@ export default function Page() {
           city={city}
           language={language}
           priceRange={priceRange}
-          sortLabel={sortLabel}
+          sort={sort}
+          sortOptions={effectiveSortOptions}
           storeOptions={storeOptions}
           storeSlug={storeSlug}
           total={visibleCasts.length}
@@ -497,6 +564,7 @@ export default function Page() {
           onLanguage={setLanguage}
           onPrice={(value) => setPriceRange(value as PriceRange)}
           onReset={resetFilters}
+          onSort={handleSortChange}
           onStore={setStoreSlug}
           onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
         />
@@ -763,6 +831,8 @@ function MobileFilterSheet({
   priceRange,
   storeOptions,
   storeSlug,
+  sort,
+  sortOptions,
   total,
   hasActiveCoupon,
   onArea,
@@ -772,6 +842,7 @@ function MobileFilterSheet({
   onLanguage,
   onPrice,
   onReset,
+  onSort,
   onStore,
   onToggleCoupon,
 }: {
@@ -782,7 +853,8 @@ function MobileFilterSheet({
   city: string;
   language: string;
   priceRange: PriceRange;
-  sortLabel: string;
+  sort: DiscoverySort;
+  sortOptions: Array<{ value: DiscoverySort; label: string }>;
   storeOptions: Option[];
   storeSlug: string;
   total: number;
@@ -794,6 +866,7 @@ function MobileFilterSheet({
   onLanguage: (value: string) => void;
   onPrice: (value: string) => void;
   onReset: () => void;
+  onSort: (value: DiscoverySort) => void;
   onStore: (value: string) => void;
   onToggleCoupon: () => void;
 }) {
@@ -845,6 +918,12 @@ function MobileFilterSheet({
             value={priceRange}
             onChange={onPrice}
           />
+          <FilterChipGroup
+            label="Sắp xếp"
+            options={sortOptions}
+            value={sort}
+            onChange={(value) => onSort(value as DiscoverySort)}
+          />
 
           <div className="cast-range-preview" aria-hidden="true">
             <div>
@@ -873,15 +952,6 @@ function MobileFilterSheet({
               className={hasActiveCoupon ? "is-on" : ""}
               onClick={onToggleCoupon}
             >
-              <b />
-            </button>
-          </div>
-          <div className="cast-toggle-row">
-            <span>
-              <Clock3 size={15} />
-              Còn lịch trống tuần này
-            </span>
-            <button type="button" aria-pressed="false">
               <b />
             </button>
           </div>
