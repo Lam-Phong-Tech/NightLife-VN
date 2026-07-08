@@ -1158,6 +1158,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   );
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
+  const showSupportChat = Boolean(authUser);
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
   const notificationNotices = memberNotifications.map(toNotice);
 
@@ -1284,7 +1285,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const updateAuthUser = () => setAuthUser(getAuthUser());
+    const updateAuthUser = () => {
+      const nextUser = getAuthUser();
+      setAuthUser(nextUser);
+      if (!nextUser) {
+        setIsChatOpen(false);
+      }
+    };
     updateAuthUser();
     window.addEventListener("focus", updateAuthUser);
     window.addEventListener("storage", updateAuthUser);
@@ -1657,13 +1664,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <LanguagePicker isMobile={isMobile} />
               <ThemeToggle isMobile={isMobile} />
 
-              {/* Chat */}
-              <SupportChatWidget
-                isMobile={isMobile}
-                isOpen={isChatOpen}
-                onOpen={() => setIsNotificationOpen(false)}
-                onOpenChange={setIsChatOpen}
-              />
+              {showSupportChat ? (
+                <SupportChatWidget
+                  isMobile={isMobile}
+                  isOpen={isChatOpen}
+                  onOpen={() => setIsNotificationOpen(false)}
+                  onOpenChange={setIsChatOpen}
+                />
+              ) : null}
 
               {showCustomerNotifications ? (
                 <NotificationBellButton
@@ -1719,13 +1727,14 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
               <LanguagePicker isMobile={isMobile} />
               <ThemeToggle isMobile={isMobile} />
 
-              {/* Chat */}
-              <SupportChatWidget
-                isMobile={isMobile}
-                isOpen={isChatOpen}
-                onOpen={() => setIsNotificationOpen(false)}
-                onOpenChange={setIsChatOpen}
-              />
+              {showSupportChat ? (
+                <SupportChatWidget
+                  isMobile={isMobile}
+                  isOpen={isChatOpen}
+                  onOpen={() => setIsNotificationOpen(false)}
+                  onOpenChange={setIsChatOpen}
+                />
+              ) : null}
 
               {showCustomerNotifications ? (
                 <NotificationBellButton
