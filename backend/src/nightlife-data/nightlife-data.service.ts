@@ -247,6 +247,12 @@ type CustomerNotificationRecord = {
     status: string;
     scheduledAt: Date;
     store: { id: string; name: string; slug: string | null } | null;
+    cast: {
+      id: string;
+      slug: string;
+      stageName: string;
+      publicAlias: string | null;
+    } | null;
   } | null;
   bill: {
     id: string;
@@ -3011,7 +3017,9 @@ export class NightlifeDataService {
     await this.adminNotificationService?.notifyBookingCreated(booking);
     await this.notifyBookingCustomerTemplate(
       booking,
-      'customer.booking.created.v1',
+      booking.cast
+        ? 'customer.booking.cast_created.v1'
+        : 'customer.booking.created.v1',
       {
         scheduledAt: this.toAuditIso(booking.scheduledAt),
         partySize: booking.partySize ?? null,
@@ -10394,7 +10402,7 @@ export class NightlifeDataService {
 
     const channel = booking.user?.id ? 'IN_APP' : guestEmail ? 'EMAIL' : 'LINE';
 
-    await this.prisma.notificationLog.create({
+    const notification = await this.prisma.notificationLog.create({
       data: {
         userId: booking.user?.id,
         guestId: booking.guest?.id,
@@ -10411,6 +10419,17 @@ export class NightlifeDataService {
         },
       },
     });
+
+    if (channel === 'IN_APP' && booking.user?.id) {
+      this.socketGateway?.notifyMemberNotificationCreated(booking.user.id, {
+        id: notification.id,
+        templateKey,
+        category: this.customerNotificationCategory(templateKey),
+        bookingId: booking.id,
+        billId: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
   }
 
   private assertBookingDateWindow(scheduledAt: Date) {
@@ -11148,6 +11167,14 @@ export class NightlifeDataService {
           status: true,
           scheduledAt: true,
           store: { select: { id: true, name: true, slug: true } },
+          cast: {
+            select: {
+              id: true,
+              slug: true,
+              stageName: true,
+              publicAlias: true,
+            },
+          },
         },
       },
       bill: {
@@ -11169,16 +11196,36 @@ export class NightlifeDataService {
   }
 
   private toCustomerNotification(log: CustomerNotificationRecord) {
-    const payload = this.asRecord(log.payload);
+    const payload = this.asRecord(log.payload) ?? {};
     const templateKey = log.templateKey ?? 'customer.system.update.v1';
     const billNumber =
       log.bill?.billNumber ??
       (log.billId ? `#${log.billId.slice(0, 8).toUpperCase()}` : 'hóa đơn');
     const storeName =
       log.bill?.store?.name ??
+      this.payloadString(payload, 'storeName') ??
       log.store?.name ??
       log.booking?.store?.name ??
       'Vietyoru';
+    const castName =
+      this.payloadString(payload, 'castName') ??
+      log.booking?.cast?.publicAlias ??
+      log.booking?.cast?.stageName ??
+      null;
+    const bookingTarget = castName ? `${castName} @ ${storeName}` : storeName;
+    const scheduleLabel = this.formatCustomerSchedule(
+      this.payloadString(payload, 'scheduledAt') ?? log.booking?.scheduledAt,
+    );
+    const previousScheduleLabel = this.formatCustomerSchedule(
+      this.payloadString(payload, 'previousScheduledAt'),
+    );
+    const scheduleSuffix = scheduleLabel ? ` lúc ${scheduleLabel}` : '';
+    const changeSuffix =
+      previousScheduleLabel && scheduleLabel
+        ? ` từ ${previousScheduleLabel} sang ${scheduleLabel}`
+        : scheduleLabel
+          ? ` sang ${scheduleLabel}`
+          : '';
     const amountLabel =
       typeof log.bill?.totalVnd === 'number' && log.bill.totalVnd > 0
         ? ` (${this.formatVnd(log.bill.totalVnd)})`
@@ -11190,6 +11237,10 @@ export class NightlifeDataService {
     const rejectReason =
       log.bill?.rejectReason ??
       (typeof payload?.rejectReason === 'string' ? payload.rejectReason : null);
+    const note =
+      this.payloadString(payload, 'note') ??
+      this.payloadString(payload, 'reason') ??
+      null;
     const href = log.billId
       ? `/gui-hoa-don?billId=${encodeURIComponent(log.billId)}`
       : log.bookingId
@@ -11199,13 +11250,13 @@ export class NightlifeDataService {
     let title = 'Thông báo mới';
     let body = 'Bạn có cập nhật mới từ Vietyoru.';
     let tone: 'gold' | 'green' | 'amber' | 'danger' = 'gold';
-    let category: 'bill' | 'booking' | 'system' = 'system';
+    let category = this.customerNotificationCategory(templateKey);
     let actionLabel = 'Xem chi tiết';
 
     if (templateKey === 'customer.bill.submitted.v1') {
-      title = 'Đã nhận hóa đơn của bạn';
-      body = `Hóa đơn ${billNumber} tại ${storeName}${amountLabel} đang chờ Admin duyệt.`;
-      category = 'bill';
+      title = 'Đã gửi hóa đơn';
+      body = `Hóa đơn ${billNumber} tại ${storeName}${amountLabel} đã được gửi, đang chờ Admin duyệt.`;
+      tone = 'amber';
       actionLabel = 'Xem hóa đơn';
     } else if (templateKey === 'customer.bill.verified.v1') {
       title = 'Hóa đơn đã được duyệt';
@@ -11213,29 +11264,62 @@ export class NightlifeDataService {
         `Admin đã duyệt hóa đơn ${billNumber} tại ${storeName}.` +
         (pointsEarned > 0 ? ` Bạn được cộng ${pointsEarned} điểm.` : '');
       tone = 'green';
-      category = 'bill';
-      actionLabel = 'Xem kết quả duyệt';
+      actionLabel = 'Xem kết quả';
     } else if (templateKey === 'customer.bill.rejected.v1') {
-      title = 'Hóa đơn chưa được duyệt';
+      title = 'Hóa đơn bị từ chối';
       body =
         `Admin đã từ chối hóa đơn ${billNumber} tại ${storeName}.` +
         (rejectReason
           ? ` Lý do: ${rejectReason}.`
           : ' Vui lòng kiểm tra lại chứng từ.');
       tone = 'danger';
-      category = 'bill';
       actionLabel = 'Xem lý do';
     } else if (templateKey === 'customer.booking.created.v1') {
-      title = 'Đã gửi yêu cầu đặt bàn';
-      body = `Lịch đặt tại ${storeName} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
+      title = 'Đặt bàn thành công';
+      body = `Yêu cầu đặt bàn tại ${storeName}${scheduleSuffix} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
       tone = 'amber';
-      category = 'booking';
+      actionLabel = 'Xem lịch đặt';
+    } else if (templateKey === 'customer.booking.cast_created.v1') {
+      title = 'Đặt bàn theo cast thành công';
+      body = `Yêu cầu đặt ${bookingTarget}${scheduleSuffix} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
+      tone = 'amber';
+      actionLabel = 'Xem lịch đặt';
+    } else if (templateKey === 'customer.booking.rescheduled.v1') {
+      title = 'Lịch đặt đã được đổi';
+      body = `Lịch đặt tại ${bookingTarget}${changeSuffix} đã được cập nhật.`;
+      tone = 'green';
+      actionLabel = 'Xem lịch mới';
+    } else if (templateKey === 'customer.booking.reschedule_rejected.v1') {
+      title = 'Yêu cầu đổi lịch chưa được duyệt';
+      body =
+        `Yêu cầu đổi lịch tại ${bookingTarget} chưa được Admin duyệt.` +
+        (note ? ` Ghi chú: ${note}.` : '');
+      tone = 'danger';
+      actionLabel = 'Xem lịch đặt';
+    } else if (templateKey === 'customer.booking.cancelled.v1') {
+      const actorType = this.payloadString(payload, 'actorType');
+      title = 'Lịch đặt đã hủy';
+      body =
+        actorType === 'MEMBER' || actorType === 'GUEST'
+          ? `Bạn đã hủy lịch đặt tại ${bookingTarget}${scheduleSuffix}.`
+          : `Lịch đặt tại ${bookingTarget}${scheduleSuffix} đã được hủy.`;
+      body += note ? ` Lý do: ${note}.` : '';
+      tone = 'danger';
+      actionLabel = 'Xem lịch đặt';
+    } else if (templateKey === 'customer.booking.checked_in.v1') {
+      title = 'Đã check-in lịch đặt';
+      body = `Lịch đặt tại ${bookingTarget}${scheduleSuffix} đã được check-in.`;
+      tone = 'green';
+      actionLabel = 'Xem lịch đặt';
+    } else if (templateKey === 'customer.booking.completed.v1') {
+      title = 'Lịch đặt đã hoàn tất';
+      body = `Lịch đặt tại ${bookingTarget}${scheduleSuffix} đã hoàn tất.`;
+      tone = 'green';
       actionLabel = 'Xem lịch đặt';
     } else if (templateKey.startsWith('customer.booking.')) {
       title = 'Cập nhật lịch đặt';
-      body = `Lịch đặt tại ${storeName} vừa có cập nhật mới.`;
+      body = `Lịch đặt tại ${bookingTarget} vừa có cập nhật mới.`;
       tone = 'amber';
-      category = 'booking';
     }
 
     return {
@@ -11252,7 +11336,7 @@ export class NightlifeDataService {
       timeLabel: this.relativeNotificationTime(log.createdAt),
       billId: log.billId,
       bookingId: log.bookingId,
-      status: log.bill?.status ?? null,
+      status: log.bill?.status ?? log.booking?.status ?? null,
       bill: log.bill
         ? {
             id: log.bill.id,
@@ -11265,6 +11349,40 @@ export class NightlifeDataService {
           }
         : null,
     };
+  }
+
+  private customerNotificationCategory(templateKey: string) {
+    if (templateKey.startsWith('customer.bill.')) {
+      return 'bill' as const;
+    }
+
+    if (templateKey.startsWith('customer.booking.')) {
+      return 'booking' as const;
+    }
+
+    return 'system' as const;
+  }
+
+  private payloadString(
+    payload: Record<string, unknown>,
+    key: string,
+  ): string | null {
+    const value = payload[key];
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private formatCustomerSchedule(value: unknown) {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(String(value));
+    if (!Number.isFinite(date.getTime())) return null;
+
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }).format(date);
   }
 
   private relativeNotificationTime(value: Date) {
@@ -11348,13 +11466,14 @@ export class NightlifeDataService {
       return;
     }
 
-    await this.prisma.notificationLog.create({
+    const channel = booking.user?.id ? 'IN_APP' : 'LINE';
+    const notification = await this.prisma.notificationLog.create({
       data: {
         userId: booking.user?.id,
         guestId: booking.guest?.id,
         storeId: booking.storeId ?? booking.store?.id ?? undefined,
         bookingId: booking.id,
-        channel: booking.user?.id ? 'IN_APP' : 'LINE',
+        channel,
         status: 'QUEUED',
         recipient,
         templateKey,
@@ -11363,9 +11482,25 @@ export class NightlifeDataService {
           status: booking.status,
           reason: options.reason ?? null,
           actorType: options.actorType,
+          scheduledAt: this.toAuditIso(booking.scheduledAt),
+          partySize: booking.partySize ?? null,
+          storeName: booking.store?.name ?? null,
+          storeSlug: booking.store?.slug ?? null,
+          castName: booking.cast?.publicAlias ?? booking.cast?.stageName ?? null,
         },
       },
     });
+
+    if (channel === 'IN_APP' && booking.user?.id) {
+      this.socketGateway?.notifyMemberNotificationCreated(booking.user.id, {
+        id: notification.id,
+        templateKey,
+        category: this.customerNotificationCategory(templateKey),
+        bookingId: booking.id,
+        billId: null,
+        createdAt: new Date().toISOString(),
+      });
+    }
   }
 
   private customerBookingTemplateKey(status: string) {
@@ -14907,7 +15042,7 @@ export class NightlifeDataService {
   ) {
     if (!input.userId) return;
 
-    await prisma.notificationLog.create({
+    const notification = await prisma.notificationLog.create({
       data: {
         userId: input.userId,
         storeId: input.storeId ?? undefined,
@@ -14929,6 +15064,15 @@ export class NightlifeDataService {
           storeSlug: input.bill?.store?.slug ?? null,
         }),
       },
+    });
+
+    this.socketGateway?.notifyMemberNotificationCreated(input.userId, {
+      id: notification.id,
+      templateKey: input.templateKey,
+      category: 'bill',
+      bookingId: input.bookingId ?? null,
+      billId: input.billId,
+      createdAt: new Date().toISOString(),
     });
   }
 

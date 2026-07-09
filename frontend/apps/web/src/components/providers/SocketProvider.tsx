@@ -2,6 +2,11 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { authSessionChangeEvent, getAuthUser } from '@/lib/auth/session';
+import {
+  memberNotificationCreatedEvent,
+  type MemberNotificationSocketPayload,
+} from '@/lib/api/notifications';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -24,6 +29,24 @@ export const SocketProvider = ({
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [sessionUserId, setSessionUserId] = useState<string | null>(() =>
+    typeof window === 'undefined' ? null : (getAuthUser()?.id ?? null),
+  );
+  const activeUserId = userId ?? sessionUserId ?? undefined;
+
+  useEffect(() => {
+    const updateSessionUser = () => {
+      setSessionUserId(getAuthUser()?.id ?? null);
+    };
+
+    window.addEventListener(authSessionChangeEvent, updateSessionUser);
+    window.addEventListener('storage', updateSessionUser);
+
+    return () => {
+      window.removeEventListener(authSessionChangeEvent, updateSessionUser);
+      window.removeEventListener('storage', updateSessionUser);
+    };
+  }, []);
 
   useEffect(() => {
     // Connect to Backend WebSocket server
@@ -34,8 +57,8 @@ export const SocketProvider = ({
 
     socketInstance.on('connect', () => {
       setIsConnected(true);
-      if (userId) {
-        socketInstance.emit('join_room', { userId });
+      if (activeUserId) {
+        socketInstance.emit('join_room', { userId: activeUserId });
       }
     });
 
@@ -53,13 +76,28 @@ export const SocketProvider = ({
       }
     });
 
+    socketInstance.on(
+      'member_notification_created',
+      (data: MemberNotificationSocketPayload) => {
+        window.dispatchEvent(
+          new CustomEvent(memberNotificationCreatedEvent, { detail: data }),
+        );
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Bạn có thông báo mới', {
+            body: 'Vietyoru vừa gửi một cập nhật mới cho bạn.',
+          });
+        }
+      },
+    );
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSocket(socketInstance);
 
     return () => {
       socketInstance.disconnect();
     };
-  }, [userId]);
+  }, [activeUserId]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

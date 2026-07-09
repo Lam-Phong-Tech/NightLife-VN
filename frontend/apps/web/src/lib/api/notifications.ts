@@ -34,7 +34,17 @@ export type MemberNotificationsResponse = {
   unreadCount: number;
 };
 
+export type MemberNotificationSocketPayload = {
+  id?: string;
+  templateKey?: string;
+  category?: MemberNotificationCategory;
+  bookingId?: string | null;
+  billId?: string | null;
+  createdAt?: string;
+};
+
 export const memberNotificationsRefreshEvent = "nightlife:member-notifications:refresh";
+export const memberNotificationCreatedEvent = "nightlife:member-notification-created";
 
 export const requestMemberNotificationsRefresh = () => {
   if (typeof window === "undefined") {

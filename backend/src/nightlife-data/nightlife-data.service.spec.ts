@@ -2114,7 +2114,7 @@ describe('NightlifeDataService', () => {
         channel: 'IN_APP',
         status: 'QUEUED',
         recipient: 'member-1',
-        templateKey: 'customer.booking.created.v1',
+        templateKey: 'customer.booking.cast_created.v1',
       }),
     });
   });
@@ -4444,12 +4444,62 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         id: 'notification-bill-1',
         title: 'Hóa đơn đã được duyệt',
-        actionLabel: 'Xem kết quả duyệt',
+        actionLabel: 'Xem kết quả',
         href: '/gui-hoa-don?billId=bill-1',
         unread: true,
         category: 'bill',
       }),
     );
+  });
+
+  it('formats cast booking notifications separately for members', async () => {
+    prisma.notificationLog.findMany.mockResolvedValue([
+      {
+        id: 'notification-booking-cast-1',
+        status: 'QUEUED',
+        templateKey: 'customer.booking.cast_created.v1',
+        payload: {
+          castName: 'Kotone',
+          storeName: 'Tokyo Kitchen',
+          scheduledAt: '2026-07-09T14:00:00.000Z',
+        },
+        createdAt: new Date('2026-07-03T10:00:00.000Z'),
+        sentAt: null,
+        billId: null,
+        bookingId: 'booking-cast-1',
+        store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+        booking: {
+          id: 'booking-cast-1',
+          status: 'REQUESTED',
+          scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
+          store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+          cast: {
+            id: 'cast-1',
+            slug: 'kotone-tokyo',
+            stageName: 'Kotone',
+            publicAlias: 'Kotone',
+          },
+        },
+        bill: null,
+      },
+    ] as never);
+    prisma.notificationLog.count.mockResolvedValue(1 as never);
+
+    const result = await service.listMemberNotifications(
+      { id: 'member-1', role: 'USER' },
+      { limit: 10 },
+    );
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        title: 'Đặt bàn theo cast thành công',
+        category: 'booking',
+        tone: 'amber',
+        actionLabel: 'Xem lịch đặt',
+        href: '/lich-su-dat-cho?bookingId=booking-cast-1',
+      }),
+    );
+    expect(result.data[0].body).toContain('Kotone @ Tokyo Kitchen');
   });
 
   it('marks member notifications as read inside the customer scope', async () => {

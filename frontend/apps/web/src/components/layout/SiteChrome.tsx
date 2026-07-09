@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   authSessionChangeEvent,
@@ -32,10 +32,12 @@ import {
 } from "@/lib/api/appearance";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
+  memberNotificationCreatedEvent,
   memberNotificationsRefreshEvent,
   notificationApi,
   type MemberNotification,
   type MemberNotificationCategory,
+  type MemberNotificationSocketPayload,
   type MemberNotificationTone,
 } from "@/lib/api/notifications";
 import { SystemFeedbackProvider } from "@/components/ui/SystemFeedback";
@@ -189,6 +191,8 @@ type Notice = {
   category: MemberNotificationCategory;
 };
 
+type NotificationFilter = "all" | MemberNotificationCategory;
+
 const noticeToneStyle: Record<NoticeTone, { background: string; border: string; color: string }> = {
   gold: {
     background: "rgba(212,178,106,.12)",
@@ -329,10 +333,29 @@ function NotificationBellButton({
   );
 }
 
-function NotificationTabs({ isMobile, unreadCount }: { isMobile: boolean; unreadCount: number }) {
-  const tabs = isMobile
-    ? ["Tất cả", "Hóa đơn", "Đặt chỗ", "Hệ thống"]
-    : ["Tất cả", "Hóa đơn", "Đặt chỗ"];
+function NotificationTabs({
+  isMobile,
+  unreadCount,
+  activeFilter,
+  onFilterChange,
+}: {
+  isMobile: boolean;
+  unreadCount: number;
+  activeFilter: NotificationFilter;
+  onFilterChange: (filter: NotificationFilter) => void;
+}) {
+  const tabs: Array<{ key: NotificationFilter; label: string }> = isMobile
+    ? [
+        { key: "all", label: "Tất cả" },
+        { key: "bill", label: "Hóa đơn" },
+        { key: "booking", label: "Đặt chỗ" },
+        { key: "system", label: "Hệ thống" },
+      ]
+    : [
+        { key: "all", label: "Tất cả" },
+        { key: "bill", label: "Hóa đơn" },
+        { key: "booking", label: "Đặt chỗ" },
+      ];
 
   return (
     <div
@@ -345,12 +368,14 @@ function NotificationTabs({ isMobile, unreadCount }: { isMobile: boolean; unread
         scrollbarWidth: "none",
       }}
     >
-      {tabs.map((tab, index) => {
-        const active = index === 0;
+      {tabs.map((tab) => {
+        const active = tab.key === activeFilter;
         return (
           <button
-            key={tab}
+            key={tab.key}
             type="button"
+            aria-pressed={active}
+            onClick={() => onFilterChange(tab.key)}
             style={{
               flex: "none",
               display: "inline-flex",
@@ -369,8 +394,8 @@ function NotificationTabs({ isMobile, unreadCount }: { isMobile: boolean; unread
               cursor: "pointer",
             }}
           >
-            {tab}
-            {active && unreadCount > 0 ? (
+            {tab.label}
+            {active && tab.key === "all" && unreadCount > 0 ? (
               <b
                 style={{
                   background: colors.onGold,
@@ -586,6 +611,8 @@ type NotificationPanelProps = {
   unreadCount: number;
   isLoading: boolean;
   error: string;
+  activeFilter: NotificationFilter;
+  onFilterChange: (filter: NotificationFilter) => void;
   onMarkAllRead: () => void;
   onNoticeSelect: (notice: Notice) => void;
 };
@@ -613,11 +640,15 @@ function DesktopNotificationDropdown({
   unreadCount,
   isLoading,
   error,
+  activeFilter,
+  onFilterChange,
   onMarkAllRead,
   onNoticeSelect,
 }: NotificationPanelProps) {
-  const todayNotices = notices.filter((notice) => notice.group === "today");
-  const previousNotices = notices.filter((notice) => notice.group === "yesterday");
+  const visibleNotices =
+    activeFilter === "all" ? notices : notices.filter((notice) => notice.category === activeFilter);
+  const todayNotices = visibleNotices.filter((notice) => notice.group === "today");
+  const previousNotices = visibleNotices.filter((notice) => notice.group === "yesterday");
 
   return (
     <>
@@ -694,8 +725,13 @@ function DesktopNotificationDropdown({
           </button>
         </div>
 
-        <NotificationTabs isMobile={false} unreadCount={unreadCount} />
-        {notices.length ? (
+        <NotificationTabs
+          isMobile={false}
+          unreadCount={unreadCount}
+          activeFilter={activeFilter}
+          onFilterChange={onFilterChange}
+        />
+        {visibleNotices.length ? (
           <>
             <NoticeGroup
               label="Hôm nay"
@@ -769,11 +805,15 @@ function MobileNotificationPanel({
   unreadCount,
   isLoading,
   error,
+  activeFilter,
+  onFilterChange,
   onMarkAllRead,
   onNoticeSelect,
 }: { onClose: () => void } & NotificationPanelProps) {
-  const todayNotices = notices.filter((notice) => notice.group === "today");
-  const previousNotices = notices.filter((notice) => notice.group === "yesterday");
+  const visibleNotices =
+    activeFilter === "all" ? notices : notices.filter((notice) => notice.category === activeFilter);
+  const todayNotices = visibleNotices.filter((notice) => notice.group === "today");
+  const previousNotices = visibleNotices.filter((notice) => notice.group === "yesterday");
 
   return (
     <section
@@ -909,7 +949,12 @@ function MobileNotificationPanel({
         </button>
       </div>
 
-      <NotificationTabs isMobile unreadCount={unreadCount} />
+      <NotificationTabs
+        isMobile
+        unreadCount={unreadCount}
+        activeFilter={activeFilter}
+        onFilterChange={onFilterChange}
+      />
 
       <div
         style={{
@@ -918,7 +963,7 @@ function MobileNotificationPanel({
           paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
         }}
       >
-        {notices.length ? (
+        {visibleNotices.length ? (
           <>
             <NoticeGroup
               label="Hôm nay"
@@ -1155,10 +1200,13 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState<NotificationFilter>("all");
   const [memberNotifications, setMemberNotifications] = useState<MemberNotification[]>([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [isNotificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
+  const notificationIdsRef = useRef(new Set<string>());
+  const optimisticNotificationIdsRef = useRef(new Set<string>());
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
@@ -1170,6 +1218,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   const refreshMemberNotifications = useCallback(async () => {
     if (!showCustomerNotifications) {
+      notificationIdsRef.current = new Set();
+      optimisticNotificationIdsRef.current.clear();
       setMemberNotifications([]);
       setNotificationUnreadCount(0);
       setNotificationsError("");
@@ -1180,6 +1230,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     setNotificationsError("");
     try {
       const response = await notificationApi.listMemberNotifications(20);
+      notificationIdsRef.current = new Set(response.data.map((item) => item.id));
+      optimisticNotificationIdsRef.current.clear();
       setMemberNotifications(response.data);
       setNotificationUnreadCount(response.unreadCount);
     } catch {
@@ -1347,6 +1399,45 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     return () => {
       window.clearInterval(interval);
       window.removeEventListener(memberNotificationsRefreshEvent, handleRefresh);
+    };
+  }, [refreshMemberNotifications, showCustomerNotifications]);
+
+  useEffect(() => {
+    if (!showCustomerNotifications) {
+      optimisticNotificationIdsRef.current.clear();
+      return;
+    }
+
+    const retryTimers = new Set<number>();
+    const handleCreated = (event: Event) => {
+      const detail = event instanceof CustomEvent
+        ? (event.detail as MemberNotificationSocketPayload | undefined)
+        : undefined;
+      const notificationId =
+        typeof detail?.id === "string" && detail.id.trim() ? detail.id.trim() : "";
+
+      if (
+        notificationId &&
+        !notificationIdsRef.current.has(notificationId) &&
+        !optimisticNotificationIdsRef.current.has(notificationId)
+      ) {
+        optimisticNotificationIdsRef.current.add(notificationId);
+        setNotificationUnreadCount((count) => count + 1);
+      }
+
+      void refreshMemberNotifications();
+      const retryTimer = window.setTimeout(() => {
+        retryTimers.delete(retryTimer);
+        void refreshMemberNotifications();
+      }, 800);
+      retryTimers.add(retryTimer);
+    };
+
+    window.addEventListener(memberNotificationCreatedEvent, handleCreated as EventListener);
+
+    return () => {
+      window.removeEventListener(memberNotificationCreatedEvent, handleCreated as EventListener);
+      retryTimers.forEach((timer) => window.clearTimeout(timer));
     };
   }, [refreshMemberNotifications, showCustomerNotifications]);
 
@@ -1917,6 +2008,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
                 unreadCount={notificationUnreadCount}
                 isLoading={isNotificationsLoading}
                 error={notificationsError}
+                activeFilter={notificationFilter}
+                onFilterChange={setNotificationFilter}
                 onMarkAllRead={markAllNotificationsRead}
                 onNoticeSelect={handleNotificationSelect}
                 onClose={() => setIsNotificationOpen(false)}
