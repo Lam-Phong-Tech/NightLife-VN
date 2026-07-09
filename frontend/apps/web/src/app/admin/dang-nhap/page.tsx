@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-  BadgeCheck,
   BarChart3,
   Eye,
   EyeOff,
@@ -172,26 +171,6 @@ export default function AdminLoginPage() {
               </div>
             </div>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
-          </div>
-
-          <div
-            style={{
-              border: `1px solid ${colors.borderGold22}`,
-              borderRadius: '14px',
-              background: 'rgba(212,178,106,.08)',
-              padding: '13px',
-              color: colors.text2,
-              fontSize: '12px',
-              lineHeight: 1.6,
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.goldBright, fontWeight: 700 }}>
-              <BadgeCheck size={16} />
-              Tài khoản test admin
-            </div>
-            <div style={{ marginTop: '7px' }}>Email: <b>{testAccount.email}</b></div>
-            <div>Mật khẩu: <b>{testAccount.password}</b></div>
           </div>
 
           <div style={{ display: 'grid', gap: '13px' }}>
