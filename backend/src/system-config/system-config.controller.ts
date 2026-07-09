@@ -61,4 +61,14 @@ export class SystemConfigController {
     const result = await this.configService.setConfig('VPS_MAX_STORAGE_GB', data, req.user.id);
     return { data: result.value };
   }
+
+  @ApiOperation({ summary: 'Get VPS storage usage' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OPERATOR)
+  @Get('admin/system-config/storage/usage')
+  async getStorageUsage() {
+    const usage = await this.configService.getStorageUsage();
+    return { data: usage };
+  }
 }

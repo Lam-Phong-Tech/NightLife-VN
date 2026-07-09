@@ -249,6 +249,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
   );
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [storageExceeded, setStorageExceeded] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? !window.matchMedia('(max-width: 767px)').matches : true,
   );
@@ -293,6 +295,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       try {
         const data = await apiClient<any>('/admin/layout/badges');
         if (data) setBadges(data);
+        
+        try {
+          const usage = await apiClient<{ data: any }>('/admin/system-config/storage/usage');
+          if (usage && usage.data && usage.data.isExceeded) {
+            setStorageExceeded(true);
+          }
+        } catch (e) {
+          // Ignore
+        }
       } catch (err) {
         console.error(err);
       }
@@ -466,14 +477,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
           </span>
 
-          <span style={{ position: 'relative', width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)' }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            {badges.pendingBills > 0 && (
-              <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f' }}>
-                {badges.pendingBills > 99 ? '99+' : badges.pendingBills}
-              </span>
+          <div style={{ position: 'relative' }}>
+            <span onClick={() => setShowNotifications(!showNotifications)} style={{ width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)', position: 'relative' }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+              {(badges.pendingBills > 0 || storageExceeded) && (
+                <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f' }}>
+                  {storageExceeded ? '!' : (badges.pendingBills > 99 ? '99+' : badges.pendingBills)}
+                </span>
+              )}
+            </span>
+
+            {showNotifications && (
+              <div style={{ position: 'absolute', top: '50px', right: 0, width: '320px', background: '#1c1b22', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 100 }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f3f0ea' }}>Thông báo</h4>
+                {storageExceeded && (
+                  <div style={{ background: 'rgba(244, 67, 54, 0.1)', border: '1px solid rgba(244, 67, 54, 0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => { setShowNotifications(false); window.location.href = '/admin/system/storage'; }}>
+                    <div style={{ color: '#f44336', fontSize: '13px', fontWeight: 600 }}>Dung lượng VPS đã đầy!</div>
+                    <div style={{ color: '#c5c0b6', fontSize: '12px', marginTop: '4px' }}>Hệ thống đang bị ngưng upload. Nhấp vào để xem chi tiết.</div>
+                  </div>
+                )}
+                {badges.pendingBills > 0 && (
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 12px', borderRadius: '8px', cursor: 'pointer' }} onClick={() => { setShowNotifications(false); window.location.href = '/admin/bills'; }}>
+                    <div style={{ color: '#e3c27e', fontSize: '13px', fontWeight: 600 }}>Hóa đơn chờ duyệt</div>
+                    <div style={{ color: '#c5c0b6', fontSize: '12px', marginTop: '4px' }}>Bạn có {badges.pendingBills} hóa đơn đang chờ.</div>
+                  </div>
+                )}
+                {!storageExceeded && badges.pendingBills === 0 && (
+                  <div style={{ color: '#8c8679', fontSize: '13px', textAlign: 'center', padding: '10px' }}>Không có thông báo mới</div>
+                )}
+              </div>
             )}
-          </span>
+          </div>
         </header>
 
         {/* content */}

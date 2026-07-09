@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  PayloadTooLargeException,
   Injectable,
   NotFoundException,
   OnModuleInit,
@@ -42,12 +43,15 @@ const GLOBAL_PUBLIC_UPLOAD_PURPOSES = new Set([
   'BANNER_GLOBAL',
 ]);
 
+import { SystemConfigService } from '../system-config/system-config.service';
+
 @Injectable()
 export class StorageService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly accessService: AccessService,
+    private readonly systemConfigService: SystemConfigService,
   ) {}
 
   onModuleInit() {
@@ -190,6 +194,12 @@ export class StorageService implements OnModuleInit {
 
     await this.validateUploadPermissions(options);
 
+    // Check storage quota
+    const usage = await this.systemConfigService.getStorageUsage();
+    if (usage.limit > 0 && usage.usedBytes + file.size > usage.limit * 1024 * 1024 * 1024) {
+      throw new PayloadTooLargeException(`Dung lượng lưu trữ của hệ thống đã đạt giới hạn (${usage.limit}GB). Vui lòng nâng cấp gói để tiếp tục.`);
+    }
+
     const storageKey = file.filename;
     const webBaseUrl = this.configService.get<string>('WEB_BASE_URL');
     const defaultPublicBase = webBaseUrl
@@ -232,6 +242,13 @@ export class StorageService implements OnModuleInit {
     const access = this.resolveAccess(options.access);
 
     await this.validateUploadPermissions(options);
+
+    // Check storage quota
+    const usage = await this.systemConfigService.getStorageUsage();
+    if (usage.limit > 0 && usage.usedBytes > usage.limit * 1024 * 1024 * 1024) {
+      throw new PayloadTooLargeException(`Dung lượng lưu trữ của hệ thống đã đạt giới hạn (${usage.limit}GB). Vui lòng nâng cấp gói để tiếp tục.`);
+    }
+
     const relationIds = this.cleanRelationIds(options);
 
     let mimeType = 'application/octet-stream';

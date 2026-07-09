@@ -58,6 +58,7 @@ function AdminDashboardContent() {
   const city = searchParams.get('city') || 'other';
   const category = searchParams.get('category') || '';
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
+  const [storageUsage, setStorageUsage] = useState<{ limit: number, used: number, percentage: number, isExceeded: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
@@ -72,6 +73,15 @@ function AdminDashboardContent() {
       if (category) params.set('category', category);
       const data = await apiClient<AdminDashboardStats>(`/admin/dashboard/stats?${params.toString()}`);
       setStats(data);
+      
+      try {
+        const usageData = await apiClient<{ data: any }>('/admin/system-config/storage/usage');
+        if (usageData && usageData.data) {
+          setStorageUsage(usageData.data);
+        }
+      } catch (e) {
+        // Ignore if user is not SUPER_ADMIN
+      }
     } catch (err: any) {
       console.error(err);
       setError('Lỗi khi tải dữ liệu thống kê. Vui lòng thử lại sau.');
@@ -146,6 +156,34 @@ function AdminDashboardContent() {
 
   return (
     <div className="nl-admin-page nl-admin-dashboard" data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
+      {storageUsage && storageUsage.percentage >= 90 && (
+        <div style={{
+          background: storageUsage.isExceeded ? 'rgba(244, 67, 54, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+          border: `1px solid ${storageUsage.isExceeded ? 'rgba(244, 67, 54, 0.5)' : 'rgba(255, 152, 0, 0.5)'}`,
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={storageUsage.isExceeded ? '#f44336' : '#ff9800'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <div>
+            <div style={{ color: storageUsage.isExceeded ? '#f44336' : '#ff9800', fontWeight: 600, fontSize: '15px' }}>
+              {storageUsage.isExceeded ? 'Cảnh báo: Dung lượng VPS đã đầy!' : 'Cảnh báo: Dung lượng VPS sắp đầy!'}
+            </div>
+            <div style={{ color: '#c5c0b6', fontSize: '13px', marginTop: '2px' }}>
+              Hệ thống đang sử dụng <b>{storageUsage.used}GB / {storageUsage.limit}GB</b> ({storageUsage.percentage}%). 
+              {storageUsage.isExceeded ? ' Chức năng upload đã bị khóa tạm thời. Vui lòng dọn dẹp dữ liệu hoặc nâng cấp VPS.' : ' Hãy kiểm tra và lên kế hoạch nâng cấp dung lượng VPS.'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* welcome + range */}
       <div className="nl-admin-dashboard-head" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <div>

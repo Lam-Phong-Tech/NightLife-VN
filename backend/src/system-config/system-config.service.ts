@@ -26,4 +26,30 @@ export class SystemConfigService {
       },
     });
   }
+
+  async getStorageUsage() {
+    const config = await this.getConfig('VPS_MAX_STORAGE_GB', { limit: 50 });
+    const limitGB = typeof config?.limit === 'number' ? config.limit : 50;
+    
+    // Sum sizeBytes from Media table
+    const result = await this.prisma.media.aggregate({
+      _sum: {
+        sizeBytes: true,
+      },
+    });
+
+    const usedBytes = result._sum.sizeBytes || 0;
+    const usedGB = usedBytes / (1024 * 1024 * 1024);
+    
+    const percentage = limitGB > 0 ? (usedGB / limitGB) * 100 : 0;
+    const isExceeded = usedGB >= limitGB;
+
+    return {
+      limit: limitGB,
+      used: Number(usedGB.toFixed(4)),
+      usedBytes,
+      percentage: Number(percentage.toFixed(2)),
+      isExceeded,
+    };
+  }
 }
