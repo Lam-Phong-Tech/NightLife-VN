@@ -90,6 +90,9 @@ const targetTypeByKind: Record<RankingKind, RankingTargetType> = {
   quan: "STORE",
 };
 
+const initialVisibleRankings = 5;
+const maxPreloadedRankings = 10;
+
 function getRankTone(rank: number) {
   return rankTones[rank - 1];
 }
@@ -379,6 +382,7 @@ export default function Page() {
   const [rankingType, setRankingType] = useState<RankingKind>("cast");
   const [selectedArea, setSelectedArea] = useState<RankingCity>("hn");
   const [list, setList] = useState<PublicRankingItem[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -387,12 +391,13 @@ export default function Page() {
     () => ({
       targetType: targetTypeByKind[rankingType],
       city: selectedArea,
-      limit: 5,
+      limit: maxPreloadedRankings,
     }),
     [rankingType, selectedArea],
   );
 
   const markRankingLoading = () => {
+    setIsExpanded(false);
     setLoadState("loading");
     setErrorMessage("");
   };
@@ -418,7 +423,7 @@ export default function Page() {
     rankingsApi
       .list(query, { signal: controller.signal })
       .then((response) => {
-        setList(response.data);
+        setList(response.data.slice(0, maxPreloadedRankings));
         setLoadState("ready");
       })
       .catch((error: unknown) => {
@@ -433,6 +438,9 @@ export default function Page() {
 
   const dateLabel = "Tháng 6 năm 2026";
   const hasItems = list.length > 0;
+  const visibleList = isExpanded ? list : list.slice(0, initialVisibleRankings);
+  const hiddenRankingCount = Math.max(0, list.length - visibleList.length);
+  const canShowMore = loadState === "ready" && hiddenRankingCount > 0;
   const trackingContext: RankingClickContext = {
     city: selectedArea,
     category: "all",
@@ -526,10 +534,23 @@ export default function Page() {
           ) : null}
 
           {loadState === "ready" && hasItems
-            ? list.map((item) => (
+            ? visibleList.map((item) => (
                 <RankingRow key={item.targetId} item={item} trackingContext={trackingContext} />
               ))
             : null}
+
+          {canShowMore ? (
+            <div className="vyr-ranking-more">
+              <button
+                type="button"
+                data-testid="ranking-show-more"
+                onClick={() => setIsExpanded(true)}
+              >
+                Xem thêm
+                <span>{hiddenRankingCount} mục đã tải sẵn</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -895,6 +916,53 @@ export default function Page() {
 
         .vyr-rank-action.is-disabled {
           opacity: 0.45;
+        }
+
+        .vyr-ranking-more {
+          display: flex;
+          justify-content: center;
+          padding: 8px 0 2px;
+        }
+
+        .vyr-ranking-more button {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 12px;
+          background: var(--vy-gold-soft-bg);
+          color: var(--vy-gold-pale);
+          cursor: pointer;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 850;
+          padding: 0 18px;
+          transition:
+            background 160ms ease,
+            border-color 160ms ease,
+            transform 160ms ease;
+        }
+
+        .vyr-ranking-more button:hover,
+        .vyr-ranking-more button:focus-visible {
+          transform: translateY(-1px);
+          border-color: rgba(212, 178, 106, 0.55);
+          background: linear-gradient(135deg, #f0dda8, #d4b26a);
+          color: var(--vy-on-gold);
+          outline: 0;
+        }
+
+        .vyr-ranking-more button span {
+          color: var(--vy-muted);
+          font-size: 11px;
+          font-weight: 750;
+        }
+
+        .vyr-ranking-more button:hover span,
+        .vyr-ranking-more button:focus-visible span {
+          color: rgba(36, 26, 10, 0.72);
         }
 
         .vyr-ranking-state {
