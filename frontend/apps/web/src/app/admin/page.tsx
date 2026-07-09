@@ -62,6 +62,13 @@ function AdminDashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(0); // 0 = Hôm nay, 1 = Tuần, 2 = Tháng
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    import('@/lib/auth/session').then(({ getAuthUser }) => {
+      setUser(getAuthUser());
+    });
+  }, []);
 
   const loadStats = async () => {
     setIsLoading(true);
@@ -156,7 +163,7 @@ function AdminDashboardContent() {
 
   return (
     <div className="nl-admin-page nl-admin-dashboard" data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
-      {storageUsage && storageUsage.percentage >= 90 && (
+      {user?.role === 'SUPER_ADMIN' && storageUsage && storageUsage.percentage >= 90 && (
         <div style={{
           background: storageUsage.isExceeded ? 'rgba(244, 67, 54, 0.1)' : 'rgba(255, 152, 0, 0.1)',
           border: `1px solid ${storageUsage.isExceeded ? 'rgba(244, 67, 54, 0.5)' : 'rgba(255, 152, 0, 0.5)'}`,
@@ -187,7 +194,9 @@ function AdminDashboardContent() {
       {/* welcome + range */}
       <div className="nl-admin-dashboard-head" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#f3f0ea' }}>Chào buổi tối, Admin 🌙</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: '#f3f0ea' }}>
+            Chào buổi tối, {user?.displayName || 'Admin'} 🌙
+          </div>
           <div style={{ fontSize: '13px', color: '#8c8679', marginTop: '4px' }}>
             {formatDateStr()} · Có <b style={{ color: '#e3c27e' }}>{pendingBills} hóa đơn</b> và <b style={{ color: '#e3c27e' }}>{pendingPartners} đối tác</b> đang chờ bạn xử lý.
           </div>

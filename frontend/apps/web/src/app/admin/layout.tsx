@@ -248,6 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isMobileSidebar, setIsMobileSidebar] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
   );
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [storageUsage, setStorageUsage] = useState<{ limit: number, used: number, percentage: number, isExceeded: boolean } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -264,6 +265,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
     } catch (e) {}
     const user = getAuthUser();
+    if (user) setCurrentUser(user);
     if (user?.role === 'SUPER_ADMIN') {
       setIsSuperAdmin(true);
     }
@@ -428,7 +430,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
 
           {/* storage usage */}
-          {storageUsage && (
+          {currentUser?.role === 'SUPER_ADMIN' && storageUsage && (
             <div style={{ margin: '0 12px 14px', padding: '14px 12px', borderRadius: '13px', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.04)' }}>
               <div style={{ fontSize: '12px', color: '#8c8679', marginBottom: '8px', lineHeight: 1.4 }}>
                 Đã sử dụng <span style={{ color: '#f3f0ea', fontWeight: 600 }}>{storageUsage.used} GB</span> trong tổng số <span style={{ color: '#f3f0ea', fontWeight: 600 }}>{storageUsage.limit} GB</span>
@@ -461,10 +463,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* account */}
           <div style={{ margin: '8px 12px 14px', padding: '11px 12px', borderRadius: '13px', background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span data-noinvert style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>A</span>
+            <span data-noinvert style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '10px', background: 'linear-gradient(135deg,#f4e3b4,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 800, fontSize: '14px' }}>
+              {currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'A'}
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Nguyễn Admin</div>
-              <div style={{ fontSize: '10px', color: '#8c8679' }}>Super Admin</div>
+              <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {currentUser?.displayName || 'Admin'}
+              </div>
+              <div style={{ fontSize: '10px', color: '#8c8679' }}>
+                {currentUser?.role === 'SUPER_ADMIN' ? 'Super Admin' : (currentUser?.role === 'ADMIN' ? 'Admin' : (currentUser?.role || 'Staff'))}
+              </div>
             </div>
             <button onClick={() => { clearAuthSession(); window.location.href = '/admin/dang-nhap'; }} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg>
