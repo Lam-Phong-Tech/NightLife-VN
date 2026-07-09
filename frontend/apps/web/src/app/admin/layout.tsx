@@ -803,6 +803,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 70% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(224, 114, 158, 0); }
                 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 114, 158, 0); }
               }
+              .nl-notice-list-scroll::-webkit-scrollbar {
+                width: 6px;
+              }
+              .nl-notice-list-scroll::-webkit-scrollbar-track {
+                background: transparent;
+              }
+              .nl-notice-list-scroll::-webkit-scrollbar-thumb {
+                background: rgba(140, 134, 121, 0.35);
+                border-radius: 4px;
+              }
+              .nl-notice-list-scroll::-webkit-scrollbar-thumb:hover {
+                background: rgba(140, 134, 121, 0.55);
+              }
+              .nl-notice-list-scroll {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(140, 134, 121, 0.35) transparent;
+              }
             `}} />
             
             <span onClick={() => setShowNotifications(!showNotifications)} style={{ width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)', position: 'relative' }}>
@@ -904,7 +921,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </div>
 
                   {/* Content List */}
-                  <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                  <div className="nl-notice-list-scroll" style={{ maxHeight: '360px', overflowY: 'auto' }}>
                     {(() => {
                       const filtered = activeFilter === 'all' 
                         ? notificationItems 
