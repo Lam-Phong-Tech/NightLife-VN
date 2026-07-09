@@ -39,6 +39,13 @@ describe('StorageService', () => {
     ensureStoreAccess: jest.fn(),
   };
 
+  const systemConfigService = {
+    getStorageUsage: jest.fn().mockResolvedValue({
+      limit: 5,
+      usedBytes: 0,
+    }),
+  };
+
   const file = {
     filename: 'stored-image',
     originalname: 'image.png',
@@ -51,7 +58,7 @@ describe('StorageService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new StorageService(configService, prisma, accessService as never);
+    service = new StorageService(configService, prisma, accessService as never, systemConfigService as never);
   });
 
   it('stores local media metadata with relation ids and public access', async () => {
