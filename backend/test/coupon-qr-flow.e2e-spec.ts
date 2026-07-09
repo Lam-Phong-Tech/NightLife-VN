@@ -132,6 +132,7 @@ describe('Coupon QR full flow (e2e)', () => {
     },
     booking: {
       create: jest.fn(),
+      findFirst: jest.fn(),
     },
     couponIssue: {
       create: jest.fn(),
@@ -176,6 +177,7 @@ describe('Coupon QR full flow (e2e)', () => {
     lastGuestPhone = null;
 
     prisma.$transaction.mockImplementation((callback) => callback(prisma));
+    prisma.booking.findFirst.mockResolvedValue(null);
     accessService.canClaimMemberCoupon.mockResolvedValue(true);
     accessService.canViewMemberCoupon.mockResolvedValue(true);
     accessService.canConfirmCheckIn.mockResolvedValue(true);

@@ -46,6 +46,7 @@ import {
 import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
+const historyPageSize = 5;
 const { bookingDateWindowDays } = bookingValidationLimits;
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
 const isConfirmedStatus = (status: string) => confirmedStatuses.has(status.trim().toUpperCase());
@@ -259,6 +260,7 @@ export default function Page() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatSending, setChatSending] = useState(false);
   const [message, setMessage] = useState("");
+  const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
 
   useEffect(() => {
     let alive = true;
@@ -399,6 +401,26 @@ export default function Page() {
         : bookings.filter((booking) => bookingRecordStatusGroup(booking) === activeTab),
     [activeTab, bookings],
   );
+  const historyTotalPages = Math.max(1, Math.ceil(visibleBookings.length / historyPageSize));
+  const safeHistoryPage = Math.min(currentHistoryPage, historyTotalPages);
+  const historyPageStart = visibleBookings.length
+    ? (safeHistoryPage - 1) * historyPageSize + 1
+    : 0;
+  const historyPageEnd = Math.min(visibleBookings.length, safeHistoryPage * historyPageSize);
+  const paginatedBookings = useMemo(() => {
+    const startIndex = (safeHistoryPage - 1) * historyPageSize;
+    return visibleBookings.slice(startIndex, startIndex + historyPageSize);
+  }, [safeHistoryPage, visibleBookings]);
+  const historyPageNumbers = useMemo(() => {
+    const visibleButtonCount = 5;
+    const halfWindow = Math.floor(visibleButtonCount / 2);
+    const start = Math.max(
+      1,
+      Math.min(safeHistoryPage - halfWindow, historyTotalPages - visibleButtonCount + 1),
+    );
+    const end = Math.min(historyTotalPages, start + visibleButtonCount - 1);
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  }, [historyTotalPages, safeHistoryPage]);
   const rescheduleOpeningHours = pendingRescheduleBooking?.store?.openingHours ?? null;
   const rescheduleTimeOptionGroups = useMemo(() => {
     if (!pendingRescheduleBooking) {
@@ -419,6 +441,16 @@ export default function Page() {
 
     return !memberUserId || booking.user.id === memberUserId;
   };
+
+  useEffect(() => {
+    setCurrentHistoryPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (currentHistoryPage > historyTotalPages) {
+      setCurrentHistoryPage(historyTotalPages);
+    }
+  }, [currentHistoryPage, historyTotalPages]);
 
   const handleCancelBooking = (booking: BookingRecord) => {
     if (!canCancelBooking(booking)) {
@@ -716,7 +748,7 @@ export default function Page() {
             {isLoading ? <LoadingSkeleton rows={3} /> : null}
 
             {!isLoading
-              ? visibleBookings.map((booking) => (
+              ? paginatedBookings.map((booking) => (
                   <BookingCard
                     key={booking.id}
                     booking={booking}
@@ -744,6 +776,47 @@ export default function Page() {
                 compact
               />
             </div>
+          ) : null}
+
+          {!isLoading && visibleBookings.length > historyPageSize ? (
+            <nav className={styles.historyPagination} aria-label="Phân trang lịch sử đặt chỗ">
+              <span className={styles.historyPaginationSummary}>
+                Hiển thị {historyPageStart}-{historyPageEnd} / {visibleBookings.length} lịch
+              </span>
+              <div className={styles.historyPaginationActions}>
+                <button
+                  type="button"
+                  className={styles.historyPageButton}
+                  onClick={() => setCurrentHistoryPage((page) => Math.max(1, page - 1))}
+                  disabled={safeHistoryPage <= 1}
+                >
+                  Trước
+                </button>
+                {historyPageNumbers.map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`${styles.historyPageButton} ${
+                      page === safeHistoryPage ? styles.historyPageButtonActive : ""
+                    }`}
+                    onClick={() => setCurrentHistoryPage(page)}
+                    aria-current={page === safeHistoryPage ? "page" : undefined}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={styles.historyPageButton}
+                  onClick={() =>
+                    setCurrentHistoryPage((page) => Math.min(historyTotalPages, page + 1))
+                  }
+                  disabled={safeHistoryPage >= historyTotalPages}
+                >
+                  Sau
+                </button>
+              </div>
+            </nav>
           ) : null}
 
           <div className={styles.historyFooter}>

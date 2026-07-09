@@ -151,6 +151,13 @@ const BOOKING_DATE_WINDOW_DAYS = 14;
 const BOOKING_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const BOOKING_CREATE_RATE_LIMIT = 5;
 const BOOKING_CANCEL_RATE_LIMIT = 5;
+const ACTIVE_DUPLICATE_BOOKING_STATUSES: BookingStatus[] = [
+  'REQUESTED',
+  'CONFIRMED',
+  'CHECKED_IN',
+];
+const DUPLICATE_BOOKING_MESSAGE =
+  'You already have an active booking at this store for this time slot.';
 const COUPON_CLAIM_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const COUPON_CLAIM_RATE_LIMIT = 5;
 const COUPON_CLAIM_FRAUD_WINDOW_MS = 60 * 60 * 1000;
@@ -2943,12 +2950,18 @@ export class NightlifeDataService {
   ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
-    this.resolveBookingScheduledAt(dto.scheduledAt);
+    const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
       `booking:create:guest:${contact.email ?? contact.phone}`,
       BOOKING_CREATE_RATE_LIMIT,
       'Too many booking requests. Please try again shortly.',
     );
+    await this.assertNoDuplicateActiveBooking({
+      storeId: target.store.id,
+      scheduledAt,
+      email: contact.email,
+      phone: contact.phone,
+    });
     const guest = await this.prisma.guest.create({
       data: {
         displayName: contact.displayName,
@@ -2982,12 +2995,17 @@ export class NightlifeDataService {
   ) {
     const target = await this.resolveBookingTarget(dto);
     const contact = this.sanitizeBookingContact(dto);
-    this.resolveBookingScheduledAt(dto.scheduledAt);
+    const scheduledAt = this.resolveBookingScheduledAt(dto.scheduledAt);
     this.assertBookingRateLimit(
       `booking:create:member:${user.id}`,
       BOOKING_CREATE_RATE_LIMIT,
       'Too many booking requests. Please try again shortly.',
     );
+    await this.assertNoDuplicateActiveBooking({
+      storeId: target.store.id,
+      scheduledAt,
+      userId: user.id,
+    });
     const guest = await this.prisma.guest.create({
       data: {
         convertedUserId: user.id,
@@ -8761,6 +8779,46 @@ export class NightlifeDataService {
       email,
       note,
     };
+  }
+
+  private async assertNoDuplicateActiveBooking(input: {
+    storeId: string;
+    scheduledAt: Date;
+    userId?: string;
+    email?: string;
+    phone?: string;
+    prisma?: Prisma.TransactionClient | PrismaService;
+  }) {
+    const prisma = input.prisma ?? this.prisma;
+    const identityConditions: Prisma.BookingWhereInput[] = input.userId
+      ? [{ userId: input.userId }]
+      : [
+          ...(input.email
+            ? [{ guest: { is: { email: input.email } } }]
+            : []),
+          ...(input.phone
+            ? [{ guest: { is: { phone: input.phone } } }]
+            : []),
+        ];
+
+    if (!identityConditions.length) {
+      return;
+    }
+
+    const duplicateBooking = await prisma.booking.findFirst({
+      where: {
+        storeId: input.storeId,
+        scheduledAt: input.scheduledAt,
+        deletedAt: null,
+        status: { in: ACTIVE_DUPLICATE_BOOKING_STATUSES },
+        OR: identityConditions,
+      },
+      select: { id: true },
+    });
+
+    if (duplicateBooking) {
+      throw new BadRequestException(DUPLICATE_BOOKING_MESSAGE);
+    }
   }
 
   private async resolveBookingCouponLink(input: {

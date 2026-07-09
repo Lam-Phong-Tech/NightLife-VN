@@ -299,6 +299,7 @@ describe('NightlifeDataService', () => {
     prisma.auditLog.findMany.mockResolvedValue([] as never);
     prisma.auditLog.count.mockResolvedValue(0 as never);
     prisma.booking.count.mockResolvedValue(0 as never);
+    prisma.booking.findFirst.mockResolvedValue(null as never);
     prisma.bookingQr.count.mockResolvedValue(0 as never);
     prisma.bill.count.mockResolvedValue(0 as never);
     prisma.bill.findFirst.mockResolvedValue(null as never);
@@ -2117,6 +2118,93 @@ describe('NightlifeDataService', () => {
         templateKey: 'customer.booking.cast_created.v1',
       }),
     });
+  });
+
+  it('rejects a duplicate guest booking for the same store and time slot', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    const scheduledAt = '2026-06-30T14:00:00.000Z';
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+      openingHours: null,
+    });
+    prisma.booking.findFirst.mockResolvedValueOnce({
+      id: 'booking-duplicate',
+    } as never);
+
+    await expect(
+      service.createGuestBooking({
+        storeSlug: 'neon-club',
+        displayName: 'Guest Name',
+        email: 'guest@example.com',
+        scheduledAt,
+        partySize: 4,
+      }),
+    ).rejects.toThrow(
+      'You already have an active booking at this store for this time slot.',
+    );
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        storeId: 'store-1',
+        scheduledAt: new Date(scheduledAt),
+        deletedAt: null,
+        status: { in: ['REQUESTED', 'CONFIRMED', 'CHECKED_IN'] },
+        OR: [{ guest: { is: { email: 'guest@example.com' } } }],
+      },
+      select: { id: true },
+    });
+    expect(prisma.guest.create).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a duplicate member cast booking for the same store and time slot', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    const scheduledAt = '2026-06-30T14:00:00.000Z';
+    prisma.cast.findFirst.mockResolvedValue({
+      id: 'cast-1',
+      slug: 'yuna-neon',
+      stageName: 'Yuna',
+      publicAlias: 'Yuna',
+      store: {
+        id: 'store-1',
+        name: 'Neon Club',
+        slug: 'neon-club',
+        openingHours: null,
+      },
+    });
+    prisma.booking.findFirst.mockResolvedValueOnce({
+      id: 'booking-duplicate',
+    } as never);
+
+    await expect(
+      service.createMemberBooking(
+        { id: 'member-1', role: 'USER' },
+        {
+          castSlug: 'yuna-neon',
+          displayName: 'Minh Nguyen',
+          email: 'member@example.com',
+          scheduledAt,
+          partySize: 2,
+        },
+      ),
+    ).rejects.toThrow(
+      'You already have an active booking at this store for this time slot.',
+    );
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        storeId: 'store-1',
+        scheduledAt: new Date(scheduledAt),
+        deletedAt: null,
+        status: { in: ['REQUESTED', 'CONFIRMED', 'CHECKED_IN'] },
+        OR: [{ userId: 'member-1' }],
+      },
+      select: { id: true },
+    });
+    expect(prisma.guest.create).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('cancels a member booking and sends the admin alert', async () => {
