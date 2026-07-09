@@ -237,6 +237,7 @@ type HomeBannerMetadata = {
   subtitle?: string;
   imageUrl?: string;
   position?: string;
+  order?: number;
 };
 
 function getHomeBannerMetadata(content: CmsContentItem): HomeBannerMetadata {
@@ -2220,8 +2221,20 @@ export default function Page() {
     () => [...homeTours, ...homeContentItems].slice(0, 6),
     [homeTours, homeContentItems],
   );
-  const heroBanners = useMemo(() => homeBanners.filter(b => getHomeBannerMetadata(b).position === "Trang chủ #1" || !getHomeBannerMetadata(b).position), [homeBanners]);
-  const midBanners = useMemo(() => homeBanners.filter(b => getHomeBannerMetadata(b).position === "Trang chủ #2"), [homeBanners]);
+  const heroBanners = useMemo(() => [...homeBanners]
+    .filter(b => getHomeBannerMetadata(b).position === "Trang chủ #1" || !getHomeBannerMetadata(b).position)
+    .sort((a, b) => {
+      const orderA = getHomeBannerMetadata(a).order;
+      const orderB = getHomeBannerMetadata(b).order;
+      return (typeof orderA === 'number' ? orderA : 999) - (typeof orderB === 'number' ? orderB : 999);
+    }), [homeBanners]);
+  const midBanners = useMemo(() => [...homeBanners]
+    .filter(b => getHomeBannerMetadata(b).position === "Trang chủ #2")
+    .sort((a, b) => {
+      const orderA = getHomeBannerMetadata(a).order;
+      const orderB = getHomeBannerMetadata(b).order;
+      return (typeof orderA === 'number' ? orderA : 999) - (typeof orderB === 'number' ? orderB : 999);
+    }), [homeBanners]);
   const rankList = filterRankingsByRegion(
     activeRankTab === "quan" ? storeRankItems : castRankItems,
     activeRankRegion,
@@ -2296,7 +2309,7 @@ export default function Page() {
       });
 
     contentApi
-      .list({ type: "BANNER", limit: 10 })
+      .list({ type: "BANNER", limit: 50 })
       .then((res) => {
         if (!cancelled && res.data) setHomeBanners(res.data);
       })

@@ -459,6 +459,7 @@ export default function AdminContentPage() {
     setBannerSubtitle(meta.subtitle || '');
     setBannerDescription(meta.description || '');
     setBannerAspect(meta.aspect || '21/9');
+    setBannerOrder(meta.order ?? '');
     setBannerLinkedStore(meta.linkedStore || null);
     setIsAdding('banner');
   };
@@ -499,6 +500,21 @@ export default function AdminContentPage() {
     } catch (e) { console.error(e); }
   };
 
+  // Automatically assign next order when adding a new banner
+  useEffect(() => {
+    if (!editBannerId && isAdding === 'banner') {
+      const posBanners = banners.filter(b => {
+        const meta = (b.metadata as any) || {};
+        return (meta.position || 'Trang chủ #1') === bannerPos;
+      });
+      const maxOrder = posBanners.reduce((max, b) => {
+        const order = Number((b.metadata as any)?.order) || 0;
+        return order > max ? order : max;
+      }, 0);
+      setBannerOrder(maxOrder + 1);
+    }
+  }, [bannerPos, editBannerId, banners, isAdding]);
+
   const closeDrawer = () => {
     setIsAdding(null);
     setEditBlogId(null);
@@ -519,6 +535,7 @@ export default function AdminContentPage() {
     setBannerPos('Trang chủ #1');
     setBannerStatus('Đang hiển thị');
     setBannerAspect('21/9');
+    setBannerOrder('');
     setBannerLinkedStore(null);
     setBannerStoreSearch('');
     setBannerStoreResults([]);
@@ -562,7 +579,8 @@ export default function AdminContentPage() {
           statusLabel: bannerStatusLabel,
           subtitle: bannerSubtitle,
           description: bannerDescription,
-          aspect: bannerAspect
+          aspect: bannerAspect,
+          order: bannerOrder === '' ? undefined : Number(bannerOrder)
         }
       };
 
@@ -1158,7 +1176,7 @@ export default function AdminContentPage() {
                 </label>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                     <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase' }}>NHÃN SLOT</div>
@@ -1215,6 +1233,17 @@ export default function AdminContentPage() {
                       </span>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '10px' }}>THỨ TỰ HIỂN THỊ</div>
+                  <input 
+                    type="number" 
+                    value={bannerOrder} 
+                    onChange={e => setBannerOrder(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="VD: 1, 2, 3..."
+                    style={{ background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', color: '#f3f0ea', fontSize: '13px', padding: '10px 14px', borderRadius: '11px', width: '100%', outline: 'none' }}
+                  />
                 </div>
               </div>
 
