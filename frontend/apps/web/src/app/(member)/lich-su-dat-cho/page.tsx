@@ -29,9 +29,21 @@ import {
 } from "@/lib/api/bookings";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
+import {
+  buildBookingTimeSlots,
+  buildScheduledAtFromBookingSlot,
+  fallbackBookingTimeSlots,
+  type OpeningHoursInput,
+} from "@/lib/booking-time-slots";
+import {
+  bookingValidationLimits,
+  validateBookingDate,
+  validateBookingTime,
+} from "@/lib/booking-validation";
 import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
+const { bookingDateWindowDays } = bookingValidationLimits;
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
 const isConfirmedStatus = (status: string) => confirmedStatuses.has(status.trim().toUpperCase());
 const supportLineUrl = process.env.NEXT_PUBLIC_LINE_OA_URL ?? "https://line.me/R/ti/p/@vietyoru";
@@ -71,6 +83,24 @@ const toDateInputValue = (date: Date) => {
   return localDate.toISOString().slice(0, 10);
 };
 
+const getTodayDate = () => toDateInputValue(new Date());
+
+const getMaxBookingDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + bookingDateWindowDays);
+  return toDateInputValue(date);
+};
+
+const clampBookingDate = (value?: string | null) => {
+  const today = getTodayDate();
+  const maxDate = getMaxBookingDate();
+
+  if (!value) return today;
+  if (value < today) return today;
+  if (value > maxDate) return maxDate;
+  return value;
+};
+
 const getTomorrowDate = () => {
   const date = new Date();
   date.setDate(date.getDate() + 1);
@@ -91,68 +121,54 @@ const bookingTimeValue = (value: string) => {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
 
-const toDateTimeInputValue = (value: string) => {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "";
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 16);
-};
-
-const parseDateTimeLocalValue = (value: string) => {
-  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
-  if (!match) return null;
-
-  const [, year, month, day, hour, minute] = match;
-  const parsed = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    0,
-    0,
-  );
-
-  if (
-    parsed.getFullYear() !== Number(year) ||
-    parsed.getMonth() !== Number(month) - 1 ||
-    parsed.getDate() !== Number(day) ||
-    parsed.getHours() !== Number(hour) ||
-    parsed.getMinutes() !== Number(minute)
-  ) {
-    return null;
-  }
-
-  return parsed;
-};
-
 const normalizeRescheduleReason = (value: string) => value.trim().replace(/\s+/g, " ");
 
 const validateRescheduleRequest = ({
   booking,
-  rescheduleAt,
+  availableTimes,
+  openingHours,
+  rescheduleDate,
+  rescheduleTime,
   reason,
 }: {
   booking: BookingRecord;
-  rescheduleAt: string;
+  availableTimes: string[];
+  openingHours: OpeningHoursInput;
+  rescheduleDate: string;
+  rescheduleTime: string;
   reason: string;
 }) => {
   const normalizedReason = normalizeRescheduleReason(reason);
 
-  if (!rescheduleAt.trim()) {
-    return "Vui lòng chọn ngày giờ mới.";
+  const scheduledAt = buildScheduledAtFromBookingSlot(
+    rescheduleDate,
+    rescheduleTime,
+    openingHours,
+  );
+  const scheduledDate = new Date(scheduledAt);
+
+  const dateError = validateBookingDate({
+    bookingDate: rescheduleDate,
+    maxDate: getMaxBookingDate(),
+    todayDate: getTodayDate(),
+  });
+  if (dateError) {
+    return dateError;
   }
 
-  const requestedDate = parseDateTimeLocalValue(rescheduleAt);
-  if (!requestedDate) {
-    return "Ngày giờ mới không hợp lệ. Vui lòng kiểm tra lại.";
+  const timeError = validateBookingTime({
+    availableTimes,
+    bookingTime: rescheduleTime,
+    scheduledAt,
+  });
+  if (timeError) {
+    return timeError;
   }
 
-  if (requestedDate.getTime() <= Date.now()) {
-    return "Ngày giờ mới phải ở tương lai.";
-  }
-
-  if (toDateTimeInputValue(booking.scheduledAt) === rescheduleAt.trim()) {
+  if (
+    Number.isFinite(scheduledDate.getTime()) &&
+    Math.abs(scheduledDate.getTime() - new Date(booking.scheduledAt).getTime()) < 1000
+  ) {
     return "Ngày giờ mới phải khác lịch đặt hiện tại.";
   }
 
@@ -223,8 +239,8 @@ export default function Page() {
   const [pendingCancelBooking, setPendingCancelBooking] = useState<BookingRecord | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [pendingRescheduleBooking, setPendingRescheduleBooking] = useState<BookingRecord | null>(null);
-  const [rescheduleAt, setRescheduleAt] = useState("");
-  const [rescheduleMinAt, setRescheduleMinAt] = useState("");
+  const [rescheduleDate, setRescheduleDate] = useState(getTodayDate);
+  const [rescheduleTime, setRescheduleTime] = useState("");
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
@@ -367,6 +383,19 @@ export default function Page() {
         : bookings.filter((booking) => bookingStatusGroup(booking.status) === activeTab),
     [activeTab, bookings],
   );
+  const rescheduleOpeningHours = pendingRescheduleBooking?.store?.openingHours ?? null;
+  const rescheduleTimeOptions = useMemo(() => {
+    if (!pendingRescheduleBooking) {
+      return [];
+    }
+
+    const slots = buildBookingTimeSlots(rescheduleOpeningHours, rescheduleDate);
+    if (rescheduleOpeningHours || slots.length) {
+      return slots;
+    }
+
+    return fallbackBookingTimeSlots;
+  }, [pendingRescheduleBooking, rescheduleDate, rescheduleOpeningHours]);
 
   const shouldUseMemberBookingApi = (booking: BookingRecord) => {
     if (!isMember || !booking.user?.id) {
@@ -454,10 +483,16 @@ export default function Page() {
       return;
     }
 
+    const nextDate = clampBookingDate(toDateInputValue(new Date(booking.scheduledAt)));
+    const storeOpeningHours = booking.store?.openingHours ?? null;
+    const slots = buildBookingTimeSlots(storeOpeningHours, nextDate);
+    const currentTime = bookingTimeValue(booking.scheduledAt);
+    const nextTime = slots.includes(currentTime) ? currentTime : (slots[0] ?? "");
+
     setMessage("");
     setPendingRescheduleBooking(booking);
-    setRescheduleAt(toDateTimeInputValue(booking.scheduledAt));
-    setRescheduleMinAt(toDateTimeInputValue(new Date(Date.now() + 60 * 1000).toISOString()));
+    setRescheduleDate(nextDate);
+    setRescheduleTime(nextTime);
     setRescheduleReason("");
     setRescheduleError("");
   };
@@ -468,8 +503,8 @@ export default function Page() {
     }
 
     setPendingRescheduleBooking(null);
-    setRescheduleAt("");
-    setRescheduleMinAt("");
+    setRescheduleDate(getTodayDate());
+    setRescheduleTime("");
     setRescheduleReason("");
     setRescheduleError("");
   };
@@ -484,7 +519,10 @@ export default function Page() {
     const useMemberApi = shouldUseMemberBookingApi(booking);
     const validationError = validateRescheduleRequest({
       booking,
-      rescheduleAt,
+      availableTimes: rescheduleTimeOptions,
+      openingHours: rescheduleOpeningHours,
+      rescheduleDate,
+      rescheduleTime,
       reason: rescheduleReason,
     });
 
@@ -499,20 +537,19 @@ export default function Page() {
       return;
     }
 
-    const requestedDate = parseDateTimeLocalValue(rescheduleAt);
-    if (!requestedDate) {
-      setRescheduleError("Ngày giờ mới không hợp lệ. Vui lòng kiểm tra lại.");
-      return;
-    }
-
     const normalizedReason = normalizeRescheduleReason(rescheduleReason);
+    const scheduledAt = buildScheduledAtFromBookingSlot(
+      rescheduleDate,
+      rescheduleTime,
+      rescheduleOpeningHours,
+    );
     setReschedulingId(booking.id);
     setRescheduleError("");
     setMessage("");
 
     try {
       const payload = {
-        scheduledAt: requestedDate.toISOString(),
+        scheduledAt,
         reason: normalizedReason,
       };
       const rescheduledBooking = await (useMemberApi
@@ -533,8 +570,8 @@ export default function Page() {
       );
       rememberLastBooking(updatedBooking);
       setPendingRescheduleBooking(null);
-      setRescheduleAt("");
-      setRescheduleMinAt("");
+      setRescheduleDate(getTodayDate());
+      setRescheduleTime("");
       setRescheduleReason("");
       setRescheduleError("");
       setMessage("Đã đổi lịch booking. Lịch mới đã được cập nhật.");
@@ -758,19 +795,51 @@ export default function Page() {
               Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay sau khi gửi.
             </p>
             <label className={styles.dialogField}>
-              <span>Ngày giờ mới</span>
+              <span>Ngày mới</span>
               <input
-                type="datetime-local"
-                value={rescheduleAt}
-                min={rescheduleMinAt}
+                type="date"
+                value={rescheduleDate}
+                min={getTodayDate()}
+                max={getMaxBookingDate()}
                 onChange={(event) => {
-                  setRescheduleAt(event.target.value);
+                  const nextDate = clampBookingDate(event.target.value);
+                  const nextSlots = buildBookingTimeSlots(rescheduleOpeningHours, nextDate);
+                  setRescheduleDate(nextDate);
+                  setRescheduleTime((current) =>
+                    nextSlots.includes(current) ? current : (nextSlots[0] ?? ""),
+                  );
                   setRescheduleError("");
                 }}
                 aria-invalid={Boolean(rescheduleError)}
                 className={styles.dialogInput}
               />
             </label>
+            <div className={styles.dialogField}>
+              <span>Khung giờ mới</span>
+              <div className={styles.timeChips} role="listbox" aria-label="Chọn khung giờ đổi lịch">
+                {rescheduleTimeOptions.length ? (
+                  rescheduleTimeOptions.map((time) => (
+                    <button
+                      key={time}
+                      type="button"
+                      role="option"
+                      onClick={() => {
+                        setRescheduleTime(time);
+                        setRescheduleError("");
+                      }}
+                      className={`${styles.timeChip} ${rescheduleTime === time ? styles.selectedChip : ""}`}
+                      aria-selected={rescheduleTime === time}
+                    >
+                      {time}
+                    </button>
+                  ))
+                ) : (
+                  <span className={styles.emptySlotMessage}>
+                    Quán không có khung giờ đặt bàn trong ngày này.
+                  </span>
+                )}
+              </div>
+            </div>
             <label className={styles.dialogField}>
               <span>Lý do đổi lịch</span>
               <textarea

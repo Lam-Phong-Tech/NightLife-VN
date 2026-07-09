@@ -46,6 +46,8 @@ const exactMessageTranslations: Record<string, string> = {
   "new booking time must be in the future": "Thời gian đặt mới phải ở tương lai.",
   "new booking time must be different from current booking time":
     "Thời gian mới phải khác thời gian đang đặt.",
+  "scheduledAt is outside store booking time slots":
+    "Khung giờ đã chọn không nằm trong giờ mở cửa của quán.",
   "bill has already been verified": "Hóa đơn này đã được xác nhận.",
   "cancelled booking cannot be rescheduled": "Booking đã hủy không thể đổi lịch.",
   "cast not found": "Không tìm thấy cast.",

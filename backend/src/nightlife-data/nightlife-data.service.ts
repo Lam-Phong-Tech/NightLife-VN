@@ -182,6 +182,7 @@ type BookingCancelTarget = {
     name?: string | null;
     slug?: string | null;
     bookingCancelCutoffMinutes?: number | null;
+    openingHours?: Prisma.JsonValue | null;
   } | null;
   status: string;
   scheduledAt?: Date | string | null;
@@ -216,6 +217,7 @@ type BookingNotificationRecord = {
     name?: string | null;
     slug?: string | null;
     bookingCancelCutoffMinutes?: number | null;
+    openingHours?: Prisma.JsonValue | null;
   } | null;
   cast?: {
     id: string;
@@ -783,6 +785,7 @@ type BookingTarget = {
     id: string;
     name: string;
     slug: string;
+    openingHours?: Prisma.JsonValue | null;
   };
   cast?: {
     id: string;
@@ -2914,7 +2917,15 @@ export class NightlifeDataService {
         subtotalVnd: true,
         discountVnd: true,
         totalVnd: true,
-        store: { select: { id: true, name: true, slug: true } },
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            openingHours: true,
+            bookingCancelCutoffMinutes: true,
+          },
+        },
         cast: {
           select: {
             id: true,
@@ -8620,6 +8631,7 @@ export class NightlifeDataService {
               id: true,
               name: true,
               slug: true,
+              openingHours: true,
             },
           },
         },
@@ -8661,6 +8673,7 @@ export class NightlifeDataService {
         id: true,
         name: true,
         slug: true,
+        openingHours: true,
       },
     });
 
@@ -9565,6 +9578,10 @@ export class NightlifeDataService {
     context?: CouponClaimContext;
   }) {
     const scheduledAt = this.resolveBookingScheduledAt(input.dto.scheduledAt);
+    this.assertScheduledAtWithinStoreBookingSlots(
+      input.target.store.openingHours,
+      scheduledAt,
+    );
 
     return this.prisma.$transaction(async (prisma) => {
       const couponLink = await this.resolveBookingCouponLink({
@@ -9633,7 +9650,7 @@ export class NightlifeDataService {
       status: true,
       scheduledAt: true,
       cancelledAt: true,
-      store: { select: { bookingCancelCutoffMinutes: true } },
+      store: { select: { bookingCancelCutoffMinutes: true, openingHours: true } },
     } satisfies Prisma.BookingSelect;
   }
 
@@ -9780,6 +9797,10 @@ export class NightlifeDataService {
       input.dto.scheduledAt,
     );
     this.assertBookingDateWindow(requestedScheduledAt);
+    this.assertScheduledAtWithinStoreBookingSlots(
+      input.booking.store?.openingHours,
+      requestedScheduledAt,
+    );
 
     const currentScheduledAt = new Date(input.booking.scheduledAt ?? '');
     if (!Number.isFinite(currentScheduledAt.getTime())) {
@@ -9888,6 +9909,364 @@ export class NightlifeDataService {
     }
 
     return requestedScheduledAt;
+  }
+
+  private assertScheduledAtWithinStoreBookingSlots(
+    openingHours: unknown,
+    scheduledAt: Date,
+  ) {
+    const openingRecord = this.asRecord(openingHours);
+    if (!openingRecord || !this.hasBookingOpeningRange(openingRecord)) {
+      return;
+    }
+
+    const localParts = this.bookingLocalDateTimeParts(scheduledAt);
+    if (!localParts) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    const previousDateIso = this.offsetDateIso(localParts.dateIso, -1);
+    const isAllowed =
+      this.isBookingSlotAllowedForOpeningDate(
+        openingRecord,
+        localParts.dateIso,
+        localParts.time,
+      ) ||
+      this.isBookingSlotAllowedForOpeningDate(
+        openingRecord,
+        previousDateIso,
+        localParts.time,
+        { overnightOnly: true },
+      );
+
+    if (!isAllowed) {
+      throw new UnprocessableEntityException(
+        'scheduledAt is outside store booking time slots',
+      );
+    }
+  }
+
+  private isBookingSlotAllowedForOpeningDate(
+    openingHours: Record<string, unknown>,
+    dateIso: string,
+    time: string,
+    options: { overnightOnly?: boolean } = {},
+  ) {
+    const range = this.bookingOpeningRangeForDate(openingHours, dateIso);
+    if (!range || range.status === 'closed') {
+      return false;
+    }
+
+    const slotMinutes = this.parseBookingTimeToMinutes(time);
+    if (slotMinutes === null) {
+      return false;
+    }
+
+    const crossesMidnight = range.closeMinutes <= range.openMinutes;
+    if (options.overnightOnly && (!crossesMidnight || slotMinutes >= range.openMinutes)) {
+      return false;
+    }
+
+    let closeMinutes = range.closeMinutes;
+    if (closeMinutes <= range.openMinutes) {
+      closeMinutes += 1440;
+    }
+
+    const firstSlot = range.openMinutes + 60;
+    const lastSlot = closeMinutes - 60;
+    if (firstSlot > lastSlot) {
+      return false;
+    }
+
+    const candidateMinutes =
+      crossesMidnight && slotMinutes < range.openMinutes
+        ? slotMinutes + 1440
+        : slotMinutes;
+
+    for (let minutes = firstSlot; minutes <= lastSlot; minutes += 60) {
+      if (minutes === candidateMinutes) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private hasBookingOpeningRange(openingHours: Record<string, unknown>) {
+    if (this.parseBookingTimeRange(openingHours.summary)) {
+      return true;
+    }
+
+    return Object.values(openingHours).some((value) => {
+      const slot = this.normalizeBookingOpeningSlot(value);
+      if (!slot || slot.closed) {
+        return false;
+      }
+
+      return Boolean(
+        this.parseBookingTimeRange(slot.note) ||
+          (this.parseBookingTimeToMinutes(slot.open) !== null &&
+            this.parseBookingTimeToMinutes(slot.close) !== null),
+      );
+    });
+  }
+
+  private bookingOpeningRangeForDate(
+    openingHours: Record<string, unknown>,
+    dateIso: string,
+  ):
+    | { status: 'open'; openMinutes: number; closeMinutes: number }
+    | { status: 'closed' }
+    | null {
+    const dayKey = this.bookingWeekdayKeyFromDateIso(dateIso);
+    const daySlotEntry = Object.entries(openingHours).find(
+      ([key]) => this.normalizeBookingWeekdayKey(key) === dayKey,
+    );
+    const daySlot = daySlotEntry
+      ? this.normalizeBookingOpeningSlot(daySlotEntry[1])
+      : null;
+
+    if (daySlot) {
+      if (daySlot.closed) {
+        return { status: 'closed' };
+      }
+
+      const open = this.parseBookingTimeToMinutes(daySlot.open);
+      const close = this.parseBookingTimeToMinutes(daySlot.close);
+      if (open !== null && close !== null) {
+        return { status: 'open', openMinutes: open, closeMinutes: close };
+      }
+
+      const noteRange = this.parseBookingTimeRange(daySlot.note);
+      if (noteRange) {
+        return { status: 'open', ...noteRange };
+      }
+    }
+
+    const summaryRange = this.parseBookingTimeRange(openingHours.summary);
+    if (summaryRange) {
+      return { status: 'open', ...summaryRange };
+    }
+
+    return null;
+  }
+
+  private normalizeBookingOpeningSlot(value: unknown):
+    | { open?: string; close?: string; closed?: boolean; note?: string }
+    | null {
+    if (typeof value === 'string') {
+      if (this.isClosedBookingOpeningText(value)) {
+        return { closed: true };
+      }
+
+      const range = this.parseBookingTimeRange(value);
+      if (range) {
+        return {
+          open: this.formatBookingSlot(range.openMinutes),
+          close: this.formatBookingSlot(range.closeMinutes),
+        };
+      }
+
+      return value.trim() ? { note: value.trim() } : null;
+    }
+
+    const record = this.asRecord(value);
+    if (!record) {
+      return null;
+    }
+
+    if (
+      record.closed === true ||
+      record.isOff === true ||
+      this.isClosedBookingOpeningText(record.hours) ||
+      this.isClosedBookingOpeningText(record.note)
+    ) {
+      return { closed: true };
+    }
+
+    const open = this.parseBookingTimeToMinutes(record.open);
+    const close = this.parseBookingTimeToMinutes(record.close);
+    if (open !== null && close !== null) {
+      return {
+        open: this.formatBookingSlot(open),
+        close: this.formatBookingSlot(close),
+      };
+    }
+
+    const range =
+      this.parseBookingTimeRange(record.hours) ??
+      this.parseBookingTimeRange(record.note);
+    if (range) {
+      return {
+        open: this.formatBookingSlot(range.openMinutes),
+        close: this.formatBookingSlot(range.closeMinutes),
+      };
+    }
+
+    return typeof record.note === 'string' && record.note.trim()
+      ? { note: record.note.trim() }
+      : null;
+  }
+
+  private parseBookingTimeRange(value: unknown) {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const match = value.match(
+      /(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/,
+    );
+    if (!match) {
+      return null;
+    }
+
+    const open = this.parseBookingTimeToMinutes(
+      `${match[1]}:${match[2] ?? '00'}`,
+    );
+    const close = this.parseBookingTimeToMinutes(
+      `${match[3]}:${match[4] ?? '00'}`,
+    );
+
+    return open === null || close === null
+      ? null
+      : { openMinutes: open, closeMinutes: close };
+  }
+
+  private parseBookingTimeToMinutes(value: unknown) {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const match = value.trim().match(/^(\d{1,2})(?::(\d{2}))?/);
+    if (!match) {
+      return null;
+    }
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2] ?? '0');
+    if (
+      !Number.isInteger(hours) ||
+      !Number.isInteger(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      return null;
+    }
+
+    return hours * 60 + minutes;
+  }
+
+  private formatBookingSlot(minutes: number) {
+    const normalized = ((minutes % 1440) + 1440) % 1440;
+    const hours = Math.floor(normalized / 60);
+    const minute = normalized % 60;
+
+    return `${String(hours).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
+  private isClosedBookingOpeningText(value: unknown) {
+    if (typeof value !== 'string') {
+      return false;
+    }
+
+    const normalized = this.normalizeBookingOpeningText(value);
+    return normalized === 'nghi' || normalized === 'off' || normalized === 'closed';
+  }
+
+  private normalizeBookingWeekdayKey(key: string) {
+    const normalized = this.normalizeBookingOpeningText(key);
+
+    if (
+      normalized === 'cn' ||
+      normalized.includes('sunday') ||
+      normalized.includes('chu nhat')
+    ) {
+      return 'sunday';
+    }
+
+    if (normalized.includes('monday') || normalized === 'mon') return 'monday';
+    if (normalized.includes('tuesday') || normalized === 'tue') return 'tuesday';
+    if (normalized.includes('wednesday') || normalized === 'wed') return 'wednesday';
+    if (normalized.includes('thursday') || normalized === 'thu') return 'thursday';
+    if (normalized.includes('friday') || normalized === 'fri') return 'friday';
+    if (normalized.includes('saturday') || normalized === 'sat') return 'saturday';
+
+    const dayNumber = normalized.match(/[2-7]/)?.[0];
+    if (dayNumber === '2') return 'monday';
+    if (dayNumber === '3') return 'tuesday';
+    if (dayNumber === '4') return 'wednesday';
+    if (dayNumber === '5') return 'thursday';
+    if (dayNumber === '6') return 'friday';
+    if (dayNumber === '7') return 'saturday';
+
+    return null;
+  }
+
+  private normalizeBookingOpeningText(value: string) {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private bookingWeekdayKeyFromDateIso(dateIso: string) {
+    const weekdayKeys = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ] as const;
+    const date = new Date(`${dateIso}T12:00:00`);
+    const day = Number.isFinite(date.getTime()) ? date.getDay() : 1;
+
+    return weekdayKeys[day] ?? 'monday';
+  }
+
+  private bookingLocalDateTimeParts(date: Date) {
+    if (!Number.isFinite(date.getTime())) {
+      return null;
+    }
+
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const byType = new Map(parts.map((part) => [part.type, part.value]));
+    const year = byType.get('year');
+    const month = byType.get('month');
+    const day = byType.get('day');
+    const hour = byType.get('hour');
+    const minute = byType.get('minute');
+
+    if (!year || !month || !day || !hour || !minute) {
+      return null;
+    }
+
+    return {
+      dateIso: `${year}-${month}-${day}`,
+      time: `${hour}:${minute}`,
+    };
+  }
+
+  private offsetDateIso(dateIso: string, offsetDays: number) {
+    const date = new Date(`${dateIso}T12:00:00`);
+    if (!Number.isFinite(date.getTime())) {
+      return dateIso;
+    }
+
+    date.setDate(date.getDate() + offsetDays);
+    return date.toISOString().slice(0, 10);
   }
 
   private async createBookingChangeAudit(input: {
@@ -10551,7 +10930,15 @@ export class NightlifeDataService {
       note: true,
       cancelledAt: true,
       createdAt: true,
-      store: { select: { id: true, name: true, slug: true } },
+      store: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          openingHours: true,
+          bookingCancelCutoffMinutes: true,
+        },
+      },
       cast: {
         select: {
           id: true,

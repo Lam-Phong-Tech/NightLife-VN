@@ -13,7 +13,7 @@ const weekdayKeys = [
 ] as const;
 
 type WeekdayKey = (typeof weekdayKeys)[number];
-type OpeningHoursInput = Record<string, unknown> | null | undefined;
+export type OpeningHoursInput = Record<string, unknown> | null | undefined;
 
 type OpeningRange =
   | { status: "open"; openMinutes: number; closeMinutes: number }

@@ -172,6 +172,36 @@ describe('Booking P2 workflows API (e2e)', () => {
     });
   });
 
+  it('rejects member reschedule outside store booking slots', async () => {
+    prisma.booking.findFirst.mockResolvedValue(
+      openBooking({
+        store: {
+          bookingCancelCutoffMinutes: 60,
+          openingHours: {
+            friday: { open: '19:00', close: '02:00' },
+          },
+        },
+      }),
+    );
+
+    await request(app.getHttpServer())
+      .post('/member/bookings/booking-1/reschedule')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'member-1')
+      .send({
+        scheduledAt: '2026-07-10T12:30:00.000Z',
+        reason: 'Move to a half hour slot',
+      })
+      .expect(422)
+      .expect(({ body }) => {
+        expect(body.message).toContain('outside store booking time slots');
+      });
+
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(prisma.notificationLog.create).not.toHaveBeenCalled();
+  });
+
   it('enforces per-store 120 minute cutoff for member cancellation', async () => {
     prisma.booking.findFirst.mockResolvedValue(
       openBooking({
