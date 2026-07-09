@@ -44,7 +44,7 @@ const fallbackImages = [
   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=720&q=76",
 ];
 
-const couponPageSize = 6;
+const couponPageSize = 4;
 const defaultCouponBannerImage =
   "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76";
 
@@ -444,7 +444,7 @@ export default function Page() {
               <nav aria-label="Phân trang ưu đãi" className="coupon-pagination">
                 <span>
                   Hiển thị {couponStartIndex + 1}-{Math.min(couponStartIndex + couponPageSize, filteredCoupons.length)} /{" "}
-                  {filteredCoupons.length} ưu đãi
+                  {filteredCoupons.length} ưu đãi · Trang {currentCouponPage}/{totalPages}
                 </span>
                 <div className="coupon-pagination-actions">
                   <button
