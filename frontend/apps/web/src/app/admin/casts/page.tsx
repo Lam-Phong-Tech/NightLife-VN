@@ -387,6 +387,19 @@ export default function AdminCastsPage() {
     setFormData((prev: any) => ({ ...prev, [field]: arr }));
   };
 
+  const handleMeasurementChange = (index: number, val: string) => {
+    const parts = (formData.measurements || '').split('-').map(s => s.trim());
+    while (parts.length < 3) {
+      parts.push('');
+    }
+    parts[index] = val.trim();
+    if (parts.every(p => !p)) {
+      setFormData((prev: any) => ({ ...prev, measurements: '' }));
+    } else {
+      setFormData((prev: any) => ({ ...prev, measurements: parts.join(' - ') }));
+    }
+  };
+
   const isEditing = isAddingCast || selectedCast !== null;
   const currentLabel = isAddingCast ? 'Tạo mới' : (selectedCast ? getStatusLabel(selectedCast.status, selectedCast.isPublic) : '');
 
@@ -771,7 +784,41 @@ export default function AdminCastsPage() {
                 </div>
                 <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Số đo (V1-V2-V3)</div>
-                  <input type="text" placeholder="87 - 61 - 89" value={formData.measurements} onChange={e => setFormData({...formData, measurements: e.target.value})} style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {(() => {
+                      const parts = (formData.measurements || '').split('-').map((s: string) => s.trim());
+                      const v1 = parts[0] || '';
+                      const v2 = parts[1] || '';
+                      const v3 = parts[2] || '';
+                      return (
+                        <>
+                          <input 
+                            type="number" 
+                            placeholder="V1" 
+                            value={v1} 
+                            onChange={e => handleMeasurementChange(0, e.target.value)} 
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none', textAlign: 'center' }} 
+                          />
+                          <span style={{ color: colors.muted }}>-</span>
+                          <input 
+                            type="number" 
+                            placeholder="V2" 
+                            value={v2} 
+                            onChange={e => handleMeasurementChange(1, e.target.value)} 
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none', textAlign: 'center' }} 
+                          />
+                          <span style={{ color: colors.muted }}>-</span>
+                          <input 
+                            type="number" 
+                            placeholder="V3" 
+                            value={v3} 
+                            onChange={e => handleMeasurementChange(2, e.target.value)} 
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none', textAlign: 'center' }} 
+                          />
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
 
