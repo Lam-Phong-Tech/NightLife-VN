@@ -6858,7 +6858,7 @@ describe('NightlifeDataService', () => {
       prisma.booking.findMany.mockResolvedValue([]);
       prisma.notificationLog.findMany.mockResolvedValue([]);
 
-      const result = await service.getAdminDashboardStats('today');
+      const result = await service.getAdminDashboardStats({ timeframe: 'today' });
 
       expect(prisma.store.count).toHaveBeenCalledWith({
         where: { status: 'ACTIVE', deletedAt: null },

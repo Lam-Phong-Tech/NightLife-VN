@@ -41,7 +41,14 @@ const getPillStyle = (kind: string) => {
 };
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
-const defaultHours = DAYS.reduce((acc, d) => ({ ...acc, [d]: { isOff: false, hours: '19:00 - 02:00' } }), {});
+const DEFAULT_OPENING_SLOT = '19:00 - 02:00';
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const totalMinutes = index * 30;
+  const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+  const minute = (totalMinutes % 60).toString().padStart(2, '0');
+  return `${hour}:${minute}`;
+});
+const defaultHours = DAYS.reduce((acc, d) => ({ ...acc, [d]: { isOff: false, hours: DEFAULT_OPENING_SLOT } }), {});
 
 const timeRangePattern = /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
 
@@ -95,6 +102,15 @@ const parseOpeningHourSlot = (slot: string) => {
     error: '',
     normalized: `${padHour(openHour)}:${match[2]} - ${padHour(closeHour)}:${match[4]}`,
     overnight: closeTotal < openTotal,
+  };
+};
+
+const splitOpeningHourSlot = (slot: string) => {
+  const match = slot.trim().match(timeRangePattern);
+  if (!match) return { open: '', close: '' };
+  return {
+    open: `${padHour(Number(match[1]))}:${match[2]}`,
+    close: `${padHour(Number(match[3]))}:${match[4]}`,
   };
 };
 
@@ -732,7 +748,7 @@ function AdminStoresContent() {
   const filteredStores = stores.filter((v: any) => {
     if (filterCity === 'Hanoi' && v.area !== 'HN') return false;
     if (filterCity === 'Ho Chi Minh City' && v.area !== 'HCM') return false;
-    if (!filterCity && (v.area === 'HN' || v.area === 'HCM')) return false;
+    if ((!filterCity || filterCity === 'other') && (v.area === 'HN' || v.area === 'HCM')) return false;
     
     if (filterCategory && v.category !== filterCategory) return false;
     if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -986,8 +1002,14 @@ function AdminStoresContent() {
                     newSlots[idx] = val;
                     updateHour(day, 'hours', newSlots.join(', '));
                   };
+                  const setSlotTime = (idx: number, key: 'open' | 'close', val: string) => {
+                    const parts = splitOpeningHourSlot(slots[idx] || '');
+                    const openTime = key === 'open' ? val : (parts.open || '19:00');
+                    const closeTime = key === 'close' ? val : (parts.close || '02:00');
+                    setSlotVal(idx, openTime && closeTime ? `${openTime} - ${closeTime}` : '');
+                  };
                   const addSlot = () => {
-                    updateHour(day, 'hours', [...slots, ''].join(', '));
+                    updateHour(day, 'hours', [...slots, DEFAULT_OPENING_SLOT].join(', '));
                   };
                   const removeSlot = (idx: number) => {
                     const newSlots = slots.filter((_: any, i: number) => i !== idx);
@@ -1003,9 +1025,29 @@ function AdminStoresContent() {
                           const slotMeta = parseOpeningHourSlot(sl);
                           const slotError = openingHourPreviewErrors[day]?.[idx];
                           const overnight = !slotError && slotMeta.overnight;
+                          const slotParts = splitOpeningHourSlot(sl);
+                          const timeSelectStyle = {
+                            background: 'transparent',
+                            border: 'none',
+                            outline: 'none',
+                            color: slotError ? '#e88b99' : '#f0dda8',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
+                            minWidth: '72px',
+                          };
                           return (
-                            <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 10px' }}>
-                              <input value={sl} onChange={e => setSlotVal(idx, e.target.value)} placeholder="08:00 – 12:00" style={{ width: '96px', background: 'none', border: 'none', outline: 'none', color: slotError ? '#e88b99' : '#f0dda8', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', letterSpacing: '.3px' }} />
+                            <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 8px' }}>
+                              <select value={slotParts.open} onChange={e => setSlotTime(idx, 'open', e.target.value)} aria-label={`${day} giờ mở cửa`} style={timeSelectStyle}>
+                                <option value="">Mở lúc</option>
+                                {TIME_OPTIONS.map(time => <option key={time} value={time}>{time}</option>)}
+                              </select>
+                              <span style={{ color: '#6e6a60', fontSize: '12px', fontWeight: 700 }}>–</span>
+                              <select value={slotParts.close} onChange={e => setSlotTime(idx, 'close', e.target.value)} aria-label={`${day} giờ đóng cửa`} style={timeSelectStyle}>
+                                <option value="">Đóng lúc</option>
+                                {TIME_OPTIONS.map(time => <option key={time} value={time}>{time}</option>)}
+                              </select>
                               {overnight && <span title="Khung qua đêm — kết thúc vào sáng hôm sau" style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.5px', color: '#8fb6e4', background: 'rgba(143,182,228,.12)', border: '1px solid rgba(143,182,228,.3)', borderRadius: '5px', padding: '2.5px 5px', lineHeight: 1, cursor: 'help', marginRight: '2px' }}>+1</span>}
                               <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                             </span>

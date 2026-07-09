@@ -23,6 +23,7 @@ function AdminBookingsContent() {
   const [meta, setMeta] = useState<any>({ all: 0, new: 0, completed: 0, cancelled: 0 });
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [bookingSearch, setBookingSearch] = useState('');
 
   const handleUpdateStatus = async (bookingId: string, status: string) => {
     try {
@@ -42,7 +43,14 @@ function AdminBookingsContent() {
     try {
       let statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<any>('/admin/bookings', { 
-        params: { status: statusParam, city: city || undefined, category: category || undefined, page: currentPage, limit: adminPageSize }
+        params: {
+          status: statusParam,
+          city: city || undefined,
+          category: category || undefined,
+          search: bookingSearch.trim() || undefined,
+          page: currentPage,
+          limit: adminPageSize
+        }
       });
       setBookings(res.data);
       setMeta(res.meta);
@@ -53,11 +61,11 @@ function AdminBookingsContent() {
 
   useEffect(() => {
     fetchBookings();
-  }, [activeTab, city, category, currentPage]);
+  }, [activeTab, city, category, bookingSearch, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, city, category]);
+  }, [activeTab, city, category, bookingSearch]);
 
   const getDisplayStatus = (status: string) => {
     if (status === 'REQUESTED') return 'Mới';
@@ -132,6 +140,42 @@ function AdminBookingsContent() {
             );
           })}
         </div>
+        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', width: 'min(320px, 100%)' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 12, pointerEvents: 'none' }}>
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            value={bookingSearch}
+            onChange={(event) => setBookingSearch(event.target.value)}
+            placeholder="Tìm mã booking..."
+            aria-label="Tìm mã booking"
+            style={{
+              width: '100%',
+              height: 45,
+              border: '1px solid rgba(255,255,255,.08)',
+              borderRadius: 11,
+              background: 'rgba(255,255,255,.035)',
+              color: '#f3f0ea',
+              outline: 'none',
+              padding: '0 38px 0 36px',
+              fontSize: 13,
+              fontWeight: 500
+            }}
+          />
+          {bookingSearch && (
+            <button
+              type="button"
+              onClick={() => setBookingSearch('')}
+              aria-label="Xóa tìm kiếm"
+              style={{ position: 'absolute', right: 8, width: 28, height: 28, border: 'none', borderRadius: 8, background: 'transparent', color: '#8c8679', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
+        </label>
         <div style={{ flex: 1 }}></div>
       </div>
 

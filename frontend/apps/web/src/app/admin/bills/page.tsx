@@ -200,6 +200,8 @@ export default function AdminBillsPage() {
     };
   }, [fetchBills]);
 
+  const rowStartNumber = ((meta?.page ?? pageParam) - 1) * (meta?.limit ?? adminPageSize);
+
   return (
     <div className="nl-admin-page nl-admin-bills-page" style={{ padding: '32px 40px', position: 'relative', minHeight: '100%' }}>
       
@@ -304,6 +306,7 @@ export default function AdminBillsPage() {
       <div className="nl-admin-data-list nl-admin-bill-table-wrap" style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
         <table className="nl-admin-bill-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <colgroup>
+            <col style={{ width: '72px' }} />
             <col />
             <col />
             <col />
@@ -314,6 +317,7 @@ export default function AdminBillsPage() {
           </colgroup>
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.borderSoft}` }}>
+              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px', textAlign: 'center' }}>STT</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>MÃ BILL</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>QUÁN</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>SỐ TIỀN (GỘP)</th>
@@ -326,11 +330,11 @@ export default function AdminBillsPage() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Đang tải dữ liệu...</td>
+                <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Đang tải dữ liệu...</td>
               </tr>
             ) : loadError ? (
               <tr>
-                <td colSpan={7} style={{ padding: '28px 32px', textAlign: 'center' }}>
+                <td colSpan={8} style={{ padding: '28px 32px', textAlign: 'center' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: colors.red, background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.24)', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>
                     <Info size={16} />
                     {loadError}
@@ -339,7 +343,7 @@ export default function AdminBillsPage() {
               </tr>
             ) : billsList.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Không có hóa đơn nào</td>
+                <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: colors.muted }}>Không có hóa đơn nào</td>
               </tr>
             ) : billsList.map((bill, idx) => (
               <tr 
@@ -354,6 +358,7 @@ export default function AdminBillsPage() {
                 onMouseEnter={(e) => e.currentTarget.style.background = colors.surface2}
                 onMouseLeave={(e) => e.currentTarget.style.background = selectedBill?.id === bill.id ? colors.surface2 : 'transparent'}
               >
+                <td style={{ padding: '16px 24px', fontSize: '13px', fontWeight: 700, color: colors.muted, textAlign: 'center' }}>{rowStartNumber + idx + 1}</td>
                 <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 700, color: colors.gold }}>{bill.billNumber || bill.id}</td>
                 <td style={{ padding: '16px 24px' }}>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: colors.text }}>{bill.store || 'N/A'}</div>

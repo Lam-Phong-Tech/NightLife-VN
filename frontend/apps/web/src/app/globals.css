@@ -1424,13 +1424,14 @@ textarea::placeholder {
     text-transform: uppercase;
   }
 
-  .nl-admin-bill-table td:nth-child(1)::before { content: "Mã bill"; }
-  .nl-admin-bill-table td:nth-child(2)::before { content: "Quán"; }
-  .nl-admin-bill-table td:nth-child(3)::before { content: "Số tiền"; }
-  .nl-admin-bill-table td:nth-child(4)::before { content: "Ngày DV"; }
-  .nl-admin-bill-table td:nth-child(5)::before { content: "Người gửi"; }
-  .nl-admin-bill-table td:nth-child(6)::before { content: "Ảnh"; }
-  .nl-admin-bill-table td:nth-child(7)::before { content: "Trạng thái"; }
+  .nl-admin-bill-table td:nth-child(1)::before { content: "STT"; }
+  .nl-admin-bill-table td:nth-child(2)::before { content: "Mã bill"; }
+  .nl-admin-bill-table td:nth-child(3)::before { content: "Quán"; }
+  .nl-admin-bill-table td:nth-child(4)::before { content: "Số tiền"; }
+  .nl-admin-bill-table td:nth-child(5)::before { content: "Ngày DV"; }
+  .nl-admin-bill-table td:nth-child(6)::before { content: "Người gửi"; }
+  .nl-admin-bill-table td:nth-child(7)::before { content: "Ảnh"; }
+  .nl-admin-bill-table td:nth-child(8)::before { content: "Trạng thái"; }
 }
 
 @media (max-width: 380px) {

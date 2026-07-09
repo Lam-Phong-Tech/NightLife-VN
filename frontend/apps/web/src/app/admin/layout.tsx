@@ -112,15 +112,16 @@ function TopRegionFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
+  const activeCity = city || 'other';
   const [open, setOpen] = useState(false);
 
   const opts = [
     { v: 'Hanoi', label: 'Hà Nội', short: 'HN', sub: 'Các quán tại Hà Nội' },
     { v: 'Ho Chi Minh City', label: 'TP. Hồ Chí Minh', short: 'HCM', sub: 'Các quán tại TP. HCM' },
-    { v: '', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Các tỉnh thành khác ngoài Hà Nội và TP. HCM' }
+    { v: 'other', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Các tỉnh thành khác ngoài Hà Nội và TP. HCM' }
   ];
 
-  const curr = opts.find(o => o.v === city) || { v: '', label: 'Tổng hợp', short: 'Tổng hợp', sub: 'Các tỉnh thành khác ngoài Hà Nội và TP. HCM' };
+  const curr = opts.find(o => o.v === activeCity) || opts[2]!;
 
   return (
     <div style={{ position: 'relative' }}>
@@ -146,14 +147,13 @@ function TopRegionFilter() {
               Khu vực dữ liệu
             </div>
             {opts.map(o => {
-              const isActive = city === o.v;
+              const isActive = activeCity === o.v;
               return (
                 <div 
                   key={o.v}
                   onClick={() => {
                     const params = new URLSearchParams(searchParams.toString());
-                    if (o.v) params.set('city', o.v);
-                    else params.delete('city');
+                    params.set('city', o.v);
                     router.push(pathname + '?' + params.toString());
                     setOpen(false);
                   }}

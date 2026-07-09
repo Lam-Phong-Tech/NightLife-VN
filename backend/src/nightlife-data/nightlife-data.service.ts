@@ -341,6 +341,12 @@ type CouponClaimContext = {
 };
 
 type PartnerDashboardPeriod = 'today' | 'seven' | 'thirty';
+
+type AdminDashboardQuery = {
+  timeframe?: string;
+  city?: string;
+  category?: string;
+};
 type PartnerCustomerArrivalSource = 'QR_USED' | 'BILL_APPROVED';
 
 type RevenueReportMoneyTotals = {
@@ -14464,6 +14470,79 @@ export class NightlifeDataService {
     return cityCode;
   }
 
+  private resolveAdminDashboardCityScope(value?: string | null) {
+    const token = this.normalizeToken(value);
+
+    if (!token) {
+      return undefined;
+    }
+
+    if (['other', 'others', 'khac', 'tinh-khac', 'tong-hop'].includes(token)) {
+      return 'other';
+    }
+
+    return this.normalizeCityCode(value, { strict: true });
+  }
+
+  private buildAdminDashboardCityWhere(
+    city: 'hn' | 'hcm',
+  ): Prisma.StoreWhereInput {
+    const cityNames =
+      city === 'hn'
+        ? ['Hanoi', 'Ha Noi', 'Hà Nội', 'HN']
+        : [
+            'Ho Chi Minh City',
+            'Ho Chi Minh',
+            'TP. Hồ Chí Minh',
+            'Hồ Chí Minh',
+            'HCM',
+            'Saigon',
+            'Sài Gòn',
+          ];
+
+    return {
+      OR: [
+        { city: { in: cityNames } },
+        { area: { is: { code: { startsWith: `${city}-` } } } },
+      ],
+    };
+  }
+
+  private buildAdminDashboardStoreWhere(
+    query: AdminDashboardQuery,
+  ): Prisma.StoreWhereInput | undefined {
+    const and: Prisma.StoreWhereInput[] = [];
+    const category = this.normalizeCategory(query.category, { strict: true });
+    const cityScope = this.resolveAdminDashboardCityScope(query.city);
+
+    if (category) {
+      and.push({ category });
+    }
+
+    if (cityScope === 'hn' || cityScope === 'hcm') {
+      and.push(this.buildAdminDashboardCityWhere(cityScope));
+    } else if (cityScope === 'other') {
+      and.push({
+        NOT: [
+          this.buildAdminDashboardCityWhere('hn'),
+          this.buildAdminDashboardCityWhere('hcm'),
+        ],
+      });
+    }
+
+    return and.length ? { AND: and } : undefined;
+  }
+
+  private formatAdminBookingCode(id: string) {
+    const numericMatch = id.match(/\d+/g);
+
+    if (numericMatch && numericMatch.length > 0) {
+      return `BK-${numericMatch.join('').slice(-4)}`;
+    }
+
+    return `BK-${id.slice(0, 4).toUpperCase()}`;
+  }
+
   private cityCodeFromAreaCode(code: string) {
     return code.split('-')[0] || undefined;
   }
@@ -16276,10 +16355,28 @@ export class NightlifeDataService {
     };
   }
 
-  async getAdminDashboardExport(timeframe?: string) {
+  async getAdminDashboardExport(query: AdminDashboardQuery = {}) {
     const ExcelJS = require('exceljs');
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Bao_Cao');
+    const storeFilter = this.buildAdminDashboardStoreWhere(query);
+    const scopedStoreRelation = storeFilter
+      ? { store: { is: storeFilter } }
+      : {};
+    let scheduledAtFilter: Prisma.DateTimeFilter | undefined;
+
+    if (query.timeframe) {
+      const startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
+
+      if (query.timeframe === 'week') {
+        startDate.setDate(startDate.getDate() - 7);
+      } else if (query.timeframe === 'month') {
+        startDate.setDate(1);
+      }
+
+      scheduledAtFilter = { gte: startDate };
+    }
 
     sheet.columns = [
       { header: 'Mã Booking', key: 'id', width: 20 },
@@ -16289,7 +16386,14 @@ export class NightlifeDataService {
     ];
 
     const recentBookings = await this.prisma.booking
-      .findMany({ take: 100, orderBy: { scheduledAt: 'desc' } })
+      .findMany({
+        where: {
+          ...scopedStoreRelation,
+          ...(scheduledAtFilter ? { scheduledAt: scheduledAtFilter } : {}),
+        },
+        take: 100,
+        orderBy: { scheduledAt: 'desc' },
+      })
       .catch(() => []);
     for (const b of recentBookings) {
       sheet.addRow({
@@ -16304,7 +16408,13 @@ export class NightlifeDataService {
     return buffer;
   }
 
-  async getAdminDashboardStats(timeframe?: string) {
+  async getAdminDashboardStats(query: AdminDashboardQuery = {}) {
+    const timeframe = query.timeframe;
+    const storeFilter = this.buildAdminDashboardStoreWhere(query);
+    const scopedStoreRelation = storeFilter
+      ? { store: { is: storeFilter } }
+      : {};
+
     let startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
 
@@ -16324,7 +16434,7 @@ export class NightlifeDataService {
     today.setHours(0, 0, 0, 0);
 
     const activeStores = await this.prisma.store.count({
-      where: { status: 'ACTIVE' as any, deletedAt: null },
+      where: { ...(storeFilter ?? {}), status: 'ACTIVE' as any, deletedAt: null },
     });
     const activeStoresHn = await this.prisma.store
       .count({
@@ -16344,44 +16454,54 @@ export class NightlifeDataService {
         },
       })
       .catch(() => 0);
-    const totalContents = await this.prisma.content.count();
+    const totalContents = await this.prisma.content.count({
+      where: storeFilter ? { store: { is: storeFilter } } : undefined,
+    });
     const totalCasts = await this.prisma.cast
-      .count({ where: { deletedAt: null } })
+      .count({ where: { deletedAt: null, ...scopedStoreRelation } })
       .catch(() => 0);
 
     // Using any to bypass strict type checking for statuses we aren't 100% sure about
     const pendingBills = await this.prisma.bill
-      .count({ where: { status: 'SUBMITTED' as any } })
+      .count({ where: { status: 'SUBMITTED' as any, ...scopedStoreRelation } })
       .catch(() => 0);
 
     const pendingBillsResult = await this.prisma.bill
       .aggregate({
         _sum: { totalVnd: true } as any,
-        where: { status: 'SUBMITTED' as any },
+        where: { status: 'SUBMITTED' as any, ...scopedStoreRelation },
       })
       .catch(() => ({ _sum: { totalVnd: 0 } }));
     const pendingBillsAmount = (pendingBillsResult._sum as any)?.totalVnd || 0;
 
     const pendingCasts = await this.prisma.cast
-      .count({ where: { status: 'PENDING_REVIEW' as any, deletedAt: null } })
+      .count({
+        where: {
+          status: 'PENDING_REVIEW' as any,
+          deletedAt: null,
+          ...scopedStoreRelation,
+        },
+      })
       .catch(() => 0);
     const pendingPartners = await this.prisma.partnerRequest
-      .count({ where: { status: 'PENDING_REVIEW' as any } })
+      .count({ where: { status: 'PENDING_REVIEW' as any, ...scopedStoreRelation } })
       .catch(() => 0);
 
     const todaysBookings = await this.prisma.booking.count({
-      where: { scheduledAt: { gte: startDate, lt: endDate } },
+      where: { scheduledAt: { gte: startDate, lt: endDate }, ...scopedStoreRelation },
     });
     const todaysBookingsCompleted = await this.prisma.booking.count({
       where: {
         scheduledAt: { gte: startDate, lt: endDate },
         status: 'COMPLETED' as any,
+        ...scopedStoreRelation,
       },
     });
     const todaysBookingsNew = await this.prisma.booking.count({
       where: {
         scheduledAt: { gte: startDate, lt: endDate },
         status: 'REQUESTED' as any,
+        ...scopedStoreRelation,
       },
     });
 
@@ -16391,6 +16511,7 @@ export class NightlifeDataService {
         where: {
           status: { in: ['VERIFIED', 'PAID'] } as any,
           usedAt: { gte: startDate, lt: endDate },
+          ...scopedStoreRelation,
         },
       })
       .catch(() => ({ _sum: { totalVnd: 0 } }));
@@ -16402,6 +16523,7 @@ export class NightlifeDataService {
         where: {
           status: { in: ['VERIFIED', 'PAID'] } as any,
           usedAt: { gte: startDate, lt: endDate },
+          ...scopedStoreRelation,
         },
       })
       .catch(() => ({ _sum: { commissionAmountVnd: 0 } }));
@@ -16423,6 +16545,7 @@ export class NightlifeDataService {
           where: {
             status: { in: ['VERIFIED', 'PAID'] } as any,
             usedAt: { gte: d, lt: nextD },
+            ...scopedStoreRelation,
           },
         })
         .catch(() => ({ _sum: { totalVnd: 0 } }));
@@ -16436,6 +16559,7 @@ export class NightlifeDataService {
     const recentBookings = await this.prisma.booking
       .findMany({
         take: 5,
+        where: scopedStoreRelation,
         orderBy: { scheduledAt: 'desc' },
         include: { user: true, guest: true, store: true, cast: true },
       })
@@ -16456,6 +16580,15 @@ export class NightlifeDataService {
       where: {
         channel: 'TELEGRAM' as any,
         templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) },
+        ...(storeFilter
+          ? {
+              OR: [
+                { store: { is: storeFilter } },
+                { booking: { is: scopedStoreRelation } },
+                { bill: { is: scopedStoreRelation } },
+              ],
+            }
+          : {}),
       },
       take: 4,
       orderBy: { createdAt: 'desc' },
@@ -17375,40 +17508,36 @@ export class NightlifeDataService {
       dateFilter = { scheduledAt: { gte: startDate } };
     }
 
-    let cityCondition;
-    if (city === 'Hanoi') {
-      cityCondition = { in: ['Hanoi', 'Hà Nội'] };
-    } else if (city === 'Ho Chi Minh City') {
-      cityCondition = {
-        in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'Há»“ ChÃ­ Minh'],
-      };
-    } else if (city) {
-      cityCondition = city;
-    }
+    const storeFilter = this.buildAdminDashboardStoreWhere({ city, category });
+    const searchTerm = this.cleanText(search);
+    const normalizedBookingCodeSearch = searchTerm
+      ? searchTerm.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      : '';
+    const bookingCodeNeedle = normalizedBookingCodeSearch.replace(/^BK/, '');
+    const isBookingCodeSearch = Boolean(
+      bookingCodeNeedle &&
+        (normalizedBookingCodeSearch.startsWith('BK') ||
+          /^\d+$/.test(normalizedBookingCodeSearch)),
+    );
 
-    const where: import('@prisma/client').Prisma.BookingWhereInput = {
-      ...(prismaStatus && { status: prismaStatus }),
+    const baseWhere: import('@prisma/client').Prisma.BookingWhereInput = {
       ...(storeId && { storeId }),
-      ...(city || category
-        ? {
-            store: {
-              ...(city && { city: cityCondition }),
-              ...(category && {
-                category: category as import('@prisma/client').StoreCategory,
-              }),
-            },
-          }
-        : {}),
+      ...(storeFilter ? { store: { is: storeFilter } } : {}),
       // TODO: Filter by source when the schema supports it. Currently hardcoded.
       ...dateFilter,
-      ...(search && {
+      ...(searchTerm && !isBookingCodeSearch && {
         OR: [
-          { user: { displayName: { contains: search, mode: 'insensitive' } } },
-          { guest: { displayName: { contains: search, mode: 'insensitive' } } },
-          { user: { phone: { contains: search, mode: 'insensitive' } } },
-          { guest: { phone: { contains: search, mode: 'insensitive' } } },
+          { id: this.containsInsensitive(searchTerm.replace(/^BK-?/i, '')) },
+          { user: { displayName: this.containsInsensitive(searchTerm) } },
+          { guest: { displayName: this.containsInsensitive(searchTerm) } },
+          { user: { phone: this.containsInsensitive(searchTerm) } },
+          { guest: { phone: this.containsInsensitive(searchTerm) } },
         ],
       }),
+    };
+    const where: import('@prisma/client').Prisma.BookingWhereInput = {
+      ...baseWhere,
+      ...(prismaStatus && { status: prismaStatus }),
     };
 
     let orderBy: any;
@@ -17417,6 +17546,59 @@ export class NightlifeDataService {
     } else {
       // Cho tab 'Tất cả' và 'Mới', ưu tiên những booking vừa được gửi tới
       orderBy = { createdAt: sortBy === 'oldest' ? 'asc' : 'desc' };
+    }
+
+    if (isBookingCodeSearch) {
+      const [allStatusCandidates, tabCandidates] = await Promise.all([
+        this.prisma.booking.findMany({
+          where: baseWhere,
+          orderBy,
+          include: { store: true, cast: true, user: true, guest: true },
+        }),
+        this.prisma.booking.findMany({
+          where,
+          orderBy,
+          include: { store: true, cast: true, user: true, guest: true },
+        }),
+      ]);
+      const matchesBookingCode = (booking: { id: string }) =>
+        this.formatAdminBookingCode(booking.id)
+          .replace(/[^A-Z0-9]/g, '')
+          .includes(bookingCodeNeedle);
+      const allStatusMatches = allStatusCandidates.filter(matchesBookingCode);
+      const filteredItems = tabCandidates.filter(matchesBookingCode);
+      const items = filteredItems.slice(skip, skip + limit);
+      const data = items.map((bk) => ({
+        id: bk.id,
+        customerName:
+          bk.user?.displayName || bk.guest?.displayName || 'KhÃ¡ch VÃ£ng Lai',
+        customerPhone: bk.user?.phone || bk.guest?.phone || '',
+        customerEmail: bk.user?.email || bk.guest?.email || '',
+        store: bk.store.name,
+        cast: bk.cast?.stageName ? 'Cast: ' + bk.cast.stageName : 'KhÃ´ng cast',
+        partySize: bk.partySize,
+        scheduledAt: bk.scheduledAt,
+        source: 'Telegram',
+        status: bk.status,
+        note: bk.note,
+      }));
+
+      return {
+        data,
+        meta: {
+          total: filteredItems.length,
+          page,
+          limit,
+          new: allStatusMatches.filter((bk) => bk.status === 'REQUESTED').length,
+          completed: allStatusMatches.filter((bk) => bk.status === 'COMPLETED')
+            .length,
+          cancelled: allStatusMatches.filter((bk) => bk.status === 'CANCELLED')
+            .length,
+          all: allStatusMatches.filter((bk) =>
+            ['REQUESTED', 'COMPLETED', 'CANCELLED'].includes(bk.status),
+          ).length,
+        },
+      };
     }
 
     const [items, total, newCount, completedCount, cancelledCount] =

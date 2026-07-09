@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { clearAuthSession } from '@/lib/auth/session';
 
@@ -45,6 +46,17 @@ type AdminDashboardStats = {
 };
 
 export default function AdminDashboardPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '24px 26px 40px', color: '#8c8679' }}>Đang tải...</div>}>
+      <AdminDashboardContent />
+    </Suspense>
+  );
+}
+
+function AdminDashboardContent() {
+  const searchParams = useSearchParams();
+  const city = searchParams.get('city') || 'other';
+  const category = searchParams.get('category') || '';
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +67,10 @@ export default function AdminDashboardPage() {
     setError(null);
     try {
       const timeframeMap = ['today', 'week', 'month'];
-      const tf = timeframeMap[activeFilter];
-      const data = await apiClient<AdminDashboardStats>(`/admin/dashboard/stats?timeframe=${tf}`);
+      const tf = timeframeMap[activeFilter] ?? 'today';
+      const params = new URLSearchParams({ timeframe: tf, city });
+      if (category) params.set('category', category);
+      const data = await apiClient<AdminDashboardStats>(`/admin/dashboard/stats?${params.toString()}`);
       setStats(data);
     } catch (err: any) {
       console.error(err);
@@ -72,7 +86,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     void loadStats();
-  }, [activeFilter]);
+  }, [activeFilter, city, category]);
 
   const formatVnd = (val: number) => {
     if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M₫`.replace('.0', '');
@@ -106,9 +120,11 @@ export default function AdminDashboardPage() {
   const handleExport = async () => {
     try {
       const { getAuthToken, buildApiUrl } = await import('@/lib/api/client');
-      const tf = ['today', 'week', 'month'][activeFilter];
+      const tf = ['today', 'week', 'month'][activeFilter] ?? 'today';
       const token = getAuthToken();
-      const url = buildApiUrl(`/admin/dashboard/export?timeframe=${tf}`);
+      const params = new URLSearchParams({ timeframe: tf, city });
+      if (category) params.set('category', category);
+      const url = buildApiUrl(`/admin/dashboard/export?${params.toString()}`);
       
       const response = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}

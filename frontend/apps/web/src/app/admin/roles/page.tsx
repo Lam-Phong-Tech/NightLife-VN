@@ -26,7 +26,6 @@ export type AccountRec = {
   email: string;
   role: string;
   kind: string;
-  last: string;
   avaBg: string;
   key?: string;
   disabled?: boolean;
@@ -191,7 +190,7 @@ export default function AdminRolesPage() {
     const nm = (afKind==='partner'&&afVenue&&afVenue.trim())?afVenue.trim():(afKind==='staff'&&afVenue&&afVenue.trim())?(afName.trim()+' · '+afVenue.trim()):afName.trim();
     const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
     const roleData = kmap[afKind] || ['Đối tác', 'linear-gradient(135deg,#c9a86a,#8f6b32)'];
-    const rec = {id:Date.now(), ini, name:nm, email:afEmail.trim(), role:roleData[0], kind:afKind, last:'Vừa tạo', avaBg:roleData[1]};
+    const rec = {id:Date.now(), ini, name:nm, email:afEmail.trim(), role:roleData[0], kind:afKind, avaBg:roleData[1]};
     setExtraAccs([rec, ...extraAccs]);
     setIsAdding(false);
     showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
@@ -274,9 +273,7 @@ export default function AdminRolesPage() {
                   <span style={rst(a.kind)}>{a.role}</span>
                   {a.disabled ? (
                     <div style={{ fontSize: '10.5px', color: '#e88b99', marginTop: '5px' }}>Đã vô hiệu hóa</div>
-                  ) : (
-                    <div style={{ fontSize: '10.5px', color: '#8c8679', marginTop: '5px' }}>{a.last}</div>
-                  )}
+                  ) : null}
                 </div>
                 <div style={{ display: 'flex', gap: '5px', flex: 'none' }}>
                   <span onClick={() => { setEdOrig(a.email); setEdName(a.name); setEdEmail(a.email); setEdOpen(true); }} title="Sửa tên / email" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>

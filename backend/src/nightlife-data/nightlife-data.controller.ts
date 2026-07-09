@@ -1688,8 +1688,10 @@ export class NightlifeDataController {
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/dashboard/stats')
-  async getAdminDashboardStats(@Query('timeframe') timeframe?: string) {
-    return this.nightlifeDataService.getAdminDashboardStats(timeframe);
+  async getAdminDashboardStats(
+    @Query() query: { timeframe?: string; city?: string; category?: string },
+  ) {
+    return this.nightlifeDataService.getAdminDashboardStats(query);
   }
 
   @Roles('ADMIN')
@@ -1726,11 +1728,11 @@ export class NightlifeDataController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('admin/dashboard/export')
   async getAdminDashboardExport(
-    @Query('timeframe') timeframe: string,
+    @Query() query: { timeframe?: string; city?: string; category?: string },
     @Res() res: express.Response,
   ) {
     const buffer =
-      await this.nightlifeDataService.getAdminDashboardExport(timeframe);
+      await this.nightlifeDataService.getAdminDashboardExport(query);
     res.set({
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
