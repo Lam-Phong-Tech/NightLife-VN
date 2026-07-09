@@ -1026,6 +1026,7 @@ function AdminStoresContent() {
                           const slotError = openingHourPreviewErrors[day]?.[idx];
                           const overnight = !slotError && slotMeta.overnight;
                           const slotParts = splitOpeningHourSlot(sl);
+                          const strokeColor = slotError ? '%23e88b99' : '%23f0dda8';
                           const timeSelectStyle = {
                             background: 'transparent',
                             border: 'none',
@@ -1035,18 +1036,24 @@ function AdminStoresContent() {
                             fontWeight: 700,
                             fontFamily: 'inherit',
                             cursor: 'pointer',
-                            minWidth: '72px',
+                            minWidth: '78px',
+                            paddingRight: '14px',
+                            appearance: 'none' as const,
+                            WebkitAppearance: 'none' as const,
+                            backgroundPosition: 'right 2px center',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${strokeColor}' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
                           };
                           return (
                             <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 8px' }}>
                               <select value={slotParts.open} onChange={e => setSlotTime(idx, 'open', e.target.value)} aria-label={`${day} giờ mở cửa`} style={timeSelectStyle}>
-                                <option value="">Mở lúc</option>
-                                {TIME_OPTIONS.map(time => <option key={time} value={time}>{time}</option>)}
+                                <option value="" style={{ background: '#1c1c24', color: '#f3f0ea' }}>Mở lúc</option>
+                                {TIME_OPTIONS.map(time => <option key={time} value={time} style={{ background: '#1c1c24', color: '#f3f0ea' }}>{time}</option>)}
                               </select>
                               <span style={{ color: '#6e6a60', fontSize: '12px', fontWeight: 700 }}>–</span>
                               <select value={slotParts.close} onChange={e => setSlotTime(idx, 'close', e.target.value)} aria-label={`${day} giờ đóng cửa`} style={timeSelectStyle}>
-                                <option value="">Đóng lúc</option>
-                                {TIME_OPTIONS.map(time => <option key={time} value={time}>{time}</option>)}
+                                <option value="" style={{ background: '#1c1c24', color: '#f3f0ea' }}>Đóng lúc</option>
+                                {TIME_OPTIONS.map(time => <option key={time} value={time} style={{ background: '#1c1c24', color: '#f3f0ea' }}>{time}</option>)}
                               </select>
                               {overnight && <span title="Khung qua đêm — kết thúc vào sáng hôm sau" style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.5px', color: '#8fb6e4', background: 'rgba(143,182,228,.12)', border: '1px solid rgba(143,182,228,.3)', borderRadius: '5px', padding: '2.5px 5px', lineHeight: 1, cursor: 'help', marginRight: '2px' }}>+1</span>}
                               <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>

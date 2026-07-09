@@ -60,10 +60,10 @@
   width: 38px;
   height: 38px;
   flex: none;
-  border: 1px solid rgba(212, 178, 106, 0.28);
+  border: 1px solid var(--vy-border-gold-22);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #e3c27e;
+  background: var(--vy-surface-2);
+  color: var(--vy-gold-hi);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -76,7 +76,7 @@
 
 .headerTitle {
   margin: 0;
-  color: #f3f0ea;
+  color: var(--vy-text);
   font-size: 16px;
   font-weight: 780;
   line-height: 1.1;
@@ -84,7 +84,7 @@
 
 .headerSubtitle {
   margin: 3px 0 0;
-  color: #8c8679;
+  color: var(--vy-text-2);
   font-size: 11px;
   line-height: 1.35;
 }
@@ -100,9 +100,9 @@
 .summaryCard,
 .historyItem,
 .emptyCard {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--vy-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--vy-surface-1);
 }
 
 .venueCard,
@@ -139,7 +139,7 @@
 .nudgeTitle,
 .historyTitle {
   overflow: hidden;
-  color: #f3f0ea;
+  color: var(--vy-text);
   font-size: 13.5px;
   font-weight: 720;
   line-height: 1.22;
@@ -151,7 +151,7 @@
 .nudgeText,
 .historyMeta,
 .historySubMeta {
-  color: #8c8679;
+  color: var(--vy-text-2);
   font-size: 11px;
   line-height: 1.45;
 }
@@ -163,7 +163,7 @@
 
 .textLink {
   flex: none;
-  color: #e3c27e;
+  color: var(--vy-gold-hi);
   font-size: 11.5px;
   font-weight: 760;
   text-decoration: none;
@@ -171,8 +171,8 @@
 
 .loginNudge {
   margin-top: 11px;
-  border-color: rgba(212, 178, 106, 0.34);
-  background: linear-gradient(135deg, rgba(212, 178, 106, 0.14), rgba(255, 255, 255, 0.02));
+  border-color: var(--vy-border-gold-32);
+  background: linear-gradient(135deg, var(--vy-gold-soft-bg), var(--vy-surface-1));
 }
 
 .memberNudge {
@@ -186,8 +186,8 @@
   height: 32px;
   flex: none;
   border-radius: 9px;
-  background: rgba(212, 178, 106, 0.16);
-  color: #e3c27e;
+  background: var(--vy-gold-soft-bg);
+  color: var(--vy-gold-hi);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -223,7 +223,7 @@
 }
 
 .fieldLabel {
-  color: #8c8679;
+  color: var(--vy-text-2);
   font-size: 10.5px;
   font-weight: 760;
   letter-spacing: 0.06em;
@@ -236,10 +236,10 @@
 .stepper,
 .dateInput,
 .noteArea {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--vy-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.045);
-  color: #f3f0ea;
+  background: var(--vy-surface-2);
+  color: var(--vy-text);
 }
 
 .inputWrap,
@@ -609,13 +609,13 @@
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  color: #f3f0ea;
+  color: var(--vy-text);
   font-size: 12.5px;
   line-height: 1.35;
 }
 
 .summaryRow span:first-child {
-  color: #8c8679;
+  color: var(--vy-text-2);
 }
 
 .summaryRow span:last-child {
@@ -633,19 +633,19 @@
 .heroMark {
   width: 76px;
   height: 76px;
-  border: 1.5px solid rgba(212, 178, 106, 0.5);
+  border: 1.5px solid var(--vy-border-gold-40);
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(244, 227, 180, 0.22), rgba(212, 178, 106, 0.12));
-  color: #f0dda8;
+  background: linear-gradient(135deg, var(--vy-gold-soft-bg), var(--vy-surface-1));
+  color: var(--vy-gold-pale);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 14px 34px -12px rgba(212, 178, 106, 0.5);
+  box-shadow: 0 14px 34px -12px rgba(212, 178, 106, 0.15);
 }
 
 .confirmTitle {
   margin: 18px 0 0;
-  color: #f3f0ea;
+  color: var(--vy-text);
   font-size: 22px;
   font-weight: 820;
   line-height: 1.16;
@@ -654,7 +654,7 @@
 .confirmText {
   width: min(100%, 330px);
   margin: 7px auto 0;
-  color: #8c8679;
+  color: var(--vy-text-2);
   font-size: 12.5px;
   line-height: 1.6;
 }
@@ -671,9 +671,9 @@
 .statusBadge {
   margin-top: 13px;
   padding: 6px 12px;
-  border: 1px solid rgba(212, 178, 106, 0.34);
-  background: rgba(212, 178, 106, 0.12);
-  color: #e3c27e;
+  border: 1px solid var(--vy-border-gold-32);
+  background: var(--vy-gold-soft-bg);
+  color: var(--vy-gold-hi);
   font-size: 11.5px;
 }
 
@@ -696,11 +696,11 @@
 .summaryCard .summaryRow:first-child {
   padding-bottom: 11px;
   margin-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--vy-border);
 }
 
 .bookingCode {
-  color: #e3c27e;
+  color: var(--vy-gold-hi);
   font-weight: 850;
   letter-spacing: 0.04em;
 }
@@ -769,11 +769,11 @@
 
 .qrPanel {
   margin: 20px 18px 0;
-  border: 1px solid rgba(212, 178, 106, 0.22);
+  border: 1px solid var(--vy-border-gold-22);
   border-radius: 16px;
   background:
-    linear-gradient(180deg, rgba(212, 178, 106, 0.12), rgba(255, 255, 255, 0.035)),
-    rgba(212, 178, 106, 0.08);
+    linear-gradient(180deg, var(--vy-gold-soft-bg), var(--vy-surface-1)),
+    var(--vy-gold-soft-bg);
   padding: 16px;
   display: grid;
   grid-template-columns: 172px minmax(0, 1fr);
@@ -784,7 +784,7 @@
 .qrBox {
   width: 172px;
   height: 172px;
-  border: 1px solid rgba(212, 178, 106, 0.36);
+  border: 1px solid var(--vy-border-gold-32);
   border-radius: 16px;
   background: #fff;
   display: grid;
@@ -792,14 +792,14 @@
 }
 
 .qrCopy strong {
-  color: #f0dda8;
+  color: var(--vy-gold-pale);
   font-size: 15px;
   line-height: 1.35;
 }
 
 .qrCopy p {
   margin: 8px 0 0;
-  color: #b6b1a6;
+  color: var(--vy-text-2);
   font-size: 12px;
   line-height: 1.55;
 }
