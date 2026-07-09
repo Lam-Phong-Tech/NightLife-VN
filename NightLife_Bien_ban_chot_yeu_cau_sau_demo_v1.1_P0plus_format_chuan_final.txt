@@ -1,0 +1,259 @@
+NIGHTLIFE VIETNAM
+BIÊN BẢN CHỐT YÊU CẦU SAU DEMO / CUSTOMER REVIEW
+Phiên bản dùng để khách hàng review và xác nhận phạm vi thay đổi sau buổi demo
+
+
+Hạng mục | Nội dung
+Dự án | NightLife Vietnam - nền tảng giới thiệu, booking và QR ưu đãi cho dịch vụ nightlife
+Loại tài liệu | Biên bản chốt yêu cầu / Change Confirmation Note / BA customer-facing document
+Phiên bản tài liệu | v1.1 - Cập nhật CR-01 Coupon/QR tặng thủ công thành P0+, tài liệu hướng khách hàng
+Ngày lập | 06/07/2026
+Người lập | BA Team
+Đầu vào | Transcript buổi demo/review + tài liệu BA Tổng hợp đặc tả nghiệp vụ NightLife v3.2
+Trạng thái | Ready for customer review - CR-01 đã được phân loại P0+; các rule chi tiết cần khách xác nhận trước khi triển khai chính thức
+
+
+Mục tiêu tài liệu
+Ghi rõ phiên bản hiện tại khách hàng đang review sau buổi demo.
+Tổng hợp các tính năng đã demo, các điểm đã xác nhận, các tính năng cần bổ sung và các giao diện cần chỉnh sửa.
+Tách bạch phạm vi thay đổi trước bản beta, phạm vi sau beta và các nội dung cần khách xác nhận thêm.
+Làm tài liệu căn cứ để các bên thống nhất phạm vi, ưu tiên, kế hoạch review và checklist nghiệm thu tiếp theo.
+
+
+Mục lục nội dung
+1. Tóm tắt điều hành
+2. Nguồn đầu vào và baseline nghiệp vụ
+3. Phiên bản hiện tại khách hàng đang review
+4. Phạm vi tính năng đã demo
+5. Nội dung đã confirm với khách hàng
+6. Tính năng cần bổ sung / thay đổi sau cuộc họp
+7. Giao diện cần chỉnh sửa
+8. Phạm vi thay đổi và không thay đổi
+9. Điều kiện bàn giao bản beta cho khách review
+10. Danh sách pending cần khách xác nhận
+11. Rủi ro, giới hạn và lưu ý vận hành
+12. Checklist hành động sau cuộc họp
+13. Xác nhận của các bên
+1. Tóm tắt điều hành
+Sau buổi demo/review, khách hàng đánh giá tổng thể giao diện và luồng chính ở mức tích cực, không ghi nhận blocker nghiệp vụ lớn tại thời điểm họp. Tuy nhiên, bản hiện tại vẫn là bản demo/beta candidate, chưa phải bản nghiệm thu chính thức. Trước khi gửi khách sử dụng thử, cần hoàn thiện kiểm thử nội bộ, sửa lỗi đăng nhập LINE, rà soát media/thumbnail và cấu hình tài khoản đúng vai trò.
+
+Nhóm nội dung | Kết luận BA
+Baseline nghiệp vụ | Giữ theo tài liệu BA v3.2: MVP tập trung vào Booking kèm QR ưu đãi, Admin CMS, Store/Cast, Ranking thủ công, Bill manual + Admin duyệt và thông báo Telegram/email.
+Phiên bản khách đang review | Bản demo/beta candidate sau buổi review ngày 06/07/2026. Khách cần được cấp tài khoản demo/beta để tự trải nghiệm thêm.
+Điểm đã ổn | Luồng xem quán/cast, đặt bàn, sinh QR, thông báo Telegram, quản lý booking/bill/QR, CRUD quán/cast, ranking, nội dung trang chủ và blog đã được demo theo luồng chính.
+Điểm cần chỉnh trước beta | Fix đăng nhập LINE, thay bộ icon điều hướng/trang chủ, rà soát thumbnail video và ảnh bị thiếu, kiểm thử lại E2E, cấp tài khoản đúng role và tách môi trường test nội bộ.
+Điểm bổ sung/Change Request | Tạo Coupon/QR tặng thủ công được xếp P0+; ngoài ra gồm logo linh hoạt, tùy biến icon có kiểm soát, cấu hình banner/advertising nâng cao và giao diện chế độ ban ngày/sáng. Tài liệu này chỉ ghi phạm vi nghiệp vụ khách hàng, không đưa đặc tả kỹ thuật triển khai.
+
+
+2. Nguồn đầu vào và baseline nghiệp vụ
+
+Nguồn | Mục đích sử dụng trong tài liệu này | Ghi chú BA
+Cuộc họp/demo | Trích xuất các câu hỏi, xác nhận, yêu cầu bổ sung và các việc cần hoàn thiện sau cuộc họp. | 
+[BA] Tổng hợp đặc tả nghiệp vụ NightLife v3.2 | Làm baseline scope trước cuộc họp: Booking kèm QR, rule Guest/Member/VIP, Bill, Partner, Admin CMS, Ranking, Store/Cast, Notification. | Các thay đổi sau họp được mapping lại với baseline để tránh phá vỡ scope MVP đã chốt.
+
+
+2.1. Baseline nghiệp vụ đang áp dụng
+MVP chỉ có một luồng chính: Booking kèm QR ưu đãi. QR sinh sau khi booking thành công và gắn với booking tương ứng.
+Guest nhập email bắt buộc, nhận QR qua email. Member/VIP đăng nhập thì hệ thống tự điền thông tin từ hồ sơ.
+Mức giảm theo hạng khách: Guest 5%, Member 8%, VIP 10%; mức giảm snapshot tại thời điểm tạo booking.
+Cast chỉ là thông tin mong muốn/tham chiếu trong booking, không giữ lịch cast và không cam kết cast khả dụng.
+Guest/khách vãng lai không gửi bill trong MVP; chỉ Member/VIP hoặc chủ quán/Partner có thể gửi bill. Member/VIP gửi bill là tùy chọn.
+Admin CMS quản lý nội dung quán/cast, booking, QR, bill, ranking, banner/campaign, blog và báo cáo cơ bản.
+Lưu ý kiểm soát scope:
+Các yêu cầu mới phát sinh sau demo cần được phân loại rõ về ưu tiên, tác động nghiệp vụ, trải nghiệm người dùng, vận hành và nghiệm thu trước khi đưa vào kế hoạch triển khai chính thức.
+3. Phiên bản hiện tại khách hàng đang review
+
+Hạng mục | Nội dung chốt
+Tên phiên bản sản phẩm | NightLife Beta Candidate v1 - bản demo/chạy thử sau buổi customer review
+Baseline tài liệu nghiệp vụ | BA Tổng hợp đặc tả nghiệp vụ NightLife v3.2 - cập nhật ngày 02/07/2026
+Trạng thái | Đã demo luồng chính; chưa phải bản nghiệm thu production. Cần test nội bộ lại trước khi cấp tài khoản cho khách sử dụng thử.
+Môi trường khách review | Demo/Beta environment - URL và thông tin build cần bổ sung khi bàn giao.
+Tài khoản khách review | Cấp 2-3 tài khoản trải nghiệm theo vai trò phù hợp. Không cấp tài khoản Super Admin hệ thống.
+Môi trường test nội bộ | Tạo môi trường nhân bản riêng để team nội bộ tiếp tục kiểm thử và sửa lỗi, tránh ảnh hưởng dữ liệu khách hàng trên môi trường demo/beta.
+Dữ liệu demo | Cần rà soát ảnh, thumbnail video, nội dung quán/cast, dữ liệu banner/blog/ranking để đảm bảo đồng nhất trước khi khách review.
+
+
+3.1. Nguyên tắc bàn giao tài khoản cho khách
+Cấp tài khoản Admin/Employee/Partner theo đúng phạm vi cần review, không dùng tài khoản Super Admin cho khách hàng.
+Tất cả thao tác xóa trên tài khoản Admin/Employee nên áp dụng xóa mềm để đảm bảo truy vết và khôi phục khi cần.
+Dữ liệu khách nhập trong quá trình review không được dùng để thử nghiệm phá dữ liệu; mọi kiểm thử nội bộ phải thực hiện trên môi trường nhân bản riêng.
+4. Phạm vi tính năng đã demo
+
+Nhóm màn hình/chức năng | Nội dung đã demo | Trạng thái BA sau họp
+Đăng nhập Member | Demo đăng nhập bằng Google thành công; LINE/login live có phát sinh lỗi trong lúc demo và cần fix/kiểm thử lại. | Google OK theo demo; LINE là việc cần hoàn thiện trước beta.
+Trang chủ / Public website | Hiển thị giao diện mobile, các khu vực điều hướng, banner, đề xuất, coupon/hot section, dịch vụ nổi bật, video, blog. | Đạt luồng demo; cần chỉnh icon để sinh động và chuyên nghiệp hơn.
+Đa ngôn ngữ | Demo chuyển đổi sang tiếng Nhật thành công ở giao diện public/cast. | Giữ theo scope; cần QA lại nội dung dịch trên các màn chính.
+Trang chi tiết quán | Xem album ảnh, giờ mở cửa, khoảng giá, số lượng cast, chỉ đường Google Maps, gọi điện, menu/bảng giá, video quán. | Giữ theo baseline; số điện thoại/giờ/menu/video cấu hình từ Admin.
+Trang chi tiết Cast | Xem ngôn ngữ, sở thích, phong cách, quán chủ quản, danh sách cast tương tự. | Giữ theo baseline; cast chỉ là thông tin mong muốn khi booking.
+Booking kèm QR | Member booking, tự điền tên/email, chọn số người/ngày/khung giờ, sinh QR giảm giá, lưu QR, xem lịch sử đặt chỗ. | Giữ theo baseline v3.2; khung giờ có thể cấu hình.
+Thông báo Telegram | Sau booking và xử lý bill, hệ thống gửi thông báo về nhóm Telegram Admin. | Giữ theo scope P0.
+Admin Dashboard | Thống kê ngày/tuần/tháng, booking gần đây, hóa đơn cần xử lý, đối tác đăng ký, log thông báo Telegram. | Giữ theo scope P0; cần rà soát số liệu test.
+Quản lý Booking | Danh sách booking với trạng thái Mới, Hoàn tất, Đã hủy; rule hủy trước 1 giờ được nhắc trong demo. | Giữ theo BA v3.2.
+Bill approval | Admin duyệt bill, ghi nhận điểm/doanh thu/hoa hồng và gửi Telegram. | Giữ theo baseline; Guest không gửi bill trong MVP.
+Quản lý QR | Danh sách QR đã cấp/in ra cho khách, thống kê QR áp dụng theo khách/quán. | Đã demo; phát sinh yêu cầu tạo QR tặng/thủ công.
+CRUD quán/cast | Admin thêm/sửa quán, loại hình, khu vực, địa chỉ, phone, mô tả, Maps, giờ mở cửa, video, menu, trạng thái; cast tương tự. | Giữ theo scope P0.
+Ranking thủ công | Admin xếp hạng top 1-5 theo Hà Nội, HCM, Tổng hợp; kéo thả/mũi tên đổi thứ tự. | Giữ theo scope P0; hỗ trợ logic quảng cáo/paid placement ở mức manual.
+Nội dung trang chủ & Blog | Admin chỉnh banner, dịch vụ nổi bật, video, blog và bài viết. | Giữ theo scope; cần bổ sung/chuẩn hóa quyền tùy chỉnh logo/icon/banner.
+
+
+5. Nội dung đã confirm với khách hàng
+Các điểm dưới đây được hiểu là nội dung đã trao đổi và được khách hàng đồng ý/không phản đối trong buổi review. Những mục còn cần quyết định về phase hoặc effort được tách riêng ở mục Pending.
+
+Mã | Nội dung xác nhận | Ý nghĩa triển khai
+CF-01 | Khách sẽ nhận tài khoản demo/beta để tự trải nghiệm thêm sau khi team test lại. | Chuẩn bị tài khoản theo vai trò, dữ liệu demo ổn định và hướng dẫn sử dụng ngắn.
+CF-02 | Tạo môi trường nhân bản riêng để team nội bộ tiếp tục kiểm thử, không ảnh hưởng dữ liệu khách đang review. | Môi trường khách dùng phải ổn định; mọi thử nghiệm nội bộ cần thực hiện trên môi trường riêng.
+CF-03 | Khung giờ booking có thể cấu hình từ hệ thống. | Không hard-code chỉ khung giờ ban đêm; Admin có thể thiết lập theo nhu cầu quán.
+CF-04 | Số điện thoại gọi từ trang quán là số do hệ thống/Admin setup, không cố định theo số của quán nếu khách muốn dùng số điều phối riêng. | Bổ sung/kiểm tra field phone/call-to-action trong CMS và public UI.
+CF-05 | Tiêu đề section như “Đề xuất tối nay”, “Coupon hot” có thể tùy chỉnh, khách có thể dùng tiếng Anh nếu muốn. | CMS cần cho phép sửa title/label các block nội dung chính trên trang chủ.
+CF-06 | Banner nổi bật nên giữ dạng slider để tránh kéo dài trang; có thể điều chỉnh thứ tự/ưu tiên hiển thị. | Không chuyển thành nhiều banner xếp dọc trong MVP; hỗ trợ thứ tự quảng cáo/paid placement.
+CF-07 | Logo khách có thể gửi file thiết kế gốc như AI/PSD hoặc ảnh 500x500; team hỗ trợ chuyển sang định dạng phù hợp để không vỡ nét. | Ưu tiên SVG cho logo/vector, PNG fallback; cần chuẩn hóa upload/fit theo khung.
+CF-08 | Tạo Coupon/QR tặng thủ công là nhu cầu phát sinh sau demo và được đưa vào nhóm P0+ để xem xét triển khai sớm. | Cần chốt rõ rule nghiệp vụ: phạm vi áp dụng, hạng khách, thời hạn, giới hạn lượt dùng, cách Partner xác nhận và cách Admin theo dõi lịch sử sử dụng.
+CF-09 | Khách hiện chưa có thêm thắc mắc nghiệp vụ lớn sau buổi demo. | Không ghi nhận blocker nghiệp vụ chính; vẫn cần UAT/beta feedback sau khi khách trải nghiệm.
+
+
+6. Tính năng cần bổ sung / thay đổi sau cuộc họp
+Bảng này là danh sách Change Request/Improvement để PM/BA đưa vào Jira. Cột “Đề xuất phase” là khuyến nghị BA, cần khách xác nhận nếu muốn thay đổi ưu tiên.
+
+Mã CR | Yêu cầu | Mô tả nghiệp vụ mong muốn | Đề xuất phase | Tác động chính
+CR-01 | Admin tạo Coupon/QR tặng thủ công | Admin tạo một chương trình ưu đãi độc lập ngoài booking, nhập tên ưu đãi, mức giảm, phạm vi áp dụng, hạng khách, thời hạn và giới hạn lượt dùng; hệ thống sinh mã/QR để khách mang đến quán sử dụng và Partner xác nhận. | P0+ | Nghiệp vụ ưu đãi, phạm vi áp dụng, thời hạn, giới hạn lượt dùng, lịch sử quét/xác nhận, báo cáo đối soát.
+CR-02 | Thay bộ icon điều hướng/trang chủ | Bộ icon các mục khám phá, cast, ưu đãi, sự kiện, tìm cast, tài khoản... cần sinh động và đúng phong cách nightlife hơn. | P0 trước beta | Thiết kế giao diện, bộ icon, kiểm tra hiển thị mobile.
+CR-03 | Cho phép tùy chỉnh icon có kiểm soát | Khách muốn về sau có thể thay icon/hình ảnh. Đề xuất không upload tự do trong MVP; dùng thư viện icon chuẩn hoặc upload có crop/fit theo khung. | P1 | Quản lý icon/media trong CMS, kiểm soát kích thước/tỷ lệ, đảm bảo giao diện không bị lệch.
+CR-04 | Logo linh hoạt | Khách có thể thay logo website từ CMS hoặc gửi file gốc để team chuyển đổi. Hệ thống tự fit theo khung, ưu tiên SVG/PNG. | P0/P1 tùy mức tự động hóa | Cấu hình logo, chuẩn khung hiển thị, đảm bảo logo không vỡ nét.
+CR-05 | Cấu hình banner/quảng cáo nâng cao | Banner nổi bật giữ dạng slider; có thể chỉnh kích thước hiển thị, thứ tự ưu tiên, thời gian chạy slide, placement theo gói quảng cáo. | P0 cơ bản, P1 nâng cao | Quản lý nội dung trang chủ, thứ tự ưu tiên quảng cáo, kiểm tra hiển thị mobile.
+CR-06 | Chế độ giao diện ban ngày / sáng | Khách hỏi khả năng chuyển đổi giao diện từ mặc định buổi tối sang chế độ sáng/ban ngày. | P2 / Future | Thiết kế theme sáng, kiểm tra màu sắc, ảnh nền, icon và trải nghiệm đọc nội dung.
+CR-07 | Sửa lỗi đăng nhập LINE/live | Luồng đăng nhập LINE/live có lỗi trong demo, cần fix và test lại như Google login. | P0 trước beta | Đăng nhập, đăng xuất, tự điền thông tin hồ sơ sau khi đăng nhập.
+CR-08 | Rà soát thumbnail video và ảnh bị thiếu | Một số video/nhà hàng chưa có thumbnail hoặc hình ảnh nhỏ chưa map đúng; một số khu vực còn thiếu ảnh. | P0 trước beta | Rà soát dữ liệu nội dung, ảnh, video thumbnail và hiển thị trên các màn chính.
+CR-09 | Cấp tài khoản beta theo role | Cấp 2-3 tài khoản cho khách/nhân viên trải nghiệm; không cấp Super Admin. | P0 trước beta | Tài khoản theo vai trò, bàn giao an toàn, hạn chế quyền vượt phạm vi review.
+CR-10 | Tách môi trường khách review và môi trường kiểm thử nội bộ | Tạo hệ thống nhân bản để team nội bộ tiếp tục sửa/test, không ảnh hưởng dữ liệu khách nhập trong beta. | P0 vận hành | Ổn định dữ liệu khách review, hạn chế xung đột trong quá trình chỉnh sửa.
+CR-11 | Xóa mềm và truy vết dữ liệu | Tài khoản Admin/Employee xóa dữ liệu thì mặc định xóa mềm; xóa vĩnh viễn chỉ dành cho quyền cao nhất và phải có kiểm soát riêng. | P0/P1 tùy trạng thái hiện tại | Quyền thao tác, khôi phục dữ liệu, lịch sử thay đổi.
+
+
+6.1. Làm rõ riêng cho CR-01 - Coupon/QR tặng thủ công P0+
+CR-01 được xếp P0+ sau cuộc họp vì đây là nhu cầu khách hàng đã nêu trực tiếp: Admin có thể tạo coupon/QR ưu đãi riêng để tặng khách quen, người quen, đối tác hoặc phục vụ chiến dịch marketing. Nội dung dưới đây chỉ chốt phạm vi nghiệp vụ, hành vi sử dụng và trải nghiệm vận hành; không đưa chi tiết kỹ thuật triển khai vào tài liệu gửi khách.
+
+Nội dung cần chốt | Quy định nghiệp vụ P0+
+Tên chức năng | Tạo Coupon mới - sinh mã giảm giá + QR.
+Mục tiêu | Admin tạo coupon/QR ưu đãi riêng để tặng khách quen, người quen, đối tác hoặc phục vụ chiến dịch marketing ngắn hạn.
+Quan hệ với Booking QR | Tách biệt với luồng Booking kèm QR hiện tại. Coupon/QR tặng không tự tạo booking, không thay thế Booking QR và không yêu cầu khách phải đặt bàn trước.
+Cách sinh QR | Mỗi chương trình coupon sinh một mã/QR chung. Mỗi lần khách sử dụng hợp lệ sẽ được ghi nhận là một lượt dùng của chương trình.
+Thông tin Admin thiết lập | Tên ưu đãi, loại giảm giá theo % hoặc số tiền, giá trị giảm, phạm vi Toàn hệ thống hoặc Chọn quán, hạng khách áp dụng, thời hạn và giới hạn lượt dùng.
+Phạm vi áp dụng | Có thể áp dụng toàn hệ thống hoặc theo quán được chọn. Nếu coupon chỉ áp dụng cho quán cụ thể, Partner ở quán khác không được xác nhận sử dụng.
+Điều kiện hợp lệ | Coupon phải đang hoạt động, còn thời hạn, còn lượt dùng, đúng phạm vi quán và đúng hạng khách áp dụng.
+Partner xác nhận | Khi khách mang QR/mã đến quán, Partner quét hoặc nhập mã để kiểm tra hợp lệ và xác nhận khách đã sử dụng ưu đãi.
+Theo dõi sử dụng | Admin xem được số lượt đã dùng, số lượt còn lại, quán sử dụng, thời gian xác nhận, Partner xác nhận và kết quả thành công/không thành công.
+Giới hạn cần khách xác nhận thêm | Cần chốt thêm: có bắt buộc khách đăng nhập không; có giới hạn mỗi khách dùng một lần không; có yêu cầu Partner nhập số tiền bill khi xác nhận không; có cho áp dụng nhiều quán cùng lúc không.
+
+
+7. Giao diện cần chỉnh sửa
+
+Màn hình/Khu vực | Vấn đề/yêu cầu ghi nhận | Hướng chỉnh đề xuất | Ưu tiên
+Trang chủ - thanh điều hướng/quick access | Icon hiện tại còn basic, chưa đủ sinh động theo định vị nightlife. | Thay bộ icon mới thống nhất style, rõ nghĩa, có thể dùng hình lady/cast phù hợp cho mục tìm cast; kiểm tra responsive mobile. | P0
+Trang chủ - title section | Khách muốn tiêu đề chính có thể viết tiếng Anh như “Tonight Recommendation”, “Hot Coupon”. | CMS cho phép đổi title/label từng section; kiểm tra hiển thị đa ngôn ngữ. | P0
+Trang chủ - banner nổi bật | Khách hỏi có thể mở rộng kích thước hoặc hiển thị nhiều banner xếp dọc. | Giữ slider để không kéo dài trang; thêm cấu hình kích thước/slide time/thứ tự ưu tiên ở mức cơ bản. | P0/P1
+Trang chủ - quảng cáo/paid placement | Khách quan tâm cơ chế quán trả tiền cao được lên đầu, trả ít hơn nằm vị trí dưới. | Thiết lập thứ tự ưu tiên bằng manual ranking/banner order trong MVP; paid ranking/report chi tiết đưa P1. | P0/P1
+Header/Logo website | Khách hỏi kích thước/logo và khả năng thay đổi logo sau này. | Chuẩn hóa khung logo; ưu tiên SVG/PNG; file gốc AI/PSD team hỗ trợ chuyển đổi; nếu mở CMS upload thì cần validation. | P0/P1
+Store detail - phone CTA | Trong demo nhầm thành số điện thoại của quán, khách muốn có thể setup số của phía khách/Admin. | Đảm bảo CMS có trường phone/call CTA và public UI lấy đúng số đã cấu hình. | P0
+Booking form - khung giờ | Khách hỏi có khung giờ ban ngày hay chỉ ban đêm. | Khẳng định khung giờ cấu hình được; UI cần hiển thị đúng slot theo cấu hình quán. | P0
+Login screen | LINE/live login lỗi trong demo. | Sửa và kiểm tra lại đăng nhập LINE, Google, đăng xuất và tự điền thông tin hồ sơ sau khi đăng nhập. | P0
+Media/video thumbnail | Một số video mất thumbnail, ảnh nhỏ chưa map đúng, có chỗ thiếu hình ảnh. | Rà soát dữ liệu media, tạo thumbnail fallback, kiểm tra Store/Cast/Home/Blog. | P0
+Admin CMS - Coupon/QR list | Bổ sung danh sách Coupon/QR tặng thủ công để Admin quản lý các chương trình đã tạo. | Hiển thị tên ưu đãi, phạm vi áp dụng, thời hạn, giới hạn lượt dùng, số lượt đã dùng/còn lại, trạng thái và lịch sử xác nhận. | P0+
+Giao diện sáng/ban ngày | Khách hỏi về khả năng chuyển theme sáng. | Đưa vào backlog phase sau; cần design system riêng để tránh ảnh hưởng nghiệm thu MVP. | P2
+Admin CMS - Tạo coupon mới | Màn hình/modal tạo coupon mới theo ảnh review: có preview coupon, tên ưu đãi, mức giảm, phạm vi áp dụng, hạng khách, thời hạn, giới hạn số lượt và nút tạo coupon & sinh QR. | Giữ cấu trúc nhập liệu rõ ràng theo nhóm thông tin; sau khi tạo phải hiển thị mã/QR, trạng thái, hạn dùng, số lượt đã dùng/còn lại và hướng dẫn Partner xác nhận. | P0+
+
+
+8. Phạm vi thay đổi và không thay đổi
+8.1. Phạm vi thay đổi đề xuất trước khi gửi bản beta
+Hoàn thiện CR-01 Coupon/QR tặng thủ công ở mức P0+ theo phạm vi nghiệp vụ đã chốt trong tài liệu này.
+Fix đăng nhập LINE/live và chạy lại test đăng nhập Google/LINE.
+Thay bộ icon điều hướng/trang chủ bản đầu để tăng chất lượng visual.
+Rà soát nội dung media: ảnh quán/cast, thumbnail video, banner, blog, nội dung tiếng Nhật cơ bản.
+Chuẩn hóa cấu hình số điện thoại CTA và khung giờ booking trong Admin.
+Cấp tài khoản beta theo vai trò phù hợp; không cấp Super Admin.
+Tạo môi trường nhân bản riêng cho kiểm thử nội bộ trước khi khách bắt đầu nhập dữ liệu review.
+8.2. Phạm vi thay đổi sau beta / cần xác nhận thêm
+Tối ưu báo cáo/đối soát nâng cao cho Coupon/QR tặng sau khi P0+ ổn định.
+CMS cho phép khách tự thay icon hoặc chọn icon từ thư viện chuẩn.
+CMS upload logo tự động hoàn chỉnh nếu ngoài phạm vi team hỗ trợ bằng file thiết kế.
+Cấu hình banner/advertising nâng cao: nhiều placement, giá quảng cáo, lịch chạy, báo cáo hiệu quả.
+Chuyển đổi theme ban ngày/ban đêm.
+8.3. Phạm vi không thay đổi so với BA v3.2
+Không thêm payment online/POS/order/đặt món trên web vào MVP.
+Không chuyển sang mô hình giữ lịch cast; cast vẫn là thông tin mong muốn để Admin điều phối offline.
+Không mở Guest gửi bill trong MVP; nếu Guest muốn gửi bill/tích điểm thì cần đăng ký/đăng nhập Member.
+Không thay đổi rule mức giảm Guest/Member/VIP đã chốt nếu khách chưa có xác nhận mới.
+Không cấp Super Admin cho khách trong giai đoạn beta review.
+9. Điều kiện bàn giao bản beta cho khách review
+
+Nhóm điều kiện | Tiêu chí cần đạt | Kết quả mong đợi
+Kiểm thử nhanh chức năng chính | Chạy lại E2E: đăng nhập, xem quán/cast, booking, QR, Telegram, Admin xử lý booking/bill, ranking và nội dung CMS. | Không còn blocker P0 trước khi cấp tài khoản.
+Đăng nhập | Google login OK; LINE/login live được sửa và kiểm tra lại. | Khách đăng nhập được và thông tin tên/email tự điền đúng.
+Media/content | Không còn khu vực mất ảnh, video có thumbnail hoặc fallback thumbnail. | Giao diện khách nhìn chuyên nghiệp, không lộ dữ liệu lỗi.
+Account/Role | Tạo 2-3 tài khoản review theo role; không dùng Super Admin. | Khách trải nghiệm đúng phạm vi, hạn chế rủi ro xóa/sửa dữ liệu hệ thống.
+Môi trường review | Có Beta URL ổn định và môi trường nhân bản riêng cho kiểm thử nội bộ. | Khách review không bị ảnh hưởng bởi các hoạt động sửa lỗi nội bộ.
+Ghi chú bàn giao | Gửi kèm tài liệu này và danh sách giới hạn/các điểm còn cần xác nhận. | Khách hiểu rõ bản đang review, phần nào đã làm, phần nào đang bổ sung.
+
+
+9.1. Thông tin cần bổ sung khi gửi beta
+
+Thông tin | Giá trị cần điền
+Beta URL | [TBD]
+Admin URL | [TBD]
+Phiên bản/bản build khách review | [TBD]
+Trạng thái kiểm thử nội bộ trước khi gửi khách | [TBD]
+Danh sách giới hạn/các điểm còn tồn tại | [TBD]
+Dữ liệu demo mẫu | [TBD]
+Kênh thông báo vận hành | [TBD]
+Danh sách tài khoản demo | [TBD - gửi riêng qua kênh bảo mật, không đưa mật khẩu vào tài liệu này]
+
+
+10. Rủi ro, giới hạn và lưu ý vận hành
+
+Mã | Rủi ro/Giới hạn | Ảnh hưởng | Biện pháp kiểm soát
+R-01 | Bản demo chưa kiểm thử hồi quy đầy đủ. | Khách có thể gặp lỗi khi tự trải nghiệm. | Chỉ cấp beta sau khi kiểm thử nhanh; ghi rõ các giới hạn còn tồn tại.
+R-02 | LINE login lỗi trong demo. | Ảnh hưởng đăng nhập Member qua LINE. | Sửa trước beta; nếu chưa xong phải ghi rõ là điểm còn tồn tại và tạm dùng Google login.
+R-03 | Media/thumbnail thiếu hoặc map sai. | Làm giảm chất lượng cảm nhận giao diện. | Rà soát data, fallback thumbnail, checklist media trước beta.
+R-04 | Coupon/QR tặng ngoài booking nếu không có rule rõ có thể bị dùng sai phạm vi hoặc khó đối soát. | Ảnh hưởng kiểm soát ưu đãi, số lượt dùng và báo cáo vận hành. | Chốt P0+ với giới hạn thời hạn, lượt dùng, phạm vi quán, hạng khách và lịch sử xác nhận của Partner.
+R-05 | Khách thao tác trên tài khoản quyền cao. | Nguy cơ xóa/sửa dữ liệu nhạy cảm hoặc khó truy vết. | Không cấp Super Admin; Admin/Employee áp dụng soft delete.
+R-06 | Kiểm thử nội bộ thực hiện trực tiếp trên môi trường khách review. | Gây xung đột dữ liệu, phát sinh lỗi ẩn. | Tách môi trường khách review và môi trường kiểm thử nội bộ; release có kiểm soát.
+
+
+11. Checklist hành động sau cuộc họp
+
+STT | Việc cần làm | Owner đề xuất | Ưu tiên | Trạng thái
+1 | Sửa và kiểm tra lại đăng nhập LINE/live. | Team kỹ thuật + QA | P0 | Open
+2 | Chạy kiểm thử nhanh E2E toàn bộ luồng demo trước khi cấp beta. | QA + BA | P0 | Open
+3 | Thay bộ icon trang chủ/điều hướng theo design mới. | UI/UX + Frontend | P0 | Open
+4 | Rà soát media, thumbnail video, ảnh thiếu ở Store/Cast/Home/Blog. | Content/Admin + QA | P0 | Open
+5 | Chuẩn hóa cấu hình phone CTA và khung giờ booking trong CMS. | Team kỹ thuật + BA | P0 | Open
+6 | Tạo 2-3 tài khoản beta theo role; không cấp Super Admin. | PM + vận hành hệ thống | P0 | Open
+7 | Tạo môi trường nhân bản riêng cho kiểm thử nội bộ sau khi khách review. | Vận hành hệ thống | P0 | Open
+8 | Gửi khách tài liệu này kèm danh sách pending cần xác nhận. | BA/PM | P0 | Open
+9 | Hoàn thiện CR-01 Coupon/QR tặng thủ công thành user story/flow nghiệp vụ khách hàng và checklist nghiệm thu P0+. | BA + PM + UI/UX | P0+ | Open
+10 | Chốt rule banner/ads nâng cao và khả năng đổi logo/icon qua CMS. | BA + UIUX + Khách | P1 | Pending khách
+
+
+12. Xác nhận của các bên
+Bảng xác nhận dưới đây dùng để chốt rằng các bên đã review tài liệu và đồng ý với phạm vi/phân loại thay đổi. Các mục Pending chỉ được đưa vào kế hoạch triển khai khi có xác nhận riêng.
+
+Bên xác nhận | Họ tên | Vai trò | Ý kiến | Ngày xác nhận | Chữ ký/xác nhận
+Khách hàng |  |  | Đồng ý / Cần chỉnh sửa |  | 
+PM |  |  | Đồng ý / Cần chỉnh sửa |  | 
+BA Lead |  |  | Đồng ý / Cần chỉnh sửa |  | 
+Tech Lead |  |  | Đồng ý / Cần chỉnh sửa |  | 
+QA Lead |  |  | Đồng ý / Cần chỉnh sửa |  | 
+
+
+Phụ lục A - Mapping nhanh với tài liệu BA v3.2
+
+Nhóm baseline BA v3.2 | Trạng thái sau demo | Ghi chú mapping
+WEB-01/02/03/05/06/07 - Public Website & Navigation | Giữ scope, cần chỉnh UI icon/banner/title. | Các thay đổi icon/banner là UI improvement, không làm đổi flow nghiệp vụ chính.
+STO-01 đến STO-11 - Store Detail | Giữ scope, cần kiểm tra phone CTA/media/video/menu. | Phone/giờ/menu/video cấu hình trong Admin.
+CAS-01 đến CAS-11 - Cast Profile | Giữ scope. | Không hiển thị lịch trống, cast chỉ là mong muốn/tham chiếu.
+BOO-01 đến BOO-09 - Booking & Notification | Giữ scope. | Booking kèm QR vẫn là flow chính; hủy trước 1 giờ; Telegram Admin.
+MEM-03 đến MEM-06 - Booking QR | Giữ scope Booking QR; bổ sung CR-01 Coupon/QR tặng thủ công P0+ là luồng ưu đãi độc lập. | CR-01 không thay thế Booking QR, không tự tạo booking và cần rule riêng về thời hạn/lượt dùng/phạm vi áp dụng.
+BIL-01 đến BIL-12 - Bill, Revenue & Commission | Giữ scope. | Guest không gửi bill trong MVP; Member/VIP/Partner gửi bill tùy rule.
+PAR-04 - Partner Account tối giản | Giữ scope. | Partner đăng nhập, quét QR, xác nhận khách đến quán.
+ADM-01 đến ADM-13 - Admin CMS | Giữ scope, bổ sung cấu hình logo/icon/banner nếu được duyệt. | Một số mục có thể là P1 nếu yêu cầu CMS nâng cao.
+RAN-01 đến RAN-08 - Ranking | Giữ scope. | Manual ranking hỗ trợ ưu tiên hiển thị/quảng cáo ở mức cơ bản.
+
+

@@ -56,10 +56,13 @@ export default function AdminCouponsPage() {
     try {
       const statusMap: Record<string, string> = { holding: 'ISSUED', used: 'USED', expired: 'EXPIRED' };
       const statusParam = activeTab === 'all' ? undefined : statusMap[activeTab];
-      const res = await apiClient<any>('/admin/coupons/issues', {
-        params: { status: statusParam, page: currentPage, limit: adminPageSize }
+      const res = await apiClient<any>('/admin/coupon-issues', {
+        params: { status: statusParam, limit: 100 }
       });
-      if (res?.data) {
+      if (Array.isArray(res)) {
+        setIssues(res);
+        setTotalIssues(res.length);
+      } else if (res?.data) {
         setIssues(res.data);
         setTotalIssues(res.total ?? res.data.length);
       }
@@ -242,36 +245,41 @@ export default function AdminCouponsPage() {
         <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
           <span>Mã coupon</span><span>Ưu đãi</span><span>Quán áp dụng</span><span>Hạng</span><span>Hạn dùng</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
-        {issues.map((c: any) => {
-          const meta = getStatusMeta(c.status);
-          const tStyle = getTierStyle(c.user?.tier || c.guest?.tier || 'Member');
-          const isExpired = c.status === 'EXPIRED';
-          const dealStr = c.adminCoupon ? renderDeal(c.adminCoupon) : '';
-          
-          return (
-            <div 
-              key={c.id} onClick={() => setSelectedIssue(c)} 
-              className="nl-admin-table-row nl-admin-coupon-row"
-              style={{ 
-                display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', alignItems: 'center', 
-                padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', 
-                fontSize: '13px', opacity: isExpired ? 0.58 : 1, transition: 'background 0.2s' 
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a', letterSpacing: '.3px' }}>{formatCode(c)}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
-                <span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', whiteSpace: 'nowrap' }}>{dealStr}</span>
-                <span style={{ fontSize: '11.5px', color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.adminCoupon?.name}</span>
+        {(() => {
+          const startIndex = (currentPage - 1) * adminPageSize;
+          const visibleIssues = issues.slice(startIndex, startIndex + adminPageSize);
+          return visibleIssues.map((c: any) => {
+            const coupon = c.coupon || c.adminCoupon;
+            const meta = getStatusMeta(c.status);
+            const tStyle = getTierStyle(c.user?.tier || c.guest?.tier || 'Member');
+            const isExpired = c.status === 'EXPIRED';
+            const dealStr = coupon ? renderDeal(coupon) : '';
+            
+            return (
+              <div 
+                key={c.id} onClick={() => setSelectedIssue(c)} 
+                className="nl-admin-table-row nl-admin-coupon-row"
+                style={{ 
+                  display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', alignItems: 'center', 
+                  padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', 
+                  fontSize: '13px', opacity: isExpired ? 0.58 : 1, transition: 'background 0.2s' 
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a', letterSpacing: '.3px' }}>{formatCode(c)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+                  <span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', whiteSpace: 'nowrap' }}>{dealStr}</span>
+                  <span style={{ fontSize: '11.5px', color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{coupon?.name || 'Coupon ưu đãi'}</span>
+                </div>
+                <span style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.store?.name || coupon?.store?.name || 'Toàn hệ thống'}</span>
+                <span><span style={{ ...tStyle, fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px', display: 'inline-block' }}>{c.user?.tier || 'Member'}</span></span>
+                <span style={{ color: '#8c8679', fontSize: '11.5px' }}>{formatTime(c.expiresAt)}</span>
+                <span style={{ textAlign: 'right' }}><span style={{ ...meta.style, fontSize: '11px', fontWeight: 600, padding: '4px 11px', borderRadius: '20px', whiteSpace: 'nowrap', display: 'inline-flex' }}>{meta.label}</span></span>
               </div>
-              <span style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.store?.name || 'Toàn hệ thống'}</span>
-              <span><span style={{ ...tStyle, fontSize: '10.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '7px', display: 'inline-block' }}>{c.user?.tier || 'Member'}</span></span>
-              <span style={{ color: '#8c8679', fontSize: '11.5px' }}>{formatTime(c.expiresAt)}</span>
-              <span style={{ textAlign: 'right' }}><span style={{ ...meta.style, fontSize: '11px', fontWeight: 600, padding: '4px 11px', borderRadius: '20px', whiteSpace: 'nowrap', display: 'inline-flex' }}>{meta.label}</span></span>
-            </div>
-          );
-        })}
+            );
+          });
+        })()}
         {issues.length === 0 && <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Không có mã nào.</div>}
         {issues.length > 0 && (
           <AdminPagination page={currentPage} totalItems={totalIssues} onPageChange={setCurrentPage} itemLabel="mã" />
@@ -354,11 +362,12 @@ export default function AdminCouponsPage() {
       {/* Drawer - Issue Detail (Individual Code) */}
       {selectedIssue && (() => {
         const c = selectedIssue;
+        const coupon = c.coupon || c.adminCoupon;
         const meta = getStatusMeta(c.status);
         const isExpired = c.status === 'EXPIRED';
         const isUsed = c.status === 'USED';
         const isHolding = c.status === 'ISSUED';
-        const dealStr = c.adminCoupon ? renderDeal(c.adminCoupon) : '';
+        const dealStr = coupon ? renderDeal(coupon) : '';
 
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
@@ -373,8 +382,8 @@ export default function AdminCouponsPage() {
               <div style={{ padding: '24px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '34px', fontWeight: 800, color: '#e3c27e' }}>{dealStr}</div>
-                  <div style={{ fontSize: '13.5px', color: '#f3f0ea', fontWeight: 600, marginTop: '2px' }}>{c.adminCoupon?.name}</div>
-                  <div style={{ fontSize: '12px', color: '#8c8679', marginTop: '3px' }}>{c.store?.name || 'Toàn hệ thống'}</div>
+                  <div style={{ fontSize: '13.5px', color: '#f3f0ea', fontWeight: 600, marginTop: '2px' }}>{coupon?.name || 'Coupon ưu đãi'}</div>
+                  <div style={{ fontSize: '12px', color: '#8c8679', marginTop: '3px' }}>{c.store?.name || coupon?.store?.name || 'Toàn hệ thống'}</div>
                   <div style={{ marginTop: '12px' }}><span style={{ ...meta.style, fontSize: '12px', fontWeight: 600, padding: '5px 13px', borderRadius: '20px', display: 'inline-flex' }}>{meta.label}</span></div>
                 </div>
 
