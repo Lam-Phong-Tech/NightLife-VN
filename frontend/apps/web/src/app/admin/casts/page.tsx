@@ -600,9 +600,7 @@ export default function AdminCastsPage() {
                         boxShadow: storePickerOpen ? '0 16px 34px -26px rgba(212,178,106,.8)' : 'none',
                       }}
                     >
-                      <span style={{ width: 30, height: 30, flex: 'none', borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12 }}>
-                        {selectedStore?.name ? selectedStore.name.slice(0, 2).toUpperCase() : 'Q'}
-                      </span>
+
                       <span style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ display: 'block', fontSize: '10px', color: colors.muted, fontWeight: 700, letterSpacing: '.8px', textTransform: 'uppercase', marginBottom: '2px' }}>
                           Quán trực thuộc
@@ -656,9 +654,7 @@ export default function AdminCastsPage() {
                                   textAlign: 'left',
                                 }}
                               >
-                                <span style={{ width: 28, height: 28, flex: 'none', borderRadius: 9, background: isSelected ? colors.goldGrad : 'rgba(255,255,255,.06)', color: isSelected ? colors.onGold : colors.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
-                                  {(store.name || 'Q').slice(0, 2).toUpperCase()}
-                                </span>
+
                                 <span style={{ flex: 1, minWidth: 0 }}>
                                   <span style={{ display: 'block', fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{store.name}</span>
                                   <span style={{ display: 'block', fontSize: '10.5px', color: colors.muted, marginTop: '1px' }}>{store.category || store.area || 'Quán trong hệ thống'}</span>
