@@ -347,6 +347,34 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('lists public areas from every active city when city is all', async () => {
+    prisma.area.findMany.mockResolvedValue([
+      {
+        id: 'area-dn',
+        code: 'dn-sontra',
+        name: 'Son Tra',
+        city: 'Da Nang',
+        district: 'Son Tra',
+        ward: null,
+      },
+    ] as never);
+
+    await expect(service.listPublicAreas({ city: 'all' })).resolves.toEqual([
+      expect.objectContaining({
+        code: 'dn-sontra',
+        cityCode: 'dn',
+      }),
+    ]);
+    expect(prisma.area.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      }),
+    );
+  });
+
   it('searches public stores by name with category and area filters', async () => {
     prisma.store.findMany.mockResolvedValue([
       {
@@ -422,6 +450,59 @@ describe('NightlifeDataService', () => {
             },
           ]),
         }),
+      }),
+    );
+  });
+
+  it('does not limit public stores to Hanoi and HCM when city is all', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-dragon',
+        createdAt: new Date('2026-07-09T00:00:00.000Z'),
+        name: 'Dragon Rooftop Club',
+        slug: 'dragon-rooftop-club',
+        category: 'CLUB',
+        description: null,
+        address: '36 Bach Dang',
+        city: 'Da Nang',
+        district: 'Hai Chau',
+        latitude: null,
+        longitude: null,
+        area: {
+          id: 'area-dn',
+          code: 'dn-haichau',
+          name: 'Hai Chau',
+          city: 'Da Nang',
+          district: 'Hai Chau',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({ city: 'all' });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        slug: 'dragon-rooftop-club',
+        cityCode: 'dn',
+      }),
+    ]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          AND: [
+            {
+              area: {
+                is: {
+                  deletedAt: null,
+                  status: 'ACTIVE',
+                },
+              },
+            },
+          ],
+        },
       }),
     );
   });
@@ -1096,6 +1177,72 @@ describe('NightlifeDataService', () => {
         }),
       }),
     });
+  });
+
+  it('does not limit public casts to Hanoi and HCM when city is all', async () => {
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        id: 'cast-mika',
+        createdAt: new Date('2026-07-09T00:00:00.000Z'),
+        slug: 'mika-dragon',
+        stageName: 'Mika',
+        publicAlias: 'Mika',
+        publicHeadline: 'Da Nang skyline host',
+        tags: ['club'],
+        languages: ['vi'],
+        hourlyRateVnd: 500000,
+        media: [],
+        store: {
+          id: 'store-dragon',
+          name: 'Dragon Rooftop Club',
+          slug: 'dragon-rooftop-club',
+          category: 'CLUB',
+          city: 'Da Nang',
+          district: 'Hai Chau',
+          latitude: null,
+          longitude: null,
+          area: {
+            id: 'area-dn',
+            code: 'dn-haichau',
+            name: 'Hai Chau',
+            city: 'Da Nang',
+            district: 'Hai Chau',
+          },
+        },
+      },
+    ] as never);
+
+    const result = await service.listPublicCasts({ city: 'all' });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        slug: 'mika-dragon',
+        store: expect.objectContaining({
+          slug: 'dragon-rooftop-club',
+          cityCode: 'dn',
+        }),
+      }),
+    ]);
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
+            AND: [
+              {
+                area: {
+                  is: {
+                    deletedAt: null,
+                    status: 'ACTIVE',
+                  },
+                },
+              },
+            ],
+          },
+        }),
+      }),
+    );
   });
 
   it('searches public casts by cast or store name and store filters', async () => {
