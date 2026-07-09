@@ -14,6 +14,7 @@ import { seedStorePermissions } from './11-store-permissions';
 import { seedBookingsAndBills } from './12-bookings-bills';
 import { seedApiFixtures } from './13-api-fixtures';
 import { seedFullFixtures } from './14-full-fixtures';
+import { seedSystemConfigs } from './15-system-configs';
 import { SeedOptions } from './shared';
 import { verifySeedCoverage } from './verify';
 
@@ -54,6 +55,8 @@ export async function seedAll(
     transactions,
     now: options.now,
   });
+
+  await seedSystemConfigs(prisma);
 
   if (options.profile === 'full') {
     await seedFullFixtures(prisma, {

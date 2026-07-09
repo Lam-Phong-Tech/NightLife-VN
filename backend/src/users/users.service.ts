@@ -201,4 +201,52 @@ export class UsersService {
       createdAt: user.createdAt,
     };
   }
+
+  async assignRole(assignerId: string, targetUserId: string, roleId: string) {
+    const assignerAssignments = await this.prisma.userRoleAssignment.findMany({
+      where: { userId: assignerId },
+      include: { role: true },
+    });
+    const assignerMaxLevel = Math.max(...assignerAssignments.map(a => a.role.level), 0);
+
+    const roleToAssign = await this.prisma.role.findUnique({
+      where: { id: roleId },
+    });
+    if (!roleToAssign) throw new NotFoundException('Role not found');
+
+    if (roleToAssign.level >= assignerMaxLevel) {
+      throw new UnauthorizedException('You cannot assign a role with a level equal to or higher than your own.');
+    }
+
+    const targetAssignments = await this.prisma.userRoleAssignment.findMany({
+      where: { userId: targetUserId },
+      include: { role: true },
+    });
+    const targetMaxLevel = Math.max(...targetAssignments.map(a => a.role.level), 0);
+
+    if (targetMaxLevel >= assignerMaxLevel) {
+       throw new UnauthorizedException('You cannot modify roles of a user with a level equal to or higher than your own.');
+    }
+
+    return this.prisma.userRoleAssignment.create({
+      data: {
+        userId: targetUserId,
+        roleId: roleId,
+      },
+    });
+  }
+
+  async softDeleteUser(targetUserId: string) {
+    await this.findByIdOrThrow(targetUserId);
+    return this.prisma.user.update({
+      where: { id: targetUserId },
+      data: { deletedAt: new Date(), status: 'DELETED' },
+    });
+  }
+
+  async hardDeleteUser(targetUserId: string) {
+    return this.prisma.user.delete({
+      where: { id: targetUserId },
+    });
+  }
 }

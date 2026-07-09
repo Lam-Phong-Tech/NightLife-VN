@@ -2,33 +2,44 @@ import { Permission, PrismaClient, Role } from '@prisma/client';
 
 const ROLES = [
   {
+    key: 'super_admin',
+    name: 'Super Administrator',
+    description: 'Absolute full system access, including system configuration and hard deletes',
+    level: 100,
+  },
+  {
     key: 'admin',
     name: 'Administrator',
     description:
-      'Full system access: manage all stores, casts, bookings, bills, rankings, and settings',
-  },
-  {
-    key: 'partner',
-    name: 'Partner',
-    description:
-      'Store partner: login, scan QR codes, confirm customer check-in',
+      'System access: manage all stores, casts, bookings, bills, rankings, and settings',
+    level: 80,
   },
   {
     key: 'operator',
     name: 'Operator',
     description:
       'Operational reviewer: manage bookings, scans, and bill review queues',
+    level: 50,
   },
   {
     key: 'staff',
     name: 'Staff',
     description:
       'Internal support staff role, separated from Operator for P1 RBAC expansion',
+    level: 40,
+  },
+  {
+    key: 'partner',
+    name: 'Partner',
+    description:
+      'Store partner: login, scan QR codes, confirm customer check-in',
+    level: 30,
   },
   {
     key: 'member',
     name: 'Member',
     description: 'Signed-in customer account with member and VIP benefits',
+    level: 10,
   },
 ];
 
@@ -146,7 +157,31 @@ const PERMISSIONS = [
     name: 'Read protected media',
     description:
       'Read protected media when scoped by owner, store, or support role',
-    roleKeys: ['admin', 'operator', 'staff'],
+    roleKeys: ['super_admin', 'admin', 'operator', 'staff'],
+  },
+  {
+    key: 'system.storage.config',
+    name: 'Configure VPS Storage',
+    description: 'Configure maximum allowed VPS storage',
+    roleKeys: ['super_admin'],
+  },
+  {
+    key: 'system.storage.view',
+    name: 'View VPS Storage',
+    description: 'View current VPS storage usage',
+    roleKeys: ['super_admin', 'admin'],
+  },
+  {
+    key: 'system.hard_delete',
+    name: 'Hard Delete Records',
+    description: 'Permanently remove records from database',
+    roleKeys: ['super_admin'],
+  },
+  {
+    key: 'system.role.assign',
+    name: 'Assign Roles',
+    description: 'Assign roles to other users (restricted by role level)',
+    roleKeys: ['super_admin', 'admin'],
   },
 ];
 
@@ -159,11 +194,12 @@ export async function seedRoles(
   for (const r of ROLES) {
     result[r.key] = await prisma.role.upsert({
       where: { key: r.key },
-      update: { name: r.name, description: r.description, status: 'ACTIVE' },
+      update: { name: r.name, description: r.description, level: r.level, status: 'ACTIVE' },
       create: {
         key: r.key,
         name: r.name,
         description: r.description,
+        level: r.level,
         status: 'ACTIVE',
       },
     });

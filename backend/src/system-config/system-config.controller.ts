@@ -37,4 +37,28 @@ export class SystemConfigController {
     const result = await this.configService.setConfig('appearance', data, req.user.id);
     return { data: result.value };
   }
+
+  @ApiOperation({ summary: 'Get VPS storage config' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Get('admin/system-config/storage')
+  async getStorageConfig() {
+    const config = await this.configService.getConfig('VPS_MAX_STORAGE_GB', { limit: 50 });
+    return { data: config };
+  }
+
+  @ApiOperation({ summary: 'Update VPS storage config' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @Put('admin/system-config/storage')
+  async updateStorageConfig(
+    @Body() body: any,
+    @Req() req: RequestWithUser,
+  ) {
+    const data = body.value || body;
+    const result = await this.configService.setConfig('VPS_MAX_STORAGE_GB', data, req.user.id);
+    return { data: result.value };
+  }
 }

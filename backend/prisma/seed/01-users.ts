@@ -4,7 +4,7 @@ interface UserSeed {
   email: string;
   displayName: string;
   phone?: string;
-  role: 'ADMIN' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'USER';
+  role: 'ADMIN' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'USER' | 'SUPER_ADMIN';
   tier: UserTier;
   roleKey?: string; // maps to Role.key for UserRoleAssignment
   profile?: {
@@ -15,6 +15,19 @@ interface UserSeed {
 }
 
 const USERS: UserSeed[] = [
+  {
+    email: 'superadmin@nightlife.vn',
+    displayName: 'NightLife Super Admin',
+    phone: '+84901000000',
+    role: 'SUPER_ADMIN',
+    tier: 'VIP',
+    roleKey: 'super_admin',
+    profile: {
+      fullName: 'Vũ Tối Cao',
+      gender: 'male',
+      bio: 'System owner — NightLife Vietnam',
+    },
+  },
   {
     email: 'admin@nightlife.vn',
     displayName: 'NightLife Admin',

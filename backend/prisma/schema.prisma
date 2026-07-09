@@ -12,6 +12,7 @@ enum UserRole {
   OPERATOR
   STAFF
   ADMIN
+  SUPER_ADMIN
 }
 
 enum UserTier {
@@ -367,6 +368,7 @@ model Role {
   key         String               @unique
   name        String
   description String?
+  level       Int                  @default(0)
   status      RoleStatus           @default(ACTIVE)
   users       UserRoleAssignment[]
   permissions RolePermission[]
