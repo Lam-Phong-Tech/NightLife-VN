@@ -69,6 +69,7 @@ const INIT_CAPS_PARTNER: CapRow[] = [
 const INIT_CAPS_MGMT: CapRow[] = [
   ['Xem hoá đơn nhạy cảm','canViewSensitiveBill',1,0,1,0,0],
   ['Xem báo cáo doanh thu','canViewRevenueReport',1,0,1,0,0],
+  ['Quản lý chat hỗ trợ','canManageSupportChat',1,0,0,0,0],
 ];
 const INIT_CAPS_USER: CapRow[] = [
   ['Xem lịch sử đặt bàn bản thân','canViewMemberBooking',1,0,0,0,1],
