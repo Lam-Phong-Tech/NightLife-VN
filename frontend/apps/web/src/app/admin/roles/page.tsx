@@ -231,14 +231,16 @@ export default function AdminRolesPage() {
     showToast('Đã cập nhật cấu hình quyền');
   };
 
+  const matrixGridCols = isSuperAdmin ? '1.4fr repeat(5, 44px)' : '1.4fr repeat(4, 44px)';
+
   const renderCapRow = (c: CapRow, idx: number, section: string) => {
     return (
-      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 44px)', gap: '3px', padding: '9px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
+      <div key={idx} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '3px', padding: '9px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
         <span style={{ minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: '11.5px', color: '#c5c0b6' }}>{c[0]}</span>
           <span style={{ display: 'block', fontSize: '9px', color: '#57534b', fontFamily: 'ui-monospace,Menlo,monospace', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c[1]}</span>
         </span>
-        <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />
+        {isSuperAdmin && <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />}
         <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />
         <Toggle on={c[4]===1} onClick={() => handleToggleCap(section, idx, 4)} />
         <Toggle on={c[5]===1} onClick={() => handleToggleCap(section, idx, 5)} />
@@ -355,9 +357,9 @@ export default function AdminRolesPage() {
           {isMatrixVisible && (
             <>
               <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 44px)', gap: '3px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.015)', alignItems: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '3px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.015)', alignItems: 'center' }}>
                   <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.8px', color: '#57534b', textTransform: 'uppercase' }}>Chức năng</span>
-                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#e3c27e' }}>Admin</span>
+                  {isSuperAdmin && <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#e3c27e' }}>Admin</span>}
                   <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Oper.</span>
                   <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Partner</span>
                   <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Staff</span>
