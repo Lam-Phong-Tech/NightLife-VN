@@ -1346,7 +1346,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   );
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
-  const showSupportChat = Boolean(authUser);
+  const showSupportChat = true; // Always show for both User and Guest
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
   const notificationNotices = memberNotifications.map(toNotice);
 
