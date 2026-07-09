@@ -1466,6 +1466,7 @@ describe('NightlifeDataService', () => {
       select: {
         id: true,
         name: true,
+        openingHours: true,
         slug: true,
       },
     });
