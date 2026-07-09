@@ -28,6 +28,7 @@ interface RankingItem {
   name: string;
   desc: string;
   avatar: string;
+  image?: string | null;
   sponsored: boolean;
 }
 
@@ -151,22 +152,46 @@ function SortableRankingItem(props: {
         {rank}
       </span>
 
-      {isStore ? (
-        <span style={{ 
-          width: '40px', height: '40px', flex: 'none', borderRadius: '10px', 
-          background: getAvatarStyle(item.name, true), 
-          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          color: '#241a0a', fontWeight: 700, fontSize: '14px' 
-        }}>
-          {item.name.substring(0,2).toUpperCase()}
-        </span>
-      ) : (
-        <span style={{ 
-          width: '40px', height: '40px', flex: 'none', borderRadius: '50%', 
-          background: getAvatarStyle(item.name, false), 
-          border: '1.5px solid rgba(212,178,106,.3)' 
-        }}></span>
-      )}
+      {item.image ? (
+        <img
+          src={item.image}
+          alt={item.name}
+          loading="lazy"
+          style={{
+            width: '40px',
+            height: '40px',
+            flex: 'none',
+            borderRadius: isStore ? '10px' : '50%',
+            objectFit: 'cover',
+            border: '1.5px solid rgba(212,178,106,.3)',
+            background: getAvatarStyle(item.name, isStore),
+          }}
+          onError={(e) => {
+            const target = e.currentTarget;
+            target.style.display = 'none';
+            const fallback = target.nextElementSibling as HTMLElement | null;
+            if (fallback) fallback.style.display = 'flex';
+          }}
+        />
+      ) : null}
+      <span
+        style={{
+          width: '40px',
+          height: '40px',
+          flex: 'none',
+          borderRadius: isStore ? '10px' : '50%',
+          background: getAvatarStyle(item.name, isStore),
+          border: '1.5px solid rgba(212,178,106,.3)',
+          display: item.image ? 'none' : 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#241a0a',
+          fontWeight: 700,
+          fontSize: '14px',
+        }}
+      >
+        {isStore ? item.name.substring(0, 2).toUpperCase() : ''}
+      </span>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -276,6 +301,7 @@ function AdminRankingsClient() {
       name: option.name,
       desc: option.store?.name || 'Cast',
       avatar: 'C',
+      image: option.image || null,
       sponsored: false
     }]);
     setCastSearch('');
@@ -294,6 +320,7 @@ function AdminRankingsClient() {
       name: option.name,
       desc: option.category || 'Store',
       avatar: 'S',
+      image: option.image || null,
       sponsored: false
     }]);
     setStoreSearch('');
@@ -327,6 +354,7 @@ function AdminRankingsClient() {
           name: r.targetName || (isCast ? 'Unknown Cast' : 'Unknown Store'),
           desc: isCast ? (r.targetArea || r.targetCity || 'Cast') : (r.targetCategory || r.targetArea || 'Store'),
           avatar: isCast ? 'C' : 'S',
+          image: r.targetImage || null,
           sponsored: r.sponsored || false,
         };
         if (isCast) castItems.push(obj);
