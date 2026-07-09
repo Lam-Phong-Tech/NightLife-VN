@@ -79,7 +79,7 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
 
     const senderType = data.userId ? SupportSenderType.USER : (data.guestSessionId ? SupportSenderType.GUEST : SupportSenderType.ADMIN);
     
-    const message = await this.supportChatService.sendMessage(ticketId, senderType, data.content, data.userId || null);
+    const message = await this.supportChatService.sendMessage(ticketId as string, senderType, data.content, data.userId || null);
 
     // Broadcast to the room
     this.server.to(`ticket_${ticketId}`).emit('receive_message', message);
