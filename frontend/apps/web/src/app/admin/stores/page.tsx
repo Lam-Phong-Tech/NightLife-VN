@@ -7,6 +7,7 @@ import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 import { getAuthUser } from '@/lib/auth/session';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -272,6 +273,7 @@ export default function AdminStoresPage() {
 }
 
 function AdminStoresContent() {
+  const feedback = useSystemFeedback();
   const [stores, setStores] = useState<any[]>([]);
   const [partnerAccounts, setPartnerAccounts] = useState<any[]>([]);
   const [venueSel, setVenueSel] = useState<string | null>(null);
@@ -827,29 +829,41 @@ function AdminStoresContent() {
         : { label: 'Chưa liên kết', kind: 'muted' };
 
   const handleSoftDeleteStore = async () => {
-    if (!window.confirm('Xóa mềm quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.')) return;
-    try {
-      await apiClient(`/admin/stores/${selectedStore?.id}?hard=false`, { method: 'DELETE' });
-      showToast('Đã xóa mềm quán');
-      closeDrawer();
-      fetchStores();
-      fetchPartnerAccounts();
-    } catch (err: any) {
-      showToast(err.message || 'Không thể xóa mềm quán');
-    }
+    feedback.showModal({
+      title: 'Xóa mềm quán',
+      description: 'Xóa mềm quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.',
+      onPrimary: async () => {
+        try {
+          await apiClient(`/admin/stores/${selectedStore?.id}?hard=false`, { method: 'DELETE' });
+          showToast('Đã xóa mềm quán');
+          closeDrawer();
+          fetchStores();
+          fetchPartnerAccounts();
+          feedback.closeModal();
+        } catch (err: any) {
+          showToast(err.message || 'Không thể xóa mềm quán');
+        }
+      }
+    });
   };
 
   const handleHardDeleteStore = async () => {
-    if (!window.confirm('CẢNH BÁO: Bạn có chắc muốn xóa VĨNH VIỄN quán này khỏi cơ sở dữ liệu? (Chỉ Super Admin mới có quyền này)')) return;
-    try {
-      await apiClient(`/admin/stores/${selectedStore?.id}?hard=true`, { method: 'DELETE' });
-      showToast('Đã xóa cứng quán vĩnh viễn');
-      closeDrawer();
-      fetchStores();
-      fetchPartnerAccounts();
-    } catch (err: any) {
-      showToast(err.message || 'Không thể xóa cứng quán');
-    }
+    feedback.showModal({
+      title: 'Xóa vĩnh viễn quán',
+      description: 'CẢNH BÁO: Bạn có chắc muốn xóa VĨNH VIỄN quán này khỏi cơ sở dữ liệu? (Chỉ Super Admin mới có quyền này)',
+      onPrimary: async () => {
+        try {
+          await apiClient(`/admin/stores/${selectedStore?.id}?hard=true`, { method: 'DELETE' });
+          showToast('Đã xóa cứng quán vĩnh viễn');
+          closeDrawer();
+          fetchStores();
+          fetchPartnerAccounts();
+          feedback.closeModal();
+        } catch (err: any) {
+          showToast(err.message || 'Không thể xóa cứng quán');
+        }
+      }
+    });
   };
 
   const handleRestoreStore = async () => {
@@ -929,6 +943,7 @@ function AdminStoresContent() {
           const stStyle = getPillStyle(stMeta.style);
           const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : (v.area === 'HCM' ? 'pink' : 'gold'));
           const rowNumber = (currentPage - 1) * adminPageSize + idx + 1;
+          const coverImage = v.media?.find((m: any) => m.type === 'IMAGE' && m.purpose === 'store-hero')?.url;
 
           return (
             <div
@@ -941,7 +956,11 @@ function AdminStoresContent() {
             >
               <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{rowNumber}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
-                <span style={{ width: 38, height: 38, flex: 'none', borderRadius: 10, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', color: '#241a0a' }}>{v.initials || v.name?.substring(0,2)?.toUpperCase()}</span>
+                {coverImage ? (
+                  <span style={{ width: 38, height: 38, flex: 'none', borderRadius: 10, background: `url(${resolveClientUrl(coverImage)}) center/cover no-repeat` }} />
+                ) : (
+                  <span style={{ width: 38, height: 38, flex: 'none', borderRadius: 10, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', color: '#241a0a' }}>{v.initials || v.name?.substring(0,2)?.toUpperCase()}</span>
+                )}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
                   <div style={{ fontSize: '11px', color: '#57534b', marginTop: '1px' }}>{v.address}</div>
