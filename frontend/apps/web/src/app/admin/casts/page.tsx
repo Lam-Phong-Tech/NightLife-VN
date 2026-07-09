@@ -189,8 +189,8 @@ export default function AdminCastsPage() {
     });
     
     const mediaList = c.media || [];
-    const imageList = mediaList.filter((m: any) => !m.type || m.type === 'IMAGE' || (m.url && m.url.match(/\.(jpeg|jpg|gif|png|webp)$/i)));
-    const videoList = mediaList.filter((m: any) => m.type === 'VIDEO' || (m.url && m.url.match(/\.(mp4|webm|ogg|mov)$/i)));
+    const imageList = mediaList.filter((m: any) => m.type === 'IMAGE' || (!m.type && m.url && m.url.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i)));
+    const videoList = mediaList.filter((m: any) => m.type === 'VIDEO' || (!m.type && m.url && m.url.split('?')[0].match(/\.(mp4|webm|ogg|mov)$/i)));
     
     setAvatarImage(imageList[0] || null);
     setAlbums(imageList.slice(1) || []);

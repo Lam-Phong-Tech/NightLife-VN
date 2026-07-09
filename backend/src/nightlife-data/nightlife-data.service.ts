@@ -17165,7 +17165,7 @@ export class NightlifeDataService {
         orderBy: { createdAt: 'desc' },
         include: {
           store: { select: { id: true, name: true } },
-          media: { select: { id: true, url: true } },
+          media: { select: { id: true, url: true, type: true } },
         },
       }),
     ]);
