@@ -40,8 +40,9 @@ export default function VpsStorageConfigPage() {
     setSuccessMsg('');
     setErrorMsg('');
     try {
-      await apiClient.put('/admin/system-config/storage', {
-        value: { limit }
+      await apiClient('/admin/system-config/storage', {
+        method: 'PUT',
+        data: { value: { limit } },
       });
       setSuccessMsg('Cập nhật giới hạn VPS Storage thành công!');
     } catch (err: any) {

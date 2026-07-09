@@ -357,7 +357,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <nav style={{ flex: 1, padding: '6px 12px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {[...navGroups, ...(isSuperAdmin ? [{
+            {([...navGroups, ...(isSuperAdmin ? [{
               title: 'Hệ thống (Super)',
               items: [
                 {
@@ -366,7 +366,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   href: '/admin/system/storage'
                 }
               ]
-            }] : [])].map(group => (
+            }] : [])] as { title: string; items: AdminNavItem[] }[]).map(group => (
               <React.Fragment key={group.title}>
                 <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1.8px', color: '#57534b', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
                   {group.title}

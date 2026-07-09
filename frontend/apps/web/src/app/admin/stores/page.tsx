@@ -193,6 +193,7 @@ function AdminStoresContent() {
   const [venueSel, setVenueSel] = useState<string | null>(null);
   const [isDraftStore, setIsDraftStore] = useState(false);
   const [partnerLinkEditing, setPartnerLinkEditing] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const searchParams = useSearchParams();
@@ -744,7 +745,7 @@ function AdminStoresContent() {
   const handleSoftDeleteStore = async () => {
     if (!window.confirm('Xóa mềm quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.')) return;
     try {
-      await apiClient.delete(`/admin/stores/${selectedStore?.id}?hard=false`);
+      await apiClient(`/admin/stores/${selectedStore?.id}?hard=false`, { method: 'DELETE' });
       showToast('Đã xóa mềm quán');
       closeDrawer();
       fetchStores();
@@ -757,7 +758,7 @@ function AdminStoresContent() {
   const handleHardDeleteStore = async () => {
     if (!window.confirm('CẢNH BÁO: Bạn có chắc muốn xóa VĨNH VIỄN quán này khỏi cơ sở dữ liệu? (Chỉ Super Admin mới có quyền này)')) return;
     try {
-      await apiClient.delete(`/admin/stores/${selectedStore?.id}?hard=true`);
+      await apiClient(`/admin/stores/${selectedStore?.id}?hard=true`, { method: 'DELETE' });
       showToast('Đã xóa cứng quán vĩnh viễn');
       closeDrawer();
       fetchStores();
