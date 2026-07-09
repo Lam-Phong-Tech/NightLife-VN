@@ -71,6 +71,7 @@ export default function AdminCastsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [storePickerOpen, setStorePickerOpen] = useState(false);
   const [storePickerSearch, setStorePickerSearch] = useState('');
+  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
 
   const fetchCasts = async () => {
     try {
@@ -151,6 +152,7 @@ export default function AdminCastsPage() {
     setIsAddingCast(false);
     setStorePickerOpen(false);
     setStorePickerSearch('');
+    setStatusPickerOpen(false);
   };
 
   const openNewDrawer = () => {
@@ -166,6 +168,7 @@ export default function AdminCastsPage() {
     setSelectedCast(null);
     setStorePickerOpen(false);
     setStorePickerSearch('');
+    setStatusPickerOpen(false);
   };
 
   const openEditDrawer = (c: any) => {
@@ -196,6 +199,7 @@ export default function AdminCastsPage() {
     setIsAddingCast(false);
     setStorePickerOpen(false);
     setStorePickerSearch('');
+    setStatusPickerOpen(false);
   };
 
   const createCastDraft = async () => {
@@ -386,6 +390,11 @@ export default function AdminCastsPage() {
   const filteredStores = stores.filter((store) =>
     !storePickerSearch || (store.name || '').toLowerCase().includes(storePickerSearch.toLowerCase())
   );
+  const statusOptions = [
+    { value: 'ACTIVE', label: 'Hoạt động', description: 'Cast có thể hiển thị khi bật public', tone: colors.green },
+    { value: 'DRAFT', label: 'Bản nháp / Chờ duyệt', description: 'Giữ lại để hoàn thiện hoặc kiểm duyệt', tone: colors.gold },
+  ];
+  const selectedStatus = statusOptions.find((option) => option.value === formData.status) || statusOptions[0];
 
   // Stats
   const statPending = casts.filter(c => getStatusLabel(c.status, c.isPublic) === 'Chờ duyệt').length;
@@ -750,10 +759,79 @@ export default function AdminCastsPage() {
                   <input type="checkbox" checked={formData.isPublic} onChange={e => setFormData({...formData, isPublic: e.target.checked})} style={{ width: 16, height: 16, accentColor: colors.gold }} />
                   Cho phép hiển thị trên Web (Public)
                 </label>
-                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, color: colors.text2, fontSize: '13px', padding: '6px 12px', borderRadius: '6px', outline: 'none' }}>
-                  <option value="ACTIVE">Trạng thái: Hoạt động</option>
-                  <option value="DRAFT">Trạng thái: Bản nháp / Chờ duyệt</option>
-                </select>
+                <div style={{ position: 'relative', flex: 1, minWidth: '230px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setStatusPickerOpen((open) => !open)}
+                    style={{
+                      width: '100%',
+                      minHeight: '46px',
+                      borderRadius: '13px',
+                      border: `1px solid ${statusPickerOpen ? colors.gold : colors.borderGold22}`,
+                      background: statusPickerOpen ? 'rgba(212,178,106,.08)' : colors.surface1,
+                      color: colors.text,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '11px',
+                      padding: '0 13px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      boxShadow: statusPickerOpen ? '0 16px 34px -26px rgba(212,178,106,.8)' : 'none',
+                    }}
+                  >
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: selectedStatus?.tone || colors.gold, boxShadow: `0 0 0 4px ${(selectedStatus?.tone || colors.gold)}22`, flex: 'none' }} />
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: '10px', color: colors.muted, fontWeight: 700, letterSpacing: '.8px', textTransform: 'uppercase', marginBottom: '2px' }}>
+                        Trạng thái
+                      </span>
+                      <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {selectedStatus?.label}
+                      </span>
+                    </span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.gold} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: statusPickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {statusPickerOpen ? (
+                    <div style={{ position: 'absolute', zIndex: 18, top: 'calc(100% + 8px)', left: 0, right: 0, borderRadius: '14px', border: `1px solid ${colors.borderGold22}`, background: '#15151b', boxShadow: '0 26px 70px -28px rgba(0,0,0,.95)', padding: '6px' }}>
+                      {statusOptions.map((option) => {
+                        const isSelected = option.value === formData.status;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, status: option.value });
+                              setStatusPickerOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              border: 0,
+                              borderRadius: '11px',
+                              background: isSelected ? 'rgba(212,178,106,.14)' : 'transparent',
+                              color: isSelected ? colors.gold : colors.text2,
+                              minHeight: '54px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '11px',
+                              padding: '9px 10px',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }}
+                          >
+                            <span style={{ width: 10, height: 10, borderRadius: '50%', background: option.tone, boxShadow: `0 0 0 4px ${option.tone}22`, flex: 'none' }} />
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <span style={{ display: 'block', fontSize: '13px', fontWeight: 800 }}>{option.label}</span>
+                              <span style={{ display: 'block', fontSize: '10.5px', color: colors.muted, marginTop: '2px' }}>{option.description}</span>
+                            </span>
+                            {isSelected ? <Check size={16} color={colors.gold} /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               {/* ẢNH ĐẠI DIỆN */}
