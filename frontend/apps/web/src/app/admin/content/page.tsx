@@ -710,7 +710,7 @@ export default function AdminContentPage() {
             const bgImage = metadata.imageUrl ? `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), url(${resolveClientUrl(metadata.imageUrl)})` : `linear-gradient(180deg, rgba(24,24,31,0) 0%, rgba(24,24,31,0.8) 100%), #1f1f26`;
             
             return (
-            <div key={banner.id} onClick={() => handleEditBanner(banner)} style={{ 
+            <div key={banner.id} data-noinvert onClick={() => handleEditBanner(banner)} style={{ 
               height: '220px', borderRadius: '16px', border: `1px solid ${colors.borderSoft}`, 
               background: bgImage, backgroundSize: 'cover', backgroundPosition: 'center',
               padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
