@@ -1168,14 +1168,14 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
       data-testid="home-mid-banner"
       {...swipeHandlers}
       style={{
-        minHeight: desktop ? "210px" : "132px",
+        minHeight: desktop ? "310px" : "208px",
         borderRadius: homeCardRadius,
         overflow: "hidden",
         position: "relative",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
-        padding: desktop ? "26px 28px 42px" : "14px 14px 32px",
+        padding: desktop ? "34px" : "18px 18px 42px",
         color: "#fff",
         border: `1px solid ${colors.line}`,
         boxShadow: "0 18px 36px rgba(0,0,0,.28)",
