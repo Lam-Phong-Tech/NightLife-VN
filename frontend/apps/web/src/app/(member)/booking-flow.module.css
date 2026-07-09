@@ -883,6 +883,12 @@
   color: #7fd6a6;
 }
 
+.historyBadgeOverdue {
+  border-color: rgba(245, 158, 76, 0.44);
+  background: rgba(245, 158, 76, 0.14);
+  color: #f2a65f;
+}
+
 .historyBadgeMuted {
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);

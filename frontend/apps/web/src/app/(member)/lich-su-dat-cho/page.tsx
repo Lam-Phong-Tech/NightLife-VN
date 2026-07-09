@@ -1107,8 +1107,11 @@ function BookingCard({
 
 function StatusBadge({ booking }: { booking: BookingRecord }) {
   const group = bookingRecordStatusGroup(booking);
+  const isPastDue = isBookingPastDue(booking);
   const className =
-    group === "Hoàn tất"
+    isPastDue
+      ? `${styles.historyBadge} ${styles.historyBadgeOverdue}`
+      : group === "Hoàn tất"
       ? `${styles.historyBadge} ${styles.historyBadgeDone}`
       : group === "Đã hủy"
         ? `${styles.historyBadge} ${styles.historyBadgeMuted}`
@@ -1116,7 +1119,9 @@ function StatusBadge({ booking }: { booking: BookingRecord }) {
 
   return (
     <span className={className}>
-      {group === "Hoàn tất" ? (
+      {isPastDue ? (
+        <Clock size={9} />
+      ) : group === "Hoàn tất" ? (
         <Check size={9} />
       ) : group === "Mới" ? (
         <span className={styles.statusDot} />
