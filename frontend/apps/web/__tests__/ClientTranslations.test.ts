@@ -179,4 +179,36 @@ describe("client translations", () => {
       "初めての方向け 1区ナイトマップ",
     );
   });
+
+  it("translates blog detail and nested blog route copy", () => {
+    expect(translateText("Bài liên quan", "ja")).toBe("関連記事");
+    expect(
+      translateText(
+        "Giá, tình trạng bàn, cast và ưu đãi trong bài chỉ là tham khảo. Thông tin cuối cùng sẽ được admin xác nhận khi khách gửi yêu cầu đặt chỗ.",
+        "ja",
+      ),
+    ).toBe(
+      "記事内の料金、席の空き状況、キャスト、特典は参考情報です。最終情報は、予約リクエスト送信時に管理者が確認します。",
+    );
+    expect(translateText("Không tìm thấy bài viết", "ja")).toBe("記事が見つかりません");
+    expect(translateText("Nháp", "ja")).toBe("下書き");
+    expect(translateText("Không tìm thấy chủ đề blog", "ja")).toBe(
+      "ブログトピックが見つかりません",
+    );
+    expect(translateText("Không tìm thấy tag blog", "ja")).toBe(
+      "ブログタグが見つかりません",
+    );
+    expect(
+      translateText(
+        "Các bài viết được nhóm theo chủ đề để khách chọn nhanh nội dung phù hợp trước khi đặt chỗ.",
+        "ja",
+      ),
+    ).toBe("記事はトピック別に整理されているため、予約前に必要な内容をすぐ選べます。");
+    expect(
+      translateText(
+        "Các bài viết được gắn cùng tag để khách tìm nhanh theo nhu cầu đặt chỗ, khu vực hoặc ưu đãi.",
+        "ja",
+      ),
+    ).toBe("同じタグの記事から、予約目的、エリア、特典に合わせてすばやく探せます。");
+  });
 });
