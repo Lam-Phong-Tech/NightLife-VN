@@ -159,8 +159,6 @@ const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
-const MVP_CITY_CODES = ['hn', 'hcm'] as const;
-
 type BookingStatusActorType =
   | 'MEMBER'
   | 'GUEST'
@@ -12220,11 +12218,7 @@ export class NightlifeDataService {
       return { code: { startsWith: `${cityCode}-` } };
     }
 
-    return {
-      OR: MVP_CITY_CODES.map((code) => ({
-        code: { startsWith: `${code}-` },
-      })),
-    };
+    return {};
   }
 
   private resolvePagination(query: PublicDiscoveryQueryDto): PublicPagination {
