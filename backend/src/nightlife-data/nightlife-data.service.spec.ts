@@ -2085,6 +2085,34 @@ describe('NightlifeDataService', () => {
     });
   });
 
+  it('lists member bookings by newest creation time before schedule time', async () => {
+    prisma.booking.findMany.mockResolvedValue([] as never);
+
+    await expect(service.listMemberBookings('member-1')).resolves.toEqual([]);
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'member-1',
+        deletedAt: null,
+      },
+      orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
+      select: expect.objectContaining({
+        id: true,
+        status: true,
+        scheduledAt: true,
+        createdAt: true,
+        cast: {
+          select: {
+            id: true,
+            slug: true,
+            stageName: true,
+            publicAlias: true,
+          },
+        },
+      }),
+    });
+  });
+
   it('rate-limits repeated member cancellation attempts', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
     prisma.booking.findFirst.mockResolvedValue({

@@ -32,21 +32,56 @@ describe("booking history status helpers", () => {
     expect(bookingRecordStatusLabel(overdueBooking)).toBe("Đã qua giờ");
   });
 
-  it("sorts booking history by booking time before created time", () => {
-    const olderBookingCreatedLater = baseBooking({
-      id: "old-booking",
-      scheduledAt: "2026-07-08T14:00:00.000Z",
-      createdAt: "2026-07-09T18:00:00.000Z",
+  it("sorts active booking history by newest creation time before booking time", () => {
+    const regularBookingCreatedEarlier = baseBooking({
+      id: "regular-booking",
+      scheduledAt: "2030-07-10T16:00:00.000Z",
+      createdAt: "2030-07-09T04:00:00.000Z",
     });
-    const newerBookingCreatedEarlier = baseBooking({
-      id: "new-booking",
-      scheduledAt: "2026-07-10T14:00:00.000Z",
-      createdAt: "2026-07-08T18:00:00.000Z",
+    const castBookingCreatedLater = baseBooking({
+      id: "cast-booking",
+      castId: "cast-1",
+      scheduledAt: "2030-07-09T14:00:00.000Z",
+      createdAt: "2030-07-09T06:00:00.000Z",
     });
 
-    expect(sortBookingHistories([olderBookingCreatedLater, newerBookingCreatedEarlier]).map((booking) => booking.id)).toEqual([
-      "new-booking",
-      "old-booking",
-    ]);
+    expect(
+      sortBookingHistories([regularBookingCreatedEarlier, castBookingCreatedLater]).map(
+        (booking) => booking.id,
+      ),
+    ).toEqual(["cast-booking", "regular-booking"]);
+  });
+
+  it("pushes overdue and cancelled bookings below active and completed bookings", () => {
+    const nowMs = new Date("2026-07-09T12:00:00.000Z").getTime();
+    const activeBooking = baseBooking({
+      id: "active",
+      scheduledAt: "2026-07-09T14:00:00.000Z",
+      createdAt: "2026-07-09T06:00:00.000Z",
+    });
+    const completedBooking = baseBooking({
+      id: "completed",
+      status: "COMPLETED",
+      scheduledAt: "2026-07-08T14:00:00.000Z",
+      createdAt: "2026-07-09T05:00:00.000Z",
+    });
+    const overdueBooking = baseBooking({
+      id: "overdue",
+      scheduledAt: "2026-07-09T10:00:00.000Z",
+      createdAt: "2026-07-09T08:00:00.000Z",
+    });
+    const cancelledBooking = baseBooking({
+      id: "cancelled",
+      status: "CANCELLED",
+      scheduledAt: "2026-07-12T15:00:00.000Z",
+      createdAt: "2026-07-09T07:00:00.000Z",
+    });
+
+    expect(
+      sortBookingHistories(
+        [cancelledBooking, overdueBooking, completedBooking, activeBooking],
+        nowMs,
+      ).map((booking) => booking.id),
+    ).toEqual(["active", "completed", "overdue", "cancelled"]);
   });
 });

@@ -4346,7 +4346,7 @@ export class NightlifeDataService {
         userId,
         deletedAt: null,
       },
-      orderBy: { scheduledAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { scheduledAt: 'desc' }],
       select: {
         id: true,
         status: true,

@@ -273,11 +273,39 @@ export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "schedu
   return Number.isFinite(scheduledAt) && scheduledAt - Date.now() >= cutoffMinutes * 60 * 1000;
 };
 
-const bookingTimeValue = (booking: BookingRecord) =>
-  toBookingTimestamp(booking.scheduledAt) || toBookingTimestamp(booking.createdAt);
+const bookingCreatedTimeValue = (booking: BookingRecord) =>
+  toBookingTimestamp(booking.createdAt) || toBookingTimestamp(booking.scheduledAt);
 
-export const sortBookingHistories = (bookings: BookingRecord[]) =>
-  [...bookings].sort((a, b) => bookingTimeValue(b) - bookingTimeValue(a));
+const bookingScheduledTimeValue = (booking: BookingRecord) =>
+  toBookingTimestamp(booking.scheduledAt);
+
+const bookingHistoryRank = (booking: BookingRecord, nowMs: number) => {
+  const normalizedStatus = booking.status.trim().toUpperCase();
+  if (cancelledBookingStatuses.has(normalizedStatus)) return 3;
+  if (
+    openBookingStatuses.has(normalizedStatus) &&
+    bookingScheduledTimeValue(booking) > 0 &&
+    bookingScheduledTimeValue(booking) < nowMs
+  ) {
+    return 2;
+  }
+  if (completedBookingStatuses.has(normalizedStatus)) return 1;
+  return 0;
+};
+
+export const sortBookingHistories = (bookings: BookingRecord[], nowMs = Date.now()) =>
+  [...bookings].sort((a, b) => {
+    const rankDiff = bookingHistoryRank(a, nowMs) - bookingHistoryRank(b, nowMs);
+    if (rankDiff !== 0) return rankDiff;
+
+    const createdDiff = bookingCreatedTimeValue(b) - bookingCreatedTimeValue(a);
+    if (createdDiff !== 0) return createdDiff;
+
+    const scheduledDiff = bookingScheduledTimeValue(b) - bookingScheduledTimeValue(a);
+    if (scheduledDiff !== 0) return scheduledDiff;
+
+    return a.id.localeCompare(b.id);
+  });
 
 export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
   const bookingsById = new Map<string, BookingRecord>();
