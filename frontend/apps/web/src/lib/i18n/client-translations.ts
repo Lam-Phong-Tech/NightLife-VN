@@ -3302,6 +3302,146 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ko: "매장 갤러리 확대 보기",
     zh: "店铺图库放大查看",
   },
+  {
+    vi: "Thông báo",
+    en: "Notifications",
+    ja: "通知",
+    ko: "알림",
+    zh: "通知",
+  },
+  {
+    vi: "Đánh dấu tất cả đã đọc",
+    en: "Mark all as read",
+    ja: "すべて既読にする",
+    ko: "모두 읽음으로 표시",
+    zh: "全部标为已读",
+  },
+  {
+    vi: "Đánh dấu đã đọc",
+    en: "Mark as read",
+    ja: "既読にする",
+    ko: "읽음으로 표시",
+    zh: "标为已读",
+  },
+  {
+    vi: "HÔM NAY",
+    en: "TODAY",
+    ja: "今日",
+    ko: "오늘",
+    zh: "今天",
+  },
+  {
+    vi: "Hôm nay",
+    en: "Today",
+    ja: "今日",
+    ko: "오늘",
+    zh: "今天",
+  },
+  {
+    vi: "Trước đó",
+    en: "Earlier",
+    ja: "以前",
+    ko: "이전",
+    zh: "此前",
+  },
+  {
+    vi: "Hóa đơn",
+    en: "Bills",
+    ja: "請求書",
+    ko: "영수증",
+    zh: "账单",
+  },
+  {
+    vi: "Đặt chỗ",
+    en: "Reservations",
+    ja: "予約",
+    ko: "예약",
+    zh: "预订",
+  },
+  {
+    vi: "Hệ thống",
+    en: "System",
+    ja: "システム",
+    ko: "시스템",
+    zh: "系统",
+  },
+  {
+    vi: "Xem lịch đặt",
+    en: "View reservations",
+    ja: "予約を見る",
+    ko: "예약 보기",
+    zh: "查看预订",
+  },
+  {
+    vi: "Đăng ký đối tác",
+    en: "Partner signup",
+    ja: "パートナー登録",
+    ko: "파트너 등록",
+    zh: "合作伙伴注册",
+  },
+  {
+    vi: "Chính sách hoạt động",
+    en: "Operating policy",
+    ja: "運営ポリシー",
+    ko: "운영 정책",
+    zh: "运营政策",
+  },
+  {
+    vi: "Tour",
+    en: "Tour",
+    ja: "ツアー",
+    ko: "투어",
+    zh: "行程",
+  },
+  {
+    vi: "© 2026 Vietyoru. Bảo lưu mọi quyền.",
+    en: "© 2026 Vietyoru. All rights reserved.",
+    ja: "© 2026 Vietyoru. 無断転載を禁じます。",
+    ko: "© 2026 Vietyoru. 모든 권리 보유.",
+    zh: "© 2026 Vietyoru. 保留所有权利。",
+  },
+  {
+    vi: "18+ · Giá và tình trạng đặt chỗ được xác nhận lại bởi admin.",
+    en: "18+ · Prices and reservation availability are reconfirmed by admin.",
+    ja: "18+ · 料金と予約状況は管理者が再確認します。",
+    ko: "18+ · 가격과 예약 가능 여부는 관리자가 다시 확인합니다.",
+    zh: "18+ · 价格和预订状态由管理员再次确认。",
+  },
+  {
+    vi: "Sân khấu DJ",
+    en: "DJ stage",
+    ja: "DJステージ",
+    ko: "DJ 스테이지",
+    zh: "DJ 舞台",
+  },
+  {
+    vi: "Mở muộn",
+    en: "Late opening",
+    ja: "深夜営業",
+    ko: "늦게까지 영업",
+    zh: "营业至深夜",
+  },
+  {
+    vi: "Gói đôi",
+    en: "Couple package",
+    ja: "ペアプラン",
+    ko: "커플 패키지",
+    zh: "双人套餐",
+  },
+  {
+    vi: "Set Nhật",
+    en: "Japanese set",
+    ja: "日本セット",
+    ko: "일본식 세트",
+    zh: "日式套餐",
+  },
+  {
+    vi: "Set Nhật Bản",
+    en: "Japanese set",
+    ja: "日本セット",
+    ko: "일본식 세트",
+    zh: "日式套餐",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -3370,6 +3510,20 @@ const termEntries: TranslationEntry[] = [
     zh: "VIP 桌",
   },
   {
+    vi: "VIP席を予約",
+    en: "Book a VIP table",
+    ja: "VIP席を予約",
+    ko: "VIP 테이블 예약",
+    zh: "预订 VIP 桌",
+  },
+  {
+    vi: "席を予約",
+    en: "Book a seat",
+    ja: "席を予約",
+    ko: "좌석 예약",
+    zh: "预订座位",
+  },
+  {
     vi: "Night dining",
     en: "Night dining",
     ja: "夜のグルメ",
@@ -3389,6 +3543,20 @@ const termEntries: TranslationEntry[] = [
     ja: "注目動画",
     ko: "인기 영상",
     zh: "热门视频",
+  },
+  {
+    vi: "Hải Phòng",
+    en: "Hai Phong",
+    ja: "ハイフォン",
+    ko: "하이퐁",
+    zh: "海防",
+  },
+  {
+    vi: "Hai Phong",
+    en: "Hai Phong",
+    ja: "ハイフォン",
+    ko: "하이퐁",
+    zh: "海防",
   },
   {
     vi: "khu vực này",
@@ -4185,8 +4353,6 @@ function translatePattern(
   language: Exclude<LanguageCode, "vi">,
 ): string | null {
   const normalized = normalizeText(value);
-  const delimitedText = translateDelimitedText(normalized, language);
-  if (delimitedText) return delimitedText;
 
   const districtMatch = normalized.match(/^(?:Quận|District)\s+(\d+)$/i);
   if (districtMatch) {
@@ -4204,6 +4370,41 @@ function translatePattern(
     }[language];
   }
 
+  const bookingRecordedMatch = normalized.match(
+    /^Lịch đặt tại\s+(.+?)\s+đã được ghi nhận\.\s+Admin sẽ xác nhận sớm\.$/i,
+  );
+  if (bookingRecordedMatch) {
+    const storeName = translateText(bookingRecordedMatch[1] ?? "", language);
+    return {
+      en: `Your reservation at ${storeName} has been received. Admin will confirm soon.`,
+      ja: `${storeName}の予約リクエストを受け付けました。管理者がまもなく確認します。`,
+      ko: `${storeName} 예약 요청이 접수되었습니다. 관리자가 곧 확인합니다.`,
+      zh: `已收到你在 ${storeName} 的预订请求。管理员会尽快确认。`,
+    }[language];
+  }
+
+  const openUntilMatch = normalized.match(/^(?:Đang mở đến|Mở đến)\s+(.+)$/i);
+  if (openUntilMatch) {
+    const time = openUntilMatch[1] ?? "";
+    return {
+      en: `Open until ${time}`,
+      ja: `${time}まで営業`,
+      ko: `${time}까지 영업`,
+      zh: `营业至 ${time}`,
+    }[language];
+  }
+
+  const hourCountMatch = normalized.match(/^(\d+)\s+giờ$/i);
+  if (hourCountMatch) {
+    const count = hourCountMatch[1] ?? "";
+    return {
+      en: `${count} hours`,
+      ja: `${count}時間`,
+      ko: `${count}시간`,
+      zh: `${count}小时`,
+    }[language];
+  }
+
   const castAreaMatch = normalized.match(/^Cast\s+(.+)$/i);
   if (castAreaMatch) {
     const area = translateText(castAreaMatch[1] ?? "", language);
@@ -4214,6 +4415,9 @@ function translatePattern(
       zh: `${area} Cast`,
     }[language];
   }
+
+  const delimitedText = translateDelimitedText(normalized, language);
+  if (delimitedText) return delimitedText;
 
   const topMatch = normalized.match(/^TOP\s+(\d+)$/i) ?? normalized.match(/^Top\s+(\d+)$/i);
 

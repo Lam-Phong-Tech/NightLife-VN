@@ -112,4 +112,33 @@ describe("client translations", () => {
     ).toBe("Sakura Loungeは21:00に4名席がまだあります。仮押さえしましょうか？");
     expect(translateText("Store gallery lightbox", "zh")).toBe("店铺图库放大查看");
   });
+
+  it("translates notification, footer, and discovery list leftovers", () => {
+    expect(translateText("Thông báo", "ja")).toBe("通知");
+    expect(translateText("Đánh dấu tất cả đã đọc", "ja")).toBe("すべて既読にする");
+    expect(translateText("Hóa đơn", "ja")).toBe("請求書");
+    expect(translateText("Đặt chỗ", "ja")).toBe("予約");
+    expect(translateText("HÔM NAY", "ja")).toBe("今日");
+    expect(translateText("Xem lịch đặt", "ja")).toBe("予約を見る");
+    expect(translateText("5 giờ", "ja")).toBe("5時間");
+    expect(
+      translateText(
+        "Lịch đặt tại 東京キッチン — Tokyo Kitchen đã được ghi nhận. Admin sẽ xác nhận sớm.",
+        "ja",
+      ),
+    ).toBe("東京キッチン — 東京キッチンの予約リクエストを受け付けました。管理者がまもなく確認します。");
+    expect(translateText("Đăng ký đối tác", "ja")).toBe("パートナー登録");
+    expect(translateText("Chính sách hoạt động", "ja")).toBe("運営ポリシー");
+    expect(translateText("© 2026 Vietyoru. Bảo lưu mọi quyền.", "ja")).toBe(
+      "© 2026 Vietyoru. 無断転載を禁じます。",
+    );
+    expect(translateText("Sân khấu DJ", "ja")).toBe("DJステージ");
+    expect(translateText("Mở đến 02:00", "ja")).toBe("02:00まで営業");
+    expect(translateText("Đang mở đến 02:00", "ja")).toBe("02:00まで営業");
+    expect(translateText("Mở muộn", "ja")).toBe("深夜営業");
+    expect(translateText("Gói đôi", "ja")).toBe("ペアプラン");
+    expect(translateText("Set Nhật Bản", "ja")).toBe("日本セット");
+    expect(translateText("Opera Spa Hải Phòng", "ja")).toBe("Opera スパ ハイフォン");
+    expect(translateText("13 cast · Hà Nội", "ja")).toBe("13人のキャスト · ハノイ");
+  });
 });
