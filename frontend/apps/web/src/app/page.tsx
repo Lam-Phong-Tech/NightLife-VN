@@ -669,6 +669,81 @@ function useBannerSwipe(
   };
 }
 
+function useCarouselSwipe(
+  slideCount: number,
+  setActiveSlide: React.Dispatch<React.SetStateAction<number>>,
+) {
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef(0);
+  const suppressClickRef = useRef(false);
+
+  const moveSlide = (direction: 1 | -1) => {
+    if (slideCount < 2) return;
+    setActiveSlide((current) => (current + direction + slideCount) % slideCount);
+  };
+
+  const beginSwipe = (clientX: number) => {
+    touchStartXRef.current = clientX;
+    touchDeltaXRef.current = 0;
+    suppressClickRef.current = false;
+  };
+
+  const updateSwipe = (clientX: number) => {
+    if (touchStartXRef.current === null) return;
+    touchDeltaXRef.current = clientX - touchStartXRef.current;
+    if (Math.abs(touchDeltaXRef.current) > 8) {
+      suppressClickRef.current = true;
+    }
+  };
+
+  const endSwipe = () => {
+    const deltaX = touchDeltaXRef.current;
+    const shouldSuppressClick = Math.abs(deltaX) > 8;
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
+
+    if (Math.abs(deltaX) >= 46) {
+      moveSlide(deltaX < 0 ? 1 : -1);
+    }
+
+    if (shouldSuppressClick) {
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 220);
+    } else {
+      suppressClickRef.current = false;
+    }
+  };
+
+  return {
+    onClickCapture: (event: React.MouseEvent<HTMLElement>) => {
+      if (suppressClickRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressClickRef.current = false;
+      }
+    },
+    onTouchCancel: () => {
+      touchStartXRef.current = null;
+      touchDeltaXRef.current = 0;
+      suppressClickRef.current = false;
+    },
+    onTouchEnd: (event: React.TouchEvent<HTMLElement>) => {
+      const touch = event.changedTouches[0];
+      if (touch) updateSwipe(touch.clientX);
+      endSwipe();
+    },
+    onTouchMove: (event: React.TouchEvent<HTMLElement>) => {
+      const touch = event.touches[0];
+      if (touch) updateSwipe(touch.clientX);
+    },
+    onTouchStart: (event: React.TouchEvent<HTMLElement>) => {
+      const touch = event.touches[0];
+      if (touch) beginSwipe(touch.clientX);
+    },
+  };
+}
+
 const shellStyle: CSSProperties = {
   minHeight: "100vh",
   background: colors.shell,
@@ -1221,6 +1296,146 @@ function SectionHeading({ title, action }: { title: string; action?: string }) {
   );
 }
 
+function chunkHomeCarouselItems<T>(items: T[], itemsPerSlide: number) {
+  const safeItemsPerSlide = Math.max(1, itemsPerSlide);
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += safeItemsPerSlide) {
+    chunks.push(items.slice(index, index + safeItemsPerSlide));
+  }
+
+  return chunks;
+}
+
+function HomeCarouselDots({
+  activeSlide,
+  setActiveSlide,
+  slideCount,
+}: {
+  activeSlide: number;
+  setActiveSlide: React.Dispatch<React.SetStateAction<number>>;
+  slideCount: number;
+}) {
+  if (slideCount < 2) return null;
+
+  return (
+    <div
+      aria-label="Choose slide"
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: "6px",
+        marginTop: "12px",
+      }}
+    >
+      {Array.from({ length: slideCount }).map((_, index) => (
+        <button
+          key={index}
+          type="button"
+          aria-label={`Slide ${index + 1}`}
+          aria-pressed={activeSlide === index}
+          onClick={() => setActiveSlide(index)}
+          style={{
+            display: "block",
+            flex: "0 0 auto",
+            width: activeSlide === index ? 22 : 5,
+            height: 5,
+            border: 0,
+            borderRadius: 99,
+            padding: 0,
+            background: activeSlide === index ? colors.gold : "rgba(255,255,255,.26)",
+            cursor: "pointer",
+            transition: "width 420ms cubic-bezier(.22,.78,.22,1), background 420ms ease",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HomeCardCarousel<T>({
+  ariaLabel,
+  gap = 12,
+  getKey,
+  items,
+  itemsPerSlide,
+  renderItem,
+}: {
+  ariaLabel: string;
+  gap?: number;
+  getKey: (item: T) => string;
+  items: T[];
+  itemsPerSlide: number;
+  renderItem: (item: T) => React.ReactNode;
+}) {
+  const slides = useMemo(
+    () => chunkHomeCarouselItems(items, itemsPerSlide),
+    [items, itemsPerSlide],
+  );
+  const slideKey = useMemo(() => items.map(getKey).join("|"), [getKey, items]);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const swipeHandlers = useCarouselSwipe(slides.length, setActiveSlide);
+
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [itemsPerSlide, slideKey, slides.length]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "test" || slides.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % slides.length);
+    }, homeBannerAutoDelayMs);
+
+    return () => window.clearInterval(timer);
+  }, [slides.length]);
+
+  return (
+    <div
+      className="nl-home-auto-carousel"
+      aria-label={ariaLabel}
+      {...swipeHandlers}
+      style={{
+        gridColumn: "1 / -1",
+        overflow: "hidden",
+        touchAction: "pan-y",
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          transform: `translate3d(-${activeSlide * 100}%,0,0)`,
+          transition: homeBannerSlideTransition,
+          willChange: "transform, opacity",
+        }}
+      >
+        {slides.map((slide, slideIndex) => (
+          <div
+            key={`${slideIndex}-${slide.map(getKey).join("-")}`}
+            aria-hidden={activeSlide !== slideIndex}
+            style={{
+              flex: "0 0 100%",
+              display: "grid",
+              gridTemplateColumns: `repeat(${Math.max(1, Math.min(itemsPerSlide, slide.length))}, minmax(0, 1fr))`,
+              gap,
+              minWidth: 0,
+              paddingRight: slideIndex < slides.length - 1 ? gap : 0,
+              opacity: activeSlide === slideIndex ? 1 : 0.54,
+              transition: "opacity 960ms ease",
+            }}
+          >
+            {slide.map((item) => (
+              <React.Fragment key={getKey(item)}>{renderItem(item)}</React.Fragment>
+            ))}
+          </div>
+        ))}
+      </div>
+      <HomeCarouselDots activeSlide={activeSlide} setActiveSlide={setActiveSlide} slideCount={slides.length} />
+    </div>
+  );
+}
+
 function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact?: boolean }) {
   return (
     <Link
@@ -1235,7 +1450,7 @@ function VenueMiniCard({ item, compact = false }: { item: HomeStoreCard; compact
         })
       }
       style={{
-        minWidth: compact ? "162px" : "0",
+        minWidth: compact ? "min(162px, 100%)" : "0",
         display: "block",
         overflow: "hidden",
         borderRadius: homeCardRadius,
@@ -1662,7 +1877,7 @@ function ContentPlaceholderCard({
       href={item.href}
       className="nl-home-card nl-home-content-card"
       style={{
-        minWidth: compact ? "172px" : "0",
+        minWidth: compact ? "min(172px, 100%)" : "0",
         display: "block",
         borderRadius: homeCardRadius,
         border: `1px solid ${colors.line}`,
@@ -1992,7 +2207,7 @@ export default function Page() {
   );
   const recommendedCards = homeRecommendations.length ? homeRecommendations : homeStoreCards;
   const guideItems = useMemo(
-    () => [...homeTours, ...homeContentItems].slice(0, 3),
+    () => [...homeTours, ...homeContentItems].slice(0, 6),
     [homeTours, homeContentItems],
   );
   const heroBanners = useMemo(() => homeBanners.filter(b => getHomeBannerMetadata(b).position === "Trang chủ #1" || !getHomeBannerMetadata(b).position), [homeBanners]);
@@ -2298,7 +2513,14 @@ export default function Page() {
                 {isHomeRecommendationsLoading && isHomeStoresLoading ? (
                   <HomeDataMessage text="Đang tải quán từ API..." compact />
                 ) : recommendedCards.length ? (
-                  recommendedCards.slice(0, 3).map((item) => <VenueMiniCard key={item.slug} item={item} compact />)
+                  <HomeCardCarousel
+                    ariaLabel="Home recommendations"
+                    gap={12}
+                    getKey={(item) => item.slug}
+                    items={recommendedCards.slice(0, 8)}
+                    itemsPerSlide={2}
+                    renderItem={(item) => <VenueMiniCard item={item} compact />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."} compact />
                 )}
@@ -2355,7 +2577,14 @@ export default function Page() {
                 {isFeaturedServicesLoading ? (
                   <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." compact />
                 ) : svc.length ? (
-                  svc.slice(0, 2).map((item) => <ServiceCard key={item.slug} item={item} compact />)
+                  <HomeCardCarousel
+                    ariaLabel="Featured services"
+                    gap={11}
+                    getKey={(item) => item.slug}
+                    items={svc}
+                    itemsPerSlide={2}
+                    renderItem={(item) => <ServiceCard item={item} compact />}
+                  />
                 ) : (
                   <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} compact />
                 )}
@@ -2368,7 +2597,14 @@ export default function Page() {
                 {isHomeContentLoading ? (
                   <HomeDataMessage text="Đang tải nội dung CMS..." compact />
                 ) : guideItems.length ? (
-                  guideItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} compact />)
+                  <HomeCardCarousel
+                    ariaLabel="Tour blog guide"
+                    gap={12}
+                    getKey={(item) => item.id}
+                    items={guideItems}
+                    itemsPerSlide={1}
+                    renderItem={(item) => <ContentPlaceholderCard item={item} compact />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} compact />
                 )}
@@ -2424,7 +2660,14 @@ export default function Page() {
                 {isHomeRecommendationsLoading && isHomeStoresLoading ? (
                   <HomeDataMessage text="Đang tải quán từ API..." />
                 ) : recommendedCards.length ? (
-                  recommendedCards.slice(0, 4).map((item) => <VenueMiniCard key={item.slug} item={item} />)
+                  <HomeCardCarousel
+                    ariaLabel="Home recommendations"
+                    gap={16}
+                    getKey={(item) => item.slug}
+                    items={recommendedCards.slice(0, 8)}
+                    itemsPerSlide={4}
+                    renderItem={(item) => <VenueMiniCard item={item} />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeRecommendationsError || homeStoresError || "Chưa có quán từ backend."} />
                 )}
@@ -2485,7 +2728,14 @@ export default function Page() {
                 {isFeaturedServicesLoading ? (
                   <HomeDataMessage text="Đang tải dịch vụ nổi bật từ API..." />
                 ) : svc.length ? (
-                  svc.map((item) => <ServiceCard key={item.slug} item={item} />)
+                  <HomeCardCarousel
+                    ariaLabel="Featured services"
+                    gap={16}
+                    getKey={(item) => item.slug}
+                    items={svc}
+                    itemsPerSlide={4}
+                    renderItem={(item) => <ServiceCard item={item} />}
+                  />
                 ) : (
                   <HomeDataMessage text={featuredServicesError || "Chưa có dịch vụ nổi bật phù hợp."} />
                 )}
@@ -2498,7 +2748,14 @@ export default function Page() {
                 {isHomeContentLoading ? (
                   <HomeDataMessage text="Đang tải nội dung CMS..." />
                 ) : guideItems.length ? (
-                  guideItems.map((item) => <ContentPlaceholderCard key={item.id} item={item} />)
+                  <HomeCardCarousel
+                    ariaLabel="Tour blog guide"
+                    gap={16}
+                    getKey={(item) => item.id}
+                    items={guideItems}
+                    itemsPerSlide={3}
+                    renderItem={(item) => <ContentPlaceholderCard item={item} />}
+                  />
                 ) : (
                   <HomeDataMessage text={homeContentError || "Chưa có bài viết/chính sách được xuất bản."} />
                 )}
