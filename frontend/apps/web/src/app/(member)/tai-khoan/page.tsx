@@ -1,6 +1,12 @@
 "use client";
 
-import { clearAuthSession, getAuthUser, type AuthUser } from "@/lib/auth/session";
+import {
+  authSessionChangeEvent,
+  clearAuthSession,
+  getAuthSessionExpiresAt,
+  getAuthUser,
+  type AuthUser,
+} from "@/lib/auth/session";
 import { logoutCurrentUser } from "@/lib/api/auth";
 import { memberApi, type MemberPointSummary } from "@/lib/api/member";
 import {
@@ -52,21 +58,57 @@ export default function Page() {
   const [pointSummaryStatus, setPointSummaryStatus] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    let redirected = false;
+    let expiryTimer: number | undefined;
+
+    const redirectToLogin = () => {
+      if (redirected) return;
+      redirected = true;
+      setAuthStatus("redirecting");
+      window.location.replace("/dang-nhap?redirect=/tai-khoan");
+    };
+
+    const scheduleExpiryCheck = () => {
+      if (expiryTimer) {
+        window.clearTimeout(expiryTimer);
+        expiryTimer = undefined;
+      }
+
+      const expiresAt = getAuthSessionExpiresAt();
+      if (!expiresAt) return;
+
+      const delay = Math.max(0, Math.min(expiresAt - Date.now() + 250, 2_147_483_647));
+      expiryTimer = window.setTimeout(verifyAuthUser, delay);
+    };
+
+    const verifyAuthUser = () => {
       const currentUser = getAuthUser();
 
       if (!currentUser || currentUser.role !== "USER") {
-        clearAuthSession();
-        setAuthStatus("redirecting");
-        window.location.replace("/dang-nhap?redirect=/tai-khoan");
+        if (currentUser) {
+          clearAuthSession();
+        }
+        redirectToLogin();
         return;
       }
 
       setAuthUser(currentUser);
       setAuthStatus("ready");
-    }, 0);
+      scheduleExpiryCheck();
+    };
 
-    return () => window.clearTimeout(timer);
+    const timer = window.setTimeout(verifyAuthUser, 0);
+    window.addEventListener("focus", verifyAuthUser);
+    window.addEventListener(authSessionChangeEvent, verifyAuthUser);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (expiryTimer) {
+        window.clearTimeout(expiryTimer);
+      }
+      window.removeEventListener("focus", verifyAuthUser);
+      window.removeEventListener(authSessionChangeEvent, verifyAuthUser);
+    };
   }, []);
 
   const name = authUser?.displayName || authUser?.email?.split("@")[0] || "";

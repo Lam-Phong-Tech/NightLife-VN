@@ -1,3 +1,5 @@
+import { clearAuthSession, getAuthSessionToken } from "../auth/session";
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -16,6 +18,27 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
 interface FormDataRequestOptions extends Omit<RequestInit, "body"> {
   params?: Record<string, string>;
 }
+
+const authEntryEndpointPattern = /^\/?auth\/(login|register|google|line|password-reset)/i;
+
+const endpointPathname = (endpoint: string) => {
+  if (!endpoint.startsWith("http")) return endpoint.replace(/^\/+/, "");
+
+  try {
+    return new URL(endpoint).pathname.replace(/^\/?(api\/backend\/)?/, "");
+  } catch {
+    return endpoint;
+  }
+};
+
+const clearStaleSessionOnUnauthorized = (endpoint: string, status: number, token: string | null) => {
+  if (typeof window === "undefined" || status !== 401 || !token) return;
+
+  const path = endpointPathname(endpoint);
+  if (authEntryEndpointPattern.test(path)) return;
+
+  clearAuthSession();
+};
 
 const genericStatusMessages: Record<number, string> = {
   400: "Thông tin gửi lên chưa hợp lệ. Vui lòng kiểm tra lại.",
@@ -404,15 +427,7 @@ const getBaseUrl = () => {
 
 export const getAuthToken = () => {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(^| )auth_token=([^;]+)"));
-  if (match && match[2]) {
-    try {
-      return decodeURIComponent(match[2]);
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return getAuthSessionToken() || null;
 };
 
 export const buildApiUrl = (endpoint: string, params?: RequestOptions["params"]) => {
@@ -459,6 +474,7 @@ export const apiClient = async <T>(endpoint: string, options: RequestOptions = {
   const response = await fetch(url, config);
 
   if (!response.ok) {
+    clearStaleSessionOnUnauthorized(endpoint, response.status, token);
     let errorMessage = translateApiMessage(
       undefined,
       response.status,
@@ -504,6 +520,7 @@ export const apiFormDataClient = async <T>(
   });
 
   if (!response.ok) {
+    clearStaleSessionOnUnauthorized(endpoint, response.status, token);
     let errorMessage = translateApiMessage(
       undefined,
       response.status,

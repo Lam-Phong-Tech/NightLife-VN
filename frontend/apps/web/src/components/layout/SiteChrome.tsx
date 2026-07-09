@@ -19,7 +19,12 @@ import {
 import { usePathname } from "next/navigation";
 import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { getAuthUser, type AuthUser } from "@/lib/auth/session";
+import {
+  authSessionChangeEvent,
+  getAuthSessionExpiresAt,
+  getAuthUser,
+  type AuthUser,
+} from "@/lib/auth/session";
 import {
   DEFAULT_APPEARANCE_CONFIG,
   getAppearanceConfig,
@@ -1286,19 +1291,42 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let expiryTimer: number | undefined;
+
+    const scheduleExpiryCheck = () => {
+      if (expiryTimer) {
+        window.clearTimeout(expiryTimer);
+        expiryTimer = undefined;
+      }
+
+      const expiresAt = getAuthSessionExpiresAt();
+      if (!expiresAt) return;
+
+      const delay = Math.max(0, Math.min(expiresAt - Date.now() + 250, 2_147_483_647));
+      expiryTimer = window.setTimeout(updateAuthUser, delay);
+    };
+
     const updateAuthUser = () => {
       const nextUser = getAuthUser();
       setAuthUser(nextUser);
       if (!nextUser) {
         setIsChatOpen(false);
+        setIsNotificationOpen(false);
       }
+      scheduleExpiryCheck();
     };
+
     updateAuthUser();
     window.addEventListener("focus", updateAuthUser);
     window.addEventListener("storage", updateAuthUser);
+    window.addEventListener(authSessionChangeEvent, updateAuthUser);
     return () => {
+      if (expiryTimer) {
+        window.clearTimeout(expiryTimer);
+      }
       window.removeEventListener("focus", updateAuthUser);
       window.removeEventListener("storage", updateAuthUser);
+      window.removeEventListener(authSessionChangeEvent, updateAuthUser);
     };
   }, [pathname]);
 
