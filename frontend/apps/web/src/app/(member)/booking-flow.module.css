@@ -912,6 +912,14 @@
   min-width: 0;
 }
 
+.historyActions .historyBadge {
+  min-height: 36px;
+  justify-content: center;
+  padding: 8px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .historyActions .secondaryCta,
 .historyActions .ghostCta,
 .historyActions .dangerCta {
@@ -989,7 +997,7 @@
 .dialogTextArea {
   width: 100%;
   min-height: 104px;
-  resize: vertical;
+  resize: none;
   border: 1px solid rgba(212, 178, 106, 0.28);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.055);
@@ -1024,6 +1032,11 @@
 
 .dialogTextArea::placeholder {
   color: #8d887d;
+}
+
+.dialogError {
+  margin-top: 12px;
+  text-align: left;
 }
 
 .chatList {

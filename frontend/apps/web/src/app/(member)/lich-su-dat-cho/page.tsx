@@ -98,6 +98,34 @@ const toDateTimeInputValue = (value: string) => {
   return localDate.toISOString().slice(0, 16);
 };
 
+const parseDateTimeLocalValue = (value: string) => {
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute] = match;
+  const parsed = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    0,
+    0,
+  );
+
+  if (
+    parsed.getFullYear() !== Number(year) ||
+    parsed.getMonth() !== Number(month) - 1 ||
+    parsed.getDate() !== Number(day) ||
+    parsed.getHours() !== Number(hour) ||
+    parsed.getMinutes() !== Number(minute)
+  ) {
+    return null;
+  }
+
+  return parsed;
+};
+
 const normalizeRescheduleReason = (value: string) => value.trim().replace(/\s+/g, " ");
 
 const validateRescheduleRequest = ({
@@ -115,8 +143,8 @@ const validateRescheduleRequest = ({
     return "Vui lòng chọn ngày giờ mới.";
   }
 
-  const requestedDate = new Date(rescheduleAt);
-  if (!Number.isFinite(requestedDate.getTime())) {
+  const requestedDate = parseDateTimeLocalValue(rescheduleAt);
+  if (!requestedDate) {
     return "Ngày giờ mới không hợp lệ. Vui lòng kiểm tra lại.";
   }
 
@@ -124,11 +152,7 @@ const validateRescheduleRequest = ({
     return "Ngày giờ mới phải ở tương lai.";
   }
 
-  const currentDate = new Date(booking.scheduledAt);
-  if (
-    Number.isFinite(currentDate.getTime()) &&
-    currentDate.toISOString().slice(0, 16) === requestedDate.toISOString().slice(0, 16)
-  ) {
+  if (toDateTimeInputValue(booking.scheduledAt) === rescheduleAt.trim()) {
     return "Ngày giờ mới phải khác lịch đặt hiện tại.";
   }
 
@@ -475,7 +499,12 @@ export default function Page() {
       return;
     }
 
-    const requestedDate = new Date(rescheduleAt);
+    const requestedDate = parseDateTimeLocalValue(rescheduleAt);
+    if (!requestedDate) {
+      setRescheduleError("Ngày giờ mới không hợp lệ. Vui lòng kiểm tra lại.");
+      return;
+    }
+
     const normalizedReason = normalizeRescheduleReason(rescheduleReason);
     setReschedulingId(booking.id);
     setRescheduleError("");
@@ -486,9 +515,25 @@ export default function Page() {
         scheduledAt: requestedDate.toISOString(),
         reason: normalizedReason,
       };
-      await (useMemberApi
+      const changeRequest = await (useMemberApi
         ? bookingApi.requestMemberReschedule(booking.id, payload)
         : bookingApi.requestGuestReschedule(booking.id, { ...payload, phone: guestPhone }));
+      const nextScheduledAt = changeRequest.requestedScheduledAt ?? payload.scheduledAt;
+      const updatedBooking: BookingRecord = {
+        ...booking,
+        ...(changeRequest.booking ?? {}),
+        scheduledAt: nextScheduledAt,
+        store: changeRequest.booking?.store ?? booking.store,
+        cast: changeRequest.booking?.cast ?? booking.cast,
+        guest: changeRequest.booking?.guest ?? booking.guest,
+        user: changeRequest.booking?.user ?? booking.user,
+        coupon: changeRequest.booking?.coupon ?? booking.coupon,
+        couponIssue: changeRequest.booking?.couponIssue ?? booking.couponIssue,
+      };
+      setBookings((current) =>
+        current.map((item) => (item.id === booking.id ? updatedBooking : item)),
+      );
+      rememberLastBooking(updatedBooking);
       setPendingRescheduleBooking(null);
       setRescheduleAt("");
       setRescheduleMinAt("");
@@ -744,7 +789,11 @@ export default function Page() {
                 className={styles.dialogTextArea}
               />
             </label>
-            {rescheduleError ? <div className={styles.errorMessage}>{rescheduleError}</div> : null}
+            {rescheduleError ? (
+              <div className={`${styles.errorMessage} ${styles.dialogError}`}>
+                {rescheduleError}
+              </div>
+            ) : null}
             <div className={styles.dialogActions}>
               <button
                 type="button"
@@ -877,7 +926,7 @@ function BookingCard({
         <div className={styles.historyCopy}>
           <div className={styles.historyHead}>
             <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
-            <StatusBadge status={booking.status} />
+            {group !== "Đã hủy" ? <StatusBadge status={booking.status} /> : null}
           </div>
           <div className={styles.historyMeta}>
             {formatDateTime(booking.scheduledAt)} · {booking.partySize} người
@@ -969,10 +1018,13 @@ function BookingCard({
             </Link>
           </>
         ) : (
-          <Link href={rebookHref(booking)} className={styles.secondaryCta}>
-            <RotateCcw size={14} />
-            Đặt lại
-          </Link>
+          <>
+            <StatusBadge status={booking.status} />
+            <Link href={rebookHref(booking)} className={styles.secondaryCta}>
+              <RotateCcw size={14} />
+              Đặt lại
+            </Link>
+          </>
         )}
       </div>
     </article>
