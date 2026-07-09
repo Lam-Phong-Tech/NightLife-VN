@@ -43,6 +43,105 @@ const getPillStyle = (kind: string) => {
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
 const defaultHours = DAYS.reduce((acc, d) => ({ ...acc, [d]: { isOff: false, hours: '19:00 - 02:00' } }), {});
 
+const timeRangePattern = /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
+
+type OpeningHourDay = {
+  isOff?: boolean;
+  hours?: string;
+};
+
+type OpeningHourValidation = {
+  errors: Record<string, Record<number, string>>;
+  normalizedHours: Record<string, OpeningHourDay>;
+};
+
+const padHour = (value: number) => value.toString().padStart(2, '0');
+
+const parseOpeningHourSlot = (slot: string) => {
+  const value = slot.trim();
+  const match = value.match(timeRangePattern);
+  if (!match) {
+    return {
+      error: 'Nhập đúng dạng HH:mm - HH:mm, ví dụ 08:00 - 12:00.',
+      normalized: value,
+      overnight: false,
+    };
+  }
+
+  const openHour = Number(match[1]);
+  const openMinute = Number(match[2]);
+  const closeHour = Number(match[3]);
+  const closeMinute = Number(match[4]);
+
+  if (openHour > 23 || closeHour > 23 || openMinute > 59 || closeMinute > 59) {
+    return {
+      error: 'Giờ phải nằm trong 00:00 - 23:59.',
+      normalized: value,
+      overnight: false,
+    };
+  }
+
+  const openTotal = openHour * 60 + openMinute;
+  const closeTotal = closeHour * 60 + closeMinute;
+  if (openTotal === closeTotal) {
+    return {
+      error: 'Giờ kết thúc phải khác giờ bắt đầu.',
+      normalized: value,
+      overnight: false,
+    };
+  }
+
+  return {
+    error: '',
+    normalized: `${padHour(openHour)}:${match[2]} - ${padHour(closeHour)}:${match[4]}`,
+    overnight: closeTotal < openTotal,
+  };
+};
+
+const validateOpeningHours = (hours: Record<string, OpeningHourDay>): OpeningHourValidation => {
+  const errors: Record<string, Record<number, string>> = {};
+  const normalizedHours: Record<string, OpeningHourDay> = {};
+
+  DAYS.forEach((day) => {
+    const dayState = hours[day] || { isOff: false, hours: '' };
+    if (dayState.isOff) {
+      normalizedHours[day] = { ...dayState, isOff: true, hours: '' };
+      return;
+    }
+
+    const slots = String(dayState.hours || '').split(',').map((slot) => slot.trim());
+    const normalizedSlots: string[] = [];
+
+    slots.forEach((slot, index) => {
+      if (!slot) {
+        errors[day] = { ...(errors[day] || {}), [index]: 'Ngày đang mở cần có khung giờ.' };
+        return;
+      }
+
+      const result = parseOpeningHourSlot(slot);
+      if (result.error) {
+        errors[day] = { ...(errors[day] || {}), [index]: result.error };
+      }
+      normalizedSlots.push(result.normalized);
+    });
+
+    normalizedHours[day] = { ...dayState, isOff: false, hours: normalizedSlots.join(', ') };
+  });
+
+  return { errors, normalizedHours };
+};
+
+const firstOpeningHourError = (errors: Record<string, Record<number, string>>) => {
+  for (const day of DAYS) {
+    const dayErrors = errors[day];
+    if (!dayErrors) continue;
+    const firstIndex = Object.keys(dayErrors)[0];
+    if (firstIndex === undefined) continue;
+    return `${day}: ${dayErrors[Number(firstIndex)]}`;
+  }
+  return '';
+};
+
 export default function AdminStoresPage() {
   return (
     <React.Suspense fallback={<div style={{ padding: '20px', color: '#8c8679', fontSize: '13px' }}>Đang tải...</div>}>
@@ -314,6 +413,13 @@ function AdminStoresContent() {
         return;
       }
 
+      const openingHourValidation = validateOpeningHours(hoursForm);
+      const openingHourError = firstOpeningHourError(openingHourValidation.errors);
+      if (openingHourError) {
+        showToast(openingHourError);
+        return;
+      }
+
       let finalCity = formData.city;
       if (pName) {
          if (pName.includes('Hồ Chí Minh')) finalCity = 'Ho Chi Minh City';
@@ -326,7 +432,7 @@ function AdminStoresContent() {
         city: finalCity,
         tags,
         partnerAccountId: partnerAccountId || null,
-        openingHours: hoursForm,
+        openingHours: openingHourValidation.normalizedHours,
         pricingInfo: { groups: menuGroups },
         mediaIds: [coverImage?.id, ...albums.map(a => a.id), ...videos.map(v => v.id)].filter(Boolean)
       };
@@ -573,6 +679,7 @@ function AdminStoresContent() {
 
   const updateForm = (key: string, val: string) => setFormData(p => ({ ...p, [key]: val }));
   const updateHour = (day: string, key: string, val: any) => setHoursForm((p: any) => ({ ...p, [day]: { ...p[day], [key]: val } }));
+  const openingHourPreviewErrors = validateOpeningHours(hoursForm).errors;
 
   const getYoutubeThumb = (url: string) => {
     if (!url) return '';
@@ -892,21 +999,23 @@ function AdminStoresContent() {
                       <span style={{ width: '50px', flex: 'none', fontSize: '12px', fontWeight: 600, color: dayColor, lineHeight: '28px' }}>{day}</span>
                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
                         {!isOff && slots.map((sl: string, idx: number) => {
-                          const match = sl.match(/^(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/);
-                          let overnight = false;
-                          if (match) {
-                            const open = Number(match[1]) * 60 + Number(match[2] || 0);
-                            const close = Number(match[3]) * 60 + Number(match[4] || 0);
-                            if (close <= open) overnight = true;
-                          }
+
+                          const slotMeta = parseOpeningHourSlot(sl);
+                          const slotError = openingHourPreviewErrors[day]?.[idx];
+                          const overnight = !slotError && slotMeta.overnight;
                           return (
-                            <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(12,12,15,.45)', border: '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 10px' }}>
-                              <input value={sl} onChange={e => setSlotVal(idx, e.target.value)} placeholder="08:00 – 12:00" style={{ width: '96px', background: 'none', border: 'none', outline: 'none', color: '#f0dda8', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', letterSpacing: '.3px' }} />
+                            <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '2px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 10px' }}>
+                              <input value={sl} onChange={e => setSlotVal(idx, e.target.value)} placeholder="08:00 – 12:00" style={{ width: '96px', background: 'none', border: 'none', outline: 'none', color: slotError ? '#e88b99' : '#f0dda8', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', letterSpacing: '.3px' }} />
                               {overnight && <span title="Khung qua đêm — kết thúc vào sáng hôm sau" style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.5px', color: '#8fb6e4', background: 'rgba(143,182,228,.12)', border: '1px solid rgba(143,182,228,.3)', borderRadius: '5px', padding: '2.5px 5px', lineHeight: 1, cursor: 'help', marginRight: '2px' }}>+1</span>}
                               <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                             </span>
                           );
                         })}
+                        {!isOff && openingHourPreviewErrors[day] && (
+                          <span style={{ width: '100%', color: '#e88b99', fontSize: '10.5px', lineHeight: 1.35, marginTop: '-1px' }}>
+                            {Object.values(openingHourPreviewErrors[day])[0]}
+                          </span>
+                        )}
                         {!isOff && (
                           <span onClick={addSlot} title="Thêm khung giờ trong ngày" style={{ display: 'flex', alignItems: 'center', gap: '5px', border: '1.5px dashed rgba(212,178,106,.32)', borderRadius: '8px', padding: '5px 10px', fontSize: '10.5px', fontWeight: 700, color: '#8c8679', cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseEnter={e => { e.currentTarget.style.color = '#caa765'; e.currentTarget.style.borderColor = 'rgba(212,178,106,.55)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#8c8679'; e.currentTarget.style.borderColor = 'rgba(212,178,106,.32)'; }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>Khung giờ</span>
                         )}
