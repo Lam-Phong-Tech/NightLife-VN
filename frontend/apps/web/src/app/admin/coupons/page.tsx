@@ -242,31 +242,33 @@ export default function AdminCouponsPage() {
       </div>
 
       <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-          <span>Mã coupon</span><span>Ưu đãi</span><span>Quán áp dụng</span><span>Hạng</span><span>Hạn dùng</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '46px 132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <span>STT</span><span>Mã coupon</span><span>Ưu đãi</span><span>Quán áp dụng</span><span>Hạng</span><span>Hạn dùng</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
         {(() => {
           const startIndex = (currentPage - 1) * adminPageSize;
           const visibleIssues = issues.slice(startIndex, startIndex + adminPageSize);
-          return visibleIssues.map((c: any) => {
+          return visibleIssues.map((c: any, index: number) => {
             const coupon = c.coupon || c.adminCoupon;
             const meta = getStatusMeta(c.status);
             const tStyle = getTierStyle(c.user?.tier || c.guest?.tier || 'Member');
             const isExpired = c.status === 'EXPIRED';
             const dealStr = coupon ? renderDeal(coupon) : '';
+            const serialNum = (currentPage - 1) * adminPageSize + index + 1;
             
             return (
               <div 
                 key={c.id} onClick={() => setSelectedIssue(c)} 
                 className="nl-admin-table-row nl-admin-coupon-row"
                 style={{ 
-                  display: 'grid', gridTemplateColumns: '132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', alignItems: 'center', 
+                  display: 'grid', gridTemplateColumns: '46px 132px 1fr 1.3fr 96px 1.2fr 120px', gap: '12px', alignItems: 'center', 
                   padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', 
                   fontSize: '13px', opacity: isExpired ? 0.58 : 1, transition: 'background 0.2s' 
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
+                <span style={{ color: '#8c8679', fontSize: '12px' }}>{serialNum}</span>
                 <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a', letterSpacing: '.3px' }}>{formatCode(c)}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
                   <span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', whiteSpace: 'nowrap' }}>{dealStr}</span>
