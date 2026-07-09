@@ -87,6 +87,7 @@ export function BookingDateTimeFields({
   const max = parseDate(maxDate) ?? min.add(14, "day");
   const options = timeOptions.map((time) => ({ value: time, label: time }));
   const shouldDisableTime = disabled || loadingTimes || !timeOptions.length;
+  const selectedTimeValue = timeOptions.includes(timeValue) ? timeValue : undefined;
 
   return (
     <ConfigProvider locale={viVN} theme={bookingPickerTheme}>
@@ -136,7 +137,7 @@ export function BookingDateTimeFields({
             options={options}
             placeholder={loadingTimes ? "Đang tải khung giờ..." : "Chọn khung giờ"}
             popupClassName="nl-booking-select-popup"
-            value={timeValue || undefined}
+            value={selectedTimeValue}
           />
           {!loadingTimes && !timeOptions.length ? (
             <span className="nl-booking-empty-message">{emptyMessage}</span>
