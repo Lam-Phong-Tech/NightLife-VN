@@ -658,7 +658,37 @@ function AdminRankingsClient() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '240px', overflowY: 'auto' }}>
                 {filteredCastOptions.map(opt => (
                   <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                    <span style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '50%', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', border: '1.5px solid rgba(212,178,106,.3)' }}></span>
+                    {opt.image ? (
+                      <img
+                        src={opt.image}
+                        alt={opt.name}
+                        loading="lazy"
+                        style={{
+                          width: '34px',
+                          height: '34px',
+                          flex: 'none',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '1.5px solid rgba(212,178,106,.3)',
+                          background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)',
+                        }}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          const fallback = target.nextElementSibling as HTMLElement | null;
+                          if (fallback) fallback.style.display = 'block';
+                        }}
+                      />
+                    ) : null}
+                    <span style={{ 
+                      width: '34px', 
+                      height: '34px', 
+                      flex: 'none', 
+                      borderRadius: '50%', 
+                      background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', 
+                      border: '1.5px solid rgba(212,178,106,.3)',
+                      display: opt.image ? 'none' : 'block' 
+                    }}></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
                       <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.store?.name || 'Cast'}</div>
@@ -708,7 +738,42 @@ function AdminRankingsClient() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: '10px', maxHeight: '240px', overflowY: 'auto' }}>
                 {filteredStoreOptions.map(opt => (
                   <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: '11px', padding: '8px 10px' }}>
-                    <span style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '9px', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 700, fontSize: '12px' }}>{opt.name.substring(0,2).toUpperCase()}</span>
+                    {opt.image ? (
+                      <img
+                        src={opt.image}
+                        alt={opt.name}
+                        loading="lazy"
+                        style={{
+                          width: '34px',
+                          height: '34px',
+                          flex: 'none',
+                          borderRadius: '9px',
+                          objectFit: 'cover',
+                          border: '1.5px solid rgba(212,178,106,.3)',
+                          background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)',
+                        }}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          const fallback = target.nextElementSibling as HTMLElement | null;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <span style={{ 
+                      width: '34px', 
+                      height: '34px', 
+                      flex: 'none', 
+                      borderRadius: '9px', 
+                      background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', 
+                      border: '1.5px solid rgba(212,178,106,.3)',
+                      display: opt.image ? 'none' : 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      color: '#241a0a', 
+                      fontWeight: 700, 
+                      fontSize: '12px' 
+                    }}>{opt.name.substring(0,2).toUpperCase()}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{opt.name}</div>
                       <div style={{ fontSize: '11px', color: '#8c8679', marginTop: '1px' }}>{opt.category || 'Store'}</div>
