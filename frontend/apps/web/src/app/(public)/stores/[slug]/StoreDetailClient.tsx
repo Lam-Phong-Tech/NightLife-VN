@@ -2358,6 +2358,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.45;
         }
 
+        :global(html.vy-light) .booking-error {
+          border-color: rgba(194, 69, 92, .34);
+          background: rgba(194, 69, 92, .12);
+          color: #8f1f33;
+          font-weight: 760;
+        }
+
         .primary-action {
           background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
           color: var(--vy-on-gold);

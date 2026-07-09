@@ -49,12 +49,16 @@ import { ThemeToggle } from "./ThemeToggle";
 const colors = {
   bg: "var(--vy-bg)",
   navBg: "var(--vy-nav-bg)",
+  surface: "var(--vy-surface)",
+  surface2: "var(--vy-surface-2)",
+  border: "var(--vy-border)",
   borderGold12: "var(--vy-border-gold-12)",
   borderGold22: "var(--vy-border-gold-22)",
   borderGold32: "var(--vy-border-gold-32)",
   text: "var(--vy-text)",
   text2: "var(--vy-text-2)",
   muted: "var(--vy-muted)",
+  faint: "var(--vy-faint)",
   onGold: "#241a0a",
   gold: "var(--vy-gold)",
   goldPale: "var(--vy-gold-pale)",
@@ -310,7 +314,7 @@ function NotificationBellButton({
             maxHeight: "18px",
             borderRadius: "999px",
             background: "#e0729e",
-            border: "2px solid #15131a",
+            border: "2px solid var(--vy-nav-bg)",
             color: "#fff",
             fontSize: unreadCount > 9 ? "8px" : "10px",
             lineHeight: "1",
@@ -364,7 +368,7 @@ function NotificationTabs({
         gap: "7px",
         padding: isMobile ? "0 16px 12px" : "0 16px 12px",
         overflowX: isMobile ? "auto" : "hidden",
-        borderBottom: `1px solid rgba(255,255,255,.06)`,
+        borderBottom: `1px solid ${colors.border}`,
         scrollbarWidth: "none",
       }}
     >
@@ -386,8 +390,8 @@ function NotificationTabs({
               color: active ? colors.onGold : colors.text2,
               background: active
                 ? "linear-gradient(135deg,#f0dda8,#d4b26a)"
-                : "rgba(255,255,255,.05)",
-              border: active ? "0" : "1px solid rgba(255,255,255,.1)",
+                : colors.surface2,
+              border: active ? "0" : `1px solid ${colors.border}`,
               borderRadius: "15px",
               padding: isMobile ? "7px 13px" : "6px 12px",
               fontFamily: "var(--nl-font-sans)",
@@ -433,9 +437,9 @@ function NoticeRow({
     gap: "12px",
     padding: "11px 16px",
     alignItems: "flex-start",
-    background: notice.unread ? "rgba(212,178,106,.06)" : "transparent",
+    background: notice.unread ? "var(--vy-gold-soft-bg)" : "transparent",
     border: 0,
-    borderBottom: "1px solid rgba(255,255,255,.05)",
+    borderBottom: `1px solid ${colors.border}`,
     position: "relative",
     width: "100%",
     textAlign: "left",
@@ -482,7 +486,7 @@ function NoticeRow({
           >
             {notice.title}
           </span>
-          <span style={{ fontSize: isMobile ? "10.5px" : "11px", color: "#6f6b62", flex: "none" }}>
+          <span style={{ fontSize: isMobile ? "10.5px" : "11px", color: colors.faint, flex: "none" }}>
             {notice.time}
           </span>
         </div>
@@ -794,9 +798,9 @@ function DesktopNotificationDropdown({
           right: "72px",
           width: "14px",
           height: "14px",
-          background: "#16141b",
-          borderLeft: "1px solid rgba(255,255,255,.08)",
-          borderTop: "1px solid rgba(255,255,255,.08)",
+          background: colors.surface,
+          borderLeft: `1px solid ${colors.border}`,
+          borderTop: `1px solid ${colors.border}`,
           transform: "rotate(45deg)",
           zIndex: 101,
         }}
@@ -812,10 +816,10 @@ function DesktopNotificationDropdown({
           right: "18px",
           zIndex: 101,
           width: "min(404px, calc(100vw - 36px))",
-          background: "#16141b",
-          border: "1px solid rgba(255,255,255,.08)",
+          background: colors.surface,
+          border: `1px solid ${colors.border}`,
           borderRadius: "16px",
-          boxShadow: "0 30px 70px -24px rgba(0,0,0,.85)",
+          boxShadow: "var(--vy-shadow)",
           overflow: "hidden",
           color: colors.text,
           fontFamily: "var(--nl-font-sans)",
@@ -890,7 +894,7 @@ function DesktopNotificationDropdown({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "12px 16px",
-            borderTop: "1px solid rgba(255,255,255,.06)",
+            borderTop: `1px solid ${colors.border}`,
           }}
         >
           <Link
@@ -918,7 +922,7 @@ function DesktopNotificationDropdown({
               border: 0,
               padding: 0,
               background: "transparent",
-              color: "#9b958a",
+              color: colors.muted,
               fontSize: "12px",
               fontFamily: "var(--nl-font-sans)",
               cursor: "pointer",
@@ -963,10 +967,10 @@ function MobileNotificationPanel({
         left: "10px",
         zIndex: 101,
         maxHeight: "min(68vh, 560px)",
-        background: "#16141b",
-        border: "1px solid rgba(255,255,255,.09)",
+        background: colors.surface,
+        border: `1px solid ${colors.border}`,
         borderRadius: "18px",
-        boxShadow: "0 22px 60px -24px rgba(0,0,0,.92)",
+        boxShadow: "var(--vy-shadow)",
         color: colors.text,
         fontFamily: "var(--nl-font-sans)",
         display: "flex",
@@ -991,8 +995,8 @@ function MobileNotificationPanel({
             width: "36px",
             height: "36px",
             borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,.12)",
-            background: "transparent",
+            border: `1px solid ${colors.border}`,
+            background: colors.surface2,
             color: colors.text,
             display: "flex",
             alignItems: "center",
@@ -1032,9 +1036,9 @@ function MobileNotificationPanel({
             width: "36px",
             height: "36px",
             borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,.12)",
-            background: "transparent",
-            color: "#9b958a",
+            border: `1px solid ${colors.border}`,
+            background: colors.surface2,
+            color: colors.muted,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1055,7 +1059,7 @@ function MobileNotificationPanel({
           gap: "12px",
         }}
       >
-        <span style={{ fontSize: "11.5px", color: "#9b958a" }}>
+        <span style={{ fontSize: "11.5px", color: colors.muted }}>
           <b style={{ color: colors.goldPale }}>{unreadCount}</b> thông báo chưa đọc
         </span>
         <button
