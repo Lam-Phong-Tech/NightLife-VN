@@ -8711,7 +8711,14 @@ export class NightlifeDataService {
       }
     }
 
-    if (phone && !/^[0-9+\-\s().]{8,20}$/.test(phone)) {
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (
+      phone &&
+      (!/^[0-9+\-\s().]{8,20}$/.test(phone) ||
+        phoneDigits.length < 8 ||
+        phoneDigits.length > 15 ||
+        /^(\d)\1+$/.test(phoneDigits))
+    ) {
       throw new BadRequestException('phone must be a valid phone number');
     }
 

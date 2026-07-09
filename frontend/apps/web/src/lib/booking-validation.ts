@@ -4,6 +4,9 @@ export const bookingValidationLimits = {
   maxGuests: 50,
   maxNameLength: 80,
   maxNoteLength: 300,
+  maxPhoneDigits: 15,
+  maxPhoneLength: 20,
+  minPhoneDigits: 8,
   minNameLength: 2,
 } as const;
 
@@ -11,6 +14,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const emailDomainLabelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 const displayNamePattern = /^[\p{L}\s]+$/u;
 const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
+const phonePattern = /^[0-9+\-\s().]+$/;
 
 export const normalizeBookingDisplayName = (value: string) =>
   value.trim().replace(/\s+/g, " ");
@@ -21,6 +25,13 @@ export const sanitizeBookingDisplayNameInput = (value: string) =>
 export const normalizeBookingEmail = (value: string) => value.trim().toLowerCase();
 
 export const normalizeBookingNote = (value: string) => value.trim();
+
+export const normalizeBookingPhone = (value: string) => value.trim().replace(/\s+/g, " ");
+
+export const sanitizeBookingPhoneInput = (value: string) =>
+  value.replace(/[^0-9+\-\s().]/g, "").replace(/\s{2,}/g, " ");
+
+const phoneDigits = (value: string) => value.replace(/\D/g, "");
 
 export function validateBookingDisplayName(value: string) {
   if (!value) {
@@ -90,6 +101,35 @@ export function validateBookingEmail(value: string) {
 
   if (!emailPattern.test(value)) {
     return "Email chưa đúng định dạng.";
+  }
+
+  return "";
+}
+
+export function validateBookingPhone(value: string, options: { required?: boolean } = {}) {
+  const normalizedPhone = normalizeBookingPhone(value);
+  if (!normalizedPhone) {
+    return options.required ? "Vui lòng nhập số điện thoại." : "";
+  }
+
+  if (normalizedPhone.length > bookingValidationLimits.maxPhoneLength) {
+    return `Số điện thoại tối đa ${bookingValidationLimits.maxPhoneLength} ký tự.`;
+  }
+
+  if (!phonePattern.test(normalizedPhone)) {
+    return "Số điện thoại chỉ được nhập số và các ký tự + - ( ) .";
+  }
+
+  const digits = phoneDigits(normalizedPhone);
+  if (
+    digits.length < bookingValidationLimits.minPhoneDigits ||
+    digits.length > bookingValidationLimits.maxPhoneDigits
+  ) {
+    return `Số điện thoại phải có từ ${bookingValidationLimits.minPhoneDigits} đến ${bookingValidationLimits.maxPhoneDigits} chữ số.`;
+  }
+
+  if (/^(\d)\1+$/.test(digits)) {
+    return "Số điện thoại không được nhập một chữ số lặp lại.";
   }
 
   return "";
@@ -176,6 +216,7 @@ export function validateBookingFormFields({
   guestCount,
   maxDate,
   note,
+  phone,
   scheduledAt,
   todayDate,
 }: {
@@ -187,12 +228,14 @@ export function validateBookingFormFields({
   guestCount: number;
   maxDate: string;
   note: string;
+  phone?: string;
   scheduledAt: string;
   todayDate: string;
 }) {
   return (
     validateBookingDisplayName(displayName) ||
     validateBookingEmail(email) ||
+    validateBookingPhone(phone ?? "") ||
     validateBookingGuestCount(guestCount) ||
     validateBookingDate({ bookingDate, maxDate, todayDate }) ||
     validateBookingTime({ availableTimes, bookingTime, scheduledAt }) ||

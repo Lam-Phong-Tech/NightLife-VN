@@ -18,11 +18,13 @@ import { getAuthUser } from "@/lib/auth/session";
 import { useSocket } from "@/components/providers/SocketProvider";
 import {
   bookingApi,
-  bookingStatusGroup,
-  bookingStatusLabel,
+  bookingRecordStatusGroup,
+  bookingRecordStatusLabel,
   canCancelBooking,
+  isBookingPastDue,
   mergeBookingHistories,
   rememberLastBooking,
+  sortBookingHistories,
   type BookingChatMessage,
   type BookingRecord,
   type BookingStatusGroup,
@@ -214,6 +216,10 @@ const rebookHref = (booking: BookingRecord) => {
 };
 
 const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
+  if (isBookingPastDue(booking)) {
+    return `${bookingCode(booking)} · Đã qua giờ đặt, bạn có thể đặt lại nếu cần.`;
+  }
+
   if (group === "Hoàn tất") {
     return "Hoàn tất · gắn điểm/hoá đơn khi đối soát";
   }
@@ -292,7 +298,7 @@ export default function Page() {
           }));
           if (alive) {
             setMemberUserId(resolvedMemberUserId);
-            setBookings(memberBookings);
+            setBookings(sortBookingHistories(memberBookings));
           }
           return;
         }
@@ -352,19 +358,21 @@ export default function Page() {
           return mergeBookingHistories([updatedBooking], current);
         }
 
-        return current.map((booking) =>
-          booking.id === updatedBooking.id
-            ? {
-                ...booking,
-                ...updatedBooking,
-                store: updatedBooking.store ?? booking.store,
-                cast: updatedBooking.cast ?? booking.cast,
-                guest: updatedBooking.guest ?? booking.guest,
-                user: updatedBooking.user ?? booking.user,
-                coupon: updatedBooking.coupon ?? booking.coupon,
-                couponIssue: updatedBooking.couponIssue ?? booking.couponIssue,
-              }
-            : booking,
+        return sortBookingHistories(
+          current.map((booking) =>
+            booking.id === updatedBooking.id
+              ? {
+                  ...booking,
+                  ...updatedBooking,
+                  store: updatedBooking.store ?? booking.store,
+                  cast: updatedBooking.cast ?? booking.cast,
+                  guest: updatedBooking.guest ?? booking.guest,
+                  user: updatedBooking.user ?? booking.user,
+                  coupon: updatedBooking.coupon ?? booking.coupon,
+                  couponIssue: updatedBooking.couponIssue ?? booking.couponIssue,
+                }
+              : booking,
+          ),
         );
       });
     };
@@ -380,7 +388,7 @@ export default function Page() {
     () =>
       activeTab === "Tất cả"
         ? bookings
-        : bookings.filter((booking) => bookingStatusGroup(booking.status) === activeTab),
+        : bookings.filter((booking) => bookingRecordStatusGroup(booking) === activeTab),
     [activeTab, bookings],
   );
   const rescheduleOpeningHours = pendingRescheduleBooking?.store?.openingHours ?? null;
@@ -457,7 +465,7 @@ export default function Page() {
           });
       const mergedBooking = { ...booking, ...cancelledBooking };
       setBookings((current) =>
-        current.map((item) => (item.id === booking.id ? mergedBooking : item)),
+        sortBookingHistories(current.map((item) => (item.id === booking.id ? mergedBooking : item))),
       );
       rememberLastBooking(mergedBooking);
       setPendingCancelBooking(null);
@@ -566,7 +574,7 @@ export default function Page() {
         couponIssue: rescheduledBooking.couponIssue ?? booking.couponIssue,
       };
       setBookings((current) =>
-        current.map((item) => (item.id === booking.id ? updatedBooking : item)),
+        sortBookingHistories(current.map((item) => (item.id === booking.id ? updatedBooking : item))),
       );
       rememberLastBooking(updatedBooking);
       setPendingRescheduleBooking(null);
@@ -964,7 +972,7 @@ function BookingCard({
   onReschedule: (booking: BookingRecord) => void;
   onChat: (booking: BookingRecord) => void;
 }) {
-  const group = bookingStatusGroup(booking.status);
+  const group = bookingRecordStatusGroup(booking);
   const isOpenBooking = group === "Mới";
   const hasQr = isConfirmedStatus(booking.status);
   const isMemberActionBooking =
@@ -992,7 +1000,7 @@ function BookingCard({
         <div className={styles.historyCopy}>
           <div className={styles.historyHead}>
             <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
-            {group !== "Đã hủy" ? <StatusBadge status={booking.status} /> : null}
+            {group !== "Đã hủy" ? <StatusBadge booking={booking} /> : null}
           </div>
           <div className={styles.historyMeta}>
             {formatDateTime(booking.scheduledAt)} · {booking.partySize} người
@@ -1085,7 +1093,7 @@ function BookingCard({
           </>
         ) : (
           <>
-            <StatusBadge status={booking.status} />
+            <StatusBadge booking={booking} />
             <Link href={rebookHref(booking)} className={styles.secondaryCta}>
               <RotateCcw size={14} />
               Đặt lại
@@ -1097,8 +1105,8 @@ function BookingCard({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const group = bookingStatusGroup(status);
+function StatusBadge({ booking }: { booking: BookingRecord }) {
+  const group = bookingRecordStatusGroup(booking);
   const className =
     group === "Hoàn tất"
       ? `${styles.historyBadge} ${styles.historyBadgeDone}`
@@ -1113,7 +1121,7 @@ function StatusBadge({ status }: { status: string }) {
       ) : group === "Mới" ? (
         <span className={styles.statusDot} />
       ) : null}
-      {bookingStatusLabel(status)}
+      {bookingRecordStatusLabel(booking)}
     </span>
   );
 }

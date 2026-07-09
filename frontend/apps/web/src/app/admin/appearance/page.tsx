@@ -149,11 +149,15 @@ const parseCssColor = (value?: string) => {
   if (raw.startsWith('#')) return expandHexColor(raw);
   const rgbMatch = raw.match(/rgba?\(([^)]+)\)/);
   if (rgbMatch) {
-    const parts = rgbMatch[1].split(',').map((part) => part.trim());
+    const rgbBody = rgbMatch[1];
+    if (!rgbBody) return undefined;
+    const parts = rgbBody.split(',').map((part) => part.trim());
     if (parts.length >= 3) {
-      const alpha = parts[3] === undefined ? 1 : Number(parts[3]);
+      const alpha: number = parts[3] === undefined ? 1 : Number(parts[3]);
       if (Number.isFinite(alpha) && alpha <= 0.05) return undefined;
-      const [r, g, b] = parts.map((part) => Number(part.replace('%', '')));
+      const r = Number(parts[0]?.replace('%', ''));
+      const g = Number(parts[1]?.replace('%', ''));
+      const b = Number(parts[2]?.replace('%', ''));
       if ([r, g, b].every(Number.isFinite)) return rgbToHex(r, g, b);
     }
   }
@@ -235,13 +239,15 @@ const extractPngDominantColor = (file: File) =>
         const data = ctx.getImageData(0, 0, size, size).data;
         const samples: string[] = [];
         for (let i = 0; i < data.length; i += 16) {
-          const alpha = data[i + 3];
+          const alpha = data[i + 3] ?? 0;
           if (alpha < 80) continue;
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const quantized = [r, g, b].map((value) => Math.round(value / 24) * 24);
-          samples.push(rgbToHex(quantized[0], quantized[1], quantized[2]));
+          const r = data[i] ?? 0;
+          const g = data[i + 1] ?? 0;
+          const b = data[i + 2] ?? 0;
+          const quantizedR = Math.round(r / 24) * 24;
+          const quantizedG = Math.round(g / 24) * 24;
+          const quantizedB = Math.round(b / 24) * 24;
+          samples.push(rgbToHex(quantizedR, quantizedG, quantizedB));
         }
         resolve(chooseDominantColor(samples));
       } catch (err) {

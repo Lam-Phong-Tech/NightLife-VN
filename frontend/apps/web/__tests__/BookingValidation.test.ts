@@ -6,6 +6,7 @@ import {
   validateBookingDisplayName,
   validateBookingEmail,
   validateBookingFormFields,
+  validateBookingPhone,
 } from "../src/lib/booking-validation";
 
 describe("booking validation", () => {
@@ -40,6 +41,19 @@ describe("booking validation", () => {
     );
   });
 
+  it("rejects invalid phone numbers used by legacy guest booking flows", () => {
+    expect(validateBookingPhone("abc0901234567")).toBe(
+      "Số điện thoại chỉ được nhập số và các ký tự + - ( ) .",
+    );
+    expect(validateBookingPhone("11111111")).toBe(
+      "Số điện thoại không được nhập một chữ số lặp lại.",
+    );
+    expect(validateBookingPhone("0901234")).toBe(
+      "Số điện thoại phải có từ 8 đến 15 chữ số.",
+    );
+    expect(validateBookingPhone("+84 901 234 567")).toBe("");
+  });
+
   it("validates the full booking form before submit", () => {
     expect(
       validateBookingFormFields({
@@ -51,6 +65,7 @@ describe("booking validation", () => {
         guestCount: 4,
         maxDate: "2026-07-22",
         note: "",
+        phone: "0901234567",
         scheduledAt: "2099-07-08T14:00:00.000Z",
         todayDate: "2026-07-08",
       }),
@@ -66,6 +81,7 @@ describe("booking validation", () => {
         guestCount: 4,
         maxDate: "2026-07-22",
         note: "x".repeat(301),
+        phone: "0901234567",
         scheduledAt: "2099-07-08T14:00:00.000Z",
         todayDate: "2026-07-08",
       }),

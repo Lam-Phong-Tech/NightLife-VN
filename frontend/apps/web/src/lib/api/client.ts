@@ -126,7 +126,6 @@ const exactMessageTranslations: Record<string, string> = {
   "member coupon issue cannot be linked to a guest booking":
     "Mã ưu đãi hội viên không thể dùng cho booking khách vãng lai.",
   "message is required": "Vui lòng nhập tin nhắn.",
-  "new booking time must be in the future": "Thời gian đặt mới phải ở tương lai.",
   "partner request not found": "Không tìm thấy hồ sơ đối tác.",
   "payload is required": "Thiếu dữ liệu gửi lên.",
   "phone is required": "Vui lòng nhập số điện thoại.",

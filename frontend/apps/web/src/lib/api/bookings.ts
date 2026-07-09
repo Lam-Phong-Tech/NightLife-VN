@@ -198,15 +198,51 @@ const toApiParams = (params?: Record<string, string | number | undefined>) => {
   );
 };
 
-export const bookingStatusGroup = (status: string): BookingStatusGroup => {
+const openBookingStatuses = new Set(["REQUESTED", "CONFIRMED"]);
+const completedBookingStatuses = new Set(["COMPLETED", "CHECKED_IN"]);
+const cancelledBookingStatuses = new Set(["CANCELLED", "NO_SHOW"]);
+
+const toBookingTimestamp = (value?: string | null) => {
+  const time = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(time) ? time : 0;
+};
+
+export const isBookingPastDue = (booking: Pick<BookingRecord, "status" | "scheduledAt">) => {
+  const normalizedStatus = booking.status.trim().toUpperCase();
+  if (!openBookingStatuses.has(normalizedStatus)) {
+    return false;
+  }
+
+  const scheduledAt = toBookingTimestamp(booking.scheduledAt);
+  return scheduledAt > 0 && scheduledAt < Date.now();
+};
+
+export const bookingStatusGroup = (status: string, scheduledAt?: string): BookingStatusGroup => {
   const normalizedStatus = status.trim().toUpperCase();
-  if (normalizedStatus === "COMPLETED" || normalizedStatus === "CHECKED_IN") return "Hoàn tất";
-  if (normalizedStatus === "CANCELLED" || normalizedStatus === "NO_SHOW") return "Đã hủy";
+  if (completedBookingStatuses.has(normalizedStatus)) return "Hoàn tất";
+  if (cancelledBookingStatuses.has(normalizedStatus)) return "Đã hủy";
+  const scheduledTime = toBookingTimestamp(scheduledAt);
+  if (
+    openBookingStatuses.has(normalizedStatus) &&
+    scheduledTime > 0 &&
+    scheduledTime < Date.now()
+  ) {
+    return "Hoàn tất";
+  }
   return "Mới";
 };
 
-export const bookingStatusLabel = (status: string) => {
+export const bookingStatusLabel = (status: string, scheduledAt?: string) => {
   const normalizedStatus = status.trim().toUpperCase();
+  const scheduledTime = toBookingTimestamp(scheduledAt);
+  if (
+    openBookingStatuses.has(normalizedStatus) &&
+    scheduledTime > 0 &&
+    scheduledTime < Date.now()
+  ) {
+    return "Đã qua giờ";
+  }
+
   const labels: Record<string, string> = {
     REQUESTED: "Mới",
     CONFIRMED: "Đã xác nhận",
@@ -218,6 +254,12 @@ export const bookingStatusLabel = (status: string) => {
 
   return labels[normalizedStatus] ?? status;
 };
+
+export const bookingRecordStatusGroup = (booking: Pick<BookingRecord, "status" | "scheduledAt">) =>
+  bookingStatusGroup(booking.status, booking.scheduledAt);
+
+export const bookingRecordStatusLabel = (booking: Pick<BookingRecord, "status" | "scheduledAt">) =>
+  bookingStatusLabel(booking.status, booking.scheduledAt);
 
 export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "scheduledAt" | "store">) => {
   const normalizedStatus = booking.status.trim().toUpperCase();
@@ -231,11 +273,11 @@ export const canCancelBooking = (booking: Pick<BookingRecord, "status" | "schedu
   return Number.isFinite(scheduledAt) && scheduledAt - Date.now() >= cutoffMinutes * 60 * 1000;
 };
 
-const bookingTimeValue = (booking: BookingRecord) => {
-  const value = booking.createdAt ?? booking.scheduledAt;
-  const time = value ? new Date(value).getTime() : 0;
-  return Number.isFinite(time) ? time : 0;
-};
+const bookingTimeValue = (booking: BookingRecord) =>
+  toBookingTimestamp(booking.scheduledAt) || toBookingTimestamp(booking.createdAt);
+
+export const sortBookingHistories = (bookings: BookingRecord[]) =>
+  [...bookings].sort((a, b) => bookingTimeValue(b) - bookingTimeValue(a));
 
 export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
   const bookingsById = new Map<string, BookingRecord>();
@@ -250,9 +292,7 @@ export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
     }
   }
 
-  return Array.from(bookingsById.values())
-    .sort((a, b) => bookingTimeValue(b) - bookingTimeValue(a))
-    .slice(0, maxStoredBookings);
+  return sortBookingHistories(Array.from(bookingsById.values())).slice(0, maxStoredBookings);
 };
 
 const readStoredBookings = () => {
