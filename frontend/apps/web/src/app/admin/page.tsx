@@ -185,9 +185,7 @@ function AdminDashboardContent() {
             </div>
             <div style={{ color: '#c5c0b6', fontSize: '13px', marginTop: '2px' }}>
               Hệ thống đang sử dụng <b>{storageUsage.used}GB / {storageUsage.limit}GB</b> ({storageUsage.percentage}%). 
-              {storageUsage.isExceeded 
-                ? (user?.role === 'SUPER_ADMIN' ? ' Chức năng upload đã bị khóa tạm thời. Vui lòng dọn dẹp dữ liệu hoặc nâng cấp VPS.' : ' Chức năng upload đã bị khóa tạm thời do hệ thống đầy dung lượng. Vui lòng báo cáo lại với cấp trên.') 
-                : (user?.role === 'SUPER_ADMIN' ? ' Hãy kiểm tra và lên kế hoạch nâng cấp dung lượng VPS.' : ' Hãy báo cáo với cấp trên để chuẩn bị nâng cấp.')}
+              {storageUsage.isExceeded ? ' Chức năng upload đã bị khóa tạm thời. Vui lòng dọn dẹp dữ liệu hoặc nâng cấp VPS.' : ' Hãy kiểm tra và lên kế hoạch nâng cấp dung lượng VPS.'}
             </div>
           </div>
         </div>

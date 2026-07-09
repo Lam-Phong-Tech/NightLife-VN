@@ -438,28 +438,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
                 <div style={{ height: '100%', width: `${Math.min(storageUsage.percentage, 100)}%`, background: storageUsage.isExceeded ? '#f44336' : (storageUsage.percentage >= 90 ? '#ff9800' : '#d4b26a'), borderRadius: '2px' }} />
               </div>
-              {currentUser?.role === 'SUPER_ADMIN' && (
-                <Link
-                  href="/admin/system/storage"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(212,178,106,0.3)',
-                    color: '#d4b26a',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    background: 'rgba(212,178,106,0.05)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Mua thêm bộ nhớ
-                </Link>
-              )}
+              <Link
+                href="/admin/system/storage"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(212,178,106,0.3)',
+                  color: '#d4b26a',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  background: 'rgba(212,178,106,0.05)',
+                  cursor: 'pointer'
+                }}
+              >
+                Mua thêm bộ nhớ
+              </Link>
             </div>
           )}
 
@@ -533,9 +531,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div style={{ position: 'absolute', top: '50px', right: 0, width: '320px', background: '#1c1b22', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 100 }}>
                 <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f3f0ea' }}>Thông báo</h4>
                 {storageUsage?.isExceeded && (
-                  <div style={{ background: 'rgba(244, 67, 54, 0.1)', border: '1px solid rgba(244, 67, 54, 0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '8px', cursor: currentUser?.role === 'SUPER_ADMIN' ? 'pointer' : 'default' }} onClick={() => { if(currentUser?.role === 'SUPER_ADMIN') { setShowNotifications(false); window.location.href = '/admin/system/storage'; } }}>
+                  <div style={{ background: 'rgba(244, 67, 54, 0.1)', border: '1px solid rgba(244, 67, 54, 0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => { setShowNotifications(false); window.location.href = '/admin/system/storage'; }}>
                     <div style={{ color: '#f44336', fontSize: '13px', fontWeight: 600 }}>Dung lượng VPS đã đầy!</div>
-                    <div style={{ color: '#c5c0b6', fontSize: '12px', marginTop: '4px' }}>Hệ thống đang bị ngưng upload. {currentUser?.role === 'SUPER_ADMIN' ? 'Nhấp vào để xem chi tiết.' : 'Vui lòng báo lại với cấp trên.'}</div>
+                    <div style={{ color: '#c5c0b6', fontSize: '12px', marginTop: '4px' }}>Hệ thống đang bị ngưng upload. Nhấp vào để xem chi tiết.</div>
                   </div>
                 )}
                 {badges.pendingBills > 0 && (
