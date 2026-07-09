@@ -209,7 +209,11 @@ export const buildBookingTimeSlots = (openingHours: OpeningHoursInput, dateIso: 
   }
 
   const firstSlot = range.openMinutes + 60;
-  const lastSlot = closeMinutes - 60;
+  let lastSlot = closeMinutes - 60;
+
+  if (lastSlot > 1440) {
+    lastSlot = 1440;
+  }
 
   if (firstSlot > lastSlot) return [];
 
