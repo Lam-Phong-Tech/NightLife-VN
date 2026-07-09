@@ -43,12 +43,96 @@ const getPillStyle = (kind: string) => {
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
 const DEFAULT_OPENING_SLOT = '19:00 - 02:00';
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
-  const totalMinutes = index * 30;
-  const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-  const minute = (totalMinutes % 60).toString().padStart(2, '0');
-  return `${hour}:${minute}`;
+const TIME_OPTIONS = Array.from({ length: 24 }, (_, index) => {
+  const hour = index.toString().padStart(2, '0');
+  return `${hour}:00`;
 });
+
+function CustomTimeSelect({ value, onChange, placeholder, hasError }: { value: string; onChange: (val: string) => void; placeholder: string; hasError?: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const strokeColor = hasError ? '#e88b99' : '#f0dda8';
+  const textColor = hasError ? '#e88b99' : '#f0dda8';
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'transparent',
+          color: value ? textColor : '#8c8679',
+          fontSize: '12.5px',
+          fontWeight: 700,
+          cursor: 'pointer',
+          minWidth: '82px',
+          padding: '4px 6px',
+        }}
+      >
+        <span>{value || placeholder}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={strokeColor} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '6px', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </div>
+      
+      {isOpen && (
+        <div className="nl-custom-scrollbar" style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          marginTop: '6px',
+          width: '90px',
+          maxHeight: '180px',
+          overflowY: 'auto',
+          background: '#1c1c24',
+          border: '1px solid rgba(255,255,255,.08)',
+          borderRadius: '8px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          zIndex: 100,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '4px'
+        }}>
+          {TIME_OPTIONS.map(time => (
+            <div
+              key={time}
+              onClick={() => {
+                onChange(time);
+                setIsOpen(false);
+              }}
+              style={{
+                padding: '7px 10px',
+                fontSize: '12.5px',
+                color: value === time ? '#f0dda8' : '#f3f0ea',
+                background: value === time ? 'rgba(212,178,106,.15)' : 'transparent',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = value === time ? 'rgba(212,178,106,.2)' : 'rgba(255,255,255,.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = value === time ? 'rgba(212,178,106,.15)' : 'transparent'}
+            >
+              {time}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 const defaultHours = DAYS.reduce((acc, d) => ({ ...acc, [d]: { isOff: false, hours: DEFAULT_OPENING_SLOT } }), {});
 
 const timeRangePattern = /^(\d{1,2}):(\d{2})\s*[-–—]\s*(\d{1,2}):(\d{2})$/;
@@ -1063,35 +1147,21 @@ function AdminStoresContent() {
                           const slotError = openingHourPreviewErrors[day]?.[idx];
                           const overnight = !slotError && slotMeta.overnight;
                           const slotParts = splitOpeningHourSlot(sl);
-                          const strokeColor = slotError ? '%23e88b99' : '%23f0dda8';
-                          const timeSelectStyle = {
-                            background: 'transparent',
-                            border: 'none',
-                            outline: 'none',
-                            color: slotError ? '#e88b99' : '#f0dda8',
-                            fontSize: '12.5px',
-                            fontWeight: 700,
-                            fontFamily: 'inherit',
-                            cursor: 'pointer',
-                            minWidth: '78px',
-                            paddingRight: '14px',
-                            appearance: 'none' as const,
-                            WebkitAppearance: 'none' as const,
-                            backgroundPosition: 'right 2px center',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${strokeColor}' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-                          };
                           return (
                             <span key={idx} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(12,12,15,.45)', border: slotError ? '1px solid rgba(232,139,153,.55)' : '1px solid rgba(212,178,106,.2)', borderRadius: '8px', padding: '3px 4px 3px 8px' }}>
-                              <select value={slotParts.open} onChange={e => setSlotTime(idx, 'open', e.target.value)} aria-label={`${day} giờ mở cửa`} style={timeSelectStyle}>
-                                <option value="" style={{ background: '#1c1c24', color: '#f3f0ea' }}>Mở lúc</option>
-                                {TIME_OPTIONS.map(time => <option key={time} value={time} style={{ background: '#1c1c24', color: '#f3f0ea' }}>{time}</option>)}
-                              </select>
+                              <CustomTimeSelect 
+                                value={slotParts.open} 
+                                onChange={val => setSlotTime(idx, 'open', val)} 
+                                placeholder="Mở lúc" 
+                                hasError={!!slotError} 
+                              />
                               <span style={{ color: '#6e6a60', fontSize: '12px', fontWeight: 700 }}>–</span>
-                              <select value={slotParts.close} onChange={e => setSlotTime(idx, 'close', e.target.value)} aria-label={`${day} giờ đóng cửa`} style={timeSelectStyle}>
-                                <option value="" style={{ background: '#1c1c24', color: '#f3f0ea' }}>Đóng lúc</option>
-                                {TIME_OPTIONS.map(time => <option key={time} value={time} style={{ background: '#1c1c24', color: '#f3f0ea' }}>{time}</option>)}
-                              </select>
+                              <CustomTimeSelect 
+                                value={slotParts.close} 
+                                onChange={val => setSlotTime(idx, 'close', val)} 
+                                placeholder="Đóng lúc" 
+                                hasError={!!slotError} 
+                              />
                               <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                             </span>
                           );
