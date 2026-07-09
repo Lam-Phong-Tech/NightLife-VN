@@ -492,16 +492,44 @@ describe('NightlifeDataService', () => {
         where: {
           deletedAt: null,
           status: 'ACTIVE',
-          AND: [
-            {
-              area: {
-                is: {
-                  deletedAt: null,
-                  status: 'ACTIVE',
-                },
-              },
-            },
-          ],
+        },
+      }),
+    );
+  });
+
+  it('includes active all-city stores without an area relation', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-meo-meo',
+        createdAt: new Date('2026-07-09T00:00:00.000Z'),
+        name: 'Meo Meo',
+        slug: 'meo-meo',
+        category: 'CLUB',
+        description: null,
+        address: 'Kim Thanh, Ninh Binh',
+        city: 'Tinh Ninh Binh',
+        district: null,
+        latitude: null,
+        longitude: null,
+        area: null,
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({ city: 'all' });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        slug: 'meo-meo',
+        city: 'Tinh Ninh Binh',
+        area: null,
+      }),
+    ]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
         },
       }),
     );
@@ -1229,16 +1257,57 @@ describe('NightlifeDataService', () => {
           store: {
             deletedAt: null,
             status: 'ACTIVE',
-            AND: [
-              {
-                area: {
-                  is: {
-                    deletedAt: null,
-                    status: 'ACTIVE',
-                  },
-                },
-              },
-            ],
+          },
+        }),
+      }),
+    );
+  });
+
+  it('includes active public all-city casts when their active store has no area', async () => {
+    prisma.cast.findMany.mockResolvedValue([
+      {
+        id: 'cast-yuki',
+        createdAt: new Date('2026-07-09T00:00:00.000Z'),
+        slug: 'yuki-meo-meo',
+        stageName: 'Yuki',
+        publicAlias: 'Yuki',
+        publicHeadline: 'Host at Meo Meo',
+        tags: ['hostess'],
+        languages: ['vi', 'ja'],
+        hourlyRateVnd: 400000,
+        media: [],
+        store: {
+          id: 'store-meo-meo',
+          name: 'Meo Meo',
+          slug: 'meo-meo',
+          category: 'CLUB',
+          city: 'Tinh Ninh Binh',
+          district: null,
+          latitude: null,
+          longitude: null,
+          area: null,
+        },
+      },
+    ] as never);
+
+    const result = await service.listPublicCasts({ city: 'all' });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        slug: 'yuki-meo-meo',
+        store: expect.objectContaining({
+          slug: 'meo-meo',
+          city: 'Tinh Ninh Binh',
+          area: null,
+        }),
+      }),
+    ]);
+    expect(prisma.cast.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          store: {
+            deletedAt: null,
+            status: 'ACTIVE',
           },
         }),
       }),

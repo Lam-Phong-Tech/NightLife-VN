@@ -12124,8 +12124,10 @@ export class NightlifeDataService {
     const areaCode = this.normalizeToken(area);
     const category = this.normalizeCategory(query.category, { strict: true });
     const hasActiveCoupon = this.parseBooleanFlag(query.hasActiveCoupon);
-    const and: Prisma.StoreWhereInput[] = [
-      {
+    const and: Prisma.StoreWhereInput[] = [];
+
+    if (cityCode) {
+      and.push({
         area: {
           is: {
             deletedAt: null,
@@ -12133,8 +12135,8 @@ export class NightlifeDataService {
             ...this.buildMvpAreaCodeWhere(cityCode),
           },
         },
-      },
-    ];
+      });
+    }
 
     if (options.includeTextSearch !== false && searchTerm) {
       const textFilters: Prisma.StoreWhereInput[] = [
