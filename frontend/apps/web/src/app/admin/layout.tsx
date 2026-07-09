@@ -35,6 +35,14 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         href: '/admin/bookings' 
       },
       { 
+        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, 
+        label: 'Chat hỗ trợ', 
+        href: '/admin/support-chat',
+        count: 2,
+        countBg: '#e0a44e',
+        countColor: '#241a0a'
+      },
+      { 
         icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>, 
         label: 'Duyệt hóa đơn', 
         href: '/admin/bills',
@@ -320,6 +328,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const getPageInfo = () => {
     if (pathname === '/admin') return { title: 'Bảng điều khiển', subtitle: 'OVERVIEW' };
     if (pathname === '/admin/bookings') return { title: 'Booking', subtitle: '' };
+    if (pathname === '/admin/support-chat') return { title: 'Chat hỗ trợ khách', subtitle: 'SUPPORT CHAT' };
     if (pathname === '/admin/bills') return { title: 'Duyệt hóa đơn', subtitle: 'BILL APPROVAL' };
     if (pathname === '/admin/coupons') return { title: 'Coupon & QR', subtitle: 'PROMOTIONS' };
     if (pathname === '/admin/stores') return { title: 'Quán', subtitle: 'VENUES' };
