@@ -32,7 +32,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const DEFAULT_JWT_TTL_MS = 24 * 60 * 60 * 1000;
 
-export type LoginRole = 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
+export type LoginRole = 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN' | 'SUPER_ADMIN';
 
 export type SessionContext = {
   userAgent?: string;
@@ -165,7 +165,8 @@ export class AuthService {
       dto.password.trim(),
     );
 
-    if (user.role !== role) {
+    const isSuperAdminFallback = role === 'ADMIN' && user.role === 'SUPER_ADMIN';
+    if (!isSuperAdminFallback && user.role !== role) {
       throw new ForbiddenException(`This account is not a ${role} account`);
     }
 

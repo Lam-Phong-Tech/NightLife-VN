@@ -28,20 +28,37 @@ const colors = {
   muted: '#8c8679',
   onGold: '#241a0a',
   gold: '#d4b26a',
+  LogIn,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { loginAdmin } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { setAuthSession } from '@/lib/auth/session';
+
+const colors = {
+  bg: '#0c0c0f',
+  surface1: 'rgba(255,255,255,.035)',
+  surface2: 'rgba(255,255,255,.04)',
+  borderGold12: 'rgba(212,178,106,.18)',
+  borderGold22: 'rgba(212,178,106,.22)',
+  borderGold32: 'rgba(212,178,106,.32)',
+  text: '#f3f0ea',
+  text2: '#c5c0b6',
+  muted: '#8c8679',
+  onGold: '#241a0a',
+  gold: '#d4b26a',
   goldBright: '#e3c27e',
   goldPale: '#f0dda8',
   neonPink: '#e0729e',
   goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
 };
 
-const testAccount = {
-  email: 'admin@nightlife.vn',
-  password: 'Str0ngPass!',
-};
-
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState(testAccount.email);
-  const [password, setPassword] = useState(testAccount.password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,7 +67,8 @@ export default function AdminLoginPage() {
     return new URLSearchParams(window.location.search).get('redirect') || '/admin';
   }, []);
 
-  const submit = async () => {
+  const submit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSubmitting(true);
     setMessage('');
 
@@ -64,7 +82,7 @@ export default function AdminLoginPage() {
       window.location.href = redirectTo;
     } catch (error) {
       const detail = error instanceof ApiError ? error.message : 'Khong ket noi duoc API dang nhap.';
-      setMessage(`${detail} Tai khoan seed: admin@nightlife.vn / Str0ngPass!`);
+      setMessage(`${detail}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -173,12 +191,16 @@ export default function AdminLoginPage() {
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
           </div>
 
-          <div style={{ display: 'grid', gap: '13px' }}>
+          <form onSubmit={submit} style={{ display: 'grid', gap: '13px' }}>
             <label style={{ display: 'grid', gap: '7px', color: colors.text2, fontSize: '11.5px', fontWeight: 600 }}>
               Email
               <span style={{ position: 'relative', display: 'block' }}>
                 <Mail size={16} color={colors.gold} style={{ position: 'absolute', left: 13, top: 14 }} />
                 <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="username"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   style={{
@@ -200,6 +222,9 @@ export default function AdminLoginPage() {
               <span style={{ position: 'relative', display: 'block' }}>
                 <LockKeyhole size={16} color={colors.gold} style={{ position: 'absolute', left: 13, top: 14 }} />
                 <input
+                  id="password"
+                  name="password"
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -241,15 +266,13 @@ export default function AdminLoginPage() {
                 </button>
               </span>
             </label>
-          </div>
 
           {message ? <div style={{ marginTop: '12px', color: colors.neonPink, fontSize: '12px' }}>{message}</div> : null}
 
           <button
             className="nl-admin-login-submit"
-            type="button"
-            onClick={submit}
-            disabled={isSubmitting}
+            type="submit"
+            disabled={isSubmitting || !email || !password}
             style={{
               width: '100%',
               minHeight: '44px',
@@ -269,8 +292,9 @@ export default function AdminLoginPage() {
             }}
           >
             <LogIn size={16} />
-            {isSubmitting ? 'Dang xac thuc...' : 'Vào trang admin'}
+            {isSubmitting ? 'Đang đăng nhập...' : 'Vào trang admin'}
           </button>
+          </form>
 
           <div style={{ marginTop: '18px', color: colors.muted, textAlign: 'center', fontSize: '11.5px' }}>
             Khu vực dành riêng cho quản trị viên NightLife.
