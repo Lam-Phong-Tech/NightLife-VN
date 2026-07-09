@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video } from 'lucide-react';
 import { apiClient, apiFormDataClient } from '@/lib/api/client';
-import { AdminPagination, paginateAdminItems } from '../components/AdminPagination';
+import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 
 const colors = {
   bg: '#0f0f13',
@@ -459,6 +459,7 @@ export default function AdminCastsPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.borderSoft}` }}>
+              <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px', width: '60px' }}>STT</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>CAST</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>QUÁN TRỰC THUỘC</th>
               <th style={{ padding: '16px 24px', fontSize: '11px', fontWeight: 700, color: colors.muted, letterSpacing: '1px' }}>NGÔN NGỮ</th>
@@ -486,6 +487,9 @@ export default function AdminCastsPage() {
                   onMouseEnter={(e) => e.currentTarget.style.background = colors.surface2}
                   onMouseLeave={(e) => e.currentTarget.style.background = selectedCast?.id === cast.id ? colors.surface2 : 'transparent'}
                 >
+                  <td style={{ padding: '16px 24px', fontSize: '14px', color: colors.text2, fontWeight: 700 }}>
+                    {(currentPage - 1) * adminPageSize + idx + 1}
+                  </td>
                   <td style={{ padding: '16px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{ 
@@ -528,7 +532,7 @@ export default function AdminCastsPage() {
             })}
             {filteredCasts.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: colors.muted }}>Không tìm thấy Cast nào.</td>
+                <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: colors.muted }}>Không tìm thấy Cast nào.</td>
               </tr>
             )}
           </tbody>
