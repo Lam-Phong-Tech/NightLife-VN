@@ -513,7 +513,7 @@ function BookingCard({
           <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
         </div>
 
-        <div className="booking-form-grid">
+        <div className="booking-form-grid booking-contact-grid">
           <label className="booking-field booking-input-field">
             <span>Họ tên</span>
             <input
@@ -534,7 +534,10 @@ function BookingCard({
               inputMode="email"
             />
           </label>
-          <div className="booking-field">
+        </div>
+
+        <div className="booking-schedule-grid">
+          <div className="booking-field booking-guest-field">
             <span>Số người</span>
             <div className="guest-stepper">
               <button
@@ -556,19 +559,20 @@ function BookingCard({
               </button>
             </div>
           </div>
-        </div>
 
-        <BookingDateTimeFields
-          dateValue={selectedDateIso}
-          timeValue={selectedTime}
-          timeOptions={timeOptions}
-          minDate={minDate}
-          maxDate={maxDate}
-          onDateChange={onDateSelect}
-          onTimeChange={onTimeSelect}
-          emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
-          fieldClassName="booking-field"
-        />
+          <BookingDateTimeFields
+            className="booking-date-time-fields"
+            dateValue={selectedDateIso}
+            timeValue={selectedTime}
+            timeOptions={timeOptions}
+            minDate={minDate}
+            maxDate={maxDate}
+            onDateChange={onDateSelect}
+            onTimeChange={onTimeSelect}
+            emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
+            fieldClassName="booking-field"
+          />
+        </div>
 
         <label className="booking-note-label">Ghi chú tuỳ chọn</label>
         <textarea
@@ -1983,7 +1987,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           width: 100%;
           min-width: 0;
           max-width: 100%;
-          padding: 12px 16px;
+          padding: 16px;
           box-sizing: border-box;
           overflow: hidden;
         }
@@ -1991,7 +1995,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-card-form {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
-          gap: 0;
+          gap: 12px;
           width: 100%;
           min-width: 0;
           max-width: 100%;
@@ -2007,8 +2011,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .booking-card-head {
           display: flex;
+          align-items: flex-start;
           justify-content: space-between;
           gap: 14px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid rgba(212, 178, 106, .14);
         }
 
         .booking-card-head strong,
@@ -2075,17 +2082,28 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-form-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-          margin-top: 8px;
+          gap: 12px;
+          margin-top: 0;
+        }
+
+        .booking-schedule-grid {
+          display: grid;
+          grid-template-columns: minmax(130px, .82fr) minmax(150px, 1fr) minmax(150px, 1fr);
+          gap: 12px;
+          align-items: stretch;
+        }
+
+        .booking-schedule-grid .booking-date-time-fields {
+          display: contents;
         }
 
         .booking-field {
           display: grid;
           align-content: center;
-          min-height: 44px;
-          padding: 7px 10px;
+          min-height: 62px;
+          padding: 10px 12px;
           border: 1px solid var(--vy-border);
-          border-radius: 8px;
+          border-radius: 10px;
           background: var(--vy-surface-2);
         }
 
@@ -2096,7 +2114,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card label.booking-note-label {
-          margin: 10px 0 7px;
+          margin: 2px 0 -5px;
         }
 
         .booking-field span,
@@ -2108,7 +2126,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-muted);
           font-size: 10px;
           font-weight: 900;
-          line-height: 1.2;
+          line-height: 1.1;
         }
 
         .booking-field strong {
@@ -2121,13 +2139,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-field input,
         .booking-field select {
           width: 100%;
-          margin-top: 4px;
+          margin-top: 7px;
           border: 0;
           outline: none;
           background: transparent;
           color: var(--vy-text);
-          font-size: 12px;
-          font-weight: 800;
+          font-size: 13px;
+          font-weight: 850;
           line-height: 1.25;
           appearance: none;
           cursor: pointer;
@@ -2191,12 +2209,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           align-items: center;
           justify-content: space-between;
           gap: 8px;
-          margin-top: 4px;
+          margin-top: 8px;
         }
 
         .guest-stepper button {
-          width: 24px;
-          min-height: 24px;
+          width: 26px;
+          min-height: 26px;
           border: 0;
           border-radius: 7px;
           display: inline-flex;
@@ -2212,18 +2230,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .guest-stepper strong {
           color: var(--vy-text);
-          font-size: 12px;
+          font-size: 13px;
         }
 
         .booking-note-box {
           display: block;
           width: 100%;
-          min-height: 52px;
+          min-height: 58px;
           max-height: 110px;
-          margin-bottom: 12px;
-          padding: 9px 12px;
+          margin-bottom: 0;
+          padding: 12px;
           border: 1px solid rgba(212, 178, 106, .2);
-          border-radius: 8px;
+          border-radius: 10px;
           background: var(--vy-surface-2);
           color: var(--vy-text);
           font-size: 12px;
@@ -2237,6 +2255,59 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-note-box:focus {
           border-color: rgba(227, 194, 126, .58);
           box-shadow: 0 0 0 2px rgba(212, 178, 106, .1);
+        }
+
+        .booking-card .booking-field .nl-booking-ant-control.ant-picker {
+          min-height: 26px;
+          margin-top: 7px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-control.ant-picker:hover,
+        .booking-card .booking-field .nl-booking-ant-control.ant-picker-focused {
+          border: 0;
+          box-shadow: none;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-control.ant-picker .ant-picker-input > input {
+          color: var(--vy-text);
+          font-size: 13px;
+          font-weight: 850;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-select.ant-select {
+          min-height: 26px;
+          margin-top: 7px;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-select.ant-select .ant-select-selector {
+          min-height: 26px !important;
+          height: 26px !important;
+          padding: 0 !important;
+          border: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-select.ant-select:hover .ant-select-selector,
+        .booking-card .booking-field .nl-booking-ant-select.ant-select-focused .ant-select-selector {
+          border: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-select .ant-select-selection-item,
+        .booking-card .booking-field .nl-booking-ant-select .ant-select-selection-placeholder {
+          color: var(--vy-text) !important;
+          font-size: 13px;
+          font-weight: 850;
+          line-height: 26px !important;
+        }
+
+        .booking-card .booking-field .nl-booking-ant-select .ant-select-arrow {
+          color: #d4b26a !important;
         }
 
         .booking-error {
