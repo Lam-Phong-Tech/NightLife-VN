@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { AdminPagination, paginateAdminItems } from '../components/AdminPagination';
+import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -676,24 +676,26 @@ function AdminStoresContent() {
 
       {/* Table */}
       <div className="nl-admin-data-list" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 88px 130px 40px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-          <span>Quán</span><span>Loại hình</span><span>Khu vực</span><span>Cast</span><span>Trạng thái</span><span></span>
+        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '48px 1.8fr 1fr 1fr 88px 130px 40px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <span>STT</span><span>Quán</span><span>Loại hình</span><span>Khu vực</span><span>Cast</span><span>Trạng thái</span><span></span>
         </div>
-        
-        {paginatedStores.map((v: any) => {
+
+        {paginatedStores.map((v: any, idx: number) => {
           const stMeta = getStatusMeta(v.status);
           const stStyle = getPillStyle(stMeta.style);
           const cityStyle = getChipStyle(v.area === 'HN' ? 'info' : (v.area === 'HCM' ? 'pink' : 'gold'));
-          
+          const rowNumber = (currentPage - 1) * adminPageSize + idx + 1;
+
           return (
-            <div 
-              key={v.id} 
-              onClick={() => openEditDrawer(v)} 
+            <div
+              key={v.id}
+              onClick={() => openEditDrawer(v)}
               className="nl-admin-table-row nl-admin-store-row"
-              style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 88px 130px 40px', gap: '12px', alignItems: 'center', padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
+              style={{ display: 'grid', gridTemplateColumns: '48px 1.8fr 1fr 1fr 88px 130px 40px', gap: '12px', alignItems: 'center', padding: '13px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
+              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{rowNumber}</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
                 <span style={{ width: 38, height: 38, flex: 'none', borderRadius: 10, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '15px', color: '#241a0a' }}>{v.initials || v.name?.substring(0,2)?.toUpperCase()}</span>
                 <div style={{ minWidth: 0 }}>

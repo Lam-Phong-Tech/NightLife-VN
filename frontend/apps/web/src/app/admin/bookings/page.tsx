@@ -21,7 +21,6 @@ function AdminBookingsContent() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>({ all: 0, new: 0, completed: 0, cancelled: 0 });
-  const [search, setSearch] = useState('');
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -43,7 +42,7 @@ function AdminBookingsContent() {
     try {
       let statusParam = activeTab === 'all' ? undefined : activeTab;
       const res = await apiClient<any>('/admin/bookings', { 
-        params: { status: statusParam, search: search || undefined, city: city || undefined, category: category || undefined, page: currentPage, limit: adminPageSize }
+        params: { status: statusParam, city: city || undefined, category: category || undefined, page: currentPage, limit: adminPageSize }
       });
       setBookings(res.data);
       setMeta(res.meta);
@@ -54,11 +53,11 @@ function AdminBookingsContent() {
 
   useEffect(() => {
     fetchBookings();
-  }, [activeTab, search, city, category, currentPage]);
+  }, [activeTab, city, category, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, search, city, category]);
+  }, [activeTab, city, category]);
 
   const getDisplayStatus = (status: string) => {
     if (status === 'REQUESTED') return 'Mới';
@@ -134,38 +133,27 @@ function AdminBookingsContent() {
           })}
         </div>
         <div style={{ flex: 1 }}></div>
-        <div className="nl-admin-inline-search" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '8px 13px', width: '220px' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="1.9" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          <input 
-            type="text" 
-            placeholder="Tìm khách / mã booking…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12.5px', outline: 'none' }}
-          />
-        </div>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a86a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Bộ lọc
-        </span>
       </div>
 
       {/* Table */}
       <div className="nl-admin-data-list" style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
-        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
-          <span>Mã</span><span>Khách</span><span>Quán - Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
+        <div className="nl-admin-table-head" style={{ display: 'grid', gridTemplateColumns: '48px 96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
+          <span>STT</span><span>Mã</span><span>Khách</span><span>Quán - Cast</span><span>Số người</span><span>Khung giờ</span><span>Nguồn</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
         </div>
-        {bookings.map(b => {
+        {bookings.map((b, idx) => {
           const stStyle = getStatusStyle(b.status);
           const stLabel = getDisplayStatus(b.status);
+          const rowNumber = (currentPage - 1) * adminPageSize + idx + 1;
           return (
-            <div 
-              key={b.id} 
-              onClick={() => setSelectedBooking(b)} 
+            <div
+              key={b.id}
+              onClick={() => setSelectedBooking(b)}
               className="nl-admin-table-row nl-admin-booking-row"
-              style={{ display: 'grid', gridTemplateColumns: '96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
+              style={{ display: 'grid', gridTemplateColumns: '48px 96px 1.5fr 1.6fr 78px 118px 92px 108px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,178,106,.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
+              <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{rowNumber}</span>
               <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>{formatBookingId(b.id)}</span>
               <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatEmail(b.customerEmail)}</div></div>
               <div style={{ minWidth: 0 }}><div style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.store?.name || b.store}</div><div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{typeof b.cast === 'object' ? (b.cast ? `Cast: ${b.cast.stageName}` : 'Không có') : (b.cast === 'Không cast' ? 'Không có' : b.cast)}</div></div>

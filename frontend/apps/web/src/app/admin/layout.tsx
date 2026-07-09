@@ -240,36 +240,6 @@ function TopCategoryFilter() {
   );
 }
 
-function TopSearchBar() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [val, setVal] = useState(searchParams.get('search') || '');
-
-  useEffect(() => { setVal(searchParams.get('search') || ''); }, [searchParams]);
-
-  return (
-    <div className="nl-admin-top-search" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '100px', padding: '8px 16px', gap: '8px', minWidth: '300px' }}>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8c8679" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
-      <input 
-        type="text" 
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            const params = new URLSearchParams(searchParams.toString());
-            if (val) params.set('search', val);
-            else params.delete('search');
-            router.push(pathname + '?' + params.toString());
-          }
-        }}
-        placeholder="Tìm quán, cast, booking, bill..." 
-        style={{ background: 'transparent', border: 'none', outline: 'none', color: '#f3f0ea', fontSize: '13px', width: '100%', WebkitAppearance: 'none' }} 
-      />
-    </div>
-  );
-}
-
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
@@ -465,11 +435,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="nl-admin-topbar-spacer" style={{ flex: 1 }}></div>
 
           <div className="nl-admin-topbar-controls">
-            {/* Search Bar */}
-            <React.Suspense fallback={<div style={{ minWidth: '300px' }} />}>
-              <TopSearchBar />
-            </React.Suspense>
-
             <React.Suspense fallback={<div />}>
               <TopCategoryFilter />
             </React.Suspense>
