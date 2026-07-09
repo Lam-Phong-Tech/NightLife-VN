@@ -252,11 +252,11 @@ const isSlotInRange = (slotMinutes: number, range: OpeningTimeRange) => {
   );
 };
 
-const slotPeriodFromRange = (minutes: number, range: OpeningTimeRange): BookingTimeSlotPeriod => {
+const slotPeriodFromRange = (range: OpeningTimeRange): BookingTimeSlotPeriod => {
   const crossesMidnight = range.closeMinutes <= range.openMinutes;
   if (crossesMidnight) return "evening";
 
-  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
+  const normalizedMinutes = ((range.openMinutes % 1440) + 1440) % 1440;
   return normalizedMinutes < middayMinutes ? "morning" : "evening";
 };
 
@@ -294,6 +294,7 @@ export const buildBookingTimeSlotGroups = (
   const seenSlots = new Set<string>();
 
   opening.ranges.forEach((range) => {
+    const rangeGroup = groups.find((item) => item.key === slotPeriodFromRange(range));
     let closeMinutes = range.closeMinutes;
     if (closeMinutes <= range.openMinutes) {
       closeMinutes += 1440;
@@ -307,9 +308,8 @@ export const buildBookingTimeSlotGroups = (
       const slot = formatSlot(minutes);
       if (seenSlots.has(slot)) continue;
 
-      const group = groups.find((item) => item.key === slotPeriodFromRange(minutes, range));
-      if (group) {
-        group.slots.push(slot);
+      if (rangeGroup) {
+        rangeGroup.slots.push(slot);
         seenSlots.add(slot);
       }
     }

@@ -114,6 +114,11 @@ export function BookingDateTimeFields({
   const options = activeTimeOptions.map((time) => ({ value: time, label: time }));
   const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
   const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
+  const periodTabs = groups.filter((group) => group.slots.length);
+  const showPeriodTabs = periodTabs.length > 1;
+  const timeFieldClassName = [fieldClassName, showPeriodTabs ? "nl-booking-field-with-period-tabs" : ""]
+    .filter(Boolean)
+    .join(" ");
 
   useEffect(() => {
     setActivePeriod((current) => {
@@ -166,25 +171,22 @@ export function BookingDateTimeFields({
           />
         </label>
 
-        <label className={fieldClassName}>
+        <label className={timeFieldClassName}>
           <span className={labelClassName}>{timeLabel}</span>
           <div className="nl-booking-period-tabs" role="tablist" aria-label="Chọn buổi đặt bàn">
-            {groups.map((group) => {
+            {periodTabs.map((group) => {
               const isActive = group.key === activeGroup?.key;
-              const isDisabled = disabled || loadingTimes || !group.slots.length;
 
               return (
                 <button
                   key={group.key}
                   type="button"
                   className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
-                  disabled={isDisabled}
                   aria-selected={isActive}
                   role="tab"
                   onClick={() => selectPeriod(group.key)}
                 >
-                  <span>{group.label}</span>
-                  <span className="nl-booking-period-tab-count">{group.slots.length}</span>
+                  {group.label}
                 </button>
               );
             })}

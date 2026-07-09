@@ -45,6 +45,36 @@ describe("booking time slots", () => {
     ]);
   });
 
+  it("keeps one continuous admin window in a single period group", () => {
+    expect(
+      buildBookingTimeSlotGroups(
+        { thursday: { hours: "11:00 - 23:00" } },
+        "2026-07-09",
+        { fallback: "empty" },
+      ),
+    ).toEqual([
+      {
+        key: "morning",
+        label: "Sáng",
+        slots: [
+          "11:00",
+          "12:00",
+          "13:00",
+          "14:00",
+          "15:00",
+          "16:00",
+          "17:00",
+          "18:00",
+          "19:00",
+          "20:00",
+          "21:00",
+          "22:00",
+        ],
+      },
+      { key: "evening", label: "Tối", slots: [] },
+    ]);
+  });
+
   it("does not show hard-coded slots when admin hours are missing in strict mode", () => {
     expect(buildBookingTimeSlots(null, "2026-07-09", { fallback: "empty" })).toEqual([]);
   });

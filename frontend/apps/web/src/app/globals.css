@@ -1863,6 +1863,11 @@ html.vy-light .nl-reset-auth-input::placeholder {
   margin-bottom: 8px;
 }
 
+.nl-booking-period-tabs:empty,
+.nl-booking-period-tabs:has(.nl-booking-period-tab:only-child) {
+  display: none;
+}
+
 .nl-booking-period-tab {
   display: inline-flex;
   align-items: center;
@@ -1899,13 +1904,6 @@ html.vy-light .nl-reset-auth-input::placeholder {
 .nl-booking-period-tab:disabled {
   cursor: not-allowed;
   opacity: 0.42;
-}
-
-.nl-booking-period-tab-count {
-  min-width: 16px;
-  opacity: 0.72;
-  font-size: 11px;
-  line-height: 1;
 }
 
 .nl-booking-select-popup.ant-select-dropdown,

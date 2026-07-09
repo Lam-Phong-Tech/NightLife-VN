@@ -2122,6 +2122,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           text-transform: none;
         }
 
+        .booking-card label.booking-field.nl-booking-field-with-period-tabs {
+          min-height: 96px;
+          align-content: start;
+        }
+
         .booking-card label.booking-note-label {
           margin: 2px 0 -5px;
         }
@@ -2296,6 +2301,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 28px;
           height: 28px;
           margin-top: 7px;
+        }
+
+        .booking-card .booking-field .nl-booking-period-tabs {
+          gap: 6px;
+          margin: 7px 0 4px;
+        }
+
+        .booking-card .booking-field .nl-booking-period-tab {
+          min-height: 26px;
+          border-radius: 8px;
+          font-size: 11px;
+        }
+
+        .booking-card .booking-field.nl-booking-field-with-period-tabs .nl-booking-ant-select.ant-select {
+          margin-top: 2px;
         }
 
         .booking-card .booking-field .nl-booking-ant-select.ant-select .ant-select-selector {
