@@ -28,28 +28,7 @@ const colors = {
   muted: '#8c8679',
   onGold: '#241a0a',
   gold: '#d4b26a',
-  LogIn,
-  Mail,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react';
-import React, { useMemo, useState } from 'react';
-import { loginAdmin } from '@/lib/api/auth';
-import { ApiError } from '@/lib/api/client';
-import { setAuthSession } from '@/lib/auth/session';
 
-const colors = {
-  bg: '#0c0c0f',
-  surface1: 'rgba(255,255,255,.035)',
-  surface2: 'rgba(255,255,255,.04)',
-  borderGold12: 'rgba(212,178,106,.18)',
-  borderGold22: 'rgba(212,178,106,.22)',
-  borderGold32: 'rgba(212,178,106,.32)',
-  text: '#f3f0ea',
-  text2: '#c5c0b6',
-  muted: '#8c8679',
-  onGold: '#241a0a',
-  gold: '#d4b26a',
   goldBright: '#e3c27e',
   goldPale: '#f0dda8',
   neonPink: '#e0729e',
