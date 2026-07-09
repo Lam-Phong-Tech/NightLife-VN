@@ -16585,10 +16585,49 @@ export class NightlifeDataService {
       .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
       .catch(() => 0);
 
+    const rawLogs = await this.prisma.notificationLog.findMany({
+      where: {
+        templateKey: { in: Object.values(ADMIN_TELEGRAM_TEMPLATES) as any },
+      },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            partySize: true,
+            store: { select: { name: true } },
+          },
+        },
+        bill: {
+          select: {
+            id: true,
+            totalVnd: true,
+            store: { select: { name: true } },
+          },
+        },
+        partnerRequests: {
+          select: { businessName: true, storeCity: true },
+          take: 1,
+        },
+      },
+    }).catch(() => []);
+
+    const notifications = rawLogs.map((log) => ({
+      id: log.id,
+      templateKey: log.templateKey,
+      createdAt: log.createdAt,
+      booking: log.booking,
+      bill: log.bill,
+      partnerRequest: log.partnerRequests?.[0] || null,
+      payload: log.payload,
+    }));
+
     return {
       pendingBills,
       pendingCasts,
       pendingPartners,
+      notifications,
     };
   }
 

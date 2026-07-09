@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { clearAuthSession, getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
+import { Calendar, Receipt, AlertTriangle, Users, UserCheck, Bell, Settings, CheckCheck, LucideIcon } from 'lucide-react';
 
 type AdminNavItem = {
   icon: React.ReactNode;
@@ -251,7 +252,14 @@ function TopCategoryFilter() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  const [badges, setBadges] = useState({ pendingBills: 0, pendingCasts: 0, pendingPartners: 0 });
+  const [badges, setBadges] = useState({ 
+    pendingBills: 0, 
+    pendingCasts: 0, 
+    pendingPartners: 0,
+    notifications: [] as any[]
+  });
+  const [readAll, setReadAll] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'booking' | 'bill' | 'system'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebar, setIsMobileSidebar] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
@@ -263,6 +271,204 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? !window.matchMedia('(max-width: 767px)').matches : true,
   );
+
+  const getNotificationItems = () => {
+    const list: any[] = [];
+
+    // System: VPS warnings
+    if (storageUsage?.isExceeded) {
+      list.push({
+        id: 'sys-storage-exceeded',
+        tag: 'SYS',
+        kind: 'error',
+        title: 'Dung lượng VPS đã đầy!',
+        body: 'Hệ thống đang bị ngưng upload. Nhấp để xem chi tiết.',
+        time: 'Hệ thống',
+        category: 'system',
+        action: 'Xem dung lượng',
+        href: '/admin/system/storage',
+        icon: AlertTriangle
+      });
+    } else if (storageUsage && storageUsage.percentage >= 90) {
+      list.push({
+        id: 'sys-storage-warning',
+        tag: 'SYS',
+        kind: 'warn',
+        title: 'Dung lượng VPS sắp đầy!',
+        body: `Đã sử dụng ${storageUsage.percentage}% dung lượng ổ đĩa.`,
+        time: 'Hệ thống',
+        category: 'system',
+        action: 'Xem dung lượng',
+        href: '/admin/system/storage',
+        icon: AlertTriangle
+      });
+    }
+
+    // Dynamic backend notifications (telegramLogs mapping)
+    const logs = badges.notifications || [];
+    logs.forEach((log) => {
+      const key = log.templateKey;
+      const createdAt = new Date(log.createdAt);
+      const isToday = !Number.isNaN(createdAt.getTime()) && createdAt.toDateString() === new Date().toDateString();
+      const timeStr = !Number.isNaN(createdAt.getTime()) 
+        ? createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'Vừa xong';
+
+      if (key === 'telegram.admin.booking.created.v1') {
+        list.push({
+          id: log.id,
+          tag: 'BK',
+          kind: 'warn',
+          title: 'Yêu cầu đặt bàn mới',
+          body: `Khách đặt bàn tại ${log.booking?.store?.name || 'quán'} · ${log.booking?.partySize || 0} khách.`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'booking',
+          action: 'Xem lịch đặt',
+          href: '/admin/bookings',
+          icon: Calendar
+        });
+      } else if (key === 'telegram.admin.booking.cancelled.v1') {
+        list.push({
+          id: log.id,
+          tag: 'BK',
+          kind: 'error',
+          title: 'Lịch đặt đã hủy',
+          body: `Lịch đặt #${log.booking?.id || ''} tại ${log.booking?.store?.name || 'quán'} đã hủy.`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'booking',
+          action: 'Xem lịch đặt',
+          href: '/admin/bookings',
+          icon: Calendar
+        });
+      } else if (key === 'telegram.admin.bill.submitted.v1') {
+        list.push({
+          id: log.id,
+          tag: 'BILL',
+          kind: 'warn',
+          title: 'Hóa đơn mới chờ duyệt',
+          body: `Có hóa đơn mới tại ${log.bill?.store?.name || 'quán'} cần kiểm duyệt thanh toán.`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'bill',
+          action: 'Duyệt hóa đơn',
+          href: '/admin/bills',
+          icon: Receipt
+        });
+      } else if (key === 'telegram.admin.bill.verified.v1') {
+        list.push({
+          id: log.id,
+          tag: 'BILL',
+          kind: 'success',
+          title: 'Hóa đơn đã duyệt',
+          body: `Hóa đơn #${log.bill?.id || ''} trị giá ${(log.bill?.totalVnd || 0).toLocaleString('vi-VN')}₫ đã được duyệt.`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'bill',
+          action: 'Xem hóa đơn',
+          href: '/admin/bills',
+          icon: Receipt
+        });
+      } else if (key === 'telegram.admin.bill.rejected.v1') {
+        list.push({
+          id: log.id,
+          tag: 'BILL',
+          kind: 'error',
+          title: 'Hóa đơn bị từ chối',
+          body: `Hóa đơn #${log.bill?.id || ''} tại ${log.bill?.store?.name || 'quán'} bị từ chối.`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'bill',
+          action: 'Xem hóa đơn',
+          href: '/admin/bills',
+          icon: Receipt
+        });
+      } else if (key === 'telegram.admin.partner.requested.v1') {
+        list.push({
+          id: log.id,
+          tag: 'ĐT',
+          kind: 'pink',
+          title: 'Yêu cầu hợp tác mới',
+          body: `Đối tác ${log.partnerRequest?.businessName || ''} (${log.partnerRequest?.storeCity === 'Hanoi' ? 'Hà Nội' : 'TP. HCM'}) đăng ký Join Us.`,
+          time: timeStr,
+          group: isToday ? 'today' : 'yesterday',
+          category: 'system',
+          action: 'Xem đối tác',
+          href: '/admin/partners',
+          icon: Users
+        });
+      }
+    });
+
+    if (list.length === 0) {
+      if (badges.pendingBills > 0) {
+        list.push({
+          id: 'fallback-bill',
+          tag: 'BILL',
+          kind: 'warn',
+          title: 'Hóa đơn chờ duyệt',
+          body: `Bạn có ${badges.pendingBills} hóa đơn đang chờ kiểm duyệt.`,
+          time: 'Mới nhận',
+          group: 'today',
+          category: 'bill',
+          action: 'Duyệt hóa đơn',
+          href: '/admin/bills',
+          icon: Receipt
+        });
+      }
+      if (badges.pendingCasts > 0) {
+        list.push({
+          id: 'fallback-cast',
+          tag: 'CAST',
+          kind: 'gold',
+          title: 'Cast chờ duyệt',
+          body: `Có ${badges.pendingCasts} hồ sơ cast mới cần duyệt lý lịch.`,
+          time: 'Mới nhận',
+          group: 'today',
+          category: 'system',
+          action: 'Kiểm duyệt cast',
+          href: '/admin/casts',
+          icon: UserCheck
+        });
+      }
+      if (badges.pendingPartners > 0) {
+        list.push({
+          id: 'fallback-partner',
+          tag: 'ĐT',
+          kind: 'pink',
+          title: 'Đối tác chờ duyệt',
+          body: `Có ${badges.pendingPartners} đối tác đang chờ duyệt hợp tác.`,
+          time: 'Mới nhận',
+          group: 'today',
+          category: 'system',
+          action: 'Duyệt đối tác',
+          href: '/admin/partners',
+          icon: Users
+        });
+      }
+    }
+
+    return list;
+  };
+
+  const notificationItems = getNotificationItems();
+  const prevItemsCount = useRef(notificationItems.length);
+  const unreadCount = readAll ? 0 : notificationItems.length;
+  const filters = [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'booking', label: 'Đặt chỗ' },
+    { key: 'bill', label: 'Hóa đơn' },
+    { key: 'system', label: 'Hệ thống' }
+  ];
+
+  useEffect(() => {
+    if (notificationItems.length > prevItemsCount.current) {
+      setReadAll(false);
+    }
+    prevItemsCount.current = notificationItems.length;
+  }, [notificationItems.length]);
+
 
   useEffect(() => {
     try {
@@ -527,34 +733,288 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </span>
 
           <div style={{ position: 'relative' }}>
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes vrise {
+                from { opacity: 0; transform: translateY(8px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              @keyframes vpulse {
+                0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 114, 158, 0.7); }
+                70% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(224, 114, 158, 0); }
+                100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 114, 158, 0); }
+              }
+            `}} />
+            
             <span onClick={() => setShowNotifications(!showNotifications)} style={{ width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)', position: 'relative' }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-              {(badges.pendingBills > 0 || storageUsage?.isExceeded) && (
-                <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f' }}>
-                  {storageUsage?.isExceeded ? '!' : (badges.pendingBills > 99 ? '99+' : badges.pendingBills)}
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f', animation: 'vpulse 2.2s infinite' }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </span>
 
             {showNotifications && (
-              <div style={{ position: 'absolute', top: '50px', right: 0, width: '320px', background: '#1c1b22', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 100 }}>
-                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f3f0ea' }}>Thông báo</h4>
-                {storageUsage?.isExceeded && (
-                  <div style={{ background: 'rgba(244, 67, 54, 0.1)', border: '1px solid rgba(244, 67, 54, 0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer' }} onClick={() => { setShowNotifications(false); window.location.href = '/admin/system/storage'; }}>
-                    <div style={{ color: '#f44336', fontSize: '13px', fontWeight: 600 }}>Dung lượng VPS đã đầy!</div>
-                    <div style={{ color: '#c5c0b6', fontSize: '12px', marginTop: '4px' }}>Hệ thống đang bị ngưng upload. Nhấp vào để xem chi tiết.</div>
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowNotifications(false)} />
+                <div style={{
+                  position: 'absolute',
+                  top: '52px',
+                  right: 0,
+                  width: 'min(410px, calc(100vw - 32px))',
+                  background: '#16141b',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '16px',
+                  boxShadow: '0 20px 48px -10px rgba(0,0,0,0.85)',
+                  zIndex: 100,
+                  overflow: 'hidden',
+                  fontFamily: 'inherit',
+                  animation: 'vrise 0.2s ease-out'
+                }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 16px 11px' }}>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#f3f0ea' }}>Thông báo</h3>
+                    <button
+                      type="button"
+                      onClick={() => setReadAll(true)}
+                      disabled={unreadCount === 0}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        border: 0,
+                        background: 'transparent',
+                        color: '#d4b26a',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: unreadCount > 0 ? 'pointer' : 'default',
+                        opacity: unreadCount > 0 ? 1 : 0.4,
+                        padding: 0
+                      }}
+                    >
+                      <CheckCheck size={13} strokeWidth={2.4} />
+                      Đọc tất cả
+                    </button>
                   </div>
-                )}
-                {badges.pendingBills > 0 && (
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 12px', borderRadius: '8px', cursor: 'pointer' }} onClick={() => { setShowNotifications(false); window.location.href = '/admin/bills'; }}>
-                    <div style={{ color: '#e3c27e', fontSize: '13px', fontWeight: 600 }}>Hóa đơn chờ duyệt</div>
-                    <div style={{ color: '#c5c0b6', fontSize: '12px', marginTop: '4px' }}>Bạn có {badges.pendingBills} hóa đơn đang chờ.</div>
+
+                  {/* Filter chips */}
+                  <div style={{ display: 'flex', gap: '8px', padding: '0 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
+                    {filters.map((f) => {
+                      const count = f.key === 'all' 
+                        ? notificationItems.length 
+                        : notificationItems.filter(item => item.category === f.key).length;
+                      const isActive = activeFilter === f.key;
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          onClick={() => setActiveFilter(f.key as any)}
+                          style={{
+                            border: 0,
+                            borderRadius: '8px',
+                            padding: '6px 11px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.2s',
+                            background: isActive ? 'rgba(212,178,106,.15)' : 'rgba(255,255,255,0.02)',
+                            color: isActive ? '#f0dda8' : '#8c8679'
+                          }}
+                        >
+                          {f.label}
+                          {count > 0 && (
+                            <span style={{
+                              background: isActive ? '#d4b26a' : 'rgba(255,255,255,0.08)',
+                              color: isActive ? '#16141b' : '#8c8679',
+                              borderRadius: '6px',
+                              fontSize: '9px',
+                              fontWeight: 800,
+                              padding: '1px 5px',
+                              lineHeight: 1.2
+                            }}>
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-                {!storageUsage?.isExceeded && badges.pendingBills === 0 && (
-                  <div style={{ color: '#8c8679', fontSize: '13px', textAlign: 'center', padding: '10px' }}>Không có thông báo mới</div>
-                )}
-              </div>
+
+                  {/* Content List */}
+                  <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                    {(() => {
+                      const filtered = activeFilter === 'all' 
+                        ? notificationItems 
+                        : notificationItems.filter(item => item.category === activeFilter);
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div style={{ padding: '34px 20px', textAlign: 'center', color: '#8c8679' }}>
+                            <Bell size={28} strokeWidth={1.5} style={{ margin: '0 auto 10px', display: 'block', opacity: 0.5, color: '#d4b26a' }} />
+                            <div style={{ fontSize: '13px', fontWeight: 600 }}>Không có thông báo mới</div>
+                            <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '2px' }}>Hệ thống đang hoạt động ổn định.</div>
+                          </div>
+                        );
+                      }
+
+                      // Group notifications: Today vs Earlier
+                      const today = filtered.filter(item => item.group === 'today' || !item.group);
+                      const earlier = filtered.filter(item => item.group === 'yesterday');
+
+                      const renderGroup = (label: string, items: any[]) => {
+                        if (items.length === 0) return null;
+                        return (
+                          <>
+                            <div style={{ fontSize: '9.5px', fontWeight: 800, letterSpacing: '1.2px', color: '#57534b', textTransform: 'uppercase', padding: '12px 16px 4px' }}>
+                              {label}
+                            </div>
+                            {items.map((item) => {
+                              const IconComponent = item.icon || Bell;
+                              
+                              let iconBg = 'rgba(212,178,106,.12)';
+                              let iconBorder = 'rgba(212,178,106,.22)';
+                              let iconColor = '#d9bd84';
+                              if (item.kind === 'error') {
+                                iconBg = 'rgba(244, 67, 54, 0.12)';
+                                iconBorder = 'rgba(244, 67, 54, 0.24)';
+                                iconColor = '#f44336';
+                              } else if (item.kind === 'success') {
+                                iconBg = 'rgba(76, 175, 80, 0.12)';
+                                iconBorder = 'rgba(76, 175, 80, 0.24)';
+                                iconColor = '#4caf50';
+                              } else if (item.kind === 'pink') {
+                                iconBg = 'rgba(224,114,158,.12)';
+                                iconBorder = 'rgba(224,114,158,.24)';
+                                iconColor = '#e79ab8';
+                              } else if (item.kind === 'gold') {
+                                iconBg = 'rgba(212,178,106,.15)';
+                                iconBorder = 'rgba(212,178,106,.3)';
+                                iconColor = '#e3c27e';
+                              }
+
+                              const isUnread = !readAll;
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  onClick={() => {
+                                    setShowNotifications(false);
+                                    if (item.href) window.location.href = item.href;
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    gap: '12px',
+                                    padding: '11px 16px',
+                                    alignItems: 'flex-start',
+                                    background: isUnread ? 'rgba(212,178,106,.05)' : 'transparent',
+                                    borderBottom: '1px solid rgba(255,255,255,.05)',
+                                    cursor: 'pointer',
+                                    position: 'relative',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,.03)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isUnread ? 'rgba(212,178,106,.05)' : 'transparent'; }}
+                                >
+                                  {/* Icon container */}
+                                  <span style={{
+                                    width: '38px',
+                                    height: '38px',
+                                    borderRadius: '11px',
+                                    flex: 'none',
+                                    background: iconBg,
+                                    border: `1px solid ${iconBorder}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: iconColor
+                                  }}>
+                                    <IconComponent size={17} strokeWidth={1.8} />
+                                  </span>
+
+                                  {/* Content info */}
+                                  <div style={{ flex: 1, minWidth: 0, paddingRight: isUnread ? '10px' : 0 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', alignItems: 'baseline' }}>
+                                      <span style={{ fontSize: '13px', fontWeight: isUnread ? 700 : 600, color: isUnread ? '#f3f0ea' : '#c5c0b6', lineHeight: 1.35 }}>
+                                        {item.title}
+                                      </span>
+                                      <span style={{ fontSize: '10.5px', color: '#6f6b62', flex: 'none' }}>
+                                        {item.time}
+                                      </span>
+                                    </div>
+                                    
+                                    <div style={{ fontSize: '11.5px', color: '#8c8679', marginTop: '2.5px', lineHeight: 1.4 }}>
+                                      {item.body}
+                                    </div>
+
+                                    {item.action && (
+                                      <span style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        marginTop: '8px',
+                                        fontSize: '10px',
+                                        fontWeight: 800,
+                                        color: '#d4b26a',
+                                        background: 'rgba(212,178,106,.09)',
+                                        border: '1px solid rgba(212,178,106,.22)',
+                                        borderRadius: '7px',
+                                        padding: '4px 9px',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.4px'
+                                      }}>
+                                        {item.action}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Status indicator dot */}
+                                  {isUnread && (
+                                    <i style={{
+                                      position: 'absolute',
+                                      top: '14px',
+                                      right: '14px',
+                                      width: '7px',
+                                      height: '7px',
+                                      borderRadius: '50%',
+                                      background: '#d4b26a',
+                                      boxShadow: '0 0 5px #d4b26a'
+                                    }} />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </>
+                        );
+                      };
+
+                      return (
+                        <>
+                          {renderGroup('Hôm nay', today)}
+                          {renderGroup('Trước đó', earlier)}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Settings footer link */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', borderTop: '1px solid rgba(255,255,255,.055)', background: 'rgba(255,255,255,.01)' }}>
+                    <span style={{ fontSize: '11.5px', color: '#6f6b62', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Settings size={12} />
+                      Vận hành
+                    </span>
+                    <Link
+                      href="/admin"
+                      onClick={() => setShowNotifications(false)}
+                      style={{ fontSize: '11.5px', fontWeight: 700, color: '#d4b26a', textDecoration: 'none' }}
+                    >
+                      Bảng điều khiển
+                    </Link>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </header>
