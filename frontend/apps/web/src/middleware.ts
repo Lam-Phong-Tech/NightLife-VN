@@ -58,12 +58,12 @@ export function middleware(request: NextRequest) {
   }
 
   // Protect admin routes
-  if (isAdminPath && userRole !== 'ADMIN') {
+  if (isAdminPath && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Protect partner routes
-  if (isPartnerPath && userRole !== 'PARTNER' && userRole !== 'ADMIN') {
+  if (isPartnerPath && userRole !== 'PARTNER' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
