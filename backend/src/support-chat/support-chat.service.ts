@@ -117,17 +117,18 @@ export class SupportChatService {
     // 2. Find the active ticket to send a system message
     const activeTicket = await this.prisma.supportTicket.findFirst({
       where: { userId, status: SupportTicketStatus.ACTIVE },
+      include: { user: { select: { id: true, displayName: true, email: true } } },
     });
 
     if (activeTicket) {
-      await this.prisma.supportMessage.create({
+      const message = await this.prisma.supportMessage.create({
         data: {
           ticketId: activeTicket.id,
           senderType: SupportSenderType.SYSTEM,
           content: 'Khách hàng đã đăng nhập tài khoản.',
         },
       });
-      return activeTicket;
+      return { ticket: activeTicket, message };
     }
     return null;
   }

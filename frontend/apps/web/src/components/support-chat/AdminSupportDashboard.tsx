@@ -48,6 +48,23 @@ export function AdminSupportDashboard() {
       setMessages(prev => [...prev, msg]);
     });
 
+    newSocket.on('ticket_closed', (data: { ticketId: string }) => {
+      setActiveTicketId(prev => {
+        if (prev === data.ticketId) {
+          setMessages([]);
+          setToast('Đoạn chat đã được đóng.');
+          setTimeout(() => setToast(null), 3000);
+          return null;
+        }
+        return prev;
+      });
+    });
+
+    newSocket.on('session_merged', (data: { ticketId: string, user: any }) => {
+      setToast(`Khách hàng đã đăng nhập: ${data.user?.displayName || 'Tài khoản mới'}`);
+      setTimeout(() => setToast(null), 4000);
+    });
+
     return () => {
       newSocket.close();
     };
@@ -83,6 +100,16 @@ export function AdminSupportDashboard() {
     });
     
     setInput('');
+  };
+
+  const closeTicket = () => {
+    if (!socket || !activeTicketId) return;
+    socket.emit('close_ticket', { ticketId: activeTicketId }, (response: any) => {
+      if (response.success) {
+        setActiveTicketId(null);
+        setMessages([]);
+      }
+    });
   };
 
   return (
@@ -135,7 +162,10 @@ export function AdminSupportDashboard() {
           <>
             <div className="bg-white p-4 border-b border-gray-200 flex justify-between items-center shadow-sm z-10">
               <h2 className="font-semibold">Phòng Chat Đang Xử Lý</h2>
-              <button className="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50">
+              <button 
+                onClick={closeTicket}
+                className="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50"
+              >
                 Hoàn tất (Close)
               </button>
             </div>

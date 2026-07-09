@@ -52,6 +52,30 @@ export function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    const sessionId = localStorage.getItem('guest_session_id');
+    if (user && sessionId) {
+      fetch(process.env.NEXT_PUBLIC_API_URL + '/api/support/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestSessionId: sessionId, userId: user['id'] })
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          localStorage.removeItem('guest_session_id');
+        }
+      }).catch(console.error);
+    }
+  }, [user]);
+
+  const handleOpen = () => {
+    setIsOpen(true);
+    if (socket) {
+      socket.emit('check_status', undefined, (response: any) => {
+        setIsOffline(!response.isOnline);
+      });
+    }
+  };
+
   const sendMessage = () => {
     if (!input.trim() || isOffline || !socket) return;
     
@@ -69,7 +93,7 @@ export function ChatWidget() {
     <div className="fixed bottom-6 right-6 z-50">
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={handleOpen}
           className="bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary/90 transition"
         >
           <MessageCircle size={24} />
