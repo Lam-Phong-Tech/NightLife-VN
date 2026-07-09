@@ -52,6 +52,24 @@ describe("booking history status helpers", () => {
     ).toEqual(["cast-booking", "regular-booking"]);
   });
 
+  it("pins the just-created booking above active bookings with later schedules", () => {
+    const laterScheduledBooking = baseBooking({
+      id: "later-schedule",
+      scheduledAt: "2030-07-10T23:00:00.000Z",
+      createdAt: "2030-07-09T04:00:00.000Z",
+    });
+    const justCreatedBooking = baseBooking({
+      id: "just-created",
+      scheduledAt: "2030-07-09T21:00:00.000Z",
+    });
+
+    expect(
+      sortBookingHistories([laterScheduledBooking, justCreatedBooking], Date.now(), [
+        "just-created",
+      ]).map((booking) => booking.id),
+    ).toEqual(["just-created", "later-schedule"]);
+  });
+
   it("pushes overdue and cancelled bookings below active and completed bookings", () => {
     const nowMs = new Date("2026-07-09T12:00:00.000Z").getTime();
     const activeBooking = baseBooking({

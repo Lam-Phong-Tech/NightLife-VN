@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Check,
@@ -21,6 +21,7 @@ import {
   bookingRecordStatusGroup,
   bookingRecordStatusLabel,
   canCancelBooking,
+  getLastBooking,
   isBookingPastDue,
   mergeBookingHistories,
   rememberLastBooking,
@@ -142,11 +143,7 @@ const validateRescheduleRequest = ({
 }) => {
   const normalizedReason = normalizeRescheduleReason(reason);
 
-  const scheduledAt = buildScheduledAtFromBookingSlot(
-    rescheduleDate,
-    rescheduleTime,
-    openingHours,
-  );
+  const scheduledAt = buildScheduledAtFromBookingSlot(rescheduleDate, rescheduleTime, openingHours);
   const scheduledDate = new Date(scheduledAt);
 
   const dateError = validateBookingDate({
@@ -233,8 +230,15 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
     : `${bookingCode(booking)} · Admin đang điều phối`;
 };
 
+const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => {
+  const image = booking.store?.media?.[0]?.url ?? booking.cast?.media?.[0]?.url;
+  return image ? `url(${JSON.stringify(image)})` : thumbnails[group];
+};
+
 export default function Page() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryBookingId = searchParams.get("bookingId") ?? "";
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -244,7 +248,9 @@ export default function Page() {
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [pendingCancelBooking, setPendingCancelBooking] = useState<BookingRecord | null>(null);
   const [cancelReason, setCancelReason] = useState("");
-  const [pendingRescheduleBooking, setPendingRescheduleBooking] = useState<BookingRecord | null>(null);
+  const [pendingRescheduleBooking, setPendingRescheduleBooking] = useState<BookingRecord | null>(
+    null,
+  );
   const [rescheduleDate, setRescheduleDate] = useState(getTodayDate);
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [rescheduleReason, setRescheduleReason] = useState("");
@@ -282,6 +288,8 @@ export default function Page() {
       try {
         if (isMemberAccount) {
           const items = await bookingApi.listMemberBookings();
+          const lastBooking = queryBookingId ? getLastBooking(queryBookingId) : null;
+          const pinnedBookingIds = [queryBookingId, lastBooking?.id ?? ""].filter(Boolean);
           const resolvedMemberUserId =
             authUser?.id || items.find((booking) => booking.user?.id)?.user?.id || "";
           const memberBookings = items.map((booking) => ({
@@ -297,8 +305,11 @@ export default function Page() {
                 : undefined),
           }));
           if (alive) {
+            const mergedBookings = lastBooking
+              ? mergeBookingHistories(memberBookings, [lastBooking])
+              : memberBookings;
             setMemberUserId(resolvedMemberUserId);
-            setBookings(sortBookingHistories(memberBookings));
+            setBookings(sortBookingHistories(mergedBookings, Date.now(), pinnedBookingIds));
           }
           return;
         }
@@ -317,7 +328,7 @@ export default function Page() {
     return () => {
       alive = false;
     };
-  }, [router]);
+  }, [queryBookingId, router]);
 
   useEffect(() => {
     if (!socket || !chatBooking) {
@@ -465,7 +476,9 @@ export default function Page() {
           });
       const mergedBooking = { ...booking, ...cancelledBooking };
       setBookings((current) =>
-        sortBookingHistories(current.map((item) => (item.id === booking.id ? mergedBooking : item))),
+        sortBookingHistories(
+          current.map((item) => (item.id === booking.id ? mergedBooking : item)),
+        ),
       );
       rememberLastBooking(mergedBooking);
       setPendingCancelBooking(null);
@@ -574,7 +587,9 @@ export default function Page() {
         couponIssue: rescheduledBooking.couponIssue ?? booking.couponIssue,
       };
       setBookings((current) =>
-        sortBookingHistories(current.map((item) => (item.id === booking.id ? updatedBooking : item))),
+        sortBookingHistories(
+          current.map((item) => (item.id === booking.id ? updatedBooking : item)),
+        ),
       );
       rememberLastBooking(updatedBooking);
       setPendingRescheduleBooking(null);
@@ -584,7 +599,9 @@ export default function Page() {
       setRescheduleError("");
       setMessage("Đã đổi lịch booking. Lịch mới đã được cập nhật.");
     } catch (error) {
-      setRescheduleError(error instanceof Error ? error.message : "Không gửi được yêu cầu đổi lịch.");
+      setRescheduleError(
+        error instanceof Error ? error.message : "Không gửi được yêu cầu đổi lịch.",
+      );
     } finally {
       setReschedulingId(null);
     }
@@ -737,7 +754,8 @@ export default function Page() {
             <div className={styles.infoNote}>
               <Clock size={15} />
               <span>
-                Có thể đổi lịch hoặc hủy đặt chỗ trước giờ hẹn tối thiểu 1 tiếng. Trường hợp sát giờ, vui lòng liên hệ Admin qua LINE OA / Mail.
+                Có thể đổi lịch hoặc hủy đặt chỗ trước giờ hẹn tối thiểu 1 tiếng. Trường hợp sát
+                giờ, vui lòng liên hệ Admin qua LINE OA / Mail.
               </span>
             </div>
           </div>
@@ -800,7 +818,8 @@ export default function Page() {
           <div className={styles.dialogPanel}>
             <h2 id="reschedule-booking-title">Đổi lịch booking</h2>
             <p>
-              Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay sau khi gửi.
+              Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay
+              sau khi gửi.
             </p>
             <label className={styles.dialogField}>
               <span>Ngày mới</span>
@@ -993,7 +1012,7 @@ function BookingCard({
         <span
           className={styles.historyThumb}
           style={{
-            backgroundImage: thumbnails[group],
+            backgroundImage: bookingThumbnail(booking, group),
             filter: group === "Đã hủy" ? "grayscale(.4)" : undefined,
           }}
         />
@@ -1021,7 +1040,11 @@ function BookingCard({
               Chat Admin
             </button>
             {cancelAllowed ? (
-              <button type="button" onClick={() => onReschedule(booking)} className={styles.ghostCta}>
+              <button
+                type="button"
+                onClick={() => onReschedule(booking)}
+                className={styles.ghostCta}
+              >
                 <Clock size={14} />
                 Đổi lịch
               </button>
@@ -1108,10 +1131,9 @@ function BookingCard({
 function StatusBadge({ booking }: { booking: BookingRecord }) {
   const group = bookingRecordStatusGroup(booking);
   const isPastDue = isBookingPastDue(booking);
-  const className =
-    isPastDue
-      ? `${styles.historyBadge} ${styles.historyBadgeOverdue}`
-      : group === "Hoàn tất"
+  const className = isPastDue
+    ? `${styles.historyBadge} ${styles.historyBadgeOverdue}`
+    : group === "Hoàn tất"
       ? `${styles.historyBadge} ${styles.historyBadgeDone}`
       : group === "Đã hủy"
         ? `${styles.historyBadge} ${styles.historyBadgeMuted}`

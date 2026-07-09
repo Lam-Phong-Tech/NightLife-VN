@@ -4361,13 +4361,41 @@ export class NightlifeDataService {
         subtotalVnd: true,
         discountVnd: true,
         totalVnd: true,
-        store: { select: { id: true, name: true, slug: true } },
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { url: true },
+            },
+          },
+        },
         cast: {
           select: {
             id: true,
             slug: true,
             stageName: true,
             publicAlias: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { url: true },
+            },
           },
         },
         coupon: { select: { id: true, code: true, name: true } },
@@ -10950,6 +10978,17 @@ export class NightlifeDataService {
           slug: true,
           openingHours: true,
           bookingCancelCutoffMinutes: true,
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { url: true },
+          },
         },
       },
       cast: {
@@ -10958,6 +10997,17 @@ export class NightlifeDataService {
           slug: true,
           stageName: true,
           publicAlias: true,
+          media: {
+            where: {
+              deletedAt: null,
+              access: 'PUBLIC',
+              status: 'READY',
+              type: 'IMAGE',
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { url: true },
+          },
         },
       },
       user: {

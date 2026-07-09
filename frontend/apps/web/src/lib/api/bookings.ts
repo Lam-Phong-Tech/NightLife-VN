@@ -29,19 +29,16 @@ export type BookingRecord = {
     slug: string;
     bookingCancelCutoffMinutes?: number | null;
     openingHours?: Record<string, unknown> | null;
+    media?: Array<{ url: string }>;
   } | null;
   cast?: {
     id: string;
     slug: string;
     stageName: string;
     publicAlias?: string | null;
+    media?: Array<{ url: string }>;
   } | null;
-  guest?: {
-    id: string;
-    displayName?: string | null;
-    phone?: string | null;
-    email?: string | null;
-  } | null;
+  guest?: { id: string; displayName?: string | null; phone?: string | null; email?: string | null } | null;
   user?: {
     id: string;
     displayName?: string | null;
@@ -136,7 +133,12 @@ export type BookingChatMessage = {
   body: string;
   createdAt: string;
   senderUser?: { id: string; displayName?: string | null; role?: string } | null;
-  guest?: { id: string; displayName?: string | null; phone?: string | null; email?: string | null } | null;
+  guest?: {
+    id: string;
+    displayName?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  } | null;
 };
 
 export type BookingChatPayload = {
@@ -279,8 +281,13 @@ const bookingCreatedTimeValue = (booking: BookingRecord) =>
 const bookingScheduledTimeValue = (booking: BookingRecord) =>
   toBookingTimestamp(booking.scheduledAt);
 
-const bookingHistoryRank = (booking: BookingRecord, nowMs: number) => {
+const bookingHistoryRank = (
+  booking: BookingRecord,
+  nowMs: number,
+  pinnedBookingIds: Set<string>,
+) => {
   const normalizedStatus = booking.status.trim().toUpperCase();
+  if (pinnedBookingIds.has(booking.id) && openBookingStatuses.has(normalizedStatus)) return -1;
   if (cancelledBookingStatuses.has(normalizedStatus)) return 3;
   if (
     openBookingStatuses.has(normalizedStatus) &&
@@ -293,10 +300,22 @@ const bookingHistoryRank = (booking: BookingRecord, nowMs: number) => {
   return 0;
 };
 
-export const sortBookingHistories = (bookings: BookingRecord[], nowMs = Date.now()) =>
-  [...bookings].sort((a, b) => {
-    const rankDiff = bookingHistoryRank(a, nowMs) - bookingHistoryRank(b, nowMs);
+export const sortBookingHistories = (
+  bookings: BookingRecord[],
+  nowMs = Date.now(),
+  pinnedBookingIds: string[] = [],
+) => {
+  const pinnedIds = new Set(pinnedBookingIds.filter(Boolean));
+
+  return [...bookings].sort((a, b) => {
+    const rankDiff =
+      bookingHistoryRank(a, nowMs, pinnedIds) - bookingHistoryRank(b, nowMs, pinnedIds);
     if (rankDiff !== 0) return rankDiff;
+
+    if (pinnedIds.size) {
+      const pinnedDiff = Number(pinnedIds.has(b.id)) - Number(pinnedIds.has(a.id));
+      if (pinnedDiff !== 0) return pinnedDiff;
+    }
 
     const createdDiff = bookingCreatedTimeValue(b) - bookingCreatedTimeValue(a);
     if (createdDiff !== 0) return createdDiff;
@@ -306,6 +325,7 @@ export const sortBookingHistories = (bookings: BookingRecord[], nowMs = Date.now
 
     return a.id.localeCompare(b.id);
   });
+};
 
 export const mergeBookingHistories = (...sources: BookingRecord[][]) => {
   const bookingsById = new Map<string, BookingRecord>();

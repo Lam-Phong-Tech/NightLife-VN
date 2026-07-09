@@ -2102,13 +2102,28 @@ describe('NightlifeDataService', () => {
         status: true,
         scheduledAt: true,
         createdAt: true,
+        store: {
+          select: expect.objectContaining({
+            id: true,
+            name: true,
+            slug: true,
+            media: expect.objectContaining({
+              take: 1,
+              select: { url: true },
+            }),
+          }),
+        },
         cast: {
-          select: {
+          select: expect.objectContaining({
             id: true,
             slug: true,
             stageName: true,
             publicAlias: true,
-          },
+            media: expect.objectContaining({
+              take: 1,
+              select: { url: true },
+            }),
+          }),
         },
       }),
     });
