@@ -4,6 +4,8 @@ import { ChevronDown, ChevronLeft, MessageCircle, Send, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { io, Socket } from "socket.io-client";
+import { getAuthUser } from "@/lib/auth/session";
 
 const chatColors = {
   bg: "var(--vy-bg)",
@@ -222,7 +224,7 @@ function ChatBubble({ message, isMobile }: { message: ChatMessage; isMobile: boo
   );
 }
 
-function ChatThread({ messages, isMobile }: { messages: ChatMessage[]; isMobile: boolean }) {
+function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMessage[]; isMobile: boolean; isLoadingHistory?: boolean }) {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -261,6 +263,11 @@ function ChatThread({ messages, isMobile }: { messages: ChatMessage[]; isMobile:
           Hôm nay
         </span>
       </div>
+      {isLoadingHistory && (
+        <div style={{ textAlign: "center", fontSize: "12px", color: chatColors.gold, margin: "10px 0", fontWeight: 600 }}>
+          Đang tải lịch sử...
+        </div>
+      )}
       {messages.map((message) => (
         <ChatBubble key={message.id} message={message} isMobile={isMobile} />
       ))}
@@ -341,12 +348,14 @@ function ChatComposer({
 function DesktopSupportChatPanel({
   draft,
   messages,
+  isLoadingHistory,
   onClose,
   onDraftChange,
   onSubmit,
 }: {
   draft: string;
   messages: ChatMessage[];
+  isLoadingHistory?: boolean;
   onClose: () => void;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -413,7 +422,7 @@ function DesktopSupportChatPanel({
         </IconCircleButton>
       </div>
 
-      <ChatThread messages={messages} isMobile={false} />
+      <ChatThread messages={messages} isMobile={false} isLoadingHistory={isLoadingHistory} />
       <ChatComposer
         draft={draft}
         isMobile={false}
@@ -427,12 +436,14 @@ function DesktopSupportChatPanel({
 function MobileSupportChatPanel({
   draft,
   messages,
+  isLoadingHistory,
   onClose,
   onDraftChange,
   onSubmit,
 }: {
   draft: string;
   messages: ChatMessage[];
+  isLoadingHistory?: boolean;
   onClose: () => void;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -509,7 +520,7 @@ function MobileSupportChatPanel({
         </IconCircleButton>
       </div>
 
-      <ChatThread messages={messages} isMobile />
+      <ChatThread messages={messages} isMobile isLoadingHistory={isLoadingHistory} />
       <ChatComposer draft={draft} isMobile onDraftChange={onDraftChange} onSubmit={onSubmit} />
     </section>
   );
@@ -565,12 +576,107 @@ export function SupportChatWidget({
   onOpenChange,
 }: SupportChatWidgetProps) {
   const pathname = usePathname() || "/";
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [guestSessionId, setGuestSessionId] = useState<string>("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   useEffect(() => {
     onOpenChange(false);
   }, [pathname, onOpenChange]);
+
+  useEffect(() => {
+    const user = getAuthUser();
+    if (user) setCurrentUser(user);
+
+    let gId = localStorage.getItem("vy_guest_session_id");
+    if (!gId) {
+      gId = "guest_" + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      localStorage.setItem("vy_guest_session_id", gId);
+    }
+    setGuestSessionId(gId);
+
+    const savedTicketId = localStorage.getItem("vy_support_ticket_id");
+    if (savedTicketId) {
+      setTicketId(savedTicketId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ticketId) return;
+    setIsLoadingHistory(true);
+    fetch(process.env.NEXT_PUBLIC_API_URL + "/api/support/history?ticketId=" + ticketId)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const mapped: ChatMessage[] = data.map((m: any) => ({
+            id: m.id,
+            from: m.senderType === "USER" || m.senderType === "GUEST" ? "user" : "support",
+            text: m.content,
+            time: formatChatTime(new Date(m.createdAt)),
+          }));
+          setMessages(mapped);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingHistory(false));
+  }, [ticketId]);
+
+  useEffect(() => {
+    const newSocket = io(process.env.NEXT_PUBLIC_API_URL + '/support', {
+      query: ticketId ? { ticketId } : undefined
+    });
+    setSocket(newSocket);
+
+    newSocket.on('receive_message', (msg: any) => {
+      setMessages(prev => {
+        // Prevent duplicate if we already have it from optimistic UI
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [
+          ...prev,
+          {
+            id: msg.id || Date.now().toString(),
+            from: msg.senderType === 'USER' || msg.senderType === 'GUEST' ? 'user' : 'support',
+            text: msg.content,
+            time: formatChatTime(new Date(msg.createdAt || Date.now())),
+          }
+        ];
+      });
+    });
+
+    newSocket.on('system_message', (msg: any) => {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: msg.id || Date.now().toString(),
+          from: 'support',
+          text: msg.content,
+          time: formatChatTime(new Date(msg.createdAt || Date.now())),
+        }
+      ]);
+    });
+
+    newSocket.on('ticket_closed', () => {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: 'closed-' + Date.now().toString(),
+          from: 'support',
+          text: 'Phiên chat đã được đóng bởi nhân viên hỗ trợ.',
+          time: formatChatTime(new Date()),
+        }
+      ]);
+      setTicketId(null);
+      localStorage.removeItem("vy_support_ticket_id");
+    });
+
+    return () => {
+      newSocket.close();
+    };
+  }, [ticketId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -614,24 +720,31 @@ export function SupportChatWidget({
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = draft.trim();
-    if (!text) return;
+    if (!text || !socket) return;
 
-    setMessages((current) => [
-      ...current,
-      {
-        id: `user-${Date.now()}`,
-        from: "user",
-        text,
-        time: formatChatTime(new Date()),
-      },
-    ]);
     setDraft("");
+
+    socket.emit("send_message", {
+      ticketId,
+      content: text,
+      guestSessionId,
+      userId: currentUser?.id
+    }, (response: any) => {
+      if (response && response.error === 'Offline') {
+        return;
+      }
+      if (response && response.ticketId && !ticketId) {
+        setTicketId(response.ticketId);
+        localStorage.setItem("vy_support_ticket_id", response.ticketId);
+      }
+    });
   };
 
   const panel = isMobile ? (
     <MobileSupportChatPanel
       draft={draft}
       messages={messages}
+      isLoadingHistory={isLoadingHistory}
       onClose={() => onOpenChange(false)}
       onDraftChange={setDraft}
       onSubmit={handleSubmit}
@@ -640,6 +753,7 @@ export function SupportChatWidget({
     <DesktopSupportChatPanel
       draft={draft}
       messages={messages}
+      isLoadingHistory={isLoadingHistory}
       onClose={() => onOpenChange(false)}
       onDraftChange={setDraft}
       onSubmit={handleSubmit}
