@@ -82,6 +82,7 @@ export default function AdminContentPage() {
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerDescription, setBannerDescription] = useState('');
   const [bannerAspect, setBannerAspect] = useState('21/9');
+  const [bannerOrder, setBannerOrder] = useState<number | ''>('');
   const [bannerStoreSearch, setBannerStoreSearch] = useState('');
   const [bannerStoreResults, setBannerStoreResults] = useState<any[]>([]);
   const [bannerLinkedStore, setBannerLinkedStore] = useState<any | null>(null);
@@ -1109,7 +1110,7 @@ export default function AdminContentPage() {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', color: '#8c8679', textTransform: 'uppercase' }}>BANNER · TRANG CHỦ & LANDING</div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#f3f0ea', marginTop: '4px' }}>Thêm banner</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#f3f0ea', marginTop: '4px' }}>{editBannerId ? 'Sửa banner' : 'Thêm banner'}</div>
               </div>
               <span onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
                 <X size={16} />
