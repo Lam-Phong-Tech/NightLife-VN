@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Check,
@@ -237,8 +237,6 @@ const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => 
 
 export default function Page() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const queryBookingId = searchParams.get("bookingId") ?? "";
   const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -288,8 +286,8 @@ export default function Page() {
       try {
         if (isMemberAccount) {
           const items = await bookingApi.listMemberBookings();
-          const lastBooking = queryBookingId ? getLastBooking(queryBookingId) : null;
-          const pinnedBookingIds = [queryBookingId, lastBooking?.id ?? ""].filter(Boolean);
+          // URL bookingId can be stale; the session booking is the one just created in this tab.
+          const lastBooking = getLastBooking();
           const resolvedMemberUserId =
             authUser?.id || items.find((booking) => booking.user?.id)?.user?.id || "";
           const memberBookings = items.map((booking) => ({
@@ -309,7 +307,7 @@ export default function Page() {
               ? mergeBookingHistories(memberBookings, [lastBooking])
               : memberBookings;
             setMemberUserId(resolvedMemberUserId);
-            setBookings(sortBookingHistories(mergedBookings, Date.now(), pinnedBookingIds));
+            setBookings(sortBookingHistories(mergedBookings, Date.now()));
           }
           return;
         }
@@ -328,7 +326,7 @@ export default function Page() {
     return () => {
       alive = false;
     };
-  }, [queryBookingId, router]);
+  }, [router]);
 
   useEffect(() => {
     if (!socket || !chatBooking) {

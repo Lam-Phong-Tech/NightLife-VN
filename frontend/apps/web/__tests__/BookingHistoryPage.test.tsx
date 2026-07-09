@@ -1,0 +1,135 @@
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import Page from "../src/app/(member)/lich-su-dat-cho/page";
+import { rememberLastBooking, type BookingRecord } from "@/lib/api/bookings";
+
+const mocks = vi.hoisted(() => ({
+  bookingApi: {
+    listMemberBookings: vi.fn(),
+  },
+  router: {
+    replace: vi.fn(),
+  },
+  socket: {
+    emit: vi.fn(),
+    off: vi.fn(),
+    on: vi.fn(),
+  },
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => mocks.router,
+  useSearchParams: () => new URLSearchParams("bookingId=e19330dd-707d-4247-8a07-fd727da9265f"),
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  getAuthUser: () => ({
+    id: "member-1",
+    displayName: "NightLife Member",
+    role: "USER",
+    tier: "GOLD",
+  }),
+}));
+
+vi.mock("@/components/providers/SocketProvider", () => ({
+  useSocket: () => ({ socket: mocks.socket }),
+}));
+
+vi.mock("@/lib/api/bookings", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/bookings")>("@/lib/api/bookings");
+
+  return {
+    ...actual,
+    bookingApi: {
+      ...actual.bookingApi,
+      listMemberBookings: mocks.bookingApi.listMemberBookings,
+    },
+  };
+});
+
+const booking = (overrides: Partial<BookingRecord>): BookingRecord => ({
+  id: overrides.id ?? "booking-1",
+  status: overrides.status ?? "REQUESTED",
+  scheduledAt: overrides.scheduledAt ?? "2030-07-09T14:00:00.000Z",
+  partySize: overrides.partySize ?? 4,
+  createdAt: overrides.createdAt,
+  user: overrides.user ?? { id: "member-1", displayName: "NightLife Member", tier: "GOLD" },
+  store:
+    overrides.store ??
+    ({
+      id: "store-1",
+      name: "Star KTV",
+      slug: "star-ktv",
+      media: [],
+    } as BookingRecord["store"]),
+  cast: overrides.cast,
+});
+
+describe("BookingHistoryPage", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    window.history.pushState(
+      {},
+      "",
+      "/lich-su-dat-cho?bookingId=e19330dd-707d-4247-8a07-fd727da9265f",
+    );
+    mocks.bookingApi.listMemberBookings.mockReset();
+    mocks.router.replace.mockReset();
+    mocks.socket.emit.mockClear();
+    mocks.socket.off.mockClear();
+    mocks.socket.on.mockClear();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("keeps the newest booking first even when the URL still has an older booking id", async () => {
+    const erikaBooking = booking({
+      id: "e19330dd-707d-4247-8a07-fd727da9265f",
+      createdAt: "2026-07-09T06:00:00.000Z",
+      store: {
+        id: "star-ktv",
+        name: "Star KTV",
+        slug: "star-ktv",
+        media: [],
+      } as BookingRecord["store"],
+      cast: {
+        id: "erika",
+        slug: "erika",
+        stageName: "Erika",
+        publicAlias: "Erika",
+        media: [],
+      },
+    });
+    const kotoneBooking = booking({
+      id: "4e648024-2222-4444-8888-123456789abc",
+      createdAt: "2026-07-09T07:00:00.000Z",
+      store: {
+        id: "tokyo-kitchen",
+        name: "Tokyo Kitchen",
+        slug: "tokyo-kitchen",
+        media: [],
+      } as BookingRecord["store"],
+      cast: {
+        id: "kotone",
+        slug: "kotone",
+        stageName: "Kotone",
+        publicAlias: "Kotone",
+        media: [],
+      },
+    });
+
+    rememberLastBooking(kotoneBooking);
+    mocks.bookingApi.listMemberBookings.mockResolvedValue([erikaBooking, kotoneBooking]);
+
+    render(<Page />);
+
+    await waitFor(() => expect(screen.getByText("Kotone @ Tokyo Kitchen")).toBeInTheDocument());
+
+    expect(
+      screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent),
+    ).toEqual(["Kotone @ Tokyo Kitchen", "Erika @ Star KTV"]);
+  });
+});
