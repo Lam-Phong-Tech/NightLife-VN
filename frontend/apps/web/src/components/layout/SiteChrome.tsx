@@ -586,23 +586,157 @@ const notificationIconByCategory: Record<MemberNotificationCategory, LucideIcon>
   system: Bell,
 };
 
+const extractBookingPlaceFromBody = (body: string) => {
+  const match = body.match(/Lịch đặt tại\s+(.+?)(?:\s+đã được|\s+vừa có|\s+đã hủy|\.|$)/i);
+  return match?.[1]?.trim() || "";
+};
+
+const bookingPlaceLabel = (notification: MemberNotification) => {
+  const place = extractBookingPlaceFromBody(notification.body);
+  return place ? `tại ${place}` : "của bạn";
+};
+
+const normalizeMemberNotification = (notification: MemberNotification): MemberNotification => {
+  const key = notification.templateKey;
+  const placeLabel = bookingPlaceLabel(notification);
+
+  if (key === "customer.bill.submitted.v1") {
+    return {
+      ...notification,
+      title: "Đã gửi hóa đơn",
+      actionLabel: "Xem hóa đơn",
+      category: "bill",
+      tone: notification.tone === "gold" ? "amber" : notification.tone,
+    };
+  }
+
+  if (key === "customer.bill.verified.v1") {
+    return {
+      ...notification,
+      title: "Hóa đơn đã được duyệt",
+      actionLabel: "Xem kết quả",
+      category: "bill",
+      tone: "green",
+    };
+  }
+
+  if (key === "customer.bill.rejected.v1") {
+    return {
+      ...notification,
+      title: "Hóa đơn bị từ chối",
+      actionLabel: "Xem lý do",
+      category: "bill",
+      tone: "danger",
+    };
+  }
+
+  if (key === "customer.booking.created.v1") {
+    return {
+      ...notification,
+      title: "Đặt bàn thành công",
+      body: `Yêu cầu đặt bàn ${placeLabel} đã được ghi nhận. Admin sẽ xác nhận sớm.`,
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "amber",
+    };
+  }
+
+  if (key === "customer.booking.cast_created.v1") {
+    return {
+      ...notification,
+      title: "Đặt bàn theo cast thành công",
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "amber",
+    };
+  }
+
+  if (key === "customer.booking.rescheduled.v1") {
+    return {
+      ...notification,
+      title: "Lịch đặt đã được đổi",
+      body: notification.title === "Cập nhật lịch đặt"
+        ? `Lịch đặt ${placeLabel} đã được đổi lịch.`
+        : notification.body,
+      actionLabel: "Xem lịch mới",
+      category: "booking",
+      tone: "green",
+    };
+  }
+
+  if (key === "customer.booking.reschedule_rejected.v1") {
+    return {
+      ...notification,
+      title: "Yêu cầu đổi lịch chưa được duyệt",
+      body: notification.title === "Cập nhật lịch đặt"
+        ? `Yêu cầu đổi lịch ${placeLabel} chưa được Admin duyệt.`
+        : notification.body,
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "danger",
+    };
+  }
+
+  if (key === "customer.booking.cancelled.v1") {
+    return {
+      ...notification,
+      title: "Lịch đặt đã hủy",
+      body: notification.title === "Cập nhật lịch đặt"
+        ? `Lịch đặt ${placeLabel} đã được hủy.`
+        : notification.body,
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "danger",
+    };
+  }
+
+  if (key === "customer.booking.checked_in.v1") {
+    return {
+      ...notification,
+      title: "Đã check-in lịch đặt",
+      body: notification.title === "Cập nhật lịch đặt"
+        ? `Lịch đặt ${placeLabel} đã được check-in.`
+        : notification.body,
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "green",
+    };
+  }
+
+  if (key === "customer.booking.completed.v1") {
+    return {
+      ...notification,
+      title: "Lịch đặt đã hoàn tất",
+      body: notification.title === "Cập nhật lịch đặt"
+        ? `Lịch đặt ${placeLabel} đã hoàn tất.`
+        : notification.body,
+      actionLabel: "Xem lịch đặt",
+      category: "booking",
+      tone: "green",
+    };
+  }
+
+  return notification;
+};
+
 const toNotice = (notification: MemberNotification): Notice => {
+  const displayNotification = normalizeMemberNotification(notification);
   const createdAt = new Date(notification.createdAt);
   const isToday =
     !Number.isNaN(createdAt.getTime()) && createdAt.toDateString() === new Date().toDateString();
 
   return {
-    id: notification.id,
+    id: displayNotification.id,
     group: isToday ? "today" : "yesterday",
-    title: notification.title,
-    body: notification.body,
-    time: notification.timeLabel,
-    action: notification.actionLabel,
-    unread: notification.unread,
-    icon: notificationIconByCategory[notification.category] ?? Bell,
-    tone: notification.tone,
-    href: notification.href,
-    category: notification.category,
+    title: displayNotification.title,
+    body: displayNotification.body,
+    time: displayNotification.timeLabel,
+    action: displayNotification.actionLabel,
+    unread: displayNotification.unread,
+    icon: notificationIconByCategory[displayNotification.category] ?? Bell,
+    tone: displayNotification.tone,
+    href: displayNotification.href,
+    category: displayNotification.category,
   };
 };
 
