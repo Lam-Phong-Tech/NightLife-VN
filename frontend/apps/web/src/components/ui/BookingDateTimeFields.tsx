@@ -5,7 +5,13 @@ import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import {
+  groupBookingTimeSlots,
+  type BookingTimeSlotGroup,
+  type BookingTimeSlotPeriod,
+} from "@/lib/booking-time-slots";
 
 dayjs.extend(customParseFormat);
 dayjs.locale("vi");
@@ -16,6 +22,7 @@ type BookingDateTimeFieldsProps = {
   dateValue: string;
   timeValue: string;
   timeOptions: string[];
+  timeOptionGroups?: BookingTimeSlotGroup[];
   minDate: string;
   maxDate: string;
   onDateChange: (value: string) => void;
@@ -74,6 +81,7 @@ export function BookingDateTimeFields({
   dateValue,
   timeValue,
   timeOptions,
+  timeOptionGroups,
   minDate,
   maxDate,
   onDateChange,
@@ -89,9 +97,42 @@ export function BookingDateTimeFields({
   const currentDate = parseDate(dateValue) ?? parseDate(minDate) ?? dayjs();
   const min = parseDate(minDate) ?? dayjs();
   const max = parseDate(maxDate) ?? min.add(14, "day");
-  const options = timeOptions.map((time) => ({ value: time, label: time }));
-  const shouldDisableTime = disabled || loadingTimes || !timeOptions.length;
-  const selectedTimeValue = timeOptions.includes(timeValue) ? timeValue : undefined;
+  const groups = useMemo(
+    () => (timeOptionGroups?.length ? timeOptionGroups : groupBookingTimeSlots(timeOptions)),
+    [timeOptionGroups, timeOptions],
+  );
+  const selectedTimePeriod = groups.find((group) => group.slots.includes(timeValue))?.key;
+  const firstAvailablePeriod = groups.find((group) => group.slots.length)?.key ?? "morning";
+  const [activePeriod, setActivePeriod] = useState<BookingTimeSlotPeriod>(
+    selectedTimePeriod ?? firstAvailablePeriod,
+  );
+  const activeGroup =
+    groups.find((group) => group.key === activePeriod) ??
+    groups.find((group) => group.key === firstAvailablePeriod) ??
+    groups[0];
+  const activeTimeOptions = activeGroup?.slots ?? [];
+  const options = activeTimeOptions.map((time) => ({ value: time, label: time }));
+  const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
+  const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
+
+  useEffect(() => {
+    setActivePeriod((current) => {
+      if (selectedTimePeriod) return selectedTimePeriod;
+      if (groups.find((group) => group.key === current)?.slots.length) return current;
+      return firstAvailablePeriod;
+    });
+  }, [firstAvailablePeriod, groups, selectedTimePeriod]);
+
+  const selectPeriod = (period: BookingTimeSlotPeriod) => {
+    const nextGroup = groups.find((group) => group.key === period);
+    if (!nextGroup?.slots.length || disabled || loadingTimes) return;
+
+    setActivePeriod(period);
+    if (!nextGroup.slots.includes(timeValue)) {
+      const nextTime = nextGroup.slots[0];
+      if (nextTime) onTimeChange(nextTime);
+    }
+  };
 
   return (
     <ConfigProvider locale={viVN} theme={bookingPickerTheme}>
@@ -127,6 +168,27 @@ export function BookingDateTimeFields({
 
         <label className={fieldClassName}>
           <span className={labelClassName}>{timeLabel}</span>
+          <div className="nl-booking-period-tabs" role="tablist" aria-label="Chọn buổi đặt bàn">
+            {groups.map((group) => {
+              const isActive = group.key === activeGroup?.key;
+              const isDisabled = disabled || loadingTimes || !group.slots.length;
+
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
+                  disabled={isDisabled}
+                  aria-selected={isActive}
+                  role="tab"
+                  onClick={() => selectPeriod(group.key)}
+                >
+                  <span>{group.label}</span>
+                  <span className="nl-booking-period-tab-count">{group.slots.length}</span>
+                </button>
+              );
+            })}
+          </div>
           <Select
             className="nl-booking-ant-control nl-booking-ant-select"
             disabled={shouldDisableTime}
@@ -139,7 +201,7 @@ export function BookingDateTimeFields({
             popupClassName="nl-booking-select-popup"
             value={selectedTimeValue}
           />
-          {!loadingTimes && !timeOptions.length ? (
+          {!loadingTimes && !activeTimeOptions.length ? (
             <span className="nl-booking-empty-message">{emptyMessage}</span>
           ) : null}
         </label>

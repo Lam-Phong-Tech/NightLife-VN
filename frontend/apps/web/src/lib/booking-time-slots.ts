@@ -20,6 +20,23 @@ type BuildBookingTimeSlotsOptions = {
 
 type OpeningTimeRange = { openMinutes: number; closeMinutes: number };
 type OpeningRanges = { status: "open"; ranges: OpeningTimeRange[] } | { status: "closed" };
+export type BookingTimeSlotPeriod = "morning" | "evening";
+export type BookingTimeSlotGroup = {
+  key: BookingTimeSlotPeriod;
+  label: string;
+  slots: string[];
+};
+
+const middayMinutes = 12 * 60;
+const bookingTimeSlotGroupLabels: Record<BookingTimeSlotPeriod, string> = {
+  morning: "Sáng",
+  evening: "Tối",
+};
+
+const emptyBookingTimeSlotGroups = (): BookingTimeSlotGroup[] => [
+  { key: "morning", label: bookingTimeSlotGroupLabels.morning, slots: [] },
+  { key: "evening", label: bookingTimeSlotGroupLabels.evening, slots: [] },
+];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -235,7 +252,30 @@ const isSlotInRange = (slotMinutes: number, range: OpeningTimeRange) => {
   );
 };
 
-export const buildBookingTimeSlots = (
+const slotPeriodFromRange = (minutes: number, range: OpeningTimeRange): BookingTimeSlotPeriod => {
+  const crossesMidnight = range.closeMinutes <= range.openMinutes;
+  if (crossesMidnight) return "evening";
+
+  const normalizedMinutes = ((minutes % 1440) + 1440) % 1440;
+  return normalizedMinutes < middayMinutes ? "morning" : "evening";
+};
+
+export const groupBookingTimeSlots = (timeSlots: string[]): BookingTimeSlotGroup[] => {
+  const groups = emptyBookingTimeSlotGroups();
+
+  timeSlots.forEach((time) => {
+    const slotMinutes = parseTimeToMinutes(time);
+    const period = slotMinutes !== null && slotMinutes < middayMinutes ? "morning" : "evening";
+    const group = groups.find((item) => item.key === period);
+    if (group && !group.slots.includes(time)) {
+      group.slots.push(time);
+    }
+  });
+
+  return groups;
+};
+
+export const buildBookingTimeSlotGroups = (
   openingHours: OpeningHoursInput,
   dateIso: string,
   options: BuildBookingTimeSlotsOptions = {},
@@ -243,12 +283,14 @@ export const buildBookingTimeSlots = (
   const opening = openingRangesForDate(openingHours, dateIso);
 
   if (!opening) {
-    return options.fallback === "empty" ? [] : fallbackBookingTimeSlots;
+    return options.fallback === "empty"
+      ? emptyBookingTimeSlotGroups()
+      : groupBookingTimeSlots(fallbackBookingTimeSlots);
   }
 
-  if (opening.status === "closed") return [];
+  if (opening.status === "closed") return emptyBookingTimeSlotGroups();
 
-  const slots: string[] = [];
+  const groups = emptyBookingTimeSlotGroups();
   const seenSlots = new Set<string>();
 
   opening.ranges.forEach((range) => {
@@ -261,17 +303,26 @@ export const buildBookingTimeSlots = (
     const lastSlot = closeMinutes - 60;
     if (firstSlot > lastSlot) return;
 
-    for (let minutes = firstSlot; minutes <= lastSlot && slots.length < 48; minutes += 60) {
+    for (let minutes = firstSlot; minutes <= lastSlot && seenSlots.size < 48; minutes += 60) {
       const slot = formatSlot(minutes);
-      if (!seenSlots.has(slot)) {
+      if (seenSlots.has(slot)) continue;
+
+      const group = groups.find((item) => item.key === slotPeriodFromRange(minutes, range));
+      if (group) {
+        group.slots.push(slot);
         seenSlots.add(slot);
-        slots.push(slot);
       }
     }
   });
 
-  return slots;
+  return groups;
 };
+
+export const buildBookingTimeSlots = (
+  openingHours: OpeningHoursInput,
+  dateIso: string,
+  options: BuildBookingTimeSlotsOptions = {},
+) => buildBookingTimeSlotGroups(openingHours, dateIso, options).flatMap((group) => group.slots);
 
 export const buildScheduledAtFromBookingSlot = (
   dateIso: string,

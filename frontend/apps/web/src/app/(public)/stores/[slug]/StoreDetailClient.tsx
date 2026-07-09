@@ -28,9 +28,10 @@ import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
-  buildBookingTimeSlots,
+  buildBookingTimeSlotGroups,
   buildScheduledAtFromBookingSlot,
   normalizeStoreOpeningHours,
+  type BookingTimeSlotGroup,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -460,6 +461,7 @@ function BookingCard({
   maxDate,
   selectedTime,
   timeOptions,
+  timeOptionGroups,
   guestCount,
   guestName,
   email,
@@ -480,6 +482,7 @@ function BookingCard({
   maxDate: string;
   selectedTime: string;
   timeOptions: string[];
+  timeOptionGroups: BookingTimeSlotGroup[];
   guestCount: number;
   guestName: string;
   email: string;
@@ -565,6 +568,7 @@ function BookingCard({
             dateValue={selectedDateIso}
             timeValue={selectedTime}
             timeOptions={timeOptions}
+            timeOptionGroups={timeOptionGroups}
             minDate={minDate}
             maxDate={maxDate}
             onDateChange={onDateSelect}
@@ -762,12 +766,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     label: "",
     iso: new Date().toISOString().slice(0, 10),
   };
-  const bookingTimeOptions = useMemo(
+  const bookingTimeOptionGroups = useMemo(
     () =>
-      buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
+      buildBookingTimeSlotGroups(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
         fallback: "empty",
       }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
+  );
+  const bookingTimeOptions = useMemo(
+    () => bookingTimeOptionGroups.flatMap((group) => group.slots),
+    [bookingTimeOptionGroups],
   );
 
   useEffect(() => {
@@ -1176,6 +1184,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               maxDate={getMaxBookingDate()}
               selectedTime={selectedTime}
               timeOptions={bookingTimeOptions}
+              timeOptionGroups={bookingTimeOptionGroups}
               guestCount={guestCount}
               guestName={guestName}
               email={email}

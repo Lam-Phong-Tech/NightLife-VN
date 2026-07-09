@@ -34,6 +34,7 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import {
+  buildBookingTimeSlotGroups,
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
   type OpeningHoursInput,
@@ -401,13 +402,17 @@ export default function Page() {
     [activeTab, bookings],
   );
   const rescheduleOpeningHours = pendingRescheduleBooking?.store?.openingHours ?? null;
-  const rescheduleTimeOptions = useMemo(() => {
+  const rescheduleTimeOptionGroups = useMemo(() => {
     if (!pendingRescheduleBooking) {
       return [];
     }
 
-    return buildBookingTimeSlots(rescheduleOpeningHours, rescheduleDate, { fallback: "empty" });
+    return buildBookingTimeSlotGroups(rescheduleOpeningHours, rescheduleDate, { fallback: "empty" });
   }, [pendingRescheduleBooking, rescheduleDate, rescheduleOpeningHours]);
+  const rescheduleTimeOptions = useMemo(
+    () => rescheduleTimeOptionGroups.flatMap((group) => group.slots),
+    [rescheduleTimeOptionGroups],
+  );
 
   const shouldUseMemberBookingApi = (booking: BookingRecord) => {
     if (!isMember || !booking.user?.id) {
@@ -821,6 +826,7 @@ export default function Page() {
               dateValue={rescheduleDate}
               timeValue={rescheduleTime}
               timeOptions={rescheduleTimeOptions}
+              timeOptionGroups={rescheduleTimeOptionGroups}
               minDate={getTodayDate()}
               maxDate={getMaxBookingDate()}
               onDateChange={(value) => {

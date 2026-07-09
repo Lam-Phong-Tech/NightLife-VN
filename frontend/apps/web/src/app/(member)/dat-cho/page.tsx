@@ -19,7 +19,7 @@ import { getCastDetail } from "@/lib/api/cast-detail";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { getStoreDetail } from "@/lib/api/store-detail";
 import {
-  buildBookingTimeSlots,
+  buildBookingTimeSlotGroups,
   buildScheduledAtFromBookingSlot,
 } from "@/lib/booking-time-slots";
 import {
@@ -247,11 +247,15 @@ export default function Page() {
     };
   }, [context.storeSlug]);
 
-  const bookingTimeOptions = useMemo(() => {
+  const bookingTimeOptionGroups = useMemo(() => {
     return storeHoursResolved
-      ? buildBookingTimeSlots(storeOpeningHours, bookingDate, { fallback: "empty" })
+      ? buildBookingTimeSlotGroups(storeOpeningHours, bookingDate, { fallback: "empty" })
       : [];
   }, [bookingDate, storeHoursResolved, storeOpeningHours]);
+  const bookingTimeOptions = useMemo(
+    () => bookingTimeOptionGroups.flatMap((group) => group.slots),
+    [bookingTimeOptionGroups],
+  );
 
   useEffect(() => {
     if (!storeHoursResolved) return;
@@ -492,6 +496,7 @@ export default function Page() {
                 dateValue={bookingDate}
                 timeValue={bookingTime}
                 timeOptions={bookingTimeOptions}
+                timeOptionGroups={bookingTimeOptionGroups}
                 minDate={getTodayDate()}
                 maxDate={getMaxBookingDate()}
                 onDateChange={(value) => setBookingDate(clampBookingDate(value))}
