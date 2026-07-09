@@ -74,28 +74,30 @@ export default function AdminLoginPage() {
           className="nl-admin-login-card"
           style={{
             alignSelf: 'center',
+            width: '100%',
+            maxWidth: '520px',
             border: `1px solid ${colors.borderGold22}`,
-            borderRadius: '16px',
+            borderRadius: '20px',
             background: colors.surface1,
-            padding: '26px',
+            padding: '40px 48px',
             boxShadow: '0 16px 34px -18px rgba(0,0,0,.7)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '21px', fontWeight: 600 }}>Đăng nhập quản trị</h2>
-              <div style={{ marginTop: '4px', fontSize: '9px', fontWeight: 600, letterSpacing: '1.6px', color: colors.muted }}>
+              <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>Đăng nhập quản trị</h2>
+              <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 600, letterSpacing: '1.8px', color: colors.muted }}>
                 ADMIN SIGN IN
               </div>
             </div>
             <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(212,178,106,.45), transparent)' }} />
           </div>
 
-          <form onSubmit={submit} style={{ display: 'grid', gap: '13px' }}>
-            <label style={{ display: 'grid', gap: '7px', color: colors.text2, fontSize: '11.5px', fontWeight: 600 }}>
+          <form onSubmit={submit} style={{ display: 'grid', gap: '20px' }}>
+            <label style={{ display: 'grid', gap: '8px', color: colors.text2, fontSize: '14px', fontWeight: 600 }}>
               Email
               <span style={{ position: 'relative', display: 'block' }}>
-                <Mail size={16} color={colors.gold} style={{ position: 'absolute', left: 13, top: 14 }} />
+                <Mail size={20} color={colors.gold} style={{ position: 'absolute', left: 16, top: 16 }} />
                 <input
                   id="email"
                   name="email"
@@ -104,23 +106,23 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   style={{
-                    minHeight: '44px',
+                    minHeight: '52px',
                     width: '100%',
                     border: `1px solid ${colors.borderGold22}`,
-                    borderRadius: '11px',
-                    padding: '0 13px 0 40px',
+                    borderRadius: '12px',
+                    padding: '0 16px 0 48px',
                     color: colors.text,
                     background: colors.surface2,
-                    fontSize: '13px',
+                    fontSize: '15px',
                     outline: 'none',
                   }}
                 />
               </span>
             </label>
-            <label style={{ display: 'grid', gap: '7px', color: colors.text2, fontSize: '11.5px', fontWeight: 600 }}>
+            <label style={{ display: 'grid', gap: '8px', color: colors.text2, fontSize: '14px', fontWeight: 600 }}>
               Mật khẩu
               <span style={{ position: 'relative', display: 'block' }}>
-                <LockKeyhole size={16} color={colors.gold} style={{ position: 'absolute', left: 13, top: 14 }} />
+                <LockKeyhole size={20} color={colors.gold} style={{ position: 'absolute', left: 16, top: 16 }} />
                 <input
                   id="password"
                   name="password"
@@ -129,14 +131,14 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   style={{
-                    minHeight: '44px',
+                    minHeight: '52px',
                     width: '100%',
                     border: `1px solid ${colors.borderGold22}`,
-                    borderRadius: '11px',
-                    padding: '0 48px 0 40px',
+                    borderRadius: '12px',
+                    padding: '0 52px 0 48px',
                     color: colors.text,
                     background: colors.surface2,
-                    fontSize: '13px',
+                    fontSize: '15px',
                     outline: 'none',
                   }}
                 />
@@ -147,10 +149,10 @@ export default function AdminLoginPage() {
                   onClick={() => setShowPassword((current) => !current)}
                   style={{
                     position: 'absolute',
-                    right: 8,
-                    top: 8,
-                    width: 28,
-                    height: 28,
+                    right: 10,
+                    top: 10,
+                    width: 32,
+                    height: 32,
                     border: 0,
                     borderRadius: 8,
                     background: 'transparent',
@@ -162,12 +164,12 @@ export default function AdminLoginPage() {
                     padding: 0,
                   }}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </span>
             </label>
 
-          {message ? <div style={{ marginTop: '12px', color: colors.neonPink, fontSize: '12px' }}>{message}</div> : null}
+          {message ? <div style={{ marginTop: '12px', color: colors.neonPink, fontSize: '13px' }}>{message}</div> : null}
 
           <button
             className="nl-admin-login-submit"
@@ -175,13 +177,13 @@ export default function AdminLoginPage() {
             disabled={isSubmitting || !email || !password}
             style={{
               width: '100%',
-              minHeight: '44px',
-              marginTop: '16px',
+              minHeight: '52px',
+              marginTop: '24px',
               border: 0,
-              borderRadius: '11px',
+              borderRadius: '12px',
               background: colors.goldGrad,
               color: colors.onGold,
-              fontSize: '14px',
+              fontSize: '16px',
               fontWeight: 800,
               display: 'inline-flex',
               alignItems: 'center',
@@ -191,12 +193,12 @@ export default function AdminLoginPage() {
               opacity: isSubmitting ? 0.72 : 1,
             }}
           >
-            <LogIn size={16} />
+            <LogIn size={20} />
             {isSubmitting ? 'Đang đăng nhập...' : 'Vào trang admin'}
           </button>
           </form>
 
-          <div style={{ marginTop: '18px', color: colors.muted, textAlign: 'center', fontSize: '11.5px' }}>
+          <div style={{ marginTop: '24px', color: colors.muted, textAlign: 'center', fontSize: '13px' }}>
             Khu vực dành riêng cho quản trị viên NightLife.
           </div>
         </section>
