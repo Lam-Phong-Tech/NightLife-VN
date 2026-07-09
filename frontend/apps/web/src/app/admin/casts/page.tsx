@@ -72,6 +72,7 @@ export default function AdminCastsPage() {
   const [storePickerOpen, setStorePickerOpen] = useState(false);
   const [storePickerSearch, setStorePickerSearch] = useState('');
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   const fetchCasts = async () => {
     try {
@@ -153,6 +154,7 @@ export default function AdminCastsPage() {
     setStorePickerOpen(false);
     setStorePickerSearch('');
     setStatusPickerOpen(false);
+    setMonthPickerOpen(false);
   };
 
   const openNewDrawer = () => {
@@ -169,6 +171,7 @@ export default function AdminCastsPage() {
     setStorePickerOpen(false);
     setStorePickerSearch('');
     setStatusPickerOpen(false);
+    setMonthPickerOpen(false);
   };
 
   const openEditDrawer = (c: any) => {
@@ -200,6 +203,7 @@ export default function AdminCastsPage() {
     setStorePickerOpen(false);
     setStorePickerSearch('');
     setStatusPickerOpen(false);
+    setMonthPickerOpen(false);
   };
 
   const createCastDraft = async () => {
@@ -681,26 +685,81 @@ export default function AdminCastsPage() {
 
               {/* GRID INFO */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', position: 'relative' }}>
+                <div 
+                  onClick={() => {
+                    setMonthPickerOpen(!monthPickerOpen);
+                    setStorePickerOpen(false);
+                    setStatusPickerOpen(false);
+                  }}
+                  style={{ 
+                    padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', position: 'relative',
+                    cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75px'
+                  }}
+                >
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Tháng sinh</div>
-                  <select 
-                    value={formData.birthMonth || ''} 
-                    onChange={e => setFormData({...formData, birthMonth: e.target.value})} 
-                    style={{ 
-                      width: '100%', background: 'transparent', border: 'none', 
-                      color: formData.birthMonth ? colors.text : colors.muted, 
-                      fontSize: '15px', fontWeight: 700, outline: 'none', appearance: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="" disabled style={{ color: colors.muted, background: colors.surface1 }}>Chọn tháng...</option>
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i+1} value={i+1} style={{ background: colors.surface1, color: colors.text }}>Tháng {i+1}</option>
-                    ))}
-                  </select>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '16px', bottom: '18px', pointerEvents: 'none' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: formData.birthMonth ? colors.text : colors.muted }}>
+                    {formData.birthMonth ? `Tháng ${formData.birthMonth}` : 'Chọn tháng...'}
+                  </div>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '16px', bottom: '20px', transform: monthPickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
                     <path d="M6 9l6 6 6-6" />
                   </svg>
+
+                  {monthPickerOpen && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ 
+                        position: 'absolute', zIndex: 100, top: 'calc(100% + 8px)', left: 0, right: 0, 
+                        borderRadius: '12px', border: `1px solid ${colors.borderGold22}`, background: '#15151b', 
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.6)', overflow: 'hidden', maxHeight: '200px', overflowY: 'auto',
+                        padding: '6px'
+                      }}
+                    >
+                      {[...Array(12)].map((_, i) => {
+                        const mVal = i + 1;
+                        const isSelected = String(formData.birthMonth) === String(mVal);
+                        return (
+                          <button
+                            key={mVal}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, birthMonth: mVal });
+                              setMonthPickerOpen(false);
+                            }}
+                            style={{
+                              width: '100%',
+                              border: 0,
+                              borderRadius: '8px',
+                              background: isSelected ? 'rgba(212,178,106,.14)' : 'transparent',
+                              color: isSelected ? colors.gold : colors.text2,
+                              minHeight: '38px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              fontSize: '13px',
+                              fontWeight: isSelected ? 700 : 500,
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                e.currentTarget.style.color = colors.text;
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.color = colors.text2;
+                              }
+                            }}
+                          >
+                            Tháng {mVal}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Cung Hoàng Đạo</div>
