@@ -11,6 +11,7 @@ import { NightlifeDataModule } from './nightlife-data/nightlife-data.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SystemConfigModule } from './system-config/system-config.module';
+import { SupportChatModule } from './support-chat/support-chat.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -25,6 +26,7 @@ import { validateEnv } from './config/env.validation';
     TelegramModule,
     CategoriesModule,
     SystemConfigModule,
+    SupportChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
