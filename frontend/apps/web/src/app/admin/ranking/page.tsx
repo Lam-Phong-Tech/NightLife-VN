@@ -89,6 +89,56 @@ const normalizeRankingCategory = (value?: string | null): AdminRankingCategory |
 
 function SortableRankingItem(props: { 
   item: RankingItem; 
+  index: number; 
+  isStore: boolean; 
+  toggleSponsor: (id: string) => void; 
+  moveItem: (index: number, direction: 'up' | 'down') => void;
+  removeItem: (id: string) => void;
+}) {
+  const { item, index, isStore, toggleSponsor, moveItem, removeItem } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const feedback = useSystemFeedback();
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  const getAvatarStyle = (name: string, storeMode: boolean = false) => {
+    const hue = (name.length * 45) % 360;
+    return `linear-gradient(135deg, hsl(${hue}, 60%, 70%), hsl(${hue}, 40%, 40%))`;
+  };
+
+  const rank = index + 1;
+  const numStyle = rank === 1 
+    ? { color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)' } 
+    : rank <= 3 
+      ? { color: '#d4b26a', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.3)' } 
+      : { color: '#9b958a', background: 'rgba(255,255,255,.05)' };
+
+  const rowBg = index === 0 ? 'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))' : 'rgba(255,255,255,.025)';
+  const rowBd = index === 0 ? 'rgba(212,178,106,.34)' : 'rgba(255,255,255,.06)';
+  const sponsorColor = item.sponsored ? '#241a0a' : '#8c8679';
+  const sponsorBg = item.sponsored ? 'linear-gradient(135deg,#f0dda8,#d4b26a)' : 'rgba(255,255,255,.04)';
+  const sponsorBorder = item.sponsored ? '1px solid rgba(212,178,106,.7)' : '1px solid rgba(255,255,255,.08)';
+
+  const onRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    feedback.showModal({
+      title: 'Xóa khỏi xếp hạng',
+      description: 'Bạn có chắc chắn muốn gỡ '+item.name+' khỏi bảng xếp hạng không?',
+      destructive: true,
+      onPrimary: () => {
+        removeItem(item.id);
+      }
+    });
+  };
+
+  const onToggleSponsor = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleSponsor(item.id);
   };
 
   return (
