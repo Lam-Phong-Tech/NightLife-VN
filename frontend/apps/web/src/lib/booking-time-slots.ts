@@ -14,6 +14,9 @@ const weekdayKeys = [
 
 type WeekdayKey = (typeof weekdayKeys)[number];
 export type OpeningHoursInput = Record<string, unknown> | null | undefined;
+type BuildBookingTimeSlotsOptions = {
+  fallback?: "default" | "empty";
+};
 
 type OpeningRange =
   | { status: "open"; openMinutes: number; closeMinutes: number }
@@ -197,10 +200,17 @@ const openingRangeForDate = (
   return null;
 };
 
-export const buildBookingTimeSlots = (openingHours: OpeningHoursInput, dateIso: string) => {
+export const buildBookingTimeSlots = (
+  openingHours: OpeningHoursInput,
+  dateIso: string,
+  options: BuildBookingTimeSlotsOptions = {},
+) => {
   const range = openingRangeForDate(openingHours, dateIso);
 
-  if (!range) return fallbackBookingTimeSlots;
+  if (!range) {
+    return options.fallback === "empty" ? [] : fallbackBookingTimeSlots;
+  }
+
   if (range.status === "closed") return [];
 
   let closeMinutes = range.closeMinutes;
@@ -209,17 +219,13 @@ export const buildBookingTimeSlots = (openingHours: OpeningHoursInput, dateIso: 
   }
 
   const firstSlot = range.openMinutes + 60;
-  let lastSlot = closeMinutes - 60;
-
-  if (lastSlot > 1440) {
-    lastSlot = 1440;
-  }
+  const lastSlot = closeMinutes - 60;
 
   if (firstSlot > lastSlot) return [];
 
   const slots: string[] = [];
 
-  for (let minutes = firstSlot; minutes <= lastSlot; minutes += 60) {
+  for (let minutes = firstSlot; minutes <= lastSlot && slots.length < 24; minutes += 60) {
     slots.push(formatSlot(minutes));
   }
 

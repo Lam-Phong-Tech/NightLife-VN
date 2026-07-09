@@ -21,7 +21,6 @@ import { getStoreDetail } from "@/lib/api/store-detail";
 import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
-  fallbackBookingTimeSlots,
 } from "@/lib/booking-time-slots";
 import {
   bookingValidationLimits,
@@ -249,16 +248,10 @@ export default function Page() {
   }, [context.storeSlug]);
 
   const bookingTimeOptions = useMemo(() => {
-    const slots = storeHoursResolved
-      ? buildBookingTimeSlots(storeOpeningHours, bookingDate)
-      : fallbackBookingTimeSlots;
-
-    if (!storeHoursResolved && bookingTime && !slots.includes(bookingTime)) {
-      return [bookingTime, ...slots];
-    }
-
-    return slots;
-  }, [bookingDate, bookingTime, storeHoursResolved, storeOpeningHours]);
+    return storeHoursResolved
+      ? buildBookingTimeSlots(storeOpeningHours, bookingDate, { fallback: "empty" })
+      : [];
+  }, [bookingDate, storeHoursResolved, storeOpeningHours]);
 
   useEffect(() => {
     if (!storeHoursResolved) return;
@@ -502,7 +495,11 @@ export default function Page() {
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Khung giờ</span>
                 <div className={styles.timeChips} role="listbox" aria-label="Chọn khung giờ">
-                  {bookingTimeOptions.length ? (
+                  {!storeHoursResolved ? (
+                    <span className={styles.emptySlotMessage}>
+                      Đang tải khung giờ của quán...
+                    </span>
+                  ) : bookingTimeOptions.length ? (
                     bookingTimeOptions.map((time) => (
                       <button
                         key={time}
@@ -534,6 +531,7 @@ export default function Page() {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Vui lòng nhập ghi chú nếu có"
+                  autoComplete="off"
                   className={styles.noteArea}
                 />
               </label>
@@ -610,6 +608,7 @@ function ReadOnlyTextField({ label, value }: { label: string; value: string }) {
           value={value}
           readOnly
           aria-readonly="true"
+          autoComplete="off"
           className={`${styles.input} ${styles.readOnlyInput}`}
         />
       </span>
@@ -640,6 +639,7 @@ function TextField({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
+          autoComplete="off"
           className={styles.input}
         />
       </span>
@@ -658,7 +658,7 @@ function EmailField({ value, onChange }: { value: string; onChange: (value: stri
           value={value}
           placeholder="Vui lòng nhập email"
           onChange={(event) => onChange(event.target.value)}
-          autoComplete="email"
+          autoComplete="off"
           inputMode="email"
           className={styles.input}
         />
@@ -679,6 +679,7 @@ function DateField({ value, onChange }: { value: string; onChange: (value: strin
           min={getTodayDate()}
           max={getMaxBookingDate()}
           onChange={(event) => onChange(event.target.value)}
+          autoComplete="off"
         />
       </span>
     </label>

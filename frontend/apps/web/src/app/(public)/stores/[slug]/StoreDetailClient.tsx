@@ -496,6 +496,7 @@ function BookingCard({
       <form
         className="booking-card-form"
         noValidate
+        autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -516,7 +517,7 @@ function BookingCard({
               value={guestName}
               onChange={(event) => onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value))}
               placeholder="Vui lòng nhập họ tên"
-              autoComplete="name"
+              autoComplete="off"
             />
           </label>
           <label className="booking-field booking-input-field">
@@ -526,7 +527,7 @@ function BookingCard({
               value={email}
               onChange={(event) => onEmailChange(event.target.value)}
               placeholder="Vui lòng nhập email"
-              autoComplete="email"
+              autoComplete="off"
               inputMode="email"
             />
           </label>
@@ -592,6 +593,7 @@ function BookingCard({
           value={note}
           onChange={(event) => onNoteChange(event.target.value)}
           placeholder="Vui lòng nhập ghi chú nếu có"
+          autoComplete="off"
         />
 
         {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
@@ -600,7 +602,7 @@ function BookingCard({
           type="button"
           data-testid="store-booking-cta-sidebar"
           className="primary-action full"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !selectedTime}
           onClick={onSubmit}
         >
           <CalendarDays size={18} />
@@ -774,7 +776,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     iso: new Date().toISOString().slice(0, 10),
   };
   const bookingTimeOptions = useMemo(
-    () => buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso),
+    () =>
+      buildBookingTimeSlots(normalizedOpeningHours ?? store.openingHours, selectedDate.iso, {
+        fallback: "empty",
+      }),
     [normalizedOpeningHours, selectedDate.iso, store.openingHours],
   );
 

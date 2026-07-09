@@ -35,7 +35,6 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import {
   buildBookingTimeSlots,
   buildScheduledAtFromBookingSlot,
-  fallbackBookingTimeSlots,
   type OpeningHoursInput,
 } from "@/lib/booking-time-slots";
 import {
@@ -406,12 +405,7 @@ export default function Page() {
       return [];
     }
 
-    const slots = buildBookingTimeSlots(rescheduleOpeningHours, rescheduleDate);
-    if (rescheduleOpeningHours || slots.length) {
-      return slots;
-    }
-
-    return fallbackBookingTimeSlots;
+    return buildBookingTimeSlots(rescheduleOpeningHours, rescheduleDate, { fallback: "empty" });
   }, [pendingRescheduleBooking, rescheduleDate, rescheduleOpeningHours]);
 
   const shouldUseMemberBookingApi = (booking: BookingRecord) => {
@@ -504,7 +498,7 @@ export default function Page() {
 
     const nextDate = clampBookingDate(toDateInputValue(new Date(booking.scheduledAt)));
     const storeOpeningHours = booking.store?.openingHours ?? null;
-    const slots = buildBookingTimeSlots(storeOpeningHours, nextDate);
+    const slots = buildBookingTimeSlots(storeOpeningHours, nextDate, { fallback: "empty" });
     const currentTime = bookingTimeValue(booking.scheduledAt);
     const nextTime = slots.includes(currentTime) ? currentTime : (slots[0] ?? "");
 
@@ -781,6 +775,7 @@ export default function Page() {
                 placeholder="Ví dụ: đổi lịch, nhầm thời gian, không thể đến..."
                 maxLength={300}
                 rows={4}
+                autoComplete="off"
                 className={styles.dialogTextArea}
               />
             </label>
@@ -828,7 +823,9 @@ export default function Page() {
                 max={getMaxBookingDate()}
                 onChange={(event) => {
                   const nextDate = clampBookingDate(event.target.value);
-                  const nextSlots = buildBookingTimeSlots(rescheduleOpeningHours, nextDate);
+                  const nextSlots = buildBookingTimeSlots(rescheduleOpeningHours, nextDate, {
+                    fallback: "empty",
+                  });
                   setRescheduleDate(nextDate);
                   setRescheduleTime((current) =>
                     nextSlots.includes(current) ? current : (nextSlots[0] ?? ""),
@@ -836,6 +833,7 @@ export default function Page() {
                   setRescheduleError("");
                 }}
                 aria-invalid={Boolean(rescheduleError)}
+                autoComplete="off"
                 className={styles.dialogInput}
               />
             </label>
@@ -877,6 +875,7 @@ export default function Page() {
                 maxLength={maxRescheduleReasonLength}
                 rows={4}
                 aria-invalid={Boolean(rescheduleError)}
+                autoComplete="off"
                 className={styles.dialogTextArea}
               />
             </label>
@@ -898,7 +897,7 @@ export default function Page() {
                 type="button"
                 className={`${styles.primaryCta} ${reschedulingId ? styles.disabledCta : ""}`}
                 onClick={submitRescheduleRequest}
-                disabled={Boolean(reschedulingId)}
+                disabled={Boolean(reschedulingId) || !rescheduleTime}
               >
                 {reschedulingId ? "Đang cập nhật" : "Cập nhật lịch"}
               </button>
@@ -944,6 +943,7 @@ export default function Page() {
                 placeholder="Nhập nội dung cần đổi/hủy booking..."
                 maxLength={800}
                 rows={3}
+                autoComplete="off"
                 className={styles.dialogTextArea}
               />
             </label>

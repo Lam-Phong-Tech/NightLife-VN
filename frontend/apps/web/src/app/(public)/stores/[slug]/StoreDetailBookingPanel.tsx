@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CalendarDays, Ticket } from "lucide-react";
 import type { StoreActiveCoupon } from "@/lib/api/store-detail";
-import { fallbackBookingTimeSlots } from "@/lib/booking-time-slots";
 import { formatPriceTier } from "@/lib/price-tier";
 import { formatDiscount } from "./store-detail.helpers";
 
@@ -32,7 +31,7 @@ export function StoreDetailBookingPanel({
   dateOptions,
   selectedDateIndex,
   selectedTime,
-  timeOptions = fallbackBookingTimeSlots,
+  timeOptions = [],
   guestCount,
   bookingHref,
   couponHref,
@@ -135,7 +134,7 @@ export function StoreDetailMobileBookingControls({
   dateOptions,
   selectedDateIndex,
   selectedTime,
-  timeOptions = fallbackBookingTimeSlots,
+  timeOptions = [],
   guestCount,
   onDateSelect,
   onTimeSelect,
