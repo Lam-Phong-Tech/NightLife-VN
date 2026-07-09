@@ -1851,11 +1851,11 @@ const entries: TranslationEntry[] = [
     zh: "正在取消",
   },
   {
-    vi: "Yêu cầu sẽ ở trạng thái chờ duyệt. Booking chỉ đổi giờ sau khi Admin xác nhận.",
-    en: "The request will wait for review. The reservation changes only after Admin confirms.",
-    ja: "リクエストは承認待ちになります。管理者の確認後にのみ予約時間が変更されます。",
-    ko: "요청은 검토 대기 상태가 됩니다. 관리자가 확인한 후에만 예약 시간이 변경됩니다.",
-    zh: "请求将进入待审核状态。管理员确认后预约时间才会更改。",
+    vi: "Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay sau khi gửi.",
+    en: "You can reschedule at least 1 hour before the booking time. The new schedule updates immediately after submission.",
+    ja: "予約時間の1時間前まで変更できます。送信後すぐに新しい日時へ更新されます。",
+    ko: "예약 시간 최소 1시간 전까지 일정을 변경할 수 있습니다. 제출 후 새 일정이 바로 반영됩니다.",
+    zh: "可在预约时间至少1小时前改期。提交后新时间会立即更新。",
   },
   {
     vi: "Ngày giờ mới",
@@ -1879,11 +1879,11 @@ const entries: TranslationEntry[] = [
     zh: "例如：改日期、希望更晚时段...",
   },
   {
-    vi: "Gửi yêu cầu",
-    en: "Send request",
-    ja: "リクエストを送信",
-    ko: "요청 보내기",
-    zh: "发送请求",
+    vi: "Cập nhật lịch",
+    en: "Update schedule",
+    ja: "日程を更新",
+    ko: "일정 업데이트",
+    zh: "更新时间",
   },
   {
     vi: "Đang gửi",

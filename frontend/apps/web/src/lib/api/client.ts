@@ -43,6 +43,9 @@ const exactMessageTranslations: Record<string, string> = {
     "Booking này đã có yêu cầu đổi lịch đang chờ duyệt.",
   "booking can only be rescheduled at least 1 hour before scheduled time":
     "Chỉ có thể đổi lịch trước giờ đặt tối thiểu 1 tiếng.",
+  "new booking time must be in the future": "Thời gian đặt mới phải ở tương lai.",
+  "new booking time must be different from current booking time":
+    "Thời gian mới phải khác thời gian đang đặt.",
   "bill has already been verified": "Hóa đơn này đã được xác nhận.",
   "cancelled booking cannot be rescheduled": "Booking đã hủy không thể đổi lịch.",
   "cast not found": "Không tìm thấy cast.",

@@ -3163,7 +3163,7 @@ export class NightlifeDataService {
       throw new NotFoundException('Booking not found');
     }
 
-    return this.createBookingRescheduleRequest({
+    return this.rescheduleBookingSelfService({
       booking,
       actorId: user.id,
       actorType: 'MEMBER',
@@ -3198,7 +3198,7 @@ export class NightlifeDataService {
       throw new NotFoundException('Booking not found');
     }
 
-    return this.createBookingRescheduleRequest({
+    return this.rescheduleBookingSelfService({
       booking,
       actorType: 'GUEST',
       dto,
@@ -9766,6 +9766,90 @@ export class NightlifeDataService {
     );
 
     return created;
+  }
+
+  private async rescheduleBookingSelfService(input: {
+    booking: BookingCancelTarget;
+    actorId?: string | null;
+    actorType: BookingStatusActorType;
+    dto: RequestBookingRescheduleDto;
+  }) {
+    this.assertBookingCanRequestReschedule(input.booking);
+
+    const requestedScheduledAt = this.parseRequestedSchedule(
+      input.dto.scheduledAt,
+    );
+    this.assertBookingDateWindow(requestedScheduledAt);
+
+    const currentScheduledAt = new Date(input.booking.scheduledAt ?? '');
+    if (!Number.isFinite(currentScheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date');
+    }
+
+    if (requestedScheduledAt.getTime() <= Date.now()) {
+      throw new UnprocessableEntityException(
+        'New booking time must be in the future',
+      );
+    }
+
+    if (
+      Math.abs(requestedScheduledAt.getTime() - currentScheduledAt.getTime()) <
+      1000
+    ) {
+      throw new UnprocessableEntityException(
+        'New booking time must be different from current booking time',
+      );
+    }
+
+    const reason = this.cleanText(input.dto.reason);
+    const updated = await this.prisma.booking.update({
+      where: { id: input.booking.id },
+      data: { scheduledAt: requestedScheduledAt },
+      select: this.bookingNotificationSelect(),
+    });
+    const previousScheduledAt = currentScheduledAt.toISOString();
+    const nextScheduledAt = requestedScheduledAt.toISOString();
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: input.actorId ?? undefined,
+        action: 'BOOKING_RESCHEDULED_SELF_SERVICE',
+        targetType: 'Booking',
+        targetId: input.booking.id,
+        beforeJson: this.toPrismaJson(
+          this.buildBookingCancelAuditSnapshot(input.booking),
+        ),
+        afterJson: this.toPrismaJson(
+          this.buildBookingCancelAuditSnapshot(updated),
+        ),
+        metadata: {
+          actorType: input.actorType,
+          actorId: input.actorId ?? null,
+          reason: reason || null,
+          previousScheduledAt,
+          nextScheduledAt,
+          beforeStatus: input.booking.status,
+          afterStatus: updated.status,
+        },
+      },
+    });
+
+    await this.notifyBookingCustomerTemplate(
+      updated,
+      'customer.booking.rescheduled.v1',
+      {
+        previousScheduledAt,
+        scheduledAt: nextScheduledAt,
+        reason: reason || null,
+        actorType: input.actorType,
+      },
+    );
+
+    if (updated.user?.id) {
+      this.socketGateway?.notifyBookingStatusUpdate(updated.user.id, updated);
+    }
+
+    return updated;
   }
 
   private assertBookingCanRequestReschedule(booking: BookingCancelTarget) {

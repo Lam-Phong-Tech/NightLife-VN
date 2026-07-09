@@ -338,11 +338,11 @@ export const bookingApi = {
       data: reason ? { reason } : {},
     }),
   requestMemberReschedule: (bookingId: string, payload: BookingReschedulePayload) =>
-    apiClient<BookingChangeRequest>(`/member/bookings/${encodeURIComponent(bookingId)}/reschedule`, {
+    apiClient<BookingRecord>(`/member/bookings/${encodeURIComponent(bookingId)}/reschedule`, {
       data: payload,
     }),
   requestGuestReschedule: (bookingId: string, payload: GuestBookingReschedulePayload) =>
-    apiClient<BookingChangeRequest>(`/bookings/${encodeURIComponent(bookingId)}/reschedule`, {
+    apiClient<BookingRecord>(`/bookings/${encodeURIComponent(bookingId)}/reschedule`, {
       data: payload,
     }),
   listMemberBookingMessages: (bookingId: string) =>

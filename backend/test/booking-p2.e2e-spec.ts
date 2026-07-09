@@ -127,10 +127,11 @@ describe('Booking P2 workflows API (e2e)', () => {
     await app.close();
   });
 
-  it('lets a member request reschedule as a separate workflow status', async () => {
+  it('lets a member reschedule directly before the cutoff', async () => {
     prisma.booking.findFirst.mockResolvedValue(openBooking());
-    prisma.bookingChangeRequest.findFirst.mockResolvedValue(null);
-    prisma.bookingChangeRequest.create.mockResolvedValue(changeRequest());
+    prisma.booking.update.mockResolvedValue(
+      bookingNotification({ scheduledAt: new Date('2026-07-10T20:00:00.000Z') }),
+    );
 
     await request(app.getHttpServer())
       .post('/member/bookings/booking-1/reschedule')
@@ -144,32 +145,29 @@ describe('Booking P2 workflows API (e2e)', () => {
       .expect(({ body }) => {
         expect(body).toEqual(
           expect.objectContaining({
-            id: 'change-1',
-            bookingId: 'booking-1',
+            id: 'booking-1',
             status: 'REQUESTED',
+            scheduledAt: '2026-07-10T20:00:00.000Z',
           }),
         );
       });
 
-    expect(prisma.bookingChangeRequest.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        bookingId: 'booking-1',
-        status: 'REQUESTED',
-        requestedById: 'member-1',
-        requestedScheduledAt: new Date('2026-07-10T20:00:00.000Z'),
-      }),
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: 'booking-1' },
+      data: { scheduledAt: new Date('2026-07-10T20:00:00.000Z') },
       select: expect.any(Object),
     });
+    expect(prisma.bookingChangeRequest.create).not.toHaveBeenCalled();
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        action: 'BOOKING_RESCHEDULE_REQUESTED',
-        targetType: 'BookingChangeRequest',
+        action: 'BOOKING_RESCHEDULED_SELF_SERVICE',
+        targetType: 'Booking',
       }),
     });
     expect(prisma.notificationLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        recipient: 'ADMIN',
-        templateKey: 'admin.booking.reschedule_requested.v1',
+        recipient: 'member-1',
+        templateKey: 'customer.booking.rescheduled.v1',
       }),
     });
   });

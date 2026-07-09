@@ -515,20 +515,18 @@ export default function Page() {
         scheduledAt: requestedDate.toISOString(),
         reason: normalizedReason,
       };
-      const changeRequest = await (useMemberApi
+      const rescheduledBooking = await (useMemberApi
         ? bookingApi.requestMemberReschedule(booking.id, payload)
         : bookingApi.requestGuestReschedule(booking.id, { ...payload, phone: guestPhone }));
-      const nextScheduledAt = changeRequest.requestedScheduledAt ?? payload.scheduledAt;
       const updatedBooking: BookingRecord = {
         ...booking,
-        ...(changeRequest.booking ?? {}),
-        scheduledAt: nextScheduledAt,
-        store: changeRequest.booking?.store ?? booking.store,
-        cast: changeRequest.booking?.cast ?? booking.cast,
-        guest: changeRequest.booking?.guest ?? booking.guest,
-        user: changeRequest.booking?.user ?? booking.user,
-        coupon: changeRequest.booking?.coupon ?? booking.coupon,
-        couponIssue: changeRequest.booking?.couponIssue ?? booking.couponIssue,
+        ...rescheduledBooking,
+        store: rescheduledBooking.store ?? booking.store,
+        cast: rescheduledBooking.cast ?? booking.cast,
+        guest: rescheduledBooking.guest ?? booking.guest,
+        user: rescheduledBooking.user ?? booking.user,
+        coupon: rescheduledBooking.coupon ?? booking.coupon,
+        couponIssue: rescheduledBooking.couponIssue ?? booking.couponIssue,
       };
       setBookings((current) =>
         current.map((item) => (item.id === booking.id ? updatedBooking : item)),
@@ -539,7 +537,7 @@ export default function Page() {
       setRescheduleMinAt("");
       setRescheduleReason("");
       setRescheduleError("");
-      setMessage("Đã gửi yêu cầu đổi lịch. Admin sẽ xác nhận trước khi cập nhật booking.");
+      setMessage("Đã đổi lịch booking. Lịch mới đã được cập nhật.");
     } catch (error) {
       setRescheduleError(error instanceof Error ? error.message : "Không gửi được yêu cầu đổi lịch.");
     } finally {
@@ -694,8 +692,7 @@ export default function Page() {
             <div className={styles.infoNote}>
               <Clock size={15} />
               <span>
-                Không sửa trực tiếp đặt chỗ cũ. Mỗi thay đổi tạo bản ghi mới - hủy trước 1 giờ rồi
-                đặt lại hoặc liên hệ Admin qua LINE OA / Mail.
+                Có thể đổi lịch hoặc hủy đặt chỗ trước giờ hẹn tối thiểu 1 tiếng. Trường hợp sát giờ, vui lòng liên hệ Admin qua LINE OA / Mail.
               </span>
             </div>
           </div>
@@ -758,7 +755,7 @@ export default function Page() {
           <div className={styles.dialogPanel}>
             <h2 id="reschedule-booking-title">Đổi lịch booking</h2>
             <p>
-              Yêu cầu sẽ ở trạng thái chờ duyệt. Booking chỉ đổi giờ sau khi Admin xác nhận.
+              Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay sau khi gửi.
             </p>
             <label className={styles.dialogField}>
               <span>Ngày giờ mới</span>
@@ -809,7 +806,7 @@ export default function Page() {
                 onClick={submitRescheduleRequest}
                 disabled={Boolean(reschedulingId)}
               >
-                {reschedulingId ? "Đang gửi" : "Gửi yêu cầu"}
+                {reschedulingId ? "Đang cập nhật" : "Cập nhật lịch"}
               </button>
             </div>
           </div>
