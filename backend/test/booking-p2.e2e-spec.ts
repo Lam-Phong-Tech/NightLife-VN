@@ -104,7 +104,10 @@ describe('Booking P2 workflows API (e2e)', () => {
         NightlifeDataService,
         { provide: PrismaService, useValue: prisma },
         { provide: AccessService, useValue: accessService },
-        { provide: AdminNotificationService, useValue: adminNotificationService },
+        {
+          provide: AdminNotificationService,
+          useValue: adminNotificationService,
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -130,7 +133,9 @@ describe('Booking P2 workflows API (e2e)', () => {
   it('lets a member reschedule directly before the cutoff', async () => {
     prisma.booking.findFirst.mockResolvedValue(openBooking());
     prisma.booking.update.mockResolvedValue(
-      bookingNotification({ scheduledAt: new Date('2026-07-10T20:00:00.000Z') }),
+      bookingNotification({
+        scheduledAt: new Date('2026-07-10T20:00:00.000Z'),
+      }),
     );
 
     await request(app.getHttpServer())
@@ -169,6 +174,43 @@ describe('Booking P2 workflows API (e2e)', () => {
         recipient: 'member-1',
         templateKey: 'customer.booking.rescheduled.v1',
       }),
+    });
+  });
+
+  it('allows member reschedule at opening hour from separated admin windows', async () => {
+    const scheduledAt = new Date('2026-07-10T01:00:00.000Z');
+
+    prisma.booking.findFirst.mockResolvedValue(
+      openBooking({
+        store: {
+          bookingCancelCutoffMinutes: 60,
+          openingHours: {
+            friday: { hours: '08:00 - 12:00, 18:00 - 22:00' },
+          },
+        },
+      }),
+    );
+    prisma.booking.update.mockResolvedValue(
+      bookingNotification({ scheduledAt }),
+    );
+
+    await request(app.getHttpServer())
+      .post('/member/bookings/booking-1/reschedule')
+      .set('x-test-role', 'USER')
+      .set('x-test-user-id', 'member-1')
+      .send({
+        scheduledAt: scheduledAt.toISOString(),
+        reason: 'Move to the first morning slot',
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.scheduledAt).toBe(scheduledAt.toISOString());
+      });
+
+    expect(prisma.booking.update).toHaveBeenCalledWith({
+      where: { id: 'booking-1' },
+      data: { scheduledAt },
+      select: expect.any(Object),
     });
   });
 
@@ -227,7 +269,9 @@ describe('Booking P2 workflows API (e2e)', () => {
   it('lets admin approve a reschedule request and updates booking time', async () => {
     prisma.bookingChangeRequest.findUnique.mockResolvedValue(changeRequest());
     prisma.booking.update.mockResolvedValue(
-      bookingNotification({ scheduledAt: new Date('2026-07-10T20:00:00.000Z') }),
+      bookingNotification({
+        scheduledAt: new Date('2026-07-10T20:00:00.000Z'),
+      }),
     );
     prisma.bookingChangeRequest.update.mockResolvedValue(
       changeRequest({ status: 'APPROVED', reviewedById: 'admin-1' }),
@@ -343,7 +387,11 @@ describe('Booking P2 workflows API (e2e)', () => {
 
   it('returns cancel-rate dashboard grouped by store, cast, and channel', async () => {
     prisma.booking.findMany.mockResolvedValue([
-      analyticsBooking({ id: 'booking-1', status: 'CANCELLED', userId: 'member-1' }),
+      analyticsBooking({
+        id: 'booking-1',
+        status: 'CANCELLED',
+        userId: 'member-1',
+      }),
       analyticsBooking({ id: 'booking-2', status: 'REQUESTED', userId: null }),
     ]);
 

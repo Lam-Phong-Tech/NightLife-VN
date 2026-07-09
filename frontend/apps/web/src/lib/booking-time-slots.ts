@@ -18,9 +18,8 @@ type BuildBookingTimeSlotsOptions = {
   fallback?: "default" | "empty";
 };
 
-type OpeningRange =
-  | { status: "open"; openMinutes: number; closeMinutes: number }
-  | { status: "closed" };
+type OpeningTimeRange = { openMinutes: number; closeMinutes: number };
+type OpeningRanges = { status: "open"; ranges: OpeningTimeRange[] } | { status: "closed" };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -55,21 +54,28 @@ const formatSlot = (minutes: number) => {
   return `${String(hours).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 };
 
-const parseTimeRange = (value: unknown) => {
-  if (typeof value !== "string") return null;
+const parseTimeRanges = (value: unknown): OpeningTimeRange[] => {
+  if (typeof value !== "string") return [];
 
-  const match = value.match(
-    /(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/,
-  );
+  const ranges: OpeningTimeRange[] = [];
+  const matches = value.matchAll(/(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/g);
 
-  if (!match) return null;
+  Array.from(matches).forEach((match) => {
+    const open = parseTimeToMinutes(`${match[1]}:${match[2] ?? "00"}`);
+    const close = parseTimeToMinutes(`${match[3]}:${match[4] ?? "00"}`);
 
-  const open = parseTimeToMinutes(`${match[1]}:${match[2] ?? "00"}`);
-  const close = parseTimeToMinutes(`${match[3]}:${match[4] ?? "00"}`);
+    if (open !== null && close !== null) {
+      ranges.push({ openMinutes: open, closeMinutes: close });
+    }
+  });
 
-  if (open === null || close === null) return null;
-  return { openMinutes: open, closeMinutes: close };
+  return ranges;
 };
+
+const formatTimeRanges = (ranges: OpeningTimeRange[]) =>
+  ranges
+    .map((range) => `${formatSlot(range.openMinutes)} - ${formatSlot(range.closeMinutes)}`)
+    .join(", ");
 
 const normalizeWeekdayKey = (key: string): WeekdayKey | null => {
   const normalized = normalizeText(key);
@@ -106,20 +112,27 @@ const normalizeOpeningSlot = (value: unknown): StoreOpeningHour | null => {
   if (typeof value === "string") {
     if (isClosedText(value)) return { closed: true };
 
-    const range = parseTimeRange(value);
-    if (range) {
+    const ranges = parseTimeRanges(value);
+    if (ranges.length === 1) {
+      const range = ranges[0]!;
       return {
         open: formatSlot(range.openMinutes),
         close: formatSlot(range.closeMinutes),
       };
     }
+    if (ranges.length > 1) return { note: formatTimeRanges(ranges) };
 
     return value.trim() ? { note: value.trim() } : null;
   }
 
   if (!isRecord(value)) return null;
 
-  if (value.closed === true || value.isOff === true || isClosedText(value.hours) || isClosedText(value.note)) {
+  if (
+    value.closed === true ||
+    value.isOff === true ||
+    isClosedText(value.hours) ||
+    isClosedText(value.note)
+  ) {
     return { closed: true };
   }
 
@@ -129,13 +142,16 @@ const normalizeOpeningSlot = (value: unknown): StoreOpeningHour | null => {
     return { open: formatSlot(open), close: formatSlot(close) };
   }
 
-  const range = parseTimeRange(value.hours) ?? parseTimeRange(value.note);
-  if (range) {
+  const ranges = parseTimeRanges(value.hours);
+  const noteRanges = ranges.length ? ranges : parseTimeRanges(value.note);
+  if (noteRanges.length === 1) {
+    const range = noteRanges[0]!;
     return {
       open: formatSlot(range.openMinutes),
       close: formatSlot(range.closeMinutes),
     };
   }
+  if (noteRanges.length > 1) return { note: formatTimeRanges(noteRanges) };
 
   if (typeof value.note === "string" && value.note.trim()) {
     return { note: value.note.trim() };
@@ -159,9 +175,7 @@ export const normalizeStoreOpeningHours = (
     if (slot) normalized[weekday] = slot;
   });
 
-  return Object.keys(normalized).length
-    ? (normalized as Record<string, StoreOpeningHour>)
-    : null;
+  return Object.keys(normalized).length ? (normalized as Record<string, StoreOpeningHour>) : null;
 };
 
 const dayKeyFromIsoDate = (dateIso: string) => {
@@ -171,10 +185,22 @@ const dayKeyFromIsoDate = (dateIso: string) => {
   return weekdayKeys[day] ?? "monday";
 };
 
-const openingRangeForDate = (
+const rangesFromOpeningSlot = (slot?: StoreOpeningHour | null): OpeningTimeRange[] => {
+  if (!slot || slot.closed) return [];
+
+  const open = parseTimeToMinutes(slot.open);
+  const close = parseTimeToMinutes(slot.close);
+  if (open !== null && close !== null) {
+    return [{ openMinutes: open, closeMinutes: close }];
+  }
+
+  return parseTimeRanges(slot.note);
+};
+
+const openingRangesForDate = (
   openingHours: OpeningHoursInput,
   dateIso: string,
-): OpeningRange | null => {
+): OpeningRanges | null => {
   if (!openingHours || !isRecord(openingHours)) return null;
 
   const normalizedHours = normalizeStoreOpeningHours(openingHours);
@@ -183,21 +209,30 @@ const openingRangeForDate = (
   if (daySlot) {
     if (daySlot.closed) return { status: "closed" };
 
-    const open = parseTimeToMinutes(daySlot.open);
-    const close = parseTimeToMinutes(daySlot.close);
-
-    if (open !== null && close !== null) {
-      return { status: "open", openMinutes: open, closeMinutes: close };
-    }
-
-    const noteRange = parseTimeRange(daySlot.note);
-    if (noteRange) return { status: "open", ...noteRange };
+    const ranges = rangesFromOpeningSlot(daySlot);
+    if (ranges.length) return { status: "open", ranges };
   }
 
-  const summaryRange = parseTimeRange(openingHours.summary);
-  if (summaryRange) return { status: "open", ...summaryRange };
+  const summaryRanges = parseTimeRanges(openingHours.summary);
+  if (summaryRanges.length) return { status: "open", ranges: summaryRanges };
 
   return null;
+};
+
+const isSlotInRange = (slotMinutes: number, range: OpeningTimeRange) => {
+  const crossesMidnight = range.closeMinutes <= range.openMinutes;
+  let closeMinutes = range.closeMinutes;
+  if (crossesMidnight) closeMinutes += 1440;
+
+  const candidateMinutes =
+    crossesMidnight && slotMinutes < range.openMinutes ? slotMinutes + 1440 : slotMinutes;
+  const lastSlot = closeMinutes - 60;
+
+  return (
+    candidateMinutes >= range.openMinutes &&
+    candidateMinutes <= lastSlot &&
+    (candidateMinutes - range.openMinutes) % 60 === 0
+  );
 };
 
 export const buildBookingTimeSlots = (
@@ -205,29 +240,35 @@ export const buildBookingTimeSlots = (
   dateIso: string,
   options: BuildBookingTimeSlotsOptions = {},
 ) => {
-  const range = openingRangeForDate(openingHours, dateIso);
+  const opening = openingRangesForDate(openingHours, dateIso);
 
-  if (!range) {
+  if (!opening) {
     return options.fallback === "empty" ? [] : fallbackBookingTimeSlots;
   }
 
-  if (range.status === "closed") return [];
-
-  let closeMinutes = range.closeMinutes;
-  if (closeMinutes <= range.openMinutes) {
-    closeMinutes += 1440;
-  }
-
-  const firstSlot = range.openMinutes + 60;
-  const lastSlot = closeMinutes - 60;
-
-  if (firstSlot > lastSlot) return [];
+  if (opening.status === "closed") return [];
 
   const slots: string[] = [];
+  const seenSlots = new Set<string>();
 
-  for (let minutes = firstSlot; minutes <= lastSlot && slots.length < 24; minutes += 60) {
-    slots.push(formatSlot(minutes));
-  }
+  opening.ranges.forEach((range) => {
+    let closeMinutes = range.closeMinutes;
+    if (closeMinutes <= range.openMinutes) {
+      closeMinutes += 1440;
+    }
+
+    const firstSlot = range.openMinutes;
+    const lastSlot = closeMinutes - 60;
+    if (firstSlot > lastSlot) return;
+
+    for (let minutes = firstSlot; minutes <= lastSlot && slots.length < 48; minutes += 60) {
+      const slot = formatSlot(minutes);
+      if (!seenSlots.has(slot)) {
+        seenSlots.add(slot);
+        slots.push(slot);
+      }
+    }
+  });
 
   return slots;
 };
@@ -245,11 +286,17 @@ export const buildScheduledAtFromBookingSlot = (
 
   if (slotMinutes === null) return scheduledAt.toISOString();
 
-  const range = openingRangeForDate(openingHours, dateIso);
-  const crossesMidnight =
-    range?.status === "open" && range.closeMinutes <= range.openMinutes;
+  const opening = openingRangesForDate(openingHours, dateIso);
+  const belongsToNextDayOvernightSlot =
+    opening?.status === "open" &&
+    opening.ranges.some(
+      (range) =>
+        range.closeMinutes <= range.openMinutes &&
+        slotMinutes < range.openMinutes &&
+        isSlotInRange(slotMinutes, range),
+    );
 
-  if (crossesMidnight && slotMinutes < range.openMinutes) {
+  if (belongsToNextDayOvernightSlot) {
     scheduledAt.setDate(scheduledAt.getDate() + 1);
   }
 

@@ -9986,8 +9986,8 @@ export class NightlifeDataService {
     time: string,
     options: { overnightOnly?: boolean } = {},
   ) {
-    const range = this.bookingOpeningRangeForDate(openingHours, dateIso);
-    if (!range || range.status === 'closed') {
+    const opening = this.bookingOpeningRangesForDate(openingHours, dateIso);
+    if (!opening || opening.status === 'closed') {
       return false;
     }
 
@@ -9996,38 +9996,45 @@ export class NightlifeDataService {
       return false;
     }
 
+    return opening.ranges.some((range) => {
+      const crossesMidnight = range.closeMinutes <= range.openMinutes;
+      if (options.overnightOnly) {
+        if (!crossesMidnight || slotMinutes >= range.openMinutes) {
+          return false;
+        }
+      } else if (crossesMidnight && slotMinutes < range.openMinutes) {
+        return false;
+      }
+
+      return this.isBookingSlotAllowedInRange(slotMinutes, range);
+    });
+  }
+
+  private isBookingSlotAllowedInRange(
+    slotMinutes: number,
+    range: { openMinutes: number; closeMinutes: number },
+  ) {
     const crossesMidnight = range.closeMinutes <= range.openMinutes;
-    if (options.overnightOnly && (!crossesMidnight || slotMinutes >= range.openMinutes)) {
-      return false;
-    }
-
     let closeMinutes = range.closeMinutes;
-    if (closeMinutes <= range.openMinutes) {
+    if (crossesMidnight) {
       closeMinutes += 1440;
-    }
-
-    const firstSlot = range.openMinutes + 60;
-    const lastSlot = closeMinutes - 60;
-    if (firstSlot > lastSlot) {
-      return false;
     }
 
     const candidateMinutes =
       crossesMidnight && slotMinutes < range.openMinutes
         ? slotMinutes + 1440
         : slotMinutes;
+    const lastSlot = closeMinutes - 60;
 
-    for (let minutes = firstSlot; minutes <= lastSlot; minutes += 60) {
-      if (minutes === candidateMinutes) {
-        return true;
-      }
-    }
-
-    return false;
+    return (
+      candidateMinutes >= range.openMinutes &&
+      candidateMinutes <= lastSlot &&
+      (candidateMinutes - range.openMinutes) % 60 === 0
+    );
   }
 
   private hasBookingOpeningRange(openingHours: Record<string, unknown>) {
-    if (this.parseBookingTimeRange(openingHours.summary)) {
+    if (this.parseBookingTimeRanges(openingHours.summary).length) {
       return true;
     }
 
@@ -10038,18 +10045,21 @@ export class NightlifeDataService {
       }
 
       return Boolean(
-        this.parseBookingTimeRange(slot.note) ||
+        this.parseBookingTimeRanges(slot.note).length ||
           (this.parseBookingTimeToMinutes(slot.open) !== null &&
             this.parseBookingTimeToMinutes(slot.close) !== null),
       );
     });
   }
 
-  private bookingOpeningRangeForDate(
+  private bookingOpeningRangesForDate(
     openingHours: Record<string, unknown>,
     dateIso: string,
   ):
-    | { status: 'open'; openMinutes: number; closeMinutes: number }
+    | {
+        status: 'open';
+        ranges: Array<{ openMinutes: number; closeMinutes: number }>;
+      }
     | { status: 'closed' }
     | null {
     const dayKey = this.bookingWeekdayKeyFromDateIso(dateIso);
@@ -10065,24 +10075,37 @@ export class NightlifeDataService {
         return { status: 'closed' };
       }
 
-      const open = this.parseBookingTimeToMinutes(daySlot.open);
-      const close = this.parseBookingTimeToMinutes(daySlot.close);
-      if (open !== null && close !== null) {
-        return { status: 'open', openMinutes: open, closeMinutes: close };
-      }
-
-      const noteRange = this.parseBookingTimeRange(daySlot.note);
-      if (noteRange) {
-        return { status: 'open', ...noteRange };
+      const ranges = this.bookingRangesFromOpeningSlot(daySlot);
+      if (ranges.length) {
+        return { status: 'open', ranges };
       }
     }
 
-    const summaryRange = this.parseBookingTimeRange(openingHours.summary);
-    if (summaryRange) {
-      return { status: 'open', ...summaryRange };
+    const summaryRanges = this.parseBookingTimeRanges(openingHours.summary);
+    if (summaryRanges.length) {
+      return { status: 'open', ranges: summaryRanges };
     }
 
     return null;
+  }
+
+  private bookingRangesFromOpeningSlot(slot: {
+    open?: string;
+    close?: string;
+    closed?: boolean;
+    note?: string;
+  }) {
+    if (slot.closed) {
+      return [];
+    }
+
+    const open = this.parseBookingTimeToMinutes(slot.open);
+    const close = this.parseBookingTimeToMinutes(slot.close);
+    if (open !== null && close !== null) {
+      return [{ openMinutes: open, closeMinutes: close }];
+    }
+
+    return this.parseBookingTimeRanges(slot.note);
   }
 
   private normalizeBookingOpeningSlot(value: unknown):
@@ -10093,12 +10116,16 @@ export class NightlifeDataService {
         return { closed: true };
       }
 
-      const range = this.parseBookingTimeRange(value);
-      if (range) {
+      const ranges = this.parseBookingTimeRanges(value);
+      if (ranges.length === 1) {
+        const [range] = ranges;
         return {
           open: this.formatBookingSlot(range.openMinutes),
           close: this.formatBookingSlot(range.closeMinutes),
         };
+      }
+      if (ranges.length > 1) {
+        return { note: this.formatBookingTimeRanges(ranges) };
       }
 
       return value.trim() ? { note: value.trim() } : null;
@@ -10127,14 +10154,19 @@ export class NightlifeDataService {
       };
     }
 
-    const range =
-      this.parseBookingTimeRange(record.hours) ??
-      this.parseBookingTimeRange(record.note);
-    if (range) {
+    const ranges = this.parseBookingTimeRanges(record.hours);
+    const noteRanges = ranges.length
+      ? ranges
+      : this.parseBookingTimeRanges(record.note);
+    if (noteRanges.length === 1) {
+      const [range] = noteRanges;
       return {
         open: this.formatBookingSlot(range.openMinutes),
         close: this.formatBookingSlot(range.closeMinutes),
       };
+    }
+    if (noteRanges.length > 1) {
+      return { note: this.formatBookingTimeRanges(noteRanges) };
     }
 
     return typeof record.note === 'string' && record.note.trim()
@@ -10142,28 +10174,45 @@ export class NightlifeDataService {
       : null;
   }
 
-  private parseBookingTimeRange(value: unknown) {
+  private parseBookingTimeRanges(value: unknown) {
     if (typeof value !== 'string') {
-      return null;
+      return [];
     }
 
-    const match = value.match(
-      /(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/,
-    );
-    if (!match) {
-      return null;
+    const ranges: Array<{ openMinutes: number; closeMinutes: number }> = [];
+    const rangePattern =
+      /(\d{1,2})(?::(\d{2}))?\s*[^0-9:]+\s*(\d{1,2})(?::(\d{2}))?/g;
+    let match = rangePattern.exec(value);
+
+    while (match) {
+      const open = this.parseBookingTimeToMinutes(
+        `${match[1]}:${match[2] ?? '00'}`,
+      );
+      const close = this.parseBookingTimeToMinutes(
+        `${match[3]}:${match[4] ?? '00'}`,
+      );
+
+      if (open !== null && close !== null) {
+        ranges.push({ openMinutes: open, closeMinutes: close });
+      }
+
+      match = rangePattern.exec(value);
     }
 
-    const open = this.parseBookingTimeToMinutes(
-      `${match[1]}:${match[2] ?? '00'}`,
-    );
-    const close = this.parseBookingTimeToMinutes(
-      `${match[3]}:${match[4] ?? '00'}`,
-    );
+    return ranges;
+  }
 
-    return open === null || close === null
-      ? null
-      : { openMinutes: open, closeMinutes: close };
+  private formatBookingTimeRanges(
+    ranges: Array<{ openMinutes: number; closeMinutes: number }>,
+  ) {
+    return ranges
+      .map(
+        (range) =>
+          `${this.formatBookingSlot(range.openMinutes)} - ${this.formatBookingSlot(
+            range.closeMinutes,
+          )}`,
+      )
+      .join(', ');
   }
 
   private parseBookingTimeToMinutes(value: unknown) {

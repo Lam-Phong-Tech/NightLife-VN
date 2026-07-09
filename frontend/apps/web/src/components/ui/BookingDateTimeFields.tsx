@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfigProvider, DatePicker, Select, theme } from "antd";
+import { ConfigProvider, DatePicker, Select } from "antd";
 import viVN from "antd/locale/vi_VN";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
@@ -30,31 +30,30 @@ type BookingDateTimeFieldsProps = {
 };
 
 const bookingPickerTheme = {
-  algorithm: theme.darkAlgorithm,
   token: {
-    colorPrimary: "#d4b26a",
-    colorBgContainer: "#211f26",
-    colorBgElevated: "#17151c",
-    colorBorder: "rgba(212, 178, 106, 0.28)",
-    colorText: "#f3f0ea",
-    colorTextPlaceholder: "#8d887d",
-    colorTextDisabled: "rgba(243, 240, 234, 0.38)",
+    colorPrimary: "var(--vy-gold)",
+    colorBgContainer: "var(--vy-surface-2)",
+    colorBgElevated: "var(--vy-surface)",
+    colorBorder: "var(--vy-border-gold-22)",
+    colorText: "var(--vy-text)",
+    colorTextPlaceholder: "var(--vy-faint)",
+    colorTextDisabled: "var(--vy-muted)",
     borderRadius: 12,
     controlHeight: 46,
     fontFamily: "inherit",
   },
   components: {
     DatePicker: {
-      activeBorderColor: "#d4b26a",
-      hoverBorderColor: "rgba(212, 178, 106, 0.52)",
-      cellActiveWithRangeBg: "rgba(212, 178, 106, 0.18)",
+      activeBorderColor: "var(--vy-gold)",
+      hoverBorderColor: "var(--vy-border-gold-40)",
+      cellActiveWithRangeBg: "var(--vy-gold-soft-bg)",
     },
     Select: {
-      activeBorderColor: "#d4b26a",
-      hoverBorderColor: "rgba(212, 178, 106, 0.52)",
-      optionActiveBg: "rgba(212, 178, 106, 0.12)",
-      optionSelectedBg: "rgba(212, 178, 106, 0.22)",
-      optionSelectedColor: "#f4e3b4",
+      activeBorderColor: "var(--vy-gold)",
+      hoverBorderColor: "var(--vy-border-gold-40)",
+      optionActiveBg: "var(--vy-gold-soft-bg)",
+      optionSelectedBg: "var(--vy-gold-soft-bg)",
+      optionSelectedColor: "var(--vy-gold-hi)",
     },
   },
 } as const;
@@ -97,11 +96,7 @@ export function BookingDateTimeFields({
   return (
     <ConfigProvider locale={viVN} theme={bookingPickerTheme}>
       <div
-        className={[
-          "nl-booking-date-time",
-          `nl-booking-date-time--${layout}`,
-          className,
-        ]
+        className={["nl-booking-date-time", `nl-booking-date-time--${layout}`, className]
           .filter(Boolean)
           .join(" ")}
       >

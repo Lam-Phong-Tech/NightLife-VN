@@ -1798,31 +1798,31 @@ html.vy-light .nl-reset-auth-input::placeholder {
 
 .nl-booking-ant-control.ant-picker {
   min-height: 46px;
-  border-color: rgba(212, 178, 106, 0.28);
-  background: rgba(255, 255, 255, 0.055);
-  color: #f5efe4;
+  border-color: var(--vy-border-gold-22);
+  background: var(--vy-surface-2);
+  color: var(--vy-text);
 }
 
 .nl-booking-ant-control.ant-picker:hover,
 .nl-booking-ant-control.ant-picker-focused {
-  border-color: rgba(212, 178, 106, 0.74);
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+  border-color: var(--vy-border-gold-40);
+  box-shadow: 0 0 0 3px var(--vy-gold-soft-bg);
 }
 
 .nl-booking-ant-control.ant-picker .ant-picker-input > input {
-  color: #f5efe4;
+  color: var(--vy-text);
   font-size: 13px;
   font-weight: 740;
 }
 
 .nl-booking-ant-control.ant-picker .ant-picker-input > input::placeholder {
-  color: #8d887d;
+  color: var(--vy-faint);
   opacity: 1;
 }
 
 .nl-booking-ant-control.ant-picker .ant-picker-suffix,
 .nl-booking-ant-control.ant-picker .ant-picker-clear {
-  color: #d4b26a;
+  color: var(--vy-gold);
 }
 
 .nl-booking-ant-select.ant-select {
@@ -1831,76 +1831,92 @@ html.vy-light .nl-reset-auth-input::placeholder {
 
 .nl-booking-ant-select.ant-select .ant-select-selector {
   min-height: 46px !important;
-  border-color: rgba(212, 178, 106, 0.28) !important;
-  background: rgba(255, 255, 255, 0.055) !important;
-  color: #f5efe4 !important;
+  border-color: var(--vy-border-gold-22) !important;
+  background: var(--vy-surface-2) !important;
+  color: var(--vy-text) !important;
   box-shadow: none !important;
   align-items: center;
 }
 
 .nl-booking-ant-select.ant-select:hover .ant-select-selector,
 .nl-booking-ant-select.ant-select-focused .ant-select-selector {
-  border-color: rgba(212, 178, 106, 0.74) !important;
-  box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12) !important;
+  border-color: var(--vy-border-gold-40) !important;
+  box-shadow: 0 0 0 3px var(--vy-gold-soft-bg) !important;
 }
 
 .nl-booking-ant-select .ant-select-selection-item,
 .nl-booking-ant-select .ant-select-selection-placeholder,
 .nl-booking-ant-select .ant-select-arrow {
-  color: #f5efe4 !important;
+  color: var(--vy-text) !important;
   font-size: 13px;
   font-weight: 740;
 }
 
 .nl-booking-ant-select .ant-select-selection-placeholder {
-  color: #8d887d !important;
+  color: var(--vy-faint) !important;
 }
 
 .nl-booking-select-popup.ant-select-dropdown,
 .nl-booking-ant-popup .ant-picker-panel-container {
-  border: 1px solid rgba(212, 178, 106, 0.28);
-  background: #17151c;
-  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42);
+  border: 1px solid var(--vy-border-gold-22);
+  background: var(--vy-surface);
+  color: var(--vy-text);
+  box-shadow: var(--vy-shadow-card);
 }
 
 .nl-booking-select-popup .ant-select-item {
-  color: #d7d0c4;
+  color: var(--vy-text-2);
   font-weight: 720;
 }
 
 .nl-booking-select-popup .ant-select-item-option-active,
 .nl-booking-select-popup .ant-select-item-option-selected {
-  background: rgba(212, 178, 106, 0.18) !important;
-  color: #f4e3b4 !important;
+  background: var(--vy-gold-soft-bg) !important;
+  color: var(--vy-gold-hi) !important;
+}
+
+.nl-booking-ant-popup .ant-picker-panel,
+.nl-booking-ant-popup .ant-picker-date-panel,
+.nl-booking-ant-popup .ant-picker-header,
+.nl-booking-ant-popup .ant-picker-body,
+.nl-booking-ant-popup .ant-picker-content {
+  background: var(--vy-surface);
+  color: var(--vy-text);
+  border-color: var(--vy-border);
+}
+
+.nl-booking-ant-popup .ant-picker-header button,
+.nl-booking-ant-popup .ant-picker-header-view button {
+  color: var(--vy-text-2);
 }
 
 .nl-booking-ant-popup .ant-picker-header,
 .nl-booking-ant-popup .ant-picker-content th,
 .nl-booking-ant-popup .ant-picker-cell {
-  color: #bdb5a7;
+  color: var(--vy-muted);
 }
 
 .nl-booking-ant-popup .ant-picker-cell-in-view {
-  color: #f3f0ea;
+  color: var(--vy-text);
 }
 
 .nl-booking-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner,
 .nl-booking-ant-popup .ant-picker-cell-today .ant-picker-cell-inner::before {
-  border-color: #d4b26a !important;
+  border-color: var(--vy-gold) !important;
 }
 
 .nl-booking-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner {
-  background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a) !important;
-  color: #241a0a !important;
+  background: var(--vy-gold-grad) !important;
+  color: var(--vy-on-gold) !important;
 }
 
 .nl-booking-empty-message {
   display: block;
   margin-top: 8px;
-  border: 1px dashed rgba(212, 178, 106, 0.28);
+  border: 1px dashed var(--vy-border-gold-22);
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.035);
-  color: #b7afa1;
+  background: var(--vy-surface-1);
+  color: var(--vy-text-2);
   padding: 10px 12px;
   font-size: 12px;
   line-height: 1.4;

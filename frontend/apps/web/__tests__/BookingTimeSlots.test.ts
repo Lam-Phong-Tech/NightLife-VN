@@ -5,12 +5,11 @@ import { buildBookingTimeSlots } from "@/lib/booking-time-slots";
 describe("booking time slots", () => {
   it("builds booking slots from admin opening hours", () => {
     expect(
-      buildBookingTimeSlots(
-        { thursday: { open: "11:00", close: "23:00" } },
-        "2026-07-09",
-        { fallback: "empty" },
-      ),
+      buildBookingTimeSlots({ thursday: { open: "11:00", close: "23:00" } }, "2026-07-09", {
+        fallback: "empty",
+      }),
     ).toEqual([
+      "11:00",
       "12:00",
       "13:00",
       "14:00",
@@ -25,6 +24,14 @@ describe("booking time slots", () => {
     ]);
   });
 
+  it("keeps separate admin opening windows instead of merging the gap", () => {
+    expect(
+      buildBookingTimeSlots({ thursday: { hours: "08:00 - 12:00, 18:00 - 22:00" } }, "2026-07-09", {
+        fallback: "empty",
+      }),
+    ).toEqual(["08:00", "09:00", "10:00", "11:00", "18:00", "19:00", "20:00", "21:00"]);
+  });
+
   it("does not show hard-coded slots when admin hours are missing in strict mode", () => {
     expect(buildBookingTimeSlots(null, "2026-07-09", { fallback: "empty" })).toEqual([]);
   });
@@ -34,6 +41,6 @@ describe("booking time slots", () => {
       buildBookingTimeSlots({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
       }),
-    ).toEqual(["19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
+    ).toEqual(["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
   });
 });
