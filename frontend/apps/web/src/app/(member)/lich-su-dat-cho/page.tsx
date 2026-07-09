@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { getAuthUser } from "@/lib/auth/session";
 import { useSocket } from "@/components/providers/SocketProvider";
+import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import {
   bookingApi,
   bookingRecordStatusGroup,
@@ -814,55 +815,33 @@ export default function Page() {
               Bạn có thể đổi lịch trước giờ hẹn tối thiểu 1 tiếng. Lịch mới sẽ được cập nhật ngay
               sau khi gửi.
             </p>
-            <label className={styles.dialogField}>
-              <span>Ngày mới</span>
-              <input
-                type="date"
-                value={rescheduleDate}
-                min={getTodayDate()}
-                max={getMaxBookingDate()}
-                onChange={(event) => {
-                  const nextDate = clampBookingDate(event.target.value);
-                  const nextSlots = buildBookingTimeSlots(rescheduleOpeningHours, nextDate, {
-                    fallback: "empty",
-                  });
-                  setRescheduleDate(nextDate);
-                  setRescheduleTime((current) =>
-                    nextSlots.includes(current) ? current : (nextSlots[0] ?? ""),
-                  );
-                  setRescheduleError("");
-                }}
-                aria-invalid={Boolean(rescheduleError)}
-                autoComplete="off"
-                className={styles.dialogInput}
-              />
-            </label>
-            <div className={styles.dialogField}>
-              <span>Khung giờ mới</span>
-              <div className={styles.timeChips} role="listbox" aria-label="Chọn khung giờ đổi lịch">
-                {rescheduleTimeOptions.length ? (
-                  rescheduleTimeOptions.map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      role="option"
-                      onClick={() => {
-                        setRescheduleTime(time);
-                        setRescheduleError("");
-                      }}
-                      className={`${styles.timeChip} ${rescheduleTime === time ? styles.selectedChip : ""}`}
-                      aria-selected={rescheduleTime === time}
-                    >
-                      {time}
-                    </button>
-                  ))
-                ) : (
-                  <span className={styles.emptySlotMessage}>
-                    Quán không có khung giờ đặt bàn trong ngày này.
-                  </span>
-                )}
-              </div>
-            </div>
+            <BookingDateTimeFields
+              dateLabel="Ngày mới"
+              timeLabel="Khung giờ mới"
+              dateValue={rescheduleDate}
+              timeValue={rescheduleTime}
+              timeOptions={rescheduleTimeOptions}
+              minDate={getTodayDate()}
+              maxDate={getMaxBookingDate()}
+              onDateChange={(value) => {
+                const nextDate = clampBookingDate(value);
+                const nextSlots = buildBookingTimeSlots(rescheduleOpeningHours, nextDate, {
+                  fallback: "empty",
+                });
+                setRescheduleDate(nextDate);
+                setRescheduleTime((current) =>
+                  nextSlots.includes(current) ? current : (nextSlots[0] ?? ""),
+                );
+                setRescheduleError("");
+              }}
+              onTimeChange={(time) => {
+                setRescheduleTime(time);
+                setRescheduleError("");
+              }}
+              emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
+              fieldClassName={styles.dialogField}
+              layout="stack"
+            />
             <label className={styles.dialogField}>
               <span>Lý do đổi lịch</span>
               <textarea

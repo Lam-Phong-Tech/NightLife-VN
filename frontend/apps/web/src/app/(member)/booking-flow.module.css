@@ -319,6 +319,10 @@
   gap: 11px;
 }
 
+.dateTimeFields {
+  width: 100%;
+}
+
 .stepper {
   min-height: 46px;
   padding: 0 8px;
@@ -1137,6 +1141,7 @@
   }
 
   .bookingFormFrame .formStack > .twoColumn,
+  .bookingFormFrame .formStack > .dateTimeFields,
   .bookingFormFrame .formStack > .field:nth-child(n + 4),
   .bookingFormFrame .formStack > .infoNote,
   .bookingFormFrame .formStack > .errorMessage {

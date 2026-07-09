@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
 import { ApiError, apiClient, getAuthToken } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
+import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
 import { getAuthUser } from "@/lib/auth/session";
 import {
@@ -454,8 +455,9 @@ function MapBlock({
 
 function BookingCard({
   store,
-  dateOptions,
-  selectedDateIndex,
+  selectedDateIso,
+  minDate,
+  maxDate,
   selectedTime,
   timeOptions,
   guestCount,
@@ -473,8 +475,9 @@ function BookingCard({
   onSubmit,
 }: {
   store: PublicStoreDetail;
-  dateOptions: Array<{ label: string; iso: string }>;
-  selectedDateIndex: number;
+  selectedDateIso: string;
+  minDate: string;
+  maxDate: string;
   selectedTime: string;
   timeOptions: string[];
   guestCount: number;
@@ -483,7 +486,7 @@ function BookingCard({
   note: string;
   isSubmitting: boolean;
   errorMessage: string;
-  onDateSelect: (index: number) => void;
+  onDateSelect: (value: string) => void;
   onTimeSelect: (time: string) => void;
   onGuestCountChange: (guestCount: number) => void;
   onGuestNameChange: (value: string) => void;
@@ -553,39 +556,19 @@ function BookingCard({
               </button>
             </div>
           </div>
-          <label className="booking-field">
-            <span>Ngày</span>
-            <select
-              aria-label="Chọn ngày"
-              value={selectedDateIndex}
-              onChange={(event) => onDateSelect(Number(event.target.value))}
-            >
-              {dateOptions.map((date, index) => (
-                <option key={date.iso} value={index}>
-                  {date.label}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
 
-        <label>Khung giờ</label>
-        <div className="slot-row">
-          {timeOptions.length ? (
-            timeOptions.map((time) => (
-              <button
-                key={time}
-                type="button"
-                className={time === selectedTime ? "slot active" : "slot"}
-                onClick={() => onTimeSelect(time)}
-              >
-                {time}
-              </button>
-            ))
-          ) : (
-            <span className="slot-empty">Quán không có khung giờ đặt bàn trong ngày này.</span>
-          )}
-        </div>
+        <BookingDateTimeFields
+          dateValue={selectedDateIso}
+          timeValue={selectedTime}
+          timeOptions={timeOptions}
+          minDate={minDate}
+          maxDate={maxDate}
+          onDateChange={onDateSelect}
+          onTimeChange={onTimeSelect}
+          emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
+          fieldClassName="booking-field"
+        />
 
         <label className="booking-note-label">Ghi chú tuỳ chọn</label>
         <textarea
@@ -1184,8 +1167,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <BookingCard
               store={store}
-              dateOptions={dateOptions}
-              selectedDateIndex={selectedDateIndex}
+              selectedDateIso={selectedDate.iso}
+              minDate={getTodayDate()}
+              maxDate={getMaxBookingDate()}
               selectedTime={selectedTime}
               timeOptions={bookingTimeOptions}
               guestCount={guestCount}
@@ -1194,7 +1178,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               note={note}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
-              onDateSelect={setSelectedDateIndex}
+              onDateSelect={(value) => {
+                const nextIndex = dateOptions.findIndex((date) => date.iso === value);
+                setSelectedDateIndex(nextIndex >= 0 ? nextIndex : 0);
+              }}
               onTimeSelect={setSelectedTime}
               onGuestCountChange={setGuestCount}
               onGuestNameChange={setGuestName}

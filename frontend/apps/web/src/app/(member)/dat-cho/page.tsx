@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  CalendarDays,
   ChevronLeft,
   Mail,
   Minus,
@@ -13,6 +12,7 @@ import {
   Star,
   UserRound,
 } from "lucide-react";
+import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
 import { getCastDetail } from "@/lib/api/cast-detail";
@@ -168,7 +168,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (!context.castSlug || context.castName) return;
+    if (!context.castSlug) return;
 
     let cancelled = false;
 
@@ -182,9 +182,9 @@ export default function Page() {
 
           return {
             ...current,
-            castName,
-            storeSlug: current.storeSlug ?? cast.store.slug,
-            storeName: current.storeName || cast.store.name,
+            castName: current.castName ?? castName,
+            storeSlug: cast.store.slug ?? current.storeSlug,
+            storeName: cast.store.name || current.storeName,
             area: current.area ?? cast.store.area?.name ?? cast.store.district ?? undefined,
           };
         });
@@ -201,7 +201,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [context.castName, context.castSlug]);
+  }, [context.castSlug]);
 
   useEffect(() => {
     if (!context.storeSlug) {
@@ -486,39 +486,22 @@ export default function Page() {
                   </div>
                 </div>
 
-                <DateField
-                  value={bookingDate}
-                  onChange={(value) => setBookingDate(clampBookingDate(value))}
-                />
               </div>
 
-              <div className={styles.field}>
-                <span className={styles.fieldLabel}>Khung giờ</span>
-                <div className={styles.timeChips} role="listbox" aria-label="Chọn khung giờ">
-                  {!storeHoursResolved ? (
-                    <span className={styles.emptySlotMessage}>
-                      Đang tải khung giờ của quán...
-                    </span>
-                  ) : bookingTimeOptions.length ? (
-                    bookingTimeOptions.map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        role="option"
-                        onClick={() => setBookingTime(time)}
-                        className={`${styles.timeChip} ${bookingTime === time ? styles.selectedChip : ""}`}
-                        aria-selected={bookingTime === time}
-                      >
-                        {time}
-                      </button>
-                    ))
-                  ) : (
-                    <span className={styles.emptySlotMessage}>
-                      Quán không có khung giờ đặt bàn trong ngày này.
-                    </span>
-                  )}
-                </div>
-              </div>
+              <BookingDateTimeFields
+                dateValue={bookingDate}
+                timeValue={bookingTime}
+                timeOptions={bookingTimeOptions}
+                minDate={getTodayDate()}
+                maxDate={getMaxBookingDate()}
+                onDateChange={(value) => setBookingDate(clampBookingDate(value))}
+                onTimeChange={setBookingTime}
+                loadingTimes={!storeHoursResolved}
+                emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
+                className={styles.dateTimeFields}
+                fieldClassName={styles.field}
+                labelClassName={styles.fieldLabel}
+              />
 
               <ReadOnlyTextField label="Cast đã chọn" value={castDisplayName} />
 
@@ -597,7 +580,6 @@ export default function Page() {
     </main>
   );
 }
-
 function ReadOnlyTextField({ label, value }: { label: string; value: string }) {
   return (
     <label className={styles.field}>
@@ -661,25 +643,6 @@ function EmailField({ value, onChange }: { value: string; onChange: (value: stri
           autoComplete="off"
           inputMode="email"
           className={styles.input}
-        />
-      </span>
-    </label>
-  );
-}
-
-function DateField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <label className={styles.field}>
-      <span className={styles.fieldLabel}>Ngày</span>
-      <span className={styles.dateInput}>
-        <CalendarDays size={15} />
-        <input
-          type="date"
-          value={value}
-          min={getTodayDate()}
-          max={getMaxBookingDate()}
-          onChange={(event) => onChange(event.target.value)}
-          autoComplete="off"
         />
       </span>
     </label>
