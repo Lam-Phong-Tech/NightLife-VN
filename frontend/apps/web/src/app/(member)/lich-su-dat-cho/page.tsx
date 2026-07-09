@@ -725,6 +725,7 @@ export default function Page() {
                     cancelingId={cancelingId}
                     onCancel={handleCancelBooking}
                     onReschedule={handleRescheduleBooking}
+                    onChat={openBookingChat}
                   />
                 ))
               : null}
@@ -961,6 +962,7 @@ function BookingCard({
   cancelingId,
   onCancel,
   onReschedule,
+  onChat,
 }: {
   booking: BookingRecord;
   isMember: boolean;
@@ -968,6 +970,7 @@ function BookingCard({
   cancelingId: string | null;
   onCancel: (booking: BookingRecord) => void;
   onReschedule: (booking: BookingRecord) => void;
+  onChat: (booking: BookingRecord) => void;
 }) {
   const group = bookingRecordStatusGroup(booking);
   const isOpenBooking = group === "Mới";
@@ -1013,6 +1016,10 @@ function BookingCard({
       <div className={styles.historyActions}>
         {isOpenBooking ? (
           <>
+            <button type="button" onClick={() => onChat(booking)} className={styles.secondaryCta}>
+              <MessageCircle size={14} />
+              Chat Admin
+            </button>
             {cancelAllowed ? (
               <button
                 type="button"
