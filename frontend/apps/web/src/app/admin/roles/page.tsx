@@ -35,7 +35,8 @@ export type AccountRec = {
 export type CapRow = [string, string, number, number, number, number, number];
 
 const allAcc = [
-  {id:1, ini:'A', name:'Nguyễn Admin', email:'admin@vietyoru.vn', role:'Super Admin', kind:'admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
+  {id:1, ini:'SA', name:'Super Admin', email:'superadmin@vietyoru.vn', role:'Super Admin', kind:'super_admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#e85050,#b52b2b)'},
+  {id:101, ini:'A', name:'Nguyễn Admin', email:'admin@vietyoru.vn', role:'Admin', kind:'admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
   {id:2, ini:'O', name:'Trần Vận Hành', email:'operator@vietyoru.vn', role:'Operator', kind:'operator', last:'2 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
   {id:3, ini:'LH', name:'Lê Thu Hà', email:'ha.le@vietyoru.vn', role:'Operator', kind:'operator', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
   {id:4, ini:'LT', name:'Lễ tân · Club Lumière', email:'staff.lumiere1@vietyoru.vn', role:'Staff', kind:'staff', last:'10 phút trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
@@ -128,7 +129,7 @@ export default function AdminRolesPage() {
   const [capsUser, setCapsUser] = useState<CapRow[]>(INIT_CAPS_USER);
 
   // Computed data
-  const S_allAcc = [...extraAccs, ...allAcc].filter(a => !accGone[a.email]).map(a => {
+  const S_allAcc = [...extraAccs, ...allAcc].filter(a => !accGone[a.email]).filter(a => isSuperAdmin || a.kind !== 'super_admin').map(a => {
     const ov = accEdits[a.email];
     return { ...a, key: a.email, name: ov?.name || a.name, email: ov?.email || a.email, disabled: !!accStatus[a.email] };
   });
@@ -159,6 +160,7 @@ export default function AdminRolesPage() {
 
   const rst = (kind: string) => {
     const m: Record<string, string[]> = {
+      super_admin: ['rgba(232,80,80,.1)','rgba(232,80,80,.3)','#e85050'],
       info: ['rgba(111,159,216,.12)','rgba(111,159,216,.28)','#8fb6e4'],
       gold: ['rgba(212,178,106,.12)','rgba(212,178,106,.3)','#e3c27e'],
       success: ['rgba(95,191,134,.1)','rgba(95,191,134,.28)','#7fd3a2'],
@@ -166,7 +168,7 @@ export default function AdminRolesPage() {
       muted: ['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a']
     };
     const fallback = ['rgba(255,255,255,.05)','rgba(255,255,255,.12)','#9b958a'];
-    const c = m[kind==='admin'?'gold':kind==='operator'?'info':kind==='partner'?'success':kind==='staff'?'pink':'muted'] || fallback;
+    const c = m[kind==='super_admin'?'super_admin':kind==='admin'?'gold':kind==='operator'?'info':kind==='partner'?'success':kind==='staff'?'pink':'muted'] || fallback;
     return { background: c[0], border: `1px solid ${c[1]}`, color: c[2], fontSize: '10.5px', fontWeight: 600, padding: '3px 10px', borderRadius: '7px', display: 'inline-flex' };
   };
 
@@ -197,7 +199,14 @@ export default function AdminRolesPage() {
     showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
   };
 
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const user = getAuthUser();
+      return user?.role === 'SUPER_ADMIN';
+    }
+    return false;
+  });
+  
   useEffect(() => {
     const user = getAuthUser();
     if (user?.role === 'SUPER_ADMIN') {
@@ -258,7 +267,9 @@ export default function AdminRolesPage() {
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {[
-                { id: 'all', label: 'Tất cả' }, { id: 'admin', label: 'Admin' }, 
+                { id: 'all', label: 'Tất cả' }, 
+                ...(isSuperAdmin ? [{ id: 'super_admin', label: 'Super Admin' }] : []),
+                { id: 'admin', label: 'Admin' }, 
                 { id: 'operator', label: 'Operator' }, { id: 'partner', label: 'Đối tác' }, 
                 { id: 'staff', label: 'Staff' }, { id: 'muted', label: 'Chờ kích hoạt' },
                 { id: 'disabled', label: 'Đã vô hiệu' }
