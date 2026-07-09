@@ -251,6 +251,7 @@ function TopCategoryFilter() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [badges, setBadges] = useState({ 
     pendingBills: 0, 
@@ -258,7 +259,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     pendingPartners: 0,
     notifications: [] as any[]
   });
-  const [readAll, setReadAll] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+  const [readAllTimestamp, setReadAllTimestamp] = useState<number>(0);
   const [activeFilter, setActiveFilter] = useState<'all' | 'booking' | 'bill' | 'system'>('all');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isMobileSidebar, setIsMobileSidebar] = useState(() =>
@@ -314,8 +317,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ? createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : 'Vừa xong';
 
+      let item: any = null;
+
       if (key === 'telegram.admin.booking.created.v1') {
-        list.push({
+        item = {
           id: log.id,
           tag: 'BK',
           kind: 'warn',
@@ -327,9 +332,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Xem lịch đặt',
           href: '/admin/bookings',
           icon: Calendar
-        });
+        };
       } else if (key === 'telegram.admin.booking.cancelled.v1') {
-        list.push({
+        item = {
           id: log.id,
           tag: 'BK',
           kind: 'error',
@@ -341,9 +346,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Xem lịch đặt',
           href: '/admin/bookings',
           icon: Calendar
-        });
+        };
       } else if (key === 'telegram.admin.bill.submitted.v1') {
-        list.push({
+        item = {
           id: log.id,
           tag: 'BILL',
           kind: 'warn',
@@ -355,9 +360,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Duyệt hóa đơn',
           href: '/admin/bills',
           icon: Receipt
-        });
+        };
       } else if (key === 'telegram.admin.bill.verified.v1') {
-        list.push({
+        item = {
           id: log.id,
           tag: 'BILL',
           kind: 'success',
@@ -369,9 +374,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Xem hóa đơn',
           href: '/admin/bills',
           icon: Receipt
-        });
+        };
       } else if (key === 'telegram.admin.bill.rejected.v1') {
-        list.push({
+        item = {
           id: log.id,
           tag: 'BILL',
           kind: 'error',
@@ -383,9 +388,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Xem hóa đơn',
           href: '/admin/bills',
           icon: Receipt
-        });
+        };
       } else if (key === 'telegram.admin.partner.requested.v1') {
-        list.push({
+        item = {
           id: log.id,
           tag: 'ĐT',
           kind: 'pink',
@@ -397,7 +402,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           action: 'Xem đối tác',
           href: '/admin/partners',
           icon: Users
-        });
+        };
+      }
+
+      if (item) {
+        item.createdAtStr = log.createdAt;
+        list.push(item);
       }
     });
 
@@ -414,7 +424,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           category: 'bill',
           action: 'Duyệt hóa đơn',
           href: '/admin/bills',
-          icon: Receipt
+          icon: Receipt,
+          createdAtStr: null
         });
       }
       if (badges.pendingCasts > 0) {
@@ -429,7 +440,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           category: 'system',
           action: 'Kiểm duyệt cast',
           href: '/admin/casts',
-          icon: UserCheck
+          icon: UserCheck,
+          createdAtStr: null
         });
       }
       if (badges.pendingPartners > 0) {
@@ -444,17 +456,61 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           category: 'system',
           action: 'Duyệt đối tác',
           href: '/admin/partners',
-          icon: Users
+          icon: Users,
+          createdAtStr: null
         });
       }
     }
 
-    return list;
+    return list.map(item => {
+      let isUnread = true;
+      if (readNotificationIds.includes(item.id)) {
+        isUnread = false;
+      } else if (item.createdAtStr) {
+        const itemTime = new Date(item.createdAtStr).getTime();
+        if (!Number.isNaN(itemTime) && itemTime <= readAllTimestamp) {
+          isUnread = false;
+        }
+      } else {
+        if (readAllTimestamp > 0) {
+          isUnread = false;
+        }
+      }
+      return { ...item, isUnread };
+    });
+  };
+
+  const markAsRead = (id: string) => {
+    try {
+      const readIds = localStorage.getItem('vy-read-notifications');
+      let next: string[] = [];
+      if (readIds) {
+        next = JSON.parse(readIds);
+      }
+      if (!next.includes(id)) {
+        next.push(id);
+        localStorage.setItem('vy-read-notifications', JSON.stringify(next));
+      }
+      setReadNotificationIds(next);
+    } catch (e) {}
+  };
+
+  const markAllAsRead = () => {
+    const now = Date.now();
+    setReadAllTimestamp(now);
+    try {
+      localStorage.setItem('vy-notifications-read-all-time', String(now));
+      const currentIds = getNotificationItems().map(item => item.id);
+      setReadNotificationIds(prev => {
+        const next = Array.from(new Set([...prev, ...currentIds]));
+        localStorage.setItem('vy-read-notifications', JSON.stringify(next));
+        return next;
+      });
+    } catch (e) {}
   };
 
   const notificationItems = getNotificationItems();
-  const prevItemsCount = useRef(notificationItems.length);
-  const unreadCount = readAll ? 0 : notificationItems.length;
+  const unreadCount = notificationItems.filter(item => item.isUnread).length;
   const filters = [
     { key: 'all', label: 'Tất cả' },
     { key: 'booking', label: 'Đặt chỗ' },
@@ -462,20 +518,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { key: 'system', label: 'Hệ thống' }
   ];
 
-  useEffect(() => {
-    if (notificationItems.length > prevItemsCount.current) {
-      setReadAll(false);
-    }
-    prevItemsCount.current = notificationItems.length;
-  }, [notificationItems.length]);
-
 
   useEffect(() => {
+    setIsMounted(true);
     try {
       const storedTheme = localStorage.getItem('vy-admin-theme') as 'light' | 'dark' | null;
       if (storedTheme) {
         setTheme(storedTheme);
         document.documentElement.classList.toggle('vy-admin-light', storedTheme === 'light');
+      }
+    } catch (e) {}
+    try {
+      const readIds = localStorage.getItem('vy-read-notifications');
+      if (readIds) {
+        setReadNotificationIds(JSON.parse(readIds));
+      }
+      const readTime = localStorage.getItem('vy-notifications-read-all-time');
+      if (readTime) {
+        setReadAllTimestamp(Number(readTime));
       }
     } catch (e) {}
     const user = getAuthUser();
@@ -747,7 +807,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             
             <span onClick={() => setShowNotifications(!showNotifications)} style={{ width: '39px', height: '39px', borderRadius: '50%', border: '1px solid rgba(212,178,106,.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d4b26a', cursor: 'pointer', background: 'rgba(255,255,255,.02)', position: 'relative' }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-              {unreadCount > 0 && (
+              {isMounted && unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: '2px', right: '-2px', minWidth: '16px', height: '16px', borderRadius: '8px', background: '#e0729e', color: '#fff', fontSize: '9px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid #0c0c0f', animation: 'vpulse 2.2s infinite' }}>
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
@@ -776,7 +836,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#f3f0ea' }}>Thông báo</h3>
                     <button
                       type="button"
-                      onClick={() => setReadAll(true)}
+                      onClick={() => markAllAsRead()}
                       disabled={unreadCount === 0}
                       style={{
                         display: 'inline-flex',
@@ -801,8 +861,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <div style={{ display: 'flex', gap: '8px', padding: '0 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' }}>
                     {filters.map((f) => {
                       const count = f.key === 'all' 
-                        ? notificationItems.length 
-                        : notificationItems.filter(item => item.category === f.key).length;
+                        ? notificationItems.filter(item => item.isUnread).length 
+                        : notificationItems.filter(item => item.category === f.key && item.isUnread).length;
                       const isActive = activeFilter === f.key;
                       return (
                         <button
@@ -825,7 +885,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           }}
                         >
                           {f.label}
-                          {count > 0 && (
+                          {isMounted && count > 0 && (
                             <span style={{
                               background: isActive ? '#d4b26a' : 'rgba(255,255,255,0.08)',
                               color: isActive ? '#16141b' : '#8c8679',
@@ -895,28 +955,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 iconColor = '#e3c27e';
                               }
 
-                              const isUnread = !readAll;
+                              const isUnread = item.isUnread;
 
                               return (
                                 <div
                                   key={item.id}
                                   onClick={() => {
                                     setShowNotifications(false);
-                                    if (item.href) window.location.href = item.href;
+                                    markAsRead(item.id);
+                                    if (item.href) router.push(item.href);
                                   }}
                                   style={{
                                     display: 'flex',
                                     gap: '12px',
                                     padding: '11px 16px',
                                     alignItems: 'flex-start',
-                                    background: isUnread ? 'rgba(212,178,106,.05)' : 'transparent',
+                                    background: isMounted && isUnread ? 'rgba(212,178,106,.05)' : 'transparent',
                                     borderBottom: '1px solid rgba(255,255,255,.05)',
                                     cursor: 'pointer',
                                     position: 'relative',
                                     transition: 'background 0.2s'
                                   }}
                                   onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,.03)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = isUnread ? 'rgba(212,178,106,.05)' : 'transparent'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isMounted && isUnread ? 'rgba(212,178,106,.05)' : 'transparent'; }}
                                 >
                                   {/* Icon container */}
                                   <span style={{
