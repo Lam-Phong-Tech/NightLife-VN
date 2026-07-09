@@ -64,6 +64,11 @@ const parseDate = (value: string) => {
   return parsed.isValid() ? parsed : null;
 };
 
+const formatBookingDateLabel = (value: dayjs.Dayjs) => {
+  const label = value.format("dddd, DD/MM");
+  return label.charAt(0).toLocaleUpperCase("vi-VN") + label.slice(1);
+};
+
 export function BookingDateTimeFields({
   dateLabel = "Ngày",
   timeLabel = "Khung giờ",
@@ -110,7 +115,7 @@ export function BookingDateTimeFields({
             disabledDate={(date) =>
               date ? date.isBefore(min, "day") || date.isAfter(max, "day") : false
             }
-            format="dddd, DD/MM"
+            format={formatBookingDateLabel}
             getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
             inputReadOnly
             maxDate={max}

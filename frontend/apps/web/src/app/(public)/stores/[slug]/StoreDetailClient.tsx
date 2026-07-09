@@ -2258,12 +2258,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         .booking-card .booking-field .nl-booking-ant-control.ant-picker {
-          min-height: 26px;
+          min-height: 28px;
+          height: 28px;
           margin-top: 7px;
           padding: 0;
           border: 0;
           background: transparent;
           box-shadow: none;
+          display: flex;
+          align-items: center;
         }
 
         .booking-card .booking-field .nl-booking-ant-control.ant-picker:hover,
@@ -2276,20 +2279,24 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-text);
           font-size: 13px;
           font-weight: 850;
+          height: 28px;
+          line-height: 28px;
         }
 
         .booking-card .booking-field .nl-booking-ant-select.ant-select {
-          min-height: 26px;
+          min-height: 28px;
+          height: 28px;
           margin-top: 7px;
         }
 
         .booking-card .booking-field .nl-booking-ant-select.ant-select .ant-select-selector {
-          min-height: 26px !important;
-          height: 26px !important;
+          min-height: 28px !important;
+          height: 28px !important;
           padding: 0 !important;
           border: 0 !important;
           background: transparent !important;
           box-shadow: none !important;
+          align-items: center !important;
         }
 
         .booking-card .booking-field .nl-booking-ant-select.ant-select:hover .ant-select-selector,
@@ -2303,7 +2310,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           color: var(--vy-text) !important;
           font-size: 13px;
           font-weight: 850;
-          line-height: 26px !important;
+          line-height: 28px !important;
+          min-height: 28px !important;
         }
 
         .booking-card .booking-field .nl-booking-ant-select .ant-select-arrow {
