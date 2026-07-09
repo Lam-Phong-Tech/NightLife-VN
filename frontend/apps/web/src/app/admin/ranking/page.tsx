@@ -33,6 +33,10 @@ interface RankingItem {
 }
 
 type RankingCityTab = 'HN' | 'HCM' | 'ALL';
+type RankingToast = {
+  type: 'success' | 'error' | 'warning';
+  message: string;
+};
 type AdminRankingCategory =
   | 'BAR'
   | 'CLUB'
@@ -254,6 +258,17 @@ function AdminRankingsClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
+  const [toast, setToast] = useState<RankingToast | null>(null);
+
+  const showToast = useCallback((message: string, type: RankingToast['type'] = 'success') => {
+    setToast({ message, type });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 3600);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   const updateCityTab = (tab: RankingCityTab) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -291,7 +306,7 @@ function AdminRankingsClient() {
   const handleAddCast = (option: any) => {
     if (casts.find(c => c.targetId === option.id)) return;
     if (casts.length >= 5) {
-      alert('Chỉ được xếp hạng tối đa 5 Cast!');
+      showToast('Chỉ được xếp hạng tối đa 5 Cast.', 'warning');
       return;
     }
     setCasts([...casts, {
@@ -310,7 +325,7 @@ function AdminRankingsClient() {
   const handleAddStore = (option: any) => {
     if (stores.find(s => s.targetId === option.id)) return;
     if (stores.length >= 5) {
-      alert('Chỉ được xếp hạng tối đa 5 Quán!');
+      showToast('Chỉ được xếp hạng tối đa 5 Quán.', 'warning');
       return;
     }
     setStores([...stores, {
@@ -500,12 +515,12 @@ function AdminRankingsClient() {
         }
       }
 
-      alert('Lưu ranking thành công!');
+      showToast('Lưu ranking thành công.', 'success');
       setDeletedItemIds([]);
       fetchRankings();
     } catch (error: any) {
       console.error(error);
-      alert('Lỗi khi lưu ranking');
+      showToast('Lỗi khi lưu ranking. Vui lòng thử lại.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -523,6 +538,78 @@ function AdminRankingsClient() {
 
   return (
     <div style={{ padding: '22px 26px 44px', maxWidth: '1000px', margin: '0 auto' }}>
+      {toast ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            top: '88px',
+            right: '28px',
+            zIndex: 80,
+            minWidth: '280px',
+            maxWidth: '360px',
+            borderRadius: '14px',
+            border:
+              toast.type === 'error'
+                ? '1px solid rgba(224,105,122,.46)'
+                : toast.type === 'warning'
+                  ? '1px solid rgba(224,164,78,.5)'
+                  : '1px solid rgba(127,211,162,.42)',
+            background:
+              toast.type === 'error'
+                ? 'linear-gradient(135deg,rgba(224,105,122,.16),rgba(19,18,24,.96))'
+                : toast.type === 'warning'
+                  ? 'linear-gradient(135deg,rgba(224,164,78,.16),rgba(19,18,24,.96))'
+                  : 'linear-gradient(135deg,rgba(127,211,162,.14),rgba(19,18,24,.96))',
+            boxShadow: '0 24px 60px -28px rgba(0,0,0,.9)',
+            padding: '14px 14px 14px 15px',
+            color: '#f3f0ea',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '11px',
+          }}
+        >
+          <span
+            style={{
+              width: '30px',
+              height: '30px',
+              flex: 'none',
+              borderRadius: '10px',
+              background:
+                toast.type === 'error'
+                  ? 'rgba(224,105,122,.18)'
+                  : toast.type === 'warning'
+                    ? 'rgba(224,164,78,.18)'
+                    : 'rgba(127,211,162,.16)',
+              color: toast.type === 'error' ? '#e88b99' : toast.type === 'warning' ? '#e3c27e' : '#7fd3a2',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {toast.type === 'success' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.01" /></svg>
+            )}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '12px', fontWeight: 800, color: toast.type === 'success' ? '#7fd3a2' : toast.type === 'warning' ? '#e3c27e' : '#e88b99', marginBottom: '2px' }}>
+              {toast.type === 'success' ? 'Thành công' : toast.type === 'warning' ? 'Lưu ý' : 'Không lưu được'}
+            </div>
+            <div style={{ fontSize: '12.5px', lineHeight: 1.45, color: '#c5c0b6' }}>{toast.message}</div>
+          </div>
+          <button
+            type="button"
+            aria-label="Đóng thông báo"
+            onClick={() => setToast(null)}
+            style={{ width: '26px', height: '26px', borderRadius: '8px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.04)', color: '#8c8679', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+      ) : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
         <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '3px', gap: '2px' }}>
           <span onClick={() => updateCityTab('HN')} style={getTabStyle('HN')}>Hà Nội</span>
