@@ -6,6 +6,7 @@ import { ApiError, apiClient, translateApiMessage } from '@/lib/api/client';
 import { adminPageSize } from '../components/AdminPagination';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 const colors = {
   bg: '#0f0f13',
@@ -75,6 +76,7 @@ type AdminBillsResponse = {
 };
 
 export default function AdminBillsPage() {
+  const feedback = useSystemFeedback();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -155,7 +157,7 @@ export default function AdminBillsPage() {
       setSelectedBill(null);
     } catch (e) {
       console.error(e);
-      alert('Có lỗi xảy ra khi duyệt bill');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi duyệt bill', tone: 'error' });
     } finally {
       setIsProcessing(false);
     }
@@ -171,7 +173,7 @@ export default function AdminBillsPage() {
   const handleRejectSubmit = async () => {
     const finalReason = rejectReason === 'Khác' ? rejectCustomReason : rejectReason;
     if (!finalReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối!');
+      feedback.showToast({ title: 'Vui lòng nhập lý do từ chối!', tone: 'warning' });
       return;
     }
     
@@ -183,7 +185,7 @@ export default function AdminBillsPage() {
       setSelectedBill(null);
     } catch (e) {
       console.error(e);
-      alert('Có lỗi xảy ra khi từ chối bill');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi từ chối bill', tone: 'error' });
     } finally {
       setIsProcessing(false);
     }

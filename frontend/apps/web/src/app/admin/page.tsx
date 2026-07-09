@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { clearAuthSession } from '@/lib/auth/session';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 type AdminDashboardStats = {
   activeStores: number;
@@ -54,6 +55,7 @@ export default function AdminDashboardPage() {
 }
 
 function AdminDashboardContent() {
+  const feedback = useSystemFeedback();
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || 'other';
   const category = searchParams.get('category') || '';
@@ -157,7 +159,7 @@ function AdminDashboardContent() {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       console.error('Export error:', err);
-      alert('Không thể tải báo cáo. V vui lòng thử lại.');
+      feedback.showToast({ title: 'Không thể tải báo cáo. Vui lòng thử lại.', tone: 'error' });
     }
   };
 

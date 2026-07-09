@@ -474,7 +474,7 @@ export default function AdminContentPage() {
 
   const handleSaveBanner = async () => {
     if (!bannerTitle.trim()) {
-      alert('Vui lòng nhập tiêu đề banner!');
+      feedback.showToast({ title: 'Vui lòng nhập tiêu đề banner!', tone: 'warning' });
       return;
     }
     try {
@@ -493,7 +493,7 @@ export default function AdminContentPage() {
           }
         } catch (uploadErr) {
           console.error('Failed to upload banner image:', uploadErr);
-          alert('Lỗi tải ảnh. Banner sẽ được lưu nhưng không có ảnh mới.');
+          feedback.showToast({ title: 'Lỗi tải ảnh. Banner sẽ được lưu nhưng không có ảnh mới.', tone: 'error' });
         }
       }
 
@@ -525,9 +525,9 @@ export default function AdminContentPage() {
       
       fetchBanners();
       closeDrawer();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save banner:', error);
-      alert('Có lỗi xảy ra khi lưu banner');
+      feedback.showToast({ title: error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi lưu banner', tone: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -535,7 +535,7 @@ export default function AdminContentPage() {
 
   const handleSaveBlog = async (status: 'DRAFT' | 'PUBLISHED') => {
     if (!blogTitle.trim()) {
-      alert('Vui lòng nhập tiêu đề bài viết!');
+      feedback.showToast({ title: 'Vui lòng nhập tiêu đề bài viết!', tone: 'warning' });
       return;
     }
 
@@ -574,7 +574,7 @@ export default function AdminContentPage() {
           }
         } catch (uploadErr) {
           console.error('Failed to upload image:', uploadErr);
-          alert('Lỗi tải ảnh bìa. Bài viết vẫn sẽ được lưu nhưng không có ảnh bìa mới.');
+          feedback.showToast({ title: 'Lỗi tải ảnh bìa. Bài viết vẫn sẽ được lưu nhưng không có ảnh bìa mới.', tone: 'error' });
         }
       }
 
@@ -596,12 +596,12 @@ export default function AdminContentPage() {
       } else {
         await contentApi.adminCreate(payload);
       }
-      alert(status === 'DRAFT' ? 'Đã lưu nháp thành công!' : 'Đã đăng bài thành công!');
+      feedback.showToast({ title: status === 'DRAFT' ? 'Đã lưu nháp thành công!' : 'Đã đăng bài thành công!', tone: 'success' });
       fetchBlogs();
       closeDrawer();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save blog:', error);
-      alert('Có lỗi xảy ra khi lưu bài viết. Vui lòng thử lại!');
+      feedback.showToast({ title: error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi lưu bài viết. Vui lòng thử lại!', tone: 'error' });
     } finally {
       setIsSubmitting(false);
     }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { AdminPagination, adminPageSize } from '../components/AdminPagination';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 export default function AdminBookingsPage() {
   return (
@@ -14,6 +15,7 @@ export default function AdminBookingsPage() {
 }
 
 function AdminBookingsContent() {
+  const feedback = useSystemFeedback();
   const searchParams = useSearchParams();
   const city = searchParams.get('city') || '';
   const category = searchParams.get('category') || '';
@@ -33,7 +35,7 @@ function AdminBookingsContent() {
       setSelectedBooking((prev: any) => prev && prev.id === bookingId ? { ...prev, status } : prev);
     } catch (error) {
       console.error(error);
-      alert('Lỗi khi cập nhật trạng thái');
+      feedback.showToast({ title: 'Lỗi khi cập nhật trạng thái', tone: 'error' });
     } finally {
       setIsActionLoading(false);
     }

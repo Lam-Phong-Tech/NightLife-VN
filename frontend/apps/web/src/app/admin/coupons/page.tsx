@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { AdminPagination, adminPageSize } from '../components/AdminPagination';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 export default function AdminCouponsPage() {
+  const feedback = useSystemFeedback();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIssue, setSelectedIssue] = useState<any | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
@@ -338,16 +340,21 @@ export default function AdminCouponsPage() {
                 <div style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: '20px' }}>
                   <span 
                     onClick={async () => {
-                      if (confirm(`Bạn có chắc chắn muốn xóa chiến dịch ${vc.code}?`)) {
-                        try {
-                          await apiClient(`/admin/coupons/${vc.id}`, { method: 'DELETE' });
-                          setSelectedCampaign(null);
-                          fetchCampaigns();
-                          showToastMsg(`Đã xóa thành công chiến dịch ${vc.code}`);
-                        } catch (err: any) {
-                          showToastMsg(err?.message || 'Không thể xóa chiến dịch');
+                      feedback.showModal({
+                        title: 'Xóa chiến dịch',
+                        description: `Bạn có chắc chắn muốn xóa chiến dịch ${vc.code}?`,
+                        onPrimary: async () => {
+                          try {
+                            await apiClient(`/admin/coupons/${vc.id}`, { method: 'DELETE' });
+                            setSelectedCampaign(null);
+                            fetchCampaigns();
+                            feedback.closeModal();
+                            feedback.showToast({ title: `Đã xóa thành công chiến dịch ${vc.code}`, tone: 'success' });
+                          } catch (err: any) {
+                            feedback.showToast({ title: err?.message || 'Không thể xóa chiến dịch', tone: 'error' });
+                          }
                         }
-                      }
+                      });
                     }}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', background: 'rgba(235,94,85,.1)', border: '1px solid rgba(235,94,85,.3)', borderRadius: '11px', color: '#eb5e55', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
                   >
