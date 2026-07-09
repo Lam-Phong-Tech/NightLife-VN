@@ -5,6 +5,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { VIETNAM_CITY_FILTER_CODES } from '../vietnam-admin-units';
 
 const decimalNumberPattern = /^-?\d+(\.\d+)?$/;
 
@@ -76,7 +77,7 @@ export class PublicRankingQueryDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['all', 'hn', 'hcm'])
+  @IsIn(VIETNAM_CITY_FILTER_CODES)
   @MaxLength(24)
   city?: string;
 

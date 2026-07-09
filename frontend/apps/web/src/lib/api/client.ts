@@ -76,6 +76,7 @@ const exactMessageTranslations: Record<string, string> = {
   "cast not found": "Không tìm thấy cast.",
   "cast does not belong to selected store": "Cast không thuộc quán đã chọn.",
   "city must be hn, hcm, or all": "Thành phố chỉ được chọn Hà Nội, TP.HCM hoặc tất cả.",
+  "city must be a supported city code or all": "Thành phố chưa được hỗ trợ hoặc không hợp lệ.",
   "code must be a 6 digit number": "Mã xác nhận phải gồm 6 chữ số.",
   "content not found": "Không tìm thấy nội dung.",
   "content slug already exists": "Đường dẫn nội dung này đã tồn tại.",

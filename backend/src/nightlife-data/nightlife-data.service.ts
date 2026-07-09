@@ -114,6 +114,11 @@ import {
   PublicHotVideoInteractionDto,
   UpdateHotVideosDto,
 } from './dto/admin-video.dto';
+import {
+  resolveVietnamProvinceArea,
+  VIETNAM_CITY_ALIASES,
+  vietnamAreaCityLookupNames,
+} from './vietnam-admin-units';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BILL_SUBMISSION_DEADLINE_DAYS = 10;
@@ -538,6 +543,7 @@ type PartnerCouponIssueRecord = {
 };
 
 const CITY_ALIASES: Record<string, string> = {
+  ...VIETNAM_CITY_ALIASES,
   all: 'all',
   'tat-ca': 'all',
   'tong-hop': 'all',
@@ -1236,7 +1242,6 @@ export class NightlifeDataService {
   ) {
     const targetType = this.resolveRankingTargetType(query.targetType);
     const cityCode = this.normalizeCityCode(query.city, { strict: true });
-    const isAll = query.city?.toLowerCase() === 'all';
     const category =
       this.resolveAdminRankingCategory(query.category) ?? undefined;
     const q = this.cleanText(query.q);
@@ -1261,15 +1266,7 @@ export class NightlifeDataService {
                   { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
                 ],
               }
-            : isAll
-              ? {
-                  NOT: [
-                    { city: { in: ['Hanoi', 'Ho Chi Minh City'] } },
-                    { area: { is: { code: { startsWith: 'hn-' } } } },
-                    { area: { is: { code: { startsWith: 'hcm-' } } } },
-                  ],
-                }
-              : {}),
+            : {}),
           ...(q
             ? {
                 OR: [
@@ -1355,28 +1352,10 @@ export class NightlifeDataService {
                         },
                       ],
                     }
-                  : isAll
-                    ? {
-                        NOT: [
-                          { city: { in: ['Hanoi', 'Ho Chi Minh City'] } },
-                          { area: { is: { code: { startsWith: 'hn-' } } } },
-                          { area: { is: { code: { startsWith: 'hcm-' } } } },
-                        ],
-                      }
-                    : {}),
+                  : {}),
               },
             }
-          : isAll
-            ? {
-                store: {
-                  NOT: [
-                    { city: { in: ['Hanoi', 'Ho Chi Minh City'] } },
-                    { area: { is: { code: { startsWith: 'hn-' } } } },
-                    { area: { is: { code: { startsWith: 'hcm-' } } } },
-                  ],
-                },
-              }
-            : {}),
+          : {}),
         ...(q
           ? {
               OR: [
@@ -5362,6 +5341,14 @@ export class NightlifeDataService {
     const storeAddress = this.cleanNullableText(dto.storeAddress);
     const storeCity = this.cleanNullableText(dto.storeCity);
     const storeDistrict = this.cleanNullableText(dto.storeDistrict);
+    const draftStoreCity =
+      storeCity ?? this.partnerCityFromArea(area) ?? 'Ho Chi Minh City';
+    const draftStoreDistrict =
+      storeDistrict ?? this.partnerDistrictFromArea(area);
+    const draftStoreAreaId = await this.inferAreaFromAddress(
+      storeAddress ?? '',
+      draftStoreCity,
+    );
 
     const request = await this.prisma.$transaction(async (tx) => {
       const store = await tx.store.create({
@@ -5371,9 +5358,9 @@ export class NightlifeDataService {
           category,
           description: storeDescription,
           address: storeAddress,
-          city:
-            storeCity ?? this.partnerCityFromArea(area) ?? 'Ho Chi Minh City',
-          district: storeDistrict ?? this.partnerDistrictFromArea(area),
+          city: draftStoreCity,
+          district: draftStoreDistrict,
+          areaId: draftStoreAreaId,
           phone: contactPhone,
           openingHours: openingHours
             ? this.toPrismaJson({ summary: openingHours })
@@ -14330,6 +14317,11 @@ export class NightlifeDataService {
       return null;
     }
 
+    const provinceArea = resolveVietnamProvinceArea(text);
+    if (provinceArea) {
+      return provinceArea.city;
+    }
+
     if (token.includes('ha-noi') || token.includes('hanoi')) {
       return 'Ha Noi';
     }
@@ -14510,7 +14502,9 @@ export class NightlifeDataService {
     }
 
     if (!cityCode && options.strict) {
-      throw new BadRequestException('city must be hn, hcm, or all');
+      throw new BadRequestException(
+        'city must be a supported city code or all',
+      );
     }
 
     return cityCode;
@@ -17055,16 +17049,24 @@ export class NightlifeDataService {
     address: string,
     city: string,
   ): Promise<string | undefined> {
-    const cityNames =
-      city === 'Ho Chi Minh City'
-        ? ['Ho Chi Minh City', 'TP.HCM', 'Hồ Chí Minh', 'HCM']
-        : city === 'Hanoi'
-          ? ['Hanoi', 'Hà Nội', 'HN']
-          : [city];
+    const provinceArea = resolveVietnamProvinceArea(city);
+    const cityNames = vietnamAreaCityLookupNames(city);
+    const cityWhere: Prisma.AreaWhereInput = provinceArea
+      ? {
+          OR: [
+            { city: { in: cityNames } },
+            { code: { startsWith: `${provinceArea.cityCode}-` } },
+          ],
+        }
+      : { city: { in: cityNames } };
 
     // A simple inference: look for matching district names in the address
     const areas = await this.prisma.area.findMany({
-      where: { city: { in: cityNames }, status: 'ACTIVE' },
+      where: {
+        status: 'ACTIVE',
+        deletedAt: null,
+        ...cityWhere,
+      },
     });
 
     // Find an area where its district name is mentioned in the address
@@ -17076,7 +17078,14 @@ export class NightlifeDataService {
       }
     }
 
-    // Fallback: just return the first active area in that city
+    const generalArea = areas.find(
+      (area) =>
+        area.code === provinceArea?.areaCode ||
+        this.normalizeToken(area.name) === 'tong-hop',
+    );
+    if (generalArea) return generalArea.id;
+
+    // Fallback: just return the first active area in that city.
     if (areas.length > 0) return areas[0].id;
     return undefined;
   }
@@ -18329,8 +18338,7 @@ export class NightlifeDataService {
   }
 
   private normalizeHotVideoCityCode(cityCode: string) {
-    const normalized = this.normalizeToken(cityCode) || 'all';
-    return ['all', 'hn', 'hcm'].includes(normalized) ? normalized : 'all';
+    return this.normalizeCityCode(cityCode) ?? 'all';
   }
 
   // ── Admin Coupon (独立 QR flow) ──────────────────────────────────

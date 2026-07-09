@@ -1,11 +1,20 @@
 import { PrismaClient, Area } from '@prisma/client';
+import { VIETNAM_PROVINCE_AREAS } from '../../src/nightlife-data/vietnam-admin-units';
 
 /**
- * P0 public listing renders HCM/HN only.
- * DN/HP areas below are later-phase seed data and are filtered out by P0 APIs.
+ * Keep one "Tổng hợp" area for every current Vietnam province-level unit.
+ * More granular nightlife districts stay below for cities that need richer filters.
  */
-const AREAS = [
-  // ── Hồ Chí Minh ──
+const GENERAL_AREAS = VIETNAM_PROVINCE_AREAS.map((area) => ({
+  code: area.areaCode,
+  name: 'Tổng hợp',
+  city: area.city,
+  district: 'Tổng hợp',
+  ward: null,
+}));
+
+const DETAIL_AREAS = [
+  // Hồ Chí Minh
   {
     code: 'hcm-q1',
     name: 'Quận 1',
@@ -27,7 +36,7 @@ const AREAS = [
     district: 'Quận 7',
     ward: 'Tân Phú',
   },
-  // ── Hà Nội ──
+  // Hà Nội
   {
     code: 'hn-hoankiem',
     name: 'Hoàn Kiếm',
@@ -49,7 +58,7 @@ const AREAS = [
     district: 'Cầu Giấy',
     ward: 'Dịch Vọng Hậu',
   },
-  // ── Đà Nẵng ──
+  // Đà Nẵng
   {
     code: 'dn-haichau',
     name: 'Hải Châu',
@@ -64,7 +73,7 @@ const AREAS = [
     district: 'Sơn Trà',
     ward: 'An Hải Bắc',
   },
-  // ── Hải Phòng ──
+  // Hải Phòng
   {
     code: 'hp-hongbang',
     name: 'Hồng Bàng',
@@ -80,6 +89,8 @@ const AREAS = [
     ward: 'Máy Tơ',
   },
 ];
+
+const AREAS = [...GENERAL_AREAS, ...DETAIL_AREAS];
 
 export async function seedAreas(
   prisma: PrismaClient,
@@ -108,6 +119,8 @@ export async function seedAreas(
     });
   }
 
-  console.log(`     ✓ ${Object.keys(result).length} areas (HCM/HN P0 + DN/HP later-phase seeds)`);
+  console.log(
+    `     ✓ ${Object.keys(result).length} areas (34 province-level general + city detail seeds)`,
+  );
   return result;
 }

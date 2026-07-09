@@ -11,6 +11,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { VIETNAM_CITY_FILTER_CODES } from '../vietnam-admin-units';
 
 export class AdminRankingQueryDto {
   @IsOptional()
@@ -20,7 +21,7 @@ export class AdminRankingQueryDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['all', 'hn', 'hcm'])
+  @IsIn(VIETNAM_CITY_FILTER_CODES)
   city?: string;
 
   @IsOptional()
@@ -62,7 +63,7 @@ export class CreateAdminRankingConfigDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['all', 'hn', 'hcm'])
+  @IsIn(VIETNAM_CITY_FILTER_CODES)
   cityCode?: string;
 
   @IsOptional()
@@ -123,7 +124,7 @@ export class UpdateAdminRankingConfigDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['all', 'hn', 'hcm'])
+  @IsIn(VIETNAM_CITY_FILTER_CODES)
   cityCode?: string;
 
   @IsOptional()

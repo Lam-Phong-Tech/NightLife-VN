@@ -81,7 +81,9 @@ export async function seedAll(
   console.log(
     '  • Users:         8 (1 admin, 1 operator, 1 staff, 3 partners, 1 member, 1 VIP)',
   );
-  console.log('  • Areas:         10 (HCM/HN/DN/HP)');
+  console.log(
+    '  • Areas:         44 (34 province-level general + 10 city detail)',
+  );
   console.log('  • Stores:        15 (HCM/HN/DN/HP)');
   console.log('  • Casts:         31');
   console.log(

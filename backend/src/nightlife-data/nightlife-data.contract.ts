@@ -45,7 +45,7 @@ const badRequestExample = {
 
 const publicDiscoveryBadRequestExample = {
   statusCode: 400,
-  message: 'city must be hn, hcm, or all',
+  message: 'city must be a supported city code or all',
   error: 'Bad Request',
 };
 
@@ -1103,13 +1103,13 @@ export function PublicAreasContract() {
     ApiOperation({
       summary: 'Public discovery: list active areas',
       description:
-        'Auth guard: none. P0 supports hn, hcm, and all only. Da Nang/Hai Phong seed data is reserved for later phases and is not rendered by P0 public listing.',
+        'Auth guard: none. Supports all current Vietnam province-level city codes plus all.',
     }),
     ApiQuery({
       name: 'city',
       required: false,
-      description: 'P0 city code or alias: hn, hcm, all.',
-      example: 'hn',
+      description: 'City code or alias such as all, hn, hcm, dn, ninhbinh.',
+      example: 'all',
     }),
     ApiOkResponse({
       description: 'Active areas used by public store and cast filters.',
@@ -1138,7 +1138,8 @@ export function PublicRankingsContract() {
     ApiQuery({
       name: 'city',
       required: false,
-      description: 'City filter: all, hn, or hcm. Defaults to all.',
+      description:
+        'City filter: all or a supported Vietnam province-level city code. Defaults to all.',
       example: 'all',
     }),
     ApiQuery({
@@ -2330,9 +2331,8 @@ function publicDiscoveryQueries(
     ApiQuery({
       name: 'city',
       required: false,
-      description:
-        'P0 city code or alias: hn, hcm, all. Da Nang/Hai Phong are later-phase data and are not returned by P0 listing.',
-      example: 'hn',
+      description: 'City code or alias such as all, hn, hcm, dn, ninhbinh.',
+      example: 'all',
     }),
     ApiQuery({
       name: 'area',

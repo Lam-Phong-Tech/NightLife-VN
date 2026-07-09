@@ -264,6 +264,7 @@ describe('NightlifeDataService', () => {
       status: 'PENDING_REVIEW',
     } as never);
     prisma.store.update.mockResolvedValue({ id: 'store-draft-1' } as never);
+    prisma.area.findMany.mockResolvedValue([] as never);
     prisma.cast.count.mockResolvedValue(1);
     prisma.cast.create.mockResolvedValue({ id: 'cast-draft-1' } as never);
     prisma.cast.updateMany.mockResolvedValue({ count: 1 } as never);
@@ -531,6 +532,120 @@ describe('NightlifeDataService', () => {
           deletedAt: null,
           status: 'ACTIVE',
         },
+      }),
+    );
+  });
+
+  it('filters public stores by newly seeded province area codes', async () => {
+    prisma.store.findMany.mockResolvedValue([
+      {
+        id: 'store-meo-meo',
+        createdAt: new Date('2026-07-09T00:00:00.000Z'),
+        name: 'Meo Meo',
+        slug: 'meo-meo',
+        category: 'CLUB',
+        description: null,
+        address: 'Kim Thanh, Ninh Binh',
+        city: 'Tinh Ninh Binh',
+        district: null,
+        latitude: null,
+        longitude: null,
+        area: {
+          id: 'area-ninhbinh-general',
+          code: 'ninhbinh-tong-hop',
+          name: 'Tong hop',
+          city: 'Ninh Binh',
+          district: 'Tong hop',
+        },
+        media: [],
+      },
+    ] as never);
+
+    const result = await service.listPublicStores({ city: 'ninhbinh' });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        slug: 'meo-meo',
+        cityCode: 'ninhbinh',
+      }),
+    ]);
+    expect(prisma.store.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            {
+              area: {
+                is: {
+                  deletedAt: null,
+                  status: 'ACTIVE',
+                  code: { startsWith: 'ninhbinh-' },
+                },
+              },
+            },
+          ]),
+        }),
+      }),
+    );
+  });
+
+  it('assigns the general province area when admin creates a store', async () => {
+    prisma.store.findUnique.mockResolvedValue(null as never);
+    prisma.area.findMany.mockResolvedValue([
+      {
+        id: 'area-ninhbinh-general',
+        code: 'ninhbinh-tong-hop',
+        name: 'Tong hop',
+        city: 'Ninh Binh',
+        district: 'Tong hop',
+        ward: null,
+      },
+    ] as never);
+    prisma.store.create.mockResolvedValue({
+      id: 'store-meo-meo',
+      name: 'Meo Meo',
+      slug: 'meo-meo',
+      status: 'ACTIVE',
+      areaId: 'area-ninhbinh-general',
+    } as never);
+
+    const result = await service.createAdminStore({
+      name: 'Meo Meo',
+      category: 'CLUB',
+      city: 'Tinh Ninh Binh',
+      address: 'Kim Thanh, Tinh Ninh Binh',
+      status: 'ACTIVE',
+    } as never);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'store-meo-meo',
+        areaId: 'area-ninhbinh-general',
+      }),
+    );
+    expect(prisma.area.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          OR: expect.arrayContaining([
+            {
+              code: { startsWith: 'ninhbinh-' },
+            },
+            expect.objectContaining({
+              city: expect.objectContaining({
+                in: expect.arrayContaining(['Ninh Bình', 'Tinh Ninh Binh']),
+              }),
+            }),
+          ]),
+        }),
+      }),
+    );
+    expect(prisma.store.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: 'Meo Meo',
+          areaId: 'area-ninhbinh-general',
+        }),
       }),
     );
   });
@@ -4937,6 +5052,66 @@ describe('NightlifeDataService', () => {
 
     expect(prisma.partnerRequest.create).toHaveBeenCalled();
     expect(prisma.partnerRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('assigns province areas to partner draft stores', async () => {
+    prisma.area.findMany.mockResolvedValueOnce([
+      {
+        id: 'area-ninhbinh-general',
+        code: 'ninhbinh-tong-hop',
+        name: 'Tong hop',
+        city: 'Ninh Binh',
+        district: 'Tong hop',
+        ward: null,
+      },
+    ] as never);
+    prisma.store.create.mockResolvedValueOnce({
+      id: 'store-draft-1',
+      name: 'Meo Meo',
+      slug: 'meo-meo-partner-abc12345',
+      status: 'PENDING_REVIEW',
+    } as never);
+    prisma.partnerRequest.create.mockImplementation(
+      (args) =>
+        Promise.resolve(
+          partnerRequestRecord({
+            id: args.data?.id,
+            status: args.data?.status,
+            businessName: args.data?.businessName,
+            area: args.data?.area,
+            contactName: args.data?.contactName,
+            contactPhone: args.data?.contactPhone,
+            draftCastIds: args.data?.draftCastIds,
+            draftMediaIds: args.data?.draftMediaIds,
+            draftContentIds: args.data?.draftContentIds,
+            submittedAt: args.data?.submittedAt,
+          }),
+        ) as never,
+    );
+
+    await expect(
+      service.createPartnerRequest({
+        businessName: 'Meo Meo',
+        businessType: 'Club',
+        area: 'Tinh Ninh Binh',
+        contactName: 'Owner',
+        contactPhone: '+84901234567',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'PENDING_REVIEW',
+      }),
+    );
+
+    expect(prisma.store.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          city: 'Ninh Bình',
+          areaId: 'area-ninhbinh-general',
+          status: 'PENDING_REVIEW',
+        }),
+      }),
+    );
   });
 
   it('lists partner requests from durable CMS records with filters', async () => {
