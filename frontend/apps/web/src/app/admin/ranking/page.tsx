@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
-import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import {
   DndContext,
   closestCenter,
