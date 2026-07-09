@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -11,7 +11,8 @@ import {
   Sparkles,
   Ticket,
 } from "lucide-react";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, resolveClientUrl } from "@/lib/api/client";
+import { contentApi, type CmsContentItem } from "@/lib/api/content";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
 
 const categoryLabels: Record<string, string> = {
@@ -42,6 +43,20 @@ const fallbackImages = [
   "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=720&q=76",
   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=720&q=76",
 ];
+
+const couponPageSize = 6;
+const defaultCouponBannerImage =
+  "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76";
+
+type CouponBannerMetadata = {
+  description?: string;
+  tag?: string;
+  link?: string;
+  statusLabel?: string;
+  subtitle?: string;
+  imageUrl?: string;
+  position?: string;
+};
 
 const formatVnd = (value?: number | null) => {
   if (!value) {
@@ -86,6 +101,33 @@ const normalizeText = (value: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+
+const getCouponBannerMetadata = (content: CmsContentItem): CouponBannerMetadata =>
+  (content.metadata ?? {}) as CouponBannerMetadata;
+
+const isCouponBanner = (content: CmsContentItem) => {
+  const metadata = getCouponBannerMetadata(content);
+  const haystack = [
+    content.title,
+    content.slug,
+    content.excerpt ?? "",
+    metadata.position ?? "",
+    metadata.tag ?? "",
+    metadata.link ?? "",
+    metadata.statusLabel ?? "",
+    metadata.subtitle ?? "",
+    metadata.description ?? "",
+  ].join(" ");
+  const normalized = normalizeText(haystack);
+
+  return (
+    normalized.includes("uu dai") ||
+    normalized.includes("khuyen mai") ||
+    normalized.includes("coupon") ||
+    normalized.includes("deal") ||
+    normalized.includes("/uu-dai")
+  );
+};
 
 const getCouponImage = (coupon: PublicCoupon, index: number) =>
   coupon.store.media?.[0]?.url ??
@@ -141,10 +183,12 @@ function CouponDealCard({ coupon, index }: { coupon: PublicCoupon; index: number
 
 export default function Page() {
   const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
+  const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -172,10 +216,27 @@ export default function Page() {
         }
       });
 
+    contentApi
+      .list({ type: "BANNER", limit: 24 })
+      .then((response) => {
+        if (isMounted) {
+          setBanners(response.data ?? []);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setBanners([]);
+        }
+      });
+
     return () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchTerm]);
 
   const categoryOptions = useMemo(() => {
     const counts = coupons.reduce<Record<string, number>>((acc, coupon) => {
@@ -212,17 +273,48 @@ export default function Page() {
   }, [activeCategory, coupons, searchTerm]);
 
   const featuredCoupon = filteredCoupons[0] ?? coupons[0];
+  const couponBanner = useMemo(() => banners.find(isCouponBanner) ?? null, [banners]);
+  const couponBannerMetadata = couponBanner ? getCouponBannerMetadata(couponBanner) : null;
+  const couponBannerImage =
+    resolveClientUrl(couponBannerMetadata?.imageUrl) ||
+    couponBannerMetadata?.imageUrl ||
+    defaultCouponBannerImage;
+  const couponHeroStyle = {
+    "--coupon-hero-image": `url(${JSON.stringify(couponBannerImage)})`,
+  } as CSSProperties;
+  const couponHeroTitle = couponBanner?.title || "Ưu đãi đêm nay";
+  const couponHeroDescription =
+    couponBannerMetadata?.description ||
+    couponBanner?.excerpt ||
+    "Coupon & khuyến mãi từ các quán đối tác, dẫn thẳng về trang đặt bàn để nhận QR.";
+  const couponHeroEyebrow = couponBannerMetadata?.tag || couponBannerMetadata?.statusLabel || "Xem danh sách quán";
+  const couponHeroHref =
+    couponBannerMetadata?.link && couponBannerMetadata.link !== "/uu-dai"
+      ? couponBannerMetadata.link
+      : "/danh-sach-quan";
+  const totalPages = Math.max(1, Math.ceil(filteredCoupons.length / couponPageSize));
+  const currentCouponPage = Math.min(currentPage, totalPages);
+  const couponStartIndex = (currentCouponPage - 1) * couponPageSize;
+  const paginatedCoupons = filteredCoupons.slice(couponStartIndex, couponStartIndex + couponPageSize);
+  const shouldShowPagination = !isLoading && !loadError && filteredCoupons.length > couponPageSize;
+  const hasActiveCouponFilter = searchTerm.trim().length > 0 || activeCategory !== "ALL";
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <main className="coupon-page">
       <section className="coupon-shell">
-        <header className="coupon-hero">
+        <header className="coupon-hero" style={couponHeroStyle}>
           <div className="hero-copy">
-            <Link className="back-link" href="/danh-sach-quan">
-              Xem danh sách quán
+            <Link className="back-link" href={couponHeroHref}>
+              {couponHeroEyebrow}
             </Link>
-            <h1>Ưu đãi đêm nay</h1>
-            <p>Coupon & khuyến mãi từ các quán đối tác, dẫn thẳng về trang đặt bàn để nhận QR.</p>
+            <h1>{couponHeroTitle}</h1>
+            <p>{couponHeroDescription}</p>
           </div>
 
           <div className="hero-search" role="search">
@@ -244,7 +336,7 @@ export default function Page() {
           </section>
         ) : null}
 
-        <section className="coupon-content">
+        <section className={`coupon-content${hasActiveCouponFilter ? " is-filtering" : ""}`}>
           <aside className="coupon-panel" aria-label="Bộ lọc ưu đãi">
             <div className="panel-card featured-card">
               <span className="panel-icon">
@@ -342,10 +434,55 @@ export default function Page() {
 
             {!isLoading && !loadError && filteredCoupons.length ? (
               <section className="coupon-grid" aria-label="Danh sách coupon đang có">
-                {filteredCoupons.map((coupon, index) => (
-                  <CouponDealCard coupon={coupon} index={index} key={coupon.id} />
+                {paginatedCoupons.map((coupon, index) => (
+                  <CouponDealCard coupon={coupon} index={couponStartIndex + index} key={coupon.id} />
                 ))}
               </section>
+            ) : null}
+
+            {shouldShowPagination ? (
+              <nav aria-label="Phân trang ưu đãi" className="coupon-pagination">
+                <span>
+                  Hiển thị {couponStartIndex + 1}-{Math.min(couponStartIndex + couponPageSize, filteredCoupons.length)} /{" "}
+                  {filteredCoupons.length} ưu đãi
+                </span>
+                <div className="coupon-pagination-actions">
+                  <button
+                    disabled={currentCouponPage <= 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    type="button"
+                  >
+                    Trước
+                  </button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                    <button
+                      aria-current={currentCouponPage === page ? "page" : undefined}
+                      className={currentCouponPage === page ? "active" : ""}
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      type="button"
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    disabled={currentCouponPage >= totalPages}
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    type="button"
+                  >
+                    Sau
+                  </button>
+                  {currentCouponPage < totalPages ? (
+                    <button
+                      className="load-more"
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      type="button"
+                    >
+                      Xem thêm
+                    </button>
+                  ) : null}
+                </div>
+              </nav>
             ) : null}
           </section>
         </section>
@@ -378,7 +515,7 @@ export default function Page() {
           border-radius: 8px;
           background:
             linear-gradient(115deg, rgba(18, 18, 22, .98), rgba(25, 23, 25, .86)),
-            url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76");
+            var(--coupon-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
           background-position: center;
           background-size: cover;
           box-shadow: 0 28px 72px -44px rgba(0, 0, 0, .9);
@@ -817,6 +954,57 @@ export default function Page() {
           line-height: 1.6;
         }
 
+        .coupon-pagination {
+          border: 1px solid rgba(212, 178, 106, .16);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .035);
+          padding: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .coupon-pagination > span {
+          color: #bdb4a5;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .coupon-pagination-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 7px;
+          flex-wrap: wrap;
+        }
+
+        .coupon-pagination button {
+          min-width: 38px;
+          min-height: 36px;
+          border: 1px solid rgba(212, 178, 106, .2);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, .04);
+          color: #d9c08a;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+          padding: 0 11px;
+        }
+
+        .coupon-pagination button.active,
+        .coupon-pagination button.load-more {
+          border-color: transparent;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
+          color: #17130c;
+        }
+
+        .coupon-pagination button:disabled {
+          cursor: not-allowed;
+          opacity: .45;
+        }
+
         html.vy-light .coupon-page {
           background:
             radial-gradient(circle at 18% 0%, rgba(168, 124, 52, .1), transparent 32%),
@@ -829,7 +1017,7 @@ export default function Page() {
           border-color: rgba(150, 116, 52, .28);
           background:
             linear-gradient(115deg, rgba(255, 255, 255, .94), rgba(246, 244, 239, .9)),
-            url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76");
+            var(--coupon-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
           background-position: center;
           background-size: cover;
           box-shadow: 0 22px 54px -34px rgba(40, 30, 10, .34);
@@ -882,7 +1070,8 @@ export default function Page() {
         html.vy-light .panel-card,
         html.vy-light .result-head,
         html.vy-light .coupon-card,
-        html.vy-light .empty-state {
+        html.vy-light .empty-state,
+        html.vy-light .coupon-pagination {
           border-color: rgba(150, 116, 52, .28);
           background: rgba(255, 255, 255, .82);
           box-shadow: 0 18px 40px -34px rgba(40, 30, 10, .32);
@@ -944,6 +1133,22 @@ export default function Page() {
           color: #8c8679;
         }
 
+        html.vy-light .coupon-pagination > span {
+          color: #6f675c;
+        }
+
+        html.vy-light .coupon-pagination button {
+          border-color: rgba(150, 116, 52, .24);
+          background: rgba(28, 22, 10, .035);
+          color: #8f6a2a;
+        }
+
+        html.vy-light .coupon-pagination button.active,
+        html.vy-light .coupon-pagination button.load-more {
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
+          color: #17130c;
+        }
+
         html.vy-light .result.error {
           border-color: rgba(194, 69, 92, .34);
           background: rgba(194, 69, 92, .08);
@@ -968,6 +1173,23 @@ export default function Page() {
           .coupon-panel {
             position: static;
             grid-template-columns: 1fr 1fr;
+          }
+
+          .coupon-content.is-filtering {
+            gap: 12px;
+          }
+
+          .coupon-content.is-filtering .coupon-results {
+            order: 1;
+          }
+
+          .coupon-content.is-filtering .coupon-panel {
+            order: 2;
+          }
+
+          .coupon-content.is-filtering .featured-card,
+          .coupon-content.is-filtering .note-card {
+            display: none;
           }
 
           .note-card {
@@ -1000,6 +1222,15 @@ export default function Page() {
 
           .coupon-grid {
             grid-template-columns: 1fr;
+          }
+
+          .coupon-pagination {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .coupon-pagination-actions {
+            justify-content: flex-start;
           }
         }
 
