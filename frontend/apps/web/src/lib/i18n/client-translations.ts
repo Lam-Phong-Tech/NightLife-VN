@@ -3098,19 +3098,151 @@ const entries: TranslationEntry[] = [
   },
 ];
 
+const dynamicPhraseEntries: TranslationEntry[] = [
+  {
+    vi: "Vi vu hôm nay",
+    en: "Tonight's picks",
+    ja: "今夜のおすすめ",
+    ko: "오늘 밤 추천",
+    zh: "今晚推荐",
+  },
+  {
+    vi: "Chưa có Video Hot cho khu vực này.",
+    en: "No hot videos for this area yet.",
+    ja: "このエリアの注目動画はまだありません。",
+    ko: "이 지역에는 아직 인기 영상이 없습니다.",
+    zh: "该区域暂无热门视频。",
+  },
+  {
+    vi: "Concierge cho một đêm trọn vẹn",
+    en: "Concierge for a complete night out",
+    ja: "一晩を満喫するコンシェルジュ",
+    ko: "완벽한 밤을 위한 컨시어지",
+    zh: "整晚无忧的礼宾服务",
+  },
+  {
+    vi: "Xem hướng dẫn",
+    en: "View guide",
+    ja: "ガイドを見る",
+    ko: "가이드 보기",
+    zh: "查看指南",
+  },
+  {
+    vi: "Gợi ý bàn đẹp cho nhóm 2-6 người, đặt trước để được ưu tiên.",
+    en: "Recommended tables for groups of 2-6; book ahead for priority.",
+    ja: "2〜6名のグループにおすすめの席です。優先案内には事前予約を。",
+    ko: "2-6명 그룹에 추천하는 좌석입니다. 우선 안내를 원하면 미리 예약하세요.",
+    zh: "适合2-6人小组的推荐座位，提前预订可优先安排。",
+  },
+  {
+    vi: "Nhà hàng hot",
+    en: "Hot restaurant",
+    ja: "注目レストラン",
+    ko: "인기 레스토랑",
+    zh: "热门餐厅",
+  },
+  {
+    vi: "Ẩm thực đêm",
+    en: "Night dining",
+    ja: "夜のグルメ",
+    ko: "야간 다이닝",
+    zh: "夜间美食",
+  },
+  {
+    vi: "Set dinner đêm",
+    en: "Night set dinner",
+    ja: "夜のセットディナー",
+    ko: "나이트 세트 디너",
+    zh: "夜间套餐晚餐",
+  },
+];
+
 const translations = new Map<string, TranslationSet>(
-  entries.map(({ vi, ...translated }) => [normalizeText(vi), translated]),
+  [...entries, ...dynamicPhraseEntries].map(({ vi, ...translated }) => [
+    normalizeText(vi),
+    translated,
+  ]),
 );
 
 const reverseTranslations = new Map<string, string>();
 
-for (const entry of entries) {
+for (const entry of [...entries, ...dynamicPhraseEntries]) {
   for (const code of ["en", "ja", "ko", "zh"] as const) {
     reverseTranslations.set(normalizeText(entry[code]), entry.vi);
   }
 }
 
 const termEntries: TranslationEntry[] = [
+  {
+    vi: "Ho Chi Minh City",
+    en: "Ho Chi Minh City",
+    ja: "ホーチミン市",
+    ko: "호찌민시",
+    zh: "胡志明市",
+  },
+  {
+    vi: "Hanoi",
+    en: "Hanoi",
+    ja: "ハノイ",
+    ko: "하노이",
+    zh: "河内",
+  },
+  {
+    vi: "Night dining",
+    en: "Night dining",
+    ja: "夜のグルメ",
+    ko: "야간 다이닝",
+    zh: "夜间美食",
+  },
+  {
+    vi: "Restaurant",
+    en: "Restaurant",
+    ja: "レストラン",
+    ko: "레스토랑",
+    zh: "餐厅",
+  },
+  {
+    vi: "Video Hot",
+    en: "Hot videos",
+    ja: "注目動画",
+    ko: "인기 영상",
+    zh: "热门视频",
+  },
+  {
+    vi: "khu vực này",
+    en: "this area",
+    ja: "このエリア",
+    ko: "이 지역",
+    zh: "该区域",
+  },
+  {
+    vi: "đặt trước",
+    en: "book ahead",
+    ja: "事前予約",
+    ko: "미리 예약",
+    zh: "提前预订",
+  },
+  {
+    vi: "ưu tiên",
+    en: "priority",
+    ja: "優先案内",
+    ko: "우선 안내",
+    zh: "优先安排",
+  },
+  {
+    vi: "hướng dẫn",
+    en: "guide",
+    ja: "ガイド",
+    ko: "가이드",
+    zh: "指南",
+  },
+  {
+    vi: "bàn đẹp",
+    en: "recommended table",
+    ja: "おすすめの席",
+    ko: "추천 좌석",
+    zh: "推荐座位",
+  },
   {
     vi: "TP. Hồ Chí Minh",
     en: "Ho Chi Minh City",
@@ -3831,11 +3963,65 @@ function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
   return output;
 }
 
+function lowercaseFirst(value: string) {
+  return value.length > 0 ? `${value[0]?.toLocaleLowerCase() ?? ""}${value.slice(1)}` : value;
+}
+
+function translateDelimitedText(
+  value: string,
+  language: Exclude<LanguageCode, "vi">,
+) {
+  const delimiters = [" — ", " · "];
+
+  for (const delimiter of delimiters) {
+    if (!value.includes(delimiter)) continue;
+
+    const parts = value.split(delimiter);
+    const translatedParts = parts.map((part) => translateText(part, language));
+    const hasTranslation = translatedParts.some((part, index) => part !== parts[index]);
+
+    if (hasTranslation) return translatedParts.join(delimiter);
+  }
+
+  return null;
+}
+
+function translateDistrictLabel(
+  district: string,
+  language: Exclude<LanguageCode, "vi">,
+) {
+  return {
+    en: `District ${district}`,
+    ja: `${district}区`,
+    ko: `${district}군`,
+    zh: `第${district}郡`,
+  }[language];
+}
+
 function translatePattern(
   value: string,
   language: Exclude<LanguageCode, "vi">,
 ): string | null {
   const normalized = normalizeText(value);
+  const delimitedText = translateDelimitedText(normalized, language);
+  if (delimitedText) return delimitedText;
+
+  const districtMatch = normalized.match(/^(?:Quận|District)\s+(\d+)$/i);
+  if (districtMatch) {
+    return translateDistrictLabel(districtMatch[1] ?? "", language);
+  }
+
+  const emptyAreaMatch = normalized.match(/^Chưa có\s+(.+?)\s+cho khu vực này\.$/i);
+  if (emptyAreaMatch) {
+    const subject = translateText(emptyAreaMatch[1] ?? "", language);
+    return {
+      en: `No ${lowercaseFirst(subject)} for this area yet.`,
+      ja: `このエリアの${subject}はまだありません。`,
+      ko: `이 지역에는 아직 ${subject}이(가) 없습니다.`,
+      zh: `该区域暂无${subject}。`,
+    }[language];
+  }
+
   const topMatch = normalized.match(/^TOP\s+(\d+)$/i) ?? normalized.match(/^Top\s+(\d+)$/i);
 
   if (topMatch) {

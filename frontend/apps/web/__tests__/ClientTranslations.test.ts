@@ -63,4 +63,21 @@ describe("client translations", () => {
     expect(translateText("Gửi mã xác nhận", "ja")).toBe("確認コードを送信");
     expect(translateText("Tạo mật khẩu mới", "ja")).toBe("新しいパスワードを作成");
   });
+
+  it("translates admin-fed mixed public content with shared fallback patterns", () => {
+    expect(translateText("Vi vu hôm nay", "ja")).toBe("今夜のおすすめ");
+    expect(translateText("Chưa có Video Hot cho khu vực này.", "ja")).toBe(
+      "このエリアの注目動画はまだありません。",
+    );
+    expect(translateText("東京キッチン — Set dinner đêm", "ja")).toBe(
+      "東京キッチン — 夜のセットディナー",
+    );
+    expect(translateText("Quận 2", "ja")).toBe("2区");
+    expect(translateText("District 3 · Ho Chi Minh City · Restaurant", "ja")).toBe(
+      "3区 · ホーチミン市 · レストラン",
+    );
+    expect(translateText("Concierge cho một đêm trọn vẹn", "ko")).toBe(
+      "완벽한 밤을 위한 컨시어지",
+    );
+  });
 });
