@@ -500,8 +500,8 @@ export default function Page() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
-      <section style={{ maxWidth: 1120, margin: "0 auto", padding: "24px 18px 64px" }}>
+    <main className="nl-bill-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+      <section className="nl-bill-shell">
         <Link
           href="/tai-khoan"
           style={{
@@ -742,6 +742,25 @@ export default function Page() {
       </section>
 
       <style jsx>{`
+        .nl-bill-page {
+          width: 100%;
+          overflow-x: hidden;
+        }
+
+        .nl-bill-shell {
+          width: min(100%, 1120px);
+          max-width: 100%;
+          box-sizing: border-box;
+          margin: 0 auto;
+          padding: 24px 18px 64px;
+        }
+
+        .nl-bill-page *,
+        .nl-bill-page *::before,
+        .nl-bill-page *::after {
+          box-sizing: border-box;
+        }
+
         .nl-bill-head {
           display: flex;
           align-items: flex-start;
@@ -787,14 +806,17 @@ export default function Page() {
           gap: 18px;
           margin-top: 22px;
           align-items: start;
+          min-width: 0;
         }
 
         .nl-bill-form,
         .nl-bill-side {
+          min-width: 0;
           border: 1px solid ${colors.border};
           border-radius: 8px;
           background: ${colors.panel};
           padding: 16px;
+          overflow: hidden;
         }
 
         .nl-submit,
@@ -829,6 +851,7 @@ export default function Page() {
           display: grid;
           gap: 7px;
           margin-top: 14px;
+          min-width: 0;
         }
 
         .nl-field label {
@@ -841,11 +864,18 @@ export default function Page() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 12px;
+          min-width: 0;
+        }
+
+        .nl-form-grid > * {
+          min-width: 0;
         }
 
         input,
         select {
           width: 100%;
+          min-width: 0;
+          max-width: 100%;
           min-height: 48px;
           border: 1px solid ${colors.border};
           border-radius: 8px;
@@ -854,6 +884,8 @@ export default function Page() {
           padding: 0 12px;
           font-size: 14px;
           outline: none;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         select option {
@@ -872,6 +904,11 @@ export default function Page() {
           align-items: center;
           gap: 10px;
           flex-wrap: wrap;
+          min-width: 0;
+        }
+
+        .nl-upload-row > * {
+          max-width: 100%;
         }
 
         .nl-upload-button input {
@@ -925,6 +962,7 @@ export default function Page() {
 
         .nl-file-pill {
           min-width: 0;
+          flex: 1 1 180px;
           display: inline-flex;
           align-items: center;
           gap: 7px;
@@ -936,24 +974,32 @@ export default function Page() {
           font-size: 12.5px;
           font-weight: 850;
           max-width: 100%;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .nl-file-pill button {
+          flex: none;
           min-height: 28px;
           padding: 0 9px;
           color: ${colors.success};
         }
 
         .nl-hint {
+          min-width: 0;
           color: ${colors.muted};
           font-size: 12.5px;
+          overflow-wrap: anywhere;
         }
 
         .nl-rule {
           width: 100%;
+          min-width: 0;
           margin-top: 14px;
           align-items: flex-start;
           line-height: 1.5;
+          overflow-wrap: anywhere;
         }
 
         .nl-rule.danger,
@@ -965,9 +1011,11 @@ export default function Page() {
 
         .nl-notice {
           width: 100%;
+          min-width: 0;
           margin-top: 14px;
           justify-content: flex-start;
           line-height: 1.45;
+          overflow-wrap: anywhere;
         }
 
         .nl-notice.success {
@@ -1005,6 +1053,7 @@ export default function Page() {
         .nl-side-row {
           display: grid;
           gap: 4px;
+          min-width: 0;
           border-bottom: 1px solid ${colors.border};
           padding-bottom: 11px;
         }
@@ -1019,6 +1068,8 @@ export default function Page() {
           color: ${colors.goldPale};
           font-size: 14px;
           line-height: 1.35;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .nl-recent {
@@ -1036,6 +1087,7 @@ export default function Page() {
         .nl-recent article {
           display: grid;
           gap: 4px;
+          min-width: 0;
           border: 1px solid ${colors.border};
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.035);
@@ -1053,12 +1105,16 @@ export default function Page() {
           color: ${colors.muted};
           font-size: 12.5px;
           margin: 0;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .nl-recent article em {
           color: ${colors.goldPale};
           font-size: 12px;
           font-style: normal;
+          min-width: 0;
+          overflow-wrap: anywhere;
         }
 
         .nl-recent article small {
@@ -1092,6 +1148,15 @@ export default function Page() {
         }
 
         @media (max-width: 620px) {
+          .nl-bill-shell {
+            padding: 14px 10px calc(92px + env(safe-area-inset-bottom));
+          }
+
+          .nl-bill-form,
+          .nl-bill-side {
+            padding: 12px;
+          }
+
           .nl-form-grid {
             grid-template-columns: 1fr;
           }

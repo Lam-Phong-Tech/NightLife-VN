@@ -24,6 +24,7 @@ import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ran
 
 type RankingKind = "cast" | "quan";
 type LoadState = "loading" | "ready" | "error";
+type CallNotice = { name: string; phone: string; href: string };
 
 type SelectOption<T extends string> = {
   key: T;
@@ -92,6 +93,11 @@ const targetTypeByKind: Record<RankingKind, RankingTargetType> = {
 
 const initialVisibleRankings = 5;
 const maxPreloadedRankings = 10;
+
+function phoneHref(phone: string) {
+  const normalized = phone.trim().replace(/[^\d+]/g, "");
+  return normalized ? `tel:${normalized}` : "";
+}
 
 function getRankTone(rank: number) {
   return rankTones[rank - 1];
@@ -258,9 +264,11 @@ function LoadingRows() {
 function RankingRow({
   item,
   trackingContext,
+  onCall,
 }: {
   item: PublicRankingItem;
   trackingContext: RankingClickContext;
+  onCall: (notice: CallNotice) => void;
 }) {
   const tone = getRankTone(item.rank);
   const topRank = item.rank === 1;
@@ -275,6 +283,7 @@ function RankingRow({
     .filter(Boolean)
     .join(" · ");
   const primaryAction = isStore ? "store" : "profile";
+  const itemPhoneHref = item.phone ? phoneHref(item.phone) : "";
 
   return (
     <article
@@ -348,11 +357,14 @@ function RankingRow({
           {isStore ? "Xem chi tiết" : "Xem profile"}
         </Link>
         {isStore ? (
-          item.phone ? (
+          item.phone && itemPhoneHref ? (
             <a
               className="vyr-rank-action"
-              href={`tel:${item.phone}`}
-              onClick={() => trackRankingClick(item, "call", trackingContext)}
+              href={itemPhoneHref}
+              onClick={() => {
+                trackRankingClick(item, "call", trackingContext);
+                onCall({ name: item.name, phone: item.phone ?? "", href: itemPhoneHref });
+              }}
             >
               <Phone size={15} />
               Gọi ngay
@@ -386,6 +398,7 @@ export default function Page() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [callNotice, setCallNotice] = useState<CallNotice | null>(null);
 
   const query = useMemo(
     () => ({
@@ -404,11 +417,13 @@ export default function Page() {
 
   const changeRankingType = (value: RankingKind) => {
     markRankingLoading();
+    setCallNotice(null);
     setRankingType(value);
   };
 
   const changeSelectedArea = (value: RankingCity) => {
     markRankingLoading();
+    setCallNotice(null);
     setSelectedArea(value);
   };
 
@@ -502,6 +517,18 @@ export default function Page() {
           </div>
         </div>
 
+        {callNotice ? (
+          <div className="vyr-call-notice" role="status" aria-live="polite">
+            <span>
+              Số điện thoại {callNotice.name}: <strong>{callNotice.phone}</strong>
+            </span>
+            <a href={callNotice.href}>Gọi số này</a>
+            <button type="button" onClick={() => setCallNotice(null)}>
+              Đóng
+            </button>
+          </div>
+        ) : null}
+
         <div className="vyr-ranking-list" aria-live="polite">
           {loadState === "loading" ? <LoadingRows /> : null}
 
@@ -535,7 +562,12 @@ export default function Page() {
 
           {loadState === "ready" && hasItems
             ? visibleList.map((item) => (
-                <RankingRow key={item.targetId} item={item} trackingContext={trackingContext} />
+                <RankingRow
+                  key={item.targetId}
+                  item={item}
+                  trackingContext={trackingContext}
+                  onCall={setCallNotice}
+                />
               ))
             : null}
 
@@ -759,6 +791,50 @@ export default function Page() {
           flex-direction: column;
           gap: 11px;
           margin-top: 22px;
+        }
+
+        .vyr-call-notice {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-top: 18px;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 12px;
+          background: var(--vy-gold-soft-bg);
+          color: var(--vy-text);
+          padding: 10px 12px;
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .vyr-call-notice span {
+          min-width: 0;
+          flex: 1;
+          overflow-wrap: anywhere;
+        }
+
+        .vyr-call-notice strong {
+          color: var(--vy-gold-pale);
+          white-space: nowrap;
+        }
+
+        .vyr-call-notice a,
+        .vyr-call-notice button {
+          min-height: 32px;
+          flex: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 9px;
+          background: var(--vy-surface-2);
+          color: var(--vy-gold-pale);
+          padding: 0 10px;
+          font-size: 12px;
+          font-weight: 850;
+          text-decoration: none;
+          cursor: pointer;
         }
 
         .vyr-rank-row {
@@ -1164,6 +1240,17 @@ export default function Page() {
             gap: 9px;
             margin-top: 10px;
             padding-bottom: 16px;
+          }
+
+          .vyr-call-notice {
+            align-items: stretch;
+            flex-direction: column;
+            margin-top: 10px;
+          }
+
+          .vyr-call-notice a,
+          .vyr-call-notice button {
+            width: 100%;
           }
 
           .vyr-rank-row {
