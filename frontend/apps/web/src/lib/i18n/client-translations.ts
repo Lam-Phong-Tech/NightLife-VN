@@ -3191,6 +3191,328 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "夜生活博客与指南 | Vietyoru",
   },
   {
+    vi: "Coupon & khuyến mãi từ các quán đối tác, dẫn thẳng về trang đặt bàn để nhận QR.",
+    en: "Coupons and promotions from partner venues, linked directly to booking pages for QR pickup.",
+    ja: "提携店舗のクーポンとキャンペーンを、QR受け取り用の予約ページへ直接案内します。",
+    ko: "제휴 매장의 쿠폰과 프로모션을 QR 수령용 예약 페이지로 바로 연결합니다.",
+    zh: "合作店铺的优惠券和活动会直接连接到领取 QR 的预订页面。",
+  },
+  {
+    vi: "Tìm quán, khu vực hoặc ưu đãi...",
+    en: "Search venues, areas, or deals...",
+    ja: "店舗、エリア、特典を検索...",
+    ko: "매장, 지역 또는 혜택 검색...",
+    zh: "搜索店铺、区域或优惠...",
+  },
+  {
+    vi: "Bộ lọc ưu đãi",
+    en: "Deal filters",
+    ja: "特典フィルター",
+    ko: "혜택 필터",
+    zh: "优惠筛选",
+  },
+  {
+    vi: "Đang nổi bật",
+    en: "Featured now",
+    ja: "注目中",
+    ko: "현재 추천",
+    zh: "当前精选",
+  },
+  {
+    vi: "Ưu đãi mới",
+    en: "New deals",
+    ja: "新着特典",
+    ko: "새 혜택",
+    zh: "新优惠",
+  },
+  {
+    vi: "Các ưu đãi sẽ được cập nhật liên tục theo khu vực.",
+    en: "Deals will keep updating by area.",
+    ja: "特典はエリアごとに随時更新されます。",
+    ko: "혜택은 지역별로 계속 업데이트됩니다.",
+    zh: "优惠会按区域持续更新。",
+  },
+  {
+    vi: "Loại ưu đãi",
+    en: "Deal type",
+    ja: "特典タイプ",
+    ko: "혜택 유형",
+    zh: "优惠类型",
+  },
+  {
+    vi: "Ưu đãi có thể thay đổi theo tình trạng đặt chỗ. Admin sẽ xác nhận sau khi gửi yêu cầu.",
+    en: "Deals may change based on booking availability. Admin will confirm after you send the request.",
+    ja: "特典は予約状況により変更される場合があります。リクエスト送信後に管理者が確認します。",
+    ko: "혜택은 예약 가능 여부에 따라 변경될 수 있습니다. 요청 후 관리자가 확인합니다.",
+    zh: "优惠可能会根据预订情况变化。提交请求后管理员会确认。",
+  },
+  {
+    vi: "Danh sách ưu đãi",
+    en: "Deal list",
+    ja: "特典一覧",
+    ko: "혜택 목록",
+    zh: "优惠列表",
+  },
+  {
+    vi: "Đang tải...",
+    en: "Loading...",
+    ja: "読み込み中...",
+    ko: "불러오는 중...",
+    zh: "正在加载...",
+  },
+  {
+    vi: "Xóa lọc",
+    en: "Clear filters",
+    ja: "フィルターをクリア",
+    ko: "필터 지우기",
+    zh: "清除筛选",
+  },
+  {
+    vi: "Chưa có coupon phù hợp",
+    en: "No matching coupons",
+    ja: "条件に合うクーポンはありません",
+    ko: "조건에 맞는 쿠폰이 없습니다",
+    zh: "没有匹配的优惠券",
+  },
+  {
+    vi: "Thử đổi bộ lọc hoặc tìm theo tên quán/khu vực khác.",
+    en: "Try changing filters or searching by another venue or area.",
+    ja: "フィルターを変更するか、別の店舗名・エリアで検索してください。",
+    ko: "필터를 바꾸거나 다른 매장명/지역으로 검색해 보세요.",
+    zh: "请尝试更换筛选条件，或按其他店铺/区域搜索。",
+  },
+  {
+    vi: "Xem tất cả ưu đãi",
+    en: "View all deals",
+    ja: "すべての特典を見る",
+    ko: "모든 혜택 보기",
+    zh: "查看全部优惠",
+  },
+  {
+    vi: "Danh sách coupon đang có",
+    en: "Available coupon list",
+    ja: "利用可能なクーポン一覧",
+    ko: "사용 가능한 쿠폰 목록",
+    zh: "可用优惠券列表",
+  },
+  {
+    vi: "Không giới hạn",
+    en: "No limit",
+    ja: "期限なし",
+    ko: "제한 없음",
+    zh: "不限",
+  },
+  {
+    vi: "Đang cập nhật",
+    en: "Updating",
+    ja: "更新中",
+    ko: "업데이트 중",
+    zh: "正在更新",
+  },
+  {
+    vi: "Cẩm nang nightlife cho mỗi lần xuống phố",
+    en: "Nightlife guides for every night out",
+    ja: "夜の外出に役立つナイトライフガイド",
+    ko: "외출할 때마다 참고하는 나이트라이프 가이드",
+    zh: "每次夜晚出行都可参考的夜生活指南",
+  },
+  {
+    vi: "Gợi ý khu vực, etiquette, ưu đãi và mẹo đặt chỗ để khách có một buổi tối rõ ràng hơn trước khi gửi yêu cầu.",
+    en: "Area tips, etiquette, deals, and booking advice so guests know the plan before sending a request.",
+    ja: "リクエスト前に夜の流れが分かるよう、エリア情報、マナー、特典、予約のコツを紹介します。",
+    ko: "요청을 보내기 전 밤 일정이 선명해지도록 지역 추천, 에티켓, 혜택, 예약 팁을 제공합니다.",
+    zh: "提供区域建议、礼仪、优惠和预订技巧，让客人在发送请求前更清楚今晚安排。",
+  },
+  {
+    vi: "Tất cả tag",
+    en: "All tags",
+    ja: "すべてのタグ",
+    ko: "전체 태그",
+    zh: "全部标签",
+  },
+  {
+    vi: "Lọc",
+    en: "Filter",
+    ja: "絞り込む",
+    ko: "필터",
+    zh: "筛选",
+  },
+  {
+    vi: "Chủ đề blog",
+    en: "Blog topics",
+    ja: "ブログトピック",
+    ko: "블로그 주제",
+    zh: "博客主题",
+  },
+  {
+    vi: "Nổi bật",
+    en: "Featured",
+    ja: "注目",
+    ko: "추천",
+    zh: "精选",
+  },
+  {
+    vi: "Đọc tiếp",
+    en: "Read more",
+    ja: "続きを読む",
+    ko: "더 읽기",
+    zh: "继续阅读",
+  },
+  {
+    vi: "Danh sách bài viết",
+    en: "Post list",
+    ja: "記事一覧",
+    ko: "게시글 목록",
+    zh: "文章列表",
+  },
+  {
+    vi: "Chưa có bài viết phù hợp.",
+    en: "No matching posts.",
+    ja: "条件に合う記事はありません。",
+    ko: "조건에 맞는 게시글이 없습니다.",
+    zh: "没有匹配的文章。",
+  },
+  {
+    vi: "Cẩm nang",
+    en: "Guides",
+    ja: "ガイド",
+    ko: "가이드",
+    zh: "指南",
+  },
+  {
+    vi: "Cẩm nang nightlife",
+    en: "Nightlife guides",
+    ja: "ナイトライフガイド",
+    ko: "나이트라이프 가이드",
+    zh: "夜生活指南",
+  },
+  {
+    vi: "Cẩm nang khu vực",
+    en: "Area guide",
+    ja: "エリアガイド",
+    ko: "지역 가이드",
+    zh: "区域指南",
+  },
+  {
+    vi: "Văn hóa Nhật",
+    en: "Japanese culture",
+    ja: "日本文化",
+    ko: "일본 문화",
+    zh: "日本文化",
+  },
+  {
+    vi: "Mẹo đặt chỗ",
+    en: "Booking tips",
+    ja: "予約のコツ",
+    ko: "예약 팁",
+    zh: "预订技巧",
+  },
+  {
+    vi: "Hướng dẫn trọn vẹn một đêm ở Tây Hồ",
+    en: "A complete night guide to Tay Ho",
+    ja: "タイホーで一晩を楽しむ完全ガイド",
+    ko: "떠이호에서의 완벽한 밤 가이드",
+    zh: "西湖完整夜晚指南",
+  },
+  {
+    vi: "Văn hóa karaoke Nhật tại Hà Nội",
+    en: "Japanese karaoke culture in Hanoi",
+    ja: "ハノイの日本式カラオケ文化",
+    ko: "하노이의 일본식 가라오케 문화",
+    zh: "河内的日式卡拉 OK 文化",
+  },
+  {
+    vi: "5 mẹo đặt bàn nhanh dịp cuối tuần",
+    en: "5 tips for faster weekend table booking",
+    ja: "週末に素早く席を予約する5つのコツ",
+    ko: "주말 테이블을 빠르게 예약하는 5가지 팁",
+    zh: "周末快速订桌的 5 个技巧",
+  },
+  {
+    vi: "Bản đồ Quận 1 về đêm cho khách mới",
+    en: "District 1 night map for first-time guests",
+    ja: "初めての方向け 1区ナイトマップ",
+    ko: "처음 방문하는 손님을 위한 1군 밤 지도",
+    zh: "新客人的第 1 郡夜生活地图",
+  },
+  {
+    vi: "Cách dùng coupon và tích điểm hiệu quả",
+    en: "How to use coupons and earn points effectively",
+    ja: "クーポン活用とポイント獲得のコツ",
+    ko: "쿠폰 사용과 포인트 적립을 효율적으로 하는 법",
+    zh: "如何高效使用优惠券并累计积分",
+  },
+  {
+    vi: "Lộ trình gợi ý cho khách muốn đi lounge, club và ăn khuya ở Tây Hồ, kèm lưu ý đặt chỗ qua Vietyoru.",
+    en: "A suggested route for guests who want lounges, clubs, and late-night food in Tay Ho, with booking notes for Vietyoru.",
+    ja: "タイホーでラウンジ、クラブ、夜食を楽しみたい方向けのモデルルートと、Vietyoruでの予約ポイントです。",
+    ko: "떠이호에서 라운지, 클럽, 야식을 즐기고 싶은 손님을 위한 추천 코스와 Vietyoru 예약 팁입니다.",
+    zh: "为想在西湖体验酒廊、俱乐部和夜宵的客人推荐路线，并附上通过 Vietyoru 预订的提示。",
+  },
+  {
+    vi: "Các lưu ý về phòng riêng, etiquette khi đi cùng khách Nhật và cách đặt trước để tránh chờ cuối tuần.",
+    en: "Notes on private rooms, etiquette with Japanese guests, and booking ahead to avoid weekend waits.",
+    ja: "個室利用、日本人ゲストとのマナー、週末の待ち時間を避ける事前予約のポイントです。",
+    ko: "개별룸, 일본 손님과 동행할 때의 에티켓, 주말 대기를 줄이는 사전 예약 팁입니다.",
+    zh: "关于包间、与日本客人同行的礼仪，以及提前预订避免周末等待的提示。",
+  },
+  {
+    vi: "Checklist ngắn để đặt bàn nightlife nhanh hơn: chọn khu vực, giờ đến, số khách, yêu cầu phòng và coupon.",
+    en: "A short checklist for faster nightlife booking: area, arrival time, guest count, room request, and coupon.",
+    ja: "ナイトライフ予約を早く進めるためのチェックリスト: エリア、到着時間、人数、部屋希望、クーポン。",
+    ko: "나이트라이프 예약을 빠르게 진행하기 위한 짧은 체크리스트: 지역, 도착 시간, 인원, 룸 요청, 쿠폰.",
+    zh: "更快完成夜生活订桌的简短清单：区域、到店时间、人数、房间需求和优惠券。",
+  },
+  {
+    vi: "Gợi ý cách chia một buổi tối ở Quận 1 theo lounge, rooftop bar và điểm ăn khuya gần trung tâm.",
+    en: "How to split a night in District 1 across lounges, rooftop bars, and late-night food near the center.",
+    ja: "1区でラウンジ、ルーフトップバー、中心部近くの夜食スポットを組み合わせる夜の過ごし方です。",
+    ko: "1군에서 라운지, 루프탑 바, 중심지 근처 야식 코스로 밤을 나누는 방법입니다.",
+    zh: "如何在第 1 郡安排酒廊、屋顶酒吧和市中心附近夜宵的一晚。",
+  },
+  {
+    vi: "Tóm tắt cách xem ưu đãi, dùng mã hợp lệ và tích điểm thành viên sau khi hóa đơn được duyệt.",
+    en: "A quick guide to viewing deals, using valid codes, and earning member points after bill approval.",
+    ja: "特典の確認、有効なコードの利用、請求書承認後の会員ポイント獲得をまとめたガイドです。",
+    ko: "혜택 확인, 유효 코드 사용, 청구서 승인 후 멤버십 포인트 적립 방법을 요약했습니다.",
+    zh: "简要说明如何查看优惠、使用有效码，并在账单通过后累计会员积分。",
+  },
+  {
+    vi: "Đội ngũ Vietyoru",
+    en: "Vietyoru team",
+    ja: "Vietyoruチーム",
+    ko: "Vietyoru 팀",
+    zh: "Vietyoru 团队",
+  },
+  {
+    vi: "Đặt chỗ",
+    en: "Booking",
+    ja: "予約",
+    ko: "예약",
+    zh: "预订",
+  },
+  {
+    vi: "Cuối tuần",
+    en: "Weekend",
+    ja: "週末",
+    ko: "주말",
+    zh: "周末",
+  },
+  {
+    vi: "Rooftop",
+    en: "Rooftop",
+    ja: "ルーフトップ",
+    ko: "루프탑",
+    zh: "屋顶",
+  },
+  {
+    vi: "Điểm thành viên",
+    en: "Member points",
+    ja: "会員ポイント",
+    ko: "멤버십 포인트",
+    zh: "会员积分",
+  },
+  {
     vi: "Cast này không tồn tại hoặc chưa được công khai trên Vietyoru.",
     en: "This Cast does not exist or is not public on Vietyoru yet.",
     ja: "このキャストは存在しないか、まだVietyoruで公開されていません。",
@@ -4405,6 +4727,39 @@ function translatePattern(
     }[language];
   }
 
+  const readTimeMatch = normalized.match(/^(\d+)\s+phút đọc$/i);
+  if (readTimeMatch) {
+    const count = readTimeMatch[1] ?? "";
+    return {
+      en: `${count} min read`,
+      ja: `${count}分で読めます`,
+      ko: `${count}분 읽기`,
+      zh: `${count} 分钟阅读`,
+    }[language];
+  }
+
+  const matchingDealsMatch = normalized.match(/^(\d+)\s+ưu đãi phù hợp$/i);
+  if (matchingDealsMatch) {
+    const count = matchingDealsMatch[1] ?? "";
+    return {
+      en: `${count} matching deals`,
+      ja: `一致する特典 ${count}件`,
+      ko: `조건에 맞는 혜택 ${count}개`,
+      zh: `${count} 个匹配优惠`,
+    }[language];
+  }
+
+  const expiryMatch = normalized.match(/^HSD\s+(.+)$/i);
+  if (expiryMatch) {
+    const date = expiryMatch[1] ?? "";
+    return {
+      en: `Valid until ${date}`,
+      ja: `有効期限 ${date}`,
+      ko: `${date}까지 유효`,
+      zh: `有效期至 ${date}`,
+    }[language];
+  }
+
   const castAreaMatch = normalized.match(/^Cast\s+(.+)$/i);
   if (castAreaMatch) {
     const area = translateText(castAreaMatch[1] ?? "", language);
@@ -4413,6 +4768,17 @@ function translatePattern(
       ja: `${area}のキャスト`,
       ko: `${area} Cast`,
       zh: `${area} Cast`,
+    }[language];
+  }
+
+  const featuredCategoryMatch = normalized.match(/^Nổi bật\s+·\s+(.+)$/i);
+  if (featuredCategoryMatch) {
+    const category = translateText(featuredCategoryMatch[1] ?? "", language);
+    return {
+      en: `Featured · ${category}`,
+      ja: `注目 · ${category}`,
+      ko: `추천 · ${category}`,
+      zh: `精选 · ${category}`,
     }[language];
   }
 

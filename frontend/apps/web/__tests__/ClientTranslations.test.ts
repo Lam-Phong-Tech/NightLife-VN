@@ -141,4 +141,42 @@ describe("client translations", () => {
     expect(translateText("Opera Spa Hải Phòng", "ja")).toBe("Opera スパ ハイフォン");
     expect(translateText("13 cast · Hà Nội", "ja")).toBe("13人のキャスト · ハノイ");
   });
+
+  it("translates deals and blog page leftovers", () => {
+    expect(translateText("Ưu đãi đêm nay", "ja")).toBe("今夜の特典");
+    expect(
+      translateText(
+        "Coupon & khuyến mãi từ các quán đối tác, dẫn thẳng về trang đặt bàn để nhận QR.",
+        "ja",
+      ),
+    ).toBe("提携店舗のクーポンとキャンペーンを、QR受け取り用の予約ページへ直接案内します。");
+    expect(translateText("Tìm quán, khu vực hoặc ưu đãi...", "ja")).toBe(
+      "店舗、エリア、特典を検索...",
+    );
+    expect(translateText("Bộ lọc ưu đãi", "ja")).toBe("特典フィルター");
+    expect(translateText("Đang nổi bật", "ja")).toBe("注目中");
+    expect(translateText("Loại ưu đãi", "ja")).toBe("特典タイプ");
+    expect(translateText("0 ưu đãi phù hợp", "ja")).toBe("一致する特典 0件");
+    expect(translateText("HSD 10/07", "ja")).toBe("有効期限 10/07");
+    expect(translateText("Xóa lọc", "ja")).toBe("フィルターをクリア");
+    expect(translateText("Chưa có coupon phù hợp", "ja")).toBe(
+      "条件に合うクーポンはありません",
+    );
+    expect(translateText("Cẩm nang nightlife cho mỗi lần xuống phố", "ja")).toBe(
+      "夜の外出に役立つナイトライフガイド",
+    );
+    expect(translateText("Tất cả tag", "ja")).toBe("すべてのタグ");
+    expect(translateText("Lọc", "ja")).toBe("絞り込む");
+    expect(translateText("Nổi bật · Cẩm nang khu vực", "ja")).toBe(
+      "注目 · エリアガイド",
+    );
+    expect(translateText("6 phút đọc", "ja")).toBe("6分で読めます");
+    expect(translateText("Đọc tiếp", "ja")).toBe("続きを読む");
+    expect(translateText("Chưa có bài viết phù hợp.", "ja")).toBe(
+      "条件に合う記事はありません。",
+    );
+    expect(translateText("Bản đồ Quận 1 về đêm cho khách mới", "ja")).toBe(
+      "初めての方向け 1区ナイトマップ",
+    );
+  });
 });
