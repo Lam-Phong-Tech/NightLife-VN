@@ -681,9 +681,26 @@ export default function AdminCastsPage() {
 
               {/* GRID INFO */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
+                <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px', position: 'relative' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Tháng sinh</div>
-                  <input type="number" placeholder="Ví dụ: 1" value={formData.birthMonth} onChange={e => setFormData({...formData, birthMonth: e.target.value})} style={{ width: '100%', background: 'transparent', border: 'none', color: colors.text, fontSize: '15px', fontWeight: 700, outline: 'none' }} />
+                  <select 
+                    value={formData.birthMonth || ''} 
+                    onChange={e => setFormData({...formData, birthMonth: e.target.value})} 
+                    style={{ 
+                      width: '100%', background: 'transparent', border: 'none', 
+                      color: formData.birthMonth ? colors.text : colors.muted, 
+                      fontSize: '15px', fontWeight: 700, outline: 'none', appearance: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="" disabled style={{ color: colors.muted, background: colors.surface1 }}>Chọn tháng...</option>
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i+1} value={i+1} style={{ background: colors.surface1, color: colors.text }}>Tháng {i+1}</option>
+                    ))}
+                  </select>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', right: '16px', bottom: '18px', pointerEvents: 'none' }}>
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
                 </div>
                 <div style={{ padding: '16px', background: 'transparent', border: `1px solid ${colors.borderSoft}`, borderRadius: '12px' }}>
                   <div style={{ fontSize: '12px', color: colors.muted, marginBottom: '8px' }}>Cung Hoàng Đạo</div>
