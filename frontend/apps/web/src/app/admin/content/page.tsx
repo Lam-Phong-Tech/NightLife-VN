@@ -1173,7 +1173,6 @@ export default function AdminContentPage() {
                 </div>
                 {bannerLinkedStore ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(212,178,106,.08)', border: '1px solid rgba(212,178,106,.3)', borderRadius: '11px' }}>
-                    <span style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg,#d4b26a,#b6924a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#241a0a', flex: 'none' }}>{(bannerLinkedStore.name || '').substring(0, 2).toUpperCase()}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: '#f3f0ea', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bannerLinkedStore.name}</div>
                       <div style={{ fontSize: '11px', color: '#8c8679', marginTop: 1 }}>{bannerLinkedStore.category} · {bannerLinkedStore.area}</div>
@@ -1190,7 +1189,6 @@ export default function AdminContentPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
                         {bannerStoreResults.map((s: any) => (
                           <div key={s.id} onClick={() => { setBannerLinkedStore(s); setBannerLink(`/quan/${s.slug}`); setBannerStoreSearch(''); setBannerStoreResults([]); }} style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.05)' }}>
-                            <span style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg,#caa765,#8c6e3a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#241a0a', flex: 'none' }}>{(s.name || '').substring(0, 2).toUpperCase()}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
                               <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.category} · {s.area}</div>
