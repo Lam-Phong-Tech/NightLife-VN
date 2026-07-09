@@ -4502,6 +4502,53 @@ describe('NightlifeDataService', () => {
     expect(result.data[0].body).toContain('Kotone @ Tokyo Kitchen');
   });
 
+  it('formats legacy created booking notifications as cast bookings when the booking has a cast', async () => {
+    prisma.notificationLog.findMany.mockResolvedValue([
+      {
+        id: 'notification-booking-legacy-cast-1',
+        status: 'QUEUED',
+        templateKey: 'customer.booking.created.v1',
+        payload: {
+          storeName: 'Tokyo Kitchen',
+          scheduledAt: '2026-07-09T14:00:00.000Z',
+        },
+        createdAt: new Date('2026-07-03T10:00:00.000Z'),
+        sentAt: null,
+        billId: null,
+        bookingId: 'booking-legacy-cast-1',
+        store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+        booking: {
+          id: 'booking-legacy-cast-1',
+          status: 'REQUESTED',
+          scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
+          store: { id: 'store-1', name: 'Tokyo Kitchen', slug: 'tokyo-kitchen' },
+          cast: {
+            id: 'cast-1',
+            slug: 'aoi-tokyo',
+            stageName: 'Aoi',
+            publicAlias: 'Aoi',
+          },
+        },
+        bill: null,
+      },
+    ] as never);
+    prisma.notificationLog.count.mockResolvedValue(1 as never);
+
+    const result = await service.listMemberNotifications(
+      { id: 'member-1', role: 'USER' },
+      { limit: 10 },
+    );
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        title: 'Đặt bàn theo cast thành công',
+        category: 'booking',
+        tone: 'amber',
+      }),
+    );
+    expect(result.data[0].body).toContain('Aoi @ Tokyo Kitchen');
+  });
+
   it('marks member notifications as read inside the customer scope', async () => {
     await expect(
       service.markMemberNotificationRead(

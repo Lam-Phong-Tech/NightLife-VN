@@ -11275,8 +11275,12 @@ export class NightlifeDataService {
       tone = 'danger';
       actionLabel = 'Xem lý do';
     } else if (templateKey === 'customer.booking.created.v1') {
-      title = 'Đặt bàn thành công';
-      body = `Yêu cầu đặt bàn tại ${storeName}${scheduleSuffix} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
+      title = castName
+        ? 'Đặt bàn theo cast thành công'
+        : 'Đặt bàn thành công';
+      body = castName
+        ? `Yêu cầu đặt ${bookingTarget}${scheduleSuffix} đã được ghi nhận. Admin sẽ xác nhận sớm.`
+        : `Yêu cầu đặt bàn tại ${storeName}${scheduleSuffix} đã được ghi nhận. Admin sẽ xác nhận sớm.`;
       tone = 'amber';
       actionLabel = 'Xem lịch đặt';
     } else if (templateKey === 'customer.booking.cast_created.v1') {
