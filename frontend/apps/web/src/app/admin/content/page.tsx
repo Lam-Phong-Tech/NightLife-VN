@@ -178,18 +178,30 @@ export default function AdminContentPage() {
       setSearchFeaturedQuery('');
     } catch (err: any) {
       console.error(err?.response?.data || err);
-      alert(`Không thể thêm vào danh sách nổi bật: ${err?.response?.data?.message || err.message || ''}`);
+      feedback.showToast({ title: `Không thể thêm vào danh sách nổi bật: ${err?.response?.data?.message || err.message || ''}`, tone: 'error' });
     }
   };
 
   const handleRemoveFeatured = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn gỡ khỏi trang chủ?')) return;
+    feedback.showModal({
+      title: 'Xác nhận gỡ',
+      description: 'Bạn có chắc muốn gỡ khỏi trang chủ?',
+      onPrimary: async () => {
+        try {
+          await contentApi.adminRemoveFeatured(item.id);
+          fetchFeaturedContent();
+          feedback.closeModal();
+        } catch (err) {
+          feedback.showToast({ title: 'Không thể gỡ.', tone: 'error' });
+        }
+      }
+    }); return;
     try {
       await adminRankingsApi.delete(id);
       await fetchFeaturedItems();
     } catch (err) {
       console.error(err);
-      alert('Không thể gỡ.');
+      feedback.showToast({ title: 'Không thể gỡ.', tone: 'error' });
     }
   };
 
@@ -223,7 +235,7 @@ export default function AdminContentPage() {
       await fetchFeaturedItems();
     } catch (err) {
       console.error(err);
-      alert('Không thể đổi vị trí.');
+      feedback.showToast({ title: 'Không thể đổi vị trí.', tone: 'error' });
     }
   };
 
@@ -282,10 +294,10 @@ export default function AdminContentPage() {
         method: 'PUT',
         data: { mediaIds: hotVideos.map(v => v.id) }
       });
-      alert('Đã lưu danh sách Video Hot thành công');
+      feedback.showToast({ title: 'Đã lưu danh sách Video Hot thành công', tone: 'success' });
     } catch (err) {
       console.error(err);
-      alert('Có lỗi xảy ra khi lưu');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi lưu', tone: 'error' });
     }
   };
 
@@ -334,20 +346,33 @@ export default function AdminContentPage() {
       fetchBannerTags();
     } catch (error) {
       console.error('Failed to add tag:', error);
-      alert('Có lỗi xảy ra khi thêm nhãn');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi thêm nhãn', tone: 'error' });
     } finally {
       setIsSubmittingTag(false);
     }
   };
 
   const handleDeleteTag = async (id: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa nhãn này?')) return;
+    feedback.showModal({
+      title: 'Xóa nhãn',
+      description: 'Bạn có chắc chắn muốn xóa nhãn này?',
+      onPrimary: async () => {
+        try {
+          await apiClient(`/admin/content/tags/${id}`, { method: 'DELETE' });
+          fetchTags();
+          feedback.closeModal();
+        } catch (error) {
+          console.error(error);
+          feedback.showToast({ title: 'Có lỗi xảy ra khi xóa nhãn', tone: 'error' });
+        }
+      }
+    }); return;
     try {
       await categoriesApi.adminDelete(id);
       fetchBannerTags();
     } catch (error) {
       console.error('Failed to delete tag:', error);
-      alert('Có lỗi xảy ra khi xóa nhãn');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi xóa nhãn', tone: 'error' });
     }
   };
 
@@ -378,20 +403,33 @@ export default function AdminContentPage() {
       fetchCategories();
     } catch (error) {
       console.error('Failed to add category:', error);
-      alert('Có lỗi xảy ra khi thêm chuyên mục.');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi thêm chuyên mục.', tone: 'error' });
     } finally {
       setIsSubmittingCategory(false);
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa chuyên mục này?')) return;
+    feedback.showModal({
+      title: 'Xóa chuyên mục',
+      description: 'Bạn có chắc chắn muốn xóa chuyên mục này?',
+      onPrimary: async () => {
+        try {
+          await apiClient(`/admin/content/categories/${id}`, { method: 'DELETE' });
+          fetchCategories();
+          feedback.closeModal();
+        } catch (error) {
+          console.error(error);
+          feedback.showToast({ title: 'Có lỗi xảy ra khi xóa chuyên mục.', tone: 'error' });
+        }
+      }
+    }); return;
     try {
       await categoriesApi.adminDelete(id);
       fetchCategories();
     } catch (error) {
       console.error('Failed to delete category:', error);
-      alert('Có lỗi xảy ra khi xóa chuyên mục.');
+      feedback.showToast({ title: 'Có lỗi xảy ra khi xóa chuyên mục.', tone: 'error' });
     }
   };
 
@@ -424,7 +462,19 @@ export default function AdminContentPage() {
   };
 
   const handleDeleteBanner = async (bannerId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa banner này?')) return;
+    feedback.showModal({
+      title: 'Xóa banner',
+      description: 'Bạn có chắc chắn muốn xóa banner này?',
+      onPrimary: async () => {
+        try {
+          await apiClient(`/admin/content/banners/${id}`, { method: 'DELETE' });
+          fetchBanners();
+          feedback.closeModal();
+        } catch (e) {
+          feedback.showToast({ title: 'Lỗi khi xóa banner', tone: 'error' });
+        }
+      }
+    }); return;
     try {
       setIsDeletingBanner(true);
       await contentApi.adminDelete(bannerId);
@@ -432,7 +482,7 @@ export default function AdminContentPage() {
       closeDrawer();
     } catch (err) {
       console.error(err);
-      alert('Lỗi khi xóa banner');
+      feedback.showToast({ title: 'Lỗi khi xóa banner', tone: 'error' });
     } finally {
       setIsDeletingBanner(false);
     }
