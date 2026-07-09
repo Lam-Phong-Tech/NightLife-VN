@@ -157,13 +157,13 @@ function AdminDashboardContent() {
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       console.error('Export error:', err);
-      alert('Không thể tải báo cáo. Vui lòng thử lại.');
+      alert('Không thể tải báo cáo. V vui lòng thử lại.');
     }
   };
 
   return (
     <div className="nl-admin-page nl-admin-dashboard" data-screen-label="Admin · Dashboard" style={{ padding: '24px 26px 40px' }}>
-      {user?.role === 'SUPER_ADMIN' && storageUsage && storageUsage.percentage >= 90 && (
+      {['SUPER_ADMIN', 'ADMIN', 'STAFF'].includes(user?.role) && storageUsage && storageUsage.percentage >= 90 && (
         <div style={{
           background: storageUsage.isExceeded ? 'rgba(244, 67, 54, 0.1)' : 'rgba(255, 152, 0, 0.1)',
           border: `1px solid ${storageUsage.isExceeded ? 'rgba(244, 67, 54, 0.5)' : 'rgba(255, 152, 0, 0.5)'}`,
@@ -185,7 +185,9 @@ function AdminDashboardContent() {
             </div>
             <div style={{ color: '#c5c0b6', fontSize: '13px', marginTop: '2px' }}>
               Hệ thống đang sử dụng <b>{storageUsage.used}GB / {storageUsage.limit}GB</b> ({storageUsage.percentage}%). 
-              {storageUsage.isExceeded ? ' Chức năng upload đã bị khóa tạm thời. Vui lòng dọn dẹp dữ liệu hoặc nâng cấp VPS.' : ' Hãy kiểm tra và lên kế hoạch nâng cấp dung lượng VPS.'}
+              {storageUsage.isExceeded 
+                ? (user?.role === 'SUPER_ADMIN' ? ' Chức năng upload đã bị khóa tạm thời. Vui lòng dọn dẹp dữ liệu hoặc nâng cấp VPS.' : ' Chức năng upload đã bị khóa tạm thời do hệ thống đầy dung lượng. Vui lòng báo cáo lại với cấp trên.') 
+                : (user?.role === 'SUPER_ADMIN' ? ' Hãy kiểm tra và lên kế hoạch nâng cấp dung lượng VPS.' : ' Hãy báo cáo với cấp trên để chuẩn bị nâng cấp.')}
             </div>
           </div>
         </div>
