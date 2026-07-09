@@ -69,6 +69,8 @@ export default function AdminCastsPage() {
   const [youtubeInput, setYoutubeInput] = useState('');
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [storePickerOpen, setStorePickerOpen] = useState(false);
+  const [storePickerSearch, setStorePickerSearch] = useState('');
 
   const fetchCasts = async () => {
     try {
@@ -147,6 +149,8 @@ export default function AdminCastsPage() {
   const closeDrawer = () => {
     setSelectedCast(null);
     setIsAddingCast(false);
+    setStorePickerOpen(false);
+    setStorePickerSearch('');
   };
 
   const openNewDrawer = () => {
@@ -160,6 +164,8 @@ export default function AdminCastsPage() {
     setVideos([]);
     setIsAddingCast(true);
     setSelectedCast(null);
+    setStorePickerOpen(false);
+    setStorePickerSearch('');
   };
 
   const openEditDrawer = (c: any) => {
@@ -188,6 +194,8 @@ export default function AdminCastsPage() {
     setVideos(videoList || []);
     setSelectedCast(c);
     setIsAddingCast(false);
+    setStorePickerOpen(false);
+    setStorePickerSearch('');
   };
 
   const createCastDraft = async () => {
@@ -374,6 +382,11 @@ export default function AdminCastsPage() {
   const isEditing = isAddingCast || selectedCast !== null;
   const currentLabel = isAddingCast ? 'Tạo mới' : (selectedCast ? getStatusLabel(selectedCast.status, selectedCast.isPublic) : '');
 
+  const selectedStore = stores.find((store) => store.id === formData.storeId);
+  const filteredStores = stores.filter((store) =>
+    !storePickerSearch || (store.name || '').toLowerCase().includes(storePickerSearch.toLowerCase())
+  );
+
   // Stats
   const statPending = casts.filter(c => getStatusLabel(c.status, c.isPublic) === 'Chờ duyệt').length;
   const statVisible = casts.filter(c => getStatusLabel(c.status, c.isPublic) === 'Đang hiển thị').length;
@@ -558,12 +571,102 @@ export default function AdminCastsPage() {
               <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <input type="text" placeholder="Tên Cast (Stage Name)" value={formData.stageName} onChange={e => setFormData({...formData, stageName: e.target.value})} style={{ background: 'transparent', border: 'none', color: colors.text, fontSize: '24px', fontWeight: 700, outline: 'none', marginBottom: '8px', width: '100%' }} />
-                  <select value={formData.storeId} onChange={e => setFormData({...formData, storeId: e.target.value})} style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, color: colors.text2, fontSize: '13px', padding: '6px 12px', borderRadius: '6px', outline: 'none', width: '220px' }}>
-                    <option value="" disabled hidden>Chọn quán trực thuộc</option>
-                    {stores.map(st => (
-                      <option key={st.id} value={st.id}>{st.name}</option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative', width: '100%', maxWidth: '330px', marginTop: '2px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setStorePickerOpen((open) => !open)}
+                      style={{
+                        width: '100%',
+                        minHeight: '46px',
+                        borderRadius: '13px',
+                        border: `1px solid ${storePickerOpen ? colors.gold : colors.borderGold22}`,
+                        background: storePickerOpen ? 'rgba(212,178,106,.08)' : colors.surface1,
+                        color: selectedStore ? colors.text : colors.muted,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '11px',
+                        padding: '0 13px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        boxShadow: storePickerOpen ? '0 16px 34px -26px rgba(212,178,106,.8)' : 'none',
+                      }}
+                    >
+                      <span style={{ width: 30, height: 30, flex: 'none', borderRadius: 10, background: colors.goldGrad, color: colors.onGold, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12 }}>
+                        {selectedStore?.name ? selectedStore.name.slice(0, 2).toUpperCase() : 'Q'}
+                      </span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: '10px', color: colors.muted, fontWeight: 700, letterSpacing: '.8px', textTransform: 'uppercase', marginBottom: '2px' }}>
+                          Quán trực thuộc
+                        </span>
+                        <span style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {selectedStore?.name || 'Chọn quán trực thuộc'}
+                        </span>
+                      </span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={colors.gold} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: storePickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+
+                    {storePickerOpen ? (
+                      <div style={{ position: 'absolute', zIndex: 20, top: 'calc(100% + 8px)', left: 0, right: 0, borderRadius: '14px', border: `1px solid ${colors.borderGold22}`, background: '#15151b', boxShadow: '0 26px 70px -28px rgba(0,0,0,.95)', overflow: 'hidden' }}>
+                        <div style={{ padding: '10px', borderBottom: `1px solid ${colors.borderSoft}` }}>
+                          <div style={{ position: 'relative' }}>
+                            <Search size={15} color={colors.muted} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }} />
+                            <input
+                              value={storePickerSearch}
+                              onChange={(event) => setStorePickerSearch(event.target.value)}
+                              placeholder="Tìm quán..."
+                              style={{ width: '100%', height: '38px', border: `1px solid ${colors.borderSoft}`, borderRadius: '10px', background: 'rgba(255,255,255,.035)', color: colors.text, outline: 'none', padding: '0 12px 0 36px', fontSize: '13px' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ maxHeight: '260px', overflowY: 'auto', padding: '6px' }}>
+                          {filteredStores.map((store) => {
+                            const isSelected = store.id === formData.storeId;
+                            return (
+                              <button
+                                key={store.id}
+                                type="button"
+                                onClick={() => {
+                                  setFormData({ ...formData, storeId: store.id });
+                                  setStorePickerOpen(false);
+                                  setStorePickerSearch('');
+                                }}
+                                style={{
+                                  width: '100%',
+                                  border: 0,
+                                  borderRadius: '11px',
+                                  background: isSelected ? 'rgba(212,178,106,.14)' : 'transparent',
+                                  color: isSelected ? colors.gold : colors.text2,
+                                  minHeight: '44px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  padding: '8px 10px',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                }}
+                              >
+                                <span style={{ width: 28, height: 28, flex: 'none', borderRadius: 9, background: isSelected ? colors.goldGrad : 'rgba(255,255,255,.06)', color: isSelected ? colors.onGold : colors.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
+                                  {(store.name || 'Q').slice(0, 2).toUpperCase()}
+                                </span>
+                                <span style={{ flex: 1, minWidth: 0 }}>
+                                  <span style={{ display: 'block', fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{store.name}</span>
+                                  <span style={{ display: 'block', fontSize: '10.5px', color: colors.muted, marginTop: '1px' }}>{store.category || store.area || 'Quán trong hệ thống'}</span>
+                                </span>
+                                {isSelected ? <Check size={16} color={colors.gold} /> : null}
+                              </button>
+                            );
+                          })}
+                          {filteredStores.length === 0 ? (
+                            <div style={{ padding: '18px 12px', color: colors.muted, textAlign: 'center', fontSize: '12.5px' }}>
+                              Không tìm thấy quán phù hợp.
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
