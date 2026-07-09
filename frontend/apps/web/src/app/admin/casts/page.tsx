@@ -383,17 +383,17 @@ export default function AdminCastsPage() {
   };
 
   const updateArrField = (field: string, val: string) => {
-    const arr = val.split(',').map(s => s.trim()).filter(Boolean);
+    const arr = val.split(',').map((s: string) => s.trim()).filter(Boolean);
     setFormData((prev: any) => ({ ...prev, [field]: arr }));
   };
 
   const handleMeasurementChange = (index: number, val: string) => {
-    const parts = (formData.measurements || '').split('-').map(s => s.trim());
+    const parts = (formData.measurements || '').split('-').map((s: string) => s.trim());
     while (parts.length < 3) {
       parts.push('');
     }
     parts[index] = val.trim();
-    if (parts.every(p => !p)) {
+    if (parts.every((p: string) => !p)) {
       setFormData((prev: any) => ({ ...prev, measurements: '' }));
     } else {
       setFormData((prev: any) => ({ ...prev, measurements: parts.join(' - ') }));

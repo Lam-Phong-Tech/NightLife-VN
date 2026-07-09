@@ -1323,8 +1323,10 @@ function HomeCarouselDots({
       aria-label="Choose slide"
       style={{
         display: "flex",
+        alignItems: "center",
         justifyContent: "center",
         gap: "6px",
+        minHeight: "5px",
         marginTop: "12px",
       }}
     >
@@ -1332,19 +1334,27 @@ function HomeCarouselDots({
         <button
           key={index}
           type="button"
+          className="nl-home-carousel-dot"
           aria-label={`Slide ${index + 1}`}
           aria-pressed={activeSlide === index}
           onClick={() => setActiveSlide(index)}
           style={{
+            appearance: "none",
             display: "block",
             flex: "0 0 auto",
             width: activeSlide === index ? 22 : 5,
+            minWidth: activeSlide === index ? 22 : 5,
+            maxWidth: activeSlide === index ? 22 : 5,
             height: 5,
+            minHeight: 5,
+            maxHeight: 5,
             border: 0,
             borderRadius: 99,
             padding: 0,
             background: activeSlide === index ? colors.gold : "rgba(255,255,255,.26)",
             cursor: "pointer",
+            fontSize: 0,
+            lineHeight: 0,
             transition: "width 420ms cubic-bezier(.22,.78,.22,1), background 420ms ease",
           }}
         />

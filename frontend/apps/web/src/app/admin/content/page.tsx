@@ -8,6 +8,7 @@ import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
 import { adminRankingsApi, AdminRankingConfig, AdminRankingTargetOption } from '@/lib/api/admin-rankings';
+import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -31,6 +32,7 @@ const colors = {
 
 
 export default function AdminContentPage() {
+  const feedback = useSystemFeedback();
   const [activeTab, setActiveTab] = useState<'banner' | 'featured' | 'video' | 'blog'>('banner');
   const [isAdding, setIsAdding] = useState<'banner' | 'blog' | null>(null);
   const [editBlogId, setEditBlogId] = useState<string | null>(null);
@@ -188,8 +190,8 @@ export default function AdminContentPage() {
       description: 'Bạn có chắc muốn gỡ khỏi trang chủ?',
       onPrimary: async () => {
         try {
-          await contentApi.adminRemoveFeatured(item.id);
-          fetchFeaturedContent();
+          await adminRankingsApi.delete(id);
+          await fetchFeaturedItems();
           feedback.closeModal();
         } catch (err) {
           feedback.showToast({ title: 'Không thể gỡ.', tone: 'error' });
@@ -359,7 +361,7 @@ export default function AdminContentPage() {
       onPrimary: async () => {
         try {
           await apiClient(`/admin/content/tags/${id}`, { method: 'DELETE' });
-          fetchTags();
+          fetchBannerTags();
           feedback.closeModal();
         } catch (error) {
           console.error(error);
@@ -467,7 +469,7 @@ export default function AdminContentPage() {
       description: 'Bạn có chắc chắn muốn xóa banner này?',
       onPrimary: async () => {
         try {
-          await apiClient(`/admin/content/banners/${id}`, { method: 'DELETE' });
+          await contentApi.adminDelete(bannerId);
           fetchBanners();
           feedback.closeModal();
         } catch (e) {

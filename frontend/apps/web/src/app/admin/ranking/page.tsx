@@ -86,11 +86,11 @@ const normalizeRankingCategory = (value?: string | null): AdminRankingCategory |
     : undefined;
 };
 
-function SortableRankingItem(props: { 
-  item: RankingItem; 
-  index: number; 
-  isStore: boolean; 
-  toggleSponsor: (id: string) => void; 
+function SortableRankingItem(props: {
+  item: RankingItem;
+  index: number;
+  isStore: boolean;
+  toggleSponsor: (id: string) => void;
   moveItem: (index: number, direction: 'up' | 'down') => void;
   removeItem: (id: string) => void;
 }) {
@@ -111,10 +111,10 @@ function SortableRankingItem(props: {
   };
 
   const rank = index + 1;
-  const numStyle = rank === 1 
-    ? { color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)' } 
-    : rank <= 3 
-      ? { color: '#d4b26a', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.3)' } 
+  const numStyle = rank === 1
+    ? { color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a)' }
+    : rank <= 3
+      ? { color: '#d4b26a', background: 'rgba(212,178,106,.12)', border: '1px solid rgba(212,178,106,.3)' }
       : { color: '#9b958a', background: 'rgba(255,255,255,.05)' };
 
   const rowBg = index === 0 ? 'linear-gradient(135deg,rgba(212,178,106,.13),rgba(255,255,255,.02))' : 'rgba(255,255,255,.025)';
