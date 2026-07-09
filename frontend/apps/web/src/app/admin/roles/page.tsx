@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff, ChevronUp, ChevronDown, Edit2, Key, Ban, RotateCcw, Trash2, AlertCircle } from 'lucide-react';
+import { getAuthUser } from '@/lib/auth/session';
 
 const colors = {
   bg: '#0c0c0f',
@@ -196,6 +197,14 @@ export default function AdminRolesPage() {
     showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
   };
 
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  useEffect(() => {
+    const user = getAuthUser();
+    if (user?.role === 'SUPER_ADMIN') {
+      setIsSuperAdmin(true);
+    }
+  }, []);
+
   const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
     const updater = (prev: CapRow[]) => {
       const next = [...prev];
@@ -291,9 +300,11 @@ export default function AdminRolesPage() {
                       <RotateCcw size={12} strokeWidth={2} />
                     </span>
                   )}
-                  <span onClick={() => { setHdName(a.name); setHdEmail(a.email); setHdKey(a.key); setHdOpen(true); }} title="Xóa vĩnh viễn (xóa cứng)" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
-                    <Trash2 size={12} strokeWidth={1.9} />
-                  </span>
+                  {isSuperAdmin && (
+                    <span onClick={() => { setHdName(a.name); setHdEmail(a.email); setHdKey(a.key); setHdOpen(true); }} title="Xóa vĩnh viễn (xóa cứng)" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                      <Trash2 size={12} strokeWidth={1.9} />
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -412,7 +423,7 @@ export default function AdminRolesPage() {
                     { id: 'operator', label: 'Operator' }, 
                     { id: 'partner', label: 'Đối tác (chủ quán)' }, 
                     { id: 'staff', label: 'Staff (NV quán)' }
-                  ].map(k => (
+                  ].filter(k => isSuperAdmin || k.id !== 'admin').map(k => (
                     <span key={k.id} onClick={() => setAfKind(k.id)} style={{ fontSize: '11.5px', fontWeight: 600, padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap', ...(afKind === k.id ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#9b958a', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }) }}>
                       {k.label}
                     </span>

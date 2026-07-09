@@ -6,6 +6,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
+import { getAuthUser } from '@/lib/auth/session';
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -258,6 +259,10 @@ function AdminStoresContent() {
   };
 
   useEffect(() => {
+    const user = getAuthUser();
+    if (user?.role === 'SUPER_ADMIN') {
+      setIsSuperAdmin(true);
+    }
     fetchStores();
     fetchPartnerAccounts();
     fetch('https://provinces.open-api.vn/api/v2/p/')
@@ -737,17 +742,28 @@ function AdminStoresContent() {
         : { label: 'Chưa liên kết', kind: 'muted' };
 
   const handleSoftDeleteStore = async () => {
-    if (!venueSel || !selectedStore) return;
     if (!window.confirm('Xóa mềm quán này? Quán sẽ bị ẩn và tài khoản đối tác liên kết sẽ tạm khóa.')) return;
-
     try {
-      await apiClient(`/admin/stores/${venueSel}`, { method: 'DELETE' });
+      await apiClient.delete(`/admin/stores/${selectedStore?.id}?hard=false`);
       showToast('Đã xóa mềm quán');
       closeDrawer();
       fetchStores();
       fetchPartnerAccounts();
     } catch (err: any) {
       showToast(err.message || 'Không thể xóa mềm quán');
+    }
+  };
+
+  const handleHardDeleteStore = async () => {
+    if (!window.confirm('CẢNH BÁO: Bạn có chắc muốn xóa VĨNH VIỄN quán này khỏi cơ sở dữ liệu? (Chỉ Super Admin mới có quyền này)')) return;
+    try {
+      await apiClient.delete(`/admin/stores/${selectedStore?.id}?hard=true`);
+      showToast('Đã xóa cứng quán vĩnh viễn');
+      closeDrawer();
+      fetchStores();
+      fetchPartnerAccounts();
+    } catch (err: any) {
+      showToast(err.message || 'Không thể xóa cứng quán');
     }
   };
 
@@ -1319,6 +1335,12 @@ function AdminStoresContent() {
                 <span onClick={handleRestoreStore} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 700, color: '#7fd3a2', background: 'rgba(95,191,134,.08)', border: '1px solid rgba(95,191,134,.3)', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v6h6"/><path d="M3.5 9a9 9 0 1 1 1.2 6"/></svg>
                   Khôi phục
+                </span>
+              )}
+              {selectedStore && isSuperAdmin && (
+                <span onClick={handleHardDeleteStore} style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12.5px', fontWeight: 700, color: '#fff', background: '#d32f2f', border: '1px solid #b71c1c', padding: '13px 16px', borderRadius: '11px', cursor: 'pointer' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Xóa cứng
                 </span>
               )}
               <span onClick={closeDrawer} style={{ flex: 'none', fontSize: '13px', fontWeight: 600, color: '#c5c0b6', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', padding: '13px 22px', borderRadius: '11px', cursor: 'pointer' }}>Hủy</span>

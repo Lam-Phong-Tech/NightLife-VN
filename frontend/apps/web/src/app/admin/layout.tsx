@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { clearAuthSession } from '@/lib/auth/session';
+import { clearAuthSession, getAuthUser } from '@/lib/auth/session';
 import { apiClient } from '@/lib/api/client';
 
 type AdminNavItem = {
@@ -248,6 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isMobileSidebar, setIsMobileSidebar] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
   );
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? !window.matchMedia('(max-width: 767px)').matches : true,
   );
@@ -260,6 +261,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         document.documentElement.classList.toggle('vy-admin-light', storedTheme === 'light');
       }
     } catch (e) {}
+    const user = getAuthUser();
+    if (user?.role === 'SUPER_ADMIN') {
+      setIsSuperAdmin(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -352,7 +357,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <nav style={{ flex: 1, padding: '6px 12px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {navGroups.map(group => (
+            {[...navGroups, ...(isSuperAdmin ? [{
+              title: 'Hệ thống (Super)',
+              items: [
+                {
+                  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>,
+                  label: 'Giới hạn VPS',
+                  href: '/admin/system/storage'
+                }
+              ]
+            }] : [])].map(group => (
               <React.Fragment key={group.title}>
                 <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1.8px', color: '#57534b', textTransform: 'uppercase', padding: '12px 12px 6px' }}>
                   {group.title}
