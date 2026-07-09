@@ -360,19 +360,50 @@ describe('Public discovery listing API (e2e)', () => {
     expect(prisma.store.findMany).not.toHaveBeenCalled();
   });
 
-  it('rejects cities outside the P0 public scope', async () => {
-    await request(app.getHttpServer())
+  it('handles valid GET /areas query for a supported province city', async () => {
+    prisma.area.findMany.mockResolvedValueOnce([
+      {
+        id: 'area-dn',
+        code: 'dn-haichau',
+        name: 'Hai Chau',
+        city: 'Da Nang',
+        district: 'Hai Chau',
+        ward: null,
+      },
+    ]);
+
+    const response = await request(app.getHttpServer())
       .get('/areas')
       .query({ city: 'dn' })
+      .expect(200);
+
+    expect(response.body).toEqual([
+      expect.objectContaining({ code: 'dn-haichau', cityCode: 'dn' }),
+    ]);
+    expect(prisma.area.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          status: 'ACTIVE',
+          code: { startsWith: 'dn-' },
+        }),
+      }),
+    );
+  });
+
+  it('rejects unsupported public area city filters', async () => {
+    await request(app.getHttpServer())
+      .get('/areas')
+      .query({ city: 'tokyo' })
       .expect(400);
 
     expect(prisma.area.findMany).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid public ranking city filters', async () => {
+  it('rejects unsupported public ranking city filters', async () => {
     await request(app.getHttpServer())
       .get('/rankings')
-      .query({ city: 'dn' })
+      .query({ city: 'tokyo' })
       .expect(400);
 
     expect(prisma.rankingConfig.findMany).not.toHaveBeenCalled();
