@@ -80,4 +80,36 @@ describe("client translations", () => {
       "완벽한 밤을 위한 컨시어지",
     );
   });
+
+  it("translates audited public and member screen copy without per-page patches", () => {
+    expect(translateText("Email chưa đúng định dạng.", "ja")).toBe(
+      "メールアドレスの形式が正しくありません。",
+    );
+    expect(translateText("Email không được vượt quá 254 ký tự.", "ko")).toBe(
+      "이메일은 254자를 초과할 수 없습니다.",
+    );
+    expect(
+      translateText("Bạn chưa lấy mã nào. Khám phá Coupon Hot để nhận ưu đãi ngay.", "zh"),
+    ).toBe("你还没有领取任何码。立即探索热门优惠券领取优惠。");
+    expect(translateText("Blog và cẩm nang nightlife | Vietyoru", "en")).toBe(
+      "Nightlife blog and guides | Vietyoru",
+    );
+    expect(
+      translateText("Cast này không tồn tại hoặc chưa được công khai trên Vietyoru.", "ja"),
+    ).toBe("このキャストは存在しないか、まだVietyoruで公開されていません。");
+    expect(translateText("Coupon đã lưu", "ko")).toBe("저장한 쿠폰");
+    expect(translateText("Đặt bàn VIP", "ja")).toBe("VIP席を予約");
+    expect(translateText("VIP sofa · Coupon", "ja")).toBe("VIPソファ · クーポン");
+    expect(translateText("Cast Hoàn Kiếm", "ja")).toBe("ホアンキエムのキャスト");
+    expect(
+      translateText("Dạ chào anh, Vietyoru Hỗ trợ có thể giúp gì cho anh ạ?", "en"),
+    ).toBe("Hello, Vietyoru Support here. How can we help you?");
+    expect(
+      translateText(
+        "Sakura Lounge vẫn còn bàn khung 21:00 cho 4 khách ạ. Em giữ chỗ trước cho anh nhé?",
+        "ja",
+      ),
+    ).toBe("Sakura Loungeは21:00に4名席がまだあります。仮押さえしましょうか？");
+    expect(translateText("Store gallery lightbox", "zh")).toBe("店铺图库放大查看");
+  });
 });

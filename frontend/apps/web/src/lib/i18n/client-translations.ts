@@ -3155,6 +3155,153 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ko: "나이트 세트 디너",
     zh: "夜间套餐晚餐",
   },
+  {
+    vi: "Email chưa đúng định dạng.",
+    en: "Email format is invalid.",
+    ja: "メールアドレスの形式が正しくありません。",
+    ko: "이메일 형식이 올바르지 않습니다.",
+    zh: "邮箱格式不正确。",
+  },
+  {
+    vi: "Email không được vượt quá 254 ký tự.",
+    en: "Email must not exceed 254 characters.",
+    ja: "メールアドレスは254文字以内で入力してください。",
+    ko: "이메일은 254자를 초과할 수 없습니다.",
+    zh: "邮箱不能超过254个字符。",
+  },
+  {
+    vi: "Bạn chưa lấy mã nào. Khám phá Coupon Hot để nhận ưu đãi ngay.",
+    en: "You have not claimed any codes yet. Explore Hot Coupons to get deals now.",
+    ja: "まだコードを取得していません。注目クーポンを見て特典を受け取りましょう。",
+    ko: "아직 받은 코드가 없습니다. 인기 쿠폰을 둘러보고 혜택을 받아보세요.",
+    zh: "你还没有领取任何码。立即探索热门优惠券领取优惠。",
+  },
+  {
+    vi: "Blog và cẩm nang nightlife",
+    en: "Nightlife blog and guides",
+    ja: "ナイトライフブログとガイド",
+    ko: "나이트라이프 블로그와 가이드",
+    zh: "夜生活博客与指南",
+  },
+  {
+    vi: "Blog và cẩm nang nightlife | Vietyoru",
+    en: "Nightlife blog and guides | Vietyoru",
+    ja: "ナイトライフブログとガイド | Vietyoru",
+    ko: "나이트라이프 블로그와 가이드 | Vietyoru",
+    zh: "夜生活博客与指南 | Vietyoru",
+  },
+  {
+    vi: "Cast này không tồn tại hoặc chưa được công khai trên Vietyoru.",
+    en: "This Cast does not exist or is not public on Vietyoru yet.",
+    ja: "このキャストは存在しないか、まだVietyoruで公開されていません。",
+    ko: "이 Cast는 존재하지 않거나 아직 Vietyoru에 공개되지 않았습니다.",
+    zh: "该 Cast 不存在或尚未在 Vietyoru 公开。",
+  },
+  {
+    vi: "Cast này không tồn tại, chưa active hoặc chưa được duyệt public qua CMS.",
+    en: "This Cast does not exist, is not active, or has not been approved for public CMS display.",
+    ja: "このキャストは存在しない、アクティブでない、またはCMSで公開承認されていません。",
+    ko: "이 Cast는 존재하지 않거나 활성 상태가 아니며 CMS 공개 승인이 완료되지 않았습니다.",
+    zh: "该 Cast 不存在、未启用，或尚未通过 CMS 公开审核。",
+  },
+  {
+    vi: "Coupon đã lưu",
+    en: "Saved coupons",
+    ja: "保存済みクーポン",
+    ko: "저장한 쿠폰",
+    zh: "已保存优惠券",
+  },
+  {
+    vi: "Email đã lưu",
+    en: "Saved email",
+    ja: "保存済みメール",
+    ko: "저장된 이메일",
+    zh: "已保存邮箱",
+  },
+  {
+    vi: "Đặt bàn VIP",
+    en: "Book a VIP table",
+    ja: "VIP席を予約",
+    ko: "VIP 테이블 예약",
+    zh: "预订 VIP 桌",
+  },
+  {
+    vi: "Ưu đãi VIP",
+    en: "VIP deals",
+    ja: "VIP特典",
+    ko: "VIP 혜택",
+    zh: "VIP 优惠",
+  },
+  {
+    vi: "Karaoke/KTV",
+    en: "Karaoke/KTV",
+    ja: "カラオケ/KTV",
+    ko: "노래방/KTV",
+    zh: "卡拉OK/KTV",
+  },
+  {
+    vi: "Massage/Spa",
+    en: "Massage/Spa",
+    ja: "マッサージ/スパ",
+    ko: "마사지/스파",
+    zh: "按摩/水疗",
+  },
+  {
+    vi: "Dạ chào anh, Vietyoru Hỗ trợ có thể giúp gì cho anh ạ?",
+    en: "Hello, Vietyoru Support here. How can we help you?",
+    ja: "こんにちは、Vietyoruサポートです。どのようにお手伝いできますか？",
+    ko: "안녕하세요, Vietyoru 지원팀입니다. 무엇을 도와드릴까요?",
+    zh: "您好，这里是 Vietyoru 支持。有什么可以帮您？",
+  },
+  {
+    vi: "Mình muốn hỏi về đặt bàn tối nay ở Sakura Lounge",
+    en: "I want to ask about booking a table tonight at Sakura Lounge.",
+    ja: "今夜Sakura Loungeで席を予約したいです。",
+    ko: "오늘 밤 Sakura Lounge 테이블 예약에 대해 문의하고 싶어요.",
+    zh: "我想咨询今晚在 Sakura Lounge 订桌。",
+  },
+  {
+    vi: "Dạ anh đi mấy người và khoảng mấy giờ để em kiểm tra bàn trống giúp anh ạ?",
+    en: "How many guests and what time should we check availability for?",
+    ja: "人数とご希望時間を教えてください。空席を確認します。",
+    ko: "몇 분이 몇 시쯤 방문하시는지 알려주시면 빈자리를 확인해드릴게요.",
+    zh: "请问几位、几点左右到店？我帮您确认空位。",
+  },
+  {
+    vi: "4 người, khoảng 21:00 nhé",
+    en: "4 guests, around 21:00 please.",
+    ja: "4名で、21:00頃お願いします。",
+    ko: "4명, 21:00쯤 부탁해요.",
+    zh: "4位，大约21:00。",
+  },
+  {
+    vi: "Sakura Lounge vẫn còn bàn khung 21:00 cho 4 khách ạ. Em giữ chỗ trước cho anh nhé?",
+    en: "Sakura Lounge still has a 21:00 table for 4 guests. Shall we hold it for you?",
+    ja: "Sakura Loungeは21:00に4名席がまだあります。仮押さえしましょうか？",
+    ko: "Sakura Lounge는 21:00에 4명 좌석이 아직 있습니다. 먼저 잡아드릴까요?",
+    zh: "Sakura Lounge 21:00 还有4人桌。需要先为您保留吗？",
+  },
+  {
+    vi: "Vâng bạn giữ giúp mình",
+    en: "Yes, please hold it for me.",
+    ja: "はい、お願いします。",
+    ko: "네, 잡아주세요.",
+    zh: "好的，请帮我保留。",
+  },
+  {
+    vi: "Em đã giữ chỗ cho anh. Anh vào mục Đặt chỗ xác nhận trong 15 phút giúp em là xong ạ. Cảm ơn anh!",
+    en: "We have held the spot for you. Please confirm it in Reservations within 15 minutes. Thank you!",
+    ja: "お席を仮押さえしました。15分以内に予約画面で確定してください。ありがとうございます！",
+    ko: "좌석을 잡아두었습니다. 15분 안에 예약 메뉴에서 확정해주시면 됩니다. 감사합니다!",
+    zh: "已为您保留座位。请在15分钟内到“预订”确认。谢谢！",
+  },
+  {
+    vi: "Store gallery lightbox",
+    en: "Store gallery lightbox",
+    ja: "店舗ギャラリーの拡大表示",
+    ko: "매장 갤러리 확대 보기",
+    zh: "店铺图库放大查看",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -3186,6 +3333,41 @@ const termEntries: TranslationEntry[] = [
     ja: "ハノイ",
     ko: "하노이",
     zh: "河内",
+  },
+  {
+    vi: "Coupon Hot",
+    en: "Hot Coupons",
+    ja: "注目クーポン",
+    ko: "인기 쿠폰",
+    zh: "热门优惠券",
+  },
+  {
+    vi: "Coupon",
+    en: "Coupon",
+    ja: "クーポン",
+    ko: "쿠폰",
+    zh: "优惠券",
+  },
+  {
+    vi: "VIP friendly",
+    en: "VIP friendly",
+    ja: "VIP対応",
+    ko: "VIP 친화",
+    zh: "VIP 友好",
+  },
+  {
+    vi: "VIP sofa",
+    en: "VIP sofa",
+    ja: "VIPソファ",
+    ko: "VIP 소파",
+    zh: "VIP 沙发",
+  },
+  {
+    vi: "VIP table",
+    en: "VIP table",
+    ja: "VIP席",
+    ko: "VIP 테이블",
+    zh: "VIP 桌",
   },
   {
     vi: "Night dining",
@@ -4019,6 +4201,17 @@ function translatePattern(
       ja: `このエリアの${subject}はまだありません。`,
       ko: `이 지역에는 아직 ${subject}이(가) 없습니다.`,
       zh: `该区域暂无${subject}。`,
+    }[language];
+  }
+
+  const castAreaMatch = normalized.match(/^Cast\s+(.+)$/i);
+  if (castAreaMatch) {
+    const area = translateText(castAreaMatch[1] ?? "", language);
+    return {
+      en: `Cast in ${area}`,
+      ja: `${area}のキャスト`,
+      ko: `${area} Cast`,
+      zh: `${area} Cast`,
     }[language];
   }
 
