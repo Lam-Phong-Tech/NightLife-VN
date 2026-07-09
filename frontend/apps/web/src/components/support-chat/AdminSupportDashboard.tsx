@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
+import { getAuthUser } from '@/lib/auth/session';
+
 export function AdminSupportDashboard() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [pendingTickets, setPendingTickets] = useState<any[]>([]);
@@ -11,20 +13,31 @@ export function AdminSupportDashboard() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // MOCK admin user
-  const adminId = 'mock-admin-id';
-  const role = 'ADMIN';
+  useEffect(() => {
+    const user = getAuthUser();
+    if (user) setCurrentUser(user);
+  }, []);
+
+  const adminId = currentUser?.id;
+  const role = currentUser?.role || 'ADMIN';
 
   useEffect(() => {
+    if (!currentUser) return; // Wait for user to be loaded
+
+    const adminId = currentUser.id;
+    const role = currentUser.role || 'ADMIN';
+
     const newSocket = io(process.env.NEXT_PUBLIC_API_URL + '/support', {
       query: { adminId, role },
     });
     setSocket(newSocket);
 
     // Initial load pending tickets via REST API (Mocked here)
+    // Add auth token if required by your backend
     fetch(process.env.NEXT_PUBLIC_API_URL + '/api/support/pending')
       .then(res => res.json())
       .then(data => setPendingTickets(data))
@@ -68,7 +81,7 @@ export function AdminSupportDashboard() {
     return () => {
       newSocket.close();
     };
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
