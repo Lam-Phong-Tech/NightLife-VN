@@ -1187,8 +1187,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "linear-gradient(90deg,rgba(8,8,11,.88),rgba(8,8,11,.5) 54%,rgba(8,8,11,.18)), linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.7))",
+          background: "linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.76))",
         }}
       />
       <div key={event.title} style={{ position: "relative", zIndex: 1, maxWidth: desktop ? "520px" : "248px", animation: "nl-banner-copy-in 820ms cubic-bezier(.22,.78,.22,1)" }}>
