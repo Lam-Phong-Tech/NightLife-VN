@@ -50,17 +50,16 @@ const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
 const { bookingDateWindowDays } = bookingValidationLimits;
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
 const isConfirmedStatus = (status: string) => confirmedStatuses.has(status.trim().toUpperCase());
-const supportLineUrl = process.env.NEXT_PUBLIC_LINE_OA_URL ?? "https://line.me/R/ti/p/@vietyoru";
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@vietyoru.vn";
 const supportMailHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Vietyoru booking support")}`;
 const supportCancelMessage =
-  "Chỉ có thể hủy booking trước giờ hẹn ít nhất 1 giờ. Nếu cần đổi thông tin hoặc hủy sát giờ, vui lòng liên hệ Admin qua LINE OA hoặc Mail.";
+  "Chỉ có thể hủy booking trước giờ hẹn ít nhất 1 giờ. Nếu cần đổi thông tin hoặc hủy sát giờ, vui lòng liên hệ Admin qua Mail.";
 const missingGuestCancelIdentityMessage =
-  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua LINE OA hoặc Mail để hủy hoặc đổi thông tin.";
+  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua Mail để hủy hoặc đổi thông tin.";
 const missingGuestRescheduleIdentityMessage =
-  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua LINE OA hoặc Mail để đổi lịch.";
+  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua Mail để đổi lịch.";
 const missingGuestContactIdentityMessage =
-  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua LINE OA hoặc Mail.";
+  "Booking guest thiếu số điện thoại xác thực. Vui lòng liên hệ Admin qua Mail.";
 const maxRescheduleReasonLength = 300;
 const minRescheduleReasonLength = 5;
 const reasonContentPattern = /[\p{L}\p{N}]/u;
@@ -753,7 +752,7 @@ export default function Page() {
               <Clock size={15} />
               <span>
                 Có thể đổi lịch hoặc hủy đặt chỗ trước giờ hẹn tối thiểu 1 tiếng. Trường hợp sát
-                giờ, vui lòng liên hệ Admin qua LINE OA / Mail.
+                giờ, vui lòng liên hệ Admin qua Mail.
               </span>
             </div>
           </div>
@@ -771,7 +770,7 @@ export default function Page() {
             <h2 id="cancel-booking-title">Hủy booking</h2>
             <p>
               Nếu cần đổi ngày, số khách hoặc thông tin liên hệ, hãy hủy booking này rồi đặt lại.
-              Trường hợp sát giờ, vui lòng liên hệ Admin qua LINE OA hoặc Mail.
+              Trường hợp sát giờ, vui lòng liên hệ Admin qua Mail.
             </p>
             <label className={styles.dialogField}>
               <span>Lý do hủy</span>
@@ -1067,21 +1066,10 @@ function BookingCard({
                     : "Quá giờ"}
               </button>
             ) : (
-              <>
-                <a
-                  href={supportLineUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.secondaryCta}
-                >
-                  <MessageCircle size={14} />
-                  LINE OA
-                </a>
-                <a href={supportMailHref} className={styles.ghostCta}>
-                  <Mail size={14} />
-                  Mail Admin
-                </a>
-              </>
+              <a href={supportMailHref} className={styles.ghostCta}>
+                <Mail size={14} />
+                Mail Admin
+              </a>
             )}
           </>
         ) : group === "Hoàn tất" ? (

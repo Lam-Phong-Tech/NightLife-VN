@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Check, Clock3, Download, Headphones } from "lucide-react";
+import { AlertCircle, Check, Clock3, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -209,10 +209,6 @@ export default function Page() {
           <div className={styles.bottomActions}>
             <Link href="/lich-su-dat-cho" className={styles.primaryCta}>
               <strong>Xem đặt chỗ của tôi</strong>
-            </Link>
-            <Link href="/huong-dan" className={styles.secondaryCta}>
-              <Headphones size={15} />
-              Liên hệ hỗ trợ (LINE OA)
             </Link>
           </div>
         </div>

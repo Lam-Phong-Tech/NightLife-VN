@@ -93,8 +93,8 @@ const statusContent: Record<
     line: true,
     primaryLabel: "Về trang chủ",
     primaryHref: "/",
-    secondaryLabel: "Liên hệ LINE",
-    secondaryHref: "https://line.me/R/ti/p/@vietyoru",
+    secondaryLabel: "Tìm quán",
+    secondaryHref: "/danh-sach-quan",
   },
 };
 
