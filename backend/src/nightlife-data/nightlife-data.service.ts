@@ -17565,9 +17565,10 @@ export class NightlifeDataService {
       : '';
     const bookingCodeNeedle = normalizedBookingCodeSearch.replace(/^BK/, '');
     const isBookingCodeSearch = Boolean(
-      bookingCodeNeedle &&
-        (normalizedBookingCodeSearch.startsWith('BK') ||
-          /^\d+$/.test(normalizedBookingCodeSearch)),
+      normalizedBookingCodeSearch === 'BK' ||
+        (bookingCodeNeedle &&
+          (normalizedBookingCodeSearch.startsWith('BK') ||
+            /^\d+$/.test(normalizedBookingCodeSearch))),
     );
 
     const baseWhere: import('@prisma/client').Prisma.BookingWhereInput = {
@@ -17620,6 +17621,7 @@ export class NightlifeDataService {
       const items = filteredItems.slice(skip, skip + limit);
       const data = items.map((bk) => ({
         id: bk.id,
+        bookingCode: this.formatAdminBookingCode(bk.id),
         customerName:
           bk.user?.displayName || bk.guest?.displayName || 'KhÃ¡ch VÃ£ng Lai',
         customerPhone: bk.user?.phone || bk.guest?.phone || '',
@@ -17668,6 +17670,7 @@ export class NightlifeDataService {
 
     const data = items.map((bk) => ({
       id: bk.id,
+      bookingCode: this.formatAdminBookingCode(bk.id),
       customerName:
         bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
       customerPhone: bk.user?.phone || bk.guest?.phone || '',

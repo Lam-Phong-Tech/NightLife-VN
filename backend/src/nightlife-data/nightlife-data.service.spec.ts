@@ -1425,6 +1425,43 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('lists admin bookings when searching by the BK code prefix', async () => {
+    const booking = {
+      id: 'booking-5542',
+      user: null,
+      guest: {
+        displayName: 'Minh Tu Nguyen Dang',
+        phone: '0900000000',
+        email: 'guest@example.com',
+      },
+      store: { name: 'Opera Spa Hai Phong' },
+      cast: null,
+      partySize: 4,
+      scheduledAt: new Date('2026-07-09T14:00:00.000Z'),
+      status: 'REQUESTED',
+      note: null,
+    };
+    prisma.booking.findMany
+      .mockResolvedValueOnce([booking] as never)
+      .mockResolvedValueOnce([booking] as never);
+
+    const result = await service.listAdminBookings({ search: 'BK' });
+
+    expect(result.data).toEqual([
+      expect.objectContaining({
+        id: 'booking-5542',
+        bookingCode: 'BK-5542',
+      }),
+    ]);
+    expect(result.meta).toEqual(
+      expect.objectContaining({
+        total: 1,
+        all: 1,
+        new: 1,
+      }),
+    );
+  });
+
   it('creates a guest booking request for an active store', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
     prisma.store.findFirst.mockResolvedValue({

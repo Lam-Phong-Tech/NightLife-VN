@@ -98,7 +98,9 @@ function AdminBookingsContent() {
     return `${h}:${m} - ${D}/${M}`;
   };
 
-  const formatBookingId = (id: string) => {
+  const formatBookingId = (booking: any) => {
+    if (booking?.bookingCode) return booking.bookingCode;
+    const id = String(booking?.id || '');
     const numericMatch = id.match(/\d+/g);
     if (numericMatch && numericMatch.length > 0) {
       return `BK-${numericMatch.join('').slice(-4)}`;
@@ -198,7 +200,7 @@ function AdminBookingsContent() {
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#8c8679' }}>{rowNumber}</span>
-              <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>{formatBookingId(b.id)}</span>
+              <span style={{ fontFamily: "'Inter'", fontSize: '12px', fontWeight: 600, color: '#d4b26a' }}>{formatBookingId(b)}</span>
               <div style={{ minWidth: 0 }}><div style={{ color: '#f3f0ea', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</div><div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatEmail(b.customerEmail)}</div></div>
               <div style={{ minWidth: 0 }}><div style={{ color: '#c5c0b6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.store?.name || b.store}</div><div style={{ fontSize: '11px', color: '#8c8679', marginTop: '2px' }}>{typeof b.cast === 'object' ? (b.cast ? `Cast: ${b.cast.stageName}` : 'Không có') : (b.cast === 'Không cast' ? 'Không có' : b.cast)}</div></div>
               <span style={{ color: '#c5c0b6' }}>{b.partySize} người</span>
@@ -233,7 +235,7 @@ function AdminBookingsContent() {
             <div className="scw nl-admin-drawer" style={{ position: 'absolute', right: 0, top: 0, height: '100vh', width: '428px', maxWidth: '92vw', overflow: 'auto', background: '#131218', borderLeft: '1px solid rgba(212,178,106,.18)', boxShadow: '-30px 0 60px -30px rgba(0,0,0,.8)' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Booking · BK-{bk.id.slice(0,4).toUpperCase()}</div>
+                  <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Booking · {formatBookingId(bk)}</div>
                   <div style={{ fontSize: '20px', fontWeight: 700, color: '#f3f0ea', marginTop: '5px' }}>{bk.customerName}</div>
                   <span style={{ ...stStyle, fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', display: 'inline-block', marginTop: '9px' }}>{stLabel}</span>
                 </div>
