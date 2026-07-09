@@ -1,4 +1,5 @@
-import { apiClient } from "./client";
+import { castImageForSlug } from "../demo-media";
+import { apiClient, resolveClientUrl } from "./client";
 
 export type RankingTargetType = "CAST" | "STORE";
 export type RankingCity = "all" | "hn" | "hcm";
@@ -61,10 +62,21 @@ const toParams = (params: RankingParams) => {
   return searchParams;
 };
 
+const normalizeRankingItem = (item: PublicRankingItem): PublicRankingItem => ({
+  ...item,
+  image: item.targetType === "CAST" ? castImageForSlug(item.slug) : resolveClientUrl(item.image),
+});
+
 export const rankingsApi = {
-  list: (params: RankingParams = {}, options: RequestInit = {}) =>
-    apiClient<PublicRankingResponse>("/rankings", {
+  list: async (params: RankingParams = {}, options: RequestInit = {}) => {
+    const response = await apiClient<PublicRankingResponse>("/rankings", {
       ...options,
       params: toParams(params),
-    }),
+    });
+
+    return {
+      ...response,
+      data: response.data.map(normalizeRankingItem),
+    };
+  },
 };
