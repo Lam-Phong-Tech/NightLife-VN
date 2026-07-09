@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   BarChart3,
   Eye,
+  EyeOff,
   LockKeyhole,
   LogIn,
   Mail,
@@ -42,6 +43,7 @@ const testAccount = {
 export default function AdminLoginPage() {
   const [email, setEmail] = useState(testAccount.email);
   const [password, setPassword] = useState(testAccount.password);
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const redirectTo = useMemo(() => {
@@ -219,7 +221,7 @@ export default function AdminLoginPage() {
               <span style={{ position: 'relative', display: 'block' }}>
                 <LockKeyhole size={16} color={colors.gold} style={{ position: 'absolute', left: 13, top: 14 }} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   style={{
@@ -234,7 +236,30 @@ export default function AdminLoginPage() {
                     outline: 'none',
                   }}
                 />
-                <Eye size={16} color={colors.gold} style={{ position: 'absolute', right: 14, top: 14 }} />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((current) => !current)}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
+                    width: 28,
+                    height: 28,
+                    border: 0,
+                    borderRadius: 8,
+                    background: 'transparent',
+                    color: colors.gold,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </span>
             </label>
           </div>
