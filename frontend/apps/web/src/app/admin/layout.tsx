@@ -366,7 +366,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div data-noinvert style={{ fontWeight: 800, fontSize: '22px', lineHeight: 1, background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-.4px' }}>Vietyoru</div>
               <div style={{ fontSize: '7.5px', letterSpacing: '3px', color: '#8c8679', marginTop: '3px', textTransform: 'uppercase' }}>Admin Console · CMS</div>
             </div>
-            <span data-noinvert style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '4px 8px', borderRadius: '6px' }}>ADMIN</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span data-noinvert style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '1.5px', color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '4px 8px', borderRadius: '6px' }}>ADMIN</span>
+              <button
+                aria-label="Đóng menu admin"
+                className="nl-admin-sidebar-close"
+                onClick={() => setSidebarOpen(false)}
+                type="button"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <nav style={{ flex: 1, padding: '6px 12px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
