@@ -90,7 +90,7 @@ const parseOpeningHourSlot = (slot: string) => {
 
   const openTotal = openHour * 60 + openMinute;
   const closeTotal = closeHour * 60 + closeMinute;
-  if (openTotal === closeTotal) {
+  if (openTotal === closeTotal && !(openTotal === 0 && closeTotal === 0)) {
     return {
       error: 'Giờ kết thúc phải khác giờ bắt đầu.',
       normalized: value,
@@ -102,6 +102,8 @@ const parseOpeningHourSlot = (slot: string) => {
     error: '',
     normalized: `${padHour(openHour)}:${match[2]} - ${padHour(closeHour)}:${match[4]}`,
     overnight: closeTotal < openTotal,
+    openTotal,
+    closeTotal,
   };
 };
 
@@ -127,6 +129,7 @@ const validateOpeningHours = (hours: Record<string, OpeningHourDay>): OpeningHou
 
     const slots = String(dayState.hours || '').split(',').map((slot) => slot.trim());
     const normalizedSlots: string[] = [];
+    const intervals: {start: number, end: number, index: number}[] = [];
 
     slots.forEach((slot, index) => {
       if (!slot) {
@@ -137,9 +140,26 @@ const validateOpeningHours = (hours: Record<string, OpeningHourDay>): OpeningHou
       const result = parseOpeningHourSlot(slot);
       if (result.error) {
         errors[day] = { ...(errors[day] || {}), [index]: result.error };
+      } else {
+        const start = result.openTotal!;
+        let end = result.closeTotal!;
+        if (end < start) end += 1440;
+        else if (start === 0 && end === 0) end = 1440;
+        intervals.push({ start, end, index });
       }
       normalizedSlots.push(result.normalized);
     });
+
+    for (let i = 0; i < intervals.length; i++) {
+      for (let j = i + 1; j < intervals.length; j++) {
+        const a = intervals[i];
+        const b = intervals[j];
+        if (!a || !b) continue;
+        if (Math.max(a.start, b.start) < Math.min(a.end, b.end)) {
+          errors[day] = { ...(errors[day] || {}), [b.index]: 'Khung giờ bị trùng lặp.' };
+        }
+      }
+    }
 
     normalizedHours[day] = { ...dayState, isOff: false, hours: normalizedSlots.join(', ') };
   });
@@ -1055,7 +1075,6 @@ function AdminStoresContent() {
                                 <option value="" style={{ background: '#1c1c24', color: '#f3f0ea' }}>Đóng lúc</option>
                                 {TIME_OPTIONS.map(time => <option key={time} value={time} style={{ background: '#1c1c24', color: '#f3f0ea' }}>{time}</option>)}
                               </select>
-                              {overnight && <span title="Khung qua đêm — kết thúc vào sáng hôm sau" style={{ flex: 'none', fontSize: '8.5px', fontWeight: 800, letterSpacing: '.5px', color: '#8fb6e4', background: 'rgba(143,182,228,.12)', border: '1px solid rgba(143,182,228,.3)', borderRadius: '5px', padding: '2.5px 5px', lineHeight: 1, cursor: 'help', marginRight: '2px' }}>+1</span>}
                               <span onClick={() => removeSlot(idx)} title="Xóa khung giờ" style={{ width: '19px', height: '19px', flex: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6e6a60', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.color = '#e08a7e'; e.currentTarget.style.background = 'rgba(224,122,110,.13)'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6e6a60'; e.currentTarget.style.background = 'transparent'; }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                             </span>
                           );
@@ -1079,7 +1098,7 @@ function AdminStoresContent() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '10px', fontSize: '10.5px', color: '#8c8679', lineHeight: 1.5 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ flex: 'none', marginTop: '1px' }}><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>
-                <span>Một ngày có thể có nhiều khung giờ. Khung có giờ kết thúc nhỏ hơn giờ bắt đầu (VD 20:00 – 02:00) tự nhận là qua đêm, gắn nhãn <b style={{ color: '#8fb6e4' }}>+1</b> — kết thúc vào sáng hôm sau. Bấm <b style={{ color: '#caa765' }}>+ Khung giờ</b> để thêm ca, ✕ để xóa, nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>.</span>
+                <span>Một ngày có thể có nhiều khung giờ, không được trùng lặp. Bấm <b style={{ color: '#caa765' }}>+ Khung giờ</b> để thêm ca, ✕ để xóa, nút bên phải chuyển <b style={{ color: '#7fd3a2' }}>Mở</b> / <b style={{ color: '#e08a7e' }}>Nghỉ</b>. Có thể chọn 00:00 - 00:00 để mở cả ngày (24h).</span>
               </div>
 
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', color: '#caa765', textTransform: 'uppercase', margin: '24px 0 12px' }}>Ảnh bìa (Tối đa 15MB)</div>
