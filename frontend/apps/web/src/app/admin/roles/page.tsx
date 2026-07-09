@@ -83,6 +83,21 @@ const Toggle = ({ on, onClick }: { on: boolean, onClick: () => void }) => (
 );
 
 export default function AdminRolesPage() {
+  const [isSuperAdmin, setIsSuperAdmin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const user = getAuthUser();
+      return user?.role === 'SUPER_ADMIN';
+    }
+    return false;
+  });
+  
+  useEffect(() => {
+    const user = getAuthUser();
+    if (user?.role === 'SUPER_ADMIN') {
+      setIsSuperAdmin(true);
+    }
+  }, []);
+
   const [accQ, setAccQ] = useState('');
   const [accRole, setAccRole] = useState('all');
   const [accPage, setAccPage] = useState(0);
@@ -198,21 +213,6 @@ export default function AdminRolesPage() {
     setIsAdding(false);
     showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
   };
-
-  const [isSuperAdmin, setIsSuperAdmin] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const user = getAuthUser();
-      return user?.role === 'SUPER_ADMIN';
-    }
-    return false;
-  });
-  
-  useEffect(() => {
-    const user = getAuthUser();
-    if (user?.role === 'SUPER_ADMIN') {
-      setIsSuperAdmin(true);
-    }
-  }, []);
 
   const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
     const updater = (prev: CapRow[]) => {
