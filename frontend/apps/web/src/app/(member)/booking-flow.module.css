@@ -932,6 +932,10 @@
   min-width: 0;
 }
 
+.historyActions > :only-child {
+  grid-column: 1 / -1;
+}
+
 .historyActions .historyBadge {
   min-height: 36px;
   justify-content: center;
