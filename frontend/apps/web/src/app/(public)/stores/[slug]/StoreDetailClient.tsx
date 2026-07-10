@@ -43,6 +43,7 @@ import {
 } from "@/lib/booking-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
+import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -750,7 +751,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [isMemberBooking, setIsMemberBooking] = useState(false);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [bookingErrorMessage, setBookingErrorMessage] = useState("");
-  const [isFavorite, setIsFavorite] = useState(() => isFavoriteStore(store.slug));
+  const [isFavorite, setIsFavorite] = useState(
+    () => hasMemberFavoriteAccess() && isFavoriteStore(store.slug),
+  );
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const recommendedStores = useMemo(
     () => personalizeRelatedStores(store.relatedStores),
@@ -910,6 +913,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const showNextMedia = () =>
     setSelectedGalleryIndex((index) => (index >= gallery.length - 1 ? 0 : index + 1));
   const toggleFavorite = () => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
     const nextValue = !isFavorite;
     setIsFavorite(nextValue);
     writeFavoriteStore(

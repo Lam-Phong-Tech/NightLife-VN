@@ -18,6 +18,7 @@ import {
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
 import { resolveClientUrl } from "@/lib/api/client";
 import { storeImageForSlug } from "@/lib/demo-media";
+import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
@@ -188,7 +189,9 @@ export default function Page() {
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [stores, setStores] = useState<PublicStore[]>([]);
-  const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(() => readFavoriteStoreSlugs());
+  const [favoriteStoreSlugs, setFavoriteStoreSlugs] = useState<string[]>(
+    () => (hasMemberFavoriteAccess() ? readFavoriteStoreSlugs() : []),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -376,6 +379,10 @@ export default function Page() {
   };
 
   const toggleVenueFavorite = (venue: VenueView) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
     const nextValue = !favoriteStoreSlugs.includes(venue.id);
     writeFavoriteStore(
       {

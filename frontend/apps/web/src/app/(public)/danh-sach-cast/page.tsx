@@ -24,6 +24,7 @@ import {
   type PublicCast,
 } from "@/lib/api/discovery";
 import { castImageForSlug } from "@/lib/demo-media";
+import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteCastSlugs, writeFavoriteCast } from "@/lib/member-favorites";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -153,7 +154,9 @@ export default function Page() {
   const [isLocating, setIsLocating] = useState(false);
   const [areas, setAreas] = useState<PublicArea[]>([]);
   const [casts, setCasts] = useState<PublicCast[]>([]);
-  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(() => readFavoriteCastSlugs());
+  const [favoriteCastSlugs, setFavoriteCastSlugs] = useState<string[]>(
+    () => (hasMemberFavoriteAccess() ? readFavoriteCastSlugs() : []),
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -363,6 +366,10 @@ export default function Page() {
   };
 
   const toggleCastFavorite = (cast: PublicCast, index: number) => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
     const nextValue = !favoriteCastSlugs.includes(cast.slug);
     writeFavoriteCast(
       {

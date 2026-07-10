@@ -5,6 +5,11 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { ApiError, apiClient } from "@/lib/api/client";
 import { castFavoriteApi, type PublicCastDetail } from "@/lib/api/cast-detail";
+import {
+  hasMemberFavoriteAccess,
+  redirectToLoginForFavorite,
+  requireMemberFavoriteAccess,
+} from "@/lib/member-favorite-auth";
 import { isFavoriteCast, writeFavoriteCast } from "@/lib/member-favorites";
 import { CastBookingCTA } from "./CastBookingCTA";
 import { CastGallery } from "./CastGallery";
@@ -39,7 +44,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     () => personalizeRelatedCasts(profile, profile.relatedCasts),
     [profile],
   );
-  const [isFavorite, setIsFavorite] = useState(() => isFavoriteCast(profile.slug));
+  const [isFavorite, setIsFavorite] = useState(
+    () => hasMemberFavoriteAccess() && isFavoriteCast(profile.slug),
+  );
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
@@ -66,8 +73,16 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
     let ignore = false;
 
     Promise.resolve().then(() => {
-      if (!ignore) setIsFavorite(isFavoriteCast(favoriteSnapshot.slug));
+      if (!ignore) {
+        setIsFavorite(hasMemberFavoriteAccess() && isFavoriteCast(favoriteSnapshot.slug));
+      }
     });
+
+    if (!hasMemberFavoriteAccess()) {
+      return () => {
+        ignore = true;
+      };
+    }
 
     castFavoriteApi
       .getState(favoriteSnapshot.slug)
@@ -77,7 +92,10 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
         writeFavoriteCast(favoriteSnapshot, state.favorited);
       })
       .catch((error) => {
-        if (error instanceof ApiError && [401, 403].includes(error.status)) return;
+        if (error instanceof ApiError && [401, 403].includes(error.status)) {
+          if (!ignore) setIsFavorite(false);
+          return;
+        }
       });
 
     return () => {
@@ -120,6 +138,10 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   };
 
   const toggleFavorite = async () => {
+    if (!requireMemberFavoriteAccess()) {
+      return;
+    }
+
     const nextValue = !isFavorite;
     setIsFavorite(nextValue);
     writeFavoriteCast(favoriteSnapshot, nextValue);
@@ -133,6 +155,9 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       writeFavoriteCast(favoriteSnapshot, state.favorited);
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        setIsFavorite(false);
+        writeFavoriteCast(favoriteSnapshot, false);
+        redirectToLoginForFavorite();
         return;
       }
 
