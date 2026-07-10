@@ -36,6 +36,22 @@ import styles from "../booking-flow.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
 
+const bookingAutofillBlockProps = {
+  autoComplete: "new-password",
+  "aria-autocomplete": "none",
+  "data-1p-ignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+} as const;
+
+const bookingNoteAutofillBlockProps = {
+  autoComplete: "off",
+  "aria-autocomplete": "none",
+  "data-1p-ignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+} as const;
+
 type BookingContext = {
   storeSlug?: string;
   storeName: string;
@@ -519,10 +535,11 @@ export default function Page() {
                   <span style={{ textTransform: "none", letterSpacing: 0 }}>(tùy chọn)</span>
                 </span>
                 <textarea
+                  {...bookingNoteAutofillBlockProps}
+                  name="nl-booking-cast-note"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Vui lòng nhập ghi chú nếu có"
-                  autoComplete="off"
                   className={styles.noteArea}
                 />
               </label>
@@ -597,6 +614,7 @@ function ReadOnlyTextField({ label, value }: { label: string; value: string }) {
       <span className={`${styles.inputWrap} ${styles.readOnlyInputWrap}`}>
         <input
           type="text"
+          name="nl-booking-selected-cast"
           value={value}
           readOnly
           aria-readonly="true"
@@ -628,10 +646,11 @@ function TextField({
         {icon}
         <input
           type="text"
+          {...bookingAutofillBlockProps}
+          name="nl-booking-cast-display"
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          autoComplete="off"
           className={styles.input}
         />
       </span>
@@ -647,10 +666,11 @@ function EmailField({ value, onChange }: { value: string; onChange: (value: stri
         <Mail size={15} />
         <input
           type="email"
+          {...bookingAutofillBlockProps}
+          name="nl-booking-cast-contact"
           value={value}
           placeholder="Vui lòng nhập email"
           onChange={(event) => onChange(event.target.value)}
-          autoComplete="off"
           inputMode="email"
           className={styles.input}
         />

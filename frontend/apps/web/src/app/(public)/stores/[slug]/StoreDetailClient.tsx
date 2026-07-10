@@ -99,6 +99,29 @@ const nationalityLabels: Record<string, string> = {
 
 const { bookingDateWindowDays, maxGuests: maxBookingGuests } = bookingValidationLimits;
 
+const bookingFormAutofillBlockProps = {
+  autoComplete: "off",
+  "data-1p-ignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+} as const;
+
+const bookingInputAutofillBlockProps = {
+  autoComplete: "new-password",
+  "aria-autocomplete": "none",
+  "data-1p-ignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+} as const;
+
+const bookingNoteAutofillBlockProps = {
+  autoComplete: "off",
+  "aria-autocomplete": "none",
+  "data-1p-ignore": "true",
+  "data-form-type": "other",
+  "data-lpignore": "true",
+} as const;
+
 const emptyMediaBackground =
   "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
 
@@ -564,9 +587,9 @@ function BookingCard({
   return (
     <aside className="booking-card" aria-label="Đặt bàn">
       <form
+        {...bookingFormAutofillBlockProps}
         className="booking-card-form"
         noValidate
-        autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -584,20 +607,22 @@ function BookingCard({
           <label className="booking-field booking-input-field">
             <span>Họ tên</span>
             <input
+              {...bookingInputAutofillBlockProps}
+              name="nl-booking-store-display"
               value={guestName}
               onChange={(event) => onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value))}
               placeholder="Vui lòng nhập họ tên"
-              autoComplete="off"
             />
           </label>
           <label className="booking-field booking-input-field">
             <span>Email</span>
             <input
+              {...bookingInputAutofillBlockProps}
               type="email"
+              name="nl-booking-store-contact"
               value={email}
               onChange={(event) => onEmailChange(event.target.value)}
               placeholder="Vui lòng nhập email"
-              autoComplete="off"
               inputMode="email"
             />
           </label>
@@ -644,11 +669,12 @@ function BookingCard({
 
         <label className="booking-note-label">Ghi chú tuỳ chọn</label>
         <textarea
+          {...bookingNoteAutofillBlockProps}
           className="booking-note-box"
+          name="nl-booking-store-note"
           value={note}
           onChange={(event) => onNoteChange(event.target.value)}
           placeholder="Vui lòng nhập ghi chú nếu có"
-          autoComplete="off"
         />
 
         {errorMessage ? <div className="booking-error">{translateText(errorMessage, activeLanguage)}</div> : null}
