@@ -924,6 +924,7 @@
 .historyActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
   gap: 8px;
   margin-top: 12px;
 }
@@ -952,9 +953,11 @@
   padding: 8px 10px;
   font-size: 12px;
   gap: 6px;
+  white-space: nowrap;
 }
 
-.historyActions .dangerCta {
+.historyActions .dangerCta,
+.historyActions .wideCta {
   grid-column: 1 / -1;
 }
 
@@ -1278,9 +1281,9 @@
 
   .historyItem {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-columns: minmax(0, 1fr) 260px;
     align-items: center;
-    gap: 14px;
+    gap: 18px;
   }
 
   .historyActions {

@@ -1138,7 +1138,7 @@ function BookingCard({
                     : "Quá giờ"}
               </button>
             ) : (
-              <a href={supportMailHref} className={styles.ghostCta}>
+              <a href={supportMailHref} className={`${styles.ghostCta} ${styles.wideCta}`}>
                 <Mail size={14} />
                 Mail Admin
               </a>
