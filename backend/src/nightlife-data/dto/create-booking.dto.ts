@@ -22,7 +22,9 @@ const trimOptionalString = ({ value }: TransformFnParams): unknown => {
 };
 
 const trimDisplayName = ({ value }: TransformFnParams): unknown =>
-  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value;
+  typeof value === 'string'
+    ? value.normalize('NFC').trim().replace(/\s+/g, ' ')
+    : value;
 
 const trimLowerEmail = ({ value }: TransformFnParams): unknown => {
   if (typeof value !== 'string') return value;
@@ -95,7 +97,7 @@ export class CreateBookingDto {
   @IsString()
   @MinLength(2)
   @MaxLength(80)
-  @Matches(/^[\p{L}\s]+$/u, {
+  @Matches(/^[\p{L}\p{M}\s]+$/u, {
     message: 'displayName must contain letters and spaces only',
   })
   displayName: string;

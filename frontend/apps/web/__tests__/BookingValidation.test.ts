@@ -3,6 +3,7 @@ import {
   normalizeBookingDisplayName,
   normalizeBookingEmail,
   normalizeBookingNote,
+  sanitizeBookingDisplayNameInput,
   validateBookingDisplayName,
   validateBookingEmail,
   validateBookingFormFields,
@@ -10,6 +11,14 @@ import {
 } from "../src/lib/booking-validation";
 
 describe("booking validation", () => {
+  it("keeps Vietnamese IME composition text intact while typing", () => {
+    const decomposedName = "Nguye\u0302\u0303n Va\u0306n A";
+
+    expect(sanitizeBookingDisplayNameInput(decomposedName)).toBe(decomposedName);
+    expect(normalizeBookingDisplayName(decomposedName)).toBe("Nguy\u1ec5n V\u0103n A");
+    expect(validateBookingDisplayName(decomposedName)).toBe("");
+  });
+
   it("normalizes input before validation", () => {
     expect(normalizeBookingDisplayName("  Nguyễn   Văn   A  ")).toBe("Nguyễn Văn A");
     expect(normalizeBookingEmail("  USER@Example.COM  ")).toBe("user@example.com");

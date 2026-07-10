@@ -8730,7 +8730,9 @@ export class NightlifeDataService {
   }
 
   private sanitizeBookingContact(dto: CreateBookingDto) {
-    const displayName = this.cleanText(dto.displayName).replace(/\s+/g, ' ');
+    const displayName = this.cleanText(dto.displayName)
+      .normalize('NFC')
+      .replace(/\s+/g, ' ');
     const phone = this.cleanText(dto.phone);
     const email = this.cleanEmail(dto.email);
     const note = this.cleanText(dto.note);
@@ -8742,7 +8744,7 @@ export class NightlifeDataService {
     if (
       displayName.length < 2 ||
       displayName.length > 80 ||
-      !/^[\p{L}\s]+$/u.test(displayName)
+      !/^[\p{L}\p{M}\s]+$/u.test(displayName)
     ) {
       throw new BadRequestException(
         'displayName must contain letters and spaces only',

@@ -1908,6 +1908,48 @@ describe('NightlifeDataService', () => {
     );
   });
 
+  it('normalizes Vietnamese guest names before creating a booking', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-20T10:00:00.000Z'));
+    prisma.store.findFirst.mockResolvedValue({
+      id: 'store-1',
+      name: 'Neon Club',
+      slug: 'neon-club',
+      openingHours: null,
+    });
+    prisma.guest.create.mockResolvedValue({ id: 'guest-1' });
+    prisma.booking.create.mockResolvedValue({
+      id: 'booking-1',
+      status: 'REQUESTED',
+      scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
+      partySize: 4,
+      storeId: 'store-1',
+      store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
+      guest: {
+        id: 'guest-1',
+        displayName: 'Nguyễn Văn A',
+        phone: null,
+        email: 'guest@example.com',
+      },
+    });
+
+    await service.createGuestBooking({
+      storeSlug: 'neon-club',
+      displayName: 'Nguye\u0302\u0303n Va\u0306n A',
+      email: 'guest@example.com',
+      scheduledAt: '2026-06-30T14:00:00.000Z',
+      partySize: 4,
+    });
+
+    expect(prisma.guest.create).toHaveBeenCalledWith({
+      data: {
+        displayName: 'Nguyễn Văn A',
+        phone: undefined,
+        email: 'guest@example.com',
+      },
+      select: { id: true },
+    });
+  });
+
   it.each([
     [
       'a past booking date',

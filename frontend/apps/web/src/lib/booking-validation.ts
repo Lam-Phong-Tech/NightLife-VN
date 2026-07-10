@@ -12,15 +12,15 @@ export const bookingValidationLimits = {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const emailDomainLabelPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
-const displayNamePattern = /^[\p{L}\s]+$/u;
+const displayNamePattern = /^[\p{L}\p{M}\s]+$/u;
 const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
 const phonePattern = /^[0-9+\-\s().]+$/;
 
 export const normalizeBookingDisplayName = (value: string) =>
-  value.trim().replace(/\s+/g, " ");
+  value.normalize("NFC").trim().replace(/\s+/g, " ");
 
 export const sanitizeBookingDisplayNameInput = (value: string) =>
-  value.replace(/[^\p{L}\s]/gu, "").replace(/\s{2,}/g, " ");
+  value.replace(/\p{C}/gu, "").replace(/\s{2,}/g, " ");
 
 export const normalizeBookingEmail = (value: string) => value.trim().toLowerCase();
 
