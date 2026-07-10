@@ -35,14 +35,14 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         label: 'Booking', 
         href: '/admin/bookings' 
       },
-      { 
+      /* { 
         icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, 
         label: 'Chat hỗ trợ', 
         href: '/admin/support-chat',
         count: 2,
         countBg: '#e0a44e',
         countColor: '#241a0a'
-      },
+      }, */
       { 
         icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>, 
         label: 'Duyệt hóa đơn', 

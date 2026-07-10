@@ -1230,7 +1230,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
             display: "flex",
             alignItems: "center",
             gap: "10px",
-            color: colors.text,
+            color: "rgba(255, 255, 255, 0.85)",
             fontSize: desktop ? "13px" : "11px",
             lineHeight: 1.35,
           }}
