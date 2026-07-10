@@ -1,5 +1,16 @@
 "use client";
 
+import { ConfigProvider, DatePicker } from "antd";
+import enUS from "antd/locale/en_US";
+import jaJP from "antd/locale/ja_JP";
+import koKR from "antd/locale/ko_KR";
+import viVN from "antd/locale/vi_VN";
+import zhCN from "antd/locale/zh_CN";
+import dayjs from "dayjs";
+import "dayjs/locale/ja";
+import "dayjs/locale/ko";
+import "dayjs/locale/vi";
+import "dayjs/locale/zh-cn";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
@@ -13,6 +24,11 @@ import {
 import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { discoveryApi } from "@/lib/api/discovery";
+import {
+  intlLocaleByLanguage,
+  useActiveLanguage,
+  type LanguageCode,
+} from "@/lib/i18n/use-active-language";
 
 const colors = {
   bg: "var(--vy-bg)",
@@ -30,6 +46,44 @@ const colors = {
   success: "var(--vy-success)",
   warning: "var(--vy-warn)",
 };
+
+const antdLocaleByLanguage: Record<LanguageCode, typeof viVN> = {
+  vi: viVN,
+  en: enUS,
+  ja: jaJP,
+  ko: koKR,
+  zh: zhCN,
+};
+
+const dayjsLocaleByLanguage: Record<LanguageCode, string> = {
+  vi: "vi",
+  en: "en",
+  ja: "ja",
+  ko: "ko",
+  zh: "zh-cn",
+};
+
+const billDatePickerTheme = {
+  token: {
+    colorPrimary: "var(--vy-gold)",
+    colorBgContainer: "var(--vy-surface-3)",
+    colorBgElevated: "var(--vy-surface)",
+    colorBorder: "var(--vy-border-gold-22)",
+    colorText: "var(--vy-text)",
+    colorTextPlaceholder: "var(--vy-faint)",
+    colorTextDisabled: "var(--vy-muted)",
+    borderRadius: 8,
+    controlHeight: 48,
+    fontFamily: "inherit",
+  },
+  components: {
+    DatePicker: {
+      activeBorderColor: "var(--vy-gold)",
+      hoverBorderColor: "var(--vy-border-gold-40)",
+      cellActiveWithRangeBg: "var(--vy-gold-soft-bg)",
+    },
+  },
+} as const;
 
 const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
 const maxBillTotalVnd = 1_000_000_000;
@@ -71,11 +125,20 @@ const toDatetimeLocalValue = (date: Date) => {
   return localTime.toISOString().slice(0, 16);
 };
 
-const formatDateTime = (value?: string | null) => {
-  if (!value) return "Chưa có";
+const emptyDateLabel = (language: LanguageCode) =>
+  ({
+    vi: "Chưa có",
+    en: "Not set",
+    ja: "未設定",
+    ko: "없음",
+    zh: "未设置",
+  })[language];
+
+const formatDateTime = (value: string | null | undefined, language: LanguageCode) => {
+  if (!value) return emptyDateLabel(language);
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Chưa có";
-  return new Intl.DateTimeFormat("vi-VN", {
+  if (Number.isNaN(date.getTime())) return emptyDateLabel(language);
+  return new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -196,6 +259,7 @@ const cleanApiMessage = (error: unknown) => {
 
 export default function Page() {
   const searchParams = useSearchParams();
+  const activeLanguage = useActiveLanguage();
   const focusedBillId = searchParams.get("billId") || "";
   const [stores, setStores] = useState<BillStoreOption[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
@@ -215,6 +279,10 @@ export default function Page() {
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
+
+  useEffect(() => {
+    dayjs.locale(dayjsLocaleByLanguage[activeLanguage]);
+  }, [activeLanguage]);
 
   const handleEvidenceFileChange = (input: HTMLInputElement) => {
     const file = input.files?.[0] ?? null;
@@ -377,6 +445,10 @@ export default function Page() {
     return focusedBill ? [focusedBill, ...topBills].slice(0, 6) : topBills;
   }, [focusedBillId, submittedBills]);
   const usedAtDate = useMemo(() => new Date(usedAt), [usedAt]);
+  const usedAtPickerValue = useMemo(() => {
+    const value = dayjs(usedAt);
+    return value.isValid() ? value : null;
+  }, [usedAt]);
   const isUsedAtInvalid = Number.isNaN(usedAtDate.getTime());
   const isFutureUsage =
     Boolean(timeWindow.nowMs) && !isUsedAtInvalid && usedAtDate.getTime() > timeWindow.nowMs;
@@ -554,7 +626,8 @@ export default function Page() {
                   <option value="">Không liên kết booking</option>
                   {bookings.map((booking) => (
                     <option key={booking.id} value={booking.id}>
-                      {booking.store?.name ?? "Booking"} - {formatDateTime(booking.scheduledAt)}
+                      {booking.store?.name ?? "Booking"} -{" "}
+                      {formatDateTime(booking.scheduledAt, activeLanguage)}
                     </option>
                   ))}
                 </select>
@@ -593,13 +666,37 @@ export default function Page() {
 
               <div className="nl-field">
                 <label htmlFor="bill-used-at">Thời gian sử dụng *</label>
-                <input
-                  id="bill-used-at"
-                  type="datetime-local"
-                  value={usedAt}
-                  onInput={(event) => setUsedAt(event.currentTarget.value)}
-                  onChange={(event) => setUsedAt(event.target.value)}
-                />
+                <ConfigProvider
+                  locale={antdLocaleByLanguage[activeLanguage]}
+                  theme={billDatePickerTheme}
+                >
+                  <DatePicker
+                    allowClear={false}
+                    className="nl-bill-ant-picker"
+                    disabledDate={(date) =>
+                      date
+                        ? date.isAfter(dayjs(), "day") ||
+                          date.isBefore(dayjs().subtract(10, "day"), "day")
+                        : false
+                    }
+                    format="DD/MM/YYYY HH:mm"
+                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                    id="bill-used-at"
+                    inputReadOnly
+                    onChange={(value) => {
+                      if (!value) {
+                        setUsedAt("");
+                        return;
+                      }
+
+                      setUsedAt(value.format("YYYY-MM-DDTHH:mm"));
+                    }}
+                    popupClassName="nl-bill-ant-popup"
+                    showNow
+                    showTime={{ format: "HH:mm", minuteStep: 5 }}
+                    value={usedAtPickerValue}
+                  />
+                </ConfigProvider>
               </div>
             </div>
 
@@ -656,7 +753,7 @@ export default function Page() {
                   <span>
                     Thời gian:{" "}
                     {ocrPreview.suggestions.usedAt
-                      ? formatDateTime(ocrPreview.suggestions.usedAt)
+                      ? formatDateTime(ocrPreview.suggestions.usedAt, activeLanguage)
                       : "cần nhập tay"}
                   </span>
                   {ocrPreview.warnings.length ? (
@@ -705,7 +802,9 @@ export default function Page() {
             <div className="nl-side-row">
               <span>Thời gian sử dụng</span>
               <strong>
-                {isUsedAtInvalid ? "Chưa có" : formatDateTime(usedAtDate.toISOString())}
+                {isUsedAtInvalid
+                  ? emptyDateLabel(activeLanguage)
+                  : formatDateTime(usedAtDate.toISOString(), activeLanguage)}
               </strong>
             </div>
             <div className="nl-side-row">
@@ -728,7 +827,7 @@ export default function Page() {
                     <strong>{bill.billNumber ?? bill.id.slice(0, 8)}</strong>
                     <span>{bill.store?.name ?? selectedStore?.name ?? "Quán"}</span>
                     <em>
-                      {moneyVnd(bill.totalVnd)} - {formatDateTime(bill.usedAt)}
+                      {moneyVnd(bill.totalVnd)} - {formatDateTime(bill.usedAt, activeLanguage)}
                     </em>
                     <small>{billStatusLabel(bill.status)}</small>
                   </article>
@@ -897,6 +996,86 @@ export default function Page() {
         select:focus {
           border-color: ${colors.borderStrong};
           box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+        }
+
+        .nl-bill-ant-picker.ant-picker {
+          width: 100%;
+          min-height: 48px;
+          border: 1px solid ${colors.border};
+          border-radius: 8px;
+          background: ${colors.panelStrong};
+          color: ${colors.text};
+          padding: 0 12px;
+          box-shadow: none;
+        }
+
+        .nl-bill-ant-picker.ant-picker:hover,
+        .nl-bill-ant-picker.ant-picker-focused {
+          border-color: ${colors.borderStrong};
+          box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+        }
+
+        .nl-bill-ant-picker .ant-picker-input > input {
+          min-height: 46px;
+          border: 0;
+          background: transparent;
+          color: ${colors.text};
+          padding: 0;
+          font-weight: 900;
+        }
+
+        .nl-bill-ant-picker .ant-picker-input > input::placeholder {
+          color: ${colors.dim};
+        }
+
+        .nl-bill-ant-picker .ant-picker-suffix {
+          color: ${colors.goldPale};
+        }
+
+        .nl-bill-ant-popup {
+          color: var(--vy-text);
+        }
+
+        .nl-bill-ant-popup .ant-picker-panel-container {
+          border: 1px solid var(--vy-border-gold-22);
+          background: var(--vy-surface);
+          box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+        }
+
+        .nl-bill-ant-popup .ant-picker-panel,
+        .nl-bill-ant-popup .ant-picker-time-panel-column {
+          background: var(--vy-surface);
+        }
+
+        .nl-bill-ant-popup .ant-picker-header,
+        .nl-bill-ant-popup .ant-picker-footer,
+        .nl-bill-ant-popup .ant-picker-time-panel {
+          border-color: var(--vy-border);
+        }
+
+        .nl-bill-ant-popup .ant-picker-content th,
+        .nl-bill-ant-popup .ant-picker-cell,
+        .nl-bill-ant-popup .ant-picker-header button,
+        .nl-bill-ant-popup .ant-picker-time-panel-cell-inner {
+          color: var(--vy-text-2);
+        }
+
+        .nl-bill-ant-popup .ant-picker-cell-in-view,
+        .nl-bill-ant-popup .ant-picker-header-view,
+        .nl-bill-ant-popup .ant-picker-now-btn {
+          color: var(--vy-text);
+        }
+
+        .nl-bill-ant-popup .ant-picker-cell-disabled::before,
+        .nl-bill-ant-popup .ant-picker-time-panel-cell-disabled .ant-picker-time-panel-cell-inner {
+          background: color-mix(in srgb, var(--vy-surface-2) 70%, transparent);
+        }
+
+        .nl-bill-ant-popup .ant-picker-cell-selected .ant-picker-cell-inner,
+        .nl-bill-ant-popup .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner,
+        .nl-bill-ant-popup .ant-btn-primary {
+          background: linear-gradient(135deg, #f0dda8, #d4b26a);
+          color: var(--vy-on-gold);
         }
 
         .nl-upload-row {

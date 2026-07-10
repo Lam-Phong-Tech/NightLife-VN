@@ -44,6 +44,11 @@ import {
   validateBookingDate,
   validateBookingTime,
 } from "@/lib/booking-validation";
+import {
+  intlLocaleByLanguage,
+  useActiveLanguage,
+  type LanguageCode,
+} from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
@@ -80,14 +85,50 @@ const thumbnails = {
     "url('https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?auto=format&fit=crop&w=180&q=72')",
 };
 
-const formatDateTime = (value: string) =>
-  new Intl.DateTimeFormat("vi-VN", {
+const formatDateTime = (value: string, language: LanguageCode) =>
+  new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   }).format(new Date(value));
+
+const formatGuestCount = (count: number, language: LanguageCode) => {
+  switch (language) {
+    case "en":
+      return `${count} ${count === 1 ? "guest" : "guests"}`;
+    case "ja":
+      return `${count}名`;
+    case "ko":
+      return `${count}명`;
+    case "zh":
+      return `${count}人`;
+    default:
+      return `${count} người`;
+  }
+};
+
+const formatHistoryPagination = (
+  start: number,
+  end: number,
+  total: number,
+  language: LanguageCode,
+) => {
+  switch (language) {
+    case "en":
+      return `Showing ${start}-${end} / ${total} reservations`;
+    case "ja":
+      return `${start}-${end} / ${total} 件の予約を表示`;
+    case "ko":
+      return `예약 ${total}개 중 ${start}-${end} 표시`;
+    case "zh":
+      return `显示 ${start}-${end} / ${total} 个预约`;
+    default:
+      return `Hiển thị ${start}-${end} / ${total} lịch`;
+  }
+};
 
 const toDateInputValue = (date: Date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -246,6 +287,7 @@ const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => 
 export default function Page() {
   const router = useRouter();
   const { socket } = useSocket();
+  const activeLanguage = useActiveLanguage();
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Tất cả");
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -840,6 +882,7 @@ export default function Page() {
                     isMember={isMember}
                     memberUserId={memberUserId}
                     cancelingId={cancelingId}
+                    activeLanguage={activeLanguage}
                     onCancel={handleCancelBooking}
                     onReschedule={handleRescheduleBooking}
                     onChat={openBookingChat}
@@ -866,7 +909,12 @@ export default function Page() {
           {!isLoading && visibleBookings.length > historyPageSize ? (
             <nav className={styles.historyPagination} aria-label="Phân trang lịch sử đặt chỗ">
               <span className={styles.historyPaginationSummary}>
-                Hiển thị {historyPageStart}-{historyPageEnd} / {visibleBookings.length} lịch
+                {formatHistoryPagination(
+                  historyPageStart,
+                  historyPageEnd,
+                  visibleBookings.length,
+                  activeLanguage,
+                )}
               </span>
               <div className={styles.historyPaginationActions}>
                 <button
@@ -1119,6 +1167,7 @@ function BookingCard({
   isMember,
   memberUserId,
   cancelingId,
+  activeLanguage,
   onCancel,
   onReschedule,
   onChat,
@@ -1127,6 +1176,7 @@ function BookingCard({
   isMember: boolean;
   memberUserId: string;
   cancelingId: string | null;
+  activeLanguage: LanguageCode;
   onCancel: (booking: BookingRecord) => void;
   onReschedule: (booking: BookingRecord) => void;
   onChat: (booking: BookingRecord) => void;
@@ -1162,7 +1212,8 @@ function BookingCard({
             {group !== "Đã hủy" ? <StatusBadge booking={booking} /> : null}
           </div>
           <div className={styles.historyMeta}>
-            {formatDateTime(booking.scheduledAt)} · {booking.partySize} người
+            {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
+            {formatGuestCount(booking.partySize, activeLanguage)}
           </div>
           <div
             className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}

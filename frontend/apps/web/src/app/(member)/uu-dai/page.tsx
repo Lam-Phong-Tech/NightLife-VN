@@ -14,6 +14,12 @@ import {
 import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { contentApi, type CmsContentItem } from "@/lib/api/content";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
+import { translateText } from "@/lib/i18n/client-translations";
+import {
+  intlLocaleByLanguage,
+  useActiveLanguage,
+  type LanguageCode,
+} from "@/lib/i18n/use-active-language";
 
 const categoryLabels: Record<string, string> = {
   BAR: "Bar",
@@ -74,17 +80,29 @@ const formatDiscount = (coupon: Pick<PublicCoupon, "discountType" | "discountVal
   return `-${formatVnd(coupon.discountValue)}`;
 };
 
-const formatShortDate = (value?: string | null) => {
+const formatShortDate = (value?: string | null, language: LanguageCode = "vi") => {
   if (!value) {
-    return "Không giới hạn";
+    return {
+      vi: "Không giới hạn",
+      en: "No limit",
+      ja: "期限なし",
+      ko: "제한 없음",
+      zh: "不限期",
+    }[language];
   }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "Đang cập nhật";
+    return {
+      vi: "Đang cập nhật",
+      en: "Updating",
+      ja: "更新中",
+      ko: "업데이트 중",
+      zh: "更新中",
+    }[language];
   }
 
-  return new Intl.DateTimeFormat("vi-VN", {
+  return new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
     day: "2-digit",
     month: "2-digit",
   }).format(date);
@@ -134,22 +152,170 @@ const getCouponImage = (coupon: PublicCoupon, index: number) =>
   categoryImages[coupon.store.category] ??
   fallbackImages[index % fallbackImages.length];
 
-const getStoreLocation = (coupon: PublicCoupon) => {
-  const area = [coupon.store.district, coupon.store.city].filter(Boolean).join(", ");
+const normalizeDistrictLabel = (value: string, language: LanguageCode) => {
+  const trimmed = value.trim();
+  const districtNumber =
+    trimmed.match(/^Quận\s+(\d+)$/i)?.[1] ?? trimmed.match(/^District\s+(\d+)$/i)?.[1];
+
+  if (districtNumber) {
+    return {
+      vi: `Quận ${districtNumber}`,
+      en: `District ${districtNumber}`,
+      ja: `${districtNumber}区`,
+      ko: `${districtNumber}군`,
+      zh: `${districtNumber}区`,
+    }[language];
+  }
+
+  return translateText(trimmed, language);
+};
+
+const normalizeCityLabel = (value: string, language: LanguageCode) => {
+  const normalized = normalizeText(value);
+  if (
+    normalized === "ho chi minh city" ||
+    normalized === "tp.hcm" ||
+    normalized === "tp hcm" ||
+    normalized === "hcm"
+  ) {
+    return {
+      vi: "TP.HCM",
+      en: "Ho Chi Minh City",
+      ja: "ホーチミン市",
+      ko: "호치민시",
+      zh: "胡志明市",
+    }[language];
+  }
+
+  if (normalized === "ha noi" || normalized === "hanoi") {
+    return {
+      vi: "Hà Nội",
+      en: "Hanoi",
+      ja: "ハノイ",
+      ko: "하노이",
+      zh: "河内",
+    }[language];
+  }
+
+  return translateText(value, language);
+};
+
+const getStoreLocation = (coupon: PublicCoupon, language: LanguageCode) => {
+  const area = [
+    coupon.store.district ? normalizeDistrictLabel(coupon.store.district, language) : "",
+    coupon.store.city ? normalizeCityLabel(coupon.store.city, language) : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return area || categoryLabels[coupon.store.category] || coupon.store.category;
 };
 
-const getCategoryLabel = (category: string) => categoryLabels[category] ?? category;
+const getCategoryLabel = (category: string, language: LanguageCode = "vi") =>
+  translateText(categoryLabels[category] ?? category, language);
 
-function CouponDealCard({ coupon, index }: { coupon: PublicCoupon; index: number }) {
+const couponCopy = (language: LanguageCode) =>
+  ({
+    vi: {
+      validUntil: "HSD",
+      viewOffer: "Xem ưu đãi",
+      deal: "ưu đãi",
+      page: "Trang",
+      showing: "Hiển thị",
+      previous: "Trước",
+      next: "Sau",
+      loadMore: "Xem thêm",
+    },
+    en: {
+      validUntil: "Valid until",
+      viewOffer: "View offer",
+      deal: "deals",
+      page: "Page",
+      showing: "Showing",
+      previous: "Previous",
+      next: "Next",
+      loadMore: "Load more",
+    },
+    ja: {
+      validUntil: "有効期限",
+      viewOffer: "特典を見る",
+      deal: "特典",
+      page: "ページ",
+      showing: "表示",
+      previous: "前へ",
+      next: "次へ",
+      loadMore: "もっと見る",
+    },
+    ko: {
+      validUntil: "유효기간",
+      viewOffer: "혜택 보기",
+      deal: "혜택",
+      page: "페이지",
+      showing: "표시",
+      previous: "이전",
+      next: "다음",
+      loadMore: "더 보기",
+    },
+    zh: {
+      validUntil: "有效期至",
+      viewOffer: "查看优惠",
+      deal: "优惠",
+      page: "页",
+      showing: "显示",
+      previous: "上一页",
+      next: "下一页",
+      loadMore: "查看更多",
+    },
+  })[language];
+
+const formatCouponPagination = ({
+  start,
+  end,
+  total,
+  page,
+  totalPages,
+  language,
+}: {
+  start: number;
+  end: number;
+  total: number;
+  page: number;
+  totalPages: number;
+  language: LanguageCode;
+}) => {
+  const copy = couponCopy(language);
+
+  switch (language) {
+    case "en":
+      return `${copy.showing} ${start}-${end} / ${total} ${copy.deal} · ${copy.page} ${page}/${totalPages}`;
+    case "ja":
+      return `${total}件中 ${start}-${end}件を表示 · ${copy.page} ${page}/${totalPages}`;
+    case "ko":
+      return `${total}개 중 ${start}-${end} 표시 · ${copy.page} ${page}/${totalPages}`;
+    case "zh":
+      return `${copy.showing} ${start}-${end} / ${total} 个${copy.deal} · 第 ${page}/${totalPages} ${copy.page}`;
+    default:
+      return `${copy.showing} ${start}-${end} / ${total} ${copy.deal} · ${copy.page} ${page}/${totalPages}`;
+  }
+};
+
+function CouponDealCard({
+  coupon,
+  index,
+  language,
+}: {
+  coupon: PublicCoupon;
+  index: number;
+  language: LanguageCode;
+}) {
   const storeName = readableName(coupon.store.name);
   const couponName = readableName(coupon.name);
-  const location = getStoreLocation(coupon);
+  const location = getStoreLocation(coupon, language);
+  const copy = couponCopy(language);
 
   return (
     <Link
-      aria-label={`Xem ưu đãi ${couponName} tại ${storeName}`}
+      aria-label={`${copy.viewOffer} ${couponName} ${language === "vi" ? "tại" : "at"} ${storeName}`}
       className="coupon-card"
       href={`/stores/${coupon.store.slug}`}
     >
@@ -163,8 +329,10 @@ function CouponDealCard({ coupon, index }: { coupon: PublicCoupon; index: number
       </span>
       <span className="coupon-copy">
         <span className="coupon-meta">
-          <span>{getCategoryLabel(coupon.store.category)}</span>
-          <span>HSD {formatShortDate(coupon.endsAt)}</span>
+          <span>{getCategoryLabel(coupon.store.category, language)}</span>
+          <span>
+            {copy.validUntil} {formatShortDate(coupon.endsAt, language)}
+          </span>
         </span>
         <strong>{formatDiscount(coupon)}</strong>
         <span className="coupon-title">{couponName}</span>
@@ -174,7 +342,7 @@ function CouponDealCard({ coupon, index }: { coupon: PublicCoupon; index: number
         </span>
       </span>
       <span className="coupon-action">
-        Xem ưu đãi
+        {copy.viewOffer}
         <ArrowRight size={14} />
       </span>
     </Link>
@@ -182,6 +350,7 @@ function CouponDealCard({ coupon, index }: { coupon: PublicCoupon; index: number
 }
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
   const [coupons, setCoupons] = useState<PublicCoupon[]>([]);
   const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -247,9 +416,9 @@ export default function Page() {
     return Object.entries(counts).map(([category, count]) => ({
       category,
       count,
-      label: getCategoryLabel(category),
+      label: getCategoryLabel(category, activeLanguage),
     }));
-  }, [coupons]);
+  }, [activeLanguage, coupons]);
 
   const filteredCoupons = useMemo(() => {
     const query = normalizeText(searchTerm);
@@ -265,12 +434,13 @@ export default function Page() {
           coupon.store.city,
           coupon.store.district ?? "",
           getCategoryLabel(coupon.store.category),
+          getCategoryLabel(coupon.store.category, activeLanguage),
         ].join(" "),
       );
 
       return matchesCategory && (!query || searchable.includes(query));
     });
-  }, [activeCategory, coupons, searchTerm]);
+  }, [activeCategory, activeLanguage, coupons, searchTerm]);
 
   const featuredCoupon = filteredCoupons[0] ?? coupons[0];
   const couponBanner = useMemo(() => banners.find(isCouponBanner) ?? null, [banners]);
@@ -435,7 +605,12 @@ export default function Page() {
             {!isLoading && !loadError && filteredCoupons.length ? (
               <section className="coupon-grid" aria-label="Danh sách coupon đang có">
                 {paginatedCoupons.map((coupon, index) => (
-                  <CouponDealCard coupon={coupon} index={couponStartIndex + index} key={coupon.id} />
+                  <CouponDealCard
+                    coupon={coupon}
+                    index={couponStartIndex + index}
+                    key={coupon.id}
+                    language={activeLanguage}
+                  />
                 ))}
               </section>
             ) : null}
@@ -443,8 +618,14 @@ export default function Page() {
             {shouldShowPagination ? (
               <nav aria-label="Phân trang ưu đãi" className="coupon-pagination">
                 <span>
-                  Hiển thị {couponStartIndex + 1}-{Math.min(couponStartIndex + couponPageSize, filteredCoupons.length)} /{" "}
-                  {filteredCoupons.length} ưu đãi · Trang {currentCouponPage}/{totalPages}
+                  {formatCouponPagination({
+                    start: couponStartIndex + 1,
+                    end: Math.min(couponStartIndex + couponPageSize, filteredCoupons.length),
+                    total: filteredCoupons.length,
+                    page: currentCouponPage,
+                    totalPages,
+                    language: activeLanguage,
+                  })}
                 </span>
                 <div className="coupon-pagination-actions">
                   <button
@@ -452,7 +633,7 @@ export default function Page() {
                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                     type="button"
                   >
-                    Trước
+                    {couponCopy(activeLanguage).previous}
                   </button>
                   {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                     <button
@@ -470,7 +651,7 @@ export default function Page() {
                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                     type="button"
                   >
-                    Sau
+                    {couponCopy(activeLanguage).next}
                   </button>
                   {currentCouponPage < totalPages ? (
                     <button
@@ -478,7 +659,7 @@ export default function Page() {
                       onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                       type="button"
                     >
-                      Xem thêm
+                      {couponCopy(activeLanguage).loadMore}
                     </button>
                   ) : null}
                 </div>

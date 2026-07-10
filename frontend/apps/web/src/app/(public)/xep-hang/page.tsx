@@ -21,6 +21,7 @@ import {
   type RankingTargetType,
 } from "@/lib/api/rankings";
 import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ranking";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 
 type RankingKind = "cast" | "quan";
 type LoadState = "loading" | "ready" | "error";
@@ -108,6 +109,40 @@ function shouldBlockDesktopPhoneCall() {
     window.innerWidth >= 768
   );
 }
+
+const rankingCallCopy = (language: LanguageCode) =>
+  ({
+    vi: {
+      phoneNumber: "Số điện thoại",
+      desktopTitle: "Không hỗ trợ gọi điện thoại trên desktop",
+      desktopBody: "Số điện thoại của quán đã được hiển thị ở phía trên.",
+      understood: "Đã hiểu",
+    },
+    en: {
+      phoneNumber: "Phone number",
+      desktopTitle: "Phone calls are not supported on desktop",
+      desktopBody: "The venue phone number is shown above.",
+      understood: "Got it",
+    },
+    ja: {
+      phoneNumber: "電話番号",
+      desktopTitle: "デスクトップでは電話発信に対応していません",
+      desktopBody: "店舗の電話番号は上に表示されています。",
+      understood: "了解",
+    },
+    ko: {
+      phoneNumber: "전화번호",
+      desktopTitle: "데스크톱에서는 전화 걸기를 지원하지 않습니다",
+      desktopBody: "매장 전화번호가 위에 표시되어 있습니다.",
+      understood: "확인",
+    },
+    zh: {
+      phoneNumber: "电话号码",
+      desktopTitle: "桌面端不支持直接拨打电话",
+      desktopBody: "店铺电话号码已显示在上方。",
+      understood: "知道了",
+    },
+  })[language];
 
 function getRankTone(rank: number) {
   return rankTones[rank - 1];
@@ -409,6 +444,8 @@ function RankingRow({
 }
 
 export default function Page() {
+  const activeLanguage = useActiveLanguage();
+  const callCopy = rankingCallCopy(activeLanguage);
   const [rankingType, setRankingType] = useState<RankingKind>("cast");
   const [selectedArea, setSelectedArea] = useState<RankingCity>("hn");
   const [list, setList] = useState<PublicRankingItem[]>([]);
@@ -553,7 +590,7 @@ export default function Page() {
         {callNotice ? (
           <div className="vyr-call-notice" role="status" aria-live="polite">
             <span>
-              Số điện thoại {callNotice.name}: <strong>{callNotice.phone}</strong>
+              {callCopy.phoneNumber} {callNotice.name}: <strong>{callNotice.phone}</strong>
             </span>
             <button type="button" onClick={() => setCallNotice(null)}>
               Đóng
@@ -563,10 +600,10 @@ export default function Page() {
 
         {showDesktopCallPopup && callNotice ? (
           <div className="vyr-call-popup" role="alert" aria-live="assertive">
-            <strong>Không hỗ trợ gọi điện thoại trên desktop</strong>
-            <span>Số điện thoại của quán đã được hiển thị ở phía trên.</span>
+            <strong>{callCopy.desktopTitle}</strong>
+            <span>{callCopy.desktopBody}</span>
             <button type="button" onClick={() => setShowDesktopCallPopup(false)}>
-              Đã hiểu
+              {callCopy.understood}
             </button>
           </div>
         ) : null}
