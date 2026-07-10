@@ -1399,7 +1399,8 @@ function HomeCardCarousel<T>({
   const swipeHandlers = useCarouselSwipe(slides.length, setActiveSlide);
 
   useEffect(() => {
-    setActiveSlide(0);
+    const timer = window.setTimeout(() => setActiveSlide(0), 0);
+    return () => window.clearTimeout(timer);
   }, [itemsPerSlide, slideKey, slides.length]);
 
   useEffect(() => {
@@ -2819,29 +2820,6 @@ export default function Page() {
               </div>
             </section>
 
-            <section
-              style={{
-                marginTop: "34px",
-                borderRadius: homeCardRadius,
-                border: `1px solid ${colors.line}`,
-                background: "rgba(212,178,106,.08)",
-                padding: "26px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "20px",
-              }}
-            >
-              <div>
-                <h2 style={{ fontSize: "24px", fontWeight: 900 }}>Concierge cho một đêm trọn vẹn</h2>
-                <p style={{ marginTop: "8px", color: colors.muted, fontSize: "14px", lineHeight: 1.6 }}>
-                  Gợi ý địa điểm, giữ bàn VIP, lưu coupon và theo dõi lịch đặt chỗ trong cùng một trải nghiệm.
-                </p>
-              </div>
-              <Link href="/huong-dan" style={{ flex: "none", borderRadius: "999px", background: colors.gold, color: "#241a0a", padding: "13px 20px", fontWeight: 900 }}>
-                Xem hướng dẫn
-              </Link>
-            </section>
           </main>
         </div>
       </div>
