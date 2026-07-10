@@ -41,6 +41,7 @@ import {
   sanitizeBookingDisplayNameInput,
   validateBookingFormFields,
 } from "@/lib/booking-validation";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
 import {
@@ -61,8 +62,10 @@ type StoreDetailClientProps = {
   store: PublicStoreDetail;
 };
 
+type IntroLanguageKey = Extract<LanguageCode, "vi" | "en" | "ja">;
+
 type IntroLine = {
-  key: "ja" | "vi";
+  key: IntroLanguageKey;
   text: string;
 };
 
@@ -70,6 +73,15 @@ const introMarkerPattern = /(?:🇯🇵|🇻🇳|🇬🇧|🇺🇸|\bJP\b|\bVN\b
 const japaneseTextPattern = /[\u3040-\u30ff\u3400-\u9fff]/;
 const vietnameseTextPattern =
   /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+const englishTextPattern = /[A-Za-z]/;
+
+const introFallbackOrder: Record<LanguageCode, IntroLanguageKey[]> = {
+  vi: ["vi", "en", "ja"],
+  en: ["en", "vi", "ja"],
+  ja: ["ja", "en", "vi"],
+  ko: ["en", "vi", "ja"],
+  zh: ["en", "vi", "ja"],
+};
 
 const languageLabels: Record<string, string> = {
   en: "Anh",
@@ -115,12 +127,28 @@ const markerToIntroKey = (marker: string) => {
   const normalized = marker.toUpperCase();
   if (marker === "🇯🇵" || normalized === "JP") return "ja";
   if (marker === "🇻🇳" || normalized === "VN") return "vi";
+  if (marker === "🇬🇧" || marker === "🇺🇸" || normalized === "GB" || normalized === "EN") {
+    return "en";
+  }
   return null;
 };
 
+const normalizeIntroSource = (description?: string | null) =>
+  description
+    ?.replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .trim();
+
 function buildIntroLines(description?: string | null): IntroLine[] {
   const fallback = "Không gian, dịch vụ và cast của quán sẽ được cập nhật trước khi nhận đặt chỗ.";
-  const source = description?.trim();
+  const source = normalizeIntroSource(description);
 
   if (!source) {
     return [{ key: "vi", text: fallback }];
@@ -141,7 +169,7 @@ function buildIntroLines(description?: string | null): IntroLine[] {
       if (text) byLanguage.set(key, text);
     });
 
-    const markedLines = (["ja", "vi"] as const)
+    const markedLines = (["ja", "en", "vi"] as const)
       .map((key) => {
         const text = byLanguage.get(key);
         return text ? { key, text } : null;
@@ -156,13 +184,46 @@ function buildIntroLines(description?: string | null): IntroLine[] {
     .map((chunk) => chunk.trim())
     .filter(Boolean);
   const japaneseLine = chunks.filter((chunk) => japaneseTextPattern.test(chunk)).join(" ");
+  const englishLine = chunks
+    .filter(
+      (chunk) =>
+        englishTextPattern.test(chunk) &&
+        !vietnameseTextPattern.test(chunk) &&
+        !japaneseTextPattern.test(chunk),
+    )
+    .join(" ");
   const vietnameseLine = chunks.filter((chunk) => vietnameseTextPattern.test(chunk)).join(" ");
   const detectedLines: IntroLine[] = [
     japaneseLine ? { key: "ja", text: japaneseLine } : null,
+    englishLine ? { key: "en", text: englishLine } : null,
     vietnameseLine ? { key: "vi", text: vietnameseLine } : null,
   ].filter((line): line is IntroLine => Boolean(line));
 
   return detectedLines.length ? detectedLines : [{ key: "vi", text: source }];
+}
+
+function selectIntroText(lines: IntroLine[], language: LanguageCode) {
+  for (const key of introFallbackOrder[language]) {
+    const line = lines.find((item) => item.key === key);
+    if (line?.text) return line.text;
+  }
+
+  return lines[0]?.text ?? "";
+}
+
+function IntroCopy({ text }: { text: string }) {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="intro-copy">
+      {(paragraphs.length ? paragraphs : [text]).map((paragraph, index) => (
+        <p key={`${paragraph.slice(0, 24)}-${index}`}>{paragraph}</p>
+      ))}
+    </div>
+  );
 }
 
 const plainMapsUrl = (store: PublicStoreDetail) => {
@@ -649,6 +710,7 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
 
 export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const router = useRouter();
+  const activeLanguage = useActiveLanguage();
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState(0);
   const [guestCount, setGuestCount] = useState(4);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
@@ -717,6 +779,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const priceText = priceRangeText(store);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
+  const introText = useMemo(
+    () => selectIntroText(introLines, activeLanguage),
+    [activeLanguage, introLines],
+  );
   const nationalityText = Array.from(
     new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))),
   )
@@ -1209,12 +1275,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <span key={chip}>{chip}</span>
                 ))}
               </div>
-              <div className="intro-copy" dangerouslySetInnerHTML={{ __html: store.description || '<p>Chưa có mô tả quán.</p>' }} />
+              <IntroCopy text={introText} />
             </section>
 
             <section className="mobile-about-section">
               <SectionTitle title="Giới thiệu" />
-              <div className="intro-copy" dangerouslySetInnerHTML={{ __html: store.description || '<p>Chưa có mô tả quán.</p>' }} />
+              <IntroCopy text={introText} />
               <div className="feature-chips">
                 {[categoryLabel, ...(store.tags || [])].map((chip) => (
                   <span key={chip}>{chip}</span>
