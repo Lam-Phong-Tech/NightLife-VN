@@ -368,40 +368,6 @@ const formatDateTime = (value: string | null | undefined) => {
   });
 };
 
-const fallbackSettlementRows = [
-  {
-    code: 'NL-HH30-7K2A',
-    service: 'Happy Hour -30% · Bàn thường',
-    time: '21:42 · hôm nay',
-    amount: 720000,
-    status: 'Đã ghi log',
-  },
-  {
-    code: 'NL-VIP21-9X4B',
-    service: 'Combo VIP 2+1 · Phòng VIP',
-    time: '20:15 · hôm nay',
-    amount: 500000,
-    status: 'Chờ đối soát',
-  },
-  {
-    code: 'NL-MB08-5K2E',
-    service: 'Member -8% · Phòng VIP',
-    time: '21:05 · hôm qua',
-    amount: 480000,
-    status: 'Đã ghi log',
-  },
-];
-
-const chartBars = [
-  { label: 'T2', value: 45 },
-  { label: 'T3', value: 62 },
-  { label: 'T4', value: 48 },
-  { label: 'T5', value: 78 },
-  { label: 'T6', value: 100 },
-  { label: 'T7', value: 92 },
-  { label: 'CN', value: 60 },
-];
-
 const emptyListingDraft: PartnerListingDraft = {
   storeName: '',
   businessType: '',
@@ -420,38 +386,6 @@ const emptyListingDraft: PartnerListingDraft = {
   castProfiles: [],
   mediaUrls: [],
 };
-
-const fallbackPricingItems: PartnerListingPricing[] = [
-  {
-    label: 'Bàn thường',
-    value: '500.000đ - 1.200.000đ',
-    note: 'Có thể gắn coupon Happy Hour',
-  },
-  {
-    label: 'Phòng VIP',
-    value: '2.500.000đ - 6.000.000đ',
-    note: 'Ưu tiên khách VIP',
-  },
-  {
-    label: 'Combo sinh nhật',
-    value: '3.000.000đ+',
-    note: 'Cần duyệt nội dung trước khi đăng',
-  },
-];
-
-const fallbackCastProfiles: PartnerListingCast[] = [
-  {
-    stageName: 'Yuki',
-    bio: 'Host nổi bật của quán',
-    tags: ['hostess'],
-    languages: ['vi', 'ja'],
-    mediaUrls: [],
-  },
-];
-
-const fallbackMediaUrls = [
-  'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=900&q=70',
-];
 
 function cleanListingText(value?: string | null) {
   if (!value) return '';
@@ -1035,11 +969,14 @@ export default function PartnerPage() {
 
     const loadPartnerData = async () => {
       try {
-        const [storeData, couponData, billData, dashboardData] = await Promise.all([
+        const [storeData, couponData, bookingData, billData, dashboardData] = await Promise.all([
           apiClient<PartnerStore[]>('/partner/stores'),
           apiClient<PartnerCoupon[]>('/partner/coupons'),
+          apiClient<PartnerBooking[]>('/partner/bookings'),
           apiClient<PartnerBill[]>('/partner/bills'),
-          apiClient<PartnerLiteDashboard>('/partner/dashboard-lite'),
+          apiClient<PartnerLiteDashboard>(
+            `/partner/dashboard-lite?period=${encodeURIComponent(period)}`,
+          ),
         ]);
 
         if (!isMounted) return;
@@ -1047,7 +984,7 @@ export default function PartnerPage() {
         setStores(storeData);
         setListingStoreId((current) => current || storeData[0]?.id || '');
         setCoupons(couponData);
-        setBookings([]);
+        setBookings(bookingData);
         setBills(billData);
         setDashboard(dashboardData);
         setStatusMessage('Dữ liệu đang hiển thị theo phạm vi quán của tài khoản Partner.');
@@ -1069,7 +1006,7 @@ export default function PartnerPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [period]);
 
   useEffect(() => {
     return () => {
@@ -1096,17 +1033,17 @@ export default function PartnerPage() {
   }, [scanCouponPayload, searchParams]);
 
   const storeName = stores[0]?.name ?? 'Vietyoru Partner';
-  const activeStoreStatus = stores[0]?.status ?? 'READY';
+  const activeStoreStatus = stores[0]?.status ?? 'Chưa gán quán';
   const usedCouponCount = coupons.reduce((sum, item) => sum + item.usedCount, 0);
   const activeCoupons = coupons.filter((coupon) => coupon.status === 'ACTIVE').length;
   const totalDiscount = bills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
-  const bookingMetricCount = dashboard?.bookingCount ?? 0;
+  const bookingMetricCount = dashboard?.bookingCount ?? bookings.length;
   const profileViewMetricCount = dashboard?.profileViewCount ?? 0;
   const customerArrivalMetricCount = dashboard?.customerArrivalCount ?? usedCouponCount;
   const customerArrivalSourceLabel =
     dashboard?.customerArrivalSource === 'BILL_APPROVED' ? 'Bill approved' : 'QR used';
   const scopedStoreCount = dashboard?.storeCount ?? stores.length;
-  const completedBookings = bookingMetricCount;
+  const completedBookings = dashboard ? bookingMetricCount : bookings.length;
   const scannedCustomerLabel = scanIssue?.customer?.label ?? 'Khách đã ẩn';
   const scannedExpiryLabel = scanIssue?.expiresAt
     ? new Date(scanIssue.expiresAt).toLocaleString('vi-VN')
@@ -1119,24 +1056,18 @@ export default function PartnerPage() {
   const canConfirmScan = scanIssue?.status === 'ISSUED';
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
 
-  const settlementRows = bills.length
-    ? bills.slice(0, 8).map((bill) => ({
+  const settlementRows = bills.slice(0, 8).map((bill) => ({
         code: bill.billNumber ?? bill.id.slice(0, 8),
         service: `${bill.coupon?.name ?? 'Hóa đơn'} · ${bill.store.name}`,
         time: formatDateTime(bill.submittedAt),
         amount: bill.discountVnd ?? bill.totalVnd ?? 0,
         status: bill.status,
-      }))
-    : fallbackSettlementRows;
+      }));
 
   const bookingTrendBars = useMemo(() => {
     const rows = dashboard?.weeklyBookings ?? [];
     if (!rows.length) {
-      return chartBars.map((bar) => ({
-        label: bar.label,
-        count: 0,
-        height: bar.value,
-      }));
+      return [];
     }
 
     const maxCount = Math.max(1, ...rows.map((row) => row.count));
@@ -1183,6 +1114,7 @@ export default function PartnerPage() {
       activeCoupons,
       bills.length,
       bookingMetricCount,
+      completedBookings,
       customerArrivalMetricCount,
       profileViewMetricCount,
       coupons.length,
@@ -1204,13 +1136,9 @@ export default function PartnerPage() {
       ...emptyListingDraft,
       ...response.draft,
       description: cleanListingText(response.draft.description),
-      pricingItems: response.draft.pricingItems?.length
-        ? response.draft.pricingItems
-        : fallbackPricingItems,
-      castProfiles: response.draft.castProfiles?.length
-        ? response.draft.castProfiles
-        : fallbackCastProfiles,
-      mediaUrls: response.draft.mediaUrls?.length ? response.draft.mediaUrls : fallbackMediaUrls,
+      pricingItems: response.draft.pricingItems ?? [],
+      castProfiles: response.draft.castProfiles ?? [],
+      mediaUrls: response.draft.mediaUrls ?? [],
     });
     setListingNotice(response.message);
   }, []);
@@ -1221,8 +1149,11 @@ export default function PartnerPage() {
     }
 
     let isMounted = true;
-    setIsListingLoading(true);
-    setListingNotice('Đang tải bản nháp đăng thông tin...');
+    const loadingTimer = window.setTimeout(() => {
+      if (!isMounted) return;
+      setIsListingLoading(true);
+      setListingNotice('Đang tải bản nháp đăng thông tin...');
+    }, 0);
 
     apiClient<PartnerListingDraftResponse>(
       `/partner/listing-draft/${encodeURIComponent(listingStoreId)}`,
@@ -1240,11 +1171,13 @@ export default function PartnerPage() {
         );
       })
       .finally(() => {
+        window.clearTimeout(loadingTimer);
         if (isMounted) setIsListingLoading(false);
       });
 
     return () => {
       isMounted = false;
+      window.clearTimeout(loadingTimer);
     };
   }, [applyListingDraftResponse, listingStoreId]);
 
@@ -1486,84 +1419,96 @@ export default function PartnerPage() {
               </StatusPill>
             }
           />
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
-            {bookingTrendBars.map((bar, index) => (
-              <div
-                key={bar.label}
-                style={{
-                  flex: 1,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  minWidth: 0,
-                }}
-              >
+          {bookingTrendBars.length ? (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', height: '235px' }}>
+              {bookingTrendBars.map((bar, index) => (
                 <div
+                  key={bar.label}
                   style={{
-                    width: '100%',
-                    height: `${bar.height}%`,
-                    borderRadius: '8px 8px 0 0',
-                    background: index === 4 ? colors.goldGrad : 'rgba(212,178,106,.22)',
-                    boxShadow: index === 4 ? '0 14px 26px -18px rgba(212,178,106,.85)' : 'none',
+                    flex: 1,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    minWidth: 0,
                   }}
-                />
-                <span style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800 }}>
-                  {bar.count}
-                </span>
-                <span style={{ color: colors.muted, fontSize: '11px' }}>{bar.label}</span>
-              </div>
-            ))}
-          </div>
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: `${bar.height}%`,
+                      borderRadius: '8px 8px 0 0',
+                      background: index === 4 ? colors.goldGrad : 'rgba(212,178,106,.22)',
+                      boxShadow: index === 4 ? '0 14px 26px -18px rgba(212,178,106,.85)' : 'none',
+                    }}
+                  />
+                  <span style={{ color: colors.goldBright, fontSize: '11px', fontWeight: 800 }}>
+                    {bar.count}
+                  </span>
+                  <span style={{ color: colors.muted, fontSize: '11px' }}>{bar.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ ...softCardStyle, minHeight: '235px', display: 'grid', placeItems: 'center', color: colors.text2, fontSize: '13px', lineHeight: 1.6, padding: '18px', textAlign: 'center' }}>
+              Chưa có dữ liệu đặt chỗ trong kỳ đã chọn.
+            </div>
+          )}
         </PanelCard>
 
         <PanelCard>
           <SectionHeading eyebrow="RECENT REDEMPTIONS" title="Đối soát gần đây" />
           <div style={{ display: 'grid', gap: '10px' }}>
-            {settlementRows.slice(0, 4).map((row) => (
-              <div key={row.code} style={{ ...softCardStyle, padding: '12px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '10px',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span style={{ color: colors.gold, fontSize: '12px', fontWeight: 800 }}>
-                    {row.code}
-                  </span>
-                  <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>
-                    -{moneyVnd(row.amount)}
-                  </span>
+            {settlementRows.length ? (
+              settlementRows.slice(0, 4).map((row) => (
+                <div key={row.code} style={{ ...softCardStyle, padding: '12px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span style={{ color: colors.gold, fontSize: '12px', fontWeight: 800 }}>
+                      {row.code}
+                    </span>
+                    <span style={{ color: colors.goldBright, fontSize: '12px', fontWeight: 800 }}>
+                      -{moneyVnd(row.amount)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '6px',
+                      color: colors.text,
+                      fontSize: '12.5px',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {row.service}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '5px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      color: colors.muted,
+                      fontSize: '11px',
+                    }}
+                  >
+                    <span>{row.time}</span>
+                    <span>Khách đã ẩn</span>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    marginTop: '6px',
-                    color: colors.text,
-                    fontSize: '12.5px',
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {row.service}
-                </div>
-                <div
-                  style={{
-                    marginTop: '5px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '8px',
-                    color: colors.muted,
-                    fontSize: '11px',
-                  }}
-                >
-                  <span>{row.time}</span>
-                  <span>Khách đã ẩn</span>
-                </div>
+              ))
+            ) : (
+              <div style={{ ...softCardStyle, padding: '16px', color: colors.text2, fontSize: '13px', lineHeight: 1.6 }}>
+                Chưa có bill hoặc coupon usage log trong phạm vi quán của partner.
               </div>
-            ))}
+            )}
           </div>
         </PanelCard>
       </div>
@@ -1941,9 +1886,7 @@ export default function PartnerPage() {
             ['Coupon đã dùng', String(usedCouponCount), 'Tự tăng sau khi confirm USED'],
             [
               'Tổng giảm giá',
-              totalDiscount
-                ? moneyVnd(totalDiscount)
-                : moneyVnd(fallbackSettlementRows.reduce((sum, row) => sum + row.amount, 0)),
+              moneyVnd(totalDiscount),
               'Theo bill trong scope',
             ],
             ['Bill chờ soát', String(bills.length), 'Không lộ dữ liệu khách chi tiết'],
@@ -2007,67 +1950,83 @@ export default function PartnerPage() {
               </tr>
             </thead>
             <tbody>
-              {settlementRows.map((row) => (
-                <tr key={row.code}>
+              {settlementRows.length ? (
+                settlementRows.map((row) => (
+                  <tr key={row.code}>
+                    <td
+                      style={{
+                        padding: '14px 12px',
+                        color: colors.gold,
+                        fontSize: '12px',
+                        fontWeight: 900,
+                        borderBottom: `1px solid ${colors.borderHair}`,
+                      }}
+                    >
+                      {row.code}
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 12px',
+                        color: colors.text,
+                        fontSize: '12.5px',
+                        borderBottom: `1px solid ${colors.borderHair}`,
+                      }}
+                    >
+                      {row.service}
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 12px',
+                        color: colors.text2,
+                        fontSize: '12px',
+                        borderBottom: `1px solid ${colors.borderHair}`,
+                      }}
+                    >
+                      {row.time}
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 12px',
+                        color: colors.muted,
+                        fontSize: '12px',
+                        borderBottom: `1px solid ${colors.borderHair}`,
+                      }}
+                    >
+                      Đã ẩn
+                    </td>
+                    <td
+                      style={{
+                        padding: '14px 12px',
+                        color: colors.goldBright,
+                        fontSize: '12px',
+                        fontWeight: 900,
+                        borderBottom: `1px solid ${colors.borderHair}`,
+                      }}
+                    >
+                      -{moneyVnd(row.amount)}
+                    </td>
+                    <td
+                      style={{ padding: '14px 12px', borderBottom: `1px solid ${colors.borderHair}` }}
+                    >
+                      <StatusPill tone="gold">{row.status}</StatusPill>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
                   <td
+                    colSpan={6}
                     style={{
-                      padding: '14px 12px',
-                      color: colors.gold,
-                      fontSize: '12px',
-                      fontWeight: 900,
-                      borderBottom: `1px solid ${colors.borderHair}`,
-                    }}
-                  >
-                    {row.code}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 12px',
-                      color: colors.text,
-                      fontSize: '12.5px',
-                      borderBottom: `1px solid ${colors.borderHair}`,
-                    }}
-                  >
-                    {row.service}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 12px',
+                      padding: '18px 12px',
                       color: colors.text2,
-                      fontSize: '12px',
-                      borderBottom: `1px solid ${colors.borderHair}`,
+                      fontSize: '13px',
+                      textAlign: 'center',
                     }}
                   >
-                    {row.time}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 12px',
-                      color: colors.muted,
-                      fontSize: '12px',
-                      borderBottom: `1px solid ${colors.borderHair}`,
-                    }}
-                  >
-                    Đã ẩn
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 12px',
-                      color: colors.goldBright,
-                      fontSize: '12px',
-                      fontWeight: 900,
-                      borderBottom: `1px solid ${colors.borderHair}`,
-                    }}
-                  >
-                    -{moneyVnd(row.amount)}
-                  </td>
-                  <td
-                    style={{ padding: '14px 12px', borderBottom: `1px solid ${colors.borderHair}` }}
-                  >
-                    <StatusPill tone="gold">{row.status}</StatusPill>
+                    Chưa có usage log trong phạm vi quán của partner.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -2079,6 +2038,11 @@ export default function PartnerPage() {
     if (listingTab === 'cast') {
       return (
         <div style={{ display: 'grid', gap: '12px' }}>
+          {!listingDraft.castProfiles.length ? (
+            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Chưa có cast trong bản nháp. Bấm Thêm cast để nhập dữ liệu thật của quán.
+            </div>
+          ) : null}
           {listingDraft.castProfiles.map((cast, index) => (
             <div key={`${cast.stageName}-${index}`} style={{ ...softCardStyle, padding: '14px' }}>
               <div className="partner-listing-grid">
@@ -2169,6 +2133,11 @@ export default function PartnerPage() {
               style={inputStyle}
             />
           </FormField>
+          {!listingDraft.pricingItems.length ? (
+            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Chưa có dòng giá trong bản nháp. Bấm Thêm dòng giá để nhập bảng giá thật.
+            </div>
+          ) : null}
           {listingDraft.pricingItems.map((item, index) => (
             <div key={`${item.label}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
               <FormField label="Tên gói">
@@ -2214,6 +2183,11 @@ export default function PartnerPage() {
     if (listingTab === 'media') {
       return (
         <div style={{ display: 'grid', gap: '12px' }}>
+          {!listingDraft.mediaUrls.length ? (
+            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Chưa có ảnh hoặc video trong bản nháp. Bấm Thêm ảnh / video để nhập media thật.
+            </div>
+          ) : null}
           {listingDraft.mediaUrls.map((url, index) => (
             <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
               <FormField label={index === 0 ? 'Ảnh cover / video URL' : 'Ảnh / video URL'}>
@@ -2442,39 +2416,43 @@ export default function PartnerPage() {
       <PanelCard>
         <SectionHeading eyebrow="STORE ACCESS" title="Quán trong phạm vi" />
         <div style={{ display: 'grid', gap: '10px' }}>
-          {(stores.length
-            ? stores
-            : [
-                {
-                  id: 'fallback-store',
-                  name: storeName,
-                  slug: 'partner-store',
-                  status: activeStoreStatus,
-                },
-              ]
-          ).map((store) => (
+          {stores.length ? (
+            stores.map((store) => (
+              <div
+                key={store.id}
+                style={{
+                  ...softCardStyle,
+                  padding: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}
+              >
+                <div>
+                  <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>
+                    {store.name}
+                  </div>
+                  <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>
+                    /{store.slug}
+                  </div>
+                </div>
+                <StatusPill tone="gold">{store.status}</StatusPill>
+              </div>
+            ))
+          ) : (
             <div
-              key={store.id}
               style={{
                 ...softCardStyle,
                 padding: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
+                color: colors.text2,
+                fontSize: '12px',
+                lineHeight: 1.6,
               }}
             >
-              <div>
-                <div style={{ color: colors.text, fontSize: '14px', fontWeight: 800 }}>
-                  {store.name}
-                </div>
-                <div style={{ marginTop: '4px', color: colors.muted, fontSize: '12px' }}>
-                  /{store.slug}
-                </div>
-              </div>
-              <StatusPill tone="gold">{store.status}</StatusPill>
+              Chưa có quán nào trong phạm vi tài khoản partner.
             </div>
-          ))}
+          )}
         </div>
       </PanelCard>
 
