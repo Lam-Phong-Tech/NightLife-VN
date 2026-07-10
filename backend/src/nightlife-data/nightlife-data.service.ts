@@ -4369,6 +4369,8 @@ export class NightlifeDataService {
             id: true,
             name: true,
             slug: true,
+            openingHours: true,
+            bookingCancelCutoffMinutes: true,
             media: {
               where: {
                 deletedAt: null,

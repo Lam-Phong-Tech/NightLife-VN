@@ -2605,6 +2605,8 @@ describe('NightlifeDataService', () => {
             id: true,
             name: true,
             slug: true,
+            openingHours: true,
+            bookingCancelCutoffMinutes: true,
             media: expect.objectContaining({
               take: 1,
               select: { url: true },

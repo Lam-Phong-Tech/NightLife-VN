@@ -30,6 +30,7 @@ import {
   type BookingRecord,
   type BookingStatusGroup,
 } from "@/lib/api/bookings";
+import { getStoreDetail } from "@/lib/api/store-detail";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import {
@@ -63,6 +64,13 @@ const missingGuestContactIdentityMessage =
 const maxRescheduleReasonLength = 300;
 const minRescheduleReasonLength = 5;
 const reasonContentPattern = /[\p{L}\p{N}]/u;
+const hasOpeningHours = (openingHours: OpeningHoursInput) =>
+  Boolean(
+    openingHours &&
+      typeof openingHours === "object" &&
+      !Array.isArray(openingHours) &&
+      Object.keys(openingHours).length,
+  );
 
 const thumbnails = {
   Mới: "url('https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=180&q=72')",
@@ -254,6 +262,7 @@ export default function Page() {
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [rescheduleError, setRescheduleError] = useState("");
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [isRescheduleHoursLoading, setRescheduleHoursLoading] = useState(false);
   const [chatBooking, setChatBooking] = useState<BookingRecord | null>(null);
   const [chatMessages, setChatMessages] = useState<BookingChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -433,6 +442,74 @@ export default function Page() {
     () => rescheduleTimeOptionGroups.flatMap((group) => group.slots),
     [rescheduleTimeOptionGroups],
   );
+  const pendingRescheduleStoreSlug = pendingRescheduleBooking?.store?.slug ?? "";
+  const pendingRescheduleStoreHasOpeningHours = hasOpeningHours(rescheduleOpeningHours);
+
+  useEffect(() => {
+    const booking = pendingRescheduleBooking;
+    if (!booking) {
+      setRescheduleHoursLoading(false);
+      return;
+    }
+
+    if (pendingRescheduleStoreHasOpeningHours || !pendingRescheduleStoreSlug) {
+      setRescheduleHoursLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setRescheduleHoursLoading(true);
+
+    getStoreDetail(pendingRescheduleStoreSlug)
+      .then((store) => {
+        if (cancelled) return;
+
+        const openingHours = store.openingHours ?? null;
+        const slots = buildBookingTimeSlots(openingHours, rescheduleDate, {
+          fallback: "empty",
+        });
+
+        setPendingRescheduleBooking((current) => {
+          if (!current || current.id !== booking.id || !current.store) {
+            return current;
+          }
+
+          return {
+            ...current,
+            store: {
+              ...current.store,
+              openingHours,
+            },
+          };
+        });
+        setRescheduleTime((current) =>
+          slots.includes(current) ? current : (slots[0] ?? ""),
+        );
+
+        if (!hasOpeningHours(openingHours)) {
+          setRescheduleError("Quán chưa có cấu hình khung giờ đặt bàn trên admin.");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRescheduleError("Chưa tải được khung giờ của quán. Vui lòng thử lại.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setRescheduleHoursLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    pendingRescheduleBooking,
+    pendingRescheduleStoreHasOpeningHours,
+    pendingRescheduleStoreSlug,
+    rescheduleDate,
+  ]);
 
   const shouldUseMemberBookingApi = (booking: BookingRecord) => {
     if (!isMember || !booking.user?.id) {
@@ -544,6 +621,7 @@ export default function Page() {
     setRescheduleTime(nextTime);
     setRescheduleReason("");
     setRescheduleError("");
+    setRescheduleHoursLoading(!hasOpeningHours(storeOpeningHours) && Boolean(booking.store?.slug));
   };
 
   const closeRescheduleDialog = () => {
@@ -556,6 +634,7 @@ export default function Page() {
     setRescheduleTime("");
     setRescheduleReason("");
     setRescheduleError("");
+    setRescheduleHoursLoading(false);
   };
 
   const submitRescheduleRequest = async () => {
@@ -566,6 +645,12 @@ export default function Page() {
 
     const guestPhone = booking.guest?.phone?.trim() ?? "";
     const useMemberApi = shouldUseMemberBookingApi(booking);
+
+    if (isRescheduleHoursLoading) {
+      setRescheduleError("Đang tải khung giờ của quán, vui lòng chờ một chút.");
+      return;
+    }
+
     const validationError = validateRescheduleRequest({
       booking,
       availableTimes: rescheduleTimeOptions,
@@ -900,6 +985,7 @@ export default function Page() {
               timeOptionGroups={rescheduleTimeOptionGroups}
               minDate={getTodayDate()}
               maxDate={getMaxBookingDate()}
+              loadingTimes={isRescheduleHoursLoading}
               onDateChange={(value) => {
                 const nextDate = clampBookingDate(value);
                 const nextSlots = buildBookingTimeSlots(rescheduleOpeningHours, nextDate, {
@@ -953,7 +1039,7 @@ export default function Page() {
                 type="button"
                 className={`${styles.primaryCta} ${reschedulingId ? styles.disabledCta : ""}`}
                 onClick={submitRescheduleRequest}
-                disabled={Boolean(reschedulingId) || !rescheduleTime}
+                disabled={Boolean(reschedulingId) || isRescheduleHoursLoading || !rescheduleTime}
               >
                 {reschedulingId ? "Đang cập nhật" : "Cập nhật lịch"}
               </button>
