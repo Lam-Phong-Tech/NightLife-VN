@@ -4037,6 +4037,265 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ko: "일본식 세트",
     zh: "日式套餐",
   },
+  {
+    vi: "Pháp lý và chính sách vận hành",
+    en: "Legal and operating policies",
+    ja: "法務と運営ポリシー",
+    ko: "법률 및 운영 정책",
+    zh: "法律与运营政策",
+  },
+  {
+    vi: "Bản nháp placeholder. Nội dung pháp lý cuối cùng cần được khách hàng cung cấp và rà soát trước khi phát hành chính thức.",
+    en: "Placeholder draft. Final legal content must be provided by the client and reviewed before official publication.",
+    ja: "仮のプレースホルダーです。正式公開前に、最終的な法務内容をクライアントから提供いただき、確認する必要があります。",
+    ko: "임시 초안입니다. 최종 법률 콘텐츠는 정식 공개 전에 고객이 제공하고 검토해야 합니다.",
+    zh: "占位草稿。最终法律内容需由客户提供，并在正式发布前完成审核。",
+  },
+  {
+    vi: "Tóm tắt placeholder",
+    en: "Placeholder summary",
+    ja: "プレースホルダー概要",
+    ko: "플레이스홀더 요약",
+    zh: "占位摘要",
+  },
+  {
+    vi: "Placeholder về cách Vietyoru thu thập, sử dụng và bảo vệ dữ liệu người dùng trong quá trình đặt chỗ.",
+    en: "Placeholder for how Vietyoru collects, uses, and protects user data during reservations.",
+    ja: "予約プロセスでVietyoruがユーザーデータを収集、利用、保護する方法に関するプレースホルダーです。",
+    ko: "예약 과정에서 Vietyoru가 사용자 데이터를 수집, 사용, 보호하는 방식에 대한 플레이스홀더입니다.",
+    zh: "关于 Vietyoru 在预订过程中如何收集、使用和保护用户数据的占位说明。",
+  },
+  {
+    vi: "Placeholder về điều kiện sử dụng nền tảng, giới hạn trách nhiệm và quy tắc đặt chỗ qua Vietyoru.",
+    en: "Placeholder for platform terms, liability limits, and reservation rules through Vietyoru.",
+    ja: "Vietyoruでのプラットフォーム利用条件、責任範囲、予約ルールに関するプレースホルダーです。",
+    ko: "Vietyoru를 통한 플랫폼 이용 조건, 책임 한도, 예약 규칙에 대한 플레이스홀더입니다.",
+    zh: "关于 Vietyoru 平台使用条件、责任限制和预订规则的占位说明。",
+  },
+  {
+    vi: "Placeholder về cách Vietyoru điều phối đặt chỗ, xử lý ưu đãi, tích điểm và hỗ trợ sau trải nghiệm.",
+    en: "Placeholder for how Vietyoru coordinates reservations, handles deals, awards points, and supports guests after the experience.",
+    ja: "Vietyoruが予約調整、特典処理、ポイント付与、体験後サポートを行う方法に関するプレースホルダーです。",
+    ko: "Vietyoru가 예약을 조율하고, 혜택을 처리하며, 포인트를 적립하고, 이용 후 지원하는 방식에 대한 플레이스홀더입니다.",
+    zh: "关于 Vietyoru 如何协调预订、处理优惠、累积积分并提供体验后支持的占位说明。",
+  },
+  {
+    vi: "Thông tin có thể thu thập",
+    en: "Information that may be collected",
+    ja: "収集される可能性のある情報",
+    ko: "수집될 수 있는 정보",
+    zh: "可能收集的信息",
+  },
+  {
+    vi: "Tên, số điện thoại, thông tin đặt chỗ, lịch sử dùng ưu đãi và dữ liệu tài khoản cần thiết để vận hành dịch vụ.",
+    en: "Name, phone number, reservation information, deal usage history, and account data needed to operate the service.",
+    ja: "サービス運営に必要な氏名、電話番号、予約情報、特典利用履歴、アカウントデータ。",
+    ko: "서비스 운영에 필요한 이름, 전화번호, 예약 정보, 혜택 사용 이력 및 계정 데이터입니다.",
+    zh: "运营服务所需的姓名、电话号码、预订信息、优惠使用记录和账户数据。",
+  },
+  {
+    vi: "Mục đích sử dụng",
+    en: "Purpose of use",
+    ja: "利用目的",
+    ko: "이용 목적",
+    zh: "使用目的",
+  },
+  {
+    vi: "Dữ liệu được dùng để xác nhận đặt chỗ, điều phối với quán, chăm sóc khách hàng, tích điểm và phòng chống lạm dụng ưu đãi.",
+    en: "Data is used to confirm reservations, coordinate with venues, support customers, award points, and prevent deal abuse.",
+    ja: "データは予約確認、店舗との調整、カスタマーサポート、ポイント付与、特典の不正利用防止に使用されます。",
+    ko: "데이터는 예약 확인, 매장 조율, 고객 지원, 포인트 적립 및 혜택 남용 방지에 사용됩니다.",
+    zh: "数据用于确认预订、与店铺协调、客户服务、积分累计以及防止优惠滥用。",
+  },
+  {
+    vi: "Quyền của người dùng",
+    en: "User rights",
+    ja: "ユーザーの権利",
+    ko: "사용자 권리",
+    zh: "用户权利",
+  },
+  {
+    vi: "Người dùng có thể yêu cầu cập nhật hoặc xóa thông tin theo kênh liên hệ chính thức sau khi khách hàng cung cấp quy trình pháp lý cuối cùng.",
+    en: "Users may request updates or deletion through official contact channels after the client provides the final legal process.",
+    ja: "クライアントが最終的な法務手続きを提供した後、ユーザーは公式連絡窓口を通じて情報の更新または削除をリクエストできます。",
+    ko: "고객이 최종 법적 절차를 제공한 후 사용자는 공식 연락 채널을 통해 정보 수정 또는 삭제를 요청할 수 있습니다.",
+    zh: "客户提供最终法律流程后，用户可通过官方联系渠道请求更新或删除信息。",
+  },
+  {
+    vi: "Điều kiện sử dụng",
+    en: "Usage conditions",
+    ja: "利用条件",
+    ko: "이용 조건",
+    zh: "使用条件",
+  },
+  {
+    vi: "Dịch vụ dành cho người dùng đủ điều kiện theo quy định pháp luật Việt Nam. Người dùng cần cung cấp thông tin chính xác khi đặt chỗ.",
+    en: "The service is for users who meet Vietnamese legal requirements. Users must provide accurate information when reserving.",
+    ja: "本サービスはベトナム法令の要件を満たすユーザー向けです。予約時には正確な情報を提供する必要があります。",
+    ko: "본 서비스는 베트남 법률 요건을 충족하는 사용자를 위한 것입니다. 예약 시 정확한 정보를 제공해야 합니다.",
+    zh: "本服务面向符合越南法律要求的用户。用户预订时需提供准确信息。",
+  },
+  {
+    vi: "Giá và xác nhận",
+    en: "Pricing and confirmation",
+    ja: "料金と確認",
+    ko: "가격 및 확인",
+    zh: "价格与确认",
+  },
+  {
+    vi: "Giá, tình trạng bàn, cast và ưu đãi hiển thị chỉ mang tính tham khảo cho đến khi admin xác nhận với quán.",
+    en: "Displayed prices, table availability, cast availability, and deals are references until admin confirms them with the venue.",
+    ja: "表示される料金、席状況、キャスト、特典は、管理者が店舗に確認するまで参考情報です。",
+    ko: "표시된 가격, 좌석 상태, 캐스트 및 혜택은 관리자가 매장에 확인하기 전까지 참고용입니다.",
+    zh: "显示的价格、座位状态、Cast 和优惠在管理员与店铺确认前仅供参考。",
+  },
+  {
+    vi: "Tài khoản và hành vi",
+    en: "Account and conduct",
+    ja: "アカウントと行動",
+    ko: "계정 및 이용 행위",
+    zh: "账户与行为",
+  },
+  {
+    vi: "Tài khoản có dấu hiệu spam, lạm dụng mã ưu đãi hoặc cung cấp thông tin sai có thể bị tạm khóa theo quy trình chính thức.",
+    en: "Accounts showing spam, deal abuse, or inaccurate information may be temporarily locked under the official process.",
+    ja: "スパム、特典の不正利用、虚偽情報の提供が疑われるアカウントは、正式な手続きにより一時停止される場合があります。",
+    ko: "스팸, 혜택 남용 또는 부정확한 정보 제공이 의심되는 계정은 공식 절차에 따라 일시 정지될 수 있습니다.",
+    zh: "存在垃圾行为、优惠滥用或提供错误信息的账户，可能会按正式流程被暂时锁定。",
+  },
+  {
+    vi: "Điều phối đặt chỗ",
+    en: "Reservation coordination",
+    ja: "予約調整",
+    ko: "예약 조율",
+    zh: "预订协调",
+  },
+  {
+    vi: "Yêu cầu đặt chỗ được admin tiếp nhận và xác nhận với quán. Vietyoru không thu cọc hay thanh toán online nếu chưa có thông báo chính thức.",
+    en: "Reservation requests are received by admin and confirmed with the venue. Vietyoru does not collect deposits or online payments unless officially announced.",
+    ja: "予約リクエストは管理者が受け付け、店舗に確認します。正式な案内がない限り、Vietyoruはデポジットやオンライン決済を受け付けません。",
+    ko: "예약 요청은 관리자가 접수하고 매장과 확인합니다. 공식 안내가 없는 한 Vietyoru는 보증금이나 온라인 결제를 받지 않습니다.",
+    zh: "预订请求由管理员接收并与店铺确认。除非正式通知，Vietyoru 不收取押金或线上付款。",
+  },
+  {
+    vi: "Ưu đãi và tích điểm",
+    en: "Deals and points",
+    ja: "特典とポイント",
+    ko: "혜택 및 포인트",
+    zh: "优惠与积分",
+  },
+  {
+    vi: "Coupon áp dụng theo điều kiện từng chương trình. Điểm thành viên được cộng sau khi hóa đơn hợp lệ được duyệt.",
+    en: "Coupons apply according to each program's conditions. Member points are added after a valid bill is approved.",
+    ja: "クーポンは各プログラムの条件に従って適用されます。会員ポイントは有効な請求書が承認された後に付与されます。",
+    ko: "쿠폰은 각 프로그램 조건에 따라 적용됩니다. 회원 포인트는 유효한 영수증이 승인된 후 적립됩니다.",
+    zh: "优惠券按各活动条件适用。有效账单通过审核后会增加会员积分。",
+  },
+  {
+    vi: "Hỗ trợ sau đặt chỗ",
+    en: "Post-reservation support",
+    ja: "予約後サポート",
+    ko: "예약 후 지원",
+    zh: "预订后支持",
+  },
+  {
+    vi: "Khi có thay đổi lịch hoặc phản hồi dịch vụ, người dùng liên hệ admin để được điều phối theo quy trình vận hành đã công bố.",
+    en: "For schedule changes or service feedback, users contact admin for coordination under the published operating process.",
+    ja: "日時変更やサービスに関するフィードバックがある場合、ユーザーは公開済みの運営手順に従って管理者に連絡します。",
+    ko: "일정 변경이나 서비스 피드백이 있는 경우 사용자는 공개된 운영 절차에 따라 관리자에게 연락해 조율받습니다.",
+    zh: "如需变更日程或反馈服务，用户可联系管理员按已公布的运营流程协调处理。",
+  },
+  {
+    vi: "Email hoặc mật khẩu không đúng.",
+    en: "Email or password is incorrect.",
+    ja: "メールアドレスまたはパスワードが正しくありません。",
+    ko: "이메일 또는 비밀번호가 올바르지 않습니다.",
+    zh: "邮箱或密码不正确。",
+  },
+  {
+    vi: "Thứ 2",
+    en: "Mon",
+    ja: "月",
+    ko: "월",
+    zh: "周一",
+  },
+  {
+    vi: "Thứ 3",
+    en: "Tue",
+    ja: "火",
+    ko: "화",
+    zh: "周二",
+  },
+  {
+    vi: "Thứ 4",
+    en: "Wed",
+    ja: "水",
+    ko: "수",
+    zh: "周三",
+  },
+  {
+    vi: "Thứ 5",
+    en: "Thu",
+    ja: "木",
+    ko: "목",
+    zh: "周四",
+  },
+  {
+    vi: "Thứ 6",
+    en: "Fri",
+    ja: "金",
+    ko: "금",
+    zh: "周五",
+  },
+  {
+    vi: "Thứ 7",
+    en: "Sat",
+    ja: "土",
+    ko: "토",
+    zh: "周六",
+  },
+  {
+    vi: "CN",
+    en: "Sun",
+    ja: "日",
+    ko: "일",
+    zh: "周日",
+  },
+  {
+    vi: "Quán tương tự",
+    en: "Similar venues",
+    ja: "似ている店舗",
+    ko: "비슷한 매장",
+    zh: "相似店铺",
+  },
+  {
+    vi: "Xem thêm",
+    en: "See more",
+    ja: "もっと見る",
+    ko: "더 보기",
+    zh: "查看更多",
+  },
+  {
+    vi: "Gợi ý cùng khu vực",
+    en: "Recommended in the same area",
+    ja: "同じエリアのおすすめ",
+    ko: "같은 지역 추천",
+    zh: "同区域推荐",
+  },
+  {
+    vi: "Gợi ý cùng loại hình",
+    en: "Recommended by category",
+    ja: "同じジャンルのおすすめ",
+    ko: "같은 유형 추천",
+    zh: "同类型推荐",
+  },
+  {
+    vi: "Gợi ý tương tự",
+    en: "Similar recommendation",
+    ja: "類似のおすすめ",
+    ko: "비슷한 추천",
+    zh: "相似推荐",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -4208,6 +4467,13 @@ const termEntries: TranslationEntry[] = [
     ja: "ホーチミン",
     ko: "호찌민",
     zh: "胡志明",
+  },
+  {
+    vi: "Phường",
+    en: "Ward",
+    ja: "Ward",
+    ko: "Ward",
+    zh: "坊",
   },
   {
     vi: "Hà Nội",
@@ -4906,7 +5172,13 @@ function buildTermPattern(term: string) {
 }
 
 function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
-  let output = value;
+  let output = value
+    .replace(/\b(?:Quận|District)\s+(\d+)\b/gi, (_match, district: string) =>
+      translateDistrictLabel(district, language),
+    )
+    .replace(/\bPhường\s+(\d+)\b/gi, (_match, ward: string) =>
+      translateWardLabel(ward, language),
+    );
 
   for (const entry of termTranslations) {
     const replacement = entry[language];
@@ -4957,6 +5229,15 @@ function translateDistrictLabel(
   }[language];
 }
 
+function translateWardLabel(ward: string, language: Exclude<LanguageCode, "vi">) {
+  return {
+    en: `Ward ${ward}`,
+    ja: `Ward ${ward}`,
+    ko: `Ward ${ward}`,
+    zh: `第${ward}坊`,
+  }[language];
+}
+
 function translatePattern(
   value: string,
   language: Exclude<LanguageCode, "vi">,
@@ -4966,6 +5247,17 @@ function translatePattern(
   const districtMatch = normalized.match(/^(?:Quận|District)\s+(\d+)$/i);
   if (districtMatch) {
     return translateDistrictLabel(districtMatch[1] ?? "", language);
+  }
+
+  const updatedAtMatch = normalized.match(/^Cập nhật:\s*(.+)$/i);
+  if (updatedAtMatch) {
+    const date = updatedAtMatch[1] ?? "";
+    return {
+      en: `Updated: ${date}`,
+      ja: `更新日: ${date}`,
+      ko: `업데이트: ${date}`,
+      zh: `更新：${date}`,
+    }[language];
   }
 
   const emptyAreaMatch = normalized.match(/^Chưa có\s+(.+?)\s+cho khu vực này\.$/i);
