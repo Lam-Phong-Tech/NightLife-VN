@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Info, X, Check, Image as ImageIcon } from 'lucide-react';
-import { ApiError, apiClient, translateApiMessage, resolveClientUrl } from '@/lib/api/client';
+import { ApiError, apiClient, translateApiMessage, resolveClientUrl, getAuthToken } from '@/lib/api/client';
 import { adminPageSize } from '../components/AdminPagination';
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -513,7 +513,7 @@ export default function AdminBillsPage() {
               {/* Image Preview */}
               {selectedBill.hasImage && selectedBill.images && selectedBill.images.length > 0 ? (
                 <div style={{ marginBottom: '32px', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${colors.borderSoft}` }}>
-                  <img src={resolveClientUrl(selectedBill.images[0])} alt="Bill preview" style={{ width: '100%', display: 'block' }} />
+                  <img src={`${resolveClientUrl(selectedBill.images[0])}?token=${getAuthToken()}`} alt="Bill preview" style={{ width: '100%', display: 'block' }} />
                 </div>
               ) : (
                 <div style={{ 
