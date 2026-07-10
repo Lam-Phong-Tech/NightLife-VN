@@ -1123,6 +1123,55 @@ const entries: TranslationEntry[] = [
     zh: "立即查看",
   },
   {
+    vi: "WEEKEND DEAL · NIGHTLIFE",
+    en: "WEEKEND DEAL · NIGHTLIFE",
+    ja: "週末ディール · NIGHTLIFE",
+    ko: "주말 특가 · NIGHTLIFE",
+    zh: "周末优惠 · NIGHTLIFE",
+  },
+  {
+    vi: "WEEKEND DEAL",
+    en: "WEEKEND DEAL",
+    ja: "週末ディール",
+    ko: "주말 특가",
+    zh: "周末优惠",
+  },
+  {
+    vi: "COUPON HOT",
+    en: "HOT COUPONS",
+    ja: "注目クーポン",
+    ko: "인기 쿠폰",
+    zh: "热门优惠券",
+  },
+  {
+    vi: "Ưu đãi cuối tuần - giảm đến 30%",
+    en: "Weekend deals - up to 30% off",
+    ja: "週末特典 - 最大30%オフ",
+    ko: "주말 혜택 - 최대 30% 할인",
+    zh: "周末优惠 - 最高减 30%",
+  },
+  {
+    vi: "Lưu mã ưu đãi trước khi đặt bàn để không bỏ lỡ deal tốt.",
+    en: "Save the offer code before booking so you do not miss a good deal.",
+    ja: "お得な特典を逃さないよう、予約前にクーポンコードを保存してください。",
+    ko: "좋은 혜택을 놓치지 않도록 예약 전에 쿠폰 코드를 저장하세요.",
+    zh: "预订前先保存优惠码，避免错过好优惠。",
+  },
+  {
+    vi: "Nhận mã",
+    en: "Get code",
+    ja: "コードを受け取る",
+    ko: "코드 받기",
+    zh: "领取代码",
+  },
+  {
+    vi: "nhận mã",
+    en: "Get code",
+    ja: "コードを受け取る",
+    ko: "코드 받기",
+    zh: "领取代码",
+  },
+  {
     vi: "Lướt để xem thêm ưu đãi và sự kiện nổi bật.",
     en: "Swipe to see more deals and featured events.",
     ja: "スワイプして特典や注目イベントをさらに表示。",
@@ -3772,6 +3821,153 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     zh: "查看预订",
   },
   {
+    vi: "Xem hóa đơn",
+    en: "View bill",
+    ja: "請求書を見る",
+    ko: "영수증 보기",
+    zh: "查看账单",
+  },
+  {
+    vi: "Xem hóa đơn của tôi",
+    en: "View my bills",
+    ja: "自分の請求書を見る",
+    ko: "내 영수증 보기",
+    zh: "查看我的账单",
+  },
+  {
+    vi: "Xem kết quả",
+    en: "View result",
+    ja: "結果を見る",
+    ko: "결과 보기",
+    zh: "查看结果",
+  },
+  {
+    vi: "Xem lý do",
+    en: "View reason",
+    ja: "理由を見る",
+    ko: "사유 보기",
+    zh: "查看原因",
+  },
+  {
+    vi: "Xem lịch mới",
+    en: "View new reservation",
+    ja: "新しい予約を見る",
+    ko: "새 예약 보기",
+    zh: "查看新预约",
+  },
+  {
+    vi: "Đã gửi hóa đơn",
+    en: "Bill submitted",
+    ja: "請求書を送信しました",
+    ko: "영수증을 보냈습니다",
+    zh: "账单已提交",
+  },
+  {
+    vi: "Hóa đơn đã được duyệt",
+    en: "Bill approved",
+    ja: "請求書が承認されました",
+    ko: "영수증이 승인되었습니다",
+    zh: "账单已通过",
+  },
+  {
+    vi: "Hóa đơn bị từ chối",
+    en: "Bill rejected",
+    ja: "請求書が却下されました",
+    ko: "영수증이 거절되었습니다",
+    zh: "账单被拒绝",
+  },
+  {
+    vi: "Đặt bàn thành công",
+    en: "Reservation request sent",
+    ja: "予約リクエストを送信しました",
+    ko: "예약 요청을 보냈습니다",
+    zh: "预约请求已发送",
+  },
+  {
+    vi: "Đặt bàn theo cast thành công",
+    en: "Cast reservation request sent",
+    ja: "キャスト指名予約を送信しました",
+    ko: "캐스트 예약 요청을 보냈습니다",
+    zh: "Cast 预约请求已发送",
+  },
+  {
+    vi: "Lịch đặt đã được đổi",
+    en: "Reservation rescheduled",
+    ja: "予約日時を変更しました",
+    ko: "예약 일정이 변경되었습니다",
+    zh: "预约已改期",
+  },
+  {
+    vi: "Yêu cầu đổi lịch chưa được duyệt",
+    en: "Reschedule request was not approved",
+    ja: "予約変更リクエストは承認されていません",
+    ko: "예약 변경 요청이 승인되지 않았습니다",
+    zh: "改期请求未获批准",
+  },
+  {
+    vi: "Lịch đặt đã hủy",
+    en: "Reservation cancelled",
+    ja: "予約をキャンセルしました",
+    ko: "예약이 취소되었습니다",
+    zh: "预约已取消",
+  },
+  {
+    vi: "Đã check-in lịch đặt",
+    en: "Reservation checked in",
+    ja: "予約のチェックインが完了しました",
+    ko: "예약 체크인이 완료되었습니다",
+    zh: "预约已签到",
+  },
+  {
+    vi: "Lịch đặt đã hoàn tất",
+    en: "Reservation completed",
+    ja: "予約が完了しました",
+    ko: "예약이 완료되었습니다",
+    zh: "预约已完成",
+  },
+  {
+    vi: "Thông báo chưa đọc",
+    en: "Unread notifications",
+    ja: "未読通知",
+    ko: "읽지 않은 알림",
+    zh: "未读通知",
+  },
+  {
+    vi: "Cài đặt",
+    en: "Settings",
+    ja: "設定",
+    ko: "설정",
+    zh: "设置",
+  },
+  {
+    vi: "Cài đặt thông báo",
+    en: "Notification settings",
+    ja: "通知設定",
+    ko: "알림 설정",
+    zh: "通知设置",
+  },
+  {
+    vi: "Đang tải thông báo...",
+    en: "Loading notifications...",
+    ja: "通知を読み込み中...",
+    ko: "알림을 불러오는 중...",
+    zh: "正在加载通知...",
+  },
+  {
+    vi: "Chưa có thông báo mới. Khi Admin duyệt hóa đơn, kết quả sẽ hiện ở đây.",
+    en: "No new notifications. Results will appear here when Admin reviews a bill.",
+    ja: "新しい通知はありません。管理者が請求書を確認すると、結果がここに表示されます。",
+    ko: "새 알림이 없습니다. 관리자가 영수증을 검토하면 결과가 여기에 표시됩니다.",
+    zh: "暂无新通知。管理员审核账单后，结果会显示在这里。",
+  },
+  {
+    vi: "Hôm qua",
+    en: "Yesterday",
+    ja: "昨日",
+    ko: "어제",
+    zh: "昨天",
+  },
+  {
     vi: "Đăng ký đối tác",
     en: "Partner signup",
     ja: "パートナー登録",
@@ -4700,13 +4896,27 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function buildTermPattern(term: string) {
+  const escaped = escapeRegExp(term);
+  if (/^[A-Z]{2,3}$/i.test(term)) {
+    return new RegExp(`(^|[^A-Za-z0-9])(${escaped})(?=$|[^A-Za-z0-9])`, "g");
+  }
+
+  return new RegExp(escaped, "g");
+}
+
 function replaceTerms(value: string, language: Exclude<LanguageCode, "vi">) {
   let output = value;
 
   for (const entry of termTranslations) {
     const replacement = entry[language];
     if (!replacement) continue;
-    output = output.replace(new RegExp(escapeRegExp(entry.vi), "g"), replacement);
+    const pattern = buildTermPattern(entry.vi);
+    if (/^[A-Z]{2,3}$/i.test(entry.vi)) {
+      output = output.replace(pattern, (_match: string, prefix: string) => `${prefix}${replacement}`);
+    } else {
+      output = output.replace(pattern, replacement);
+    }
   }
 
   return output;
@@ -4782,6 +4992,253 @@ function translatePattern(
     }[language];
   }
 
+  const ownBookingRequestMatch = normalized.match(
+    /^Yêu cầu đặt bàn của bạn đã được ghi nhận\.\s+Admin sẽ xác nhận sớm\.$/i,
+  );
+  if (ownBookingRequestMatch) {
+    return {
+      en: "Your reservation request has been received. Admin will confirm soon.",
+      ja: "予約リクエストを受け付けました。管理者がまもなく確認します。",
+      ko: "예약 요청이 접수되었습니다. 관리자가 곧 확인합니다.",
+      zh: "已收到你的预约请求。管理员会尽快确认。",
+    }[language];
+  }
+
+  const bookingRequestWithTimeMatch = normalized.match(
+    /^Yêu cầu đặt(?:\s+bàn tại)?\s+(.+?)\s+lúc\s+(.+?)\s+đã được ghi nhận\.\s+Admin sẽ xác nhận sớm\.$/i,
+  );
+  if (bookingRequestWithTimeMatch) {
+    const target = translateText(bookingRequestWithTimeMatch[1] ?? "", language);
+    const time = bookingRequestWithTimeMatch[2] ?? "";
+    return {
+      en: `Your reservation request for ${target} at ${time} has been received. Admin will confirm soon.`,
+      ja: `${target}の${time}の予約リクエストを受け付けました。管理者がまもなく確認します。`,
+      ko: `${target} ${time} 예약 요청이 접수되었습니다. 관리자가 곧 확인합니다.`,
+      zh: `已收到你预订 ${target} ${time} 的请求。管理员会尽快确认。`,
+    }[language];
+  }
+
+  const bookingRequestMatch = normalized.match(
+    /^Yêu cầu đặt(?:\s+bàn tại)?\s+(.+?)\s+đã được ghi nhận\.\s+Admin sẽ xác nhận sớm\.$/i,
+  );
+  if (bookingRequestMatch) {
+    const target = translateText(bookingRequestMatch[1] ?? "", language);
+    return {
+      en: `Your reservation request for ${target} has been received. Admin will confirm soon.`,
+      ja: `${target}の予約リクエストを受け付けました。管理者がまもなく確認します。`,
+      ko: `${target} 예약 요청이 접수되었습니다. 관리자가 곧 확인합니다.`,
+      zh: `已收到你预订 ${target} 的请求。管理员会尽快确认。`,
+    }[language];
+  }
+
+  const billSubmittedMatch = normalized.match(
+    /^Hóa đơn\s+(.+?)\s+tại\s+(.+?)(?:\s+\((.+?)\))?\s+đã được gửi,\s+đang chờ Admin duyệt\.$/i,
+  );
+  if (billSubmittedMatch) {
+    const billNumber = billSubmittedMatch[1] ?? "";
+    const storeName = translateText(billSubmittedMatch[2] ?? "", language);
+    const amount = billSubmittedMatch[3] ? ` (${billSubmittedMatch[3]})` : "";
+    return {
+      en: `Bill ${billNumber} at ${storeName}${amount} has been submitted and is waiting for Admin review.`,
+      ja: `${storeName}の請求書 ${billNumber}${amount} を送信しました。管理者の確認待ちです。`,
+      ko: `${storeName}의 영수증 ${billNumber}${amount}이 제출되었으며 관리자 검토 대기 중입니다.`,
+      zh: `${storeName} 的账单 ${billNumber}${amount} 已提交，正在等待管理员审核。`,
+    }[language];
+  }
+
+  const billVerifiedMatch = normalized.match(
+    /^Admin đã duyệt hóa đơn\s+(.+?)\s+tại\s+(.+?)\.(?:\s+Bạn được cộng\s+(.+?)\s+điểm\.)?$/i,
+  );
+  if (billVerifiedMatch) {
+    const billNumber = billVerifiedMatch[1] ?? "";
+    const storeName = translateText(billVerifiedMatch[2] ?? "", language);
+    const points = billVerifiedMatch[3] ?? "";
+    if (points) {
+      return {
+        en: `Admin approved bill ${billNumber} at ${storeName}. You earned ${points} points.`,
+        ja: `管理者が${storeName}の請求書 ${billNumber} を承認しました。${points}ポイントが付与されました。`,
+        ko: `관리자가 ${storeName}의 영수증 ${billNumber}을 승인했습니다. ${points}포인트가 적립되었습니다.`,
+        zh: `管理员已通过 ${storeName} 的账单 ${billNumber}。你获得了 ${points} 积分。`,
+      }[language];
+    }
+
+    return {
+      en: `Admin approved bill ${billNumber} at ${storeName}.`,
+      ja: `管理者が${storeName}の請求書 ${billNumber} を承認しました。`,
+      ko: `관리자가 ${storeName}의 영수증 ${billNumber}을 승인했습니다.`,
+      zh: `管理员已通过 ${storeName} 的账单 ${billNumber}。`,
+    }[language];
+  }
+
+  const billRejectedMatch = normalized.match(
+    /^Admin đã từ chối hóa đơn\s+(.+?)\s+tại\s+(.+?)\.\s+(?:Lý do:\s+(.+?)\.|Vui lòng kiểm tra lại chứng từ\.)$/i,
+  );
+  if (billRejectedMatch) {
+    const billNumber = billRejectedMatch[1] ?? "";
+    const storeName = translateText(billRejectedMatch[2] ?? "", language);
+    const reason = billRejectedMatch[3] ?? "";
+    if (reason) {
+      return {
+        en: `Admin rejected bill ${billNumber} at ${storeName}. Reason: ${reason}.`,
+        ja: `管理者が${storeName}の請求書 ${billNumber} を却下しました。理由: ${reason}。`,
+        ko: `관리자가 ${storeName}의 영수증 ${billNumber}을 거절했습니다. 사유: ${reason}.`,
+        zh: `管理员已拒绝 ${storeName} 的账单 ${billNumber}。原因：${reason}。`,
+      }[language];
+    }
+
+    return {
+      en: `Admin rejected bill ${billNumber} at ${storeName}. Please check the evidence again.`,
+      ja: `管理者が${storeName}の請求書 ${billNumber} を却下しました。証憑を再確認してください。`,
+      ko: `관리자가 ${storeName}의 영수증 ${billNumber}을 거절했습니다. 증빙을 다시 확인해 주세요.`,
+      zh: `管理员已拒绝 ${storeName} 的账单 ${billNumber}。请重新检查凭证。`,
+    }[language];
+  }
+
+  const bookingChangedMatch = normalized.match(
+    /^Lịch đặt tại\s+(.+?)(?:\s+từ\s+(.+?)\s+sang\s+(.+?)|\s+sang\s+(.+?))?\s+đã được cập nhật\.$/i,
+  );
+  if (bookingChangedMatch) {
+    const target = translateText(bookingChangedMatch[1] ?? "", language);
+    const previousTime = bookingChangedMatch[2] ?? "";
+    const nextTime = bookingChangedMatch[3] ?? bookingChangedMatch[4] ?? "";
+    if (previousTime && nextTime) {
+      return {
+        en: `Your reservation at ${target} was changed from ${previousTime} to ${nextTime}.`,
+        ja: `${target}の予約は${previousTime}から${nextTime}に変更されました。`,
+        ko: `${target} 예약이 ${previousTime}에서 ${nextTime}(으)로 변경되었습니다.`,
+        zh: `${target} 的预约已从 ${previousTime} 改为 ${nextTime}。`,
+      }[language];
+    }
+
+    if (nextTime) {
+      return {
+        en: `Your reservation at ${target} was changed to ${nextTime}.`,
+        ja: `${target}の予約は${nextTime}に変更されました。`,
+        ko: `${target} 예약이 ${nextTime}(으)로 변경되었습니다.`,
+        zh: `${target} 的预约已改为 ${nextTime}。`,
+      }[language];
+    }
+
+    return {
+      en: `Your reservation at ${target} has been updated.`,
+      ja: `${target}の予約が更新されました。`,
+      ko: `${target} 예약이 업데이트되었습니다.`,
+      zh: `${target} 的预约已更新。`,
+    }[language];
+  }
+
+  const bookingRescheduleRejectedMatch = normalized.match(
+    /^Yêu cầu đổi lịch tại\s+(.+?)\s+chưa được Admin duyệt\.(?:\s+Ghi chú:\s+(.+?)\.)?$/i,
+  );
+  if (bookingRescheduleRejectedMatch) {
+    const target = translateText(bookingRescheduleRejectedMatch[1] ?? "", language);
+    const note = bookingRescheduleRejectedMatch[2] ?? "";
+    if (note) {
+      return {
+        en: `The reschedule request at ${target} was not approved by Admin. Note: ${note}.`,
+        ja: `${target}の予約変更リクエストは管理者に承認されていません。メモ: ${note}。`,
+        ko: `${target} 예약 변경 요청이 관리자에게 승인되지 않았습니다. 메모: ${note}.`,
+        zh: `${target} 的改期请求未获管理员批准。备注：${note}。`,
+      }[language];
+    }
+
+    return {
+      en: `The reschedule request at ${target} was not approved by Admin.`,
+      ja: `${target}の予約変更リクエストは管理者に承認されていません。`,
+      ko: `${target} 예약 변경 요청이 관리자에게 승인되지 않았습니다.`,
+      zh: `${target} 的改期请求未获管理员批准。`,
+    }[language];
+  }
+
+  const ownBookingCancelledMatch = normalized.match(
+    /^Bạn đã hủy lịch đặt tại\s+(.+?)(?:\s+lúc\s+(.+?))?\.(?:\s+Lý do:\s+(.+?)\.)?$/i,
+  );
+  if (ownBookingCancelledMatch) {
+    const target = translateText(ownBookingCancelledMatch[1] ?? "", language);
+    const time = ownBookingCancelledMatch[2] ?? "";
+    const reason = ownBookingCancelledMatch[3] ?? "";
+    const timeText = time ? ` ${time}` : "";
+    const reasonText = reason
+      ? {
+          en: ` Reason: ${reason}.`,
+          ja: ` 理由: ${reason}。`,
+          ko: ` 사유: ${reason}.`,
+          zh: ` 原因：${reason}。`,
+        }[language]
+      : "";
+    return {
+      en: `You cancelled the reservation at ${target}${timeText}.${reasonText}`,
+      ja: `${target}${timeText}の予約をキャンセルしました。${reasonText}`,
+      ko: `${target}${timeText} 예약을 취소했습니다.${reasonText}`,
+      zh: `你已取消 ${target}${timeText} 的预约。${reasonText}`,
+    }[language];
+  }
+
+  const bookingStatusMatch = normalized.match(
+    /^Lịch đặt tại\s+(.+?)(?:\s+lúc\s+(.+?))?\s+đã\s+(được hủy|được check-in|hoàn tất)\.(?:\s+Lý do:\s+(.+?)\.)?$/i,
+  );
+  if (bookingStatusMatch) {
+    const target = translateText(bookingStatusMatch[1] ?? "", language);
+    const time = bookingStatusMatch[2] ?? "";
+    const status = bookingStatusMatch[3] ?? "";
+    const reason = bookingStatusMatch[4] ?? "";
+    const timeText = time ? ` ${time}` : "";
+    if (status === "được hủy") {
+      const reasonText = reason
+        ? {
+            en: ` Reason: ${reason}.`,
+            ja: ` 理由: ${reason}。`,
+            ko: ` 사유: ${reason}.`,
+            zh: ` 原因：${reason}。`,
+          }[language]
+        : "";
+      return {
+        en: `The reservation at ${target}${timeText} was cancelled.${reasonText}`,
+        ja: `${target}${timeText}の予約はキャンセルされました。${reasonText}`,
+        ko: `${target}${timeText} 예약이 취소되었습니다.${reasonText}`,
+        zh: `${target}${timeText} 的预约已取消。${reasonText}`,
+      }[language];
+    }
+
+    if (status === "được check-in") {
+      return {
+        en: `The reservation at ${target}${timeText} has been checked in.`,
+        ja: `${target}${timeText}の予約はチェックイン済みです。`,
+        ko: `${target}${timeText} 예약이 체크인되었습니다.`,
+        zh: `${target}${timeText} 的预约已签到。`,
+      }[language];
+    }
+
+    return {
+      en: `The reservation at ${target}${timeText} has been completed.`,
+      ja: `${target}${timeText}の予約が完了しました。`,
+      ko: `${target}${timeText} 예약이 완료되었습니다.`,
+      zh: `${target}${timeText} 的预约已完成。`,
+    }[language];
+  }
+
+  const bookingGenericUpdateMatch = normalized.match(/^Lịch đặt tại\s+(.+?)\s+vừa có cập nhật mới\.$/i);
+  if (bookingGenericUpdateMatch) {
+    const target = translateText(bookingGenericUpdateMatch[1] ?? "", language);
+    return {
+      en: `Your reservation at ${target} has a new update.`,
+      ja: `${target}の予約に新しい更新があります。`,
+      ko: `${target} 예약에 새 업데이트가 있습니다.`,
+      zh: `${target} 的预约有新的更新。`,
+    }[language];
+  }
+
+  const unreadNotificationMatch = normalized.match(/^(\d+)\s+thông báo chưa đọc$/i);
+  if (unreadNotificationMatch) {
+    const count = unreadNotificationMatch[1] ?? "";
+    return {
+      en: `${count} unread notifications`,
+      ja: `未読通知 ${count}件`,
+      ko: `읽지 않은 알림 ${count}개`,
+      zh: `${count} 条未读通知`,
+    }[language];
+  }
+
   const openUntilMatch = normalized.match(/^(?:Đang mở đến|Mở đến)\s+(.+)$/i);
   if (openUntilMatch) {
     const time = openUntilMatch[1] ?? "";
@@ -4801,6 +5258,37 @@ function translatePattern(
       ja: `${count}時間`,
       ko: `${count}시간`,
       zh: `${count}小时`,
+    }[language];
+  }
+
+  if (/^vừa xong$/i.test(normalized)) {
+    return {
+      en: "Just now",
+      ja: "たった今",
+      ko: "방금",
+      zh: "刚刚",
+    }[language];
+  }
+
+  const minuteCountMatch = normalized.match(/^(\d+)\s+phút$/i);
+  if (minuteCountMatch) {
+    const count = minuteCountMatch[1] ?? "";
+    return {
+      en: `${count} minutes`,
+      ja: `${count}分`,
+      ko: `${count}분`,
+      zh: `${count}分钟`,
+    }[language];
+  }
+
+  const dayCountMatch = normalized.match(/^(\d+)\s+ngày$/i);
+  if (dayCountMatch) {
+    const count = dayCountMatch[1] ?? "";
+    return {
+      en: `${count} days`,
+      ja: `${count}日`,
+      ko: `${count}일`,
+      zh: `${count}天`,
     }[language];
   }
 

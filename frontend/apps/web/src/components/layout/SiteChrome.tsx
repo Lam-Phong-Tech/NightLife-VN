@@ -32,6 +32,12 @@ import {
 } from "@/lib/api/appearance";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
+  languageChangedEvent,
+  readStoredLanguage,
+  translateText,
+  type LanguageCode,
+} from "@/lib/i18n/client-translations";
+import {
   memberNotificationCreatedEvent,
   memberNotificationsRefreshEvent,
   notificationApi,
@@ -591,8 +597,15 @@ const notificationIconByCategory: Record<MemberNotificationCategory, LucideIcon>
 };
 
 const extractBookingPlaceFromBody = (body: string) => {
-  const match = body.match(/Lịch đặt tại\s+(.+?)(?:\s+đã được|\s+vừa có|\s+đã hủy|\.|$)/i);
-  return match?.[1]?.trim() || "";
+  const placeMatch = body.match(
+    /(?:Lịch đặt tại|Yêu cầu đặt bàn tại)\s+(.+?)(?:\s+lúc|\s+từ|\s+sang|\s+đã được|\s+vừa có|\s+đã hủy|\.|$)/i,
+  );
+  if (placeMatch?.[1]) return placeMatch[1].trim();
+
+  const castMatch = body.match(
+    /Yêu cầu đặt\s+(.+?)(?:\s+lúc|\s+đã được ghi nhận|\.|$)/i,
+  );
+  return castMatch?.[1]?.trim() || "";
 };
 
 const bookingPlaceLabel = (notification: MemberNotification) => {
@@ -603,6 +616,9 @@ const bookingPlaceLabel = (notification: MemberNotification) => {
 const normalizeMemberNotification = (notification: MemberNotification): MemberNotification => {
   const key = notification.templateKey;
   const placeLabel = bookingPlaceLabel(notification);
+  const isCastBooking =
+    notification.title === "Đặt bàn theo cast thành công" ||
+    /^Yêu cầu đặt\s+(?!bàn tại\b)/i.test(notification.body);
 
   if (key === "customer.bill.submitted.v1") {
     return {
@@ -637,8 +653,10 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
   if (key === "customer.booking.created.v1") {
     return {
       ...notification,
-      title: "Đặt bàn thành công",
-      body: `Yêu cầu đặt bàn ${placeLabel} đã được ghi nhận. Admin sẽ xác nhận sớm.`,
+      title: isCastBooking ? "Đặt bàn theo cast thành công" : "Đặt bàn thành công",
+      body: isCastBooking
+        ? notification.body
+        : `Yêu cầu đặt bàn ${placeLabel} đã được ghi nhận. Admin sẽ xác nhận sớm.`,
       actionLabel: "Xem lịch đặt",
       category: "booking",
       tone: "amber",
@@ -723,7 +741,7 @@ const normalizeMemberNotification = (notification: MemberNotification): MemberNo
   return notification;
 };
 
-const toNotice = (notification: MemberNotification): Notice => {
+const toNotice = (notification: MemberNotification, language: LanguageCode): Notice => {
   const displayNotification = normalizeMemberNotification(notification);
   const createdAt = new Date(notification.createdAt);
   const isToday =
@@ -732,10 +750,12 @@ const toNotice = (notification: MemberNotification): Notice => {
   return {
     id: displayNotification.id,
     group: isToday ? "today" : "yesterday",
-    title: displayNotification.title,
-    body: displayNotification.body,
-    time: displayNotification.timeLabel,
-    action: displayNotification.actionLabel,
+    title: translateText(displayNotification.title, language),
+    body: translateText(displayNotification.body, language),
+    time: translateText(displayNotification.timeLabel, language),
+    action: displayNotification.actionLabel
+      ? translateText(displayNotification.actionLabel, language)
+      : undefined,
     unread: displayNotification.unread,
     icon: notificationIconByCategory[displayNotification.category] ?? Bell,
     tone: displayNotification.tone,
@@ -1343,6 +1363,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [isNotificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
+  const [activeLanguage, setActiveLanguage] = useState<LanguageCode>("vi");
   const notificationIdsRef = useRef(new Set<string>());
   const optimisticNotificationIdsRef = useRef(new Set<string>());
   const hideChrome = hiddenChromePaths.some(
@@ -1352,7 +1373,21 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showSupportChat = true; // Always show for both User and Guest
   const showCustomerNotifications = authUser?.role?.toUpperCase() === "USER";
-  const notificationNotices = memberNotifications.map(toNotice);
+  const notificationNotices = memberNotifications.map((notification) =>
+    toNotice(notification, activeLanguage),
+  );
+
+  useEffect(() => {
+    const syncLanguage = (event?: Event) => {
+      const nextLanguage = (event as CustomEvent<{ language?: LanguageCode }> | undefined)?.detail
+        ?.language;
+      setActiveLanguage(nextLanguage ?? readStoredLanguage());
+    };
+
+    syncLanguage();
+    window.addEventListener(languageChangedEvent, syncLanguage);
+    return () => window.removeEventListener(languageChangedEvent, syncLanguage);
+  }, []);
 
   const refreshMemberNotifications = useCallback(async () => {
     if (!showCustomerNotifications) {

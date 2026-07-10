@@ -140,6 +140,33 @@ describe("client translations", () => {
     expect(translateText("Set Nhật Bản", "ja")).toBe("日本セット");
     expect(translateText("Opera Spa Hải Phòng", "ja")).toBe("Opera スパ ハイフォン");
     expect(translateText("13 cast · Hà Nội", "ja")).toBe("13人のキャスト · ハノイ");
+    expect(translateText("WEEKEND DEAL · NIGHTLIFE", "ja")).toBe("週末ディール · NIGHTLIFE");
+    expect(translateText("Ưu đãi cuối tuần - giảm đến 30%", "ja")).toBe(
+      "週末特典 - 最大30%オフ",
+    );
+    expect(
+      translateText("Lưu mã ưu đãi trước khi đặt bàn để không bỏ lỡ deal tốt.", "ja"),
+    ).toBe("お得な特典を逃さないよう、予約前にクーポンコードを保存してください。");
+    expect(translateText("Đã gửi hóa đơn", "ja")).toBe("請求書を送信しました");
+    expect(translateText("Đặt bàn theo cast thành công", "ja")).toBe(
+      "キャスト指名予約を送信しました",
+    );
+    expect(
+      translateText(
+        "Hóa đơn BILL-20260710-FCBF2405 tại dfghj (400.000 ₫) đã được gửi, đang chờ Admin duyệt.",
+        "ja",
+      ),
+    ).toBe("dfghjの請求書 BILL-20260710-FCBF2405 (400.000 ₫) を送信しました。管理者の確認待ちです。");
+    expect(
+      translateText(
+        "Yêu cầu đặt Yuri @ Opera Spa Hải Phòng lúc 19:00 10-07 đã được ghi nhận. Admin sẽ xác nhận sớm.",
+        "ja",
+      ),
+    ).toBe(
+      "Yuri @ Opera スパ ハイフォンの19:00 10-07の予約リクエストを受け付けました。管理者がまもなく確認します。",
+    );
+    expect(translateText("2 thông báo chưa đọc", "ja")).toBe("未読通知 2件");
+    expect(translateText("Vừa xong", "ja")).toBe("たった今");
   });
 
   it("translates deals and blog page leftovers", () => {
