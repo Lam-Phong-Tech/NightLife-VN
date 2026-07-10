@@ -25,6 +25,7 @@ import { trackRankingClick, type RankingClickContext } from "@/lib/analytics/ran
 type RankingKind = "cast" | "quan";
 type LoadState = "loading" | "ready" | "error";
 type CallNotice = { name: string; phone: string; href: string };
+type CallNoticeOptions = { desktopBlocked?: boolean };
 
 type SelectOption<T extends string> = {
   key: T;
@@ -97,6 +98,15 @@ const maxPreloadedRankings = 10;
 function phoneHref(phone: string) {
   const normalized = phone.trim().replace(/[^\d+]/g, "");
   return normalized ? `tel:${normalized}` : "";
+}
+
+function shouldBlockDesktopPhoneCall() {
+  if (typeof window === "undefined") return true;
+
+  return (
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches ||
+    window.innerWidth >= 768
+  );
 }
 
 function getRankTone(rank: number) {
@@ -268,7 +278,7 @@ function RankingRow({
 }: {
   item: PublicRankingItem;
   trackingContext: RankingClickContext;
-  onCall: (notice: CallNotice) => void;
+  onCall: (notice: CallNotice, options?: CallNoticeOptions) => void;
 }) {
   const tone = getRankTone(item.rank);
   const topRank = item.rank === 1;
@@ -361,9 +371,17 @@ function RankingRow({
             <a
               className="vyr-rank-action"
               href={itemPhoneHref}
-              onClick={() => {
+              onClick={(event) => {
+                const desktopBlocked = shouldBlockDesktopPhoneCall();
+                if (desktopBlocked) {
+                  event.preventDefault();
+                }
+
                 trackRankingClick(item, "call", trackingContext);
-                onCall({ name: item.name, phone: item.phone ?? "", href: itemPhoneHref });
+                onCall(
+                  { name: item.name, phone: item.phone ?? "", href: itemPhoneHref },
+                  { desktopBlocked },
+                );
               }}
             >
               <Phone size={15} />
@@ -399,6 +417,7 @@ export default function Page() {
   const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [callNotice, setCallNotice] = useState<CallNotice | null>(null);
+  const [showDesktopCallPopup, setShowDesktopCallPopup] = useState(false);
 
   const query = useMemo(
     () => ({
@@ -418,12 +437,14 @@ export default function Page() {
   const changeRankingType = (value: RankingKind) => {
     markRankingLoading();
     setCallNotice(null);
+    setShowDesktopCallPopup(false);
     setRankingType(value);
   };
 
   const changeSelectedArea = (value: RankingCity) => {
     markRankingLoading();
     setCallNotice(null);
+    setShowDesktopCallPopup(false);
     setSelectedArea(value);
   };
 
@@ -450,6 +471,18 @@ export default function Page() {
 
     return () => controller.abort();
   }, [query, reloadKey]);
+
+  useEffect(() => {
+    if (!showDesktopCallPopup) return;
+
+    const timer = window.setTimeout(() => setShowDesktopCallPopup(false), 4200);
+    return () => window.clearTimeout(timer);
+  }, [showDesktopCallPopup, callNotice?.phone]);
+
+  const handleCallNotice = (notice: CallNotice, options?: CallNoticeOptions) => {
+    setCallNotice(notice);
+    setShowDesktopCallPopup(Boolean(options?.desktopBlocked));
+  };
 
   const dateLabel = "Tháng 6 năm 2026";
   const hasItems = list.length > 0;
@@ -522,9 +555,18 @@ export default function Page() {
             <span>
               Số điện thoại {callNotice.name}: <strong>{callNotice.phone}</strong>
             </span>
-            <a href={callNotice.href}>Gọi số này</a>
             <button type="button" onClick={() => setCallNotice(null)}>
               Đóng
+            </button>
+          </div>
+        ) : null}
+
+        {showDesktopCallPopup && callNotice ? (
+          <div className="vyr-call-popup" role="alert" aria-live="assertive">
+            <strong>Không hỗ trợ gọi điện thoại trên desktop</strong>
+            <span>Số điện thoại của quán đã được hiển thị ở phía trên.</span>
+            <button type="button" onClick={() => setShowDesktopCallPopup(false)}>
+              Đã hiểu
             </button>
           </div>
         ) : null}
@@ -566,7 +608,7 @@ export default function Page() {
                   key={item.targetId}
                   item={item}
                   trackingContext={trackingContext}
-                  onCall={setCallNotice}
+                  onCall={handleCallNotice}
                 />
               ))
             : null}
@@ -819,7 +861,6 @@ export default function Page() {
           white-space: nowrap;
         }
 
-        .vyr-call-notice a,
         .vyr-call-notice button {
           min-height: 32px;
           flex: none;
@@ -834,6 +875,46 @@ export default function Page() {
           font-size: 12px;
           font-weight: 850;
           text-decoration: none;
+          cursor: pointer;
+        }
+
+        .vyr-call-popup {
+          position: fixed;
+          top: 92px;
+          left: 50%;
+          z-index: 70;
+          width: min(420px, calc(100vw - 32px));
+          display: grid;
+          gap: 8px;
+          transform: translateX(-50%);
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 16px;
+          background: color-mix(in srgb, var(--vy-surface) 96%, black 4%);
+          color: var(--vy-text);
+          box-shadow: 0 18px 52px rgba(0, 0, 0, 0.42);
+          padding: 16px;
+        }
+
+        .vyr-call-popup strong {
+          color: var(--vy-gold-pale);
+          font-size: 15px;
+        }
+
+        .vyr-call-popup span {
+          color: var(--vy-text-2);
+          font-size: 13px;
+          line-height: 1.45;
+        }
+
+        .vyr-call-popup button {
+          justify-self: end;
+          min-height: 34px;
+          border: 1px solid var(--vy-border-gold-32);
+          border-radius: 10px;
+          background: linear-gradient(135deg, #f0dda8, #d4b26a);
+          color: var(--vy-on-gold);
+          padding: 0 13px;
+          font-weight: 900;
           cursor: pointer;
         }
 
@@ -1248,9 +1329,14 @@ export default function Page() {
             margin-top: 10px;
           }
 
-          .vyr-call-notice a,
           .vyr-call-notice button {
             width: 100%;
+          }
+
+          .vyr-call-popup {
+            top: 74px;
+            width: calc(100vw - 24px);
+            border-radius: 14px;
           }
 
           .vyr-rank-row {
