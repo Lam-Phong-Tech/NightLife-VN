@@ -30,6 +30,8 @@ import {
   sanitizeBookingDisplayNameInput,
   validateBookingFormFields,
 } from "@/lib/booking-validation";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
@@ -122,6 +124,7 @@ const parseContext = () => {
 
 export default function Page() {
   const router = useRouter();
+  const activeLanguage = useActiveLanguage();
   const [mode, setMode] = useState<"guest" | "member">("guest");
   const [context, setContext] = useState<BookingContext>(defaultContext);
   const [guestName, setGuestName] = useState("");
@@ -532,7 +535,9 @@ export default function Page() {
                 </span>
               </div>
 
-              {errorMessage ? <div className={styles.errorMessage}>{errorMessage}</div> : null}
+              {errorMessage ? (
+                <div className={styles.errorMessage}>{translateText(errorMessage, activeLanguage)}</div>
+              ) : null}
             </div>
           </div>
 

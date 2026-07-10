@@ -1,9 +1,17 @@
 "use client";
 
 import { ConfigProvider, DatePicker, Select } from "antd";
+import enUS from "antd/locale/en_US";
+import jaJP from "antd/locale/ja_JP";
+import koKR from "antd/locale/ko_KR";
 import viVN from "antd/locale/vi_VN";
+import zhCN from "antd/locale/zh_CN";
 import dayjs from "dayjs";
+import "dayjs/locale/en";
+import "dayjs/locale/ja";
+import "dayjs/locale/ko";
 import "dayjs/locale/vi";
+import "dayjs/locale/zh-cn";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -12,9 +20,31 @@ import {
   type BookingTimeSlotGroup,
   type BookingTimeSlotPeriod,
 } from "@/lib/booking-time-slots";
+import { translateText } from "@/lib/i18n/client-translations";
+import {
+  intlLocaleByLanguage,
+  useActiveLanguage,
+  type LanguageCode,
+} from "@/lib/i18n/use-active-language";
 
 dayjs.extend(customParseFormat);
 dayjs.locale("vi");
+
+const antdLocales = {
+  vi: viVN,
+  en: enUS,
+  ja: jaJP,
+  ko: koKR,
+  zh: zhCN,
+} as const;
+
+const dayjsLocales: Record<LanguageCode, string> = {
+  vi: "vi",
+  en: "en",
+  ja: "ja",
+  ko: "ko",
+  zh: "zh-cn",
+};
 
 type BookingDateTimeFieldsProps = {
   dateLabel?: ReactNode;
@@ -70,9 +100,24 @@ const parseDate = (value: string) => {
   return parsed.isValid() ? parsed : null;
 };
 
-const formatBookingDateLabel = (value: dayjs.Dayjs) => {
-  const label = value.format("dddd, DD/MM");
-  return label.charAt(0).toLocaleUpperCase("vi-VN") + label.slice(1);
+const formatBookingDateLabel = (value: dayjs.Dayjs, language: LanguageCode) => {
+  const label = new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(value.toDate());
+
+  return language === "vi" ? label.charAt(0).toLocaleUpperCase("vi-VN") + label.slice(1) : label;
+};
+
+const translateNode = (value: ReactNode, language: LanguageCode) =>
+  typeof value === "string" ? translateText(value, language) : value;
+
+const translateSlotPeriod = (group: BookingTimeSlotGroup, language: LanguageCode) => {
+  const label = translateText(group.label, language);
+  if (!group.slots.length) return label;
+
+  return `${label} ${group.slots.length}`;
 };
 
 export function BookingDateTimeFields({
@@ -94,18 +139,30 @@ export function BookingDateTimeFields({
   layout = "grid",
   disabled = false,
 }: BookingDateTimeFieldsProps) {
+  const activeLanguage = useActiveLanguage();
   const currentDate = parseDate(dateValue) ?? parseDate(minDate) ?? dayjs();
   const min = parseDate(minDate) ?? dayjs();
   const max = parseDate(maxDate) ?? min.add(14, "day");
+  const localizedDateLabel = translateNode(dateLabel, activeLanguage);
+  const localizedTimeLabel = translateNode(timeLabel, activeLanguage);
+  const localizedEmptyMessage = translateText(emptyMessage, activeLanguage);
+  const loadingTimesText = translateText("Đang tải khung giờ...", activeLanguage);
+  const selectDateText = translateText("Chọn ngày", activeLanguage);
+  const selectTimeText = translateText("Chọn khung giờ", activeLanguage);
   const groups = useMemo(
     () => (timeOptionGroups?.length ? timeOptionGroups : groupBookingTimeSlots(timeOptions)),
     [timeOptionGroups, timeOptions],
   );
   const selectedTimePeriod = groups.find((group) => group.slots.includes(timeValue))?.key;
   const firstAvailablePeriod = groups.find((group) => group.slots.length)?.key ?? "morning";
-  const [activePeriod, setActivePeriod] = useState<BookingTimeSlotPeriod>(
+  const [preferredPeriod, setPreferredPeriod] = useState<BookingTimeSlotPeriod>(
     selectedTimePeriod ?? firstAvailablePeriod,
   );
+  const activePeriod =
+    selectedTimePeriod ??
+    (groups.find((group) => group.key === preferredPeriod)?.slots.length
+      ? preferredPeriod
+      : firstAvailablePeriod);
   const activeGroup =
     groups.find((group) => group.key === activePeriod) ??
     groups.find((group) => group.key === firstAvailablePeriod) ??
@@ -121,18 +178,14 @@ export function BookingDateTimeFields({
     .join(" ");
 
   useEffect(() => {
-    setActivePeriod((current) => {
-      if (selectedTimePeriod) return selectedTimePeriod;
-      if (groups.find((group) => group.key === current)?.slots.length) return current;
-      return firstAvailablePeriod;
-    });
-  }, [firstAvailablePeriod, groups, selectedTimePeriod]);
+    dayjs.locale(dayjsLocales[activeLanguage]);
+  }, [activeLanguage]);
 
   const selectPeriod = (period: BookingTimeSlotPeriod) => {
     const nextGroup = groups.find((group) => group.key === period);
     if (!nextGroup?.slots.length || disabled || loadingTimes) return;
 
-    setActivePeriod(period);
+    setPreferredPeriod(period);
     if (!nextGroup.slots.includes(timeValue)) {
       const nextTime = nextGroup.slots[0];
       if (nextTime) onTimeChange(nextTime);
@@ -140,14 +193,14 @@ export function BookingDateTimeFields({
   };
 
   return (
-    <ConfigProvider locale={viVN} theme={bookingPickerTheme}>
+    <ConfigProvider locale={antdLocales[activeLanguage]} theme={bookingPickerTheme}>
       <div
         className={["nl-booking-date-time", `nl-booking-date-time--${layout}`, className]
           .filter(Boolean)
           .join(" ")}
       >
         <label className={fieldClassName}>
-          <span className={labelClassName}>{dateLabel}</span>
+          <span className={labelClassName}>{localizedDateLabel}</span>
           <DatePicker
             allowClear={false}
             autoComplete="off"
@@ -156,7 +209,7 @@ export function BookingDateTimeFields({
             disabledDate={(date) =>
               date ? date.isBefore(min, "day") || date.isAfter(max, "day") : false
             }
-            format={formatBookingDateLabel}
+            format={(value) => formatBookingDateLabel(value, activeLanguage)}
             getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
             inputReadOnly
             maxDate={max}
@@ -165,15 +218,19 @@ export function BookingDateTimeFields({
               if (!nextDate) return;
               onDateChange(nextDate.format("YYYY-MM-DD"));
             }}
-            placeholder="Chọn ngày"
+            placeholder={selectDateText}
             popupClassName="nl-booking-ant-popup"
             value={currentDate}
           />
         </label>
 
         <label className={timeFieldClassName}>
-          <span className={labelClassName}>{timeLabel}</span>
-          <div className="nl-booking-period-tabs" role="tablist" aria-label="Chọn buổi đặt bàn">
+          <span className={labelClassName}>{localizedTimeLabel}</span>
+          <div
+            className="nl-booking-period-tabs"
+            role="tablist"
+            aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
+          >
             {periodTabs.map((group) => {
               const isActive = group.key === activeGroup?.key;
 
@@ -186,7 +243,7 @@ export function BookingDateTimeFields({
                   role="tab"
                   onClick={() => selectPeriod(group.key)}
                 >
-                  {group.label}
+                  {translateSlotPeriod(group, activeLanguage)}
                 </button>
               );
             })}
@@ -196,15 +253,15 @@ export function BookingDateTimeFields({
             disabled={shouldDisableTime}
             getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
             loading={loadingTimes}
-            notFoundContent={loadingTimes ? "Đang tải khung giờ..." : emptyMessage}
+            notFoundContent={loadingTimes ? loadingTimesText : localizedEmptyMessage}
             onChange={onTimeChange}
             options={options}
-            placeholder={loadingTimes ? "Đang tải khung giờ..." : "Chọn khung giờ"}
+            placeholder={loadingTimes ? loadingTimesText : selectTimeText}
             popupClassName="nl-booking-select-popup"
             value={selectedTimeValue}
           />
           {!loadingTimes && !activeTimeOptions.length ? (
-            <span className="nl-booking-empty-message">{emptyMessage}</span>
+            <span className="nl-booking-empty-message">{localizedEmptyMessage}</span>
           ) : null}
         </label>
       </div>

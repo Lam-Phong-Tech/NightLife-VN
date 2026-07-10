@@ -4296,6 +4296,251 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ko: "비슷한 추천",
     zh: "相似推荐",
   },
+  {
+    vi: "Đã quá giờ",
+    en: "Expired",
+    ja: "期限切れ",
+    ko: "시간 지남",
+    zh: "已过期",
+  },
+  {
+    vi: "Đã qua giờ",
+    en: "Expired",
+    ja: "期限切れ",
+    ko: "시간 지남",
+    zh: "已过期",
+  },
+  {
+    vi: "Đã qua giờ đặt, bạn có thể đặt lại nếu cần.",
+    en: "The reservation time has passed. You can book again if needed.",
+    ja: "予約時間が過ぎました。必要に応じて再予約できます。",
+    ko: "예약 시간이 지났습니다. 필요하면 다시 예약할 수 있습니다.",
+    zh: "预约时间已过。如有需要，可以重新预订。",
+  },
+  {
+    vi: "Hoàn tất · gắn điểm/hoá đơn khi đối soát",
+    en: "Completed · points/bill linked after reconciliation",
+    ja: "完了 · 照合後にポイント/請求書を紐付け",
+    ko: "완료 · 정산 후 포인트/영수증 연결",
+    zh: "已完成 · 对账后关联积分/账单",
+  },
+  {
+    vi: "Đã hủy trước giờ hẹn · không thu cọc",
+    en: "Cancelled before the reservation time · no deposit charged",
+    ja: "予約時間前にキャンセル済み · デポジットなし",
+    ko: "예약 시간 전에 취소됨 · 보증금 없음",
+    zh: "已在预约时间前取消 · 不收押金",
+  },
+  {
+    vi: "Trước",
+    en: "Previous",
+    ja: "前へ",
+    ko: "이전",
+    zh: "上一页",
+  },
+  {
+    vi: "Sau",
+    en: "Next",
+    ja: "次へ",
+    ko: "다음",
+    zh: "下一页",
+  },
+  {
+    vi: "Chưa có dịch vụ nổi bật phù hợp.",
+    en: "No matching featured services yet.",
+    ja: "該当する注目サービスはまだありません。",
+    ko: "조건에 맞는 추천 서비스가 아직 없습니다.",
+    zh: "暂无匹配的精选服务。",
+  },
+  {
+    vi: "Giữ bàn VIP sớm, nhận xác nhận nhanh từ admin...",
+    en: "Reserve a VIP table early and get quick confirmation from admin...",
+    ja: "VIP席を早めに確保し、管理者からすばやく確認を受け取れます...",
+    ko: "VIP 테이블을 미리 잡고 관리자에게 빠르게 확인받으세요...",
+    zh: "提前保留 VIP 桌，快速获得管理员确认...",
+  },
+  {
+    vi: "Banner nổi bật",
+    en: "Featured banner",
+    ja: "注目バナー",
+    ko: "추천 배너",
+    zh: "精选横幅",
+  },
+  {
+    vi: "Vietyoru Hỗ trợ",
+    en: "Vietyoru Support",
+    ja: "Vietyoruサポート",
+    ko: "Vietyoru 지원",
+    zh: "Vietyoru 支持",
+  },
+  {
+    vi: "Chăm sóc khách hàng",
+    en: "Customer care",
+    ja: "カスタマーサポート",
+    ko: "고객 지원",
+    zh: "客户服务",
+  },
+  {
+    vi: "Đang tải lịch sử...",
+    en: "Loading history...",
+    ja: "履歴を読み込み中...",
+    ko: "기록을 불러오는 중...",
+    zh: "正在加载历史...",
+  },
+  {
+    vi: "Nhập tin nhắn...",
+    en: "Type a message...",
+    ja: "メッセージを入力...",
+    ko: "메시지를 입력하세요...",
+    zh: "输入消息...",
+  },
+  {
+    vi: "Nhập tin nhắn hỗ trợ",
+    en: "Type a support message",
+    ja: "サポートへのメッセージを入力",
+    ko: "지원 메시지 입력",
+    zh: "输入支持消息",
+  },
+  {
+    vi: "Gửi tin nhắn",
+    en: "Send message",
+    ja: "メッセージを送信",
+    ko: "메시지 보내기",
+    zh: "发送消息",
+  },
+  {
+    vi: "Thu nhỏ chat hỗ trợ",
+    en: "Minimize support chat",
+    ja: "サポートチャットを最小化",
+    ko: "지원 채팅 최소화",
+    zh: "最小化支持聊天",
+  },
+  {
+    vi: "Đóng chat hỗ trợ",
+    en: "Close support chat",
+    ja: "サポートチャットを閉じる",
+    ko: "지원 채팅 닫기",
+    zh: "关闭支持聊天",
+  },
+  {
+    vi: "Mở chat hỗ trợ",
+    en: "Open support chat",
+    ja: "サポートチャットを開く",
+    ko: "지원 채팅 열기",
+    zh: "打开支持聊天",
+  },
+  {
+    vi: "Phiên chat đã được đóng bởi nhân viên hỗ trợ.",
+    en: "This chat session has been closed by support staff.",
+    ja: "このチャットはサポート担当者により終了されました。",
+    ko: "지원 담당자가 채팅 세션을 종료했습니다.",
+    zh: "该聊天会话已由支持人员关闭。",
+  },
+  {
+    vi: "Sáng",
+    en: "Morning",
+    ja: "午前",
+    ko: "오전",
+    zh: "上午",
+  },
+  {
+    vi: "Tối",
+    en: "Evening",
+    ja: "夜",
+    ko: "저녁",
+    zh: "晚上",
+  },
+  {
+    vi: "Ngày mới",
+    en: "New date",
+    ja: "新しい日付",
+    ko: "새 날짜",
+    zh: "新日期",
+  },
+  {
+    vi: "Khung giờ mới",
+    en: "New time slot",
+    ja: "新しい時間帯",
+    ko: "새 시간대",
+    zh: "新时间段",
+  },
+  {
+    vi: "Chọn ngày",
+    en: "Choose date",
+    ja: "日付を選択",
+    ko: "날짜 선택",
+    zh: "选择日期",
+  },
+  {
+    vi: "Chọn khung giờ",
+    en: "Choose time slot",
+    ja: "時間帯を選択",
+    ko: "시간대 선택",
+    zh: "选择时间段",
+  },
+  {
+    vi: "Đang tải khung giờ...",
+    en: "Loading time slots...",
+    ja: "時間帯を読み込み中...",
+    ko: "시간대를 불러오는 중...",
+    zh: "正在加载时间段...",
+  },
+  {
+    vi: "Quán không có khung giờ đặt bàn trong ngày này.",
+    en: "This venue has no reservation slots on this date.",
+    ja: "この日は予約可能な時間帯がありません。",
+    ko: "이 날짜에는 예약 가능한 시간대가 없습니다.",
+    zh: "该店铺当天没有可预订时段。",
+  },
+  {
+    vi: "Chọn buổi đặt bàn",
+    en: "Choose reservation period",
+    ja: "予約時間帯を選択",
+    ko: "예약 시간대 선택",
+    zh: "选择预订时段",
+  },
+  {
+    vi: "Vui lòng nhập họ tên.",
+    en: "Please enter your full name.",
+    ja: "氏名を入力してください。",
+    ko: "이름을 입력해 주세요.",
+    zh: "请输入姓名。",
+  },
+  {
+    vi: "Vui lòng nhập email.",
+    en: "Please enter your email.",
+    ja: "メールアドレスを入力してください。",
+    ko: "이메일을 입력해 주세요.",
+    zh: "请输入邮箱。",
+  },
+  {
+    vi: "Họ tên chỉ được nhập chữ cái và khoảng trắng.",
+    en: "Full name can only contain letters and spaces.",
+    ja: "氏名には文字とスペースのみ入力できます。",
+    ko: "이름에는 문자와 공백만 입력할 수 있습니다.",
+    zh: "姓名只能包含字母和空格。",
+  },
+  {
+    vi: "Vui lòng chọn khung giờ.",
+    en: "Please choose a time slot.",
+    ja: "時間帯を選択してください。",
+    ko: "시간대를 선택해 주세요.",
+    zh: "请选择时间段。",
+  },
+  {
+    vi: "Khung giờ đã chọn không còn khả dụng.",
+    en: "The selected time slot is no longer available.",
+    ja: "選択した時間帯は利用できません。",
+    ko: "선택한 시간대는 더 이상 사용할 수 없습니다.",
+    zh: "所选时间段已不可用。",
+  },
+  {
+    vi: "Khung giờ đặt chỗ phải ở tương lai.",
+    en: "Reservation time must be in the future.",
+    ja: "予約時間は現在より後にしてください。",
+    ko: "예약 시간은 현재 이후여야 합니다.",
+    zh: "预约时间必须是未来时间。",
+  },
 ];
 
 const translations = new Map<string, TranslationSet>(
@@ -5257,6 +5502,65 @@ function translatePattern(
       ja: `更新日: ${date}`,
       ko: `업데이트: ${date}`,
       zh: `更新：${date}`,
+    }[language];
+  }
+
+  const djNightMatch = normalized.match(/^Đêm nhạc DJ tại\s+(.+)$/i);
+  if (djNightMatch) {
+    const venue = translateText(djNightMatch[1] ?? "", language);
+    return {
+      en: `DJ night at ${venue}`,
+      ja: `${venue}のDJナイト`,
+      ko: `${venue} DJ 나이트`,
+      zh: `${venue} DJ之夜`,
+    }[language];
+  }
+
+  const maxCharactersMatch = normalized.match(
+    /^(Họ tên|Email|Số điện thoại|Ghi chú)\s+tối đa\s+(\d+)\s+ký tự\.$/i,
+  );
+  if (maxCharactersMatch) {
+    const field = translateText(maxCharactersMatch[1] ?? "", language);
+    const count = maxCharactersMatch[2] ?? "";
+    return {
+      en: `${field} can be up to ${count} characters.`,
+      ja: `${field}は最大${count}文字です。`,
+      ko: `${field}은(는) 최대 ${count}자까지 입력할 수 있습니다.`,
+      zh: `${field}最多 ${count} 个字符。`,
+    }[language];
+  }
+
+  const minNameMatch = normalized.match(/^Vui lòng nhập họ tên từ\s+(\d+)\s+ký tự\.$/i);
+  if (minNameMatch) {
+    const count = minNameMatch[1] ?? "";
+    return {
+      en: `Please enter a full name of at least ${count} characters.`,
+      ja: `氏名は${count}文字以上で入力してください。`,
+      ko: `이름은 최소 ${count}자 이상 입력해 주세요.`,
+      zh: `请输入至少 ${count} 个字符的姓名。`,
+    }[language];
+  }
+
+  const dateWindowMatch = normalized.match(/^Ngày đặt bàn chỉ được chọn từ hôm nay đến\s+(\d+)\s+ngày tới\.$/i);
+  if (dateWindowMatch) {
+    const count = dateWindowMatch[1] ?? "";
+    return {
+      en: `Reservation date can only be selected from today through the next ${count} days.`,
+      ja: `予約日は今日から${count}日以内で選択してください。`,
+      ko: `예약 날짜는 오늘부터 ${count}일 이내로만 선택할 수 있습니다.`,
+      zh: `预约日期只能选择从今天起 ${count} 天内。`,
+    }[language];
+  }
+
+  const guestRangeMatch = normalized.match(/^Số người chỉ được từ\s+(\d+)\s+đến\s+(\d+)\.$/i);
+  if (guestRangeMatch) {
+    const min = guestRangeMatch[1] ?? "";
+    const max = guestRangeMatch[2] ?? "";
+    return {
+      en: `Guests must be between ${min} and ${max}.`,
+      ja: `人数は${min}〜${max}名で選択してください。`,
+      ko: `인원은 ${min}명에서 ${max}명 사이여야 합니다.`,
+      zh: `人数必须在 ${min} 到 ${max} 之间。`,
     }[language];
   }
 

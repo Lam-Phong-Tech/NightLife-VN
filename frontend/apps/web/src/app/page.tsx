@@ -65,6 +65,8 @@ import {
   trackHomeVenueSignal,
 } from "@/lib/analytics/home";
 import { storeImageForSlug } from "@/lib/demo-media";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage } from "@/lib/i18n/use-active-language";
 
 const colors = {
   shell: "var(--vy-bg)",
@@ -962,6 +964,7 @@ function CategoryGrid({
 }
 
 function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
+  const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
   const fallbackBanner = useMemo<HomeBanner>(() => ({
     title: "Sự kiện đêm nay",
@@ -993,6 +996,11 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 
   const banners: HomeBanner[] = mappedBanners;
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+  const eventTitle = translateText(event.title, activeLanguage);
+  const eventDesc = translateText(event.desc, activeLanguage);
+  const eventButtonText = translateText(event.btnText, activeLanguage);
+  const eventStatusLabel = translateText(event.statusLabel ?? "", activeLanguage);
+  const eventSubtitle = translateText(event.subtitle ?? "", activeLanguage);
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
@@ -1045,19 +1053,19 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
             }}
           >
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.rose }} />
-            {event.statusLabel}
+            {eventStatusLabel}
           </span>
         )}
         {event.subtitle && (
           <div style={{ marginTop: "20px", color: colors.goldSoft, fontSize: desktop ? "13px" : "11px", letterSpacing: ".24em" }}>
-            {event.subtitle}
+            {eventSubtitle}
           </div>
         )}
         <h1 style={{ maxWidth: desktop ? "620px" : "260px", marginTop: (event.subtitle || event.statusLabel) ? "8px" : "20px", fontSize: desktop ? "48px" : "25px", lineHeight: 1.05, fontWeight: 900 }}>
-          {event.title}
+          {eventTitle}
         </h1>
         <div style={{ marginTop: desktop ? "22px" : "16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-          <span style={{ maxWidth: desktop ? "none" : "168px", fontSize: desktop ? "15px" : "12px", lineHeight: 1.35 }}>{event.desc}</span>
+          <span style={{ maxWidth: desktop ? "none" : "168px", fontSize: desktop ? "15px" : "12px", lineHeight: 1.35 }}>{eventDesc}</span>
           <span
             style={{
               display: "inline-flex",
@@ -1073,12 +1081,12 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
               whiteSpace: "nowrap",
             }}
           >
-            {event.btnText}
+            {eventButtonText}
           </span>
         </div>
       </div>
       <div
-        aria-label="Chọn banner"
+        aria-label={translateText("Chọn banner", activeLanguage)}
         style={{
           position: "absolute",
           left: "50%",
@@ -1094,7 +1102,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
             key={banner.title}
             role="button"
             tabIndex={0}
-            aria-label={`Banner ${index + 1}`}
+            aria-label={translateText(`Banner ${index + 1}`, activeLanguage)}
             onClick={(event) => {
               event.preventDefault();
               setActiveBanner(index);
@@ -1125,6 +1133,7 @@ function EventHero({ desktop = false, apiBanners = [] }: { desktop?: boolean; ap
 }
 
 function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean; apiBanners?: CmsContentItem[] }) {
+  const activeLanguage = useActiveLanguage();
   const [activeBanner, setActiveBanner] = useState(0);
   const fallbackBanner = useMemo<HomeBanner>(() => ({
     title: "Ưu đãi đêm nay",
@@ -1150,6 +1159,9 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
     });
   }, [apiBanners, fallbackBanner]);
   const event = banners[activeBanner] ?? banners[0] ?? fallbackBanner;
+  const eventTitle = translateText(event.title, activeLanguage);
+  const eventDesc = translateText(event.desc, activeLanguage);
+  const eventButtonText = translateText(event.btnText, activeLanguage);
   const swipeHandlers = useBannerSwipe(banners.length, setActiveBanner);
 
   useEffect(() => {
@@ -1200,7 +1212,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
             textTransform: "uppercase",
           }}
         >
-          Banner nổi bật
+          {translateText("Banner nổi bật", activeLanguage)}
         </div>
         <h3
           style={{
@@ -1210,7 +1222,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
             fontWeight: 900,
           }}
         >
-          {event.title}
+          {eventTitle}
         </h3>
         <div
           style={{
@@ -1223,7 +1235,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
             lineHeight: 1.35,
           }}
         >
-          <span style={{ minWidth: 0 }}>{event.desc}</span>
+          <span style={{ minWidth: 0 }}>{eventDesc}</span>
           <span
             style={{
               flex: "none",
@@ -1236,12 +1248,12 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
               whiteSpace: "nowrap",
             }}
           >
-            {event.btnText}
+            {eventButtonText}
           </span>
         </div>
       </div>
       <div
-        aria-label="Chọn banner nổi bật"
+        aria-label={translateText("Chọn banner nổi bật", activeLanguage)}
         style={{
           position: "absolute",
           left: "50%",
@@ -1257,7 +1269,7 @@ function MidPageBanner({ desktop = false, apiBanners = [] }: { desktop?: boolean
             key={banner.title}
             role="button"
             tabIndex={0}
-            aria-label={`Banner nổi bật ${index + 1}`}
+            aria-label={translateText(`Banner nổi bật ${index + 1}`, activeLanguage)}
             onClick={(event) => {
               event.preventDefault();
               setActiveBanner(index);
@@ -1925,6 +1937,7 @@ function ContentPlaceholderCard({
 }
 
 function HomeDataMessage({ text, compact = false }: { text: string; compact?: boolean }) {
+  const activeLanguage = useActiveLanguage();
   return (
     <div
       className="nl-home-data-message"
@@ -1945,7 +1958,7 @@ function HomeDataMessage({ text, compact = false }: { text: string; compact?: bo
         padding: "14px",
       }}
     >
-      {text}
+      {translateText(text, activeLanguage)}
     </div>
   );
 }

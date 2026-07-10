@@ -6,6 +6,12 @@ import React, { type CSSProperties, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { io, Socket } from "socket.io-client";
 import { getAuthUser } from "@/lib/auth/session";
+import { translateText } from "@/lib/i18n/client-translations";
+import {
+  intlLocaleByLanguage,
+  useActiveLanguage,
+  type LanguageCode,
+} from "@/lib/i18n/use-active-language";
 
 const chatColors = {
   bg: "var(--vy-bg)",
@@ -81,8 +87,8 @@ type SupportChatWidgetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function formatChatTime(date: Date) {
-  return new Intl.DateTimeFormat("vi-VN", {
+function formatChatTime(date: Date, language: LanguageCode = "vi") {
+  return new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -148,8 +154,17 @@ function SupportAvatar({ size = 38 }: { size?: number }) {
   );
 }
 
-function ChatBubble({ message, isMobile }: { message: ChatMessage; isMobile: boolean }) {
+function ChatBubble({
+  message,
+  isMobile,
+  activeLanguage,
+}: {
+  message: ChatMessage;
+  isMobile: boolean;
+  activeLanguage: LanguageCode;
+}) {
   const isUser = message.from === "user";
+  const messageText = translateText(message.text, activeLanguage);
   const bubbleStyle: CSSProperties = {
     borderRadius: isUser ? "14px 4px 14px 14px" : "4px 14px 14px 14px",
     padding: isMobile ? "10px 13px" : "9px 13px",
@@ -170,7 +185,7 @@ function ChatBubble({ message, isMobile }: { message: ChatMessage; isMobile: boo
             fontWeight: 500,
           }}
         >
-          {message.text}
+          {messageText}
         </div>
         <div
           style={{
@@ -207,7 +222,7 @@ function ChatBubble({ message, isMobile }: { message: ChatMessage; isMobile: boo
             color: "var(--vy-text)",
           }}
         >
-          {message.text}
+          {messageText}
         </div>
         <div
           style={{
@@ -225,6 +240,7 @@ function ChatBubble({ message, isMobile }: { message: ChatMessage; isMobile: boo
 }
 
 function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMessage[]; isMobile: boolean; isLoadingHistory?: boolean }) {
+  const activeLanguage = useActiveLanguage();
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -260,16 +276,21 @@ function ChatThread({ messages, isMobile, isLoadingHistory }: { messages: ChatMe
             textTransform: "uppercase",
           }}
         >
-          Hôm nay
+          {translateText("Hôm nay", activeLanguage)}
         </span>
       </div>
       {isLoadingHistory && (
         <div style={{ textAlign: "center", fontSize: "12px", color: chatColors.gold, margin: "10px 0", fontWeight: 600 }}>
-          Đang tải lịch sử...
+          {translateText("Đang tải lịch sử...", activeLanguage)}
         </div>
       )}
       {messages.map((message) => (
-        <ChatBubble key={message.id} message={message} isMobile={isMobile} />
+        <ChatBubble
+          key={message.id}
+          message={message}
+          isMobile={isMobile}
+          activeLanguage={activeLanguage}
+        />
       ))}
     </div>
   );
@@ -286,6 +307,7 @@ function ChatComposer({
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const activeLanguage = useActiveLanguage();
   const canSend = draft.trim().length > 0;
 
   return (
@@ -303,8 +325,8 @@ function ChatComposer({
       <input
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
-        placeholder="Nhập tin nhắn..."
-        aria-label="Nhập tin nhắn hỗ trợ"
+        placeholder={translateText("Nhập tin nhắn...", activeLanguage)}
+        aria-label={translateText("Nhập tin nhắn hỗ trợ", activeLanguage)}
         style={{
           flex: 1,
           minWidth: 0,
@@ -321,7 +343,7 @@ function ChatComposer({
       />
       <button
         type="submit"
-        aria-label="Gửi tin nhắn"
+        aria-label={translateText("Gửi tin nhắn", activeLanguage)}
         disabled={!canSend}
         style={{
           width: isMobile ? "42px" : "38px",
@@ -360,6 +382,8 @@ function DesktopSupportChatPanel({
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <section
       data-support-chat-panel="true"
@@ -408,16 +432,16 @@ function DesktopSupportChatPanel({
               lineHeight: 1.25,
             }}
           >
-            Vietyoru Hỗ trợ
+            {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
           <div style={{ fontSize: "11px", color: chatColors.muted, marginTop: "1px" }}>
-            Chăm sóc khách hàng
+            {translateText("Chăm sóc khách hàng", activeLanguage)}
           </div>
         </div>
-        <IconCircleButton label="Thu nhỏ chat hỗ trợ" onClick={onClose}>
+        <IconCircleButton label={translateText("Thu nhỏ chat hỗ trợ", activeLanguage)} onClick={onClose}>
           <ChevronDown size={15} strokeWidth={2.2} />
         </IconCircleButton>
-        <IconCircleButton label="Đóng chat hỗ trợ" onClick={onClose}>
+        <IconCircleButton label={translateText("Đóng chat hỗ trợ", activeLanguage)} onClick={onClose}>
           <X size={13} strokeWidth={2.4} />
         </IconCircleButton>
       </div>
@@ -448,6 +472,7 @@ function MobileSupportChatPanel({
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const activeLanguage = useActiveLanguage();
   return (
     <section
       data-support-chat-panel="true"
@@ -478,7 +503,7 @@ function MobileSupportChatPanel({
       >
         <button
           type="button"
-          aria-label="Đóng chat hỗ trợ"
+          aria-label={translateText("Đóng chat hỗ trợ", activeLanguage)}
           onClick={onClose}
           style={{
             width: "34px",
@@ -509,13 +534,13 @@ function MobileSupportChatPanel({
               lineHeight: 1.2,
             }}
           >
-            Vietyoru Hỗ trợ
+            {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
           <div style={{ fontSize: "11px", color: chatColors.muted, marginTop: "1px" }}>
-            Chăm sóc khách hàng
+            {translateText("Chăm sóc khách hàng", activeLanguage)}
           </div>
         </div>
-        <IconCircleButton label="Thu nhỏ chat hỗ trợ" onClick={onClose} size={34}>
+        <IconCircleButton label={translateText("Thu nhỏ chat hỗ trợ", activeLanguage)} onClick={onClose} size={34}>
           <ChevronDown size={16} strokeWidth={2.2} />
         </IconCircleButton>
       </div>
@@ -535,6 +560,7 @@ function SupportChatButton({
   isOpen: boolean;
   onClick: () => void;
 }) {
+  const activeLanguage = useActiveLanguage();
   const size = isMobile ? 36 : 40;
 
   return (
@@ -543,7 +569,7 @@ function SupportChatButton({
       data-support-chat-trigger="true"
       aria-haspopup="dialog"
       aria-expanded={isOpen}
-      aria-label={isOpen ? "Đóng chat hỗ trợ" : "Mở chat hỗ trợ"}
+      aria-label={translateText(isOpen ? "Đóng chat hỗ trợ" : "Mở chat hỗ trợ", activeLanguage)}
       onClick={onClick}
       style={{
         minHeight: `${size}px`,
@@ -576,6 +602,7 @@ export function SupportChatWidget({
   onOpenChange,
 }: SupportChatWidgetProps) {
   const pathname = usePathname() || "/";
+  const activeLanguage = useActiveLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -616,14 +643,14 @@ export function SupportChatWidget({
             id: m.id,
             from: m.senderType === "USER" || m.senderType === "GUEST" ? "user" : "support",
             text: m.content,
-            time: formatChatTime(new Date(m.createdAt)),
+            time: formatChatTime(new Date(m.createdAt), activeLanguage),
           }));
           setMessages(mapped);
         }
       })
       .catch(console.error)
       .finally(() => setIsLoadingHistory(false));
-  }, [ticketId]);
+  }, [ticketId, activeLanguage]);
 
   useEffect(() => {
     const newSocket = io(process.env.NEXT_PUBLIC_API_URL + '/support', {
@@ -641,7 +668,7 @@ export function SupportChatWidget({
             id: msg.id || Date.now().toString(),
             from: msg.senderType === 'USER' || msg.senderType === 'GUEST' ? 'user' : 'support',
             text: msg.content,
-            time: formatChatTime(new Date(msg.createdAt || Date.now())),
+            time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguage),
           }
         ];
       });
@@ -654,7 +681,7 @@ export function SupportChatWidget({
           id: msg.id || Date.now().toString(),
           from: 'support',
           text: msg.content,
-          time: formatChatTime(new Date(msg.createdAt || Date.now())),
+          time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguage),
         }
       ]);
     });
@@ -666,7 +693,7 @@ export function SupportChatWidget({
           id: 'closed-' + Date.now().toString(),
           from: 'support',
           text: 'Phiên chat đã được đóng bởi nhân viên hỗ trợ.',
-          time: formatChatTime(new Date()),
+          time: formatChatTime(new Date(), activeLanguage),
         }
       ]);
       setTicketId(null);
@@ -676,7 +703,7 @@ export function SupportChatWidget({
     return () => {
       newSocket.close();
     };
-  }, [ticketId]);
+  }, [ticketId, activeLanguage]);
 
   useEffect(() => {
     if (!isOpen) return;

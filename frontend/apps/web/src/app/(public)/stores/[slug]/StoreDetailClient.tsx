@@ -41,6 +41,7 @@ import {
   sanitizeBookingDisplayNameInput,
   validateBookingFormFields,
 } from "@/lib/booking-validation";
+import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier, formatPriceTierRange } from "@/lib/price-tier";
@@ -529,6 +530,7 @@ function BookingCard({
   note,
   isSubmitting,
   errorMessage,
+  activeLanguage,
   onDateSelect,
   onTimeSelect,
   onGuestCountChange,
@@ -550,6 +552,7 @@ function BookingCard({
   note: string;
   isSubmitting: boolean;
   errorMessage: string;
+  activeLanguage: LanguageCode;
   onDateSelect: (value: string) => void;
   onTimeSelect: (time: string) => void;
   onGuestCountChange: (guestCount: number) => void;
@@ -612,7 +615,7 @@ function BookingCard({
               >
                 <Minus size={15} />
               </button>
-              <strong>{guestCount} người</strong>
+              <strong>{translateText(`${guestCount} người`, activeLanguage)}</strong>
               <button
                 type="button"
                 aria-label="Tăng số khách"
@@ -648,7 +651,7 @@ function BookingCard({
           autoComplete="off"
         />
 
-        {errorMessage ? <div className="booking-error">{errorMessage}</div> : null}
+        {errorMessage ? <div className="booking-error">{translateText(errorMessage, activeLanguage)}</div> : null}
 
         <button
           type="button"
@@ -1257,6 +1260,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               note={note}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
+              activeLanguage={activeLanguage}
               onDateSelect={(value) => {
                 const nextIndex = dateOptions.findIndex((date) => date.iso === value);
                 setSelectedDateIndex(nextIndex >= 0 ? nextIndex : 0);

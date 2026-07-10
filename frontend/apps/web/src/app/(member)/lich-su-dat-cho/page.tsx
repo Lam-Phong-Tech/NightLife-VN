@@ -49,6 +49,7 @@ import {
   useActiveLanguage,
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
+import { translateText } from "@/lib/i18n/client-translations";
 import styles from "../booking-flow.module.css";
 
 const tabs = ["Tất cả", "Mới", "Hoàn tất", "Đã hủy"] as const;
@@ -261,22 +262,22 @@ const rebookHref = (booking: BookingRecord) => {
   return `/dat-cho?${params.toString()}`;
 };
 
-const statusMeta = (booking: BookingRecord, group: BookingStatusGroup) => {
+const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language: LanguageCode) => {
   if (isBookingPastDue(booking)) {
-    return `${bookingCode(booking)} · Đã qua giờ đặt, bạn có thể đặt lại nếu cần.`;
+    return `${bookingCode(booking)} · ${translateText("Đã qua giờ đặt, bạn có thể đặt lại nếu cần.", language)}`;
   }
 
   if (group === "Hoàn tất") {
-    return "Hoàn tất · gắn điểm/hoá đơn khi đối soát";
+    return translateText("Hoàn tất · gắn điểm/hoá đơn khi đối soát", language);
   }
 
   if (group === "Đã hủy") {
-    return "Đã hủy trước giờ hẹn · không thu cọc";
+    return translateText("Đã hủy trước giờ hẹn · không thu cọc", language);
   }
 
   return isConfirmedStatus(booking.status)
-    ? `${bookingCode(booking)} · QR đã cấp`
-    : `${bookingCode(booking)} · Admin đang điều phối`;
+    ? `${bookingCode(booking)} · ${translateText("QR đã cấp", language)}`
+    : `${bookingCode(booking)} · ${translateText("Admin đang điều phối", language)}`;
 };
 
 const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => {
@@ -860,14 +861,14 @@ export default function Page() {
                 className={`${styles.filterChip} ${activeTab === tab ? styles.selectedFilter : ""}`}
                 aria-selected={activeTab === tab}
               >
-                {tab}
+                {translateText(tab, activeLanguage)}
               </button>
             ))}
           </div>
 
           {message ? (
             <div style={{ padding: "6px 16px 0" }}>
-              <div className={styles.toastMessage}>{message}</div>
+              <div className={styles.toastMessage}>{translateText(message, activeLanguage)}</div>
             </div>
           ) : null}
 
@@ -896,10 +897,16 @@ export default function Page() {
               <EmptyState
                 variant="bookings"
                 title={
-                  activeTab === tabs[0] ? "Chưa có đặt chỗ nào" : "Chưa có đặt chỗ ở trạng thái này"
+                  translateText(
+                    activeTab === tabs[0] ? "Chưa có đặt chỗ nào" : "Chưa có đặt chỗ ở trạng thái này",
+                    activeLanguage,
+                  )
                 }
-                description="Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây."
-                ctaLabel="Khám phá quán"
+                description={translateText(
+                  "Khi bạn đặt bàn hoặc đặt cast, lịch sử sẽ hiển thị tại đây.",
+                  activeLanguage,
+                )}
+                ctaLabel={translateText("Khám phá quán", activeLanguage)}
                 ctaHref="/danh-sach-quan"
                 compact
               />
@@ -907,7 +914,10 @@ export default function Page() {
           ) : null}
 
           {!isLoading && visibleBookings.length > historyPageSize ? (
-            <nav className={styles.historyPagination} aria-label="Phân trang lịch sử đặt chỗ">
+            <nav
+              className={styles.historyPagination}
+              aria-label={translateText("Phân trang lịch sử đặt chỗ", activeLanguage)}
+            >
               <span className={styles.historyPaginationSummary}>
                 {formatHistoryPagination(
                   historyPageStart,
@@ -923,7 +933,7 @@ export default function Page() {
                   onClick={() => setCurrentHistoryPage((page) => Math.max(1, page - 1))}
                   disabled={safeHistoryPage <= 1}
                 >
-                  Trước
+                  {translateText("Trước", activeLanguage)}
                 </button>
                 {historyPageNumbers.map((page) => (
                   <button
@@ -946,7 +956,7 @@ export default function Page() {
                   }
                   disabled={safeHistoryPage >= historyTotalPages}
                 >
-                  Sau
+                  {translateText("Sau", activeLanguage)}
                 </button>
               </div>
             </nav>
@@ -1209,7 +1219,9 @@ function BookingCard({
         <div className={styles.historyCopy}>
           <div className={styles.historyHead}>
             <h2 className={styles.historyTitle}>{bookingTitle(booking)}</h2>
-            {group !== "Đã hủy" ? <StatusBadge booking={booking} /> : null}
+            {group !== "Đã hủy" ? (
+              <StatusBadge booking={booking} activeLanguage={activeLanguage} />
+            ) : null}
           </div>
           <div className={styles.historyMeta}>
             {formatDateTime(booking.scheduledAt, activeLanguage)} ·{" "}
@@ -1218,7 +1230,7 @@ function BookingCard({
           <div
             className={`${styles.historySubMeta} ${group === "Hoàn tất" ? styles.historySubMetaGold : ""}`}
           >
-            {statusMeta(booking, group)}
+            {statusMeta(booking, group, activeLanguage)}
           </div>
         </div>
       </div>
@@ -1283,14 +1295,14 @@ function BookingCard({
           </>
         ) : group === "Hoàn tất" ? (
           <Link href={rebookHref(booking)} className={styles.primaryCta}>
-            <strong>Đặt lại</strong>
+            <strong>{translateText("Đặt lại", activeLanguage)}</strong>
           </Link>
         ) : (
           <>
-            <StatusBadge booking={booking} />
+            <StatusBadge booking={booking} activeLanguage={activeLanguage} />
             <Link href={rebookHref(booking)} className={styles.secondaryCta}>
               <RotateCcw size={14} />
-              Đặt lại
+              {translateText("Đặt lại", activeLanguage)}
             </Link>
           </>
         )}
@@ -1299,7 +1311,13 @@ function BookingCard({
   );
 }
 
-function StatusBadge({ booking }: { booking: BookingRecord }) {
+function StatusBadge({
+  booking,
+  activeLanguage,
+}: {
+  booking: BookingRecord;
+  activeLanguage: LanguageCode;
+}) {
   const group = bookingRecordStatusGroup(booking);
   const isPastDue = isBookingPastDue(booking);
   const className = isPastDue
@@ -1319,7 +1337,7 @@ function StatusBadge({ booking }: { booking: BookingRecord }) {
       ) : group === "Mới" ? (
         <span className={styles.statusDot} />
       ) : null}
-      {bookingRecordStatusLabel(booking)}
+      {translateText(bookingRecordStatusLabel(booking), activeLanguage)}
     </span>
   );
 }
