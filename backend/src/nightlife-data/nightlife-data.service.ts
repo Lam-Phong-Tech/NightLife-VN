@@ -1242,7 +1242,15 @@ export class NightlifeDataService {
                   { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
                 ],
               }
-            : {}),
+            : {
+                NOT: {
+                  OR: [
+                    { city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM', 'Hanoi', 'Hà Nội', 'HN'] } },
+                    { area: { is: { ...this.buildMvpAreaCodeWhere('hn') } } },
+                    { area: { is: { ...this.buildMvpAreaCodeWhere('hcm') } } },
+                  ],
+                },
+              }),
           ...(q
             ? {
                 OR: [
@@ -1306,34 +1314,38 @@ export class NightlifeDataService {
         deletedAt: null,
         status: 'ACTIVE',
         isPublic: true,
-        ...(cityCode || category
-          ? {
-              store: {
-                ...(category ? { category } : {}),
-                ...(cityCode
-                  ? {
-                      OR: [
-                        {
-                          city: {
-                            in:
-                              cityCode === 'hcm'
-                                ? ['Ho Chi Minh City', 'Hồ Chí Minh']
-                                : cityCode === 'hn'
-                                  ? ['Hanoi', 'Hà Nội']
-                                  : [cityCode],
-                          },
-                        },
-                        {
-                          area: {
-                            is: { ...this.buildMvpAreaCodeWhere(cityCode) },
-                          },
-                        },
-                      ],
-                    }
-                  : {}),
-              },
-            }
-          : {}),
+        store: {
+          ...(category ? { category } : {}),
+          ...(cityCode
+            ? {
+                OR: [
+                  {
+                    city: {
+                      in:
+                        cityCode === 'hcm'
+                          ? ['Ho Chi Minh City', 'Hồ Chí Minh']
+                          : cityCode === 'hn'
+                            ? ['Hanoi', 'Hà Nội']
+                            : [cityCode],
+                    },
+                  },
+                  {
+                    area: {
+                      is: { ...this.buildMvpAreaCodeWhere(cityCode) },
+                    },
+                  },
+                ],
+              }
+            : {
+                NOT: {
+                  OR: [
+                    { city: { in: ['Ho Chi Minh City', 'Hồ Chí Minh', 'HCM', 'Hanoi', 'Hà Nội', 'HN'] } },
+                    { area: { is: { ...this.buildMvpAreaCodeWhere('hn') } } },
+                    { area: { is: { ...this.buildMvpAreaCodeWhere('hcm') } } },
+                  ],
+                },
+              }),
+        },
         ...(q
           ? {
               OR: [
