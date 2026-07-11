@@ -12,7 +12,7 @@ import {
   useActiveLanguage,
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
-import { getSupportSocketConfig } from "@/lib/socket-config";
+import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
 
 const chatColors = {
   bg: "var(--vy-bg)",
@@ -603,7 +603,7 @@ export function SupportChatWidget({
   useEffect(() => {
     if (!ticketId) return;
     setIsLoadingHistory(true);
-    fetch(process.env.NEXT_PUBLIC_API_URL + "/api/support/history?ticketId=" + ticketId)
+    fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

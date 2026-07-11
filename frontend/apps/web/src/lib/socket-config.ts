@@ -16,10 +16,9 @@ export interface SocketConfig {
   path?: string;
 }
 
-export function getSupportSocketConfig(): SocketConfig {
+export function getApiBaseUrl(): string {
   let apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
 
-  // Runtime detection: if API URL is empty or localhost but we're on a production domain
   if (typeof window !== 'undefined') {
     const isLocalApi = !apiUrl || apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
     const isProductionBrowser =
@@ -27,10 +26,16 @@ export function getSupportSocketConfig(): SocketConfig {
       !window.location.hostname.includes('127.0.0.1');
 
     if (isLocalApi && isProductionBrowser) {
-      // Derive API URL from current origin + known backend subpath
       apiUrl = window.location.origin + '/api/backend';
     }
   }
+
+  // Ensure no trailing slash
+  return apiUrl.replace(/\/$/, '');
+}
+
+export function getSupportSocketConfig(): SocketConfig {
+  const apiUrl = getApiBaseUrl();
 
   let socketHost = apiUrl;
   let socketPath: string | undefined = undefined;

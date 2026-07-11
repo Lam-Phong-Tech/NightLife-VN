@@ -5,7 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
 import { getAuthUser } from '@/lib/auth/session';
-import { getSupportSocketConfig } from "@/lib/socket-config";
+import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
 
 export function AdminSupportDashboard() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -41,9 +41,8 @@ export function AdminSupportDashboard() {
     });
     setSocket(newSocket);
 
-    // Initial load pending tickets via REST API (Mocked here)
-    // Add auth token if required by your backend
-    fetch(process.env.NEXT_PUBLIC_API_URL + '/api/support/pending')
+    // Initial load pending tickets via REST API
+    fetch(`${getApiBaseUrl()}/api/support/pending`)
       .then(res => res.json())
       .then(data => setPendingTickets(data))
       .catch(console.error);
@@ -124,7 +123,7 @@ export function AdminSupportDashboard() {
         setActiveTicketInfo(ticketInfo || response.ticket);
         setActiveTicketId(ticketId);
         setPendingTickets(prev => prev.filter(t => t.id !== ticketId));
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/history?ticketId=${ticketId}`)
+        fetch(`${getApiBaseUrl()}/api/support/history?ticketId=${ticketId}`)
           .then(res => res.json())
           .then(data => setMessages(data));
       } else {
