@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BillSubmitPage from "../src/app/(member)/gui-hoa-don/page";
 
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   listMemberBookings: vi.fn(),
   listMemberCouponIssues: vi.fn(),
   listStores: vi.fn(),
+  searchParams: "",
 }));
 
 vi.mock("@/lib/api/client", () => {
@@ -39,11 +41,30 @@ vi.mock("@/lib/api/bills", () => ({
   },
 }));
 
-vi.mock("@/lib/api/bookings", () => ({
-  bookingApi: {
-    listMemberBookings: mocks.listMemberBookings,
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(mocks.searchParams),
+}));
+
+vi.mock("next/image", () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    const imageProps = { ...props };
+    delete imageProps.unoptimized;
+    return React.createElement("img", imageProps);
   },
 }));
+
+vi.mock("@/lib/api/bookings", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/bookings")>("@/lib/api/bookings");
+
+  return {
+    ...actual,
+    bookingApi: {
+      ...actual.bookingApi,
+      listMemberBookings: mocks.listMemberBookings,
+    },
+  };
+});
 
 vi.mock("@/lib/api/coupons", () => ({
   couponApi: {
@@ -68,6 +89,7 @@ const publicStore = {
 
 describe("Bill submit page", () => {
   beforeEach(() => {
+    mocks.searchParams = "";
     mocks.listStores.mockResolvedValue([publicStore]);
     mocks.listMemberBookings.mockResolvedValue([]);
     mocks.listMemberCouponIssues.mockResolvedValue([]);
@@ -136,8 +158,56 @@ describe("Bill submit page", () => {
       });
     });
     expect(amountInput).toHaveValue("1.800.000");
-    expect(usedAtInput?.value).toMatch(/^2026-07-03T/);
+    expect(usedAtInput?.value).toMatch(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/);
     expect(screen.getByText(/86%/)).toBeInTheDocument();
+  });
+
+  it("prefills store, booking, QR summary, and used time from bookingId in the URL", async () => {
+    const bookingId = "550e8400-e29b-41d4-a716-446655440010";
+    const scheduledAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    mocks.searchParams = `bookingId=${bookingId}&storeSlug=public-neon`;
+    mocks.listMemberBookings.mockResolvedValue([
+      {
+        id: bookingId,
+        status: "COMPLETED",
+        scheduledAt,
+        partySize: 4,
+        store: publicStore,
+        user: { id: "member-1", displayName: "Minh Tú", tier: "GOLD" },
+        couponIssue: {
+          id: "issue-1",
+          code: "COUPON-QR",
+          status: "USED",
+          qrPayload: "coupon-payload",
+        },
+      },
+    ]);
+
+    render(<BillSubmitPage />);
+
+    await screen.findByText("Đơn hàng đang liên kết");
+
+    const bookingSelect = document.querySelector<HTMLSelectElement>("#bill-booking");
+    const amountInput = document.querySelector<HTMLInputElement>("#bill-total");
+    const form = document.querySelector<HTMLFormElement>("form.nl-bill-form");
+    expect(bookingSelect).not.toBeNull();
+    expect(amountInput).not.toBeNull();
+    expect(form).not.toBeNull();
+    expect(bookingSelect).toHaveValue(bookingId);
+    expect(screen.getAllByText("#BK-550E8400").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("COUPON-QR").length).toBeGreaterThan(0);
+
+    fireEvent.change(amountInput!, { target: { value: "1800000" } });
+    fireEvent.submit(form!);
+
+    await waitFor(() => {
+      expect(mocks.submitMemberBill).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingId,
+          totalVnd: 1800000,
+        }),
+      );
+    });
   });
 
   it("keeps the submitted bill visible when evidence upload fails", async () => {

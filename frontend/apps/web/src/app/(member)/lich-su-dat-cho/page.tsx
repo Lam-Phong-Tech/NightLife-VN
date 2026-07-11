@@ -10,6 +10,7 @@ import {
   Mail,
   MessageCircle,
   QrCode,
+  ReceiptText,
   RotateCcw,
   XCircle,
 } from "lucide-react";
@@ -262,6 +263,16 @@ const rebookHref = (booking: BookingRecord) => {
   return `/dat-cho?${params.toString()}`;
 };
 
+const billSubmitHref = (booking: BookingRecord) => {
+  const params = new URLSearchParams({
+    bookingId: booking.id,
+    ...(booking.store?.slug ? { storeSlug: booking.store.slug } : {}),
+    ...(booking.couponIssue?.id ? { couponIssueId: booking.couponIssue.id } : {}),
+  });
+
+  return `/gui-hoa-don?${params.toString()}`;
+};
+
 const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language: LanguageCode) => {
   if (isBookingPastDue(booking)) {
     return `${bookingCode(booking)} · ${translateText("Đã qua giờ đặt, bạn có thể đặt lại nếu cần.", language)}`;
@@ -491,17 +502,21 @@ export default function Page() {
   useEffect(() => {
     const booking = pendingRescheduleBooking;
     if (!booking) {
-      setRescheduleHoursLoading(false);
+      queueMicrotask(() => setRescheduleHoursLoading(false));
       return;
     }
 
     if (pendingRescheduleStoreHasOpeningHours || !pendingRescheduleStoreSlug) {
-      setRescheduleHoursLoading(false);
+      queueMicrotask(() => setRescheduleHoursLoading(false));
       return;
     }
 
     let cancelled = false;
-    setRescheduleHoursLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setRescheduleHoursLoading(true);
+      }
+    });
 
     getStoreDetail(pendingRescheduleStoreSlug)
       .then((store) => {
@@ -563,12 +578,12 @@ export default function Page() {
   };
 
   useEffect(() => {
-    setCurrentHistoryPage(1);
+    queueMicrotask(() => setCurrentHistoryPage(1));
   }, [activeTab]);
 
   useEffect(() => {
     if (currentHistoryPage > historyTotalPages) {
-      setCurrentHistoryPage(historyTotalPages);
+      queueMicrotask(() => setCurrentHistoryPage(historyTotalPages));
     }
   }, [currentHistoryPage, historyTotalPages]);
 
@@ -1199,6 +1214,10 @@ function BookingCard({
   const hasCancelIdentity = isMemberActionBooking || Boolean(booking.guest?.phone?.trim());
   const cancelAllowed = isOpenBooking && canCancelBooking(booking) && hasCancelIdentity;
   const cancelDisabled = cancelingId === booking.id || !cancelAllowed;
+  const canSubmitBill =
+    isMemberActionBooking &&
+    group === "Hoàn tất" &&
+    !["CANCELLED", "NO_SHOW"].includes(booking.status.trim().toUpperCase());
   const itemClass =
     group === "Mới"
       ? `${styles.historyItem} ${styles.historyItemOpen}`
@@ -1294,9 +1313,21 @@ function BookingCard({
             )}
           </>
         ) : group === "Hoàn tất" ? (
-          <Link href={rebookHref(booking)} className={styles.primaryCta}>
-            <strong>{translateText("Đặt lại", activeLanguage)}</strong>
-          </Link>
+          <>
+            {canSubmitBill ? (
+              <Link
+                href={billSubmitHref(booking)}
+                onClick={() => rememberLastBooking(booking)}
+                className={styles.primaryCta}
+              >
+                <ReceiptText size={14} />
+                <strong>{translateText("Gửi hóa đơn", activeLanguage)}</strong>
+              </Link>
+            ) : null}
+            <Link href={rebookHref(booking)} className={canSubmitBill ? styles.secondaryCta : styles.primaryCta}>
+              <strong>{translateText("Đặt lại", activeLanguage)}</strong>
+            </Link>
+          </>
         ) : (
           <>
             <StatusBadge booking={booking} activeLanguage={activeLanguage} />

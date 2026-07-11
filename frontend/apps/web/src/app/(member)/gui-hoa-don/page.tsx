@@ -11,6 +11,7 @@ import "dayjs/locale/ja";
 import "dayjs/locale/ko";
 import "dayjs/locale/vi";
 import "dayjs/locale/zh-cn";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
@@ -21,7 +22,7 @@ import {
   type BillRecord,
   type BillStoreOption,
 } from "@/lib/api/bills";
-import { bookingApi, type BookingRecord } from "@/lib/api/bookings";
+import { bookingApi, getLastBooking, type BookingRecord } from "@/lib/api/bookings";
 import { couponApi, type CouponIssue } from "@/lib/api/coupons";
 import { discoveryApi } from "@/lib/api/discovery";
 import {
@@ -147,6 +148,46 @@ const formatDateTime = (value: string | null | undefined, language: LanguageCode
   }).format(date);
 };
 
+const bookingCode = (booking: Pick<BookingRecord, "id">) =>
+  `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
+
+const bookingTitle = (booking: BookingRecord) => {
+  const storeName = booking.store?.name ?? "NightLife";
+  if (!booking.cast) return storeName;
+  return `${booking.cast.publicAlias ?? booking.cast.stageName} @ ${storeName}`;
+};
+
+const couponIssueQrPayload = (booking: BookingRecord) => {
+  const issue = booking.couponIssue;
+  if (!issue) return "";
+
+  const metadataPayload =
+    issue.metadata && typeof issue.metadata.qrPayload === "string"
+      ? issue.metadata.qrPayload.trim()
+      : "";
+
+  return issue.qrPayload?.trim() || metadataPayload || issue.code?.trim() || "";
+};
+
+const bookingQrPayload = (booking: BookingRecord) =>
+  couponIssueQrPayload(booking) ||
+  [
+    "NLBOOKING",
+    booking.id,
+    bookingCode(booking),
+    booking.store?.slug ?? "nightlife",
+    booking.scheduledAt,
+  ].join("|");
+
+const bookingQrImageUrl = (booking: BookingRecord) => {
+  const issueQrImage = booking.couponIssue?.qrImageDataUrl || booking.couponIssue?.qrImageUrl;
+  if (issueQrImage) return issueQrImage;
+
+  return `https://api.qrserver.com/v1/create-qr-code/?size=168x168&margin=10&data=${encodeURIComponent(
+    bookingQrPayload(booking),
+  )}`;
+};
+
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ""));
 
 const validateEvidenceFile = (file: File | null) => {
@@ -261,6 +302,8 @@ export default function Page() {
   const searchParams = useSearchParams();
   const activeLanguage = useActiveLanguage();
   const focusedBillId = searchParams.get("billId") || "";
+  const requestedBookingId = searchParams.get("bookingId")?.trim() || "";
+  const requestedStoreSlug = searchParams.get("storeSlug")?.trim() || "";
   const [stores, setStores] = useState<BillStoreOption[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [couponIssues, setCouponIssues] = useState<CouponIssue[]>([]);
@@ -276,6 +319,7 @@ export default function Page() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReadingEvidence, setIsReadingEvidence] = useState(false);
   const [submittedBills, setSubmittedBills] = useState<BillRecord[]>([]);
+  const [appliedBookingId, setAppliedBookingId] = useState("");
   const [timeWindow, setTimeWindow] = useState({
     nowMs: 0,
   });
@@ -365,15 +409,32 @@ export default function Page() {
         ]);
 
         if (!active) return;
+        const rememberedBooking = requestedBookingId ? getLastBooking(requestedBookingId) : null;
+        const mergedBookingItems =
+          rememberedBooking && !bookingItems.some((booking) => booking.id === rememberedBooking.id)
+            ? [rememberedBooking, ...bookingItems]
+            : bookingItems;
+        const requestedBooking = requestedBookingId
+          ? mergedBookingItems.find((booking) => booking.id === requestedBookingId) ?? null
+          : null;
+        const preferredStoreSlug = requestedBooking?.store?.slug || requestedStoreSlug;
+
         setStores(storeItems);
-        setBookings(bookingItems);
+        setBookings(mergedBookingItems);
         setCouponIssues(couponIssueItems.filter(canAttachCouponIssueToBill));
         setSubmittedBills(billItems);
-        setStoreSlug((current) =>
-          current && storeItems.some((storeItem) => storeItem.slug === current)
+        setStoreSlug((current) => {
+          if (
+            preferredStoreSlug &&
+            storeItems.some((storeItem) => storeItem.slug === preferredStoreSlug)
+          ) {
+            return preferredStoreSlug;
+          }
+
+          return current && storeItems.some((storeItem) => storeItem.slug === current)
             ? current
-            : storeItems[0]?.slug || "",
-        );
+            : storeItems[0]?.slug || "";
+        });
       } catch (error) {
         if (!active) return;
         setStores([]);
@@ -394,7 +455,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestedBookingId, requestedStoreSlug]);
 
   useEffect(() => {
     const refreshWindow = () => {
@@ -413,6 +474,27 @@ export default function Page() {
     () => bookings.find((booking) => booking.id === bookingId) ?? null,
     [bookingId, bookings],
   );
+
+  useEffect(() => {
+    if (!requestedBookingId || requestedBookingId === appliedBookingId) return;
+
+    const booking = bookings.find((item) => item.id === requestedBookingId);
+    if (!booking) return;
+
+    queueMicrotask(() => {
+      setBookingId(booking.id);
+      setCouponIssueId("");
+      if (booking.store?.slug) {
+        setStoreSlug(booking.store.slug);
+      }
+      setUsedAt(toDatetimeLocalValue(new Date(booking.scheduledAt)));
+      setNotice({
+        tone: "success",
+        message: `Đã tự điền thông tin từ booking ${bookingCode(booking)}. Vui lòng nhập tổng tiền bill gốc trước khi gửi.`,
+      });
+      setAppliedBookingId(requestedBookingId);
+    });
+  }, [appliedBookingId, bookings, requestedBookingId]);
 
   const selectedCouponIssue = useMemo(
     () => couponIssues.find((issue) => issue.id === couponIssueId) ?? null,
@@ -496,6 +578,9 @@ export default function Page() {
     const booking = bookings.find((item) => item.id === value);
     if (booking?.store?.slug) {
       setStoreSlug(booking.store.slug);
+    }
+    if (booking?.scheduledAt) {
+      setUsedAt(toDatetimeLocalValue(new Date(booking.scheduledAt)));
     }
   };
 
@@ -632,6 +717,46 @@ export default function Page() {
                   ))}
                 </select>
               </div>
+            ) : null}
+
+            {selectedBooking ? (
+              <section className="nl-linked-booking" aria-label="Booking đang gắn với hóa đơn">
+                <div className="nl-linked-qr">
+                  <Image
+                    src={bookingQrImageUrl(selectedBooking)}
+                    alt={`QR booking ${bookingCode(selectedBooking)}`}
+                    width={132}
+                    height={132}
+                    unoptimized
+                  />
+                </div>
+                <div className="nl-linked-copy">
+                  <span>Đơn hàng đang liên kết</span>
+                  <strong>{bookingTitle(selectedBooking)}</strong>
+                  <dl>
+                    <div>
+                      <dt>Mã booking</dt>
+                      <dd>{bookingCode(selectedBooking)}</dd>
+                    </div>
+                    <div>
+                      <dt>Thời gian</dt>
+                      <dd>{formatDateTime(selectedBooking.scheduledAt, activeLanguage)}</dd>
+                    </div>
+                    <div>
+                      <dt>Số người</dt>
+                      <dd>{selectedBooking.partySize} người</dd>
+                    </div>
+                    <div>
+                      <dt>Coupon/QR</dt>
+                      <dd>
+                        {selectedBooking.coupon?.name ??
+                          selectedBooking.couponIssue?.code ??
+                          "QR đặt chỗ"}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </section>
             ) : null}
 
             {!selectedBooking && couponIssues.length ? (
@@ -785,6 +910,12 @@ export default function Page() {
             <div className="nl-side-row">
               <span>Quán</span>
               <strong>{selectedStore?.name ?? "Chọn quán"}</strong>
+            </div>
+            <div className="nl-side-row">
+              <span>Booking</span>
+              <strong>
+                {selectedBooking ? `${bookingCode(selectedBooking)} · ${formatDateTime(selectedBooking.scheduledAt, activeLanguage)}` : "Không liên kết booking"}
+              </strong>
             </div>
             <div className="nl-side-row">
               <span>Coupon link</span>
@@ -996,6 +1127,83 @@ export default function Page() {
         select:focus {
           border-color: ${colors.borderStrong};
           box-shadow: 0 0 0 3px rgba(212, 178, 106, 0.12);
+        }
+
+        .nl-linked-booking {
+          display: grid;
+          grid-template-columns: 132px minmax(0, 1fr);
+          gap: 14px;
+          align-items: center;
+          margin-top: 14px;
+          border: 1px solid rgba(212, 178, 106, 0.26);
+          border-radius: 8px;
+          background:
+            linear-gradient(135deg, rgba(212, 178, 106, 0.13), rgba(255, 255, 255, 0.035)),
+            ${colors.panelStrong};
+          padding: 12px;
+        }
+
+        .nl-linked-qr {
+          width: 132px;
+          height: 132px;
+          border: 1px solid ${colors.borderStrong};
+          border-radius: 8px;
+          background: #fff;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+        }
+
+        .nl-linked-qr img {
+          display: block;
+          width: 118px;
+          height: 118px;
+          object-fit: contain;
+        }
+
+        .nl-linked-copy {
+          min-width: 0;
+          display: grid;
+          gap: 8px;
+        }
+
+        .nl-linked-copy > span {
+          color: ${colors.muted};
+          font-size: 11.5px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .nl-linked-copy > strong {
+          color: ${colors.goldPale};
+          font-size: 15px;
+          line-height: 1.3;
+          overflow-wrap: anywhere;
+        }
+
+        .nl-linked-copy dl {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px 12px;
+          margin: 0;
+        }
+
+        .nl-linked-copy div {
+          min-width: 0;
+        }
+
+        .nl-linked-copy dt {
+          color: ${colors.muted};
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .nl-linked-copy dd {
+          margin: 2px 0 0;
+          color: ${colors.text};
+          font-size: 12.5px;
+          font-weight: 850;
+          overflow-wrap: anywhere;
         }
 
         .nl-bill-ant-picker.ant-picker {
@@ -1337,6 +1545,19 @@ export default function Page() {
           }
 
           .nl-form-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .nl-linked-booking {
+            grid-template-columns: 1fr;
+          }
+
+          .nl-linked-qr {
+            width: 118px;
+            height: 118px;
+          }
+
+          .nl-linked-copy dl {
             grid-template-columns: 1fr;
           }
 

@@ -63,6 +63,8 @@ const booking = (overrides: Partial<BookingRecord>): BookingRecord => ({
       media: [],
     } as BookingRecord["store"]),
   cast: overrides.cast,
+  coupon: overrides.coupon,
+  couponIssue: overrides.couponIssue,
 });
 
 describe("BookingHistoryPage", () => {
@@ -131,5 +133,34 @@ describe("BookingHistoryPage", () => {
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent),
     ).toEqual(["Kotone @ Tokyo Kitchen", "Erika @ Star KTV"]);
+  });
+
+  it("links completed bookings to the member bill form with booking context", async () => {
+    const completedBooking = booking({
+      id: "550e8400-e29b-41d4-a716-446655440010",
+      status: "COMPLETED",
+      scheduledAt: "2026-07-09T14:00:00.000Z",
+      store: {
+        id: "tokyo-kitchen",
+        name: "Tokyo Kitchen",
+        slug: "tokyo-kitchen",
+        media: [],
+      } as BookingRecord["store"],
+      couponIssue: {
+        id: "coupon-issue-1",
+        code: "COUPON-QR",
+        status: "USED",
+      },
+    });
+
+    mocks.bookingApi.listMemberBookings.mockResolvedValue([completedBooking]);
+
+    render(<Page />);
+
+    const billLink = await screen.findByRole("link", { name: /Gửi hóa đơn/i });
+    expect(billLink).toHaveAttribute(
+      "href",
+      "/gui-hoa-don?bookingId=550e8400-e29b-41d4-a716-446655440010&storeSlug=tokyo-kitchen&couponIssueId=coupon-issue-1",
+    );
   });
 });
