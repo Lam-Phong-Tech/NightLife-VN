@@ -32,7 +32,22 @@ export function AdminSupportDashboard() {
     const adminId = currentUser.id;
     const role = currentUser.role || 'ADMIN';
 
-    const newSocket = io(process.env.NEXT_PUBLIC_API_URL + '/support', {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    let socketHost = apiUrl;
+    let socketPath = undefined;
+
+    try {
+      const parsedUrl = new URL(apiUrl);
+      if (parsedUrl.pathname && parsedUrl.pathname !== '/') {
+        socketHost = parsedUrl.origin;
+        socketPath = `${parsedUrl.pathname.replace(/\/$/, '')}/socket.io`;
+      }
+    } catch (e) {
+      console.error('Invalid NEXT_PUBLIC_API_URL', e);
+    }
+
+    const newSocket = io(socketHost + '/support', {
+      path: socketPath,
       query: { adminId, role },
     });
     setSocket(newSocket);
