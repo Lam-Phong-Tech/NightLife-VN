@@ -1421,7 +1421,7 @@ function HomeCardCarousel<T>({
             style={{
               flex: "0 0 100%",
               display: "grid",
-              gridTemplateColumns: `repeat(${Math.max(1, Math.min(itemsPerSlide, slide.length))}, minmax(0, 1fr))`,
+              gridTemplateColumns: `repeat(${Math.max(1, itemsPerSlide)}, minmax(0, 1fr))`,
               gap,
               minWidth: 0,
               paddingRight: slideIndex < slides.length - 1 ? gap : 0,
