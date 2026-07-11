@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
-import { getAuthUser } from '@/lib/auth/session';
+import { getAuthUser, getValidAuthToken } from '@/lib/auth/session';
 import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
 
 export function AdminSupportDashboard() {
@@ -42,9 +42,23 @@ export function AdminSupportDashboard() {
     setSocket(newSocket);
 
     // Initial load pending tickets via REST API
-    fetch(`${getApiBaseUrl()}/api/support/pending`)
-      .then(res => res.json())
-      .then(data => setPendingTickets(data))
+    const token = getValidAuthToken();
+    fetch(`${getApiBaseUrl()}/api/support/pending`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPendingTickets(data);
+        } else {
+          console.error('Expected array for pending tickets, got:', data);
+        }
+      })
       .catch(console.error);
 
     newSocket.on('new_ticket', (ticket: any) => {
