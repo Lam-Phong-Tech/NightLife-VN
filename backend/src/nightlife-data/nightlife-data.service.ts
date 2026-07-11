@@ -171,6 +171,23 @@ const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
+const RANKING_CITY_CODES = ['hn', 'hcm'] as const;
+const STORE_RANKING_IMAGE_PURPOSES = [
+  'hero',
+  'store-hero',
+  'store-cover',
+  'cover',
+  'thumbnail',
+] as const;
+const CAST_RANKING_IMAGE_PURPOSES = [
+  'avatar',
+  'cast-avatar',
+  'profile',
+  'profile-photo',
+  'cast-profile',
+  'cast-gallery',
+  'thumbnail',
+] as const;
 type BookingStatusActorType =
   | 'MEMBER'
   | 'GUEST'
@@ -716,68 +733,27 @@ type RankingTargetSummary = {
   status: string;
 };
 
-const demoStoreImageSlugs = new Set([
-  'crimson-bar',
-  'crimson-bar-hoan-kiem',
-  'dragon-rooftop-da-nang',
-  'golden-voice-ktv',
-  'golden-voice-ktv-quan-7',
-  'hanami-dining',
-  'harbor-ktv-hai-phong',
-  'jade-casino-hoan-kiem',
-  'jade-lounge',
-  'lotus-massage-spa',
-  'lotus-massage-spa-quan-3',
-  'moonlight-bar',
-  'moonlight-q1-bar',
-  'neon-club',
-  'neon-district-club',
-  'opera-spa-hai-phong',
-  'sakura-lounge',
-  'sakura-lounge-quan-3',
-  'son-tra-lounge',
-  'star-ktv',
-  'tokyo-kitchen',
-  'tokyo-kitchen-old-quarter',
-  'velvet-club',
-]);
+type RankingImageMedia = {
+  url: string;
+  purpose?: string | null;
+};
 
-const demoCastImageSlugs = new Set([
-  'akari-jade',
-  'aoi-tokyo',
-  'aya-velvet',
-  'eri-son-tra',
-  'erika-star',
-  'hana-harbor-ktv',
-  'hana-sakura-lounge',
-  'hikaru-jade',
-  'kaori-hanami',
-  'kotone-tokyo',
-  'kotone-tokyo-kitchen',
-  'lina-dragon-rooftop',
-  'linh-crimson-bar',
-  'mai-dragon-rooftop',
-  'mai-golden',
-  'mika-golden-ktv',
-  'mika-harbor-ktv',
-  'misaki-crimson',
-  'miyuki-moonlight',
-  'nami-son-tra',
-  'nana-golden',
-  'rei-crimson',
-  'rina-velvet',
-  'rumi-hanami',
-  'sakura-moonlight',
-  'sakura-moonlight-q1',
-  'sora-neon',
-  'sumi-lotus-massage-spa',
-  'sumi-opera-spa',
-  'tsubasa-star',
-  'yuki-sakura-lounge',
-  'yuna-neon',
-  'yuna-neon-district',
-  'yuri-opera-spa',
-]);
+function selectPreferredRankingImage(
+  media: RankingImageMedia[],
+  preferredPurposes: readonly string[],
+) {
+  for (const purpose of preferredPurposes) {
+    const preferred = media.find(
+      (item) => item.purpose?.trim().toLowerCase() === purpose,
+    );
+
+    if (preferred) {
+      return preferred.url;
+    }
+  }
+
+  return media[0]?.url ?? null;
+}
 
 type ContentRecord = {
   id: string;
@@ -1137,18 +1113,23 @@ export class NightlifeDataService {
     const scope = this.resolveAdminRankingScope(query.scope);
     const limit = this.resolveRankingLimit(query.limit);
     const now = new Date();
+    const andFilters: Prisma.RankingConfigWhereInput[] = [
+      this.buildPublicRankingConfigCityWhere(cityCode),
+      { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+      { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+    ];
+
+    if (category) {
+      andFilters.push({ OR: [{ category: null }, { category }] });
+    }
+
     const configs = await this.prisma.rankingConfig.findMany({
       where: {
         targetType,
         scope,
         status: 'ACTIVE',
         deletedAt: null,
-        ...(cityCode ? { OR: [{ cityCode: 'all' }, { cityCode }] } : {}),
-        ...(category ? { OR: [{ category: null }, { category }] } : {}),
-        AND: [
-          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
-          { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
-        ],
+        AND: andFilters,
       },
       orderBy: [
         { pinRank: 'asc' },
@@ -1178,23 +1159,10 @@ export class NightlifeDataService {
             cityCode,
             category,
           });
-    const allowFallback =
-      scope === 'global' && process.env.ENABLE_RANKING_FALLBACK === 'true';
-    const fallbackItems =
-      allowFallback && rankedItems.length < limit
-        ? await this.loadRankingFallbackItems(targetType, {
-            cityCode,
-            category,
-            excludeIds: rankedItems.map((item) => item.targetId),
-            take: limit - rankedItems.length,
-          })
-        : [];
-    const data = [...rankedItems, ...fallbackItems]
-      .slice(0, limit)
-      .map((item, index) => ({
-        ...item,
-        rank: index + 1,
-      }));
+    const data = rankedItems.slice(0, limit).map((item, index) => ({
+      ...item,
+      rank: index + 1,
+    }));
 
     return {
       data,
@@ -1316,8 +1284,8 @@ export class NightlifeDataService {
               type: 'IMAGE',
             },
             orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { url: true },
+            take: 8,
+            select: { url: true, purpose: true },
           },
         },
       });
@@ -1327,7 +1295,7 @@ export class NightlifeDataService {
         targetType: 'STORE' as const,
         name: store.name,
         slug: store.slug,
-        image: store.media[0]?.url ?? null,
+        image: this.resolveRankingStoreImage(store.media),
         area: store.area?.name ?? store.district,
         city: store.area?.city ?? store.city,
         cityCode: store.area?.code
@@ -1400,8 +1368,8 @@ export class NightlifeDataService {
             type: 'IMAGE',
           },
           orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { url: true },
+          take: 8,
+          select: { url: true, purpose: true },
         },
         store: {
           select: {
@@ -1427,7 +1395,7 @@ export class NightlifeDataService {
       targetType: 'CAST' as const,
       name: cast.publicAlias ?? cast.stageName,
       slug: cast.slug,
-      image: cast.media[0]?.url ?? null,
+      image: this.resolveRankingCastImage(cast.media),
       area: cast.store.area?.name ?? cast.store.district,
       city: cast.store.area?.city ?? cast.store.city,
       cityCode: cast.store.area?.code
@@ -12781,7 +12749,7 @@ export class NightlifeDataService {
       city: string;
       district: string | null;
       area: { name: string; city: string } | null;
-      media: Array<{ url: string }>;
+      media: RankingImageMedia[];
     };
     type CastTargetRecord = {
       id: string;
@@ -12789,7 +12757,7 @@ export class NightlifeDataService {
       stageName: string;
       publicAlias: string | null;
       status: string;
-      media: Array<{ url: string }>;
+      media: RankingImageMedia[];
       store: {
         category: StoreCategory;
         city: string;
@@ -12829,8 +12797,8 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               },
               orderBy: { createdAt: 'desc' },
-              take: 1,
-              select: { url: true },
+              take: 8,
+              select: { url: true, purpose: true },
             },
           },
         })
@@ -12852,8 +12820,8 @@ export class NightlifeDataService {
                 type: 'IMAGE',
               },
               orderBy: { createdAt: 'desc' },
-              take: 1,
-              select: { url: true },
+              take: 8,
+              select: { url: true, purpose: true },
             },
             store: {
               select: {
@@ -12877,7 +12845,7 @@ export class NightlifeDataService {
         id: store.id,
         name: store.name,
         slug: store.slug,
-        image: this.resolveRankingStoreImage(store.slug, store.media),
+        image: this.resolveRankingStoreImage(store.media),
         city: store.area?.city ?? store.city,
         area: store.area?.name ?? store.district,
         category: store.category,
@@ -12889,7 +12857,7 @@ export class NightlifeDataService {
         id: cast.id,
         name: cast.publicAlias ?? cast.stageName,
         slug: cast.slug,
-        image: this.resolveRankingCastImage(cast.slug, cast.media),
+        image: this.resolveRankingCastImage(cast.media),
         city: cast.store.area?.city ?? cast.store.city,
         area: cast.store.area?.name ?? cast.store.district,
         category: cast.store.category,
@@ -13006,6 +12974,41 @@ export class NightlifeDataService {
     return Math.floor(parsed);
   }
 
+  private buildPublicRankingConfigCityWhere(
+    cityCode?: string,
+  ): Prisma.RankingConfigWhereInput {
+    if (cityCode) {
+      return { OR: [{ cityCode: 'all' }, { cityCode }] };
+    }
+
+    return {
+      OR: [
+        { cityCode: 'all' },
+        ...RANKING_CITY_CODES.map((code) => ({ cityCode: code })),
+      ],
+    };
+  }
+
+  private buildPublicRankingTargetAreaWhere(
+    cityCode?: string,
+  ): Prisma.StoreWhereInput {
+    if (cityCode) {
+      return {};
+    }
+
+    return {
+      area: {
+        is: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          OR: RANKING_CITY_CODES.map((code) => ({
+            code: { startsWith: `${code}-` },
+          })),
+        },
+      },
+    };
+  }
+
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
     const configByTargetId = new Map<string, PublicRankingConfig>();
 
@@ -13054,6 +13057,7 @@ export class NightlifeDataService {
           },
           { includeTextSearch: false },
         ),
+        ...this.buildPublicRankingTargetAreaWhere(filters.cityCode),
         id: { in: targetIds },
       },
       select: {
@@ -13081,9 +13085,10 @@ export class NightlifeDataService {
             type: 'IMAGE',
           },
           orderBy: { createdAt: 'desc' },
-          take: 1,
+          take: 8,
           select: {
             url: true,
+            purpose: true,
           },
         },
       },
@@ -13111,13 +13116,16 @@ export class NightlifeDataService {
         deletedAt: null,
         status: 'ACTIVE',
         isPublic: true,
-        store: this.buildPublicStoreWhere(
-          {
-            city: filters.cityCode,
-            category: filters.category,
-          },
-          { includeTextSearch: false },
-        ),
+        store: {
+          ...this.buildPublicStoreWhere(
+            {
+              city: filters.cityCode,
+              category: filters.category,
+            },
+            { includeTextSearch: false },
+          ),
+          ...this.buildPublicRankingTargetAreaWhere(filters.cityCode),
+        },
       },
       select: {
         id: true,
@@ -13132,9 +13140,10 @@ export class NightlifeDataService {
             type: 'IMAGE',
           },
           orderBy: { createdAt: 'desc' },
-          take: 1,
+          take: 8,
           select: {
             url: true,
+            purpose: true,
           },
         },
         store: {
@@ -13163,129 +13172,6 @@ export class NightlifeDataService {
     );
   }
 
-  private async loadRankingFallbackItems(
-    targetType: RankingTargetType,
-    filters: {
-      cityCode?: string;
-      category?: StoreCategory;
-      excludeIds: string[];
-      take: number;
-    },
-  ) {
-    if (filters.take <= 0) {
-      return [];
-    }
-
-    if (targetType === 'STORE') {
-      const stores = await this.prisma.store.findMany({
-        where: {
-          ...this.buildPublicStoreWhere(
-            {
-              city: filters.cityCode,
-              category: filters.category,
-            },
-            { includeTextSearch: false },
-          ),
-          ...(filters.excludeIds.length
-            ? { id: { notIn: filters.excludeIds } }
-            : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        take: filters.take,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          category: true,
-          city: true,
-          district: true,
-          phone: true,
-          area: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-              city: true,
-              district: true,
-            },
-          },
-          media: {
-            where: {
-              deletedAt: null,
-              access: 'PUBLIC',
-              status: 'READY',
-              type: 'IMAGE',
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: {
-              url: true,
-            },
-          },
-        },
-      });
-
-      return stores.map((store) => this.mapStoreRankingItem(store));
-    }
-
-    const casts = await this.prisma.cast.findMany({
-      where: {
-        ...(filters.excludeIds.length
-          ? { id: { notIn: filters.excludeIds } }
-          : {}),
-        deletedAt: null,
-        status: 'ACTIVE',
-        isPublic: true,
-        store: this.buildPublicStoreWhere(
-          {
-            city: filters.cityCode,
-            category: filters.category,
-          },
-          { includeTextSearch: false },
-        ),
-      },
-      orderBy: { createdAt: 'desc' },
-      take: filters.take,
-      select: {
-        id: true,
-        slug: true,
-        stageName: true,
-        publicAlias: true,
-        media: {
-          where: {
-            deletedAt: null,
-            access: 'PUBLIC',
-            status: 'READY',
-            type: 'IMAGE',
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            url: true,
-          },
-        },
-        store: {
-          select: {
-            category: true,
-            city: true,
-            district: true,
-            area: {
-              select: {
-                id: true,
-                code: true,
-                name: true,
-                city: true,
-                district: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return casts.map((cast) => this.mapCastRankingItem(cast));
-  }
-
   private mapStoreRankingItem(
     store: {
       id: string;
@@ -13302,7 +13188,7 @@ export class NightlifeDataService {
         city: string;
         district?: string | null;
       } | null;
-      media: Array<{ url: string }>;
+      media: RankingImageMedia[];
     },
     config?: PublicRankingConfig,
   ): PublicRankingItemDraft {
@@ -13315,7 +13201,7 @@ export class NightlifeDataService {
       targetId: store.id,
       name: store.name,
       slug: store.slug,
-      image: this.resolveRankingStoreImage(store.slug, store.media),
+      image: this.resolveRankingStoreImage(store.media),
       area: store.area?.name ?? store.district,
       city: store.area?.city ?? store.city,
       cityCode,
@@ -13334,7 +13220,7 @@ export class NightlifeDataService {
       slug: string;
       stageName: string;
       publicAlias: string | null;
-      media: Array<{ url: string }>;
+      media: RankingImageMedia[];
       store: {
         category: StoreCategory;
         city: string;
@@ -13359,7 +13245,7 @@ export class NightlifeDataService {
       targetId: cast.id,
       name: cast.publicAlias ?? cast.stageName,
       slug: cast.slug,
-      image: this.resolveRankingCastImage(cast.slug, cast.media),
+      image: this.resolveRankingCastImage(cast.media),
       area: cast.store.area?.name ?? cast.store.district,
       city: cast.store.area?.city ?? cast.store.city,
       cityCode,
@@ -13371,14 +13257,8 @@ export class NightlifeDataService {
     };
   }
 
-  private resolveRankingStoreImage(
-    slug: string,
-    media: Array<{ url: string }>,
-  ) {
-    return (
-      media[0]?.url ??
-      (demoStoreImageSlugs.has(slug) ? `/media/demo/stores/${slug}.jpg` : null)
-    );
+  private resolveRankingStoreImage(media: RankingImageMedia[]) {
+    return selectPreferredRankingImage(media, STORE_RANKING_IMAGE_PURPOSES);
   }
 
   private resolveStoreCoverImage(
@@ -13398,11 +13278,8 @@ export class NightlifeDataService {
     return cover?.url ?? media[0]?.url ?? null;
   }
 
-  private resolveRankingCastImage(slug: string, media: Array<{ url: string }>) {
-    return (
-      media[0]?.url ??
-      (demoCastImageSlugs.has(slug) ? `/media/demo/casts/${slug}.jpg` : null)
-    );
+  private resolveRankingCastImage(media: RankingImageMedia[]) {
+    return selectPreferredRankingImage(media, CAST_RANKING_IMAGE_PURPOSES);
   }
 
   private buildActiveCouponWhere(now: Date): Prisma.CouponWhereInput {

@@ -1159,7 +1159,10 @@ describe('NightlifeDataService', () => {
         city: 'Ha Noi',
         district: 'Tay Ho',
         area: { name: 'Tay Ho', city: 'Ha Noi' },
-        media: [],
+        media: [
+          { url: 'https://example.com/neon-gallery.jpg', purpose: 'gallery' },
+          { url: 'https://example.com/neon-hero.jpg', purpose: 'hero' },
+        ],
       },
     ] as never);
 
@@ -1183,7 +1186,7 @@ describe('NightlifeDataService', () => {
         id: rankingId,
         targetName: 'Neon Club',
         targetSlug: 'neon-club',
-        targetImage: '/media/demo/stores/neon-club.jpg',
+        targetImage: 'https://example.com/neon-hero.jpg',
         cityCode: 'hn',
         category: 'CLUB',
         pinRank: 1,

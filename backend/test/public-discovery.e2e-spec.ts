@@ -50,7 +50,10 @@ describe('Public discovery listing API (e2e)', () => {
           city: 'Ha Noi',
           district: 'Tay Ho',
         },
-        media: [],
+        media: [
+          { url: '/media/admin/stores/neon-gallery.jpg', purpose: 'gallery' },
+          { url: '/media/admin/stores/neon-hero.jpg', purpose: 'hero' },
+        ],
       },
     ]);
     prisma.cast.findMany.mockResolvedValue([
@@ -64,7 +67,10 @@ describe('Public discovery listing API (e2e)', () => {
         tags: ['ktv'],
         languages: ['ja', 'vi'],
         hourlyRateVnd: 430000,
-        media: [],
+        media: [
+          { url: '/media/admin/casts/mika-gallery.jpg', purpose: 'cast-gallery' },
+          { url: '/media/admin/casts/mika-avatar.jpg', purpose: 'avatar' },
+        ],
         store: {
           id: 'store-ktv',
           name: 'Golden Voice KTV Quan 7',
@@ -249,7 +255,7 @@ describe('Public discovery listing API (e2e)', () => {
           targetId: 'cast-mika',
           name: 'Mika',
           slug: 'mika-golden-ktv',
-          image: '/media/demo/casts/mika-golden-ktv.jpg',
+          image: '/media/admin/casts/mika-avatar.jpg',
           category: 'KARAOKE',
           sponsored: true,
           pinRank: 1,
@@ -307,7 +313,10 @@ describe('Public discovery listing API (e2e)', () => {
           city: 'Ha Noi',
           district: 'Tay Ho',
         },
-        media: [],
+        media: [
+          { url: '/media/admin/stores/neon-gallery.jpg', purpose: 'gallery' },
+          { url: '/media/admin/stores/neon-hero.jpg', purpose: 'hero' },
+        ],
       },
     ]);
     prisma.rankingConfig.findMany.mockResolvedValue([
@@ -340,7 +349,7 @@ describe('Public discovery listing API (e2e)', () => {
         targetId: 'store-neon',
         name: 'Neon Club',
         slug: 'neon-club',
-        image: '/media/demo/stores/neon-club.jpg',
+        image: '/media/admin/stores/neon-hero.jpg',
         category: 'CLUB',
         sponsored: true,
         pinRank: 1,
@@ -349,6 +358,48 @@ describe('Public discovery listing API (e2e)', () => {
         phone: '+84243456007',
       }),
     ]);
+  });
+
+  it('does not synthesize public ranking rows without admin configs', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/rankings')
+      .query({ targetType: 'CAST', city: 'hn', limit: '5' })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      data: [],
+      meta: expect.objectContaining({
+        targetType: 'CAST',
+        city: 'hn',
+        limit: 5,
+        total: 0,
+      }),
+    });
+    expect(prisma.cast.findMany).not.toHaveBeenCalled();
+  });
+
+  it('limits aggregate public rankings to Hanoi and Ho Chi Minh configs', async () => {
+    await request(app.getHttpServer())
+      .get('/rankings')
+      .query({ targetType: 'STORE', city: 'all', limit: '5' })
+      .expect(200);
+
+    expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          targetType: 'STORE',
+          AND: expect.arrayContaining([
+            {
+              OR: [
+                { cityCode: 'all' },
+                { cityCode: 'hn' },
+                { cityCode: 'hcm' },
+              ],
+            },
+          ]),
+        }),
+      }),
+    );
   });
 
   it('rejects an invalid category', async () => {
