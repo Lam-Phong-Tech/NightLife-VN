@@ -9,9 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
-import { UseGuards } from '@nestjs/common';
 import { SupportSenderType } from '@prisma/client';
-// Note: JwtAuthGuard should ideally be applied, but WebSockets in NestJS need a custom WsJwtGuard.
 // For simplicity in this plan, we will handle basic token verification manually or assume middleware.
 
 @WebSocketGateway({ namespace: '/support', cors: true })
@@ -53,40 +51,45 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { ticketId?: string; content: string; guestSessionId?: string; userId?: string; isAdmin?: boolean }
   ) {
-    const isOnline = this.onlineAdmins.size > 0;
-    
-    // Yêu cầu: Chỉ text, không xử lý file ở đây
-    if (!data.content || data.content.trim() === '') return { error: 'Content is required' };
-
-    let ticketId = data.ticketId;
-    let ticket;
-
-    if (!ticketId) {
-      // Offline Flow check: Prevent creating ticket if no admin is online
-      if (!isOnline) {
-        client.emit('system_message', { content: 'Hiện tại chúng tôi đang ngoài giờ làm việc. Vui lòng liên hệ trực tiếp qua Hotline: 1900-xxxx' });
-        return { error: 'Offline' };
-      }
-      ticket = await this.supportChatService.createOrGetTicket(data.guestSessionId, data.userId);
-      ticketId = ticket.id;
+    try {
+      const isOnline = this.onlineAdmins.size > 0;
       
-      // Broadcast new ticket to all admins
-      if (ticket.status === 'PENDING') {
-        this.server.emit('new_ticket', ticket);
+      // Yêu cầu: Chỉ text, không xử lý file ở đây
+      if (!data.content || data.content.trim() === '') return { error: 'Content is required' };
+
+      let ticketId = data.ticketId;
+      let ticket;
+
+      if (!ticketId) {
+        // Offline Flow check: Prevent creating ticket if no admin is online
+        if (!isOnline) {
+          client.emit('system_message', { content: 'Hiện tại chúng tôi đang ngoài giờ làm việc. Vui lòng liên hệ trực tiếp qua Hotline: 1900-xxxx' });
+          return { error: 'Offline' };
+        }
+        ticket = await this.supportChatService.createOrGetTicket(data.guestSessionId, data.userId);
+        ticketId = ticket.id;
+        
+        // Broadcast new ticket to all admins
+        if (ticket.status === 'PENDING') {
+          this.server.emit('new_ticket', ticket);
+        }
       }
+
+      // Always ensure the sender is in the room so they receive their own broadcast (or rather, for future broadcasts)
+      client.join(`ticket_${ticketId}`);
+
+      const isAdminSender = this.onlineAdmins.has(client.id);
+      const senderType = isAdminSender ? SupportSenderType.ADMIN : (data.userId ? SupportSenderType.USER : SupportSenderType.GUEST);
+      
+      const message = await this.supportChatService.sendMessage(ticketId as string, senderType, data.content, data.userId || undefined);
+
+      // Broadcast to the room (excluding sender to prevent duplicate in optimistic UI)
+      client.broadcast.to(`ticket_${ticketId}`).emit('receive_message', message);
+      return message;
+    } catch (error) {
+      console.error('[SupportChat] Error sending message:', error);
+      return { error: 'Internal error' };
     }
-
-    // Always ensure the sender is in the room so they receive their own broadcast
-    client.join(`ticket_${ticketId}`);
-
-
-    const senderType = data.isAdmin ? SupportSenderType.ADMIN : (data.userId ? SupportSenderType.USER : SupportSenderType.GUEST);
-    
-    const message = await this.supportChatService.sendMessage(ticketId as string, senderType, data.content, data.userId || undefined);
-
-    // Broadcast to the room (excluding sender)
-    client.broadcast.to(`ticket_${ticketId}`).emit('receive_message', message);
-    return message;
   }
 
   @SubscribeMessage('rejoin_ticket')
@@ -119,8 +122,13 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { ticketId: string }
   ) {
-    const ticket = await this.supportChatService.closeTicket(data.ticketId);
-    this.server.to(`ticket_${data.ticketId}`).emit('ticket_closed', { ticketId: data.ticketId });
-    return { success: true, ticket };
+    try {
+      const ticket = await this.supportChatService.closeTicket(data.ticketId);
+      this.server.to(`ticket_${data.ticketId}`).emit('ticket_closed', { ticketId: data.ticketId });
+      return { success: true, ticket };
+    } catch (error) {
+      console.error('[SupportChat] Error closing ticket:', error);
+      return { success: false, error: 'Internal error' };
+    }
   }
 }

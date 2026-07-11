@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/comm
 import { SupportChatService } from './support-chat.service';
 import { SupportChatGateway } from './support-chat.gateway';
 
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Assume this exists
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('api/support')
 export class SupportChatController {
@@ -22,7 +22,7 @@ export class SupportChatController {
   }
 
   @Get('pending')
-  // @UseGuards(JwtAuthGuard) // Only admins should see this
+  @UseGuards(JwtAuthGuard) // Only admins should see this
   async getPendingTickets() {
     return this.supportChatService.getPendingTickets();
   }

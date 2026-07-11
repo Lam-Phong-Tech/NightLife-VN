@@ -35,50 +35,7 @@ type ChatMessage = {
   time: string;
 };
 
-const initialMessages: ChatMessage[] = [
-  {
-    id: "support-welcome",
-    from: "support",
-    text: "Dạ chào anh, Vietyoru Hỗ trợ có thể giúp gì cho anh ạ?",
-    time: "21:30",
-  },
-  {
-    id: "user-booking",
-    from: "user",
-    text: "Mình muốn hỏi về đặt bàn tối nay ở Sakura Lounge",
-    time: "21:31",
-  },
-  {
-    id: "support-party-size",
-    from: "support",
-    text: "Dạ anh đi mấy người và khoảng mấy giờ để em kiểm tra bàn trống giúp anh ạ?",
-    time: "21:31",
-  },
-  {
-    id: "user-time",
-    from: "user",
-    text: "4 người, khoảng 21:00 nhé",
-    time: "21:32",
-  },
-  {
-    id: "support-available",
-    from: "support",
-    text: "Sakura Lounge vẫn còn bàn khung 21:00 cho 4 khách ạ. Em giữ chỗ trước cho anh nhé?",
-    time: "21:33",
-  },
-  {
-    id: "user-confirm",
-    from: "user",
-    text: "Vâng bạn giữ giúp mình",
-    time: "21:33",
-  },
-  {
-    id: "support-confirmed",
-    from: "support",
-    text: "Em đã giữ chỗ cho anh. Anh vào mục Đặt chỗ xác nhận trong 15 phút giúp em là xong ạ. Cảm ơn anh!",
-    time: "21:34",
-  },
-];
+// Removed dead code initialMessages
 
 type SupportChatWidgetProps = {
   isMobile: boolean;
@@ -371,6 +328,7 @@ function DesktopSupportChatPanel({
   draft,
   messages,
   isLoadingHistory,
+  connectionStatus,
   onClose,
   onDraftChange,
   onSubmit,
@@ -378,6 +336,7 @@ function DesktopSupportChatPanel({
   draft: string;
   messages: ChatMessage[];
   isLoadingHistory?: boolean;
+  connectionStatus: 'connected' | 'disconnected' | 'error';
   onClose: () => void;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -434,8 +393,8 @@ function DesktopSupportChatPanel({
           >
             {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
-          <div style={{ fontSize: "11px", color: chatColors.muted, marginTop: "1px" }}>
-            {translateText("Chăm sóc khách hàng", activeLanguage)}
+          <div style={{ fontSize: "11px", color: connectionStatus === 'connected' ? '#7fd3a2' : '#f87171', marginTop: "1px" }}>
+            {connectionStatus === 'connected' ? '● Đang trực tuyến' : '● Mất kết nối'}
           </div>
         </div>
         <IconCircleButton label={translateText("Thu nhỏ chat hỗ trợ", activeLanguage)} onClick={onClose}>
@@ -461,6 +420,7 @@ function MobileSupportChatPanel({
   draft,
   messages,
   isLoadingHistory,
+  connectionStatus,
   onClose,
   onDraftChange,
   onSubmit,
@@ -468,6 +428,7 @@ function MobileSupportChatPanel({
   draft: string;
   messages: ChatMessage[];
   isLoadingHistory?: boolean;
+  connectionStatus: 'connected' | 'disconnected' | 'error';
   onClose: () => void;
   onDraftChange: (value: string) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -536,8 +497,8 @@ function MobileSupportChatPanel({
           >
             {translateText("Vietyoru Hỗ trợ", activeLanguage)}
           </h2>
-          <div style={{ fontSize: "11px", color: chatColors.muted, marginTop: "1px" }}>
-            {translateText("Chăm sóc khách hàng", activeLanguage)}
+          <div style={{ fontSize: "11px", color: connectionStatus === 'connected' ? '#7fd3a2' : '#f87171', marginTop: "2px" }}>
+            {connectionStatus === 'connected' ? '● Đang trực tuyến' : '● Mất kết nối'}
           </div>
         </div>
         <IconCircleButton label={translateText("Thu nhỏ chat hỗ trợ", activeLanguage)} onClick={onClose} size={34}>
@@ -610,6 +571,12 @@ export function SupportChatWidget({
   const [guestSessionId, setGuestSessionId] = useState<string>("");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected'|'disconnected'|'error'>('disconnected');
+  const hasOpened = useRef(false);
+
+  useEffect(() => {
+    if (isOpen) hasOpened.current = true;
+  }, [isOpen]);
 
   useEffect(() => {
     onOpenChange(false);
@@ -658,19 +625,37 @@ export function SupportChatWidget({
   }, [activeLanguage]);
 
   useEffect(() => {
-    if (socket && ticketId) {
-      // Update query for future reconnects without disconnecting now
-      socket.io.opts.query = { ticketId };
-      // Tell server we are rejoining the room in case this was a fresh connection
+    if (!socket || !ticketId) return;
+    
+    // Update query for future reconnects without disconnecting now
+    socket.io.opts.query = { ticketId };
+    
+    const onReconnect = () => {
       socket.emit('rejoin_ticket', { ticketId });
+    };
+    
+    socket.on('connect', onReconnect);
+    
+    if (socket.connected) {
+      onReconnect();
     }
+    
+    return () => {
+      socket.off('connect', onReconnect);
+    };
   }, [socket, ticketId]);
 
   useEffect(() => {
+    if (!hasOpened.current) return;
+
     const newSocket = io(process.env.NEXT_PUBLIC_API_URL + '/support', {
       query: ticketId ? { ticketId } : undefined
     });
     setSocket(newSocket);
+    
+    newSocket.on('connect', () => setConnectionStatus('connected'));
+    newSocket.on('disconnect', () => setConnectionStatus('disconnected'));
+    newSocket.on('connect_error', () => setConnectionStatus('error'));
 
     newSocket.on('receive_message', (msg: any) => {
       setMessages(prev => {
@@ -689,15 +674,18 @@ export function SupportChatWidget({
     });
 
     newSocket.on('system_message', (msg: any) => {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: msg.id || Date.now().toString(),
-          from: 'support',
-          text: msg.content,
-          time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguageRef.current),
-        }
-      ]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [
+          ...prev,
+          {
+            id: msg.id || Date.now().toString(),
+            from: 'support',
+            text: msg.content,
+            time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguageRef.current),
+          }
+        ];
+      });
     });
 
     newSocket.on('ticket_closed', () => {
@@ -717,7 +705,7 @@ export function SupportChatWidget({
     return () => {
       newSocket.close();
     };
-  }, []); // Only run once on mount!
+  }, [hasOpened.current]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -783,8 +771,16 @@ export function SupportChatWidget({
       userId: currentUser?.id
     }, (response: any) => {
       if (response && response.error === 'Offline') {
-        // Remove optimistic message if offline
-        setMessages(prev => prev.filter(m => m.id !== localTempId));
+        // Remove optimistic message if offline and show system message
+        setMessages(prev => [
+          ...prev.filter(m => m.id !== localTempId),
+          {
+            id: 'offline-' + Date.now(),
+            from: 'support',
+            text: 'Hiện tại chúng tôi đang ngoài giờ làm việc. Vui lòng liên hệ trực tiếp qua Hotline: 1900-xxxx',
+            time: formatChatTime(new Date(), activeLanguageRef.current),
+          }
+        ]);
         return;
       }
       
@@ -805,6 +801,7 @@ export function SupportChatWidget({
       draft={draft}
       messages={messages}
       isLoadingHistory={isLoadingHistory}
+      connectionStatus={connectionStatus}
       onClose={() => onOpenChange(false)}
       onDraftChange={setDraft}
       onSubmit={handleSubmit}
@@ -814,6 +811,7 @@ export function SupportChatWidget({
       draft={draft}
       messages={messages}
       isLoadingHistory={isLoadingHistory}
+      connectionStatus={connectionStatus}
       onClose={() => onOpenChange(false)}
       onDraftChange={setDraft}
       onSubmit={handleSubmit}

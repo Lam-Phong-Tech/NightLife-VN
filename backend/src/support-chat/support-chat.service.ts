@@ -62,6 +62,7 @@ export class SupportChatService {
         userId: userId || null,
         status: SupportTicketStatus.PENDING,
       },
+      include: { assignedAdmin: { select: { id: true, displayName: true } } },
     });
   }
 

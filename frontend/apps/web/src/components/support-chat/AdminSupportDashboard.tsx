@@ -10,6 +10,7 @@ export function AdminSupportDashboard() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [pendingTickets, setPendingTickets] = useState<any[]>([]);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [activeTicketInfo, setActiveTicketInfo] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [toast, setToast] = useState<string | null>(null);
@@ -58,7 +59,10 @@ export function AdminSupportDashboard() {
     });
 
     newSocket.on('receive_message', (msg: any) => {
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
     });
 
     newSocket.on('ticket_closed', (data: { ticketId: string }) => {
@@ -88,11 +92,32 @@ export function AdminSupportDashboard() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (!socket || !activeTicketId) return;
+
+    const onReconnect = () => {
+      socket.emit('rejoin_ticket', { ticketId: activeTicketId });
+    };
+
+    socket.on('connect', onReconnect);
+
+    // If we just got an activeTicketId and we're connected, let's rejoin just in case (though claim handles it, it doesn't hurt)
+    if (socket.connected) {
+      onReconnect();
+    }
+
+    return () => {
+      socket.off('connect', onReconnect);
+    };
+  }, [socket, activeTicketId]);
+
   const claimTicket = async (ticketId: string) => {
     if (!socket) return;
 
     socket.emit('claim_ticket', { ticketId, adminId }, (response: any) => {
       if (response.success) {
+        const ticketInfo = pendingTickets.find(t => t.id === ticketId);
+        setActiveTicketInfo(ticketInfo || response.ticket);
         setActiveTicketId(ticketId);
         setPendingTickets(prev => prev.filter(t => t.id !== ticketId));
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/support/history?ticketId=${ticketId}`)
@@ -137,12 +162,13 @@ export function AdminSupportDashboard() {
     socket.emit('close_ticket', { ticketId: activeTicketId }, (response: any) => {
       if (response.success) {
         setActiveTicketId(null);
+        setActiveTicketInfo(null);
         setMessages([]);
       }
     });
   };
 
-  const activeTicketInfo = pendingTickets.find(t => t.id === activeTicketId) || {
+  const currentTicketDisplay = activeTicketInfo || {
     id: activeTicketId,
     userId: null,
     user: { displayName: 'Đang tải...' }
@@ -408,11 +434,11 @@ export function AdminSupportDashboard() {
                     fontSize: '14px'
                   }}
                 >
-                  {(activeTicketInfo.user?.displayName || 'C').charAt(0).toUpperCase()}
+                  {(currentTicketDisplay.user?.displayName || 'C').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#f3f0ea' }}>
-                    {activeTicketInfo.userId ? activeTicketInfo.user?.displayName : 'Khách vãng lai'}
+                    {currentTicketDisplay.userId ? currentTicketDisplay.user?.displayName : 'Khách vãng lai'}
                   </div>
                   <div style={{ fontSize: '10.5px', color: '#7fd3a2', marginTop: '1px' }}>
                     ● Đang trực tuyến
