@@ -12,7 +12,32 @@ import { SupportChatService } from './support-chat.service';
 import { SupportSenderType } from '@prisma/client';
 // For simplicity in this plan, we will handle basic token verification manually or assume middleware.
 
-@WebSocketGateway({ namespace: '/support', cors: true })
+const productionOrigins = [
+  'https://demonightlight.test9.io.vn',
+  'https://www.demonightlight.test9.io.vn',
+  'https://demonightlight.test9io.vn',
+  'https://www.demonightlight.test9io.vn',
+];
+
+const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+@WebSocketGateway({ 
+  namespace: '/support', 
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      ...productionOrigins,
+      ...configuredOrigins,
+    ],
+    credentials: true,
+  }
+})
 export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
