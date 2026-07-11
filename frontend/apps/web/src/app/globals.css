@@ -51,6 +51,10 @@
   --vy-pink: #e0729e;
   --vy-shadow: 0 20px 44px -18px rgba(0, 0, 0, 0.85);
   --vy-shadow-card: 0 18px 40px rgba(0, 0, 0, 0.22);
+  --vy-motion-duration: 0.4s;
+  --vy-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --vy-motion-touch: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --vy-route-preload: 0.2s;
 }
 
 html.vy-light {
@@ -264,8 +268,81 @@ body > .nl-language-picker-overlay {
   background: #f6f5f2 !important;
 }
 
-.nl-page-content {
+.nl-page-content,
+.nl-customer-route-content {
   scroll-behavior: smooth;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+  animation: nl-route-content-in calc(var(--vy-route-preload) + var(--vy-motion-duration))
+    var(--vy-motion-ease) both;
+  transition:
+    opacity var(--vy-motion-duration) var(--vy-motion-ease),
+    transform var(--vy-motion-duration) var(--vy-motion-ease),
+    filter var(--vy-motion-duration) var(--vy-motion-ease),
+    background-color var(--vy-motion-duration) var(--vy-motion-ease),
+    color var(--vy-motion-duration) var(--vy-motion-ease);
+  will-change: opacity, transform, filter;
+}
+
+.nl-route-preloader {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 120;
+  height: 3px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  animation: nl-route-preloader-visible var(--vy-route-preload) ease both;
+  transition: opacity var(--vy-route-preload) ease;
+}
+
+.nl-route-preloader::before {
+  content: "";
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--vy-gold-pale), var(--vy-gold), transparent);
+  box-shadow: 0 0 18px rgba(212, 178, 106, 0.38);
+  transform: translate3d(-110%, 0, 0);
+  animation: nl-route-preload-sweep 0.8s var(--vy-motion-ease) infinite;
+}
+
+@keyframes nl-route-content-in {
+  0%,
+  33% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+    filter: blur(5px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes nl-route-preloader-visible {
+  0%,
+  82% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes nl-route-preload-sweep {
+  from {
+    transform: translate3d(-110%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(240%, 0, 0);
+  }
 }
 
 .nl-scroll-reveal {
@@ -273,9 +350,9 @@ body > .nl-language-picker-overlay {
   transform: translate3d(0, 0, 0);
   filter: blur(0);
   transition:
-    opacity 440ms ease,
-    transform 560ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 560ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--vy-motion-duration) ease,
+    transform var(--vy-motion-duration) var(--vy-motion-ease),
+    filter var(--vy-motion-duration) var(--vy-motion-ease);
   will-change: opacity, transform, filter;
 }
 
@@ -304,8 +381,22 @@ html.nl-scroll-effects-ready .nl-scroll-reveal.is-revealed {
 @media (prefers-reduced-motion: reduce) {
   html,
   body,
-  .nl-page-content {
+  .nl-page-content,
+  .nl-customer-route-content {
     scroll-behavior: auto !important;
+  }
+
+  .nl-page-content,
+  .nl-customer-route-content {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .nl-route-preloader {
+    display: none !important;
   }
 
   .nl-scroll-reveal,
@@ -469,6 +560,145 @@ textarea::placeholder {
 
 .nl-page-content a {
   text-decoration: none;
+}
+
+.nl-site-header a,
+.nl-site-header button,
+.nl-site-actions a,
+.nl-site-actions button,
+.nl-page-content a,
+.nl-page-content button,
+.nl-page-content [role="button"],
+.nl-page-content label,
+.nl-page-content .btn,
+.nl-customer-route-content a,
+.nl-customer-route-content button,
+.nl-customer-route-content [role="button"],
+.nl-customer-route-content label,
+.nl-customer-route-content .btn,
+.nl-mobile-bottom-nav a {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(212, 178, 106, 0.18);
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, filter;
+  transition-duration: var(--vy-motion-duration);
+  transition-timing-function: var(--vy-motion-touch);
+}
+
+.nl-page-content input,
+.nl-page-content select,
+.nl-page-content textarea,
+.nl-customer-route-content input,
+.nl-customer-route-content select,
+.nl-customer-route-content textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition-property: color, background-color, border-color, box-shadow, opacity, filter;
+  transition-duration: var(--vy-motion-duration);
+  transition-timing-function: var(--vy-motion-ease);
+}
+
+.nl-site-header a:where(:hover, :focus-visible),
+.nl-site-header button:where(:hover, :focus-visible),
+.nl-site-actions a:where(:hover, :focus-visible),
+.nl-site-actions button:where(:hover, :focus-visible),
+.nl-page-content a:where(:hover, :focus-visible),
+.nl-page-content button:where(:hover, :focus-visible),
+.nl-page-content [role="button"]:where(:hover, :focus-visible),
+.nl-page-content .btn:where(:hover, :focus-visible),
+.nl-customer-route-content a:where(:hover, :focus-visible),
+.nl-customer-route-content button:where(:hover, :focus-visible),
+.nl-customer-route-content [role="button"]:where(:hover, :focus-visible),
+.nl-customer-route-content .btn:where(:hover, :focus-visible),
+.nl-mobile-bottom-nav a:where(:hover, :focus-visible) {
+  filter: saturate(1.08) brightness(1.03);
+}
+
+.nl-site-header a:active,
+.nl-site-header button:active,
+.nl-site-actions a:active,
+.nl-site-actions button:active,
+.nl-page-content a:active,
+.nl-page-content button:active,
+.nl-page-content [role="button"]:active,
+.nl-page-content .btn:active,
+.nl-customer-route-content a:active,
+.nl-customer-route-content button:active,
+.nl-customer-route-content [role="button"]:active,
+.nl-customer-route-content .btn:active,
+.nl-mobile-bottom-nav a:active {
+  transform: translate3d(0, 1px, 0) scale(0.985);
+  filter: saturate(1.1) brightness(0.98);
+}
+
+.nl-site-header a:focus-visible,
+.nl-site-header button:focus-visible,
+.nl-site-actions a:focus-visible,
+.nl-site-actions button:focus-visible,
+.nl-page-content a:focus-visible,
+.nl-page-content button:focus-visible,
+.nl-page-content [role="button"]:focus-visible,
+.nl-page-content input:focus-visible,
+.nl-page-content select:focus-visible,
+.nl-page-content textarea:focus-visible,
+.nl-customer-route-content a:focus-visible,
+.nl-customer-route-content button:focus-visible,
+.nl-customer-route-content [role="button"]:focus-visible,
+.nl-customer-route-content input:focus-visible,
+.nl-customer-route-content select:focus-visible,
+.nl-customer-route-content textarea:focus-visible,
+.nl-mobile-bottom-nav a:focus-visible {
+  outline: 2px solid var(--vy-gold);
+  outline-offset: 3px;
+}
+
+.nl-site-header :is(a, button)[aria-disabled="true"],
+.nl-page-content :is(a, button, [role="button"], .btn):is(:disabled, [aria-disabled="true"]),
+.nl-customer-route-content :is(a, button, [role="button"], .btn):is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nl-site-header a,
+  .nl-site-header button,
+  .nl-site-actions a,
+  .nl-site-actions button,
+  .nl-page-content a,
+  .nl-page-content button,
+  .nl-page-content [role="button"],
+  .nl-page-content label,
+  .nl-page-content .btn,
+  .nl-page-content input,
+  .nl-page-content select,
+  .nl-page-content textarea,
+  .nl-customer-route-content a,
+  .nl-customer-route-content button,
+  .nl-customer-route-content [role="button"],
+  .nl-customer-route-content label,
+  .nl-customer-route-content .btn,
+  .nl-customer-route-content input,
+  .nl-customer-route-content select,
+  .nl-customer-route-content textarea,
+  .nl-mobile-bottom-nav a {
+    transition: none !important;
+  }
+
+  .nl-site-header a:active,
+  .nl-site-header button:active,
+  .nl-site-actions a:active,
+  .nl-site-actions button:active,
+  .nl-page-content a:active,
+  .nl-page-content button:active,
+  .nl-page-content [role="button"]:active,
+  .nl-page-content .btn:active,
+  .nl-customer-route-content a:active,
+  .nl-customer-route-content button:active,
+  .nl-customer-route-content [role="button"]:active,
+  .nl-customer-route-content .btn:active,
+  .nl-mobile-bottom-nav a:active {
+    transform: none !important;
+  }
 }
 
 .nl-page-content a,

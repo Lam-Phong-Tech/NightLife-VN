@@ -1369,6 +1369,10 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const hideChrome = hiddenChromePaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+  const customerRouteMotionEnabled =
+    !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/partner") &&
+    pathname !== "/chon-giao-dien";
   const enableScrollReveal = pathname === "/";
   const displayName = authUser?.displayName || authUser?.email?.split("@")[0] || "";
   const showSupportChat = true; // Always show for both User and Guest
@@ -1844,7 +1848,33 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 
   if (shouldSimulate) return <MobileSimulator />;
 
-  if (hideChrome) return <SystemFeedbackProvider>{children}</SystemFeedbackProvider>;
+  const routePreloader = customerRouteMotionEnabled ? (
+    <div
+      key={`route-preloader-${pathname}`}
+      aria-hidden="true"
+      className="nl-route-preloader"
+    />
+  ) : null;
+
+  if (hideChrome) {
+    return (
+      <SystemFeedbackProvider>
+        {customerRouteMotionEnabled ? (
+          <>
+            {routePreloader}
+            <div
+              key={`route-content-${pathname}`}
+              className="nl-customer-route-content"
+            >
+              {children}
+            </div>
+          </>
+        ) : (
+          children
+        )}
+      </SystemFeedbackProvider>
+    );
+  }
 
   return (
     <SystemFeedbackProvider>
@@ -2112,7 +2142,11 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
           )}
         </header>
 
-        <div className="nl-page-content">{children}</div>
+        {routePreloader}
+
+        <div key={`route-content-${pathname}`} className="nl-page-content">
+          {children}
+        </div>
 
         <SiteFooter isMobile={isMobile} />
 
