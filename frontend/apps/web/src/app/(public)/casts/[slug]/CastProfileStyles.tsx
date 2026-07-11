@@ -272,6 +272,10 @@ export function CastProfileStyles() {
         line-height: 1.78;
       }
 
+      .cast-mobile .cast-mobile-bio {
+        color: #6f6657;
+      }
+
       .cast-detail-list {
         display: grid;
         gap: 11px;
@@ -303,6 +307,15 @@ export function CastProfileStyles() {
         font-size: 12.5px;
         font-weight: 600;
         line-height: 1.45;
+      }
+
+      .cast-mobile .cast-info-row span {
+        color: #8a806f;
+      }
+
+      .cast-mobile .cast-info-row strong {
+        color: #3a3022;
+        font-weight: 700;
       }
 
       .cast-schedule-grid {
@@ -618,11 +631,20 @@ export function CastProfileStyles() {
         font-weight: 650;
       }
 
+      .cast-related-section.mobile .cast-related-copy strong {
+        color: #3a3022;
+      }
+
       .cast-related-copy small,
       .cast-related-copy em {
         color: var(--vy-muted);
         font-size: 10.5px;
         font-style: normal;
+      }
+
+      .cast-related-section.mobile .cast-related-copy small,
+      .cast-related-section.mobile .cast-related-copy em {
+        color: #746a5a;
       }
 
       .cast-booking-cta.mobile {
