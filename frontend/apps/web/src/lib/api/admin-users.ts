@@ -30,44 +30,36 @@ export const getAdminUsers = async (params: {
   if (params.role) query.set('role', params.role);
   if (params.status) query.set('status', params.status);
 
-  const res = await apiClient.get<AdminUserListResponse>(`/api/backend/admin/users?${query.toString()}`);
-  return res.data;
+  return apiClient<AdminUserListResponse>(`/api/backend/admin/users?${query.toString()}`);
 };
 
 export const createAdminUser = async (data: any) => {
-  const res = await apiClient.post<AdminUser>('/api/backend/admin/users', data);
-  return res.data;
+  return apiClient<AdminUser>('/api/backend/admin/users', { method: 'POST', data });
 };
 
 export const updateAdminUser = async (id: string, data: { displayName: string; email: string }) => {
-  const res = await apiClient.patch<AdminUser>(`/api/backend/admin/users/${id}`, data);
-  return res.data;
+  return apiClient<AdminUser>(`/api/backend/admin/users/${id}`, { method: 'PATCH', data });
 };
 
 export const changeAdminUserPassword = async (id: string, data: { password: string }) => {
-  const res = await apiClient.patch(`/api/backend/admin/users/${id}/password`, data);
-  return res.data;
+  return apiClient(`/api/backend/admin/users/${id}/password`, { method: 'PATCH', data });
 };
 
 export const disableAdminUser = async (id: string) => {
-  const res = await apiClient.delete(`/api/backend/admin/users/${id}`);
-  return res.data;
+  return apiClient(`/api/backend/admin/users/${id}`, { method: 'DELETE' });
 };
 
 export const restoreAdminUser = async (id: string) => {
-  const res = await apiClient.post(`/api/backend/admin/users/${id}/restore`, {});
-  return res.data;
+  return apiClient(`/api/backend/admin/users/${id}/restore`, { method: 'POST', data: {} });
 };
 
 export const hardDeleteAdminUser = async (id: string) => {
-  const res = await apiClient.delete(`/api/backend/admin/users/${id}/hard`);
-  return res.data;
+  return apiClient(`/api/backend/admin/users/${id}/hard`, { method: 'DELETE' });
 };
 
 export const searchStoresForAdmin = async (q?: string, forRole?: string) => {
   const query = new URLSearchParams();
   if (q) query.set('q', q);
   if (forRole) query.set('forRole', forRole);
-  const res = await apiClient.get<any[]>(`/api/backend/admin/users/stores/search?${query.toString()}`);
-  return res.data;
+  return apiClient<any[]>(`/api/backend/admin/users/stores/search?${query.toString()}`);
 };
