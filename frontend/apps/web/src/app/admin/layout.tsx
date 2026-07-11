@@ -609,7 +609,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
 
     if (pathname === '/admin/roles') return { title: 'Tài khoản', subtitle: 'ACCOUNTS' };
-    if (pathname === '/admin/permissions') return { title: 'Ma trận quyền', subtitle: 'ROLES & PERMISSIONS' };
+    if (pathname === '/admin/permissions') return { title: 'Ma trận quyền', subtitle: '' };
     return { title: 'Admin', subtitle: 'CMS' };
   };
 

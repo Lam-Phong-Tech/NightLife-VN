@@ -125,7 +125,6 @@ export default function AdminPermissionsPage() {
       <div key={idx} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '12px 20px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
         <span style={{ minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: '13px', color: '#f3f0ea' }}>{c[0]}</span>
-          <span style={{ display: 'block', fontSize: '11px', color: '#8c8679', fontFamily: 'ui-monospace,Menlo,monospace', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c[1]}</span>
         </span>
         {isSuperAdmin && <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />}
         <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />
