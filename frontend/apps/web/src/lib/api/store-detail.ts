@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, resolveClientUrl } from "./client";
 
 export type StoreDetailMediaType = "IMAGE" | "VIDEO" | "DOCUMENT" | "OTHER";
 
@@ -142,8 +142,43 @@ export type PublicStoreDetail = {
   updatedAt?: string;
 };
 
-export const getStoreDetail = (slug: string, options: RequestInit = {}) =>
-  apiClient<PublicStoreDetail>(`/stores/${encodeURIComponent(slug)}`, {
+const normalizeStoreGalleryItem = (item: StoreGalleryItem): StoreGalleryItem => ({
+  ...item,
+  url: resolveClientUrl(item.url) ?? item.url,
+});
+
+const normalizeStoreCast = (cast: StoreDetailCast): StoreDetailCast => ({
+  ...cast,
+  thumbnailUrl: resolveClientUrl(cast.thumbnailUrl),
+});
+
+const normalizeStorePriceReference = (priceReference: StorePriceReference): StorePriceReference => ({
+  ...priceReference,
+  items: priceReference.items.map((item) => ({
+    ...item,
+    imageUrl: resolveClientUrl(item.imageUrl),
+  })),
+});
+
+const normalizeRelatedStore = (store: RelatedStore): RelatedStore => ({
+  ...store,
+  thumbnailUrl: resolveClientUrl(store.thumbnailUrl),
+});
+
+export const normalizeStoreDetail = (store: PublicStoreDetail): PublicStoreDetail => ({
+  ...store,
+  gallery: store.gallery.map(normalizeStoreGalleryItem),
+  casts: store.casts.map(normalizeStoreCast),
+  priceReference: normalizeStorePriceReference(store.priceReference),
+  relatedStores: store.relatedStores.map(normalizeRelatedStore),
+  seo: {
+    ...store.seo,
+    ogImage: resolveClientUrl(store.seo.ogImage),
+  },
+});
+
+export const getStoreDetail = async (slug: string, options: RequestInit = {}) =>
+  normalizeStoreDetail(await apiClient<PublicStoreDetail>(`/stores/${encodeURIComponent(slug)}`, {
     cache: "no-store",
     ...options,
-  });
+  }));

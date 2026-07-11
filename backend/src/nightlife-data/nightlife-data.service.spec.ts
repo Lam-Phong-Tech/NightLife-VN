@@ -389,8 +389,13 @@ describe('NightlifeDataService', () => {
         address: 'Tay Ho',
         city: 'Ha Noi',
         district: 'Tay Ho',
+        tags: ['dj', 'vip'],
         latitude: '21.063',
         longitude: '105.822',
+        openingHours: { monday: { open: '19:00', close: '02:00' } },
+        pricingInfo: {
+          items: [{ name: 'VIP table', amountVnd: 2500000 }],
+        },
         area: {
           id: 'area-hn',
           code: 'hn-tayho',
@@ -399,6 +404,23 @@ describe('NightlifeDataService', () => {
           district: 'Tay Ho',
         },
         media: [{ url: 'https://example.com/neon.jpg' }],
+        casts: [{ hourlyRateVnd: 700000 }],
+        coupons: [
+          {
+            id: 'coupon-list-1',
+            code: 'LIST20',
+            name: 'List 20%',
+            description: '20% off',
+            discountType: 'PERCENT',
+            discountValue: 20,
+            maxDiscountVnd: 200000,
+            minSpendVnd: 1000000,
+            startsAt: new Date('2026-06-01T00:00:00.000Z'),
+            endsAt: new Date('2026-07-01T00:00:00.000Z'),
+            usageLimit: 100,
+            usedCount: 3,
+          },
+        ],
       },
     ] as never);
 
@@ -416,6 +438,16 @@ describe('NightlifeDataService', () => {
         slug: 'neon-club',
         category: 'CLUB',
         cityCode: 'hn',
+        tags: ['dj', 'vip'],
+        openingHours: { monday: { open: '19:00', close: '02:00' } },
+        priceReference: expect.objectContaining({
+          currency: 'VND',
+          startingFromVnd: 2500000,
+        }),
+        activeCoupon: expect.objectContaining({
+          code: 'LIST20',
+          name: 'List 20%',
+        }),
         distanceKm: expect.any(Number),
       }),
     ]);
