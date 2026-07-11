@@ -188,4 +188,29 @@ describe("Partner offline scan queue", () => {
       });
     });
   }, 15000);
+
+  it("unwraps QR image links before scanning booking orders", async () => {
+    render(<PartnerPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Quét mã QR/i }));
+
+    const bookingPayload =
+      "NLBOOKING|550e8400-e29b-41d4-a716-446655440000|BK-550E8400|moonlight-bar|2026-07-04T14:00:00.000Z";
+    const wrappedQrLink = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+      bookingPayload,
+    )}`;
+    const scanInput = screen.getByPlaceholderText(/QR đặt chỗ/i);
+    fireEvent.change(scanInput, { target: { value: wrappedQrLink } });
+    fireEvent.submit(scanInput.closest("form")!);
+
+    await waitFor(() => {
+      expect(apiClient).toHaveBeenCalledWith("/partner/booking-qrs/scan", {
+        data: {
+          payload: bookingPayload,
+          offline: false,
+        },
+      });
+    });
+    expect(screen.getByText(/Đơn đặt chỗ/i)).toBeTruthy();
+  }, 15000);
 });

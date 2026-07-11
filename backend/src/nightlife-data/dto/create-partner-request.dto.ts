@@ -26,6 +26,14 @@ export class PartnerRequestCastDto {
   stageName: string;
 
   @ApiPropertyOptional({
+    example: 'Gentle support for quiet guests.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  publicHeadline?: string;
+
+  @ApiPropertyOptional({
     example: 'Friendly hostess, Japanese and English speaking.',
   })
   @IsOptional()
@@ -48,6 +56,45 @@ export class PartnerRequestCastDto {
   @IsString({ each: true })
   @MaxLength(20, { each: true })
   languages?: string[];
+
+  @ApiPropertyOptional({ example: 8 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  birthMonth?: number;
+
+  @ApiPropertyOptional({ example: 'Leo' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  zodiacSign?: string;
+
+  @ApiPropertyOptional({ example: 165 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  heightCm?: number;
+
+  @ApiPropertyOptional({ example: '82-58-84' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  measurements?: string;
+
+  @ApiPropertyOptional({ example: ['spa', 'cocktail'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  hobbies?: string[];
+
+  @ApiPropertyOptional({ example: ['https://youtube.com/watch?v=abc'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsUrl({ require_tld: false }, { each: true })
+  youtubeLinks?: string[];
 
   @ApiPropertyOptional({ example: 1200000 })
   @IsOptional()

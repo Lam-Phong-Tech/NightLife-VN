@@ -71,11 +71,37 @@ type PartnerListingPricing = {
   note?: string | null;
 };
 
+type PartnerListingOpeningHour = {
+  day: string;
+  isOff?: boolean;
+  hours?: string;
+};
+
+type PartnerListingMenuItem = {
+  name: string;
+  description?: string;
+  priceTier?: string;
+  isHot?: boolean;
+  imageUrl?: string;
+};
+
+type PartnerListingMenuGroup = {
+  name: string;
+  items: PartnerListingMenuItem[];
+};
+
 type PartnerListingCast = {
   stageName: string;
+  publicHeadline?: string | null;
   bio?: string | null;
   tags?: string[];
   languages?: string[];
+  birthMonth?: number;
+  zodiacSign?: string | null;
+  heightCm?: number;
+  measurements?: string | null;
+  hobbies?: string[];
+  youtubeLinks?: string[];
   hourlyRateVnd?: number;
   mediaUrls?: string[];
 };
@@ -87,13 +113,22 @@ type PartnerListingDraft = {
   area: string;
   storeCity: string;
   storeDistrict: string;
+  ward: string;
+  streetAddress: string;
   storeAddress: string;
   phone: string;
   openingHours: string;
+  openingHourItems: PartnerListingOpeningHour[];
   priceRange: string;
   description: string;
   note: string;
   menuSummary: string;
+  menuGroups: PartnerListingMenuGroup[];
+  mapUrl: string;
+  tags: string[];
+  coverImageUrl: string;
+  galleryUrls: string[];
+  videoUrls: string[];
   pricingItems: PartnerListingPricing[];
   castProfiles: PartnerListingCast[];
   mediaUrls: string[];
@@ -208,11 +243,25 @@ type OfflineScanQueueItem = {
   lastError?: string | null;
 };
 
+type NormalizedScanPayload = {
+  kind: 'booking' | 'signed' | 'coupon';
+  payload: string;
+  raw: string;
+  label: string;
+};
+
 const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
 const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
 const offlineScanQueueMaxAttempts = 3;
 const offlineScanQueueMaxItems = 25;
 const signedQrTokenPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const bookingCodePattern = /^#?BK-[A-Z0-9-]{6,}$/i;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const listingOpeningDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+
+const defaultListingOpeningHours = (): PartnerListingOpeningHour[] =>
+  listingOpeningDays.map((day) => ({ day, isOff: false, hours: '' }));
 
 const isSignedQrPayload = (value: string) => {
   if (signedQrTokenPattern.test(value)) {
@@ -229,6 +278,79 @@ const isSignedQrPayload = (value: string) => {
 
 const isBookingQrPayload = (value: string) =>
   value.trim().toUpperCase().startsWith('NLBOOKING|');
+
+const bookingPayloadFromId = (bookingId: string, bookingCode?: string | null) => {
+  const code =
+    bookingCode?.trim() ||
+    (uuidPattern.test(bookingId)
+      ? `BK-${bookingId.slice(0, 8).toUpperCase()}`
+      : bookingId.trim());
+
+  return `NLBOOKING|${bookingId.trim()}|${code}||`;
+};
+
+const normalizePartnerScanPayload = (
+  value: string,
+  depth = 0,
+): NormalizedScanPayload | null => {
+  const raw = value.trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (depth > 3) {
+    return { kind: 'coupon', payload: raw, raw, label: 'mã coupon' };
+  }
+
+  if (isBookingQrPayload(raw)) {
+    return { kind: 'booking', payload: raw, raw, label: 'QR đặt chỗ' };
+  }
+
+  if (bookingCodePattern.test(raw)) {
+    const code = raw.replace(/^#/, '').toUpperCase();
+    return { kind: 'booking', payload: `NLBOOKING||${code}||`, raw, label: 'mã đặt chỗ' };
+  }
+
+  if (isSignedQrPayload(raw)) {
+    return { kind: 'signed', payload: raw, raw, label: 'QR coupon' };
+  }
+
+  try {
+    const url = new URL(raw, 'https://nightlife.local');
+    const wrappedPayload =
+      url.searchParams.get('data') ??
+      url.searchParams.get('payload') ??
+      url.searchParams.get('qrPayload');
+    if (wrappedPayload && wrappedPayload.trim() !== raw) {
+      const normalizedWrapped = normalizePartnerScanPayload(wrappedPayload, depth + 1);
+      if (normalizedWrapped) {
+        return { ...normalizedWrapped, raw };
+      }
+    }
+
+    const bookingId =
+      url.searchParams.get('bookingId') ??
+      url.searchParams.get('booking') ??
+      url.searchParams.get('booking_id');
+    if (bookingId) {
+      return {
+        kind: 'booking',
+        payload: bookingPayloadFromId(bookingId, url.searchParams.get('code')),
+        raw,
+        label: 'link đặt chỗ',
+      };
+    }
+
+    const token = url.searchParams.get('scanToken') ?? url.searchParams.get('token');
+    if (token) {
+      return { kind: 'signed', payload: raw, raw, label: 'link QR coupon' };
+    }
+  } catch {
+    // Keep falling through to manual coupon code mode.
+  }
+
+  return { kind: 'coupon', payload: raw, raw, label: 'mã coupon' };
+};
 
 const readQrFromVideoFrame = async (
   video: HTMLVideoElement,
@@ -375,13 +497,22 @@ const emptyListingDraft: PartnerListingDraft = {
   area: '',
   storeCity: '',
   storeDistrict: '',
+  ward: '',
+  streetAddress: '',
   storeAddress: '',
   phone: '',
   openingHours: '',
+  openingHourItems: defaultListingOpeningHours(),
   priceRange: '',
   description: '',
   note: '',
   menuSummary: '',
+  menuGroups: [],
+  mapUrl: '',
+  tags: [],
+  coverImageUrl: '',
+  galleryUrls: [],
+  videoUrls: [],
   pricingItems: [],
   castProfiles: [],
   mediaUrls: [],
@@ -722,9 +853,10 @@ export default function PartnerPage() {
   }, []);
 
   const scanCouponPayload = useCallback(
-    async (payload: string, options: { fromQueue?: boolean } = {}) => {
+    async (payload: string, options: { fromQueue?: boolean; fromCamera?: boolean } = {}) => {
       const trimmedPayload = payload.trim();
-      if (!trimmedPayload) {
+      const normalizedPayload = normalizePartnerScanPayload(trimmedPayload);
+      if (!normalizedPayload) {
         setScanMessage('Cần QR đặt chỗ, scanToken, link QR hoặc mã coupon để kiểm tra.');
         return false;
       }
@@ -733,7 +865,7 @@ export default function PartnerPage() {
         if (options.fromQueue) {
           setScanMessage('Vẫn offline, giữ mã trong hàng đợi để thử lại.');
         } else {
-          queueOfflineScan(trimmedPayload);
+          queueOfflineScan(normalizedPayload.payload);
         }
         return false;
       }
@@ -744,28 +876,34 @@ export default function PartnerPage() {
       );
 
       try {
-        const issue = isBookingQrPayload(trimmedPayload)
+        const issue = normalizedPayload.kind === 'booking'
           ? await apiClient<PartnerScanIssue>('/partner/booking-qrs/scan', {
               data: {
-                payload: trimmedPayload,
+                payload: normalizedPayload.payload,
                 offline: Boolean(options.fromQueue),
               },
             })
-          : isSignedQrPayload(trimmedPayload)
+          : normalizedPayload.kind === 'signed'
             ? await apiClient<PartnerScanIssue>('/partner/coupon-issues/scan', {
                 data: {
-                  payload: trimmedPayload,
+                  payload: normalizedPayload.payload,
                   offline: Boolean(options.fromQueue),
                 },
               })
             : await apiClient<PartnerScanIssue>(
-                `/partner/coupon-issues/${encodeURIComponent(trimmedPayload)}/scan`,
+                `/partner/coupon-issues/${encodeURIComponent(normalizedPayload.payload)}/scan`,
                 { data: {} },
               );
 
         setScanIssue(issue);
         setScanMessage(
-          `${issue.statusLabel ?? issue.status} - hợp lệ tại ${issue.coupon?.store?.name ?? 'quán được phân quyền'}.`,
+          `${issue.statusLabel ?? issue.status} - đã đọc ${normalizedPayload.label} ${issue.code} tại ${
+            issue.coupon?.store?.name ?? 'quán được phân quyền'
+          }. ${
+            options.fromCamera
+              ? 'Camera đã tắt, kiểm tra thông tin bên phải rồi xác nhận.'
+              : 'Kiểm tra thông tin bên phải rồi xác nhận.'
+          }`,
         );
         return true;
       } catch (error) {
@@ -773,13 +911,15 @@ export default function PartnerPage() {
           if (options.fromQueue) {
             setScanMessage('Vẫn offline, giữ mã trong hàng đợi để thử lại.');
           } else {
-            queueOfflineScan(trimmedPayload);
+            queueOfflineScan(normalizedPayload.payload);
           }
           return false;
         }
 
         setScanMessage(
-          error instanceof ApiError ? error.message : 'Không kiểm tra được mã. Thử lại sau.',
+          error instanceof ApiError
+            ? `${error.message}. Kiểm tra QR có đúng quán, còn hạn và chưa check-in/USED.`
+            : 'Không kiểm tra được mã. Thử lại hoặc dán link QR/mã đặt chỗ thủ công.',
         );
         return false;
       } finally {
@@ -843,7 +983,7 @@ export default function PartnerPage() {
             lastCameraPayloadRef.current = rawValue;
             setScanPayload(rawValue);
             setCameraMessage('Đã đọc QR, đang kiểm tra mã...');
-            void scanCouponPayload(rawValue).then((ok) => {
+            void scanCouponPayload(rawValue, { fromCamera: true }).then((ok) => {
               if (ok) {
                 stopCameraScan();
               }
@@ -1018,15 +1158,22 @@ export default function PartnerPage() {
   }, []);
 
   useEffect(() => {
-    const token = searchParams.get('scanToken') ?? searchParams.get('token');
+    const scanToken = searchParams.get('scanToken') ?? searchParams.get('token');
+    const bookingId = searchParams.get('bookingId');
+    const token =
+      scanToken ??
+      bookingId;
     if (!token) {
       return;
     }
 
     const timer = window.setTimeout(() => {
       setActivePanel('scan');
-      setScanPayload(token);
-      void scanCouponPayload(token);
+      const scanValue = bookingId && !scanToken
+        ? bookingPayloadFromId(bookingId, searchParams.get('code'))
+        : token;
+      setScanPayload(scanValue);
+      void scanCouponPayload(scanValue);
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -1130,15 +1277,23 @@ export default function PartnerPage() {
   };
 
   const applyListingDraftResponse = useCallback((response: PartnerListingDraftResponse) => {
+    const draft = response.draft;
     setListingContentId(response.contentId);
     setListingReview(response.review);
     setListingDraft({
       ...emptyListingDraft,
-      ...response.draft,
-      description: cleanListingText(response.draft.description),
-      pricingItems: response.draft.pricingItems ?? [],
-      castProfiles: response.draft.castProfiles ?? [],
-      mediaUrls: response.draft.mediaUrls ?? [],
+      ...draft,
+      description: cleanListingText(draft.description),
+      openingHourItems: draft.openingHourItems?.length
+        ? draft.openingHourItems
+        : defaultListingOpeningHours(),
+      tags: draft.tags ?? [],
+      menuGroups: draft.menuGroups ?? [],
+      galleryUrls: draft.galleryUrls ?? [],
+      videoUrls: draft.videoUrls ?? [],
+      pricingItems: draft.pricingItems ?? [],
+      castProfiles: draft.castProfiles ?? [],
+      mediaUrls: draft.mediaUrls ?? [],
     });
     setListingNotice(response.message);
   }, []);
@@ -1185,6 +1340,79 @@ export default function PartnerPage() {
     setListingDraft((current) => ({ ...current, [key]: value }));
   };
 
+  const updateListingTags = (value: string) => {
+    setListingDraft((current) => ({
+      ...current,
+      tags: value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 16),
+    }));
+  };
+
+  const updateOpeningHourItem = (
+    index: number,
+    key: keyof PartnerListingOpeningHour,
+    value: string | boolean,
+  ) => {
+    setListingDraft((current) => ({
+      ...current,
+      openingHourItems: (current.openingHourItems.length
+        ? current.openingHourItems
+        : defaultListingOpeningHours()
+      ).map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      ),
+    }));
+  };
+
+  const updateGalleryUrl = (index: number, value: string) => {
+    setListingDraft((current) => ({
+      ...current,
+      galleryUrls: current.galleryUrls.map((item, itemIndex) =>
+        itemIndex === index ? value : item,
+      ),
+    }));
+  };
+
+  const addGalleryUrl = () => {
+    setListingDraft((current) => ({
+      ...current,
+      galleryUrls: [...current.galleryUrls, ''],
+    }));
+  };
+
+  const removeGalleryUrl = (index: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      galleryUrls: current.galleryUrls.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const updateVideoUrl = (index: number, value: string) => {
+    setListingDraft((current) => ({
+      ...current,
+      videoUrls: current.videoUrls.map((item, itemIndex) =>
+        itemIndex === index ? value : item,
+      ),
+    }));
+  };
+
+  const addVideoUrl = () => {
+    setListingDraft((current) => ({
+      ...current,
+      videoUrls: [...current.videoUrls, ''],
+    }));
+  };
+
+  const removeVideoUrl = (index: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      videoUrls: current.videoUrls.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
   const updatePricingItem = (
     index: number,
     key: keyof PartnerListingPricing,
@@ -1212,6 +1440,81 @@ export default function PartnerPage() {
     }));
   };
 
+  const updateMenuGroupName = (index: number, value: string) => {
+    setListingDraft((current) => ({
+      ...current,
+      menuGroups: current.menuGroups.map((group, groupIndex) =>
+        groupIndex === index ? { ...group, name: value } : group,
+      ),
+    }));
+  };
+
+  const addMenuGroup = () => {
+    setListingDraft((current) => ({
+      ...current,
+      menuGroups: [...current.menuGroups, { name: '', items: [] }],
+    }));
+  };
+
+  const removeMenuGroup = (index: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      menuGroups: current.menuGroups.filter((_, groupIndex) => groupIndex !== index),
+    }));
+  };
+
+  const updateMenuItem = (
+    groupIndex: number,
+    itemIndex: number,
+    key: keyof PartnerListingMenuItem,
+    value: string | boolean,
+  ) => {
+    setListingDraft((current) => ({
+      ...current,
+      menuGroups: current.menuGroups.map((group, currentGroupIndex) =>
+        currentGroupIndex === groupIndex
+          ? {
+              ...group,
+              items: group.items.map((item, currentItemIndex) =>
+                currentItemIndex === itemIndex ? { ...item, [key]: value } : item,
+              ),
+            }
+          : group,
+      ),
+    }));
+  };
+
+  const addMenuItem = (groupIndex: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      menuGroups: current.menuGroups.map((group, currentGroupIndex) =>
+        currentGroupIndex === groupIndex
+          ? {
+              ...group,
+              items: [
+                ...group.items,
+                { name: '', description: '', priceTier: '$$', isHot: false, imageUrl: '' },
+              ],
+            }
+          : group,
+      ),
+    }));
+  };
+
+  const removeMenuItem = (groupIndex: number, itemIndex: number) => {
+    setListingDraft((current) => ({
+      ...current,
+      menuGroups: current.menuGroups.map((group, currentGroupIndex) =>
+        currentGroupIndex === groupIndex
+          ? {
+              ...group,
+              items: group.items.filter((_, currentItemIndex) => currentItemIndex !== itemIndex),
+            }
+          : group,
+      ),
+    }));
+  };
+
   const updateCastProfile = (
     index: number,
     key: keyof PartnerListingCast,
@@ -1230,7 +1533,16 @@ export default function PartnerPage() {
       ...current,
       castProfiles: [
         ...current.castProfiles,
-        { stageName: '', bio: '', tags: [], languages: [], mediaUrls: [] },
+        {
+          stageName: '',
+          publicHeadline: '',
+          bio: '',
+          tags: [],
+          languages: [],
+          hobbies: [],
+          youtubeLinks: [],
+          mediaUrls: [],
+        },
       ],
     }));
   };
@@ -1265,21 +1577,49 @@ export default function PartnerPage() {
     }));
   };
 
-  const listingPayload = () => ({
-    ...listingDraft,
-    pricingItems: listingDraft.pricingItems.filter(
-      (item) => item.label.trim() && item.value.trim(),
-    ),
-    castProfiles: listingDraft.castProfiles
-      .filter((item) => item.stageName.trim())
-      .map((item) => ({
-        ...item,
-        tags: item.tags?.filter(Boolean) ?? [],
-        languages: item.languages?.filter(Boolean) ?? [],
-        mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
-      })),
-    mediaUrls: listingDraft.mediaUrls.filter((url) => url.trim()),
-  });
+  const listingPayload = () => {
+    const galleryUrls = listingDraft.galleryUrls.filter((url) => url.trim());
+    const videoUrls = listingDraft.videoUrls.filter((url) => url.trim());
+    const mediaUrls = [
+      listingDraft.coverImageUrl.trim(),
+      ...galleryUrls,
+      ...videoUrls,
+      ...listingDraft.mediaUrls.filter((url) => url.trim()),
+    ]
+      .filter(Boolean)
+      .filter((url, index, list) => list.indexOf(url) === index);
+
+    return {
+      ...listingDraft,
+      tags: listingDraft.tags.filter(Boolean),
+      openingHourItems: (listingDraft.openingHourItems.length
+        ? listingDraft.openingHourItems
+        : defaultListingOpeningHours()
+      ).filter((item) => item.day.trim() && (item.isOff || item.hours?.trim())),
+      pricingItems: listingDraft.pricingItems.filter(
+        (item) => item.label.trim() && item.value.trim(),
+      ),
+      menuGroups: listingDraft.menuGroups
+        .filter((group) => group.name.trim())
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => item.name.trim()),
+        })),
+      castProfiles: listingDraft.castProfiles
+        .filter((item) => item.stageName.trim())
+        .map((item) => ({
+          ...item,
+          tags: item.tags?.filter(Boolean) ?? [],
+          languages: item.languages?.filter(Boolean) ?? [],
+          hobbies: item.hobbies?.filter(Boolean) ?? [],
+          youtubeLinks: item.youtubeLinks?.filter(Boolean) ?? [],
+          mediaUrls: item.mediaUrls?.filter(Boolean) ?? [],
+        })),
+      galleryUrls,
+      videoUrls,
+      mediaUrls,
+    };
+  };
 
   const saveListingDraft = async () => {
     if (!listingStoreId || !listingDraft.storeName.trim()) {
@@ -1768,7 +2108,10 @@ export default function PartnerPage() {
                       fontWeight: 800,
                     }}
                   >
-                    {scanIssue.coupon?.name ?? 'Coupon'} ·{' '}
+                    {scanIssue.scanType === 'BOOKING_QR'
+                      ? 'Đơn đặt chỗ'
+                      : scanIssue.coupon?.name ?? 'Coupon'}{' '}
+                    ·{' '}
                     {scanIssue.coupon?.store?.name ?? storeName}
                   </div>
                 </div>
@@ -1779,6 +2122,7 @@ export default function PartnerPage() {
             </div>
 
             {[
+              ['Loại mã', scanIssue.scanType === 'BOOKING_QR' ? 'QR đặt chỗ' : 'Coupon'],
               ['Quán áp dụng', scanIssue.coupon?.store?.name ?? storeName],
               ['Trạng thái', scanIssue.statusLabel ?? scanIssue.status],
               ['Hạn sử dụng', scannedExpiryLabel],
@@ -2054,6 +2398,14 @@ export default function PartnerPage() {
                     style={inputStyle}
                   />
                 </FormField>
+                <FormField label="Headline hiển thị">
+                  <input
+                    value={cast.publicHeadline ?? ''}
+                    onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
+                    placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
+                    style={inputStyle}
+                  />
+                </FormField>
                 <FormField label="Ngôn ngữ">
                   <input
                     value={cast.languages?.join(', ') ?? ''}
@@ -2082,6 +2434,66 @@ export default function PartnerPage() {
                     style={inputStyle}
                   />
                 </FormField>
+                <FormField label="Sở thích">
+                  <input
+                    value={cast.hobbies?.join(', ') ?? ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'hobbies',
+                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+                      )
+                    }
+                    placeholder="spa, cocktail"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Tháng sinh">
+                  <input
+                    inputMode="numeric"
+                    value={cast.birthMonth ? String(cast.birthMonth) : ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'birthMonth',
+                        event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined,
+                      )
+                    }
+                    placeholder="1 - 12"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Cung">
+                  <input
+                    value={cast.zodiacSign ?? ''}
+                    onChange={(event) => updateCastProfile(index, 'zodiacSign', event.target.value)}
+                    placeholder="VD: Leo"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Chiều cao">
+                  <input
+                    inputMode="numeric"
+                    value={cast.heightCm ? String(cast.heightCm) : ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'heightCm',
+                        event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined,
+                      )
+                    }
+                    placeholder="VD: 165"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Số đo">
+                  <input
+                    value={cast.measurements ?? ''}
+                    onChange={(event) => updateCastProfile(index, 'measurements', event.target.value)}
+                    placeholder="VD: 82-58-84"
+                    style={inputStyle}
+                  />
+                </FormField>
                 <FormField label="Giá theo giờ">
                   <input
                     inputMode="numeric"
@@ -2094,6 +2506,34 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="VD: 1200000"
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="YouTube URL">
+                  <input
+                    value={cast.youtubeLinks?.join(', ') ?? ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'youtubeLinks',
+                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+                      )
+                    }
+                    placeholder="https://youtube.com/..."
+                    style={inputStyle}
+                  />
+                </FormField>
+                <FormField label="Ảnh cast URL">
+                  <input
+                    value={cast.mediaUrls?.join(', ') ?? ''}
+                    onChange={(event) =>
+                      updateCastProfile(
+                        index,
+                        'mediaUrls',
+                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
+                      )
+                    }
+                    placeholder="https://.../cast.jpg"
                     style={inputStyle}
                   />
                 </FormField>
@@ -2133,6 +2573,102 @@ export default function PartnerPage() {
               style={inputStyle}
             />
           </FormField>
+          <FormField label="Tóm tắt thực đơn / mức giá">
+            <textarea
+              value={listingDraft.menuSummary}
+              onChange={(event) => updateListingField('menuSummary', event.target.value)}
+              placeholder="VD: Bottle service, cocktail, set VIP..."
+              style={{ ...inputStyle, minHeight: '88px', resize: 'vertical', padding: '12px' }}
+            />
+          </FormField>
+          <div className="partner-listing-section" style={{ margin: 0 }}>
+            <div className="partner-listing-section-title">Nhóm menu giống form Admin</div>
+            {!listingDraft.menuGroups.length ? (
+              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+                Chưa có nhóm menu. Bấm Thêm nhóm menu để nhập món, mô tả và mức chi phí.
+              </div>
+            ) : null}
+            {listingDraft.menuGroups.map((group, groupIndex) => (
+              <div key={`${group.name}-${groupIndex}`} style={{ ...softCardStyle, padding: '14px', display: 'grid', gap: '10px' }}>
+                <div className="partner-listing-grid">
+                  <FormField label="Tên nhóm">
+                    <input
+                      value={group.name}
+                      onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
+                      placeholder="VD: VIP packages"
+                      style={inputStyle}
+                    />
+                  </FormField>
+                  <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
+                    <GhostButton onClick={() => addMenuItem(groupIndex)}>
+                      <ReceiptText size={16} />
+                      Thêm món
+                    </GhostButton>
+                    <GhostButton onClick={() => removeMenuGroup(groupIndex)}>
+                      <XCircle size={16} />
+                      Xóa nhóm
+                    </GhostButton>
+                  </div>
+                </div>
+                {group.items.map((item, itemIndex) => (
+                  <div key={`${item.name}-${itemIndex}`} className="partner-listing-grid" style={{ borderTop: `1px solid ${colors.borderHair}`, paddingTop: '10px' }}>
+                    <FormField label="Tên món / dịch vụ">
+                      <input
+                        value={item.name}
+                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
+                        placeholder="VD: VIP table"
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Mô tả">
+                      <input
+                        value={item.description ?? ''}
+                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
+                        placeholder="Mô tả ngắn"
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <FormField label="Mức chi phí">
+                      <select
+                        value={item.priceTier ?? '$$'}
+                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'priceTier', event.target.value)}
+                        style={{ ...inputStyle, appearance: 'none' }}
+                      >
+                        <option value="$$">$$</option>
+                        <option value="$$$">$$$</option>
+                        <option value="$$$$">$$$$</option>
+                      </select>
+                    </FormField>
+                    <FormField label="Ảnh món URL">
+                      <input
+                        value={item.imageUrl ?? ''}
+                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
+                        placeholder="https://..."
+                        style={inputStyle}
+                      />
+                    </FormField>
+                    <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
+                        className="partner-toggle-button"
+                      >
+                        {item.isHot ? 'HOT' : 'Không HOT'}
+                      </button>
+                      <GhostButton onClick={() => removeMenuItem(groupIndex, itemIndex)}>
+                        <XCircle size={16} />
+                        Xóa món
+                      </GhostButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+            <GhostButton onClick={addMenuGroup}>
+              <ReceiptText size={16} />
+              Thêm nhóm menu
+            </GhostButton>
+          </div>
           {!listingDraft.pricingItems.length ? (
             <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
               Chưa có dòng giá trong bản nháp. Bấm Thêm dòng giá để nhập bảng giá thật.
@@ -2182,120 +2718,278 @@ export default function PartnerPage() {
 
     if (listingTab === 'media') {
       return (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {!listingDraft.mediaUrls.length ? (
-            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-              Chưa có ảnh hoặc video trong bản nháp. Bấm Thêm ảnh / video để nhập media thật.
-            </div>
-          ) : null}
-          {listingDraft.mediaUrls.map((url, index) => (
-            <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-              <FormField label={index === 0 ? 'Ảnh cover / video URL' : 'Ảnh / video URL'}>
-                <input
-                  value={url}
-                  onChange={(event) => updateMediaUrl(index, event.target.value)}
-                  placeholder="https://..."
-                  style={inputStyle}
-                />
-              </FormField>
-              <div style={{ display: 'flex', alignItems: 'end' }}>
-                <GhostButton onClick={() => removeMediaUrl(index)}>
-                  <XCircle size={16} />
-                  Xóa
-                </GhostButton>
+        <div className="partner-listing-form">
+          <section className="partner-listing-section">
+            <div className="partner-listing-section-title">Ảnh bìa</div>
+            <FormField label="Cover image URL">
+              <input
+                value={listingDraft.coverImageUrl}
+                onChange={(event) => updateListingField('coverImageUrl', event.target.value)}
+                placeholder="https://.../cover.jpg"
+                style={inputStyle}
+              />
+            </FormField>
+          </section>
+
+          <section className="partner-listing-section">
+            <div className="partner-listing-section-title">Album ảnh</div>
+            {!listingDraft.galleryUrls.length ? (
+              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+                Chưa có ảnh album. Bấm Thêm ảnh để nhập ảnh thật của quán.
               </div>
-            </div>
-          ))}
-          <GhostButton onClick={addMediaUrl}>
-            <ImagePlus size={16} />
-            Thêm ảnh / video
-          </GhostButton>
+            ) : null}
+            {listingDraft.galleryUrls.map((url, index) => (
+              <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+                <FormField label={`Ảnh album ${index + 1}`}>
+                  <input
+                    value={url}
+                    onChange={(event) => updateGalleryUrl(index, event.target.value)}
+                    placeholder="https://..."
+                    style={inputStyle}
+                  />
+                </FormField>
+                <div style={{ display: 'flex', alignItems: 'end' }}>
+                  <GhostButton onClick={() => removeGalleryUrl(index)}>
+                    <XCircle size={16} />
+                    Xóa
+                  </GhostButton>
+                </div>
+              </div>
+            ))}
+            <GhostButton onClick={addGalleryUrl}>
+              <ImagePlus size={16} />
+              Thêm ảnh
+            </GhostButton>
+          </section>
+
+          <section className="partner-listing-section">
+            <div className="partner-listing-section-title">Video quán</div>
+            {!listingDraft.videoUrls.length ? (
+              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+                Chưa có video. Có thể dán YouTube hoặc URL video đã tải lên.
+              </div>
+            ) : null}
+            {listingDraft.videoUrls.map((url, index) => (
+              <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+                <FormField label={`Video ${index + 1}`}>
+                  <input
+                    value={url}
+                    onChange={(event) => updateVideoUrl(index, event.target.value)}
+                    placeholder="https://youtube.com/..."
+                    style={inputStyle}
+                  />
+                </FormField>
+                <div style={{ display: 'flex', alignItems: 'end' }}>
+                  <GhostButton onClick={() => removeVideoUrl(index)}>
+                    <XCircle size={16} />
+                    Xóa
+                  </GhostButton>
+                </div>
+              </div>
+            ))}
+            <GhostButton onClick={addVideoUrl}>
+              <ImagePlus size={16} />
+              Thêm video
+            </GhostButton>
+          </section>
+
+          {listingDraft.mediaUrls.length ? (
+            <section className="partner-listing-section">
+              <div className="partner-listing-section-title">Media cũ</div>
+              {listingDraft.mediaUrls.map((url, index) => (
+                <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+                  <FormField label="Media URL">
+                    <input
+                      value={url}
+                      onChange={(event) => updateMediaUrl(index, event.target.value)}
+                      placeholder="https://..."
+                      style={inputStyle}
+                    />
+                  </FormField>
+                  <div style={{ display: 'flex', alignItems: 'end' }}>
+                    <GhostButton onClick={() => removeMediaUrl(index)}>
+                      <XCircle size={16} />
+                      Xóa
+                    </GhostButton>
+                  </div>
+                </div>
+              ))}
+              <GhostButton onClick={addMediaUrl}>
+                <ImagePlus size={16} />
+                Thêm media khác
+              </GhostButton>
+            </section>
+          ) : null}
         </div>
       );
     }
 
+    const openingRows = listingDraft.openingHourItems.length
+      ? listingDraft.openingHourItems
+      : defaultListingOpeningHours();
+
     return (
-      <div className="partner-listing-grid">
-        <FormField label="Tên quán">
-          <input
-            value={listingDraft.storeName}
-            onChange={(event) => updateListingField('storeName', event.target.value)}
-            placeholder="VD: Vietyoru Lounge"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Loại hình">
-          <input
-            value={listingDraft.businessType}
-            onChange={(event) => updateListingField('businessType', event.target.value)}
-            placeholder="VD: Lounge · Bar · Karaoke"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Khu vực">
-          <input
-            value={listingDraft.area}
-            onChange={(event) => updateListingField('area', event.target.value)}
-            placeholder="VD: Quận 1, TP. Hồ Chí Minh"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Thành phố">
-          <input
-            value={listingDraft.storeCity}
-            onChange={(event) => updateListingField('storeCity', event.target.value)}
-            placeholder="VD: Hồ Chí Minh"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Quận / khu">
-          <input
-            value={listingDraft.storeDistrict}
-            onChange={(event) => updateListingField('storeDistrict', event.target.value)}
-            placeholder="VD: Quận 1"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Địa chỉ">
-          <input
-            value={listingDraft.storeAddress}
-            onChange={(event) => updateListingField('storeAddress', event.target.value)}
-            placeholder="VD: 12 Nguyễn Huệ, Bến Nghé"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Số điện thoại">
-          <input
-            value={listingDraft.phone}
-            onChange={(event) => updateListingField('phone', event.target.value)}
-            placeholder="VD: 0901234567"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Giờ mở cửa">
-          <input
-            value={listingDraft.openingHours}
-            onChange={(event) => updateListingField('openingHours', event.target.value)}
-            placeholder="VD: 18:00 - 02:00"
-            style={inputStyle}
-          />
-        </FormField>
-        <FormField label="Mô tả ngắn" className="partner-field-wide">
-          <textarea
-            value={listingDraft.description}
-            onChange={(event) => updateListingField('description', event.target.value)}
-            placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
-            style={{ ...inputStyle, minHeight: '112px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
-          />
-        </FormField>
-        <FormField label="Ghi chú gửi Admin" className="partner-field-wide">
-          <textarea
-            value={listingDraft.note}
-            onChange={(event) => updateListingField('note', event.target.value)}
-            placeholder="Ghi chú nội bộ cho Admin khi duyệt nội dung"
-            style={{ ...inputStyle, minHeight: '86px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
-          />
-        </FormField>
+      <div className="partner-listing-form">
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Thông tin cơ bản</div>
+          <div className="partner-listing-grid">
+            <FormField label="Tên quán">
+              <input
+                value={listingDraft.storeName}
+                onChange={(event) => updateListingField('storeName', event.target.value)}
+                placeholder="VD: Vietyoru Lounge"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Loại hình">
+              <select
+                value={listingDraft.storeCategory || listingDraft.businessType || 'CLUB'}
+                onChange={(event) =>
+                  setListingDraft((current) => ({
+                    ...current,
+                    storeCategory: event.target.value,
+                    businessType: event.target.value,
+                  }))
+                }
+                style={{ ...inputStyle, appearance: 'none' }}
+              >
+                <option value="CLUB">Club</option>
+                <option value="LOUNGE">Lounge</option>
+                <option value="BAR">Bar</option>
+                <option value="GIRLS_BAR">Girls Bar</option>
+                <option value="KARAOKE">Karaoke</option>
+                <option value="MASSAGE_SPA">Massage & Spa</option>
+                <option value="RESTAURANT">Nhà hàng</option>
+              </select>
+            </FormField>
+            <FormField label="Khu vực hiển thị">
+              <input
+                value={listingDraft.area}
+                onChange={(event) => updateListingField('area', event.target.value)}
+                placeholder="VD: Quận 1, TP.HCM"
+                style={inputStyle}
+              />
+            </FormField>
+          </div>
+        </section>
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Vị trí & liên hệ</div>
+          <div className="partner-listing-grid">
+            <FormField label="Tỉnh/Thành phố">
+              <input
+                value={listingDraft.storeCity}
+                onChange={(event) => updateListingField('storeCity', event.target.value)}
+                placeholder="VD: Hồ Chí Minh"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Quận / khu">
+              <input
+                value={listingDraft.storeDistrict}
+                onChange={(event) => updateListingField('storeDistrict', event.target.value)}
+                placeholder="VD: Quận 1"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Phường/Xã">
+              <input
+                value={listingDraft.ward}
+                onChange={(event) => updateListingField('ward', event.target.value)}
+                placeholder="VD: Bến Nghé"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Số nhà, tên đường">
+              <input
+                value={listingDraft.streetAddress}
+                onChange={(event) => updateListingField('streetAddress', event.target.value)}
+                placeholder="VD: 12 Nguyễn Huệ"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Số điện thoại">
+              <input
+                value={listingDraft.phone}
+                onChange={(event) => updateListingField('phone', event.target.value)}
+                placeholder="VD: 0901234567"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Link Google Maps">
+              <input
+                value={listingDraft.mapUrl}
+                onChange={(event) => updateListingField('mapUrl', event.target.value)}
+                placeholder="Dán link Google Maps"
+                style={inputStyle}
+              />
+            </FormField>
+          </div>
+        </section>
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Giờ mở cửa theo ngày</div>
+          <div className="partner-hour-list">
+            {openingRows.map((item, index) => (
+              <div key={`${item.day}-${index}`} className="partner-hour-row">
+                <strong>{item.day}</strong>
+                <button
+                  type="button"
+                  onClick={() => updateOpeningHourItem(index, 'isOff', !item.isOff)}
+                  aria-pressed={!item.isOff}
+                  className="partner-toggle-button"
+                >
+                  {item.isOff ? 'Nghỉ' : 'Mở'}
+                </button>
+                <input
+                  value={item.hours ?? ''}
+                  disabled={item.isOff}
+                  onChange={(event) => updateOpeningHourItem(index, 'hours', event.target.value)}
+                  placeholder="VD: 19:00 - 02:00"
+                  style={inputStyle}
+                />
+              </div>
+            ))}
+          </div>
+          <FormField label="Tóm tắt giờ mở cửa" style={{ marginTop: '12px' }}>
+            <input
+              value={listingDraft.openingHours}
+              onChange={(event) => updateListingField('openingHours', event.target.value)}
+              placeholder="VD: 19:00 - 04:00"
+              style={inputStyle}
+            />
+          </FormField>
+        </section>
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Nội dung hiển thị</div>
+          <div className="partner-listing-grid">
+            <FormField label="Tags / thẻ nổi bật" className="partner-field-wide">
+              <input
+                value={listingDraft.tags.join(', ')}
+                onChange={(event) => updateListingTags(event.target.value)}
+                placeholder="VD: Club, Phòng VIP, DJ hàng đầu"
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Mô tả quán" className="partner-field-wide">
+              <textarea
+                value={listingDraft.description}
+                onChange={(event) => updateListingField('description', event.target.value)}
+                placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
+                style={{ ...inputStyle, minHeight: '132px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
+              />
+            </FormField>
+            <FormField label="Ghi chú gửi Admin" className="partner-field-wide">
+              <textarea
+                value={listingDraft.note}
+                onChange={(event) => updateListingField('note', event.target.value)}
+                placeholder="Ghi chú nội bộ cho Admin khi duyệt nội dung"
+                style={{ ...inputStyle, minHeight: '86px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
+              />
+            </FormField>
+          </div>
+        </section>
       </div>
     );
   };
@@ -2547,6 +3241,55 @@ export default function PartnerPage() {
           gap: 16px 14px;
           align-items: start;
         }
+        .partner-listing-form {
+          display: grid;
+          gap: 16px;
+        }
+        .partner-listing-section {
+          border: 1px solid ${colors.borderSoft};
+          border-radius: 14px;
+          background: rgba(255,255,255,.025);
+          padding: 14px;
+          display: grid;
+          gap: 12px;
+        }
+        .partner-listing-section-title {
+          color: ${colors.goldBright};
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 1.2px;
+          text-transform: uppercase;
+        }
+        .partner-hour-list {
+          display: grid;
+          gap: 8px;
+        }
+        .partner-hour-row {
+          display: grid;
+          grid-template-columns: 72px 72px minmax(0, 1fr);
+          gap: 10px;
+          align-items: center;
+          border: 1px solid ${colors.borderHair};
+          border-radius: 12px;
+          background: rgba(0,0,0,.16);
+          padding: 9px 10px;
+        }
+        .partner-hour-row strong {
+          color: ${colors.text};
+          font-size: 12px;
+        }
+        .partner-toggle-button {
+          min-height: 38px;
+          border-radius: 10px;
+          border: 1px solid ${colors.borderGold22};
+          background: ${colors.surface3};
+          color: ${colors.goldBright};
+          font: inherit;
+          font-weight: 900;
+          cursor: pointer;
+          padding: 0 10px;
+          white-space: nowrap;
+        }
         .partner-listing-grid > * {
           min-width: 0;
         }
@@ -2607,6 +3350,7 @@ export default function PartnerPage() {
           .partner-metric-grid,
           .partner-settlement-summary,
           .partner-listing-grid,
+          .partner-hour-row,
           .partner-listing-toolbar,
           .partner-media-grid,
           .partner-store-scope-grid {

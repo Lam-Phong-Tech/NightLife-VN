@@ -100,6 +100,8 @@ import {
 import {
   PartnerListingCastDto,
   PartnerListingDraftDto,
+  PartnerListingMenuGroupDto,
+  PartnerListingOpeningHourDto,
   PartnerListingPricingDto,
 } from './dto/partner-listing.dto';
 import {
@@ -516,13 +518,22 @@ type PartnerListingDraftPayload = {
   area: string | null;
   storeCity: string | null;
   storeDistrict: string | null;
+  ward: string | null;
+  streetAddress: string | null;
   storeAddress: string | null;
   phone: string | null;
   openingHours: string | null;
+  openingHourItems: PartnerListingOpeningHourDto[];
   priceRange: string | null;
   description: string | null;
   note: string | null;
   menuSummary: string | null;
+  menuGroups: PartnerListingMenuGroupDto[];
+  mapUrl: string | null;
+  tags: string[];
+  coverImageUrl: string | null;
+  galleryUrls: string[];
+  videoUrls: string[];
   pricingItems: PartnerListingPricingDto[];
   castProfiles: PartnerListingCastDto[];
   mediaUrls: string[];
@@ -2685,9 +2696,16 @@ export class NightlifeDataService {
               `cast-${index + 1}`,
             ),
             bio: castProfile.bio,
+            publicHeadline: castProfile.publicHeadline,
             publicBio: castProfile.bio,
             tags: castProfile.tags,
             languages: castProfile.languages,
+            birthMonth: castProfile.birthMonth,
+            zodiacSign: castProfile.zodiacSign,
+            heightCm: castProfile.heightCm,
+            measurements: castProfile.measurements,
+            hobbies: castProfile.hobbies,
+            youtubeLinks: castProfile.youtubeLinks,
             hourlyRateVnd: castProfile.hourlyRateVnd,
             isPublic: false,
             status: 'DRAFT',
@@ -5483,9 +5501,16 @@ export class NightlifeDataService {
               `cast-${index + 1}`,
             ),
             bio: castProfile.bio,
+            publicHeadline: castProfile.publicHeadline,
             publicBio: castProfile.bio,
             tags: castProfile.tags,
             languages: castProfile.languages,
+            birthMonth: castProfile.birthMonth,
+            zodiacSign: castProfile.zodiacSign,
+            heightCm: castProfile.heightCm,
+            measurements: castProfile.measurements,
+            hobbies: castProfile.hobbies,
+            youtubeLinks: castProfile.youtubeLinks,
             hourlyRateVnd: castProfile.hourlyRateVnd,
             isPublic: false,
             status: 'DRAFT',
@@ -13493,6 +13518,7 @@ export class NightlifeDataService {
         phone: true,
         openingHours: true,
         pricingInfo: true,
+        mapUrl: true,
         tags: true,
         partnerAccountId: true,
         ownerId: true,
@@ -13615,6 +13641,89 @@ export class NightlifeDataService {
     });
   }
 
+  private normalizePartnerListingOpeningHourItems(
+    items?: PartnerListingOpeningHourDto[] | null,
+  ): PartnerListingOpeningHourDto[] {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items
+      .map((item) => ({
+        day: this.cleanText(item.day),
+        isOff: Boolean(item.isOff),
+        hours: this.cleanNullableText(item.hours) ?? '',
+      }))
+      .filter((item) => item.day && (item.isOff || item.hours))
+      .slice(0, 14);
+  }
+
+  private partnerListingOpeningHourItemsFromStore(
+    openingRecord?: Record<string, unknown> | null,
+  ) {
+    if (!openingRecord) {
+      return [];
+    }
+
+    const days = Array.isArray(openingRecord.days)
+      ? openingRecord.days
+      : Array.isArray(openingRecord.items)
+        ? openingRecord.items
+        : [];
+
+    return this.normalizePartnerListingOpeningHourItems(
+      days as PartnerListingOpeningHourDto[],
+    );
+  }
+
+  private partnerListingOpeningHoursSummary(
+    items: PartnerListingOpeningHourDto[],
+    fallback?: string | null,
+  ) {
+    const cleanFallback = this.cleanNullableText(fallback);
+    if (cleanFallback) {
+      return cleanFallback;
+    }
+
+    const lines = items.map((item) =>
+      item.isOff
+        ? `${item.day}: Nghỉ`
+        : `${item.day}: ${this.cleanNullableText(item.hours) ?? ''}`,
+    );
+
+    return lines.filter(Boolean).join('; ') || null;
+  }
+
+  private normalizePartnerListingMenuGroups(
+    groups?: PartnerListingMenuGroupDto[] | null,
+  ): PartnerListingMenuGroupDto[] {
+    if (!Array.isArray(groups)) {
+      return [];
+    }
+
+    return groups
+      .map((group) => {
+        const name = this.cleanText(group.name);
+        const items = Array.isArray(group.items) ? group.items : [];
+
+        return {
+          name,
+          items: items
+            .map((item) => ({
+              name: this.cleanText(item.name),
+              description: this.cleanNullableText(item.description) ?? undefined,
+              priceTier: this.cleanNullableText(item.priceTier) ?? undefined,
+              isHot: Boolean(item.isHot),
+              imageUrl: this.cleanNullableText(item.imageUrl) ?? undefined,
+            }))
+            .filter((item) => item.name)
+            .slice(0, 20),
+        };
+      })
+      .filter((group) => group.name)
+      .slice(0, 12);
+  }
+
   private normalizePartnerListingDraft(
     dto: Partial<PartnerListingDraftDto>,
     store: Awaited<ReturnType<NightlifeDataService['getPartnerListingStore']>>,
@@ -13622,6 +13731,11 @@ export class NightlifeDataService {
     const openingRecord = this.asRecord(store.openingHours);
     const pricingRecord = this.asRecord(store.pricingInfo);
     const storeArea = [store.district, store.city].filter(Boolean).join(', ');
+    const requestedOpeningHourItems =
+      this.normalizePartnerListingOpeningHourItems(dto.openingHourItems);
+    const openingHourItems = requestedOpeningHourItems.length
+      ? requestedOpeningHourItems
+      : this.partnerListingOpeningHourItemsFromStore(openingRecord);
     const rawPricingItems = Array.isArray(dto.pricingItems)
       ? dto.pricingItems
       : [];
@@ -13639,6 +13753,25 @@ export class NightlifeDataService {
     const priceRange =
       this.cleanNullableText(dto.priceRange) ??
       this.cleanNullableText(String(pricingRecord?.summary ?? ''));
+    const menuGroups = this.normalizePartnerListingMenuGroups(dto.menuGroups);
+    const coverImageUrl = this.cleanNullableText(dto.coverImageUrl);
+    const galleryUrls = this.cleanStringArray(dto.galleryUrls, 12);
+    const videoUrls = this.cleanStringArray(dto.videoUrls, 8);
+    const mediaUrls = [
+      coverImageUrl,
+      ...galleryUrls,
+      ...videoUrls,
+      ...this.cleanStringArray(dto.mediaUrls, 12),
+    ]
+      .filter((url): url is string => Boolean(url))
+      .filter((url, index, list) => list.indexOf(url) === index)
+      .slice(0, 20);
+    const composedStoreAddress = [
+      this.cleanNullableText(dto.streetAddress),
+      this.cleanNullableText(dto.ward),
+    ]
+      .filter(Boolean)
+      .join(', ');
 
     return {
       storeName:
@@ -13651,20 +13784,37 @@ export class NightlifeDataService {
       storeCity: this.cleanNullableText(dto.storeCity) ?? store.city,
       storeDistrict:
         this.cleanNullableText(dto.storeDistrict) ?? store.district,
-      storeAddress: this.cleanNullableText(dto.storeAddress) ?? store.address,
+      ward: this.cleanNullableText(dto.ward),
+      streetAddress:
+        this.cleanNullableText(dto.streetAddress) ??
+        this.cleanNullableText(dto.storeAddress) ??
+        store.address,
+      storeAddress:
+        this.cleanNullableText(dto.storeAddress) ??
+        (composedStoreAddress || store.address),
       phone: this.cleanNullableText(dto.phone) ?? store.phone,
       openingHours:
-        this.cleanNullableText(dto.openingHours) ??
-        this.cleanNullableText(String(openingRecord?.summary ?? '')),
+        this.partnerListingOpeningHoursSummary(
+          openingHourItems,
+          dto.openingHours ??
+            (openingRecord?.summary ? String(openingRecord.summary) : null),
+        ),
+      openingHourItems,
       priceRange,
       description: this.cleanNullableText(dto.description) ?? store.description,
       note: this.cleanNullableText(dto.note),
       menuSummary:
         this.cleanNullableText(dto.menuSummary) ??
         this.partnerListingMenuSummary({ pricingItems, priceRange }),
+      menuGroups,
+      mapUrl: this.cleanNullableText(dto.mapUrl) ?? store.mapUrl,
+      tags: this.cleanStringArray(dto.tags ?? store.tags, 16),
+      coverImageUrl,
+      galleryUrls,
+      videoUrls,
       pricingItems,
       castProfiles,
-      mediaUrls: this.cleanStringArray(dto.mediaUrls, 12),
+      mediaUrls,
     };
   }
 
@@ -13816,6 +13966,7 @@ export class NightlifeDataService {
         phone: true,
         openingHours: true,
         pricingInfo: true,
+        mapUrl: true,
         tags: true,
         partnerAccountId: true,
         ownerId: true,
@@ -13840,13 +13991,25 @@ export class NightlifeDataService {
     if (payload.storeCity !== null) data.city = payload.storeCity;
     if (payload.storeDistrict !== null) data.district = payload.storeDistrict;
     if (payload.phone !== null) data.phone = payload.phone;
+    if (payload.mapUrl !== null) data.mapUrl = payload.mapUrl;
+    data.tags = payload.tags;
     if (payload.openingHours !== null) {
-      data.openingHours = this.toPrismaJson({ summary: payload.openingHours });
+      data.openingHours = this.toPrismaJson({
+        summary: payload.openingHours,
+        days: payload.openingHourItems,
+      });
     }
-    if (payload.priceRange !== null || payload.pricingItems.length) {
+    if (
+      payload.priceRange !== null ||
+      payload.pricingItems.length ||
+      payload.menuGroups.length ||
+      payload.menuSummary !== null
+    ) {
       data.pricingInfo = this.toPrismaJson({
         summary: payload.priceRange,
         items: payload.pricingItems,
+        menuSummary: payload.menuSummary,
+        groups: payload.menuGroups,
       });
     }
 
@@ -14461,12 +14624,32 @@ export class NightlifeDataService {
           profile.hourlyRateVnd >= 0
             ? Math.trunc(profile.hourlyRateVnd)
             : undefined;
+        const birthMonth =
+          typeof profile.birthMonth === 'number' &&
+          Number.isFinite(profile.birthMonth) &&
+          profile.birthMonth >= 1 &&
+          profile.birthMonth <= 12
+            ? Math.trunc(profile.birthMonth)
+            : undefined;
+        const heightCm =
+          typeof profile.heightCm === 'number' &&
+          Number.isFinite(profile.heightCm) &&
+          profile.heightCm >= 0
+            ? Math.trunc(profile.heightCm)
+            : undefined;
 
         return {
           stageName,
+          publicHeadline: this.cleanNullableText(profile.publicHeadline),
           bio: this.cleanNullableText(profile.bio),
           tags: this.cleanStringArray(profile.tags, 12),
           languages: this.cleanStringArray(profile.languages, 8),
+          birthMonth,
+          zodiacSign: this.cleanNullableText(profile.zodiacSign),
+          heightCm,
+          measurements: this.cleanNullableText(profile.measurements),
+          hobbies: this.cleanStringArray(profile.hobbies, 12),
+          youtubeLinks: this.cleanStringArray(profile.youtubeLinks, 8),
           hourlyRateVnd,
           mediaUrls: this.cleanStringArray(profile.mediaUrls, 8),
         };
