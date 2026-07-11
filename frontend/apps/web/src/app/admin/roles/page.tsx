@@ -32,56 +32,7 @@ export type AccountRec = {
   disabled?: boolean;
 };
 
-export type CapRow = [string, string, number, number, number, number, number];
 
-const allAcc = [
-  {id:1, ini:'SA', name:'Super Admin', email:'superadmin@vietyoru.vn', role:'Super Admin', kind:'super_admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#e85050,#b52b2b)'},
-  {id:101, ini:'A', name:'Nguyễn Admin', email:'admin@vietyoru.vn', role:'Admin', kind:'admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
-  {id:2, ini:'O', name:'Trần Vận Hành', email:'operator@vietyoru.vn', role:'Operator', kind:'operator', last:'2 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:3, ini:'LH', name:'Lê Thu Hà', email:'ha.le@vietyoru.vn', role:'Operator', kind:'operator', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:4, ini:'LT', name:'Lễ tân · Club Lumière', email:'staff.lumiere1@vietyoru.vn', role:'Staff', kind:'staff', last:'10 phút trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:5, ini:'PV', name:'Phục vụ · Sakura Lounge', email:'staff.sakura2@vietyoru.vn', role:'Staff', kind:'staff', last:'1 giờ trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:6, ini:'CL', name:'Club Lumière', email:'partner.lumiere@vietyoru.vn', role:'Đối tác', kind:'partner', last:'15 phút trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
-  {id:7, ini:'SL', name:'Sakura Lounge', email:'partner.sakura@vietyoru.vn', role:'Đối tác', kind:'partner', last:'1 ngày trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:8, ini:'AK', name:'Akari Lounge', email:'partner.akari@vietyoru.vn', role:'Đối tác', kind:'partner', last:'30 phút trước', avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
-  {id:9, ini:'TN', name:'Bar Tokyo Night', email:'partner.tokyonight@vietyoru.vn', role:'Đối tác', kind:'partner', last:'3 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:10, ini:'DK', name:'Dragon KTV', email:'partner.dragon@vietyoru.vn', role:'Đối tác', kind:'partner', last:'6 giờ trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
-  {id:11, ini:'SB', name:'Sky Bar 20', email:'partner.skybar@vietyoru.vn', role:'Đối tác', kind:'partner', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:12, ini:'GH', name:'The Gin House', email:'partner.ginhouse@vietyoru.vn', role:'Đối tác', kind:'partner', last:'4 ngày trước', avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
-  {id:13, ini:'MK', name:'Moonlight KTV', email:'partner.moonlight@vietyoru.vn', role:'Đối tác', kind:'partner', last:'5 ngày trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
-  {id:14, ini:'NB', name:'Neon Bar Saigon', email:'partner.neon@vietyoru.vn', role:'Đối tác', kind:'partner', last:'1 tuần trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:15, ini:'LC', name:'Lotus Club Saigon', email:'partner.lotus@vietyoru.vn', role:'Đối tác', kind:'partner', last:'2 ngày trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:16, ini:'KH', name:'KTV Hoàng Gia', email:'partner.hoanggia@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-  {id:17, ini:'ZS', name:'Zen Spa & Onsen', email:'partner.zenspa@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-  {id:18, ini:'BN', name:'Blue Note Lounge', email:'partner.bluenote@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-  {id:19, ini:'HO', name:'Hana Onsen', email:'partner.hana@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'}
-];
-
-const INIT_CAPS_PARTNER: CapRow[] = [
-  ['Xem thông tin quán','canViewPartnerStore',1,1,1,1,0],
-  ['Xem mã giảm giá của quán','canViewPartnerCoupon',1,1,1,1,0],
-  ['Xem & tạo hoá đơn','canReviewBill',1,0,1,1,0],
-  ['Quét mã QR giảm giá','canScanCoupon',1,0,1,1,0],
-  ['Xác nhận khách check-in','canConfirmCheckIn',1,0,1,1,0],
-  ['Xem danh sách khách đặt bàn','canViewPartnerBooking',1,1,1,1,0],
-  ['Xem danh sách hoá đơn','canViewPartnerBill',1,1,1,0,0],
-];
-const INIT_CAPS_MGMT: CapRow[] = [
-  ['Xem hoá đơn nhạy cảm','canViewSensitiveBill',1,0,1,0,0],
-  ['Xem báo cáo doanh thu','canViewRevenueReport',1,0,1,0,0],
-  ['Quản lý chat hỗ trợ','canManageSupportChat',1,0,0,0,0],
-];
-const INIT_CAPS_USER: CapRow[] = [
-  ['Xem lịch sử đặt bàn bản thân','canViewMemberBooking',1,0,0,0,1],
-  ['Xem voucher / coupon bản thân','canViewMemberCoupon',1,0,0,0,1],
-  ['Lấy (claim) mã ưu đãi mới','canClaimMemberCoupon',0,0,0,0,1],
-];
-
-const Toggle = ({ on, onClick }: { on: boolean, onClick: () => void }) => (
-  <div onClick={onClick} style={{ width: 28, height: 16, borderRadius: 8, background: on ? 'rgba(212,178,106,.8)' : 'rgba(255,255,255,.1)', position: 'relative', cursor: 'pointer', margin: '0 auto', transition: 'all 0.2s' }}>
-    <div style={{ width: 12, height: 12, borderRadius: '50%', background: on ? '#241a0a' : '#8c8679', position: 'absolute', top: 2, left: on ? 14 : 2, transition: 'all 0.2s' }} />
-  </div>
-);
 
 export default function AdminRolesPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(() => {
@@ -137,12 +88,6 @@ export default function AdminRolesPage() {
   const [accStatus, setAccStatus] = useState<Record<string, boolean>>({});
   const [accEdits, setAccEdits] = useState<Record<string, {name:string, email:string}>>({});
   const [accGone, setAccGone] = useState<Record<string, boolean>>({});
-
-  // Matrix states
-  const [isMatrixVisible, setIsMatrixVisible] = useState(true);
-  const [capsPartner, setCapsPartner] = useState<CapRow[]>(INIT_CAPS_PARTNER);
-  const [capsMgmt, setCapsMgmt] = useState<CapRow[]>(INIT_CAPS_MGMT);
-  const [capsUser, setCapsUser] = useState<CapRow[]>(INIT_CAPS_USER);
 
   // Computed data
   const S_allAcc = [...extraAccs, ...allAcc].filter(a => !accGone[a.email]).filter(a => isSuperAdmin || a.kind !== 'super_admin').map(a => {
@@ -215,43 +160,10 @@ export default function AdminRolesPage() {
     showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
   };
 
-  const handleToggleCap = (section: string, rowIdx: number, colIdx: number) => {
-    const updater = (prev: CapRow[]) => {
-      const next = [...prev];
-      const row = next[rowIdx];
-      if (!row) return next;
-      const newRow = [...row] as CapRow;
-      newRow[colIdx] = newRow[colIdx] === 1 ? 0 : 1;
-      next[rowIdx] = newRow;
-      return next;
-    };
-    if (section === 'partner') setCapsPartner(updater);
-    else if (section === 'mgmt') setCapsMgmt(updater);
-    else if (section === 'user') setCapsUser(updater);
-    showToast('Đã cập nhật cấu hình quyền');
-  };
-
-  const matrixGridCols = isSuperAdmin ? '1.4fr repeat(5, 44px)' : '1.4fr repeat(4, 44px)';
-
-  const renderCapRow = (c: CapRow, idx: number, section: string) => {
-    return (
-      <div key={idx} style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '3px', padding: '9px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, alignItems: 'center' }}>
-        <span style={{ minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: '11.5px', color: '#c5c0b6' }}>{c[0]}</span>
-          <span style={{ display: 'block', fontSize: '9px', color: '#57534b', fontFamily: 'ui-monospace,Menlo,monospace', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c[1]}</span>
-        </span>
-        {isSuperAdmin && <Toggle on={c[2]===1} onClick={() => handleToggleCap(section, idx, 2)} />}
-        <Toggle on={c[3]===1} onClick={() => handleToggleCap(section, idx, 3)} />
-        <Toggle on={c[4]===1} onClick={() => handleToggleCap(section, idx, 4)} />
-        <Toggle on={c[5]===1} onClick={() => handleToggleCap(section, idx, 5)} />
-        <Toggle on={c[6]===1} onClick={() => handleToggleCap(section, idx, 6)} />
-      </div>
-    );
-  };
 
   return (
     <div style={{ padding: '22px 26px 44px', minHeight: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 1fr', gap: '18px', alignItems: 'start' }}>
+      <div>
         
         {/* LEFT COLUMN: ACCOUNTS */}
         <div>
@@ -342,43 +254,6 @@ export default function AdminRolesPage() {
               </span>
             </div>
           </div>
-        </div>
-
-        {/* RIGHT COLUMN: PERMISSION MATRIX */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Ma trận phân quyền</span>
-            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
-            <span onClick={() => setIsMatrixVisible(!isMatrixVisible)} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: 600, color: '#8c8679', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
-              {isMatrixVisible ? <><ChevronUp size={14} /> Ẩn</> : <><ChevronDown size={14} /> Hiện</>}
-            </span>
-          </div>
-          
-          {isMatrixVisible && (
-            <>
-              <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '3px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.015)', alignItems: 'center' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.8px', color: '#57534b', textTransform: 'uppercase' }}>Chức năng</span>
-                  {isSuperAdmin && <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#e3c27e' }}>Admin</span>}
-                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Oper.</span>
-                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Partner</span>
-                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>Staff</span>
-                  <span style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: 700, color: '#c5c0b6' }}>User</span>
-                </div>
-                
-                <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền đối tác · Partner / Staff</div>
-                {capsPartner.map((c, i) => renderCapRow(c, i, 'partner'))}
-                
-                <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền quản lý / cấp cao</div>
-                {capsMgmt.map((c, i) => renderCapRow(c, i, 'mgmt'))}
-                
-                <div style={{ padding: '8px 16px 7px', background: 'rgba(212,178,106,.04)', fontSize: '9px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase' }}>Quyền khách hàng · User</div>
-                {capsUser.map((c, i) => renderCapRow(c, i, 'user'))}
-              </div>
-              
-
-            </>
-          )}
         </div>
       </div>
 

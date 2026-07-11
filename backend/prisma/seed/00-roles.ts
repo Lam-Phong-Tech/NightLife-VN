@@ -153,6 +153,48 @@ const PERMISSIONS = [
     roleKeys: ['member'],
   },
   {
+    key: 'ranking.manage',
+    name: 'Manage rankings',
+    description: 'Manage manual rankings globally',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'coupon.issue.manage',
+    name: 'Manage coupon issues',
+    description: 'Revoke or rotate coupon issues',
+    roleKeys: ['admin'],
+  },
+  {
+    key: 'booking.reschedule.review',
+    name: 'Review booking reschedule',
+    description: 'Review and approve booking reschedule requests',
+    roleKeys: ['admin', 'operator'],
+  },
+  {
+    key: 'booking.chat.manage',
+    name: 'Manage booking chat',
+    description: 'Access and send messages in booking support chat',
+    roleKeys: ['admin', 'operator'],
+  },
+  {
+    key: 'booking.cancel',
+    name: 'Cancel booking as staff',
+    description: 'Cancel bookings on behalf of customers bypassing cutoff rules',
+    roleKeys: ['admin', 'operator'],
+  },
+  {
+    key: 'report.cancel_analytics.view',
+    name: 'View cancel analytics',
+    description: 'View cancel rate dashboard',
+    roleKeys: ['admin', 'operator'],
+  },
+  {
+    key: 'store.policy.update',
+    name: 'Update store policy',
+    description: 'Update store booking policies (like cancel cutoff)',
+    roleKeys: ['admin', 'operator'],
+  },
+  {
     key: 'media.protected.read',
     name: 'Read protected media',
     description:

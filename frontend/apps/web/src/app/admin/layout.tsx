@@ -108,9 +108,14 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         countColor: '#f3f0ea'
       },
       { 
-        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>, 
-        label: 'Phân quyền', 
+        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, 
+        label: 'Tài khoản', 
         href: '/admin/roles' 
+      },
+      { 
+        icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>, 
+        label: 'Ma trận quyền', 
+        href: '/admin/permissions' 
       },
     ],
   },
@@ -603,7 +608,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === '/admin/content') return { title: 'Nội dung trang chủ', subtitle: 'CONTENT' };
     if (pathname === '/admin/partners') return { title: 'Duyệt đối tác', subtitle: 'PARTNERS' };
 
-    if (pathname === '/admin/roles') return { title: 'Phân quyền', subtitle: 'ROLES & PERMISSIONS' };
+    if (pathname === '/admin/roles') return { title: 'Tài khoản', subtitle: 'ACCOUNTS' };
+    if (pathname === '/admin/permissions') return { title: 'Ma trận quyền', subtitle: 'ROLES & PERMISSIONS' };
     return { title: 'Admin', subtitle: 'CMS' };
   };
 

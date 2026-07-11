@@ -26,6 +26,13 @@ Routes use role checks plus action policies for scoped business permissions:
 - `canConfirmBillPmBa`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/confirm-negative-commission`.
 - `canVoidBill`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/void`.
 - `canReverseBill`: `ADMIN`, for `PATCH /admin/sensitive-bills/:billId/reverse` and `POST /admin/sensitive-bills/auto-reverse`.
+- `canManageRanking`: `ADMIN`, for managing global rankings.
+- `canManageCouponIssue`: `ADMIN`, for revoking or rotating coupon issues.
+- `canReviewBookingReschedule`: `ADMIN` and `OPERATOR`, for reviewing change requests.
+- `canManageBookingChat`: `ADMIN` and `OPERATOR`, for accessing booking support chat.
+- `canCancelBooking`: `ADMIN` and `OPERATOR`, for cancelling bookings on behalf of customers.
+- `canViewCancelAnalytics`: `ADMIN` and `OPERATOR`, for viewing cancel rate dashboard.
+- `canUpdateStorePolicy`: `ADMIN` and `OPERATOR`, for modifying store cutoff rules.
 - `canViewSensitiveBill`: `ADMIN` for admin queue access.
 - `canViewMemberBooking`, `canViewMemberCoupon`, and `canClaimMemberCoupon`: authenticated member own-resource actions.
 

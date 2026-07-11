@@ -234,15 +234,17 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageRanking')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/rankings')
   listAdminRankingConfigs(@Query() query: AdminRankingQueryDto) {
     return this.nightlifeDataService.listAdminRankingConfigs(query);
   }
 
+  @ActionPolicy('canManageRanking')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/rankings/options')
   listAdminRankingTargetOptions(
     @Query() query: AdminRankingTargetOptionsQueryDto,
@@ -250,8 +252,9 @@ export class NightlifeDataController {
     return this.nightlifeDataService.listAdminRankingTargetOptions(query);
   }
 
+  @ActionPolicy('canManageRanking')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('admin/rankings')
   createAdminRankingConfig(
     @Req() request: RequestWithUser,
@@ -263,8 +266,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageRanking')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/rankings/:rankingId')
   updateAdminRankingConfig(
     @Req() request: RequestWithUser,
@@ -278,8 +282,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageRanking')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Delete('admin/rankings/:rankingId')
   deleteAdminRankingConfig(
     @Req() request: RequestWithUser,
@@ -680,8 +685,9 @@ export class NightlifeDataController {
   }
 
   @CancelAdminBookingContract('operator')
+  @ActionPolicy('canCancelBooking')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('operator/bookings/:bookingId/cancel')
   cancelBookingAsOperator(
     @Req() request: RequestWithUser,
@@ -695,8 +701,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canReviewBookingReschedule')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('operator/booking-change-requests')
   listOperatorBookingChangeRequests(
     @Req() request: RequestWithUser,
@@ -708,8 +715,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canReviewBookingReschedule')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('operator/booking-change-requests/:requestId/review')
   reviewBookingChangeRequestAsOperator(
     @Req() request: RequestWithUser,
@@ -723,8 +731,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageBookingChat')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('operator/bookings/:bookingId/messages')
   listOperatorBookingMessages(
     @Req() request: RequestWithUser,
@@ -736,8 +745,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageBookingChat')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('operator/bookings/:bookingId/messages')
   createOperatorBookingMessage(
     @Req() request: RequestWithUser,
@@ -751,8 +761,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canViewCancelAnalytics')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('operator/bookings/cancel-analytics')
   getOperatorBookingCancelAnalytics(
     @Req() request: RequestWithUser,
@@ -764,8 +775,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canUpdateStorePolicy')
   @Roles('OPERATOR', 'ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('operator/stores/:storeId/booking-policy')
   updateOperatorStoreBookingPolicy(
     @Req() request: RequestWithUser,
@@ -1114,15 +1126,17 @@ export class NightlifeDataController {
   }
 
   @AdminCouponIssuesContract()
+  @ActionPolicy('canManageCouponIssue')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/coupon-issues')
   listAdminCouponIssues(@Query() query: AdminCouponIssueQueryDto) {
     return this.nightlifeDataService.listAdminCouponIssues(query);
   }
 
+  @ActionPolicy('canManageCouponIssue')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/coupon-issues/:issueId/revoke-qr')
   revokeAdminCouponIssueQrToken(
     @Req() request: RequestWithUser,
@@ -1134,8 +1148,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageCouponIssue')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('admin/coupon-issues/:issueId/rotate-qr')
   rotateAdminCouponIssueQrToken(
     @Req() request: RequestWithUser,
@@ -1148,8 +1163,9 @@ export class NightlifeDataController {
   }
 
   @CancelAdminBookingContract('admin')
+  @ActionPolicy('canCancelBooking')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/bookings/:bookingId/cancel')
   cancelBookingAsAdmin(
     @Req() request: RequestWithUser,
@@ -1163,8 +1179,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canReviewBookingReschedule')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/booking-change-requests')
   listAdminBookingChangeRequests(
     @Req() request: RequestWithUser,
@@ -1176,8 +1193,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canReviewBookingReschedule')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/booking-change-requests/:requestId/review')
   reviewBookingChangeRequest(
     @Req() request: RequestWithUser,
@@ -1191,8 +1209,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageBookingChat')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/bookings/:bookingId/messages')
   listAdminBookingMessages(
     @Req() request: RequestWithUser,
@@ -1204,8 +1223,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canManageBookingChat')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Post('admin/bookings/:bookingId/messages')
   createAdminBookingMessage(
     @Req() request: RequestWithUser,
@@ -1219,8 +1239,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canViewCancelAnalytics')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Get('admin/bookings/cancel-analytics')
   getAdminBookingCancelAnalytics(
     @Req() request: RequestWithUser,
@@ -1232,8 +1253,9 @@ export class NightlifeDataController {
     );
   }
 
+  @ActionPolicy('canUpdateStorePolicy')
   @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ActionPolicyGuard)
   @Patch('admin/stores/:storeId/booking-policy')
   updateAdminStoreBookingPolicy(
     @Req() request: RequestWithUser,

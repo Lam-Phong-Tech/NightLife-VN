@@ -75,6 +75,34 @@ export class AccessService {
     return this.hasRolePermission(user, 'coupon.member.claim');
   }
 
+  canManageRanking(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'ranking.manage');
+  }
+
+  canManageCouponIssue(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'coupon.issue.manage');
+  }
+
+  canReviewBookingReschedule(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'booking.reschedule.review');
+  }
+
+  canManageBookingChat(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'booking.chat.manage');
+  }
+
+  canCancelBooking(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'booking.cancel');
+  }
+
+  canViewCancelAnalytics(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'report.cancel_analytics.view');
+  }
+
+  canUpdateStorePolicy(user: AuthenticatedUser) {
+    return this.hasRolePermission(user, 'store.policy.update');
+  }
+
   async canReviewBill(user: AuthenticatedUser, billId?: string) {
     return this.canAccessBillAction(user, billId, 'bill.review');
   }
