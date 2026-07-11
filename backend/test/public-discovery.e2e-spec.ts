@@ -135,7 +135,10 @@ describe('Public discovery listing API (e2e)', () => {
         where: expect.objectContaining({
           deletedAt: null,
           status: 'ACTIVE',
-          code: { startsWith: 'hn-' },
+          OR: [
+            { code: { startsWith: 'hn-' } },
+            { code: { startsWith: 'hanoi-' } },
+          ],
         }),
       }),
     );
