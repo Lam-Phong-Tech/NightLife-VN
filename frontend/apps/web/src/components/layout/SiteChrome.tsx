@@ -408,12 +408,19 @@ function NotificationTabs({
             {active && tab.key === "all" && unreadCount > 0 ? (
               <b
                 style={{
-                  background: colors.onGold,
-                  color: colors.goldPale,
-                  borderRadius: "7px",
-                  fontSize: "9.5px",
+                  minWidth: "18px",
+                  height: "18px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255, 250, 241, 0.96)",
+                  color: "#7b5415",
+                  border: `1px solid ${colors.borderGold32}`,
+                  borderRadius: "999px",
+                  boxShadow: "0 5px 12px rgba(36, 26, 10, 0.16)",
+                  fontSize: "10px",
                   fontWeight: 800,
-                  lineHeight: 1.5,
+                  lineHeight: 1,
                   padding: "0 5px",
                 }}
               >

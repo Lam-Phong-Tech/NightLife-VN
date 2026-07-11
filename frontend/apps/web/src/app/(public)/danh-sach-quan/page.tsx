@@ -1107,6 +1107,10 @@ const venueSearchCss = `
     font-family: var(--nl-font-sans);
   }
 
+  .nl-page-content:has(.venue-search-page) {
+    padding-bottom: 0 !important;
+  }
+
   .venue-search-page * {
     box-sizing: border-box;
   }
@@ -1907,6 +1911,7 @@ const venueSearchCss = `
 
   @media (max-width: 767px) {
     .venue-search-page {
+      min-height: auto;
       background: var(--vy-bg);
     }
 
@@ -1926,7 +1931,7 @@ const venueSearchCss = `
 
     .venue-search-shell {
       width: 100%;
-      padding: 12px 14px 28px;
+      padding: 12px 14px 14px;
     }
 
     .venue-search-header {

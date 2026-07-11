@@ -2477,7 +2477,8 @@ html.vy-light .cast-sheet-actions {
 
 @media (max-width: 767px) {
   .cast-search-page {
-    padding: 0 0 calc(20px + env(safe-area-inset-bottom));
+    min-height: auto;
+    padding: 0 0 14px;
     background: var(--vy-bg);
   }
 
