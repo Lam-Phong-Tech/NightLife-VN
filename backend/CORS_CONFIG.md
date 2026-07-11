@@ -28,6 +28,7 @@ Nếu bạn muốn fix cứng domain vào code để toàn bộ team dev đều 
 const productionOrigins = [
   'https://demonightlight.test9.io.vn',
   'https://www.demonightlight.test9.io.vn',
+  'https://nightlife.lptech.info.vn',
   // Thêm domain mới vào đây:
   'https://domain-moi-cua-ban.com'
 ];
@@ -39,6 +40,7 @@ const productionOrigins = [
 const productionOrigins = [
   'https://demonightlight.test9.io.vn',
   'https://www.demonightlight.test9.io.vn',
+  'https://nightlife.lptech.info.vn',
   // Thêm domain mới vào đây:
   'https://domain-moi-cua-ban.com'
 ];

@@ -17,6 +17,7 @@ const productionOrigins = [
   'https://www.demonightlight.test9.io.vn',
   'https://demonightlight.test9io.vn',
   'https://www.demonightlight.test9io.vn',
+  'https://nightlife.lptech.info.vn',
 ];
 
 const configuredOrigins = (process.env.CORS_ORIGINS ?? '')
