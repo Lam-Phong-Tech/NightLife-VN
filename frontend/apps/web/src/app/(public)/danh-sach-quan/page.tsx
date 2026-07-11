@@ -17,6 +17,8 @@ import {
 
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
 import { resolveClientUrl } from "@/lib/api/client";
+import { translateText } from "@/lib/i18n/client-translations";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
@@ -46,6 +48,41 @@ type VenueView = {
   image: string;
   isOpenNow: boolean;
   rating: number | null;
+};
+
+type VenueSearchCopy = {
+  all: string;
+  bookTable: string;
+  chooseCity: string;
+  emptyDescription: string;
+  emptyTitle: string;
+  filterArea: string;
+  filterAria: string;
+  filterCategory: string;
+  filterClose: string;
+  filterIntro: string;
+  filterNeeds: string;
+  filterTitle: string;
+  find: string;
+  hasDeals: string;
+  listAria: string;
+  locating: string;
+  mobileSubtitle: string;
+  mobileTitle: string;
+  nearMe: string;
+  openFilters: string;
+  openNow: string;
+  ratingUp: string;
+  resetFilters: string;
+  saveVenue: string;
+  searchAria: string;
+  searchPlaceholder: string;
+  sortAria: string;
+  sortLabel: string;
+  subtitleDesktop: string;
+  titlePrefix: string;
+  unsaveVenue: string;
+  venuePhoto: string;
 };
 
 const emptyVenueImage =
@@ -121,30 +158,178 @@ const categoryTags: Record<string, string[]> = {
   CASINO: ["VIP table", "Private room", "Premium"],
 };
 
+const venueCopyVi: VenueSearchCopy = {
+  all: "Tất cả",
+  bookTable: "Đặt bàn",
+  chooseCity: "Chọn thành phố",
+  emptyDescription: "Đổi khu vực, loại hình hoặc từ khóa để xem thêm.",
+  emptyTitle: "Chưa có quán phù hợp",
+  filterArea: "Khu vực",
+  filterAria: "Bộ lọc nhanh",
+  filterCategory: "Loại hình",
+  filterClose: "Đóng bộ lọc",
+  filterIntro: "Lọc quán theo nhu cầu",
+  filterNeeds: "Nhu cầu",
+  filterTitle: "Bộ lọc",
+  find: "Tìm",
+  hasDeals: "Có ưu đãi",
+  listAria: "Danh sách quán",
+  locating: "Đang lấy vị trí",
+  mobileSubtitle: "FIND VENUES",
+  mobileTitle: "Tìm quán",
+  nearMe: "Gần tôi",
+  openFilters: "Mở bộ lọc",
+  openNow: "Đang mở",
+  ratingUp: "4.5★ trở lên",
+  resetFilters: "Đặt lại bộ lọc",
+  saveVenue: "Lưu quán",
+  searchAria: "Tìm và lọc quán",
+  searchPlaceholder: "Tìm quán, khu vực hoặc loại hình...",
+  sortAria: "Sắp xếp danh sách",
+  sortLabel: "Sắp xếp:",
+  subtitleDesktop: "FIND YOUR VENUE TONIGHT",
+  titlePrefix: "Tìm quán đêm",
+  unsaveVenue: "Bỏ lưu quán",
+  venuePhoto: "Ảnh",
+};
+
+const venueCopyEn: VenueSearchCopy = {
+  all: "All",
+  bookTable: "Book a table",
+  chooseCity: "Choose city",
+  emptyDescription: "Change area, category, or keyword to see more venues.",
+  emptyTitle: "No matching venues yet",
+  filterArea: "Area",
+  filterAria: "Quick filters",
+  filterCategory: "Category",
+  filterClose: "Close filters",
+  filterIntro: "Filter venues by your needs",
+  filterNeeds: "Needs",
+  filterTitle: "Filters",
+  find: "Find",
+  hasDeals: "Has deals",
+  listAria: "Venue list",
+  locating: "Finding location",
+  mobileSubtitle: "FIND VENUES",
+  mobileTitle: "Find venues",
+  nearMe: "Nearby",
+  openFilters: "Open filters",
+  openNow: "Open now",
+  ratingUp: "4.5★ and up",
+  resetFilters: "Reset filters",
+  saveVenue: "Save venue",
+  searchAria: "Search and filter venues",
+  searchPlaceholder: "Search venues, areas, or categories...",
+  sortAria: "Sort venues",
+  sortLabel: "Sort:",
+  subtitleDesktop: "FIND YOUR VENUE TONIGHT",
+  titlePrefix: "Find night venues in",
+  unsaveVenue: "Unsave venue",
+  venuePhoto: "Photo of",
+};
+
+const englishCityLabels: Record<string, string> = {
+  hn: "Hanoi",
+  hcm: "Ho Chi Minh City",
+};
+
+const englishSortLabels: Record<DiscoverySort, string> = {
+  priority: "Popular",
+  nearest: "Nearest",
+  newest: "Newest",
+};
+
+const englishCategoryLabels: Record<string, string> = {
+  BAR: "Bar",
+  CLUB: "Club",
+  LOUNGE: "Lounge",
+  GIRLS_BAR: "Girls bar",
+  KARAOKE: "Karaoke",
+  MASSAGE_SPA: "Spa",
+  RESTAURANT: "Restaurant",
+  CASINO: "Casino",
+};
+
+const stripVietnameseMarks = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bQuan\b/g, "District")
+    .replace(/\bTP\.HCM\b/g, "Ho Chi Minh City");
+
+const getVenueCopy = (language: LanguageCode): VenueSearchCopy => {
+  if (language === "en") return venueCopyEn;
+  if (language === "vi") return venueCopyVi;
+
+  return Object.fromEntries(
+    Object.entries(venueCopyVi).map(([key, value]) => [key, translateText(value, language)]),
+  ) as VenueSearchCopy;
+};
+
+const getLocalizedCityLabel = (cityCode: string, language: LanguageCode) => {
+  if (!cityCode) return language === "en" ? "Vietnam" : translateText("Việt Nam", language);
+  if (language === "en") return englishCityLabels[cityCode] ?? cityCode;
+  return translateText(cityLabels[cityCode] ?? cityCode, language);
+};
+
+const getLocalizedSortLabel = (sort: DiscoverySort, language: LanguageCode) =>
+  language === "en" ? englishSortLabels[sort] : translateText(sortLabels[sort], language);
+
+const getLocalizedCategoryLabel = (category: string, language: LanguageCode) => {
+  if (language === "en") return englishCategoryLabels[category] ?? category;
+  return translateText(categoryLabels[category] ?? category, language);
+};
+
+const getLocalizedAreaLabel = (areaName: string, language: LanguageCode) => {
+  const base = areaLabels[areaName] ?? areaName;
+  if (language === "en") return stripVietnameseMarks(areaName);
+  return translateText(base, language);
+};
+
+const formatVenueCount = (count: number, language: LanguageCode) => {
+  if (language === "en") return `${count} ${count === 1 ? "venue" : "venues"}`;
+  return `${count} ${translateText("quán", language)}`;
+};
+
+const formatVenueActiveFilters = (count: number, language: LanguageCode) => {
+  if (language === "en") return `${count} ${count === 1 ? "filter" : "filters"} active`;
+  return `${count} ${translateText("bộ lọc đang bật", language)}`;
+};
+
+const formatVenueApplyLabel = (count: number, language: LanguageCode) => {
+  if (language === "en") return `View ${formatVenueCount(count, language)}`;
+  return `${translateText("Xem", language)} ${formatVenueCount(count, language)}`;
+};
+
+const getLocalizedCategoryTags = (category: string, fallback: string, language: LanguageCode) =>
+  (categoryTags[category] ?? [fallback]).map((tag) => translateText(tag, language));
+
 const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
 const currentOpeningSlot = (store: PublicStore) => store.openingHours?.[weekdayKeys[new Date().getDay()] ?? "monday"];
 
-const openingStatus = (store: PublicStore) => {
+const openingStatus = (store: PublicStore, language: LanguageCode) => {
   const slot = currentOpeningSlot(store);
-  if (!slot) return { label: "Theo giờ admin", isOpen: true };
-  if (slot.closed) return { label: slot.note || "Tạm nghỉ", isOpen: false };
+  if (!slot) return { label: translateText("Theo giờ admin", language), isOpen: true };
+  if (slot.closed) return { label: slot.note || translateText("Tạm nghỉ", language), isOpen: false };
   if (slot.open && slot.close) return { label: `${slot.open} - ${slot.close}`, isOpen: true };
-  return { label: slot.note || "Đang mở", isOpen: true };
+  return { label: slot.note || translateText("Đang mở", language), isOpen: true };
 };
 
-const formatDistance = (distanceKm: number | null | undefined) =>
+const formatDistance = (distanceKm: number | null | undefined, language: LanguageCode) =>
   typeof distanceKm === "number" && Number.isFinite(distanceKm)
     ? `${distanceKm.toFixed(1)} km`
-    : "Theo khu vực";
+    : language === "en"
+      ? "By area"
+      : translateText("Theo khu vực", language);
 
-const toVenueView = (store: PublicStore): VenueView => {
-  const categoryLabel = categoryLabels[store.category] ?? store.category;
-  const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
-  const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
+const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
+  const categoryLabel = getLocalizedCategoryLabel(store.category, language);
+  const areaLabel = getLocalizedAreaLabel(store.area?.name ?? store.district ?? store.city ?? "Trung tâm", language);
+  const cityLabel = getLocalizedCityLabel(store.cityCode ?? "", language) || store.city;
   const backendImage = resolveClientUrl(store.thumbnailUrl);
   const image = backendImage ?? emptyVenueImage;
-  const { label: statusLabel, isOpen } = openingStatus(store);
+  const { label: statusLabel, isOpen } = openingStatus(store, language);
   const adminTags = store.tags?.filter(Boolean) ?? [];
 
   return {
@@ -153,10 +338,10 @@ const toVenueView = (store: PublicStore): VenueView => {
     categoryLabel,
     areaLabel,
     cityLabel,
-    distanceLabel: formatDistance(store.distanceKm),
+    distanceLabel: formatDistance(store.distanceKm, language),
     priceLabel: formatPriceTier(store.priceReference?.startingFromVnd),
     rating: null,
-    tags: (adminTags.length ? adminTags : categoryTags[store.category] ?? [categoryLabel]).slice(0, 3),
+    tags: (adminTags.length ? adminTags : getLocalizedCategoryTags(store.category, categoryLabel, language)).slice(0, 3),
     statusLabel,
     dealLabel: store.activeCoupon?.name ?? adminTags[0] ?? categoryLabel,
     image,
@@ -185,6 +370,8 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const activeLanguage = useActiveLanguage();
+  const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -275,23 +462,44 @@ export default function Page() {
           store.slug,
         ],
       }))
-        .map(toVenueView)
+        .map((store) => toVenueView(store, activeLanguage))
         .filter((venue) => !ratingOnly || venue.rating === null || venue.rating >= 4.5)
         .filter((venue) => !openNow || venue.isOpenNow),
-    [openNow, query, ratingOnly, stores],
+    [activeLanguage, openNow, query, ratingOnly, stores],
   );
 
-  const cityLabel = cityLabels[city] ?? "Việt Nam";
-  const selectedCityLabel = cityOptions.find((option) => option.value === city)?.label ?? cityLabel;
+  const cityLabel = getLocalizedCityLabel(city, activeLanguage);
+  const selectedCityLabel = cityLabel;
+  const localizedCityOptions = useMemo(
+    () =>
+      cityOptions.map((option) => ({
+        value: option.value,
+        label: option.value ? getLocalizedCityLabel(option.value, activeLanguage) : copy.all,
+      })),
+    [activeLanguage, copy.all],
+  );
+  const localizedSortOptions = useMemo(
+    () =>
+      sortOptions.map((option) => ({
+        value: option.value,
+        label: getLocalizedSortLabel(option.value, activeLanguage),
+      })),
+    [activeLanguage],
+  );
 
   const areaOptions = useMemo<FilterOption[]>(() => {
     const dynamicOptions = areas.map((item) => ({
       value: item.code || item.name,
-      label: areaLabels[item.name] ?? item.name,
+      label: getLocalizedAreaLabel(item.name, activeLanguage),
     }));
 
-    return [{ value: "", label: "Tất cả" }, ...(dynamicOptions.length ? dynamicOptions : getFallbackAreaOptions(city))];
-  }, [areas, city]);
+    const fallbackOptions = getFallbackAreaOptions(city).map((option) => ({
+      ...option,
+      label: translateText(option.label, activeLanguage),
+    }));
+
+    return [{ value: "", label: copy.all }, ...(dynamicOptions.length ? dynamicOptions : fallbackOptions)];
+  }, [activeLanguage, areas, city, copy.all]);
 
   const requestNearby = () => {
     if (!navigator.geolocation) {
@@ -335,14 +543,17 @@ export default function Page() {
     setSort(nextSort);
   };
 
-  const categoryChips = [
-    { label: "Lounge", value: "LOUNGE" },
-    { label: "Bar", value: "BAR" },
-    { label: "Club", value: "CLUB" },
-    { label: "Karaoke", value: "KARAOKE" },
-    { label: "Spa", value: "MASSAGE_SPA" },
-  ];
-  const categoryOptions = [{ label: "Tất cả", value: "" }, ...categoryChips];
+  const categoryChips = useMemo(
+    () => [
+      { label: getLocalizedCategoryLabel("LOUNGE", activeLanguage), value: "LOUNGE" },
+      { label: getLocalizedCategoryLabel("BAR", activeLanguage), value: "BAR" },
+      { label: getLocalizedCategoryLabel("CLUB", activeLanguage), value: "CLUB" },
+      { label: getLocalizedCategoryLabel("KARAOKE", activeLanguage), value: "KARAOKE" },
+      { label: getLocalizedCategoryLabel("MASSAGE_SPA", activeLanguage), value: "MASSAGE_SPA" },
+    ],
+    [activeLanguage],
+  );
+  const categoryOptions = useMemo(() => [{ label: copy.all, value: "" }, ...categoryChips], [categoryChips, copy.all]);
   const activeFilterCount = [
     city !== "hn",
     area,
@@ -391,33 +602,35 @@ export default function Page() {
 
       <div className="venue-search-shell">
         <header className="venue-search-header">
-          <Link href="/" aria-label="Quay lại trang chủ" className="venue-search-back">
+          <Link href="/" aria-label={translateText("Quay lại trang chủ", activeLanguage)} className="venue-search-back">
             <ArrowLeft size={17} />
           </Link>
 
           <div className="venue-search-title">
             <h1>
-              <span className="venue-title-desktop">Tìm quán đêm {cityLabel}</span>
-              <span className="venue-title-mobile">Tìm quán</span>
+              <span className="venue-title-desktop">
+                {copy.titlePrefix} {cityLabel}
+              </span>
+              <span className="venue-title-mobile">{copy.mobileTitle}</span>
             </h1>
             <p>
-              <span className="venue-subtitle-desktop">FIND YOUR VENUE TONIGHT</span>
-              <span className="venue-subtitle-mobile">FIND VENUES</span>
+              <span className="venue-subtitle-desktop">{copy.subtitleDesktop}</span>
+              <span className="venue-subtitle-mobile">{copy.mobileSubtitle}</span>
             </p>
           </div>
         </header>
 
-        <section className="venue-search-controls" aria-label="Tìm và lọc quán">
+        <section className="venue-search-controls" aria-label={copy.searchAria}>
           <label className="venue-search-input">
             <Search size={18} />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Tìm quán, khu vực hoặc loại hình..."
+              placeholder={copy.searchPlaceholder}
             />
             <button
               type="button"
-              aria-label="Bộ lọc"
+              aria-label={copy.openFilters}
               className="venue-filter-icon"
               data-testid="venue-filter-button"
               onClick={() => setFilterSheetOpen(true)}
@@ -446,8 +659,8 @@ export default function Page() {
               <ChevronDown size={14} />
             </button>
             {isCityMenuOpen ? (
-              <div className="venue-city-menu" role="listbox" aria-label="Chọn thành phố">
-                {cityOptions.map((option) => (
+              <div className="venue-city-menu" role="listbox" aria-label={copy.chooseCity}>
+                {localizedCityOptions.map((option) => (
                   <button
                     key={option.value || "all"}
                     type="button"
@@ -464,17 +677,17 @@ export default function Page() {
           </div>
 
           <button type="button" className="venue-find-button">
-            Tìm
+            {copy.find}
           </button>
         </section>
 
-        <nav className="venue-chip-row hscroll" aria-label="Bộ lọc nhanh">
+        <nav className="venue-chip-row hscroll" aria-label={copy.filterAria}>
           <button
             type="button"
             className={`venue-chip ${openNow ? "is-active" : ""}`}
             onClick={() => setOpenNow((current) => !current)}
           >
-            Đang mở
+            {copy.openNow}
           </button>
           <button
             type="button"
@@ -483,21 +696,21 @@ export default function Page() {
             disabled={isLocating}
           >
             <LocateFixed size={13} />
-            {isLocating ? "Đang lấy vị trí" : "Gần tôi"}
+            {isLocating ? copy.locating : copy.nearMe}
           </button>
           <button
             type="button"
             className={`venue-chip ${hasActiveCoupon ? "is-active" : ""}`}
             onClick={() => setHasActiveCoupon((current) => !current)}
           >
-            Có ưu đãi
+            {copy.hasDeals}
           </button>
           <button
             type="button"
             className={`venue-chip ${ratingOnly ? "is-active" : ""}`}
             onClick={() => setRatingOnly((current) => !current)}
           >
-            4.5★ trở lên
+            {copy.ratingUp}
           </button>
           {categoryChips.map((chip) => (
             <button
@@ -513,7 +726,7 @@ export default function Page() {
 
         <div className="venue-result-bar">
           <div>
-            <strong>{isLoading ? "..." : venues.length} quán</strong>
+            <strong>{isLoading ? "..." : formatVenueCount(venues.length, activeLanguage)}</strong>
             <span> · {cityLabel}</span>
           </div>
 
@@ -532,13 +745,13 @@ export default function Page() {
               aria-expanded={isSortMenuOpen}
               onClick={() => setSortMenuOpen((current) => !current)}
             >
-              <span>Sắp xếp:</span>
-              <strong>{sortLabels[sort]}</strong>
+              <span>{copy.sortLabel}</span>
+              <strong>{getLocalizedSortLabel(sort, activeLanguage)}</strong>
               <ChevronDown size={13} />
             </button>
             {isSortMenuOpen ? (
-              <div className="venue-sort-menu" role="listbox" aria-label="Sắp xếp danh sách">
-                {sortOptions.map((option) => (
+              <div className="venue-sort-menu" role="listbox" aria-label={copy.sortAria}>
+                {localizedSortOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -555,9 +768,9 @@ export default function Page() {
           </div>
         </div>
 
-        {error ? <div className="venue-error">{error}</div> : null}
+        {error ? <div className="venue-error">{translateText(error, activeLanguage)}</div> : null}
 
-        <section className="venue-list" aria-label="Danh sách quán">
+        <section className="venue-list" aria-label={copy.listAria}>
           {isLoading ? (
             <VenueSkeletons />
           ) : venues.length > 0 ? (
@@ -565,14 +778,15 @@ export default function Page() {
               <VenueResultCard
                 key={venue.id}
                 venue={venue}
+                copy={copy}
                 isFavorite={favoriteStoreSlugs.includes(venue.id)}
                 onToggleFavorite={toggleVenueFavorite}
               />
             ))
           ) : (
             <div className="venue-empty">
-              <strong>Chưa có quán phù hợp</strong>
-              <span>Đổi khu vực, loại hình hoặc từ khóa để xem thêm.</span>
+              <strong>{copy.emptyTitle}</strong>
+              <span>{copy.emptyDescription}</span>
             </div>
           )}
         </section>
@@ -580,17 +794,20 @@ export default function Page() {
 
       {isFilterSheetOpen ? (
         <MobileVenueFilterSheet
-          activeCount={activeFilterCount}
           area={area}
           areaOptions={areaOptions}
+          applyLabel={formatVenueApplyLabel(venues.length, activeLanguage)}
           category={category}
           categoryOptions={categoryOptions}
           city={city}
+          cityOptions={localizedCityOptions}
+          copy={copy}
           hasActiveCoupon={hasActiveCoupon}
           openNow={openNow}
           ratingOnly={ratingOnly}
           sort={sort}
-          total={venues.length}
+          sortOptions={localizedSortOptions}
+          subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
           onArea={setArea}
           onCategory={setCategory}
           onCity={handleCityChange}
@@ -607,17 +824,20 @@ export default function Page() {
 }
 
 function MobileVenueFilterSheet({
-  activeCount,
   area,
   areaOptions,
+  applyLabel,
   category,
   categoryOptions,
   city,
+  cityOptions,
+  copy,
   hasActiveCoupon,
   openNow,
   ratingOnly,
   sort,
-  total,
+  sortOptions,
+  subtitle,
   onArea,
   onCategory,
   onCity,
@@ -628,17 +848,20 @@ function MobileVenueFilterSheet({
   onToggleOpenNow,
   onToggleRating,
 }: {
-  activeCount: number;
   area: string;
   areaOptions: FilterOption[];
+  applyLabel: string;
   category: string;
   categoryOptions: FilterOption[];
   city: string;
+  cityOptions: FilterOption[];
+  copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
   openNow: boolean;
   ratingOnly: boolean;
   sort: DiscoverySort;
-  total: number;
+  sortOptions: Array<{ value: DiscoverySort; label: string }>;
+  subtitle: string;
   onArea: (value: string) => void;
   onCategory: (value: string) => void;
   onCity: (value: string) => void;
@@ -662,59 +885,59 @@ function MobileVenueFilterSheet({
         <div className="venue-filter-handle" />
         <header className="venue-filter-head">
           <div>
-            <h2 id="venue-filter-title">Bộ lọc</h2>
-            <p>{activeCount ? `${activeCount} bộ lọc đang bật` : "Lọc quán theo nhu cầu"}</p>
+            <h2 id="venue-filter-title">{copy.filterTitle}</h2>
+            <p>{subtitle}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Đóng bộ lọc">
+          <button type="button" onClick={onClose} aria-label={copy.filterClose}>
             <X size={18} />
           </button>
         </header>
 
         <div className="venue-filter-scroll">
           <VenueFilterChipGroup
-            label="Thành phố"
+            label={copy.chooseCity}
             options={cityOptions}
             value={city}
             onChange={onCity}
           />
           <VenueFilterChipGroup
-            label="Khu vực"
+            label={copy.filterArea}
             options={areaOptions}
             value={area}
             onChange={onArea}
           />
           <VenueFilterChipGroup
-            label="Loại hình"
+            label={copy.filterCategory}
             options={categoryOptions}
             value={category}
             onChange={onCategory}
           />
 
-          <section className="venue-filter-group" aria-label="Nhu cầu">
-            <h3>Nhu cầu</h3>
+          <section className="venue-filter-group" aria-label={copy.filterNeeds}>
+            <h3>{copy.filterNeeds}</h3>
             <div>
               <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
-                Đang mở
+                {copy.openNow}
               </button>
               <button
                 type="button"
                 className={hasActiveCoupon ? "is-active" : ""}
                 onClick={onToggleCoupon}
               >
-                Có ưu đãi
+                {copy.hasDeals}
               </button>
               <button
                 type="button"
                 className={ratingOnly ? "is-active" : ""}
                 onClick={onToggleRating}
               >
-                4.5★ trở lên
+                {copy.ratingUp}
               </button>
             </div>
           </section>
 
           <VenueFilterChipGroup
-            label="Sắp xếp"
+            label={copy.sortLabel.replace(":", "")}
             options={sortOptions}
             value={sort}
             onChange={(value) => onSort(value as DiscoverySort)}
@@ -729,7 +952,7 @@ function MobileVenueFilterSheet({
             onClick={onReset}
           >
             <RotateCcw size={15} />
-            Đặt lại bộ lọc
+            {copy.resetFilters}
           </button>
           <button
             type="button"
@@ -737,7 +960,7 @@ function MobileVenueFilterSheet({
             data-testid="venue-filter-submit"
             onClick={onClose}
           >
-            {`Xem ${total} quán`}
+            {applyLabel}
           </button>
         </footer>
       </section>
@@ -777,10 +1000,12 @@ function VenueFilterChipGroup({
 
 function VenueResultCard({
   venue,
+  copy,
   isFavorite,
   onToggleFavorite,
 }: {
   venue: VenueView;
+  copy: VenueSearchCopy;
   isFavorite: boolean;
   onToggleFavorite: (venue: VenueView) => void;
 }) {
@@ -794,7 +1019,7 @@ function VenueResultCard({
     <Link href={`/stores/${venue.id}`} className="venue-card">
       <div
         className="venue-card-media"
-        aria-label={`Ảnh ${venue.name}`}
+        aria-label={`${copy.venuePhoto} ${venue.name}`}
         style={{ backgroundImage: `url(${JSON.stringify(venue.image)})` }}
       >
         <div className="venue-image-shade" />
@@ -807,7 +1032,7 @@ function VenueResultCard({
           className={`venue-heart ${isFavorite ? "is-active" : ""}`}
           role="button"
           tabIndex={0}
-          aria-label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+          aria-label={isFavorite ? copy.unsaveVenue : copy.saveVenue}
           aria-pressed={isFavorite}
           onClick={handleFavoriteClick}
           onKeyDown={(event) => {
@@ -843,7 +1068,7 @@ function VenueResultCard({
         </div>
 
         <span className="venue-book-button">
-          Đặt bàn
+          {copy.bookTable}
           <ChevronRight size={16} />
         </span>
       </div>
@@ -1442,25 +1667,40 @@ const venueSearchCss = `
   .venue-filter-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 120;
+    z-index: 320;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     background: rgba(6, 6, 8, .68);
     color: var(--vy-text);
+    padding: 0 12px;
   }
 
   .venue-filter-sheet {
-    width: min(420px, 100%);
-    max-height: calc(100vh - 58px);
+    position: relative;
+    z-index: 2;
+    width: min(420px, calc(100% - 24px));
+    max-height: min(82vh, calc(100dvh - 72px));
     display: flex;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid rgba(212, 178, 106, .2);
-    border-bottom: 0;
-    border-radius: 24px 24px 0 0;
+    border-radius: 24px;
     background: #121116;
     box-shadow: 0 -20px 50px -20px rgba(0, 0, 0, .7);
+    margin-bottom: calc(10px + env(safe-area-inset-bottom));
+    animation: venue-filter-sheet-in .28s var(--vy-motion-ease, cubic-bezier(.2, .8, .2, 1)) both;
+  }
+
+  @keyframes venue-filter-sheet-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
   }
 
   .venue-filter-handle {
@@ -1589,6 +1829,17 @@ const venueSearchCss = `
   @media (max-width: 767px) {
     .venue-search-page {
       background: var(--vy-bg);
+    }
+
+    .venue-filter-backdrop {
+      z-index: 340;
+      padding: 0 10px;
+    }
+
+    .venue-filter-sheet {
+      width: min(430px, 100%);
+      max-height: min(86dvh, calc(100dvh - 94px));
+      margin-bottom: calc(82px + env(safe-area-inset-bottom));
     }
 
     .venue-search-shell {
