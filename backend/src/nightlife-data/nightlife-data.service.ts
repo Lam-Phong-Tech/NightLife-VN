@@ -707,6 +707,78 @@ type PublicRankingItem = {
 
 type PublicRankingItemDraft = Omit<PublicRankingItem, 'rank'>;
 
+type PublicRelatedCastReason =
+  | 'same-store'
+  | 'same-area'
+  | 'same-tag'
+  | 'ranking';
+
+const PUBLIC_RELATED_CAST_SELECT = {
+  id: true,
+  slug: true,
+  storeId: true,
+  stageName: true,
+  publicAlias: true,
+  publicHeadline: true,
+  tags: true,
+  languages: true,
+  hourlyRateVnd: true,
+  media: {
+    where: {
+      deletedAt: null,
+      access: 'PUBLIC',
+      status: 'READY',
+      type: 'IMAGE',
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: { url: true },
+  },
+  store: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      category: true,
+      description: true,
+      address: true,
+      city: true,
+      district: true,
+      latitude: true,
+      longitude: true,
+      area: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          city: true,
+          district: true,
+          ward: true,
+        },
+      },
+    },
+  },
+} as const satisfies Prisma.CastSelect;
+
+type PublicRelatedCastRecord = Prisma.CastGetPayload<{
+  select: typeof PUBLIC_RELATED_CAST_SELECT;
+}>;
+
+type PublicRelatedCastMappable = Omit<PublicRelatedCastRecord, 'storeId'> & {
+  storeId?: string;
+};
+
+type PublicRelatedCastSource = {
+  id: string;
+  storeId: string;
+  tags: string[];
+  store: {
+    city: string;
+    category: StoreCategory;
+    area: { id: string; code: string } | null;
+  };
+};
+
 type AdminRankingConfigRecord = {
   id: string;
   targetType: RankingTargetType;
@@ -12239,140 +12311,163 @@ export class NightlifeDataService {
     return `${name} tại ${cast.store.name}${location ? `, ${location}` : ''}. Xem bio, gallery public, ngôn ngữ hỗ trợ và đặt booking theo cast trên NightLife VN.`;
   }
 
-  private async loadRelatedPublicCasts(cast: {
-    id: string;
-    storeId: string;
-    tags: string[];
-    store: {
-      city: string;
-      area: { id: string; code: string } | null;
+  private async loadRelatedPublicCasts(cast: PublicRelatedCastSource) {
+    const limit = 6;
+    const selected = new Map<
+      string,
+      { cast: PublicRelatedCastRecord; relatedReason: PublicRelatedCastReason }
+    >();
+    const addRelated = (
+      items: PublicRelatedCastRecord[],
+      resolveReason: (item: PublicRelatedCastRecord) => PublicRelatedCastReason,
+    ) => {
+      items.forEach((item) => {
+        if (selected.size >= limit || selected.has(item.id)) return;
+        selected.set(item.id, {
+          cast: item,
+          relatedReason: resolveReason(item),
+        });
+      });
     };
-  }) {
-    const relatedFilters = [
-      { storeId: cast.storeId },
-      ...(cast.store.area?.id
-        ? [{ store: { areaId: cast.store.area.id } }]
-        : []),
-      ...(cast.tags.length ? [{ tags: { hasSome: cast.tags } }] : []),
-      { store: { city: cast.store.city } },
-    ];
 
-    const related = await this.prisma.cast.findMany({
+    const sameStoreCasts = await this.prisma.cast.findMany({
       where: {
         id: { not: cast.id },
+        storeId: cast.storeId,
         deletedAt: null,
         status: 'ACTIVE',
         isPublic: true,
-        AND: [
-          {
-            store: {
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-          },
-          {
-            OR: relatedFilters,
-          },
-        ],
+        store: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
       },
       orderBy: { createdAt: 'desc' },
-      take: 8,
-      select: {
-        id: true,
-        slug: true,
-        storeId: true,
-        stageName: true,
-        publicAlias: true,
-        publicHeadline: true,
-        tags: true,
-        languages: true,
-        hourlyRateVnd: true,
-        media: {
-          where: {
-            deletedAt: null,
-            access: 'PUBLIC',
-            status: 'READY',
-            type: 'IMAGE',
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { url: true },
-        },
-        store: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            category: true,
-            description: true,
-            address: true,
-            city: true,
-            district: true,
-            latitude: true,
-            longitude: true,
-            area: {
-              select: {
-                id: true,
-                code: true,
-                name: true,
-                city: true,
-                district: true,
-                ward: true,
+      take: limit,
+      select: PUBLIC_RELATED_CAST_SELECT,
+    });
+    addRelated(sameStoreCasts, () => 'same-store');
+
+    if (selected.size < limit) {
+      const rankingCasts = await this.loadRankedRelatedPublicCasts(
+        cast,
+        [...selected.keys()],
+        limit - selected.size,
+      );
+      addRelated(rankingCasts, () => 'ranking');
+    }
+
+    if (selected.size < limit) {
+      const contextualFilters: Prisma.CastWhereInput[] = [
+        ...(cast.store.area?.id
+          ? [{ store: { areaId: cast.store.area.id } }]
+          : []),
+        ...(cast.tags.length ? [{ tags: { hasSome: cast.tags } }] : []),
+        { store: { city: cast.store.city } },
+      ];
+
+      const contextualCasts = await this.prisma.cast.findMany({
+        where: {
+          id: { notIn: [cast.id, ...selected.keys()] },
+          deletedAt: null,
+          status: 'ACTIVE',
+          isPublic: true,
+          AND: [
+            {
+              store: {
+                deletedAt: null,
+                status: 'ACTIVE',
               },
             },
-          },
+            {
+              OR: contextualFilters,
+            },
+          ],
         },
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: limit - selected.size,
+        select: PUBLIC_RELATED_CAST_SELECT,
+      });
+      addRelated(contextualCasts, (item) =>
+        item.store.area?.id && item.store.area.id === cast.store.area?.id
+          ? 'same-area'
+          : 'same-tag',
+      );
+    }
 
-    const unique = new Map<string, (typeof related)[number]>();
-    related.forEach((item) => unique.set(item.id, item));
-
-    return [...unique.values()].map((item) =>
-      this.mapPublicRelatedCast(
-        item,
-        item.storeId === cast.storeId
-          ? 'same-store'
-          : item.store.area?.id && item.store.area.id === cast.store.area?.id
-            ? 'same-area'
-            : 'same-tag',
-      ),
+    return [...selected.values()].map(({ cast: item, relatedReason }) =>
+      this.mapPublicRelatedCast(item, relatedReason),
     );
   }
 
+  private async loadRankedRelatedPublicCasts(
+    cast: PublicRelatedCastSource,
+    excludeIds: string[],
+    limit: number,
+  ) {
+    if (limit <= 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const cityCode = cast.store.area?.code
+      ? this.cityCodeFromAreaCode(cast.store.area.code)
+      : this.normalizeCityCode(cast.store.city);
+    const cityFilters: Prisma.RankingConfigWhereInput[] = cityCode
+      ? [{ cityCode }, { cityCode: 'all' }]
+      : [{ cityCode: 'all' }];
+    const configs = await this.prisma.rankingConfig.findMany({
+      where: {
+        targetType: 'CAST',
+        targetId: { notIn: [cast.id, ...excludeIds] },
+        scope: this.resolveAdminRankingScope(undefined),
+        status: 'ACTIVE',
+        deletedAt: null,
+        AND: [
+          { OR: cityFilters },
+          { OR: [{ category: null }, { category: cast.store.category }] },
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        ],
+      },
+      orderBy: [
+        { pinRank: 'asc' },
+        { manualScore: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+      take: Math.max(limit * 4, limit),
+      select: { targetId: true },
+    });
+    const rankedIds = [...new Set(configs.map((config) => config.targetId))];
+
+    if (!rankedIds.length) {
+      return [];
+    }
+
+    const casts = await this.prisma.cast.findMany({
+      where: {
+        id: { in: rankedIds },
+        deletedAt: null,
+        status: 'ACTIVE',
+        isPublic: true,
+        store: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      },
+      select: PUBLIC_RELATED_CAST_SELECT,
+    });
+    const castById = new Map(casts.map((item) => [item.id, item]));
+
+    return rankedIds
+      .map((id) => castById.get(id))
+      .filter((item): item is PublicRelatedCastRecord => Boolean(item))
+      .slice(0, limit);
+  }
+
   private mapPublicRelatedCast(
-    cast: {
-      id: string;
-      slug: string;
-      stageName: string;
-      publicAlias: string | null;
-      publicHeadline: string | null;
-      tags: string[];
-      languages: string[];
-      hourlyRateVnd: number | null;
-      media: Array<{ url: string }>;
-      store: {
-        id: string;
-        name: string;
-        slug: string;
-        category: StoreCategory;
-        description: string | null;
-        address: string | null;
-        city: string;
-        district: string | null;
-        latitude: Prisma.Decimal | number | string | null;
-        longitude: Prisma.Decimal | number | string | null;
-        area: {
-          id: string;
-          code: string;
-          name: string;
-          city: string;
-          district?: string | null;
-          ward?: string | null;
-        } | null;
-      };
-    },
-    relatedReason: 'same-store' | 'same-area' | 'same-tag',
+    cast: PublicRelatedCastMappable,
+    relatedReason: PublicRelatedCastReason,
   ) {
     return {
       id: cast.id,

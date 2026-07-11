@@ -10,6 +10,7 @@ type ViewerSignals = {
 
 const relatedReasonScore: Record<RelatedCast["relatedReason"], number> = {
   "same-store": 40,
+  ranking: 30,
   "same-area": 24,
   "same-tag": 18,
 };
@@ -77,6 +78,7 @@ export function personalizeRelatedCasts(current: CastProfile, relatedCasts: Rela
 }
 
 export function recommendationLabel(cast: RelatedCast) {
+  if (cast.relatedReason === "ranking") return "Đang ranking";
   if (cast.relatedReason === "same-store") return "Cùng quán";
   if (cast.relatedReason === "same-area") return "Cùng khu vực";
   return "Hợp tag";

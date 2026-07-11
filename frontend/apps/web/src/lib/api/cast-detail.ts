@@ -20,7 +20,7 @@ export type CastDetailStore = PublicStore & {
   googlePlaceId?: string | null;
 };
 
-export type RelatedCastReason = "same-store" | "same-area" | "same-tag";
+export type RelatedCastReason = "same-store" | "same-area" | "same-tag" | "ranking";
 
 export type RelatedCast = {
   id: string;

@@ -1734,6 +1734,126 @@ describe('NightlifeDataService', () => {
     expect(result).not.toHaveProperty('deletedAt');
   });
 
+  it('falls back to ranked casts when no same-store cast is available', async () => {
+    prisma.cast.findFirst.mockResolvedValue({
+      id: 'cast-aya',
+      slug: 'aya-velvet',
+      storeId: 'store-velvet',
+      stageName: 'Aya',
+      publicAlias: 'Aya',
+      publicHeadline: 'VIP host',
+      bio: 'Admin introduction for Aya.',
+      publicBio: null,
+      birthMonth: 8,
+      zodiacSign: 'Leo',
+      heightCm: 168,
+      measurements: null,
+      hobbies: [],
+      styleTags: [],
+      youtubeLinks: [],
+      tags: ['vip'],
+      languages: ['ja', 'vi'],
+      hourlyRateVnd: 700000,
+      media: [
+        {
+          id: 'media-image',
+          type: 'IMAGE',
+          url: 'https://example.com/aya.jpg',
+          purpose: 'cast-gallery',
+          mimeType: 'image/jpeg',
+          originalName: 'Aya profile',
+          createdAt: new Date('2026-06-20T00:00:00.000Z'),
+        },
+      ],
+      store: {
+        id: 'store-velvet',
+        name: 'Velvet Club',
+        slug: 'velvet-club',
+        category: 'CLUB',
+        description: 'VIP club',
+        address: 'Quan 1',
+        city: 'Ho Chi Minh',
+        district: 'Quan 1',
+        phone: '+842812345678',
+        latitude: '10.7731',
+        longitude: '106.7042',
+        mapUrl: 'https://maps.example/velvet',
+        googlePlaceId: null,
+        media: [
+          { url: 'https://example.com/velvet-hero.jpg', purpose: 'store-hero' },
+        ],
+        area: {
+          id: 'area-hcm',
+          code: 'hcm-q1',
+          name: 'Quan 1',
+          city: 'Ho Chi Minh',
+          district: 'Quan 1',
+          ward: 'Ben Nghe',
+        },
+      },
+    });
+    prisma.cast.findMany
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([
+        {
+          id: 'cast-mika',
+          slug: 'mika-ktv',
+          storeId: 'store-neon',
+          stageName: 'Mika',
+          publicAlias: 'Mika KTV',
+          publicHeadline: 'Ranked host',
+          tags: ['party'],
+          languages: ['vi'],
+          hourlyRateVnd: 650000,
+          media: [{ url: 'https://example.com/mika.jpg' }],
+          store: {
+            id: 'store-neon',
+            name: 'Neon Club',
+            slug: 'neon-club',
+            category: 'CLUB',
+            description: 'Ranked club',
+            address: 'Quan 3',
+            city: 'Ho Chi Minh',
+            district: 'Quan 3',
+            latitude: '10.7810',
+            longitude: '106.6900',
+            area: {
+              id: 'area-hcm-q3',
+              code: 'hcm-q3',
+              name: 'Quan 3',
+              city: 'Ho Chi Minh',
+              district: 'Quan 3',
+              ward: null,
+            },
+          },
+        },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+    prisma.rankingConfig.findMany.mockResolvedValueOnce([
+      { targetId: 'cast-mika' },
+    ] as never);
+
+    const result = await service.getPublicCastBySlug('aya-velvet');
+
+    expect(prisma.rankingConfig.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          targetType: 'CAST',
+          scope: 'global',
+          status: 'ACTIVE',
+          deletedAt: null,
+        }),
+      }),
+    );
+    expect(result.relatedCasts).toEqual([
+      expect.objectContaining({
+        slug: 'mika-ktv',
+        relatedReason: 'ranking',
+        thumbnailUrl: 'https://example.com/mika.jpg',
+      }),
+    ]);
+  });
+
   it('returns 404 when cast detail is not public', async () => {
     prisma.cast.findFirst.mockResolvedValue(null);
 

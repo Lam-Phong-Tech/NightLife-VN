@@ -1002,6 +1002,60 @@ export function CastProfileStyles() {
         font-size: 15px;
       }
 
+      html.vy-light .cast-desktop-shell {
+        background: rgba(255,250,240,.78);
+        border-color: rgba(212,178,106,.22);
+        box-shadow: 0 30px 70px -42px rgba(80,61,27,.38);
+      }
+
+      html.vy-light .cast-desktop-name-block h1 {
+        color: #241a0f;
+        text-shadow: none;
+      }
+
+      html.vy-light .cast-desktop-name-block p,
+      html.vy-light .cast-desktop-stat-row span,
+      html.vy-light .cast-desktop-copy {
+        color: #6f6657;
+      }
+
+      html.vy-light .cast-desktop-stat-row b,
+      html.vy-light .cast-desktop .cast-info-row strong {
+        color: #4a3924;
+        font-weight: 750;
+      }
+
+      html.vy-light .cast-desktop .cast-info-row span {
+        color: #857968;
+      }
+
+      html.vy-light .cast-desktop .cast-chip.language {
+        background: #fff3cf;
+        color: #8a641f;
+        border-color: rgba(212,178,106,.42);
+      }
+
+      html.vy-light .cast-desktop .cast-chip.tag {
+        background: rgba(255,255,255,.74);
+        color: #5f5548;
+        border-color: rgba(212,178,106,.26);
+      }
+
+      html.vy-light .cast-related-section.desktop .cast-related-card {
+        background: #fffaf0;
+        border-color: rgba(212,178,106,.28);
+        box-shadow: 0 14px 34px rgba(80,61,27,.08);
+      }
+
+      html.vy-light .cast-related-section.desktop .cast-related-copy strong {
+        color: #3a3022;
+      }
+
+      html.vy-light .cast-related-section.desktop .cast-related-copy small,
+      html.vy-light .cast-related-section.desktop .cast-related-copy em {
+        color: #746a5a;
+      }
+
       .nl-page-content:has(.cast-page) {
         padding-left: 0 !important;
         padding-right: 0 !important;
@@ -1129,7 +1183,7 @@ export function CastProfileStyles() {
       .cast-desktop-name-block h1 {
         font-size: 34px;
         line-height: 1;
-        letter-spacing: -.02em;
+        letter-spacing: 0;
       }
 
       .cast-desktop-name-block p {

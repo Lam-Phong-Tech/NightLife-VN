@@ -293,10 +293,10 @@ export class PublicRelatedCastDto {
   thumbnailUrl?: string | null;
 
   @ApiProperty({
-    enum: ['same-store', 'same-area', 'same-tag'],
+    enum: ['same-store', 'same-area', 'same-tag', 'ranking'],
     example: 'same-store',
   })
-  relatedReason!: 'same-store' | 'same-area' | 'same-tag';
+  relatedReason!: 'same-store' | 'same-area' | 'same-tag' | 'ranking';
 
   @ApiProperty({ type: () => PublicStoreDto })
   store!: PublicStoreDto;
