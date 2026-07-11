@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/comm
 import { SupportChatService } from './support-chat.service';
 import { SupportChatGateway } from './support-chat.gateway';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('api/support')
 export class SupportChatController {
