@@ -325,12 +325,32 @@
 
 .dateTimeFields {
   width: 100%;
-  align-items: start;
+  align-items: stretch;
   gap: 12px;
 }
 
+.dateTimeFields :global(.nl-booking-date-field),
 .dateTimeFields :global(.nl-booking-field-with-period-tabs) {
   gap: 8px;
+}
+
+.dateTimeFields :global(.nl-booking-date-field) {
+  grid-template-rows: auto 1fr;
+  align-self: stretch;
+}
+
+.dateTimeFields :global(.nl-booking-date-field .nl-booking-ant-control.ant-picker) {
+  min-height: 96px;
+  height: 100%;
+}
+
+.dateTimeFields :global(.nl-booking-date-field .ant-picker-input) {
+  align-items: center;
+}
+
+.dateTimeFields :global(.nl-booking-date-field .ant-picker-input > input) {
+  height: auto;
+  line-height: 1.3;
 }
 
 .dateTimeFields :global(.nl-booking-time-control) {
@@ -1330,6 +1350,10 @@
 }
 
 @media (max-width: 859px) {
+  .dateTimeFields :global(.nl-booking-date-field .nl-booking-ant-control.ant-picker) {
+    min-height: 46px;
+  }
+
   .bookingViewport {
     width: 100%;
     padding: 0 0 calc(94px + env(safe-area-inset-bottom));

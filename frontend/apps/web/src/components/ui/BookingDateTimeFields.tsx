@@ -172,7 +172,12 @@ export function BookingDateTimeFields({
   const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
   const periodTabs = groups;
   const showPeriodTabs = periodTabs.length > 1;
-  const timeFieldClassName = [fieldClassName, showPeriodTabs ? "nl-booking-field-with-period-tabs" : ""]
+  const dateFieldClassName = [fieldClassName, "nl-booking-date-field"].filter(Boolean).join(" ");
+  const timeFieldClassName = [
+    fieldClassName,
+    "nl-booking-time-field",
+    showPeriodTabs ? "nl-booking-field-with-period-tabs" : "",
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -198,7 +203,7 @@ export function BookingDateTimeFields({
           .filter(Boolean)
           .join(" ")}
       >
-        <div className={fieldClassName}>
+        <div className={dateFieldClassName}>
           <span className={labelClassName}>{localizedDateLabel}</span>
           <DatePicker
             allowClear={false}
