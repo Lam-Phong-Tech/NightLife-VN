@@ -781,13 +781,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="nl-admin-topbar-spacer" style={{ flex: 1 }}></div>
 
           <div className="nl-admin-topbar-controls">
-            <React.Suspense fallback={<div />}>
-              <TopCategoryFilter />
-            </React.Suspense>
+            {pathname !== '/admin/permissions' && (
+              <>
+                <React.Suspense fallback={<div />}>
+                  <TopCategoryFilter />
+                </React.Suspense>
 
-            <React.Suspense fallback={<div />}>
-              <TopRegionFilter />
-            </React.Suspense>
+                <React.Suspense fallback={<div />}>
+                  <TopRegionFilter />
+                </React.Suspense>
+              </>
+            )}
           </div>
           
           <span onClick={toggleTheme} title={theme === 'light' ? 'Chuyển giao diện tối' : 'Chuyển giao diện sáng'} style={{ width: '39px', height: '39px', flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#d4b26a', border: '1px solid rgba(212,178,106,.28)', transition: 'background 0.2s' }}>
