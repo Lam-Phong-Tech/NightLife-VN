@@ -1,5 +1,4 @@
 import type { PublicCastDetail } from "@/lib/api/cast-detail";
-import { castGalleryForSlug, castImageForSlug } from "@/lib/demo-media";
 import type { CastMedia, CastProfile } from "./cast-profile.types";
 
 export const cityLabels: Record<string, string> = {
@@ -38,24 +37,15 @@ export const tagLabels: Record<string, string> = {
   "vip-specialist": "VIP",
 };
 
+const emptyCastImage =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='1200' viewBox='0 0 900 1200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%2319191d'/%3E%3Cstop offset='1' stop-color='%2331281b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='900' height='1200' fill='url(%23g)'/%3E%3Ccircle cx='450' cy='420' r='118' fill='%23d6b15f' opacity='.26'/%3E%3Crect x='250' y='600' width='400' height='54' rx='27' fill='%23f0dda8' opacity='.2'/%3E%3Crect x='300' y='680' width='300' height='34' rx='17' fill='%23f0dda8' opacity='.13'/%3E%3C/svg%3E";
+
 export const placeholderGallery: CastMedia[] = [
   {
-    id: "placeholder-portrait-1",
+    id: "placeholder-cast-media",
     type: "IMAGE",
-    url: castImageForSlug("yuna-neon"),
+    url: emptyCastImage,
     alt: "Ảnh profile cast",
-  },
-  {
-    id: "placeholder-portrait-2",
-    type: "IMAGE",
-    url: castImageForSlug("akari-jade"),
-    alt: "Ảnh gallery cast",
-  },
-  {
-    id: "placeholder-video",
-    type: "VIDEO",
-    url: "https://videos.pexels.com/video-files/7271837/7271837-uhd_3840_2160_25fps.mp4",
-    alt: "Video giới thiệu cast",
   },
 ];
 
@@ -111,9 +101,8 @@ export function buildCastBio(cast: PublicCastDetail) {
 }
 
 export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
-  const localGallery = castGalleryForSlug(cast.slug, cast.publicAlias ?? cast.stageName);
-  const videoItems = cast.gallery.flatMap((media) => {
-    if (media.type !== "VIDEO") return [];
+  const items = cast.gallery.flatMap((media) => {
+    if (media.type !== "IMAGE" && media.type !== "VIDEO") return [];
 
     return [
       {
@@ -126,7 +115,17 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
       },
     ];
   });
-  const items = [...localGallery, ...videoItems];
+
+  if (cast.thumbnailUrl && !items.some((item) => item.url === cast.thumbnailUrl)) {
+    items.unshift({
+      id: `${cast.id}-thumbnail`,
+      type: "IMAGE",
+      url: cast.thumbnailUrl,
+      alt: cast.publicAlias ?? cast.stageName,
+      purpose: "thumbnail",
+    });
+  }
+
   const seen = new Set<string>();
 
   const gallery = items.filter((item) => {
@@ -135,7 +134,7 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
     return true;
   });
 
-  return gallery.length ? gallery : localGallery;
+  return gallery.length ? gallery : placeholderGallery;
 }
 
 export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
@@ -151,13 +150,14 @@ export function profileFromCastDetail(cast: PublicCastDetail): CastProfile {
     tags: cast.tags,
     languages: cast.languages.length ? cast.languages : ["vi"],
     hourlyRateVnd: cast.hourlyRateVnd ?? null,
-    thumbnailUrl: castImageForSlug(cast.slug),
+    thumbnailUrl: cast.thumbnailUrl ?? cast.gallery.find((item) => item.type === "IMAGE")?.url ?? null,
     gallery: galleryFromCast(cast),
     monthOfBirth: cast.monthOfBirth ?? null,
     zodiacSign: cast.zodiacSign ?? null,
     heightCm: cast.heightCm ?? null,
     measurements: cast.measurements ?? null,
     interests: cast.interests,
+    styleTags: cast.styleTags ?? [],
     rating: 4.8,
     store: cast.store,
     relatedCasts: cast.relatedCasts ?? [],

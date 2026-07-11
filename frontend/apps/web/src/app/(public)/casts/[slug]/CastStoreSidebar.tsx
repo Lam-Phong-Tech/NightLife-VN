@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { RelatedCast } from "@/lib/api/cast-detail";
-import { castImageForSlug } from "@/lib/demo-media";
-import { labelLanguage, mediaBg } from "./cast-profile.helpers";
+import { labelLanguage, mediaBg, placeholderGallery } from "./cast-profile.helpers";
 import { recommendationLabel } from "./cast-profile.recommendations";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
 
@@ -54,7 +53,7 @@ export function CastStoreSidebar({
         <h2>Gợi ý phù hợp</h2>
         <div className="cast-related-list">
           {relatedCasts.length ? (
-            relatedCasts.map((cast, index) => (
+            relatedCasts.map((cast) => (
               <Link
                 key={cast.id}
                 className="cast-related-card"
@@ -66,7 +65,7 @@ export function CastStoreSidebar({
                 <span
                   className="cast-related-media"
                   style={{
-                    background: mediaBg(castImageForSlug(cast.slug, index)),
+                    background: mediaBg(cast.thumbnailUrl ?? placeholderGallery[0]!.url),
                   }}
                 />
                 <span>

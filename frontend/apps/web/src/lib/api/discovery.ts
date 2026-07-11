@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, resolveClientUrl } from "./client";
 import { castImageForSlug, storeImageForSlug } from "../demo-media";
 
 export type DiscoverySort = "newest" | "nearest" | "priority";
@@ -639,6 +639,17 @@ const getFallbackCasts = (params: DiscoveryParams = {}) => {
 const unwrapListResponse = <T>(response: T[] | PublicDiscoveryListResponse<T>) =>
   Array.isArray(response) ? response : response.data;
 
+const normalizePublicStore = (store: PublicStore): PublicStore => ({
+  ...store,
+  thumbnailUrl: resolveClientUrl(store.thumbnailUrl),
+});
+
+const normalizePublicCast = (cast: PublicCast): PublicCast => ({
+  ...cast,
+  thumbnailUrl: resolveClientUrl(cast.thumbnailUrl),
+  store: normalizePublicStore(cast.store),
+});
+
 const withDemoFallback = async <T extends unknown[]>(
   request: () => Promise<T>,
   fallback: () => T,
@@ -665,19 +676,19 @@ export const discoveryApi = {
       () =>
         apiClient<PublicStore[] | PublicDiscoveryListResponse<PublicStore>>("/stores", {
           params: toParams(params),
-        }).then(unwrapListResponse),
+        }).then((response) => unwrapListResponse(response).map(normalizePublicStore)),
       () => getFallbackStores(params),
     ),
   listStoresStrict: (params?: DiscoveryParams) =>
     apiClient<PublicStore[] | PublicDiscoveryListResponse<PublicStore>>("/stores", {
       params: toParams(params),
-    }).then(unwrapListResponse),
+    }).then((response) => unwrapListResponse(response).map(normalizePublicStore)),
   listCasts: (params?: DiscoveryParams) =>
     withDemoFallback(
       () =>
         apiClient<PublicCast[] | PublicDiscoveryListResponse<PublicCast>>("/casts", {
           params: toParams(params),
-        }).then(unwrapListResponse),
+        }).then((response) => unwrapListResponse(response).map(normalizePublicCast)),
       () => getFallbackCasts(params),
     ),
 };

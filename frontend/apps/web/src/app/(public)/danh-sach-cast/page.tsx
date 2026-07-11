@@ -23,7 +23,6 @@ import {
   type PublicArea,
   type PublicCast,
 } from "@/lib/api/discovery";
-import { castImageForSlug } from "@/lib/demo-media";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteCastSlugs, writeFavoriteCast } from "@/lib/member-favorites";
 import { sortBySearchRelevance } from "@/lib/search-relevance";
@@ -380,7 +379,7 @@ export default function Page() {
         areaLabel: [cast.store.area?.name ?? cast.store.district, cityLabels[cast.store.cityCode ?? ""]]
           .filter(Boolean)
           .join(" · "),
-        image: castImageForSlug(cast.slug, index),
+        image: cast.thumbnailUrl ?? undefined,
       },
       nextValue,
     );
@@ -677,7 +676,7 @@ function SearchSuggestions({
           {casts.map((cast, index) => (
             <Link key={cast.id} href={`/casts/${cast.slug}`} className="cast-suggestion-row">
               <PlaceholderMedia
-                src={castImageForSlug(cast.slug, index)}
+                src={cast.thumbnailUrl}
                 alt={cast.name}
                 label=""
                 className="cast-suggestion-avatar"
@@ -745,7 +744,7 @@ function CastDiscoveryCard({
   isFavorite: boolean;
   onToggleFavorite: (cast: PublicCast, index: number) => void;
 }) {
-  const image = castImageForSlug(cast.slug, index);
+  const image = cast.thumbnailUrl;
   const areaLabel = [
     cast.store.area?.name ?? cast.store.district,
     cityLabels[cast.store.cityCode ?? ""],
@@ -767,10 +766,11 @@ function CastDiscoveryCard({
 
   return (
     <Link href={`/casts/${cast.slug}`} className="cast-card">
-      <div
+      <PlaceholderMedia
+        src={image}
+        label="Chưa có ảnh cast"
+        tone="dark"
         className="cast-card-media"
-        aria-label={`Ảnh ${cast.name}`}
-        style={{ backgroundImage: `url("${image}")` }}
       >
         <span className="cast-media-shade" />
         <span className={`cast-rank-badge ${isRanked ? "is-ranked" : ""}`}>
@@ -799,7 +799,7 @@ function CastDiscoveryCard({
           <b>{cast.store.name}</b>
           {areaLabel ? <small>· {areaLabel}</small> : null}
         </span>
-      </div>
+      </PlaceholderMedia>
 
       <div className="cast-card-body">
         <div className="cast-card-meta">

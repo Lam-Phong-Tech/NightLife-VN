@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, resolveClientUrl } from "./client";
 import { getFallbackCastBySlug, type PublicArea, type PublicStore } from "./discovery";
 import type { StoreSeoMetadata } from "./store-detail";
 import { castGalleryForSlug, castImageForSlug, storeImageForSlug } from "../demo-media";
@@ -62,6 +62,7 @@ export type PublicCastDetail = {
   heightCm?: number | null;
   measurements?: string | null;
   interests: string[];
+  styleTags?: string[];
   tags: string[];
   languages: string[];
   hourlyRateVnd?: number | null;
@@ -100,6 +101,7 @@ const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
     heightCm: null,
     measurements: null,
     interests: cast.tags,
+    styleTags: cast.tags,
     tags: cast.tags,
     languages: cast.languages,
     hourlyRateVnd: cast.hourlyRateVnd,
@@ -126,16 +128,47 @@ const fallbackCastDetail = (slug: string): PublicCastDetail | null => {
   };
 };
 
+const normalizeCastGalleryItem = (item: CastGalleryItem): CastGalleryItem => ({
+  ...item,
+  url: resolveClientUrl(item.url) ?? item.url,
+});
+
+const normalizeRelatedCast = (cast: RelatedCast): RelatedCast => ({
+  ...cast,
+  thumbnailUrl: resolveClientUrl(cast.thumbnailUrl),
+  store: {
+    ...cast.store,
+    thumbnailUrl: resolveClientUrl(cast.store.thumbnailUrl),
+  },
+});
+
+const normalizeCastDetail = (cast: PublicCastDetail): PublicCastDetail => ({
+  ...cast,
+  thumbnailUrl: resolveClientUrl(cast.thumbnailUrl),
+  gallery: cast.gallery.map(normalizeCastGalleryItem),
+  relatedCasts: cast.relatedCasts.map(normalizeRelatedCast),
+  store: {
+    ...cast.store,
+    thumbnailUrl: resolveClientUrl(cast.store.thumbnailUrl),
+  },
+  seo: {
+    ...cast.seo,
+    ogImage: resolveClientUrl(cast.seo.ogImage),
+  },
+});
+
 export const getCastDetail = async (slug: string, options: RequestInit = {}) => {
   try {
-    return await apiClient<PublicCastDetail>(`/casts/${encodeURIComponent(slug)}`, {
+    const cast = await apiClient<PublicCastDetail>(`/casts/${encodeURIComponent(slug)}`, {
       cache: "no-store",
       ...options,
     });
+
+    return normalizeCastDetail(cast);
   } catch (error) {
     const fallback = fallbackCastDetail(slug);
 
-    if (fallback) return fallback;
+    if (fallback) return normalizeCastDetail(fallback);
 
     throw error;
   }

@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { ChevronRight, Clock3, Star, UsersRound } from "lucide-react";
 import type { RelatedCast } from "@/lib/api/cast-detail";
-import { castImageForSlug, storeImageForSlug } from "@/lib/demo-media";
 import {
   formatMonth,
   formatOptional,
   labelLanguage,
   labelTag,
   mediaBg,
+  placeholderGallery,
 } from "./cast-profile.helpers";
 import { recommendationLabel } from "./cast-profile.recommendations";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
@@ -40,7 +40,11 @@ export function CastInfo({
   const interests = profile.interests?.length
     ? profile.interests.join(" · ")
     : profile.tags.slice(0, 3).map(labelTag).join(" · ") || "Chưa cập nhật";
-  const styleText = profile.tags.slice(0, 4).map(labelTag).join(" · ") || "Thanh lịch · Ấm áp";
+  const styleText =
+    (profile.styleTags.length ? profile.styleTags : profile.tags)
+      .slice(0, 4)
+      .map(labelTag)
+      .join(" · ") || "Thanh lịch · Ấm áp";
 
   if (variant === "mobile") {
     return (
@@ -132,7 +136,7 @@ export function CastRelatedCasts({ relatedCasts, variant, onTrack }: RelatedCast
         <small>Xem tất cả</small>
       </div>
       <div className="cast-related-list">
-        {relatedCasts.slice(0, variant === "desktop" ? 4 : 6).map((cast, index) => (
+        {relatedCasts.slice(0, variant === "desktop" ? 4 : 6).map((cast) => (
           <Link
             key={cast.id}
             className="cast-related-card"
@@ -142,7 +146,7 @@ export function CastRelatedCasts({ relatedCasts, variant, onTrack }: RelatedCast
             <span
               className="cast-related-media"
               style={{
-                background: mediaBg(castImageForSlug(cast.slug, index)),
+                background: mediaBg(cast.thumbnailUrl ?? placeholderGallery[0]!.url),
               }}
             />
             <span className="cast-related-copy">
@@ -214,7 +218,7 @@ function VenueCard({
   onTrack?: CastProfileTrack;
   compact?: boolean;
 }) {
-  const storeImage = storeImageForSlug(profile.store.slug);
+  const storeImage = profile.store.thumbnailUrl ?? placeholderGallery[0]!.url;
 
   return (
     <Link

@@ -2246,7 +2246,15 @@ export class NightlifeDataService {
         stageName: true,
         publicAlias: true,
         publicHeadline: true,
+        bio: true,
         publicBio: true,
+        birthMonth: true,
+        zodiacSign: true,
+        heightCm: true,
+        measurements: true,
+        hobbies: true,
+        styleTags: true,
+        youtubeLinks: true,
         tags: true,
         languages: true,
         hourlyRateVnd: true,
@@ -2265,6 +2273,20 @@ export class NightlifeDataService {
             longitude: true,
             mapUrl: true,
             googlePlaceId: true,
+            media: {
+              where: {
+                deletedAt: null,
+                access: 'PUBLIC',
+                status: 'READY',
+                type: 'IMAGE',
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+              select: {
+                url: true,
+                purpose: true,
+              },
+            },
             area: {
               select: {
                 id: true,
@@ -2302,18 +2324,32 @@ export class NightlifeDataService {
       throw new NotFoundException('Cast not found');
     }
 
-    const gallery = cast.media.map((media) => ({
-      id: media.id,
-      type: media.type,
-      url: media.url,
-      purpose: media.purpose,
-      mimeType: media.mimeType,
-      alt: media.originalName || cast.publicAlias || cast.stageName,
-    }));
+    const gallery = [
+      ...cast.media.map((media) => ({
+        id: media.id,
+        type: media.type,
+        url: media.url,
+        purpose: media.purpose,
+        mimeType: media.mimeType,
+        alt: media.originalName || cast.publicAlias || cast.stageName,
+      })),
+      ...cast.youtubeLinks.map((url, index) => ({
+        id: `youtube-${index + 1}`,
+        type: 'VIDEO' as const,
+        url,
+        purpose: 'youtube-link',
+        mimeType: 'video/youtube',
+        alt: `${cast.publicAlias || cast.stageName} video ${index + 1}`,
+      })),
+    ];
     const thumbnailUrl =
       gallery.find((item) => item.type === 'IMAGE')?.url ?? null;
     const name = cast.publicAlias ?? cast.stageName;
-    const seoDescription = this.buildCastSeoDescription(cast);
+    const publicBio = cast.publicBio ?? cast.bio;
+    const seoDescription = this.buildCastSeoDescription({
+      ...cast,
+      publicBio,
+    });
     const relatedCasts = await this.loadRelatedPublicCasts(cast);
 
     return {
@@ -2323,12 +2359,13 @@ export class NightlifeDataService {
       name,
       publicAlias: cast.publicAlias,
       publicHeadline: cast.publicHeadline,
-      publicBio: cast.publicBio,
-      monthOfBirth: null,
-      zodiacSign: null,
-      heightCm: null,
-      measurements: null,
-      interests: [],
+      publicBio,
+      monthOfBirth: cast.birthMonth,
+      zodiacSign: cast.zodiacSign,
+      heightCm: cast.heightCm,
+      measurements: cast.measurements,
+      interests: cast.hobbies,
+      styleTags: cast.styleTags,
       tags: cast.tags,
       languages: cast.languages,
       hourlyRateVnd: cast.hourlyRateVnd,
@@ -2351,6 +2388,7 @@ export class NightlifeDataService {
         phone: cast.store.phone,
         latitude: this.toNumber(cast.store.latitude),
         longitude: this.toNumber(cast.store.longitude),
+        thumbnailUrl: this.resolveStoreCoverImage(cast.store.media),
         mapUrl: cast.store.mapUrl,
         googlePlaceId: cast.store.googlePlaceId,
       },

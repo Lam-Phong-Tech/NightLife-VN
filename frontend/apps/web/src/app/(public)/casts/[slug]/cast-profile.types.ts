@@ -26,6 +26,7 @@ export type CastProfile = {
   heightCm?: number | null;
   measurements?: string | null;
   interests?: string[];
+  styleTags: string[];
   rating: number;
   store: PublicCastDetail["store"];
   relatedCasts: RelatedCast[];

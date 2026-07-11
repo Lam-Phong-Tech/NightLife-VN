@@ -1523,7 +1523,15 @@ describe('NightlifeDataService', () => {
       stageName: 'Aya',
       publicAlias: 'Aya',
       publicHeadline: 'VIP host',
-      publicBio: 'Public introduction for Aya.',
+      bio: 'Admin introduction for Aya.',
+      publicBio: null,
+      birthMonth: 8,
+      zodiacSign: 'Leo',
+      heightCm: 168,
+      measurements: '82-58-86',
+      hobbies: ['wine', 'piano'],
+      styleTags: ['vip'],
+      youtubeLinks: ['https://youtu.be/aya-intro'],
       tags: ['vip', 'wine-expert'],
       languages: ['ja', 'vi'],
       hourlyRateVnd: 700000,
@@ -1561,6 +1569,9 @@ describe('NightlifeDataService', () => {
         longitude: '106.7042',
         mapUrl: 'https://maps.example/velvet',
         googlePlaceId: null,
+        media: [
+          { url: 'https://example.com/velvet-hero.jpg', purpose: 'store-hero' },
+        ],
         area: {
           id: 'area-hcm',
           code: 'hcm-q1',
@@ -1621,7 +1632,6 @@ describe('NightlifeDataService', () => {
           },
         }),
         select: expect.not.objectContaining({
-          bio: true,
           status: true,
           isPublic: true,
           deletedAt: true,
@@ -1634,12 +1644,13 @@ describe('NightlifeDataService', () => {
         id: 'cast-aya',
         slug: 'aya-velvet',
         name: 'Aya',
-        publicBio: 'Public introduction for Aya.',
-        monthOfBirth: null,
-        zodiacSign: null,
-        heightCm: null,
-        measurements: null,
-        interests: [],
+        publicBio: 'Admin introduction for Aya.',
+        monthOfBirth: 8,
+        zodiacSign: 'Leo',
+        heightCm: 168,
+        measurements: '82-58-86',
+        interests: ['wine', 'piano'],
+        styleTags: ['vip'],
         thumbnailUrl: 'https://example.com/aya.jpg',
         gallery: expect.arrayContaining([
           expect.objectContaining({
@@ -1654,6 +1665,12 @@ describe('NightlifeDataService', () => {
             url: 'https://example.com/aya.mp4',
             purpose: 'intro-video',
           }),
+          expect.objectContaining({
+            id: 'youtube-1',
+            type: 'VIDEO',
+            url: 'https://youtu.be/aya-intro',
+            purpose: 'youtube-link',
+          }),
         ]),
         relatedCasts: [
           expect.objectContaining({
@@ -1666,6 +1683,7 @@ describe('NightlifeDataService', () => {
           slug: 'velvet-club',
           cityCode: 'hcm',
           phone: '+842812345678',
+          thumbnailUrl: 'https://example.com/velvet-hero.jpg',
           mapUrl: 'https://maps.example/velvet',
         }),
         seo: expect.objectContaining({
