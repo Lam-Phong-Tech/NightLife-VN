@@ -652,6 +652,18 @@ export function SupportChatWidget({
       .finally(() => setIsLoadingHistory(false));
   }, [ticketId, activeLanguage]);
 
+  const activeLanguageRef = useRef(activeLanguage);
+  useEffect(() => {
+    activeLanguageRef.current = activeLanguage;
+  }, [activeLanguage]);
+
+  useEffect(() => {
+    if (socket && ticketId) {
+      // Update query for future reconnects without disconnecting now
+      socket.io.opts.query = { ticketId };
+    }
+  }, [socket, ticketId]);
+
   useEffect(() => {
     const newSocket = io(process.env.NEXT_PUBLIC_API_URL + '/support', {
       query: ticketId ? { ticketId } : undefined
@@ -668,7 +680,7 @@ export function SupportChatWidget({
             id: msg.id || Date.now().toString(),
             from: msg.senderType === 'USER' || msg.senderType === 'GUEST' ? 'user' : 'support',
             text: msg.content,
-            time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguage),
+            time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguageRef.current),
           }
         ];
       });
@@ -681,7 +693,7 @@ export function SupportChatWidget({
           id: msg.id || Date.now().toString(),
           from: 'support',
           text: msg.content,
-          time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguage),
+          time: formatChatTime(new Date(msg.createdAt || Date.now()), activeLanguageRef.current),
         }
       ]);
     });
@@ -693,7 +705,7 @@ export function SupportChatWidget({
           id: 'closed-' + Date.now().toString(),
           from: 'support',
           text: 'Phiên chat đã được đóng bởi nhân viên hỗ trợ.',
-          time: formatChatTime(new Date(), activeLanguage),
+          time: formatChatTime(new Date(), activeLanguageRef.current),
         }
       ]);
       setTicketId(null);
@@ -703,7 +715,7 @@ export function SupportChatWidget({
     return () => {
       newSocket.close();
     };
-  }, [ticketId, activeLanguage]);
+  }, []); // Only run once on mount!
 
   useEffect(() => {
     if (!isOpen) return;

@@ -1,0 +1,165 @@
+--- RUNNING: echo 'NEXT_PUBLIC_API_URL="https://api.demonightlight.test9.io.vn"' > /var/www/demonightlight.test9.io.vn/apps/web/.env.production ---
+EXIT_STATUS: 0
+STDOUT:
+
+--- RUNNING: cd /var/www/demonightlight.test9.io.vn && pnpm build --force ---
+EXIT_STATUS: 0
+STDOUT:
+
+> nightlife-vn-frontend@0.0.0 build /var/www/demonightlight.test9.io.vn
+> turbo run build "--force"
+
+
+   • Packages in scope: @nightlife/eslint-config, @nightlife/typescript-config, web
+   • Running build in 3 packages
+   • Remote caching disabled
+
+web:build: cache bypass, force executing 3c977ed22e748c8c
+web:build: 
+web:build: > web@0.0.0 build /var/www/demonightlight.test9.io.vn/apps/web
+web:build: > next build
+web:build: 
+web:build: ▲ Next.js 16.2.9 (Turbopack)
+web:build: - Environments: .env.production
+web:build: 
+web:build: ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+web:build:   Creating an optimized production build ...
+web:build: ✓ Compiled successfully in 15.9s
+web:build:   Skipping validation of types
+web:build:   Finished TypeScript config validation in 25ms ...
+web:build:   Collecting page data using 5 workers ...
+web:build:   Generating static pages using 5 workers (0/77) ...
+web:build:   Generating static pages using 5 workers (19/77) 
+web:build:   Generating static pages using 5 workers (38/77) 
+web:build:   Generating static pages using 5 workers (57/77) 
+web:build: ✓ Generating static pages using 5 workers (77/77) in 1225ms
+web:build:   Finalizing page optimization ...
+web:build: 
+web:build: Route (app)                          Revalidate  Expire
+web:build: ┌ ○ /
+web:build: ├ ○ /_not-found
+web:build: ├ ○ /403
+web:build: ├ ○ /500
+web:build: ├ ○ /admin
+web:build: ├ ƒ /admin/[section]
+web:build: ├ ○ /admin/appearance
+web:build: ├ ○ /admin/bills
+web:build: ├ ○ /admin/bookings
+web:build: ├ ○ /admin/casts
+web:build: ├ ○ /admin/content
+web:build: ├ ○ /admin/coupons
+web:build: ├ ○ /admin/dang-nhap
+web:build: ├ ○ /admin/partners
+web:build: ├ ○ /admin/ranking
+web:build: ├ ○ /admin/reports
+web:build: ├ ○ /admin/roles
+web:build: ├ ○ /admin/stores
+web:build: ├ ○ /admin/support-chat
+web:build: ├ ○ /admin/system/storage
+web:build: ├ ƒ /api/backend/[...path]
+web:build: ├ ○ /bao-mat-tai-khoan
+web:build: ├ ƒ /blog
+web:build: ├ ○ /blog-chi-tiet
+web:build: ├ ƒ /blog/[slug]
+web:build: ├ ● /blog/category/[slug]                    5m      1y
+web:build: │ ├ /blog/category/cam-nang-khu-vuc          5m      1y
+web:build: │ ├ /blog/category/van-hoa-nhat              5m      1y
+web:build: │ ├ /blog/category/meo-dat-cho               5m      1y
+web:build: │ └ /blog/category/uu-dai                    5m      1y
+web:build: ├ ● /blog/tag/[slug]                         5m      1y
+web:build: │ ├ /blog/tag/tay-ho                         5m      1y
+web:build: │ ├ /blog/tag/lounge                         5m      1y
+web:build: │ ├ /blog/tag/dat-cho                        5m      1y
+web:build: │ └ [+11 more paths]
+web:build: ├ ƒ /casts/[slug]
+web:build: ├ ○ /chi-tiet-ma
+web:build: ├ ○ /chon-giao-dien
+web:build: ├ ○ /da-luu
+web:build: ├ ○ /dang-ky-doi-tac
+web:build: ├ ○ /dang-nhap
+web:build: ├ ○ /dang-nhap-doi-tac
+web:build: ├ ○ /danh-sach-cast
+web:build: ├ ○ /danh-sach-quan
+web:build: ├ ○ /dat-cho
+web:build: ├ ○ /dat-lai-mat-khau
+web:build: ├ ○ /gui-hoa-don
+web:build: ├ ○ /huong-dan
+web:build: ├ ○ /legal
+web:build: ├ ● /legal/[slug]                            5m      1y
+web:build: │ ├ /legal/chinh-sach-bao-mat                5m      1y
+web:build: │ ├ /legal/dieu-khoan-su-dung                5m      1y
+web:build: │ └ /legal/chinh-sach-hoat-dong              5m      1y
+web:build: ├ ○ /lich-su-dat-cho
+web:build: ├ ○ /line-email-consent
+web:build: ├ ○ /maintenance
+web:build: ├ ○ /partner
+web:build: ├ ○ /partner/gui-hoa-don
+web:build: ├ ○ /quen-mat-khau
+web:build: ├ ○ /robots.txt
+web:build: ├ ○ /sitemap.xml
+web:build: ├ ƒ /stores/[slug]
+web:build: ├ ○ /tai-khoan
+web:build: ├ ○ /tour
+web:build: ├ ○ /trang-thai-he-thong
+web:build: ├ ○ /uu-dai
+web:build: ├ ○ /vi-uu-dai
+web:build: ├ ○ /xac-nhan
+web:build: └ ○ /xep-hang
+web:build: 
+web:build: 
+web:build: ƒ Proxy (Middleware)
+web:build: 
+web:build: ○  (Static)   prerendered as static content
+web:build: ●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+web:build: ƒ  (Dynamic)  server-rendered on demand
+web:build: 
+
+ Tasks:    1 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    22.16s 
+
+
+STDERR:
+• turbo 2.9.18
+
+--- RUNNING: pm2 restart app-demonightlight.test9.io.vn ---
+EXIT_STATUS: 0
+STDOUT:
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [app-demonightlight.test9.io.vn](ids: [ 26 ])
+[PM2] [app-demonightlight.test9.io.vn](26) ✓
+┌────┬───────────────────────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name                                  │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────────────────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 22 │ adminer                               │ default     │ N/A     │ fork    │ 2197     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 27 │ api.nightlife.lptech.info.vn          │ default     │ 0.0.1   │ fork    │ 1235469  │ 19h    │ 3    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 25 │ app-api.demonightlight.test9.io.vn    │ default     │ 0.0.1   │ fork    │ 1727379  │ 10m    │ 31   │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 10 │ app-api.duocpham.test9.io.vn          │ default     │ N/A     │ fork    │ 1404733  │ 13h    │ 25   │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 26 │ app-demonightlight.test9.io.vn        │ default     │ N/A     │ fork    │ 1733263  │ 0s     │ 202  │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 14 │ app-duocpham.test9.io.vn              │ default     │ N/A     │ fork    │ 1404855  │ 13h    │ 25   │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 11 │ app-seochioi.test9.io.vn              │ default     │ N/A     │ fork    │ 1871     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 2  │ autoparts                             │ default     │ N/A     │ fork    │ 1732     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 16 │ backend-demo.test8.io.vn              │ default     │ N/A     │ fork    │ 0        │ 0      │ 434… │ stopped   │ 0%       │ 0b       │ root     │ disabled │
+│ 8  │ cms-springboot                        │ default     │ N/A     │ fork    │ 1830     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 5  │ ctm-backend                           │ default     │ 1.0.0   │ fork    │ 1758     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 17 │ frontend-demo.test8.io.vn             │ default     │ N/A     │ fork    │ 0        │ 0      │ 0    │ stopped   │ 0%       │ 0b       │ root     │ disabled │
+│ 18 │ hoanam.test8-app                      │ default     │ N/A     │ fork    │ 2082     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 1  │ lpt-crm                               │ default     │ N/A     │ fork    │ 1714     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 15 │ lpt-data-api                          │ default     │ N/A     │ fork    │ 1945     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 9  │ mock-vneid                            │ default     │ 1.0.0   │ fork    │ 1849     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 28 │ nightlife.lptech.info.vn              │ default     │ N/A     │ fork    │ 1235510  │ 19h    │ 3    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 0  │ phuquoc.test8-backend                 │ default     │ 1.0.0   │ fork    │ 1702     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 7  │ phuquoc.test8-frontend                │ default     │ N/A     │ fork    │ 1815     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 23 │ poscafe-api                           │ default     │ 0.1.0   │ fork    │ 2248     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 24 │ poscafe-web                           │ default     │ 14.2.21 │ fork    │ 2273     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 29 │ seo.lptech.info.vn                    │ default     │ 0.0.0   │ fork    │ 822186   │ 35h    │ 14   │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 6  │ thodung-backend                       │ default     │ 1.0.0   │ fork    │ 1802     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 12 │ tiny-api                              │ default     │ 0.1.0   │ fork    │ 1876     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 13 │ tiny-web                              │ default     │ 14.2.21 │ fork    │ 1912     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 4  │ vntrust                               │ default     │ N/A     │ fork    │ 1753     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 21 │ vps-dashboard                         │ default     │ 1.0.0   │ fork    │ 2183     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 19 │ ywonder-game-api                      │ default     │ N/A     │ fork    │ N/A      │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 20 │ ywonder-main-game-api                 │ default     │ 0.1.0   │ fork    │ 2162     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+│ 3  │ zentricsx                             │ default     │ N/A     │ fork    │ 1746     │ 2D     │ 0    │ online    │ 0%       │ 0b       │ root     │ disabled │
+└────┴───────────────────────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+

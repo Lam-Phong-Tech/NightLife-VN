@@ -69,13 +69,16 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
       }
       ticket = await this.supportChatService.createOrGetTicket(data.guestSessionId, data.userId);
       ticketId = ticket.id;
-      client.join(`ticket_${ticketId}`);
       
       // Broadcast new ticket to all admins
       if (ticket.status === 'PENDING') {
         this.server.emit('new_ticket', ticket);
       }
     }
+
+    // Always ensure the sender is in the room so they receive their own broadcast
+    client.join(`ticket_${ticketId}`);
+
 
     const senderType = data.userId ? SupportSenderType.USER : (data.guestSessionId ? SupportSenderType.GUEST : SupportSenderType.ADMIN);
     
