@@ -483,36 +483,34 @@ export default function Page() {
 
               <EmailField value={email} onChange={setEmail} />
 
-              <div className={styles.twoColumn}>
-                <div className={styles.field}>
-                  <span className={styles.fieldLabel}>Số người</span>
-                  <div className={styles.stepper}>
-                    <button
-                      type="button"
-                      className={styles.stepButton}
-                      onClick={() => setGuests((value) => Math.max(1, value - 1))}
-                      aria-label="Giảm số người"
-                      disabled={guests <= 1}
-                    >
-                      <Minus size={15} />
-                    </button>
-                    <span className={styles.stepValue}>{guests}</span>
-                    <button
-                      type="button"
-                      className={`${styles.stepButton} ${styles.stepButtonActive}`}
-                      onClick={() => setGuests((value) => Math.min(maxGuests, value + 1))}
-                      aria-label="Tăng số người"
-                      disabled={guests >= maxGuests}
-                    >
-                      <Plus size={15} />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-
               <BookingDateTimeFields
                 dateValue={bookingDate}
+                dateFieldAddon={
+                  <div className={styles.field}>
+                    <span className={styles.fieldLabel}>Số người</span>
+                    <div className={styles.stepper}>
+                      <button
+                        type="button"
+                        className={styles.stepButton}
+                        onClick={() => setGuests((value) => Math.max(1, value - 1))}
+                        aria-label="Giảm số người"
+                        disabled={guests <= 1}
+                      >
+                        <Minus size={15} />
+                      </button>
+                      <span className={styles.stepValue}>{guests}</span>
+                      <button
+                        type="button"
+                        className={`${styles.stepButton} ${styles.stepButtonActive}`}
+                        onClick={() => setGuests((value) => Math.min(maxGuests, value + 1))}
+                        aria-label="Tăng số người"
+                        disabled={guests >= maxGuests}
+                      >
+                        <Plus size={15} />
+                      </button>
+                    </div>
+                  </div>
+                }
                 timeValue={bookingTime}
                 timeOptions={bookingTimeOptions}
                 timeOptionGroups={bookingTimeOptionGroups}

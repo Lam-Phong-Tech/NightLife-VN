@@ -48,6 +48,7 @@ const dayjsLocales: Record<LanguageCode, string> = {
 
 type BookingDateTimeFieldsProps = {
   dateLabel?: ReactNode;
+  dateFieldAddon?: ReactNode;
   timeLabel?: ReactNode;
   dateValue: string;
   timeValue: string;
@@ -120,6 +121,7 @@ const getDocumentBodyPopupContainer = (trigger: HTMLElement) => trigger.ownerDoc
 
 export function BookingDateTimeFields({
   dateLabel = "Ngày",
+  dateFieldAddon,
   timeLabel = "Khung giờ",
   dateValue,
   timeValue,
@@ -229,6 +231,9 @@ export function BookingDateTimeFields({
             popupClassName="nl-booking-ant-popup"
             value={currentDate}
           />
+          {dateFieldAddon ? (
+            <div className="nl-booking-date-addon">{dateFieldAddon}</div>
+          ) : null}
         </div>
 
         <div className={timeFieldClassName}>
