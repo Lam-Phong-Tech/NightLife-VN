@@ -18,6 +18,7 @@ describe('UsersService', () => {
   };
 
   const prisma = {
+    $transaction: jest.fn(),
     user: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -34,6 +35,7 @@ describe('UsersService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.$transaction.mockImplementation((callback) => callback(prisma));
     service = new UsersService(prisma, passwordService);
   });
 
