@@ -387,7 +387,7 @@ function AdminRankingsClient() {
       setStores(storeItems);
     } catch (e: any) {
       console.error(e);
-      feedback.toast({ type: 'error', message: e.message || 'Không tải được danh sách xếp hạng' });
+      showToast(e.message || 'Không tải được danh sách xếp hạng', 'error');
     } finally {
       setIsLoading(false);
     }
