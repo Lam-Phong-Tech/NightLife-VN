@@ -12,6 +12,7 @@ import {
   useActiveLanguage,
   type LanguageCode,
 } from "@/lib/i18n/use-active-language";
+import { getSupportSocketConfig } from "@/lib/socket-config";
 
 const chatColors = {
   bg: "var(--vy-bg)",
@@ -648,25 +649,10 @@ export function SupportChatWidget({
   useEffect(() => {
     if (!hasOpened.current) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    let socketHost = apiUrl;
-    let socketPath = undefined; // socket.io default is /socket.io
+    const socketConfig = getSupportSocketConfig();
 
-    try {
-      const parsedUrl = new URL(apiUrl);
-      if (parsedUrl.pathname && parsedUrl.pathname !== '/') {
-        // API has a subpath (e.g. /api/backend)
-        // Set host to origin (to keep namespace as /support)
-        socketHost = parsedUrl.origin;
-        // Append socket.io to the subpath so Nginx routes it correctly
-        socketPath = `${parsedUrl.pathname.replace(/\/$/, '')}/socket.io`;
-      }
-    } catch (e) {
-      console.error('Invalid NEXT_PUBLIC_API_URL', e);
-    }
-
-    const newSocket = io(socketHost + '/support', {
-      path: socketPath,
+    const newSocket = io(socketConfig.host + '/support', {
+      path: socketConfig.path,
       query: ticketId ? { ticketId } : undefined
     });
     setSocket(newSocket);

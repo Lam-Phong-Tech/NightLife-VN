@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
 import { getAuthUser } from '@/lib/auth/session';
+import { getSupportSocketConfig } from "@/lib/socket-config";
 
 export function AdminSupportDashboard() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -32,22 +33,10 @@ export function AdminSupportDashboard() {
     const adminId = currentUser.id;
     const role = currentUser.role || 'ADMIN';
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    let socketHost = apiUrl;
-    let socketPath = undefined;
+    const socketConfig = getSupportSocketConfig();
 
-    try {
-      const parsedUrl = new URL(apiUrl);
-      if (parsedUrl.pathname && parsedUrl.pathname !== '/') {
-        socketHost = parsedUrl.origin;
-        socketPath = `${parsedUrl.pathname.replace(/\/$/, '')}/socket.io`;
-      }
-    } catch (e) {
-      console.error('Invalid NEXT_PUBLIC_API_URL', e);
-    }
-
-    const newSocket = io(socketHost + '/support', {
-      path: socketPath,
+    const newSocket = io(socketConfig.host + '/support', {
+      path: socketConfig.path,
       query: { adminId, role },
     });
     setSocket(newSocket);

@@ -7,6 +7,7 @@ import {
   memberNotificationCreatedEvent,
   type MemberNotificationSocketPayload,
 } from '@/lib/api/notifications';
+import { getSupportSocketConfig } from "@/lib/socket-config";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -50,7 +51,10 @@ export const SocketProvider = ({
 
   useEffect(() => {
     // Connect to Backend WebSocket server
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000', {
+    const socketConfig = getSupportSocketConfig();
+
+    const socketInstance = io(socketConfig.host, {
+      path: socketConfig.path,
       transports: ['websocket'],
       autoConnect: true,
     });
