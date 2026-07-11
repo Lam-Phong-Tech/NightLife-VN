@@ -661,6 +661,8 @@ export function SupportChatWidget({
     if (socket && ticketId) {
       // Update query for future reconnects without disconnecting now
       socket.io.opts.query = { ticketId };
+      // Tell server we are rejoining the room in case this was a fresh connection
+      socket.emit('rejoin_ticket', { ticketId });
     }
   }, [socket, ticketId]);
 
@@ -763,6 +765,17 @@ export function SupportChatWidget({
 
     setDraft("");
 
+    const localTempId = 'temp-' + Date.now().toString();
+    setMessages(prev => [
+      ...prev,
+      {
+        id: localTempId,
+        from: 'user',
+        text,
+        time: formatChatTime(new Date(), activeLanguageRef.current),
+      }
+    ]);
+
     socket.emit("send_message", {
       ticketId,
       content: text,
@@ -770,8 +783,16 @@ export function SupportChatWidget({
       userId: currentUser?.id
     }, (response: any) => {
       if (response && response.error === 'Offline') {
+        // Remove optimistic message if offline
+        setMessages(prev => prev.filter(m => m.id !== localTempId));
         return;
       }
+      
+      // Update real ID from server
+      if (response && response.id) {
+        setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: response.id } : m));
+      }
+
       if (response && response.ticketId && !ticketId) {
         setTicketId(response.ticketId);
         localStorage.setItem("vy_support_ticket_id", response.ticketId);

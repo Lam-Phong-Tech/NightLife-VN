@@ -109,13 +109,27 @@ export function AdminSupportDashboard() {
   const sendMessage = () => {
     if (!input.trim() || !activeTicketId || !socket) return;
     
+    const text = input.trim();
+    setInput('');
+
+    const localTempId = 'temp-' + Date.now().toString();
+    setMessages(prev => [...prev, {
+      id: localTempId,
+      senderType: 'ADMIN',
+      content: text,
+      createdAt: new Date().toISOString()
+    }]);
+
     socket.emit('send_message', {
       ticketId: activeTicketId,
-      content: input,
+      content: text,
       userId: adminId,
+      isAdmin: true,
+    }, (response: any) => {
+      if (response && response.id) {
+        setMessages(prev => prev.map(m => m.id === localTempId ? { ...m, id: response.id } : m));
+      }
     });
-    
-    setInput('');
   };
 
   const closeTicket = () => {

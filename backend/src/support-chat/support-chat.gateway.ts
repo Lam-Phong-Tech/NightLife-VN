@@ -27,7 +27,7 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
   handleConnection(client: Socket) {
     // Determine if connection is from an Admin
     const role = client.handshake.query.role as string;
-    if (role === 'ADMIN' || role === 'OPERATOR') {
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'STAFF' || role === 'OPERATOR') {
       this.onlineAdmins.add(client.id);
       // Optionally broadcast to other admins or log
     }
@@ -51,7 +51,7 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { ticketId?: string; content: string; guestSessionId?: string; userId?: string }
+    @MessageBody() data: { ticketId?: string; content: string; guestSessionId?: string; userId?: string; isAdmin?: boolean }
   ) {
     const isOnline = this.onlineAdmins.size > 0;
     
@@ -80,13 +80,20 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     client.join(`ticket_${ticketId}`);
 
 
-    const senderType = data.userId ? SupportSenderType.USER : (data.guestSessionId ? SupportSenderType.GUEST : SupportSenderType.ADMIN);
+    const senderType = data.isAdmin ? SupportSenderType.ADMIN : (data.userId ? SupportSenderType.USER : SupportSenderType.GUEST);
     
     const message = await this.supportChatService.sendMessage(ticketId as string, senderType, data.content, data.userId || undefined);
 
-    // Broadcast to the room
-    this.server.to(`ticket_${ticketId}`).emit('receive_message', message);
+    // Broadcast to the room (excluding sender)
+    client.broadcast.to(`ticket_${ticketId}`).emit('receive_message', message);
     return message;
+  }
+
+  @SubscribeMessage('rejoin_ticket')
+  handleRejoinTicket(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string }) {
+    if (data.ticketId) {
+      client.join(`ticket_${data.ticketId}`);
+    }
   }
 
   @SubscribeMessage('claim_ticket')
