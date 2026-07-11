@@ -27,7 +27,10 @@ export type BookingTimeSlotGroup = {
   slots: string[];
 };
 
-const middayMinutes = 12 * 60;
+const minutesPerDay = 24 * 60;
+const morningShiftStartMinutes = 8 * 60;
+const eveningShiftStartMinutes = 14 * 60;
+const maxEveningShiftSlotMinutes = minutesPerDay;
 const bookingTimeSlotGroupLabels: Record<BookingTimeSlotPeriod, string> = {
   morning: "Sáng",
   evening: "Tối",
@@ -64,7 +67,7 @@ const parseTimeToMinutes = (value: unknown) => {
 };
 
 const formatSlot = (minutes: number) => {
-  const normalized = ((minutes % 1440) + 1440) % 1440;
+  const normalized = ((minutes % minutesPerDay) + minutesPerDay) % minutesPerDay;
   const hours = Math.floor(normalized / 60);
   const minute = normalized % 60;
 
@@ -239,10 +242,10 @@ const openingRangesForDate = (
 const isSlotInRange = (slotMinutes: number, range: OpeningTimeRange) => {
   const crossesMidnight = range.closeMinutes <= range.openMinutes;
   let closeMinutes = range.closeMinutes;
-  if (crossesMidnight) closeMinutes += 1440;
+  if (crossesMidnight) closeMinutes += minutesPerDay;
 
   const candidateMinutes =
-    crossesMidnight && slotMinutes < range.openMinutes ? slotMinutes + 1440 : slotMinutes;
+    crossesMidnight && slotMinutes < range.openMinutes ? slotMinutes + minutesPerDay : slotMinutes;
   const lastSlot = closeMinutes - 60;
 
   return (
@@ -252,12 +255,27 @@ const isSlotInRange = (slotMinutes: number, range: OpeningTimeRange) => {
   );
 };
 
-const slotPeriodFromRange = (range: OpeningTimeRange): BookingTimeSlotPeriod => {
-  const crossesMidnight = range.closeMinutes <= range.openMinutes;
-  if (crossesMidnight) return "evening";
+const slotPeriodFromCandidateMinutes = (candidateMinutes: number): BookingTimeSlotPeriod | null => {
+  if (
+    candidateMinutes >= morningShiftStartMinutes &&
+    candidateMinutes < eveningShiftStartMinutes
+  ) {
+    return "morning";
+  }
 
-  const normalizedMinutes = ((range.openMinutes % 1440) + 1440) % 1440;
-  return normalizedMinutes < middayMinutes ? "morning" : "evening";
+  if (
+    candidateMinutes >= eveningShiftStartMinutes &&
+    candidateMinutes <= maxEveningShiftSlotMinutes
+  ) {
+    return "evening";
+  }
+
+  return null;
+};
+
+const slotPeriodFromDisplayTime = (slotMinutes: number): BookingTimeSlotPeriod | null => {
+  const candidateMinutes = slotMinutes === 0 ? minutesPerDay : slotMinutes;
+  return slotPeriodFromCandidateMinutes(candidateMinutes);
 };
 
 export const groupBookingTimeSlots = (timeSlots: string[]): BookingTimeSlotGroup[] => {
@@ -265,7 +283,9 @@ export const groupBookingTimeSlots = (timeSlots: string[]): BookingTimeSlotGroup
 
   timeSlots.forEach((time) => {
     const slotMinutes = parseTimeToMinutes(time);
-    const period = slotMinutes !== null && slotMinutes < middayMinutes ? "morning" : "evening";
+    const period = slotMinutes !== null ? slotPeriodFromDisplayTime(slotMinutes) : null;
+    if (!period) return;
+
     const group = groups.find((item) => item.key === period);
     if (group && !group.slots.includes(time)) {
       group.slots.push(time);
@@ -294,10 +314,9 @@ export const buildBookingTimeSlotGroups = (
   const seenSlots = new Set<string>();
 
   opening.ranges.forEach((range) => {
-    const rangeGroup = groups.find((item) => item.key === slotPeriodFromRange(range));
     let closeMinutes = range.closeMinutes;
     if (closeMinutes <= range.openMinutes) {
-      closeMinutes += 1440;
+      closeMinutes += minutesPerDay;
     }
 
     const firstSlot = range.openMinutes;
@@ -305,11 +324,15 @@ export const buildBookingTimeSlotGroups = (
     if (firstSlot > lastSlot) return;
 
     for (let minutes = firstSlot; minutes <= lastSlot && seenSlots.size < 48; minutes += 60) {
+      const period = slotPeriodFromCandidateMinutes(minutes);
+      if (!period) continue;
+
       const slot = formatSlot(minutes);
       if (seenSlots.has(slot)) continue;
 
-      if (rangeGroup) {
-        rangeGroup.slots.push(slot);
+      const group = groups.find((item) => item.key === period);
+      if (group) {
+        group.slots.push(slot);
         seenSlots.add(slot);
       }
     }

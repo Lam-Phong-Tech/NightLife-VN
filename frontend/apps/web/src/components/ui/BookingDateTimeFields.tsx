@@ -171,7 +171,7 @@ export function BookingDateTimeFields({
   const options = activeTimeOptions.map((time) => ({ value: time, label: time }));
   const shouldDisableTime = disabled || loadingTimes || !activeTimeOptions.length;
   const selectedTimeValue = activeTimeOptions.includes(timeValue) ? timeValue : undefined;
-  const periodTabs = groups.filter((group) => group.slots.length);
+  const periodTabs = groups;
   const showPeriodTabs = periodTabs.length > 1;
   const timeFieldClassName = [fieldClassName, showPeriodTabs ? "nl-booking-field-with-period-tabs" : ""]
     .filter(Boolean)
@@ -232,7 +232,8 @@ export function BookingDateTimeFields({
             aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
           >
             {periodTabs.map((group) => {
-              const isActive = group.key === activeGroup?.key;
+              const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
+              const isDisabled = disabled || loadingTimes || !group.slots.length;
 
               return (
                 <button
@@ -240,6 +241,8 @@ export function BookingDateTimeFields({
                   type="button"
                   className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
                   aria-selected={isActive}
+                  aria-disabled={isDisabled}
+                  disabled={isDisabled}
                   role="tab"
                   onClick={() => selectPeriod(group.key)}
                 >

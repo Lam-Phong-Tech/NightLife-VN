@@ -45,7 +45,7 @@ describe("booking time slots", () => {
     ]);
   });
 
-  it("keeps one continuous admin window in a single period group", () => {
+  it("splits one continuous admin window by booking shifts", () => {
     expect(
       buildBookingTimeSlotGroups(
         { thursday: { hours: "11:00 - 23:00" } },
@@ -60,6 +60,12 @@ describe("booking time slots", () => {
           "11:00",
           "12:00",
           "13:00",
+        ],
+      },
+      {
+        key: "evening",
+        label: "Tối",
+        slots: [
           "14:00",
           "15:00",
           "16:00",
@@ -71,7 +77,23 @@ describe("booking time slots", () => {
           "22:00",
         ],
       },
-      { key: "evening", label: "Tối", slots: [] },
+    ]);
+  });
+
+  it("clips morning slots to the 08:00 shift start and 14:00 shift boundary", () => {
+    expect(
+      buildBookingTimeSlotGroups(
+        { thursday: { hours: "06:00 - 15:00" } },
+        "2026-07-09",
+        { fallback: "empty" },
+      ),
+    ).toEqual([
+      {
+        key: "morning",
+        label: "Sáng",
+        slots: ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00"],
+      },
+      { key: "evening", label: "Tối", slots: ["14:00"] },
     ]);
   });
 
@@ -79,15 +101,15 @@ describe("booking time slots", () => {
     expect(buildBookingTimeSlots(null, "2026-07-09", { fallback: "empty" })).toEqual([]);
   });
 
-  it("keeps next-day booking slots for stores open past midnight", () => {
+  it("caps next-day booking slots at midnight for stores open past midnight", () => {
     expect(
       buildBookingTimeSlots({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
       }),
-    ).toEqual(["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"]);
+    ).toEqual(["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00"]);
   });
 
-  it("keeps after-midnight slots in the evening group for overnight ranges", () => {
+  it("keeps only midnight in the evening group for overnight ranges", () => {
     expect(
       buildBookingTimeSlotGroups({ summary: "18:00 - 02:00" }, "2026-07-09", {
         fallback: "empty",
@@ -97,7 +119,7 @@ describe("booking time slots", () => {
       {
         key: "evening",
         label: "Tối",
-        slots: ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00", "01:00"],
+        slots: ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "00:00"],
       },
     ]);
   });

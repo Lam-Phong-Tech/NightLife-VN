@@ -40,7 +40,6 @@ type VenueView = {
   cityLabel: string;
   distanceLabel: string;
   priceLabel: string;
-  rating: number;
   tags: string[];
   statusLabel: string;
   dealLabel: string;
