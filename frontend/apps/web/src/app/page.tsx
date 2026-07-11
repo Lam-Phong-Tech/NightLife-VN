@@ -291,25 +291,6 @@ type HomeContentItem = {
 
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
 
-function normalizeArea(value = "") {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function getAreaRegion(areaValue = ""): Exclude<ServiceRegion, "all"> {
-  const area = normalizeArea(areaValue);
-  return area.includes("quan 1") || area.includes("hcm") || area.includes("ho chi minh")
-    ? "hcm"
-    : "hanoi";
-}
-
-function filterRankingsByRegion(items: RankedItem[], region: ServiceRegion) {
-  const filteredItems = region === "all" ? items : items.filter((item) => getAreaRegion(item.area) === region);
-  return filteredItems.slice(0, 5).map((item, index) => ({ ...item, rank: index + 1 }));
-}
-
 function regionToCityCode(region: ServiceRegion): "all" | "hn" | "hcm" {
   if (region === "hanoi") return "hn";
   if (region === "hcm") return "hcm";
@@ -2248,10 +2229,7 @@ export default function Page() {
       const orderB = getHomeBannerMetadata(b).order;
       return (typeof orderA === 'number' ? orderA : 999) - (typeof orderB === 'number' ? orderB : 999);
     }), [homeBanners]);
-  const rankList = filterRankingsByRegion(
-    activeRankTab === "quan" ? storeRankItems : castRankItems,
-    activeRankRegion,
-  );
+  const rankList = (activeRankTab === "quan" ? storeRankItems : castRankItems).slice(0, 5);
   const svc = featuredServices;
   const videoList = homeVideos;
 
@@ -2344,26 +2322,6 @@ export default function Page() {
       });
 
     Promise.all([
-      rankingsApi.list({ targetType: "CAST", city: "all", limit: 10 }),
-      rankingsApi.list({ targetType: "STORE", city: "all", limit: 10 }),
-    ])
-      .then(([castResponse, storeResponse]) => {
-        if (cancelled) return;
-        setCastRankItems(castResponse.data.map(mapRankingToRankedItem));
-        setStoreRankItems(storeResponse.data.map(mapRankingToRankedItem));
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCastRankItems([]);
-          setStoreRankItems([]);
-          setRankingsError("Chưa tải được bảng xếp hạng từ API.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setRankingsLoading(false);
-      });
-
-    Promise.all([
       contentApi.tours({
         cityCode: "all",
         limit: 2,
@@ -2395,6 +2353,38 @@ export default function Page() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const city = regionToCityCode(activeRankRegion);
+
+    setRankingsLoading(true);
+    setRankingsError("");
+
+    Promise.all([
+      rankingsApi.list({ targetType: "CAST", city, limit: 10 }),
+      rankingsApi.list({ targetType: "STORE", city, limit: 10 }),
+    ])
+      .then(([castResponse, storeResponse]) => {
+        if (cancelled) return;
+        setCastRankItems(castResponse.data.map(mapRankingToRankedItem));
+        setStoreRankItems(storeResponse.data.map(mapRankingToRankedItem));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCastRankItems([]);
+          setStoreRankItems([]);
+          setRankingsError("Chưa tải được bảng xếp hạng từ API.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRankingsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRankRegion]);
 
   useEffect(() => {
     let cancelled = false;

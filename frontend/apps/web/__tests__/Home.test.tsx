@@ -184,7 +184,7 @@ describe('Home Page', () => {
       },
     ]);
 
-    rankingsListMock.mockImplementation((params?: { targetType?: string; scope?: string; category?: string }) => {
+    rankingsListMock.mockImplementation((params?: { targetType?: string; scope?: string; category?: string; city?: string }) => {
       if (params?.scope === 'featured_home') {
         return Promise.resolve({
           data: [
@@ -353,10 +353,10 @@ describe('Home Page', () => {
       expect(listStoresStrictMock).toHaveBeenCalledWith({ city: 'all', limit: 24, sort: 'priority' });
     });
 
-    expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', limit: 3 });
+    expect(contentListMock).toHaveBeenCalledWith({ type: 'BANNER', limit: 50 });
     expect(listPublicCouponsMock).toHaveBeenCalled();
-    expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'all', limit: 10 });
-    expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'all', limit: 10 });
+    expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'CAST', city: 'hn', limit: 10 });
+    expect(rankingsListMock).toHaveBeenCalledWith({ targetType: 'STORE', city: 'hn', limit: 10 });
     expect(rankingsListMock).toHaveBeenCalledWith({
       targetType: 'STORE',
       city: 'hn',
@@ -364,13 +364,13 @@ describe('Home Page', () => {
       scope: 'featured_home',
       limit: 8,
     });
-    expect(contentHotVideosMock).not.toHaveBeenCalled();
+    expect(contentHotVideosMock).toHaveBeenCalledWith('all');
 
     expect(await screen.findAllByText('API Neon Lounge')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Coupon')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Cast')).not.toHaveLength(0);
     expect(await screen.findAllByText('API Featured Service')).not.toHaveLength(0);
-    expect(await screen.findAllByText('Video Hot đang được chuẩn bị.')).not.toHaveLength(0);
+    expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
     expect(await screen.findAllByText('API Blog Guide')).not.toHaveLength(0);
     expect(screen.getAllByRole('link', { name: /API Neon Lounge/i })[0]).toHaveAttribute(
       'href',
@@ -425,6 +425,8 @@ describe('Home Page', () => {
   });
 
   it('does not call the Video Hot API while the homepage video flag is off', async () => {
+    process.env.NEXT_PUBLIC_ENABLE_HOME_HOT_VIDEOS = 'false';
+
     render(<Page />);
     await screen.findAllByText(/API Night Banner/i);
 
@@ -438,7 +440,7 @@ describe('Home Page', () => {
     render(<Page />);
 
     await waitFor(() => {
-      expect(contentHotVideosMock).toHaveBeenCalledWith('hn');
+      expect(contentHotVideosMock).toHaveBeenCalledWith('all');
     });
     expect(await screen.findAllByText(/API Hot Video/i)).not.toHaveLength(0);
   });

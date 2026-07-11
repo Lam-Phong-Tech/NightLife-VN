@@ -289,7 +289,8 @@ describe('Public discovery listing API (e2e)', () => {
           status: 'ACTIVE',
           isPublic: true,
           store: expect.objectContaining({
-            category: 'KARAOKE',
+            deletedAt: null,
+            status: 'ACTIVE',
           }),
         }),
       }),
@@ -378,7 +379,7 @@ describe('Public discovery listing API (e2e)', () => {
     expect(prisma.cast.findMany).not.toHaveBeenCalled();
   });
 
-  it('limits aggregate public rankings to Hanoi and Ho Chi Minh configs', async () => {
+  it('uses the aggregate admin ranking configs for city=all', async () => {
     await request(app.getHttpServer())
       .get('/rankings')
       .query({ targetType: 'STORE', city: 'all', limit: '5' })
@@ -389,13 +390,7 @@ describe('Public discovery listing API (e2e)', () => {
         where: expect.objectContaining({
           targetType: 'STORE',
           AND: expect.arrayContaining([
-            {
-              OR: [
-                { cityCode: 'all' },
-                { cityCode: 'hn' },
-                { cityCode: 'hcm' },
-              ],
-            },
+            { cityCode: 'all' },
           ]),
         }),
       }),

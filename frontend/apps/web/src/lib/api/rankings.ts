@@ -1,4 +1,3 @@
-import { castImageForSlug } from "../demo-media";
 import { apiClient, resolveClientUrl } from "./client";
 
 export type RankingTargetType = "CAST" | "STORE";
@@ -64,7 +63,7 @@ const toParams = (params: RankingParams) => {
 
 const normalizeRankingItem = (item: PublicRankingItem): PublicRankingItem => ({
   ...item,
-  image: item.targetType === "CAST" ? castImageForSlug(item.slug) : resolveClientUrl(item.image),
+  image: resolveClientUrl(item.image),
 });
 
 export const rankingsApi = {

@@ -171,7 +171,6 @@ const MAX_PUBLIC_LIMIT = 100;
 const DEFAULT_PUBLIC_PAGE = 1;
 const MAX_PUBLIC_OFFSET = 10000;
 const MAX_PUBLIC_SORT_WINDOW = 500;
-const RANKING_CITY_CODES = ['hn', 'hcm'] as const;
 const STORE_RANKING_IMAGE_PURPOSES = [
   'hero',
   'store-hero',
@@ -1151,14 +1150,8 @@ export class NightlifeDataService {
     const configByTargetId = this.mapRankingConfigs(configs);
     const rankedItems =
       targetType === 'STORE'
-        ? await this.loadStoreRankingItems(configByTargetId, {
-            cityCode,
-            category,
-          })
-        : await this.loadCastRankingItems(configByTargetId, {
-            cityCode,
-            category,
-          });
+        ? await this.loadStoreRankingItems(configByTargetId)
+        : await this.loadCastRankingItems(configByTargetId);
     const data = rankedItems.slice(0, limit).map((item, index) => ({
       ...item,
       rank: index + 1,
@@ -12978,35 +12971,10 @@ export class NightlifeDataService {
     cityCode?: string,
   ): Prisma.RankingConfigWhereInput {
     if (cityCode) {
-      return { OR: [{ cityCode: 'all' }, { cityCode }] };
+      return { cityCode };
     }
 
-    return {
-      OR: [
-        { cityCode: 'all' },
-        ...RANKING_CITY_CODES.map((code) => ({ cityCode: code })),
-      ],
-    };
-  }
-
-  private buildPublicRankingTargetAreaWhere(
-    cityCode?: string,
-  ): Prisma.StoreWhereInput {
-    if (cityCode) {
-      return {};
-    }
-
-    return {
-      area: {
-        is: {
-          deletedAt: null,
-          status: 'ACTIVE',
-          OR: RANKING_CITY_CODES.map((code) => ({
-            code: { startsWith: `${code}-` },
-          })),
-        },
-      },
-    };
+    return { cityCode: 'all' };
   }
 
   private mapRankingConfigs(configs: PublicRankingConfig[]) {
@@ -13041,7 +13009,6 @@ export class NightlifeDataService {
 
   private async loadStoreRankingItems(
     configByTargetId: Map<string, PublicRankingConfig>,
-    filters: { cityCode?: string; category?: StoreCategory },
   ) {
     const targetIds = [...configByTargetId.keys()];
     if (!targetIds.length) {
@@ -13050,14 +13017,8 @@ export class NightlifeDataService {
 
     const stores = await this.prisma.store.findMany({
       where: {
-        ...this.buildPublicStoreWhere(
-          {
-            city: filters.cityCode,
-            category: filters.category,
-          },
-          { includeTextSearch: false },
-        ),
-        ...this.buildPublicRankingTargetAreaWhere(filters.cityCode),
+        deletedAt: null,
+        status: 'ACTIVE',
         id: { in: targetIds },
       },
       select: {
@@ -13103,7 +13064,6 @@ export class NightlifeDataService {
 
   private async loadCastRankingItems(
     configByTargetId: Map<string, PublicRankingConfig>,
-    filters: { cityCode?: string; category?: StoreCategory },
   ) {
     const targetIds = [...configByTargetId.keys()];
     if (!targetIds.length) {
@@ -13117,14 +13077,8 @@ export class NightlifeDataService {
         status: 'ACTIVE',
         isPublic: true,
         store: {
-          ...this.buildPublicStoreWhere(
-            {
-              city: filters.cityCode,
-              category: filters.category,
-            },
-            { includeTextSearch: false },
-          ),
-          ...this.buildPublicRankingTargetAreaWhere(filters.cityCode),
+          deletedAt: null,
+          status: 'ACTIVE',
         },
       },
       select: {
