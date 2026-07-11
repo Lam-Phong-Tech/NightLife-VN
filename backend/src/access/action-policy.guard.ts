@@ -109,6 +109,34 @@ export class ActionPolicyGuard implements CanActivate {
       return this.accessService.canClaimMemberCoupon(user);
     }
 
+    if (policy === 'canManageRanking') {
+      return this.accessService.canManageRanking(user);
+    }
+
+    if (policy === 'canManageCouponIssue') {
+      return this.accessService.canManageCouponIssue(user);
+    }
+
+    if (policy === 'canReviewBookingReschedule') {
+      return this.accessService.canReviewBookingReschedule(user);
+    }
+
+    if (policy === 'canManageBookingChat') {
+      return this.accessService.canManageBookingChat(user);
+    }
+
+    if (policy === 'canCancelBooking') {
+      return this.accessService.canCancelBooking(user);
+    }
+
+    if (policy === 'canViewCancelAnalytics') {
+      return this.accessService.canViewCancelAnalytics(user);
+    }
+
+    if (policy === 'canUpdateStorePolicy') {
+      return this.accessService.canUpdateStorePolicy(user);
+    }
+
     return false;
   }
 }

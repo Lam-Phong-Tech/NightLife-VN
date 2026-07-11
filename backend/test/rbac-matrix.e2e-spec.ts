@@ -85,6 +85,13 @@ describe('RBAC matrix (e2e)', () => {
     canViewMemberBooking: jest.fn(),
     canViewMemberCoupon: jest.fn(),
     canClaimMemberCoupon: jest.fn(),
+    canManageRanking: jest.fn(),
+    canManageCouponIssue: jest.fn(),
+    canReviewBookingReschedule: jest.fn(),
+    canManageBookingChat: jest.fn(),
+    canCancelBooking: jest.fn(),
+    canViewCancelAnalytics: jest.fn(),
+    canUpdateStorePolicy: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -208,6 +215,13 @@ describe('RBAC matrix (e2e)', () => {
     accessService.canViewMemberBooking.mockResolvedValue(true);
     accessService.canViewMemberCoupon.mockResolvedValue(true);
     accessService.canClaimMemberCoupon.mockResolvedValue(true);
+    accessService.canManageRanking.mockResolvedValue(true);
+    accessService.canManageCouponIssue.mockResolvedValue(true);
+    accessService.canReviewBookingReschedule.mockResolvedValue(true);
+    accessService.canManageBookingChat.mockResolvedValue(true);
+    accessService.canCancelBooking.mockResolvedValue(true);
+    accessService.canViewCancelAnalytics.mockResolvedValue(true);
+    accessService.canUpdateStorePolicy.mockResolvedValue(true);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [NightlifeDataController],

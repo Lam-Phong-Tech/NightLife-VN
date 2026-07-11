@@ -77,6 +77,13 @@ describe('Booking P2 workflows API (e2e)', () => {
     canViewMemberBooking: jest.fn(),
     getAccessibleStoreIds: jest.fn(),
     ensureStoreAccess: jest.fn(),
+    canManageRanking: jest.fn(),
+    canManageCouponIssue: jest.fn(),
+    canReviewBookingReschedule: jest.fn(),
+    canManageBookingChat: jest.fn(),
+    canCancelBooking: jest.fn(),
+    canViewCancelAnalytics: jest.fn(),
+    canUpdateStorePolicy: jest.fn(),
   };
   const adminNotificationService = {
     notifyBookingCreated: jest.fn(),
@@ -92,6 +99,13 @@ describe('Booking P2 workflows API (e2e)', () => {
     accessService.canViewMemberBooking.mockResolvedValue(true);
     accessService.getAccessibleStoreIds.mockResolvedValue(undefined);
     accessService.ensureStoreAccess.mockResolvedValue(undefined);
+    accessService.canManageRanking.mockResolvedValue(true);
+    accessService.canManageCouponIssue.mockResolvedValue(true);
+    accessService.canReviewBookingReschedule.mockResolvedValue(true);
+    accessService.canManageBookingChat.mockResolvedValue(true);
+    accessService.canCancelBooking.mockResolvedValue(true);
+    accessService.canViewCancelAnalytics.mockResolvedValue(true);
+    accessService.canUpdateStorePolicy.mockResolvedValue(true);
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     prisma.notificationLog.create.mockResolvedValue({ id: 'notification-1' });
 

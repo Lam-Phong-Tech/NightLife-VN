@@ -19,7 +19,14 @@ export type ActionPolicy =
   | 'canViewRevenueReport'
   | 'canViewMemberBooking'
   | 'canViewMemberCoupon'
-  | 'canClaimMemberCoupon';
+  | 'canClaimMemberCoupon'
+  | 'canManageRanking'
+  | 'canManageCouponIssue'
+  | 'canReviewBookingReschedule'
+  | 'canManageBookingChat'
+  | 'canCancelBooking'
+  | 'canViewCancelAnalytics'
+  | 'canUpdateStorePolicy';
 
 export const ActionPolicy = (policy: ActionPolicy) =>
   SetMetadata(ACTION_POLICY_KEY, policy);

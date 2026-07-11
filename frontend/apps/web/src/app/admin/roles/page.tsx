@@ -32,7 +32,28 @@ export type AccountRec = {
   disabled?: boolean;
 };
 
-
+const allAcc = [
+  {id:1, ini:'SA', name:'Super Admin', email:'superadmin@vietyoru.vn', role:'Super Admin', kind:'super_admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#e85050,#b52b2b)'},
+  {id:101, ini:'A', name:'Nguyễn Admin', email:'admin@vietyoru.vn', role:'Admin', kind:'admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
+  {id:2, ini:'O', name:'Trần Vận Hành', email:'operator@vietyoru.vn', role:'Operator', kind:'operator', last:'2 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+  {id:3, ini:'LH', name:'Lê Thu Hà', email:'ha.le@vietyoru.vn', role:'Operator', kind:'operator', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+  {id:4, ini:'LT', name:'Lễ tân · Club Lumière', email:'staff.lumiere1@vietyoru.vn', role:'Staff', kind:'staff', last:'10 phút trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+  {id:5, ini:'PV', name:'Phục vụ · Sakura Lounge', email:'staff.sakura2@vietyoru.vn', role:'Staff', kind:'staff', last:'1 giờ trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+  {id:6, ini:'CL', name:'Club Lumière', email:'partner.lumiere@vietyoru.vn', role:'Đối tác', kind:'partner', last:'15 phút trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+  {id:7, ini:'SL', name:'Sakura Lounge', email:'partner.sakura@vietyoru.vn', role:'Đối tác', kind:'partner', last:'1 ngày trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+  {id:8, ini:'AK', name:'Akari Lounge', email:'partner.akari@vietyoru.vn', role:'Đối tác', kind:'partner', last:'30 phút trước', avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
+  {id:9, ini:'TN', name:'Bar Tokyo Night', email:'partner.tokyonight@vietyoru.vn', role:'Đối tác', kind:'partner', last:'3 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+  {id:10, ini:'DK', name:'Dragon KTV', email:'partner.dragon@vietyoru.vn', role:'Đối tác', kind:'partner', last:'6 giờ trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+  {id:11, ini:'SB', name:'Sky Bar 20', email:'partner.skybar@vietyoru.vn', role:'Đối tác', kind:'partner', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
+  {id:12, ini:'GH', name:'The Gin House', email:'partner.ginhouse@vietyoru.vn', role:'Đối tác', kind:'partner', last:'4 ngày trước', avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
+  {id:13, ini:'MK', name:'Moonlight KTV', email:'partner.moonlight@vietyoru.vn', role:'Đối tác', kind:'partner', last:'5 ngày trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
+  {id:14, ini:'NB', name:'Neon Bar Saigon', email:'partner.neon@vietyoru.vn', role:'Đối tác', kind:'partner', last:'1 tuần trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+  {id:15, ini:'LC', name:'Lotus Club Saigon', email:'partner.lotus@vietyoru.vn', role:'Đối tác', kind:'partner', last:'2 ngày trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
+  {id:16, ini:'KH', name:'KTV Hoàng Gia', email:'partner.hoanggia@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+  {id:17, ini:'ZS', name:'Zen Spa & Onsen', email:'partner.zenspa@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+  {id:18, ini:'BN', name:'Blue Note Lounge', email:'partner.bluenote@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
+  {id:19, ini:'HO', name:'Hana Onsen', email:'partner.hana@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'}
+];
 
 export default function AdminRolesPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(() => {

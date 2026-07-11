@@ -68,6 +68,13 @@ describe('Booking cancellation API (e2e)', () => {
   const accessService = {
     canViewMemberBooking: jest.fn(),
     ensureStoreAccess: jest.fn(),
+    canManageRanking: jest.fn(),
+    canManageCouponIssue: jest.fn(),
+    canReviewBookingReschedule: jest.fn(),
+    canManageBookingChat: jest.fn(),
+    canCancelBooking: jest.fn(),
+    canViewCancelAnalytics: jest.fn(),
+    canUpdateStorePolicy: jest.fn(),
   };
   const configService = {
     get: jest.fn((_key: string, defaultValue?: string) => defaultValue),
@@ -78,6 +85,13 @@ describe('Booking cancellation API (e2e)', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-30T12:30:00.000Z'));
     accessService.canViewMemberBooking.mockResolvedValue(true);
     accessService.ensureStoreAccess.mockResolvedValue(undefined);
+    accessService.canManageRanking.mockResolvedValue(true);
+    accessService.canManageCouponIssue.mockResolvedValue(true);
+    accessService.canReviewBookingReschedule.mockResolvedValue(true);
+    accessService.canManageBookingChat.mockResolvedValue(true);
+    accessService.canCancelBooking.mockResolvedValue(true);
+    accessService.canViewCancelAnalytics.mockResolvedValue(true);
+    accessService.canUpdateStorePolicy.mockResolvedValue(true);
     prisma.auditLog.create.mockResolvedValue({ id: 'audit-1' });
     prisma.notificationLog.create.mockResolvedValue({ id: 'notification-1' });
 
