@@ -83,6 +83,7 @@ export class UsersService {
     phone?: string;
     role?: 'USER' | 'PARTNER' | 'OPERATOR' | 'STAFF' | 'ADMIN';
     tier?: UserTierInput;
+    storeId?: string;
   }) {
     const email = input.email.trim().toLowerCase();
     const displayName = normalizeDisplayName(input.displayName);
@@ -91,15 +92,36 @@ export class UsersService {
       throw new ConflictException('Email is already registered');
     }
 
-    return this.prisma.user.create({
-      data: {
-        email,
-        passwordHash: await this.passwordService.hash(input.password),
-        displayName: displayName || undefined,
-        phone: input.phone?.trim() || undefined,
-        role: input.role ?? 'USER',
-        tier: this.normalizeTier(input.tier),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          passwordHash: await this.passwordService.hash(input.password),
+          displayName: displayName || undefined,
+          phone: input.phone?.trim() || undefined,
+          role: input.role ?? 'USER',
+          tier: this.normalizeTier(input.tier),
+        },
+      });
+
+      if (input.storeId) {
+        if (input.role === 'PARTNER') {
+          await tx.store.update({
+            where: { id: input.storeId },
+            data: { ownerId: user.id },
+          });
+        } else if (input.role === 'STAFF') {
+          await tx.storePermission.create({
+            data: {
+              userId: user.id,
+              storeId: input.storeId,
+              permissions: ['store.staff.all'],
+            },
+          });
+        }
+      }
+
+      return user;
     });
   }
 
@@ -244,9 +266,72 @@ export class UsersService {
     });
   }
 
+  async restoreUser(targetUserId: string) {
+    await this.findByIdOrThrow(targetUserId);
+    return this.prisma.user.update({
+      where: { id: targetUserId },
+      data: { deletedAt: null, status: 'ACTIVE' },
+    });
+  }
+
   async hardDeleteUser(targetUserId: string) {
     return this.prisma.user.delete({
       where: { id: targetUserId },
     });
+  }
+
+  async listUsers(params: {
+    skip?: number;
+    take?: number;
+    search?: string;
+    role?: string;
+    status?: string;
+  }) {
+    const { skip, take, search, role, status } = params;
+    const where: any = {};
+    
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { displayName: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    if (role) {
+      if (role !== 'all') {
+        where.role = role.toUpperCase();
+      }
+    }
+    
+    if (status === 'disabled') {
+      where.status = 'DELETED';
+    } else if (status === 'muted') {
+      where.status = 'SUSPENDED';
+    } else if (status === 'active') {
+      where.status = 'ACTIVE';
+    } else if (role !== 'disabled' && role !== 'muted') {
+      // By default if filtering by active roles, don't show deleted
+      where.status = 'ACTIVE';
+    }
+
+    if (role === 'disabled') {
+       where.status = 'DELETED';
+       delete where.role;
+    } else if (role === 'muted') {
+       where.status = 'SUSPENDED';
+       delete where.role;
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { items, total };
   }
 }

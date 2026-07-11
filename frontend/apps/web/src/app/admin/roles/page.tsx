@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Search, ChevronLeft, ChevronRight, Eye, EyeOff, ChevronUp, ChevronDown, Edit2, Key, Ban, RotateCcw, Trash2, AlertCircle } from 'lucide-react';
 import { getAuthUser } from '@/lib/auth/session';
+import { getAdminUsers, createAdminUser, updateAdminUser, changeAdminUserPassword, disableAdminUser, restoreAdminUser, hardDeleteAdminUser, searchStoresForAdmin } from '@/lib/api/admin-users';
 
 const colors = {
   bg: '#0c0c0f',
@@ -21,7 +22,7 @@ const colors = {
 };
 
 export type AccountRec = {
-  id: number;
+  id: string;
   ini: string;
   name: string;
   email: string;
@@ -31,29 +32,6 @@ export type AccountRec = {
   key?: string;
   disabled?: boolean;
 };
-
-const allAcc = [
-  {id:1, ini:'SA', name:'Super Admin', email:'superadmin@vietyoru.vn', role:'Super Admin', kind:'super_admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#e85050,#b52b2b)'},
-  {id:101, ini:'A', name:'Nguyễn Admin', email:'admin@vietyoru.vn', role:'Admin', kind:'admin', last:'● Đang online', avaBg:'linear-gradient(135deg,#f4e3b4,#b6924a)'},
-  {id:2, ini:'O', name:'Trần Vận Hành', email:'operator@vietyoru.vn', role:'Operator', kind:'operator', last:'2 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:3, ini:'LH', name:'Lê Thu Hà', email:'ha.le@vietyoru.vn', role:'Operator', kind:'operator', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:4, ini:'LT', name:'Lễ tân · Club Lumière', email:'staff.lumiere1@vietyoru.vn', role:'Staff', kind:'staff', last:'10 phút trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:5, ini:'PV', name:'Phục vụ · Sakura Lounge', email:'staff.sakura2@vietyoru.vn', role:'Staff', kind:'staff', last:'1 giờ trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:6, ini:'CL', name:'Club Lumière', email:'partner.lumiere@vietyoru.vn', role:'Đối tác', kind:'partner', last:'15 phút trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
-  {id:7, ini:'SL', name:'Sakura Lounge', email:'partner.sakura@vietyoru.vn', role:'Đối tác', kind:'partner', last:'1 ngày trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:8, ini:'AK', name:'Akari Lounge', email:'partner.akari@vietyoru.vn', role:'Đối tác', kind:'partner', last:'30 phút trước', avaBg:'linear-gradient(135deg,#f4e3b4,#d4b26a)'},
-  {id:9, ini:'TN', name:'Bar Tokyo Night', email:'partner.tokyonight@vietyoru.vn', role:'Đối tác', kind:'partner', last:'3 giờ trước', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:10, ini:'DK', name:'Dragon KTV', email:'partner.dragon@vietyoru.vn', role:'Đối tác', kind:'partner', last:'6 giờ trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
-  {id:11, ini:'SB', name:'Sky Bar 20', email:'partner.skybar@vietyoru.vn', role:'Đối tác', kind:'partner', last:'Hôm qua', avaBg:'linear-gradient(135deg,#8fb6e4,#4f6f9c)'},
-  {id:12, ini:'GH', name:'The Gin House', email:'partner.ginhouse@vietyoru.vn', role:'Đối tác', kind:'partner', last:'4 ngày trước', avaBg:'linear-gradient(135deg,#8fd4b4,#4f9c78)'},
-  {id:13, ini:'MK', name:'Moonlight KTV', email:'partner.moonlight@vietyoru.vn', role:'Đối tác', kind:'partner', last:'5 ngày trước', avaBg:'linear-gradient(135deg,#c9a86a,#8f6b32)'},
-  {id:14, ini:'NB', name:'Neon Bar Saigon', email:'partner.neon@vietyoru.vn', role:'Đối tác', kind:'partner', last:'1 tuần trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:15, ini:'LC', name:'Lotus Club Saigon', email:'partner.lotus@vietyoru.vn', role:'Đối tác', kind:'partner', last:'2 ngày trước', avaBg:'linear-gradient(135deg,#e79ab8,#b0607f)'},
-  {id:16, ini:'KH', name:'KTV Hoàng Gia', email:'partner.hoanggia@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-  {id:17, ini:'ZS', name:'Zen Spa & Onsen', email:'partner.zenspa@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-  {id:18, ini:'BN', name:'Blue Note Lounge', email:'partner.bluenote@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'},
-  {id:19, ini:'HO', name:'Hana Onsen', email:'partner.hana@vietyoru.vn', role:'Chờ kích hoạt', kind:'muted', last:'Chưa kích hoạt', avaBg:'linear-gradient(135deg,#6f6b62,#44403a)'}
-];
 
 export default function AdminRolesPage() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(() => {
@@ -75,7 +53,9 @@ export default function AdminRolesPage() {
   const [accRole, setAccRole] = useState('all');
   const [accPage, setAccPage] = useState(0);
   const [isAdding, setIsAdding] = useState(false);
-  const [extraAccs, setExtraAccs] = useState<AccountRec[]>([]);
+  const [apiUsers, setApiUsers] = useState<AccountRec[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   // Add form states
   const [afName, setAfName] = useState('');
@@ -83,8 +63,25 @@ export default function AdminRolesPage() {
   const [afPw, setAfPw] = useState('');
   const [afPwShow, setAfPwShow] = useState(false);
   const [afKind, setAfKind] = useState('partner');
-  const [afVenue, setAfVenue] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+
+  // Store search states
+  const [storeSearchOpen, setStoreSearchOpen] = useState(false);
+  const [storeSearchQ, setStoreSearchQ] = useState('');
+  const [storeSearchResults, setStoreSearchResults] = useState<any[]>([]);
+  const [afStoreId, setAfStoreId] = useState<string>('');
+  const [afStoreName, setAfStoreName] = useState<string>('');
+  
+  const handleSearchStores = async (q: string) => {
+     setStoreSearchQ(q);
+     try {
+       const res = await searchStoresForAdmin(q, afKind);
+       setStoreSearchResults(res || []);
+     } catch (e) {
+       console.error(e);
+     }
+  };
+
 
   // Edit states
   const [edOpen, setEdOpen] = useState(false);
@@ -105,16 +102,49 @@ export default function AdminRolesPage() {
   const [hdEmail, setHdEmail] = useState('');
   const [hdKey, setHdKey] = useState('');
 
-  // Status & Edits tracking (Mocking Backend)
-  const [accStatus, setAccStatus] = useState<Record<string, boolean>>({});
-  const [accEdits, setAccEdits] = useState<Record<string, {name:string, email:string}>>({});
-  const [accGone, setAccGone] = useState<Record<string, boolean>>({});
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await getAdminUsers({ take: 500 });
+      const kmap: Record<string, [string, string]> = {
+        super_admin:['Super Admin','linear-gradient(135deg,#e85050,#b52b2b)'],
+        admin:['Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],
+        operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],
+        partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)'],
+        staff:['Staff','linear-gradient(135deg,#e79ab8,#b0607f)'],
+        user:['Người dùng', 'linear-gradient(135deg,#9b958a,#57534b)']
+      };
+      const mapped = res.items.map(u => {
+        const kind = u.role.toLowerCase();
+        const nm = u.displayName || u.email.split('@')[0];
+        const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
+        const roleData = kmap[kind] || ['Khác', 'linear-gradient(135deg,#9b958a,#57534b)'];
+        return {
+           id: u.id,
+           key: u.id,
+           ini,
+           name: nm,
+           email: u.email,
+           role: roleData[0],
+           kind,
+           avaBg: roleData[1],
+           disabled: u.status === 'DELETED' || u.status === 'SUSPENDED'
+        };
+      });
+      setApiUsers(mapped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [refetchTrigger]);
 
   // Computed data
-  const S_allAcc = [...extraAccs, ...allAcc].filter(a => !accGone[a.email]).filter(a => isSuperAdmin || a.kind !== 'super_admin').map(a => {
-    const ov = accEdits[a.email];
-    return { ...a, key: a.email, name: ov?.name || a.name, email: ov?.email || a.email, disabled: !!accStatus[a.email] };
-  });
+  const S_allAcc = apiUsers.filter(a => isSuperAdmin || a.kind !== 'super_admin');
   const accF = S_allAcc.filter(a => 
     (accRole === 'all' || (accRole === 'disabled' ? a.disabled : (!a.disabled && a.kind === accRole))) && 
     (!accQ || (a.name + ' ' + a.email).toLowerCase().includes(accQ.toLowerCase()))
@@ -164,21 +194,25 @@ export default function AdminRolesPage() {
   const afPwBar3 = psc>=3?pCol:pOff;
 
   const ok = !!(afName && afName.trim() && afEmail && afEmail.indexOf('@')>0 && afPw.length>=8);
-  const handleSave = () => {
+  const handleSave = async () => {
     if(!ok) { showToast(!afName||!afName.trim()?'Nhập tên hiển thị':(!afEmail||afEmail.indexOf('@')<=0)?'Nhập email hợp lệ':'Mật khẩu tối thiểu 8 ký tự'); return; }
-    const kmap: Record<string, [string, string]> = {
-      admin:['Super Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],
-      operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],
-      partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)'],
-      staff:['Staff','linear-gradient(135deg,#e79ab8,#b0607f)']
-    };
-    const nm = (afKind==='partner'&&afVenue&&afVenue.trim())?afVenue.trim():(afKind==='staff'&&afVenue&&afVenue.trim())?(afName.trim()+' · '+afVenue.trim()):afName.trim();
-    const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
-    const roleData = kmap[afKind] || ['Đối tác', 'linear-gradient(135deg,#c9a86a,#8f6b32)'];
-    const rec = {id:Date.now(), ini, name:nm, email:afEmail.trim(), role:roleData[0], kind:afKind, avaBg:roleData[1]};
-    setExtraAccs([rec, ...extraAccs]);
-    setIsAdding(false);
-    showToast('Đã tạo tài khoản '+roleData[0]+' — đã gửi email thông báo');
+    try {
+      setLoading(true);
+      await createAdminUser({
+        email: afEmail.trim(),
+        password: afPw,
+        displayName: afName.trim(),
+        role: afKind.toUpperCase(),
+        storeId: afStoreId || undefined
+      });
+      showToast('Đã tạo tài khoản thành công');
+      setIsAdding(false);
+      setRefetchTrigger(r => r + 1);
+    } catch (err: any) {
+      showToast('Lỗi: ' + (err?.response?.data?.message || err.message || 'Không thể tạo tài khoản'));
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -191,7 +225,7 @@ export default function AdminRolesPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
             <span style={{ fontSize: '16px', fontWeight: 600, color: '#f3f0ea' }}>Tài khoản</span>
             <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(212,178,106,.4), transparent)' }}></span>
-            <span onClick={() => { setAfName(''); setAfEmail(''); setAfPw(''); setAfPwShow(false); setAfKind('partner'); setAfVenue(''); setIsAdding(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 13px', borderRadius: '9px', cursor: 'pointer' }}>
+            <span onClick={() => { setAfName(''); setAfEmail(''); setAfPw(''); setAfPwShow(false); setAfKind('partner'); setAfStoreId(''); setAfStoreName(''); setIsAdding(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 600, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '7px 13px', borderRadius: '9px', cursor: 'pointer' }}>
               <Plus size={13} strokeWidth={2.4} /> Thêm
             </span>
           </div>
@@ -232,23 +266,23 @@ export default function AdminRolesPage() {
                   ) : null}
                 </div>
                 <div style={{ display: 'flex', gap: '5px', flex: 'none' }}>
-                  <span onClick={() => { setEdOrig(a.email); setEdName(a.name); setEdEmail(a.email); setEdOpen(true); }} title="Sửa tên / email" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                  <span onClick={() => { setEdOrig(a.id); setEdName(a.name); setEdEmail(a.email); setEdOpen(true); }} title="Sửa tên / email" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                     <Edit2 size={12} strokeWidth={1.9} />
                   </span>
-                  <span onClick={() => { setCpName(a.name); setCpEmail(a.email); setCpPw(''); setCpPwShow(false); setCpOpen(true); }} title="Đổi mật khẩu" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                  <span onClick={() => { setHdKey(a.id); setCpName(a.name); setCpEmail(a.email); setCpPw(''); setCpPwShow(false); setCpOpen(true); }} title="Đổi mật khẩu" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                     <Key size={12} strokeWidth={1.9} />
                   </span>
                   {!a.disabled ? (
-                    <span onClick={() => { setAccStatus(prev => ({ ...prev, [a.key]: true })); showToast('Đã vô hiệu hóa tài khoản — có thể khôi phục bất cứ lúc nào'); }} title="Vô hiệu hóa (xóa mềm) — có thể khôi phục" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                    <span onClick={async () => { try { await disableAdminUser(a.id); showToast('Đã vô hiệu hóa tài khoản — có thể khôi phục bất cứ lúc nào'); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi vô hiệu hóa'); } }} title="Vô hiệu hóa (xóa mềm) — có thể khôi phục" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                       <Ban size={12} strokeWidth={1.9} />
                     </span>
                   ) : (
-                    <span onClick={() => { const st = {...accStatus}; delete st[a.key]; setAccStatus(st); showToast('Đã khôi phục tài khoản ' + a.email); }} title="Khôi phục tài khoản" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(95,191,134,.06)', border: '1px solid rgba(95,191,134,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fd3a2', cursor: 'pointer' }}>
+                    <span onClick={async () => { try { await restoreAdminUser(a.id); showToast('Đã khôi phục tài khoản ' + a.email); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi khôi phục'); } }} title="Khôi phục tài khoản" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(95,191,134,.06)', border: '1px solid rgba(95,191,134,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7fd3a2', cursor: 'pointer' }}>
                       <RotateCcw size={12} strokeWidth={2} />
                     </span>
                   )}
                   {isSuperAdmin && (
-                    <span onClick={() => { setHdName(a.name); setHdEmail(a.email); setHdKey(a.key); setHdOpen(true); }} title="Xóa vĩnh viễn (xóa cứng)" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
+                    <span onClick={() => { setHdName(a.name); setHdEmail(a.email); setHdKey(a.id); setHdOpen(true); }} title="Xóa vĩnh viễn (xóa cứng)" style={{ width: 27, height: 27, flex: 'none', borderRadius: 8, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8c8679', cursor: 'pointer' }}>
                       <Trash2 size={12} strokeWidth={1.9} />
                     </span>
                   )}
@@ -347,7 +381,10 @@ export default function AdminRolesPage() {
               {(afKind === 'partner' || afKind === 'staff') && (
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Quán liên kết</div>
-                  <input value={afVenue} onChange={e => setAfVenue(e.target.value)} placeholder="VD: Club Lumière" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                  <div onClick={() => { setStoreSearchOpen(true); handleSearchStores(''); }} style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: afStoreName ? '#f3f0ea' : '#8c8679', fontSize: '13px', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {afStoreName || 'Bấm để tìm và chọn quán...'}
+                    <Search size={14} />
+                  </div>
                 </div>
               )}
               
@@ -403,7 +440,7 @@ export default function AdminRolesPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
               <span style={{ flex: 1 }}></span>
               <span onClick={() => setEdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={() => { setAccEdits(prev => ({ ...prev, [edOrig]: { name: edName, email: edEmail } })); setEdOpen(false); showToast('Đã lưu thay đổi cho ' + edName); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && edEmail.includes('@') ? 1 : 0.45, pointerEvents: edName.trim() && edEmail.includes('@') ? 'auto' : 'none' }}>
+              <span onClick={async () => { try { await updateAdminUser(edOrig, { displayName: edName, email: edEmail }); setEdOpen(false); showToast('Đã lưu thay đổi cho ' + edName); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi cập nhật'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: edName.trim() && edEmail.includes('@') ? 1 : 0.45, pointerEvents: edName.trim() && edEmail.includes('@') ? 'auto' : 'none' }}>
                 Lưu thay đổi
               </span>
             </div>
@@ -479,7 +516,7 @@ export default function AdminRolesPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(12,12,15,.35)' }}>
                 <span style={{ flex: 1 }}></span>
                 <span onClick={() => setCpOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-                <span onClick={() => { setCpOpen(false); showToast('Đã đổi mật khẩu cho ' + cpName); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: cpPw.length >= 8 ? 1 : 0.45, pointerEvents: cpPw.length >= 8 ? 'auto' : 'none' }}>
+                <span onClick={async () => { try { await changeAdminUserPassword(hdKey, { password: cpPw }); setCpOpen(false); showToast('Đã đổi mật khẩu cho ' + cpName); } catch (e) { showToast('Lỗi đổi mật khẩu'); } }} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 19px', borderRadius: '10px', cursor: 'pointer', opacity: cpPw.length >= 8 ? 1 : 0.45, pointerEvents: cpPw.length >= 8 ? 'auto' : 'none' }}>
                   Đổi mật khẩu
                 </span>
               </div>
@@ -507,7 +544,7 @@ export default function AdminRolesPage() {
             </div>
             <div style={{ display: 'flex', gap: '10px', padding: '18px 24px 20px', justifyContent: 'flex-end' }}>
               <span onClick={() => setHdOpen(false)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={() => { setAccGone(prev => ({ ...prev, [hdKey]: true })); setHdOpen(false); showToast('Đã xóa vĩnh viễn tài khoản ' + hdEmail); }} style={{ fontSize: '12.5px', fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#e0697a,#b64553)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer' }}>
+              <span onClick={async () => { try { await hardDeleteAdminUser(hdKey); setHdOpen(false); showToast('Đã xóa vĩnh viễn tài khoản ' + hdEmail); setRefetchTrigger(r => r + 1); } catch (e) { showToast('Lỗi khi xóa'); } }} style={{ fontSize: '12.5px', fontWeight: 700, color: '#fff', background: 'linear-gradient(135deg,#e0697a,#b64553)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer' }}>
                 Xóa vĩnh viễn
               </span>
             </div>
@@ -521,6 +558,31 @@ export default function AdminRolesPage() {
           {toast}
         </div>
       )}
+      {storeSearchOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(6,6,9,.8)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ width: '480px', maxWidth: '94vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', background: '#141319', border: '1px solid rgba(255,255,255,.1)', borderRadius: '18px', boxShadow: '0 40px 90px -30px rgba(0,0,0,.9)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
+              <div style={{ flex: 1, fontSize: '15px', fontWeight: 700, color: '#f3f0ea' }}>Chọn quán liên kết</div>
+              <span onClick={() => setStoreSearchOpen(false)} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}><X size={16} /></span>
+            </div>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+               <input autoFocus value={storeSearchQ} onChange={e => handleSearchStores(e.target.value)} placeholder="Nhập tên quán để tìm..." style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '13px', outline: 'none' }} />
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+               {storeSearchResults.map(s => (
+                  <div key={s.id} onClick={() => { setAfStoreId(s.id); setAfStoreName(s.name); setStoreSearchOpen(false); }} style={{ padding: '12px 16px', borderRadius: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }} className="hover-bg-surface1" onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#f3f0ea' }}>{s.name}</div>
+                     <div style={{ fontSize: '11px', color: '#8c8679' }}>{s.address || 'Chưa có địa chỉ'}</div>
+                  </div>
+               ))}
+               {storeSearchResults.length === 0 && (
+                 <div style={{ padding: '24px', textAlign: 'center', color: '#57534b', fontSize: '12px' }}>Không tìm thấy quán nào</div>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
