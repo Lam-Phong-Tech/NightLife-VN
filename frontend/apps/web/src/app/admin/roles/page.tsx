@@ -106,6 +106,14 @@ export default function AdminRolesPage() {
     try {
       setLoading(true);
       const res = await getAdminUsers({ take: 500 });
+      console.log('API RES:', res);
+      
+      if (!res || !res.items) {
+        console.error('Invalid response format:', res);
+        setApiUsers([]);
+        return;
+      }
+      
       const kmap: Record<string, [string, string]> = {
         super_admin:['Super Admin','linear-gradient(135deg,#e85050,#b52b2b)'],
         admin:['Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],
@@ -115,8 +123,8 @@ export default function AdminRolesPage() {
         user:['Người dùng', 'linear-gradient(135deg,#9b958a,#57534b)']
       };
       const mapped = res.items.map(u => {
-        const kind = u.role.toLowerCase();
-        const nm = u.displayName || u.email.split('@')[0];
+        const kind = (u.role || '').toLowerCase();
+        const nm = u.displayName || (u.email ? u.email.split('@')[0] : 'Unknown');
         const ini = nm.split(' ').filter(Boolean).map((w:string)=>w.charAt(0)).join('').slice(-2).toUpperCase();
         const roleData = kmap[kind] || ['Khác', 'linear-gradient(135deg,#9b958a,#57534b)'];
         return {
@@ -131,9 +139,10 @@ export default function AdminRolesPage() {
            disabled: u.status === 'DELETED' || u.status === 'SUSPENDED'
         };
       });
+      console.log('MAPPED:', mapped);
       setApiUsers(mapped);
     } catch (err) {
-      console.error(err);
+      console.error('FETCH USERS ERROR:', err);
     } finally {
       setLoading(false);
     }
