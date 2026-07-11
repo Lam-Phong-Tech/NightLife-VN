@@ -17,7 +17,6 @@ import {
 
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
 import { resolveClientUrl } from "@/lib/api/client";
-import { storeImageForSlug } from "@/lib/demo-media";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { readFavoriteStoreSlugs, writeFavoriteStore } from "@/lib/member-favorites";
 import { formatPriceTier } from "@/lib/price-tier";
@@ -41,12 +40,16 @@ type VenueView = {
   cityLabel: string;
   distanceLabel: string;
   priceLabel: string;
-  rating: number;
   tags: string[];
   statusLabel: string;
   dealLabel: string;
   image: string;
+  isOpenNow: boolean;
+  rating: number | null;
 };
+
+const emptyVenueImage =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%2318181c'/%3E%3Cstop offset='.52' stop-color='%23342d21'/%3E%3Cstop offset='1' stop-color='%23101114'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='800' fill='url(%23g)'/%3E%3Crect x='300' y='335' width='600' height='64' rx='32' fill='%23f0dda8' opacity='.18'/%3E%3Crect x='420' y='430' width='360' height='34' rx='17' fill='%23f0dda8' opacity='.12'/%3E%3C/svg%3E";
 
 const cityOptions = [
   { value: "hn", label: "Hà Nội" },
@@ -118,45 +121,31 @@ const categoryTags: Record<string, string[]> = {
   CASINO: ["VIP table", "Private room", "Premium"],
 };
 
-const categoryPrices: Record<string, string> = {
-  BAR: "từ 650.000đ",
-  CLUB: "từ 2.500.000đ",
-  LOUNGE: "từ 900.000đ",
-  GIRLS_BAR: "từ 1.200.000đ",
-  KARAOKE: "từ 1.500.000đ",
-  MASSAGE_SPA: "từ 500.000đ",
-  RESTAURANT: "từ 800.000đ",
-  CASINO: "từ 3.000.000đ",
+const weekdayKeys = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+const currentOpeningSlot = (store: PublicStore) => store.openingHours?.[weekdayKeys[new Date().getDay()] ?? "monday"];
+
+const openingStatus = (store: PublicStore) => {
+  const slot = currentOpeningSlot(store);
+  if (!slot) return { label: "Theo giờ admin", isOpen: true };
+  if (slot.closed) return { label: slot.note || "Tạm nghỉ", isOpen: false };
+  if (slot.open && slot.close) return { label: `${slot.open} - ${slot.close}`, isOpen: true };
+  return { label: slot.note || "Đang mở", isOpen: true };
 };
 
-const dealLabels = [
-  "-30% Happy Hour",
-  "Combo nhóm",
-  "2+1 Combo phòng",
-  "Ưu đãi VIP",
-  "Set Nhật Bản",
-  "-20% gói đôi",
-];
-
-const distanceFallbacks = ["1.2 km", "2.4 km", "3.1 km", "3.8 km", "4.6 km", "5.2 km"];
-
-const pickByIndex = <T,>(items: readonly T[], index: number, fallback: T) =>
-  items[index % items.length] ?? fallback;
-
-const roundRating = (index: number) => pickByIndex([4.9, 4.8, 4.8, 4.7, 4.7, 4.6], index, 4.7);
-
-const formatDistance = (distanceKm: number | null | undefined, index: number) =>
+const formatDistance = (distanceKm: number | null | undefined) =>
   typeof distanceKm === "number" && Number.isFinite(distanceKm)
     ? `${distanceKm.toFixed(1)} km`
-    : pickByIndex(distanceFallbacks, index, "1.2 km");
+    : "Theo khu vực";
 
-const toVenueView = (store: PublicStore, index: number): VenueView => {
+const toVenueView = (store: PublicStore): VenueView => {
   const categoryLabel = categoryLabels[store.category] ?? store.category;
   const areaLabel = store.area?.name ?? store.district ?? store.city ?? "Trung tâm";
   const cityLabel = cityLabels[store.cityCode ?? ""] ?? store.city;
   const backendImage = resolveClientUrl(store.thumbnailUrl);
-  const image = backendImage ?? storeImageForSlug(store.slug, index);
-  const statusLabel = index % 3 === 2 ? "Mở đến 02:00" : "Đang mở";
+  const image = backendImage ?? emptyVenueImage;
+  const { label: statusLabel, isOpen } = openingStatus(store);
+  const adminTags = store.tags?.filter(Boolean) ?? [];
 
   return {
     id: store.slug,
@@ -164,13 +153,14 @@ const toVenueView = (store: PublicStore, index: number): VenueView => {
     categoryLabel,
     areaLabel,
     cityLabel,
-    distanceLabel: formatDistance(store.distanceKm, index),
-    priceLabel: formatPriceTier(categoryPrices[store.category] ?? "từ 900.000đ"),
-    rating: roundRating(index),
-    tags: categoryTags[store.category] ?? ["Đặt bàn nhanh", "Không gian đẹp", "Ưu đãi"],
+    distanceLabel: formatDistance(store.distanceKm),
+    priceLabel: formatPriceTier(store.priceReference?.startingFromVnd),
+    rating: null,
+    tags: (adminTags.length ? adminTags : categoryTags[store.category] ?? [categoryLabel]).slice(0, 3),
     statusLabel,
-    dealLabel: pickByIndex(dealLabels, index, "-30% Happy Hour"),
+    dealLabel: store.activeCoupon?.name ?? adminTags[0] ?? categoryLabel,
     image,
+    isOpenNow: isOpen,
   };
 };
 
@@ -286,11 +276,8 @@ export default function Page() {
         ],
       }))
         .map(toVenueView)
-        .filter((venue) => !ratingOnly || venue.rating >= 4.5)
-        .filter(
-          (venue) =>
-            !openNow || venue.statusLabel.includes("Đang") || venue.statusLabel.includes("Mở"),
-        ),
+        .filter((venue) => !ratingOnly || venue.rating === null || venue.rating >= 4.5)
+        .filter((venue) => !openNow || venue.isOpenNow),
     [openNow, query, ratingOnly, stores],
   );
 

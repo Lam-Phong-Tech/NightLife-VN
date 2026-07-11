@@ -154,6 +154,9 @@ export class PublicStoreDto {
   @ApiPropertyOptional({ example: 'Tay Ho', nullable: true })
   district?: string | null;
 
+  @ApiPropertyOptional({ type: [String], example: ['vip', 'cocktail'] })
+  tags?: string[];
+
   @ApiPropertyOptional({ type: () => PublicAreaDto, nullable: true })
   area?: PublicAreaDto | null;
 
@@ -165,6 +168,22 @@ export class PublicStoreDto {
 
   @ApiPropertyOptional({ example: null, nullable: true })
   thumbnailUrl?: string | null;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'object' },
+    nullable: true,
+  })
+  openingHours?: Record<string, PublicStoreOpeningHourDto> | null;
+
+  @ApiPropertyOptional({
+    type: () => PublicStoreDetailPriceReferenceDto,
+    nullable: true,
+  })
+  priceReference?: PublicStoreDetailPriceReferenceDto | null;
+
+  @ApiPropertyOptional({ type: () => PublicStoreDetailCouponDto, nullable: true })
+  activeCoupon?: PublicStoreDetailCouponDto | null;
 
   @ApiPropertyOptional({ example: 1.4, nullable: true })
   distanceKm?: number | null;

@@ -1,4 +1,5 @@
 import { apiClient, resolveClientUrl } from "./client";
+import type { StoreActiveCoupon, StoreOpeningHour, StorePriceReference } from "./store-detail";
 import { castImageForSlug, storeImageForSlug } from "../demo-media";
 
 export type DiscoverySort = "newest" | "nearest" | "priority";
@@ -53,10 +54,14 @@ export type PublicStore = {
   city: string;
   cityCode?: string;
   district?: string | null;
+  tags?: string[];
   area?: PublicArea | null;
   latitude?: number | null;
   longitude?: number | null;
   thumbnailUrl?: string | null;
+  openingHours?: Record<string, StoreOpeningHour> | null;
+  priceReference?: StorePriceReference | null;
+  activeCoupon?: StoreActiveCoupon | null;
   distanceKm?: number | null;
 };
 
@@ -642,6 +647,15 @@ const unwrapListResponse = <T>(response: T[] | PublicDiscoveryListResponse<T>) =
 const normalizePublicStore = (store: PublicStore): PublicStore => ({
   ...store,
   thumbnailUrl: resolveClientUrl(store.thumbnailUrl),
+  priceReference: store.priceReference
+    ? {
+        ...store.priceReference,
+        items: store.priceReference.items.map((item) => ({
+          ...item,
+          imageUrl: resolveClientUrl(item.imageUrl),
+        })),
+      }
+    : store.priceReference,
 });
 
 const normalizePublicCast = (cast: PublicCast): PublicCast => ({

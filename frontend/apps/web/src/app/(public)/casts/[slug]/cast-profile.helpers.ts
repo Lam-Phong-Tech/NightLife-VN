@@ -123,6 +123,7 @@ export function galleryFromCast(cast: PublicCastDetail): CastMedia[] {
       url: cast.thumbnailUrl,
       alt: cast.publicAlias ?? cast.stageName,
       purpose: "thumbnail",
+      mimeType: null,
     });
   }
 
