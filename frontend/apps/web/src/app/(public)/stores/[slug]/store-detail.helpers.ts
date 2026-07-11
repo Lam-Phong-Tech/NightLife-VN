@@ -129,10 +129,61 @@ export const mapEmbedUrl = (store: PublicStoreDetail) => {
   return fallbackEmbedUrl;
 };
 
-export const mediaBackground = (media?: StoreGalleryItem | null) =>
-  media?.type === "IMAGE" && media.url
-    ? `linear-gradient(180deg, rgba(10,10,12,.18), rgba(10,10,12,.66)), url("${media.url}")`
+export const youtubeThumbnailUrl = (url?: string | null) => {
+  if (!url) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    let videoId = "";
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (parsed.pathname.startsWith("/embed/")) {
+        videoId = parsed.pathname.split("/").filter(Boolean)[1] ?? "";
+      } else if (parsed.pathname.startsWith("/shorts/")) {
+        videoId = parsed.pathname.split("/").filter(Boolean)[1] ?? "";
+      } else {
+        videoId = parsed.searchParams.get("v") ?? parsed.pathname.split("/").filter(Boolean).at(-1) ?? "";
+      }
+    }
+
+    if (host === "youtu.be") {
+      videoId = parsed.pathname.split("/").filter(Boolean)[0] ?? "";
+    }
+
+    return videoId ? `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg` : "";
+  } catch {
+    return "";
+  }
+};
+
+export const mediaVisualUrl = (media?: StoreGalleryItem | null) => {
+  const thumbnailUrl = media?.thumbnailUrl?.trim();
+
+  if (thumbnailUrl) {
+    return thumbnailUrl;
+  }
+
+  if (media?.type === "IMAGE" && media.url) {
+    return media.url;
+  }
+
+  if (media?.type === "VIDEO") {
+    return youtubeThumbnailUrl(media.url);
+  }
+
+  return "";
+};
+
+export const mediaBackground = (media?: StoreGalleryItem | null) => {
+  const visualUrl = mediaVisualUrl(media);
+
+  return visualUrl
+    ? `linear-gradient(180deg, rgba(10,10,12,.18), rgba(10,10,12,.66)), url("${visualUrl}")`
     : "linear-gradient(135deg, #18181c 0%, #2f2a22 48%, #111114 100%)";
+};
 
 export const videoEmbedUrl = (url: string) => {
   try {

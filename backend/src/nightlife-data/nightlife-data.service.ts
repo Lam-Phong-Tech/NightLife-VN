@@ -1949,6 +1949,7 @@ export class NightlifeDataService {
             purpose: true,
             mimeType: true,
             originalName: true,
+            metadata: true,
             createdAt: true,
           },
         },
@@ -2055,14 +2056,26 @@ export class NightlifeDataService {
       },
     });
 
-    const gallery = store.media.map((media) => ({
-      id: media.id,
-      type: media.type,
-      url: media.url,
-      purpose: media.purpose,
-      mimeType: media.mimeType,
-      alt: media.originalName || store.name,
-    }));
+    const gallery = store.media.map((media) => {
+      const metadata = this.asRecord(media.metadata);
+      const thumbnailUrl =
+        [metadata?.thumbnailUrl, metadata?.posterUrl, metadata?.previewUrl]
+          .filter(
+            (value): value is string =>
+              typeof value === 'string' && value.trim().length > 0,
+          )
+          .map((value) => value.trim())[0] ?? null;
+
+      return {
+        id: media.id,
+        type: media.type,
+        url: media.url,
+        thumbnailUrl,
+        purpose: media.purpose,
+        mimeType: media.mimeType,
+        alt: media.originalName || store.name,
+      };
+    });
     const activeCoupons = store.coupons.map((coupon) => ({
       id: coupon.id,
       code: coupon.code,

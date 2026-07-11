@@ -34,6 +34,7 @@ export type StoreGalleryItem = {
   id: string;
   type: StoreDetailMediaType;
   url: string;
+  thumbnailUrl?: string | null;
   purpose?: string | null;
   mimeType?: string | null;
   alt?: string | null;
@@ -145,6 +146,7 @@ export type PublicStoreDetail = {
 const normalizeStoreGalleryItem = (item: StoreGalleryItem): StoreGalleryItem => ({
   ...item,
   url: resolveClientUrl(item.url) ?? item.url,
+  thumbnailUrl: resolveClientUrl(item.thumbnailUrl),
 });
 
 const normalizeStoreCast = (cast: StoreDetailCast): StoreDetailCast => ({

@@ -334,6 +334,12 @@ export class PublicStoreGalleryItemDto {
   @ApiProperty({ example: '/media/demo/stores/neon-club.jpg' })
   url!: string;
 
+  @ApiPropertyOptional({
+    example: 'https://img.youtube.com/vi/demo/hqdefault.jpg',
+    nullable: true,
+  })
+  thumbnailUrl?: string | null;
+
   @ApiPropertyOptional({ example: 'Hero image', nullable: true })
   purpose?: string | null;
 

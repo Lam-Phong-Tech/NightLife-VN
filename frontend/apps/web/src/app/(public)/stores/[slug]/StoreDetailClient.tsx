@@ -51,6 +51,7 @@ import {
   formatDateOption,
   mapEmbedUrl,
   mediaBackground,
+  mediaVisualUrl,
   openingText,
   readableName,
   videoEmbedUrl,
@@ -267,8 +268,12 @@ const imageBackground = (url: string) =>
   `linear-gradient(180deg, rgba(12,12,15,.05), rgba(12,12,15,.66)), url("${url}")`;
 
 const galleryImageUrl = (media?: StoreGalleryItem | null, fallback?: StoreGalleryItem | null) => {
-  if (media?.type === "IMAGE" && media.url) return media.url;
-  if (fallback?.type === "IMAGE" && fallback.url) return fallback.url;
+  const mediaUrl = mediaVisualUrl(media);
+  if (mediaUrl) return mediaUrl;
+
+  const fallbackUrl = mediaVisualUrl(fallback);
+  if (fallbackUrl) return fallbackUrl;
+
   return "";
 };
 
@@ -352,14 +357,18 @@ function SectionTitle({
 function IconButton({
   label,
   children,
+  className,
   onClick,
 }: {
   label: string;
   children: ReactNode;
+  className?: string;
   onClick?: () => void;
 }) {
+  const buttonClassName = ["round-action", className].filter(Boolean).join(" ");
+
   return (
-    <button className="round-action" type="button" aria-label={label} onClick={onClick}>
+    <button className={buttonClassName} type="button" aria-label={label} onClick={onClick}>
       {children}
     </button>
   );
@@ -1066,23 +1075,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <div className="hero-actions">
                   <IconButton
                     label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+                    className={`store-favorite-action${isFavorite ? " is-active" : ""}`}
                     onClick={toggleFavorite}
                   >
-                    <Heart size={18} fill={isFavorite ? "var(--vy-favorite)" : "none"} color={isFavorite ? "var(--vy-favorite)" : "currentColor"} />
+                    <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
                   </IconButton>
                 </div>
               </div>
-
-              {selectedMedia ? (
-                <button
-                  className="hero-play"
-                  type="button"
-                  aria-label={selectedMedia.type === "VIDEO" ? "Mở video tour" : "Mở ảnh quán"}
-                  onClick={() => openGallery(selectedGalleryIndex)}
-                >
-                  <Play size={25} fill="currentColor" />
-                </button>
-              ) : null}
 
               {gallery.length > 1 ? (
                 <>
@@ -1541,7 +1540,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-top,
         .hero-name,
-        .hero-play,
         .hero-media-nav,
         .video-badge {
           position: absolute;
@@ -1570,15 +1568,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .round-action {
           width: 40px;
           height: 40px;
-          border: 1px solid rgba(212, 178, 106, .34);
+          border: 1px solid rgba(182, 146, 74, .54);
           border-radius: 50%;
-          background: rgba(12, 12, 15, .48);
-          color: var(--vy-text);
+          background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
+          color: var(--vy-on-gold);
           display: inline-flex;
           align-items: center;
           justify-content: center;
           text-decoration: none;
-          backdrop-filter: blur(8px);
+          box-shadow: 0 12px 26px rgba(79, 57, 19, .24);
           cursor: pointer;
           padding: 0;
         }
@@ -1587,39 +1585,30 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: none;
         }
 
-        .hero-play {
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          width: 70px;
-          height: 70px;
-          border: 1px solid rgba(212, 178, 106, .62);
-          border-radius: 50%;
-          background: rgba(12, 12, 15, .42);
-          color: var(--vy-gold-pale);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding-left: 4px;
-          backdrop-filter: blur(8px);
-          cursor: pointer;
-          box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .8);
+        .store-favorite-action {
+          color: #4f3710;
+        }
+
+        .store-favorite-action.is-active {
+          background: linear-gradient(135deg, #ffe99d, #e0b747 54%, #c29636);
+          border-color: rgba(143, 95, 27, .44);
+          color: #7b4c11;
         }
 
         .hero-media-nav {
           top: 50%;
           width: 46px;
           height: 64px;
-          border: 1px solid rgba(244, 221, 155, .22);
+          border: 1px solid rgba(182, 146, 74, .5);
           border-radius: 999px;
-          background: rgba(12, 12, 15, .2);
-          color: #f4dd9b;
+          background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
+          color: var(--vy-on-gold);
           display: grid;
           place-items: center;
           transform: translateY(-50%);
           cursor: pointer;
-          backdrop-filter: blur(6px);
-          text-shadow: 0 2px 16px rgba(0, 0, 0, .72);
+          box-shadow: 0 14px 28px rgba(79, 57, 19, .22);
+          text-shadow: none;
         }
 
         .hero-media-nav.previous {
@@ -1708,9 +1697,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-name b.open,
         .open-pill {
-          color: #8be4ad;
-          background: rgba(95, 191, 134, .13);
-          border: 1px solid rgba(95, 191, 134, .38);
+          color: #086335;
+          background: rgba(218, 255, 232, .92);
+          border: 1px solid rgba(21, 155, 83, .36);
+          box-shadow: 0 8px 20px rgba(21, 155, 83, .12);
         }
 
         .hero-name b.closed,
@@ -1797,9 +1787,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .secondary-actions a {
           flex: 1;
-          color: #e3c27e;
-          background: var(--vy-surface-2);
-          border: 1px solid rgba(212, 178, 106, .28);
+          color: #8f6620;
+          background: #fffaf0;
+          border: 1px solid rgba(212, 178, 106, .32);
+          box-shadow: 0 8px 20px rgba(182, 146, 74, .12);
+        }
+
+        .secondary-actions a:first-child {
+          color: var(--vy-on-gold);
+          background: linear-gradient(135deg, #fff3ca, #e8c46d 58%, #c89b3f);
+          border-color: rgba(182, 146, 74, .46);
         }
 
         .thumb-grid {
@@ -2042,13 +2039,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           min-height: 34px;
           padding: 0 11px;
           border-radius: 8px;
-          background: rgba(12, 12, 15, .66);
-          color: var(--vy-gold-pale);
-          border: 1px solid rgba(212, 178, 106, .32);
+          background: linear-gradient(135deg, #fff3ca, #e8c46d 58%, #c89b3f);
+          color: var(--vy-on-gold);
+          border: 1px solid rgba(182, 146, 74, .5);
           text-decoration: none;
           font-size: 12px;
           font-weight: 900;
-          backdrop-filter: blur(8px);
+          box-shadow: 0 10px 22px rgba(88, 61, 18, .2);
         }
 
         .desktop-title {
@@ -3082,16 +3079,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             display: inline-flex;
           }
 
-          .hero-play {
-            width: 64px;
-            height: 64px;
-          }
-
           .hero-media-nav {
             width: 42px;
             height: 60px;
-            border-color: transparent;
-            background: rgba(12, 12, 15, .12);
+            border-color: rgba(182, 146, 74, .5);
+            background: linear-gradient(135deg, #f7e8b9, #d4b26a 56%, #b6924a);
+            color: var(--vy-on-gold);
           }
 
           .hero-media-nav.previous {
@@ -3240,9 +3233,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             align-items: center;
             min-height: 76px;
             padding: 10px 14px;
-            background: rgba(8, 8, 11, .94);
-            border-top: 1px solid rgba(212, 178, 106, .2);
-            box-shadow: 0 -18px 40px rgba(0, 0, 0, .34);
+            background: linear-gradient(180deg, rgba(255, 250, 240, .96), rgba(247, 239, 224, .98));
+            border-top: 1px solid rgba(212, 178, 106, .34);
+            box-shadow: 0 -12px 30px rgba(105, 75, 21, .16);
             backdrop-filter: blur(12px);
           }
 
