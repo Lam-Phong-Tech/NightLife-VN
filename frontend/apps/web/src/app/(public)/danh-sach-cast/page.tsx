@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   ChevronDown,
@@ -1100,7 +1101,7 @@ function MobileFilterSheet({
   onStore: (value: string) => void;
   onToggleCoupon: () => void;
 }) {
-  return (
+  const sheet = (
     <div className="cast-sheet-backdrop" role="presentation" onMouseDown={onClose}>
       <section
         className="cast-filter-sheet"
@@ -1199,6 +1200,8 @@ function MobileFilterSheet({
       </section>
     </div>
   );
+
+  return createPortal(sheet, document.body);
 }
 
 function FilterChipGroup({
@@ -2002,10 +2005,14 @@ const castSearchCss = `
 }
 
 .cast-filter-sheet {
-  position: relative;
-  z-index: 2;
-  width: min(420px, calc(100% - 24px));
+  position: fixed;
+  z-index: 342;
+  left: 12px;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  width: min(420px, calc(100vw - 24px));
   max-height: min(82vh, calc(100dvh - 72px));
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   border: 1px solid rgba(212, 178, 106, 0.2);
@@ -2013,7 +2020,6 @@ const castSearchCss = `
   background: #121116;
   box-shadow: 0 -20px 50px -20px rgba(0, 0, 0, 0.7);
   overflow: hidden;
-  margin-bottom: calc(10px + env(safe-area-inset-bottom));
   animation: cast-filter-sheet-in 0.28s var(--vy-motion-ease, cubic-bezier(.2, .8, .2, 1)) both;
 }
 
@@ -2493,9 +2499,12 @@ html.vy-light .cast-sheet-actions {
   }
 
   .cast-filter-sheet {
-    width: min(430px, 100%);
+    z-index: 362;
+    left: 10px;
+    right: 10px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    width: min(430px, calc(100vw - 20px));
     max-height: min(86dvh, calc(100dvh - 94px));
-    margin-bottom: calc(82px + env(safe-area-inset-bottom));
   }
 
   .cast-round-icon {
