@@ -39,6 +39,7 @@ export function CastProfileStyles() {
       .cast-section-heading,
       .cast-venue-meta,
       .cast-venue-action,
+      .cast-venue-status,
       .cast-desktop-stat-row,
       .cast-desktop-booking-actions {
         display: flex;
@@ -384,6 +385,7 @@ export function CastProfileStyles() {
         display: flex;
         align-items: center;
         gap: 15px;
+        min-height: 132px;
         color: var(--vy-text);
         text-decoration: none;
         background: linear-gradient(135deg,rgba(212,178,106,.07),rgba(255,255,255,.02));
@@ -394,6 +396,7 @@ export function CastProfileStyles() {
 
       .cast-venue-card.compact {
         gap: 13px;
+        min-height: unset;
         background: var(--vy-surface-1);
         border-color: rgba(255,255,255,.06);
         border-radius: 14px;
@@ -423,23 +426,33 @@ export function CastProfileStyles() {
       }
 
       .cast-venue-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 10px;
+        display: block;
       }
 
       .cast-venue-head strong {
+        display: block;
         color: var(--vy-text);
         font-size: 17px;
         font-weight: 650;
+        line-height: 1.26;
       }
 
       .cast-venue-card.compact .cast-venue-head strong {
         font-size: 15px;
       }
 
-      .cast-venue-head em {
+      .cast-venue-actions {
+        flex: 0 0 auto;
+        min-width: 126px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 12px;
+        margin-left: auto;
+      }
+
+      .cast-venue-status {
         display: inline-flex;
         align-items: center;
         gap: 5px;
@@ -451,10 +464,6 @@ export function CastProfileStyles() {
         font-size: 10.5px;
         font-style: normal;
         font-weight: 650;
-      }
-
-      .cast-venue-card.compact .cast-venue-head em {
-        display: none;
       }
 
       .cast-venue-copy small {
@@ -474,7 +483,9 @@ export function CastProfileStyles() {
 
       .cast-venue-action {
         flex: none;
+        justify-content: center;
         gap: 4px;
+        min-width: 126px;
         color: var(--vy-on-gold);
         background: linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a);
         border-radius: 11px;
@@ -483,9 +494,19 @@ export function CastProfileStyles() {
         font-weight: 750;
       }
 
+      .cast-venue-card.compact .cast-venue-actions {
+        min-width: auto;
+        margin-left: auto;
+      }
+
+      .cast-venue-card.compact .cast-venue-status {
+        display: none;
+      }
+
       .cast-venue-card.compact .cast-venue-action {
         color: var(--vy-gold);
         background: transparent;
+        min-width: auto;
         padding: 0;
         font-size: 11.5px;
       }
@@ -907,21 +928,6 @@ export function CastProfileStyles() {
         flex: 0 0 auto;
         min-width: 210px;
         padding: 12px 40px;
-      }
-
-      .cast-secondary-button {
-        min-height: 50px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 13px;
-        border: 1px solid var(--vy-border);
-        background: var(--vy-surface-3);
-        color: var(--vy-text);
-        padding: 0 22px;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 750;
       }
 
       .cast-desktop-booking p {

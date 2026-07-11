@@ -231,7 +231,6 @@ function VenueCard({
       <span className="cast-venue-copy">
         <span className="cast-venue-head">
           <strong>{profile.store.name}</strong>
-          <em>Đang mở</em>
         </span>
         <small>
           {profile.store.category || "Lounge"} · {area || "Khu vực đang cập nhật"}
@@ -240,9 +239,12 @@ function VenueCard({
           <span>18 cast</span>
         </span>
       </span>
-      <span className="cast-venue-action">
-        Xem quán
-        <ChevronRight size={14} strokeWidth={2.4} />
+      <span className="cast-venue-actions">
+        <span className="cast-venue-status">Đang mở</span>
+        <span className="cast-venue-action">
+          Xem quán
+          <ChevronRight size={14} strokeWidth={2.4} />
+        </span>
       </span>
     </Link>
   );

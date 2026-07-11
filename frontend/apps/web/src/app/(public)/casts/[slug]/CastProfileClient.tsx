@@ -215,7 +215,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             profile={profile}
             area={area}
             bookingHref={bookingHref}
-            storeHref={storeHref}
             variant="mobile"
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
@@ -274,7 +273,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
                   profile={profile}
                   area={area}
                   bookingHref={bookingHref}
-                  storeHref={storeHref}
                   variant="desktop"
                   onTrack={track}
                 />

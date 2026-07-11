@@ -6,7 +6,6 @@ type CastBookingCTAProps = {
   profile: CastProfile;
   area: string;
   bookingHref: string;
-  storeHref: string;
   variant: "mobile" | "desktop";
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
@@ -16,7 +15,6 @@ type CastBookingCTAProps = {
 export function CastBookingCTA({
   area,
   bookingHref,
-  storeHref,
   variant,
   isFavorite = false,
   onToggleFavorite,
@@ -46,13 +44,6 @@ export function CastBookingCTA({
       <div className="cast-desktop-booking-actions">
         <Link href={bookingHref} className="cast-booking-button" onClick={() => onTrack?.("booking", { surface: "desktop-panel" })}>
           <strong>Đặt cast này</strong>
-        </Link>
-        <Link
-          href={storeHref}
-          className="cast-secondary-button"
-          onClick={() => onTrack?.("store", { surface: "booking-secondary" })}
-        >
-          Xem quán
         </Link>
       </div>
       <p>
