@@ -1856,11 +1856,21 @@ html.vy-light .nl-reset-auth-input::placeholder {
   color: var(--vy-faint) !important;
 }
 
+.nl-booking-time-control {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
 .nl-booking-period-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin: 0;
+  border: 1px solid var(--vy-border-gold-22);
+  border-radius: 14px;
+  background: var(--vy-surface-2);
+  padding: 4px;
 }
 
 .nl-booking-period-tabs:empty {
@@ -1874,9 +1884,9 @@ html.vy-light .nl-reset-auth-input::placeholder {
   gap: 5px;
   min-width: 0;
   min-height: 32px;
-  border: 1px solid var(--vy-border-gold-22);
+  border: 0;
   border-radius: 10px;
-  background: var(--vy-surface-1);
+  background: transparent;
   color: var(--vy-text-2);
   font: inherit;
   font-size: 12px;
@@ -1894,15 +1904,14 @@ html.vy-light .nl-reset-auth-input::placeholder {
 }
 
 .nl-booking-period-tab:hover:not(:disabled) {
-  border-color: var(--vy-border-gold-40);
   background: var(--vy-gold-soft-bg);
   color: var(--vy-text);
 }
 
 .nl-booking-period-tab.is-active {
-  border-color: transparent;
   background: var(--vy-gold-grad);
   color: var(--vy-on-gold);
+  box-shadow: 0 6px 18px rgba(212, 178, 106, 0.16);
 }
 
 .nl-booking-period-tab:disabled {

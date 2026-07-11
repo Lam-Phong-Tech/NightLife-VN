@@ -2219,14 +2219,14 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           background: var(--vy-surface-2);
         }
 
-        .booking-card label.booking-field {
+        .booking-card .booking-field {
           margin: 0;
           letter-spacing: 0;
           text-transform: none;
         }
 
-        .booking-card label.booking-field.nl-booking-field-with-period-tabs {
-          min-height: 96px;
+        .booking-card .booking-field.nl-booking-field-with-period-tabs {
+          min-height: 98px;
           align-content: start;
         }
 
@@ -2403,22 +2403,30 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .booking-card .booking-field .nl-booking-ant-select.ant-select {
           min-height: 28px;
           height: 28px;
+          margin-top: 0;
+        }
+
+        .booking-card .booking-field .nl-booking-time-control {
+          gap: 5px;
           margin-top: 7px;
         }
 
         .booking-card .booking-field .nl-booking-period-tabs {
-          gap: 6px;
-          margin: 7px 0 4px;
+          gap: 3px;
+          margin: 0;
+          border-radius: 9px;
+          padding: 3px;
         }
 
         .booking-card .booking-field .nl-booking-period-tab {
-          min-height: 26px;
-          border-radius: 8px;
-          font-size: 11px;
+          min-height: 22px;
+          border-radius: 7px;
+          font-size: 10.5px;
+          padding: 0 6px;
         }
 
         .booking-card .booking-field.nl-booking-field-with-period-tabs .nl-booking-ant-select.ant-select {
-          margin-top: 2px;
+          margin-top: 0;
         }
 
         .booking-card .booking-field .nl-booking-ant-select.ant-select .ant-select-selector {

@@ -113,12 +113,10 @@ const formatBookingDateLabel = (value: dayjs.Dayjs, language: LanguageCode) => {
 const translateNode = (value: ReactNode, language: LanguageCode) =>
   typeof value === "string" ? translateText(value, language) : value;
 
-const translateSlotPeriod = (group: BookingTimeSlotGroup, language: LanguageCode) => {
-  const label = translateText(group.label, language);
-  if (!group.slots.length) return label;
+const translateSlotPeriod = (group: BookingTimeSlotGroup, language: LanguageCode) =>
+  translateText(group.label, language);
 
-  return `${label} ${group.slots.length}`;
-};
+const getDocumentBodyPopupContainer = (trigger: HTMLElement) => trigger.ownerDocument.body;
 
 export function BookingDateTimeFields({
   dateLabel = "Ngày",
@@ -140,6 +138,7 @@ export function BookingDateTimeFields({
   disabled = false,
 }: BookingDateTimeFieldsProps) {
   const activeLanguage = useActiveLanguage();
+  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
   const currentDate = parseDate(dateValue) ?? parseDate(minDate) ?? dayjs();
   const min = parseDate(minDate) ?? dayjs();
   const max = parseDate(maxDate) ?? min.add(14, "day");
@@ -199,7 +198,7 @@ export function BookingDateTimeFields({
           .filter(Boolean)
           .join(" ")}
       >
-        <label className={fieldClassName}>
+        <div className={fieldClassName}>
           <span className={labelClassName}>{localizedDateLabel}</span>
           <DatePicker
             allowClear={false}
@@ -210,63 +209,68 @@ export function BookingDateTimeFields({
               date ? date.isBefore(min, "day") || date.isAfter(max, "day") : false
             }
             format={(value) => formatBookingDateLabel(value, activeLanguage)}
-            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+            getPopupContainer={getDocumentBodyPopupContainer}
             inputReadOnly
             maxDate={max}
             minDate={min}
             onChange={(nextDate) => {
               if (!nextDate) return;
               onDateChange(nextDate.format("YYYY-MM-DD"));
+              setDatePickerOpen(false);
             }}
+            onOpenChange={(open) => setDatePickerOpen(open && !disabled)}
+            open={isDatePickerOpen && !disabled}
             placeholder={selectDateText}
             popupClassName="nl-booking-ant-popup"
             value={currentDate}
           />
-        </label>
+        </div>
 
-        <label className={timeFieldClassName}>
+        <div className={timeFieldClassName}>
           <span className={labelClassName}>{localizedTimeLabel}</span>
-          <div
-            className="nl-booking-period-tabs"
-            role="tablist"
-            aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
-          >
-            {periodTabs.map((group) => {
-              const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
-              const isDisabled = disabled || loadingTimes || !group.slots.length;
+          <div className="nl-booking-time-control">
+            <div
+              className="nl-booking-period-tabs"
+              role="tablist"
+              aria-label={translateText("Chọn buổi đặt bàn", activeLanguage)}
+            >
+              {periodTabs.map((group) => {
+                const isActive = Boolean(group.slots.length) && group.key === activeGroup?.key;
+                const isDisabled = disabled || loadingTimes || !group.slots.length;
 
-              return (
-                <button
-                  key={group.key}
-                  type="button"
-                  className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
-                  aria-selected={isActive}
-                  aria-disabled={isDisabled}
-                  disabled={isDisabled}
-                  role="tab"
-                  onClick={() => selectPeriod(group.key)}
-                >
-                  {translateSlotPeriod(group, activeLanguage)}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={group.key}
+                    type="button"
+                    className={`nl-booking-period-tab${isActive ? " is-active" : ""}`}
+                    aria-selected={isActive}
+                    aria-disabled={isDisabled}
+                    disabled={isDisabled}
+                    role="tab"
+                    onClick={() => selectPeriod(group.key)}
+                  >
+                    {translateSlotPeriod(group, activeLanguage)}
+                  </button>
+                );
+              })}
+            </div>
+            <Select
+              className="nl-booking-ant-control nl-booking-ant-select"
+              disabled={shouldDisableTime}
+              getPopupContainer={getDocumentBodyPopupContainer}
+              loading={loadingTimes}
+              notFoundContent={loadingTimes ? loadingTimesText : localizedEmptyMessage}
+              onChange={onTimeChange}
+              options={options}
+              placeholder={loadingTimes ? loadingTimesText : selectTimeText}
+              popupClassName="nl-booking-select-popup"
+              value={selectedTimeValue}
+            />
           </div>
-          <Select
-            className="nl-booking-ant-control nl-booking-ant-select"
-            disabled={shouldDisableTime}
-            getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
-            loading={loadingTimes}
-            notFoundContent={loadingTimes ? loadingTimesText : localizedEmptyMessage}
-            onChange={onTimeChange}
-            options={options}
-            placeholder={loadingTimes ? loadingTimesText : selectTimeText}
-            popupClassName="nl-booking-select-popup"
-            value={selectedTimeValue}
-          />
           {!loadingTimes && !activeTimeOptions.length ? (
             <span className="nl-booking-empty-message">{localizedEmptyMessage}</span>
           ) : null}
-        </label>
+        </div>
       </div>
     </ConfigProvider>
   );
