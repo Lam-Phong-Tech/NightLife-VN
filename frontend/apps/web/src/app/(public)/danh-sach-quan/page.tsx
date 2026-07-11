@@ -1832,6 +1832,79 @@ const venueSearchCss = `
     color: var(--vy-on-gold);
   }
 
+  html.vy-light .venue-filter-backdrop {
+    background: rgba(35, 27, 14, .32);
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-filter-sheet {
+    border-color: rgba(150, 116, 52, .2);
+    background: linear-gradient(180deg, #fffaf1 0%, #f7f0e4 100%);
+    box-shadow: 0 -22px 54px -28px rgba(62, 42, 16, .46);
+  }
+
+  html.vy-light .venue-filter-handle {
+    background: rgba(150, 116, 52, .24);
+  }
+
+  html.vy-light .venue-filter-head,
+  html.vy-light .venue-filter-actions {
+    border-color: rgba(150, 116, 52, .14);
+  }
+
+  html.vy-light .venue-filter-head h2,
+  html.vy-light .venue-filter-group h3 {
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-filter-head p {
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-filter-head button,
+  html.vy-light .venue-filter-reset {
+    border-color: rgba(150, 116, 52, .2);
+    background: rgba(255, 255, 255, .82);
+    color: #8f6a2a;
+    box-shadow: 0 12px 28px -22px rgba(68, 48, 18, .48);
+  }
+
+  html.vy-light .venue-filter-scroll {
+    scrollbar-color: rgba(150, 116, 52, .46) rgba(150, 116, 52, .12);
+  }
+
+  html.vy-light .venue-filter-scroll::-webkit-scrollbar-thumb {
+    background: rgba(150, 116, 52, .46);
+  }
+
+  html.vy-light .venue-filter-scroll::-webkit-scrollbar-track {
+    background: rgba(150, 116, 52, .12);
+  }
+
+  html.vy-light .venue-filter-group button {
+    border-color: rgba(150, 116, 52, .18);
+    background: rgba(255, 255, 255, .86);
+    color: #6f6658;
+    box-shadow: 0 10px 24px -22px rgba(68, 48, 18, .44);
+  }
+
+  html.vy-light .venue-filter-group button.is-active {
+    border-color: transparent;
+    background: linear-gradient(135deg, #ffe9a8, #d7ae4b);
+    color: #241a0a;
+    box-shadow: 0 14px 28px -20px rgba(126, 86, 18, .62);
+  }
+
+  html.vy-light .venue-filter-actions {
+    background: rgba(255, 250, 241, .94);
+    box-shadow: 0 -12px 28px -24px rgba(68, 48, 18, .38);
+  }
+
+  html.vy-light .venue-filter-apply {
+    background: linear-gradient(135deg, #ffe9a8 0%, #d7ae4b 66%, #b98f35 100%);
+    color: #241a0a;
+  }
+
   @media (max-width: 767px) {
     .venue-search-page {
       background: var(--vy-bg);
