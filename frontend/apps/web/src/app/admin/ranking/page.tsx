@@ -528,7 +528,7 @@ function AdminRankingsClient() {
       fetchRankings();
     } catch (error: any) {
       console.error(error);
-      showToast('Lỗi khi lưu ranking. Vui lòng thử lại.', 'error');
+      showToast(error?.message || 'Lỗi khi lưu ranking. Vui lòng thử lại.', 'error');
     } finally {
       setIsSaving(false);
     }
