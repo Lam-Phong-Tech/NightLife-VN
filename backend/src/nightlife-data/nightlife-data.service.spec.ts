@@ -476,7 +476,10 @@ describe('NightlifeDataService', () => {
             {
               area: {
                 is: {
-                  code: { startsWith: 'hn-' },
+                  OR: [
+                    { code: { startsWith: 'hn-' } },
+                    { code: { startsWith: 'hanoi-' } },
+                  ],
                   deletedAt: null,
                   status: 'ACTIVE',
                 },
