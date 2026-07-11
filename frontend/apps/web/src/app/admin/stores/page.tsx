@@ -288,6 +288,10 @@ function AdminStoresContent() {
   const filterCity = searchParams.get('city') || '';
   const filterCategory = searchParams.get('category') || '';
   
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'CLUB', city: 'Ho Chi Minh City', address: '', mapUrl: '', status: 'ACTIVE', phone: '', description: '' });
   const [partnerAccountId, setPartnerAccountId] = useState('');
@@ -377,7 +381,17 @@ function AdminStoresContent() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, filterCity, filterCategory]);
+  }, [search, filterCity, filterCategory, filterStatus]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (pendingAddress && wards.length > 0 && selProvince) {
@@ -887,6 +901,17 @@ function AdminStoresContent() {
     
     if (filterCategory && v.category !== filterCategory) return false;
     if (search && !v.name?.toLowerCase().includes(search.toLowerCase())) return false;
+
+    if (filterStatus !== 'all') {
+      const getNormalizedStatus = (s: string) => {
+        if (!s) return 'ACTIVE';
+        if (s === 'ACTIVE' || s === 'active' || s === 'Đang hoạt động') return 'ACTIVE';
+        if (s === 'DRAFT' || s === 'draft' || s === 'Nháp') return 'DRAFT';
+        if (s === 'SUSPENDED' || s === 'hidden' || s === 'Đang ẩn') return 'SUSPENDED';
+        return s;
+      };
+      if (getNormalizedStatus(v.status) !== filterStatus) return false;
+    }
     return true;
   });
   const paginatedStores = paginateAdminItems(filteredStores, currentPage);
@@ -906,24 +931,104 @@ function AdminStoresContent() {
             style={{ background: 'transparent', border: 'none', color: '#f3f0ea', fontSize: '12.5px', outline: 'none', width: '100%' }}
           />
         </div>
-        <select
-          value={filterCategory}
-          onChange={(e) => {
-            const params = new URLSearchParams(searchParams.toString());
-            if (e.target.value) params.set('category', e.target.value);
-            else params.delete('category');
-            router.push(`${pathname}?${params.toString()}`);
-          }}
-          style={{ appearance: 'none', display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: '#c5c0b6', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: '10px', padding: '9px 13px', cursor: 'pointer', outline: 'none' }}
-        >
-          <option value="" style={{ background: '#1a191f' }}>Tất cả loại hình</option>
-          <option value="CLUB" style={{ background: '#1a191f' }}>Club</option>
-          <option value="LOUNGE" style={{ background: '#1a191f' }}>Lounge</option>
-          <option value="BAR" style={{ background: '#1a191f' }}>Bar</option>
-          <option value="GIRLS_BAR" style={{ background: '#1a191f' }}>Girls Bar</option>
-          <option value="KARAOKE" style={{ background: '#1a191f' }}>Karaoke</option>
-          <option value="MASSAGE_SPA" style={{ background: '#1a191f' }}>Massage & Spa</option>
-        </select>
+
+        {/* Status Filter Dropdown */}
+        <div ref={statusDropdownRef} style={{ position: 'relative' }}>
+          <div 
+            onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '7px', 
+              fontSize: '12px', 
+              color: '#c5c0b6', 
+              background: 'rgba(255,255,255,.04)', 
+              border: '1px solid rgba(255,255,255,.08)', 
+              borderRadius: '10px', 
+              padding: '9px 13px', 
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            <span>
+              {filterStatus === 'all' && 'Tất cả trạng thái'}
+              {filterStatus === 'ACTIVE' && 'Đang hoạt động'}
+              {filterStatus === 'DRAFT' && 'Nháp'}
+              {filterStatus === 'SUSPENDED' && 'Đang ẩn'}
+            </span>
+            <svg 
+              style={{ marginLeft: '4px', transform: statusDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} 
+              width="12" 
+              height="12" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="#8c8679" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+
+          {statusDropdownOpen && (
+            <div 
+              style={{ 
+                position: 'absolute', 
+                top: '100%', 
+                left: 0, 
+                marginTop: '8px', 
+                background: '#17161c', 
+                border: '1px solid rgba(255,255,255,.08)', 
+                borderRadius: '12px', 
+                padding: '6px', 
+                zIndex: 100, 
+                minWidth: '160px', 
+                boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)' 
+              }}
+            >
+              {[
+                { v: 'all', l: 'Tất cả trạng thái' },
+                { v: 'ACTIVE', l: 'Đang hoạt động' },
+                { v: 'DRAFT', l: 'Nháp' },
+                { v: 'SUSPENDED', l: 'Đang ẩn' }
+              ].map(opt => (
+                <div 
+                  key={opt.v}
+                  onClick={() => {
+                    setFilterStatus(opt.v);
+                    setStatusDropdownOpen(false);
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    borderRadius: '8px',
+                    color: filterStatus === opt.v ? '#d4b26a' : '#c5c0b6',
+                    background: filterStatus === opt.v ? 'rgba(212,178,106,.08)' : 'transparent',
+                    cursor: 'pointer',
+                    fontWeight: filterStatus === opt.v ? 600 : 400,
+                    transition: 'background 0.15s, color 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filterStatus !== opt.v) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,.04)';
+                      e.currentTarget.style.color = '#f3f0ea';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filterStatus !== opt.v) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#c5c0b6';
+                    }
+                  }}
+                >
+                  {opt.l}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
 
         <div style={{ flex: 1 }}></div>
         <span onClick={openNewDrawer} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)', padding: '10px 17px', borderRadius: '10px', cursor: 'pointer' }}>
