@@ -781,16 +781,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="nl-admin-topbar-spacer" style={{ flex: 1 }}></div>
 
           <div className="nl-admin-topbar-controls">
-            {pathname !== '/admin/permissions' && (
-              <>
-                <React.Suspense fallback={<div />}>
-                  <TopCategoryFilter />
-                </React.Suspense>
+            {pathname !== '/admin/permissions' && pathname !== '/admin/ranking' && (
+              <React.Suspense fallback={<div />}>
+                <TopCategoryFilter />
+              </React.Suspense>
+            )}
 
-                <React.Suspense fallback={<div />}>
-                  <TopRegionFilter />
-                </React.Suspense>
-              </>
+            {pathname !== '/admin/permissions' && (
+              <React.Suspense fallback={<div />}>
+                <TopRegionFilter />
+              </React.Suspense>
             )}
           </div>
           
