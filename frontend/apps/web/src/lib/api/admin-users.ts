@@ -30,36 +30,36 @@ export const getAdminUsers = async (params: {
   if (params.role) query.set('role', params.role);
   if (params.status) query.set('status', params.status);
 
-  return apiClient<AdminUserListResponse>(`/api/backend/admin/users?${query.toString()}`);
+  return apiClient<AdminUserListResponse>(`/admin/users?${query.toString()}`);
 };
 
 export const createAdminUser = async (data: any) => {
-  return apiClient<AdminUser>('/api/backend/admin/users', { method: 'POST', data });
+  return apiClient<AdminUser>('/admin/users', { method: 'POST', data });
 };
 
 export const updateAdminUser = async (id: string, data: { displayName: string; email: string }) => {
-  return apiClient<AdminUser>(`/api/backend/admin/users/${id}`, { method: 'PATCH', data });
+  return apiClient<AdminUser>(`/admin/users/${id}`, { method: 'PATCH', data });
 };
 
 export const changeAdminUserPassword = async (id: string, data: { password: string }) => {
-  return apiClient(`/api/backend/admin/users/${id}/password`, { method: 'PATCH', data });
+  return apiClient(`/admin/users/${id}/password`, { method: 'PATCH', data });
 };
 
 export const disableAdminUser = async (id: string) => {
-  return apiClient(`/api/backend/admin/users/${id}`, { method: 'DELETE' });
+  return apiClient(`/admin/users/${id}`, { method: 'DELETE' });
 };
 
 export const restoreAdminUser = async (id: string) => {
-  return apiClient(`/api/backend/admin/users/${id}/restore`, { method: 'POST', data: {} });
+  return apiClient(`/admin/users/${id}/restore`, { method: 'POST', data: {} });
 };
 
 export const hardDeleteAdminUser = async (id: string) => {
-  return apiClient(`/api/backend/admin/users/${id}/hard`, { method: 'DELETE' });
+  return apiClient(`/admin/users/${id}/hard`, { method: 'DELETE' });
 };
 
 export const searchStoresForAdmin = async (q?: string, forRole?: string) => {
   const query = new URLSearchParams();
   if (q) query.set('q', q);
   if (forRole) query.set('forRole', forRole);
-  return apiClient<any[]>(`/api/backend/admin/users/stores/search?${query.toString()}`);
+  return apiClient<any[]>(`/admin/users/stores/search?${query.toString()}`);
 };
