@@ -59,16 +59,17 @@ export function CastProfileStyles() {
         height: 38px;
         min-width: 38px;
         min-height: 38px;
-        border: 1px solid rgba(212,178,106,.32);
+        border: 1px solid rgba(182,146,74,.48);
         border-radius: 999px;
-        background: rgba(12,12,15,.42);
-        color: var(--vy-text);
+        background: linear-gradient(135deg, rgba(244,227,180,.98), rgba(212,178,106,.96) 58%, rgba(182,146,74,.95));
+        color: var(--vy-on-gold);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         backdrop-filter: blur(8px);
         text-decoration: none;
         padding: 0;
+        box-shadow: 0 12px 26px rgba(79,57,19,.22);
       }
 
       .cast-icon-button {
@@ -77,7 +78,7 @@ export function CastProfileStyles() {
       }
 
       .cast-icon-button.is-active {
-        color: #e0729e;
+        color: var(--vy-on-gold);
       }
 
       .cast-hero-media-nav {
@@ -92,10 +93,10 @@ export function CastProfileStyles() {
         top: 47%;
         width: 38px;
         height: 38px;
-        border: 1px solid var(--vy-border-gold-32);
+        border: 1px solid rgba(182,146,74,.48);
         border-radius: 999px;
-        background: rgba(12,12,15,.48);
-        color: var(--vy-text);
+        background: linear-gradient(135deg, rgba(244,227,180,.98), rgba(212,178,106,.96) 58%, rgba(182,146,74,.95));
+        color: var(--vy-on-gold);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -104,7 +105,7 @@ export function CastProfileStyles() {
         pointer-events: auto;
         transform: translateY(-50%);
         backdrop-filter: blur(8px);
-        box-shadow: 0 12px 26px rgba(0,0,0,.28);
+        box-shadow: 0 12px 26px rgba(79,57,19,.24);
       }
 
       .cast-hero-media-nav .previous {
@@ -636,9 +637,9 @@ export function CastProfileStyles() {
         min-height: 76px;
         margin: 0;
         padding: 12px 16px;
-        background: rgba(8,8,11,.97);
-        border-top: 1px solid rgba(212,178,106,.18);
-        box-shadow: 0 -18px 40px rgba(0,0,0,.34);
+        background: rgba(255,250,240,.98);
+        border-top: 1px solid rgba(212,178,106,.30);
+        box-shadow: 0 -16px 34px rgba(80,61,27,.14);
         backdrop-filter: blur(12px);
         transform: translateZ(0);
         pointer-events: auto;
@@ -649,18 +650,20 @@ export function CastProfileStyles() {
         height: 46px;
         flex: none;
         border-radius: 13px;
-        border: 1px solid var(--vy-border);
-        background: var(--vy-surface-2);
-        color: #e0729e;
+        border: 1px solid rgba(212,178,106,.45);
+        background: #fffaf0;
+        color: #d4a744;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        box-shadow: 0 10px 20px rgba(80,61,27,.10);
       }
 
       .cast-booking-favorite.is-active {
-        border-color: rgba(224,114,158,.38);
-        background: rgba(224,114,158,.12);
+        border-color: rgba(182,146,74,.55);
+        background: linear-gradient(135deg,#f4e3b4,#d4b26a 58%,#b6924a);
+        color: var(--vy-on-gold);
       }
 
       .cast-booking-button {
