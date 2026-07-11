@@ -15,6 +15,7 @@ import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { contentApi, type CmsContentItem } from "@/lib/api/content";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
 import { translateText } from "@/lib/i18n/client-translations";
+import { formatVndByLanguage } from "@/lib/i18n/currency-format";
 import {
   intlLocaleByLanguage,
   useActiveLanguage,
@@ -64,20 +65,15 @@ type CouponBannerMetadata = {
   position?: string;
 };
 
-const formatVnd = (value?: number | null) => {
-  if (!value) {
-    return "0đ";
-  }
-
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
-};
-
-const formatDiscount = (coupon: Pick<PublicCoupon, "discountType" | "discountValue">) => {
+const formatDiscount = (
+  coupon: Pick<PublicCoupon, "discountType" | "discountValue">,
+  language: LanguageCode = "vi",
+) => {
   if (coupon.discountType === "PERCENT") {
     return `-${coupon.discountValue}%`;
   }
 
-  return `-${formatVnd(coupon.discountValue)}`;
+  return `-${formatVndByLanguage(coupon.discountValue, language)}`;
 };
 
 const formatShortDate = (value?: string | null, language: LanguageCode = "vi") => {
@@ -219,9 +215,7 @@ const couponCopy = (language: LanguageCode) =>
     vi: {
       validUntil: "HSD",
       viewOffer: "Xem ưu đãi",
-      deal: "ưu đãi",
       page: "Trang",
-      showing: "Hiển thị",
       previous: "Trước",
       next: "Sau",
       loadMore: "Xem thêm",
@@ -229,9 +223,7 @@ const couponCopy = (language: LanguageCode) =>
     en: {
       validUntil: "Valid until",
       viewOffer: "View offer",
-      deal: "deals",
       page: "Page",
-      showing: "Showing",
       previous: "Previous",
       next: "Next",
       loadMore: "Load more",
@@ -239,9 +231,7 @@ const couponCopy = (language: LanguageCode) =>
     ja: {
       validUntil: "有効期限",
       viewOffer: "特典を見る",
-      deal: "特典",
       page: "ページ",
-      showing: "表示",
       previous: "前へ",
       next: "次へ",
       loadMore: "もっと見る",
@@ -249,9 +239,7 @@ const couponCopy = (language: LanguageCode) =>
     ko: {
       validUntil: "유효기간",
       viewOffer: "혜택 보기",
-      deal: "혜택",
       page: "페이지",
-      showing: "표시",
       previous: "이전",
       next: "다음",
       loadMore: "더 보기",
@@ -259,9 +247,7 @@ const couponCopy = (language: LanguageCode) =>
     zh: {
       validUntil: "有效期至",
       viewOffer: "查看优惠",
-      deal: "优惠",
       page: "页",
-      showing: "显示",
       previous: "上一页",
       next: "下一页",
       loadMore: "查看更多",
@@ -269,34 +255,16 @@ const couponCopy = (language: LanguageCode) =>
   })[language];
 
 const formatCouponPagination = ({
-  start,
-  end,
-  total,
   page,
   totalPages,
   language,
 }: {
-  start: number;
-  end: number;
-  total: number;
   page: number;
   totalPages: number;
   language: LanguageCode;
 }) => {
   const copy = couponCopy(language);
-
-  switch (language) {
-    case "en":
-      return `${copy.showing} ${start}-${end} / ${total} ${copy.deal} · ${copy.page} ${page}/${totalPages}`;
-    case "ja":
-      return `${total}件中 ${start}-${end}件を表示 · ${copy.page} ${page}/${totalPages}`;
-    case "ko":
-      return `${total}개 중 ${start}-${end} 표시 · ${copy.page} ${page}/${totalPages}`;
-    case "zh":
-      return `${copy.showing} ${start}-${end} / ${total} 个${copy.deal} · 第 ${page}/${totalPages} ${copy.page}`;
-    default:
-      return `${copy.showing} ${start}-${end} / ${total} ${copy.deal} · ${copy.page} ${page}/${totalPages}`;
-  }
+  return `${copy.page} ${page}/${totalPages}`;
 };
 
 function CouponDealCard({
@@ -334,7 +302,7 @@ function CouponDealCard({
             {copy.validUntil} {formatShortDate(coupon.endsAt, language)}
           </span>
         </span>
-        <strong>{formatDiscount(coupon)}</strong>
+        <strong>{formatDiscount(coupon, language)}</strong>
         <span className="coupon-title">{couponName}</span>
         <span className="coupon-place">
           <MapPin size={13} />
@@ -516,7 +484,7 @@ export default function Page() {
               <strong>{featuredCoupon ? readableName(featuredCoupon.name) : "Ưu đãi mới"}</strong>
               <p>
                 {featuredCoupon
-                  ? `${readableName(featuredCoupon.store.name)} · ${formatDiscount(featuredCoupon)}`
+                  ? `${readableName(featuredCoupon.store.name)} · ${formatDiscount(featuredCoupon, activeLanguage)}`
                   : "Các ưu đãi sẽ được cập nhật liên tục theo khu vực."}
               </p>
             </div>
@@ -619,9 +587,6 @@ export default function Page() {
               <nav aria-label="Phân trang ưu đãi" className="coupon-pagination">
                 <span>
                   {formatCouponPagination({
-                    start: couponStartIndex + 1,
-                    end: Math.min(couponStartIndex + couponPageSize, filteredCoupons.length),
-                    total: filteredCoupons.length,
                     page: currentCouponPage,
                     totalPages,
                     language: activeLanguage,
@@ -914,9 +879,28 @@ export default function Page() {
         }
 
         .note-card {
+          position: relative;
           display: flex;
+          align-items: flex-start;
           gap: 12px;
-          color: #d4b26a;
+          border-color: rgba(244, 211, 141, .46);
+          background:
+            linear-gradient(135deg, rgba(212, 178, 106, .22), rgba(255, 122, 154, .09)),
+            rgba(255, 255, 255, .055);
+          color: #f6d77a;
+          box-shadow: 0 20px 44px -30px rgba(212, 178, 106, .45);
+        }
+
+        .note-card svg {
+          flex: none;
+          color: #f6d77a;
+          filter: drop-shadow(0 0 10px rgba(244, 211, 141, .32));
+        }
+
+        .note-card p {
+          color: #f2dfb2;
+          font-weight: 760;
+          line-height: 1.55;
         }
 
         .coupon-results {
@@ -1262,6 +1246,25 @@ export default function Page() {
           background:
             linear-gradient(155deg, rgba(168, 124, 52, .18), rgba(255, 255, 255, .84) 52%, rgba(194, 81, 126, .08)),
             rgba(255, 255, 255, .82);
+        }
+
+        html.vy-light .note-card {
+          border-color: rgba(168, 124, 52, .48);
+          background:
+            linear-gradient(135deg, rgba(236, 199, 116, .32), rgba(255, 255, 255, .9) 48%, rgba(194, 81, 126, .12)),
+            #fffaf0;
+          color: #8a641f;
+          box-shadow: 0 22px 48px -34px rgba(98, 67, 18, .5);
+        }
+
+        html.vy-light .note-card svg {
+          color: #a77720;
+          filter: drop-shadow(0 0 8px rgba(168, 124, 52, .18));
+        }
+
+        html.vy-light .note-card p {
+          color: #4f3b1f;
+          font-weight: 800;
         }
 
         html.vy-light .panel-head b,
