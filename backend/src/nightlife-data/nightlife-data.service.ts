@@ -1230,12 +1230,14 @@ export class NightlifeDataService {
             ? {
                 OR: [
                   {
-                    city:
-                      cityCode === 'hcm'
-                        ? 'Ho Chi Minh City'
-                        : cityCode === 'hn'
-                          ? 'Hanoi'
-                          : cityCode,
+                    city: {
+                      in:
+                        cityCode === 'hcm'
+                          ? ['Ho Chi Minh City', 'Hồ Chí Minh']
+                          : cityCode === 'hn'
+                            ? ['Hanoi', 'Hà Nội']
+                            : [cityCode],
+                    },
                   },
                   { area: { is: { ...this.buildMvpAreaCodeWhere(cityCode) } } },
                 ],
@@ -1312,12 +1314,14 @@ export class NightlifeDataService {
                   ? {
                       OR: [
                         {
-                          city:
-                            cityCode === 'hcm'
-                              ? 'Ho Chi Minh City'
-                              : cityCode === 'hn'
-                                ? 'Hanoi'
-                                : cityCode,
+                          city: {
+                            in:
+                              cityCode === 'hcm'
+                                ? ['Ho Chi Minh City', 'Hồ Chí Minh']
+                                : cityCode === 'hn'
+                                  ? ['Hanoi', 'Hà Nội']
+                                  : [cityCode],
+                          },
                         },
                         {
                           area: {
@@ -12453,6 +12457,11 @@ export class NightlifeDataService {
 
   private buildMvpAreaCodeWhere(cityCode?: string): Prisma.AreaWhereInput {
     if (cityCode) {
+      if (cityCode === 'hn') {
+        return {
+          OR: [{ code: { startsWith: 'hn-' } }, { code: { startsWith: 'hanoi-' } }],
+        };
+      }
       return { code: { startsWith: `${cityCode}-` } };
     }
 
@@ -18367,12 +18376,14 @@ export class NightlifeDataService {
         where.store = {
           OR: [
             {
-              city:
-                query.cityCode === 'hcm'
-                  ? 'Ho Chi Minh City'
-                  : query.cityCode === 'hn'
-                    ? 'Hanoi'
-                    : query.cityCode,
+              city: {
+                in:
+                  query.cityCode === 'hcm'
+                    ? ['Ho Chi Minh City', 'Hồ Chí Minh']
+                    : query.cityCode === 'hn'
+                      ? ['Hanoi', 'Hà Nội']
+                      : [query.cityCode],
+              },
             },
             { area: { is: { ...this.buildMvpAreaCodeWhere(query.cityCode) } } },
           ],

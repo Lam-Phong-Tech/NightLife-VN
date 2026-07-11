@@ -82,7 +82,7 @@ export class StorageService implements OnModuleInit {
       options.purpose !== undefined &&
       GLOBAL_PUBLIC_UPLOAD_PURPOSES.has(options.purpose);
 
-    if (options.userRole === 'SUPERADMIN' || options.userRole === 'ADMIN' || options.userRole === 'OPERATOR') {
+    if (options.userRole === 'SUPER_ADMIN' || options.userRole === 'ADMIN' || options.userRole === 'OPERATOR') {
       if (
         access === MediaAccess.PUBLIC &&
         !hasScopedPublicTarget &&
