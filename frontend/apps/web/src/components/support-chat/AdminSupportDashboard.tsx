@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Search, Send } from 'lucide-react';
 
-import { getAuthUser, getValidAuthToken } from '@/lib/auth/session';
+import { getAuthUser, getAuthSessionToken } from '@/lib/auth/session';
 import { getSupportSocketConfig, getApiBaseUrl } from "@/lib/socket-config";
 
 export function AdminSupportDashboard() {
@@ -42,7 +42,7 @@ export function AdminSupportDashboard() {
     setSocket(newSocket);
 
     // Initial load pending tickets via REST API
-    const token = getValidAuthToken();
+    const token = getAuthSessionToken();
     fetch(`${getApiBaseUrl()}/api/support/pending`, {
       headers: {
         'Authorization': `Bearer ${token}`
