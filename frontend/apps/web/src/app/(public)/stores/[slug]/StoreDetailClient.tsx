@@ -1461,8 +1461,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       <style>{`
         .store-detail-page {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
-          --store-mobile-cta-height: 56px;
-          --store-mobile-cta-gap: 10px;
+          --store-mobile-cta-height: 76px;
           min-height: 100vh;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -3043,13 +3042,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             padding-bottom: calc(
               var(--store-mobile-nav-height) +
               var(--store-mobile-cta-height) +
-              var(--store-mobile-cta-gap) +
-              24px
+              18px
             );
           }
 
           .nl-page-content:has(.store-detail-page) {
-            scroll-padding-bottom: calc(164px + env(safe-area-inset-bottom)) !important;
+            scroll-padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
           }
 
           .detail-shell {
@@ -3236,16 +3234,19 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .mobile-cta {
             position: fixed;
-            left: max(12px, env(safe-area-inset-left));
-            right: max(12px, env(safe-area-inset-right));
-            bottom: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-gap));
+            left: 0;
+            right: 0;
+            bottom: var(--store-mobile-nav-height);
             z-index: 70;
             display: grid;
             grid-template-columns: minmax(0, 1fr);
             align-items: center;
             min-height: var(--store-mobile-cta-height);
-            padding: 0;
-            pointer-events: none;
+            padding: 10px 12px;
+            background: color-mix(in srgb, var(--vy-bg) 94%, #f0dda8 6%);
+            border-top: 1px solid rgba(212, 178, 106, .34);
+            box-shadow: 0 -12px 30px rgba(105, 75, 21, .16);
+            backdrop-filter: blur(14px);
           }
 
           .mobile-cta div span,
@@ -3267,11 +3268,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .mobile-cta .primary-action {
-            min-height: var(--store-mobile-cta-height);
+            min-height: 52px;
             padding: 0 14px;
             width: 100%;
             border-radius: 8px;
-            box-shadow: 0 12px 28px rgba(105, 75, 21, .2);
+            box-shadow: 0 10px 22px rgba(105, 75, 21, .18);
             pointer-events: auto;
           }
 
