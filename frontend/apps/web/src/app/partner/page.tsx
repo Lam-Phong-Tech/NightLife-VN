@@ -13,6 +13,7 @@ import {
   Home,
   ImagePlus,
   LogOut,
+  Moon,
   QrCode,
   ReceiptText,
   RefreshCcw,
@@ -20,6 +21,7 @@ import {
   Send,
   Settings,
   ShieldCheck,
+  Sun,
   TicketCheck,
   TrendingUp,
   Upload,
@@ -35,28 +37,105 @@ import { billApi } from '@/lib/api/bills';
 import { clearAuthSession } from '@/lib/auth/session';
 
 const colors = {
-  bg: '#0c0c0f',
-  surface1: 'rgba(255,255,255,.035)',
-  surface2: 'rgba(255,255,255,.04)',
-  surface3: 'rgba(255,255,255,.05)',
-  navBg: 'rgba(8,8,11,.9)',
-  borderSoft: 'rgba(255,255,255,.06)',
-  borderHair: 'rgba(255,255,255,.08)',
-  borderGold12: 'rgba(212,178,106,.18)',
-  borderGold22: 'rgba(212,178,106,.22)',
-  borderGold32: 'rgba(212,178,106,.32)',
-  borderGold40: 'rgba(212,178,106,.4)',
-  text: '#f3f0ea',
-  text2: '#c5c0b6',
-  muted: '#8c8679',
-  onGold: '#241a0a',
-  gold: '#d4b26a',
-  goldBright: '#e3c27e',
-  goldPale: '#f0dda8',
-  goldGrad: 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
-  danger: '#ffb4a8',
-  success: '#8de6b0',
-  neonPink: '#e0729e',
+  bg: 'var(--partner-bg, #0c0c0f)',
+  surface1: 'var(--partner-surface-1, rgba(255,255,255,.035))',
+  surface2: 'var(--partner-surface-2, rgba(255,255,255,.04))',
+  surface3: 'var(--partner-surface-3, rgba(255,255,255,.05))',
+  navBg: 'var(--partner-nav-bg, rgba(8,8,11,.9))',
+  headerBg: 'var(--partner-header-bg, rgba(12,12,15,.72))',
+  popoverBg: 'var(--partner-popover-bg, linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98)))',
+  activeControlBg: 'var(--partner-active-control-bg, rgba(212,178,106,.16))',
+  borderSoft: 'var(--partner-border-soft, rgba(255,255,255,.06))',
+  borderHair: 'var(--partner-border-hair, rgba(255,255,255,.08))',
+  borderGold12: 'var(--partner-border-gold-12, rgba(212,178,106,.18))',
+  borderGold22: 'var(--partner-border-gold-22, rgba(212,178,106,.22))',
+  borderGold32: 'var(--partner-border-gold-32, rgba(212,178,106,.32))',
+  borderGold40: 'var(--partner-border-gold-40, rgba(212,178,106,.4))',
+  text: 'var(--partner-text, #f3f0ea)',
+  text2: 'var(--partner-text-2, #c5c0b6)',
+  muted: 'var(--partner-muted, #8c8679)',
+  onGold: 'var(--partner-on-gold, #241a0a)',
+  gold: 'var(--partner-gold, #d4b26a)',
+  goldBright: 'var(--partner-gold-bright, #e3c27e)',
+  goldPale: 'var(--partner-gold-pale, #f0dda8)',
+  goldGrad: 'var(--partner-gold-grad, linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a))',
+  danger: 'var(--partner-danger, #ffb4a8)',
+  success: 'var(--partner-success, #8de6b0)',
+  neonPink: 'var(--partner-neon-pink, #e0729e)',
+};
+
+type PartnerTheme = 'dark' | 'light';
+type PartnerThemeVariables = React.CSSProperties & Record<`--partner-${string}`, string>;
+
+const partnerThemeStorageKey = 'vy-user-theme';
+
+const partnerDarkThemeVariables: PartnerThemeVariables = {
+  '--partner-bg': '#0c0c0f',
+  '--partner-surface-1': 'rgba(255,255,255,.035)',
+  '--partner-surface-2': 'rgba(255,255,255,.04)',
+  '--partner-surface-3': 'rgba(255,255,255,.05)',
+  '--partner-nav-bg': 'rgba(8,8,11,.9)',
+  '--partner-header-bg': 'rgba(12,12,15,.72)',
+  '--partner-popover-bg': 'linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98))',
+  '--partner-active-control-bg': 'rgba(212,178,106,.16)',
+  '--partner-border-soft': 'rgba(255,255,255,.06)',
+  '--partner-border-hair': 'rgba(255,255,255,.08)',
+  '--partner-border-gold-12': 'rgba(212,178,106,.18)',
+  '--partner-border-gold-22': 'rgba(212,178,106,.22)',
+  '--partner-border-gold-32': 'rgba(212,178,106,.32)',
+  '--partner-border-gold-40': 'rgba(212,178,106,.4)',
+  '--partner-text': '#f3f0ea',
+  '--partner-text-2': '#c5c0b6',
+  '--partner-muted': '#8c8679',
+  '--partner-on-gold': '#241a0a',
+  '--partner-gold': '#d4b26a',
+  '--partner-gold-bright': '#e3c27e',
+  '--partner-gold-pale': '#f0dda8',
+  '--partner-gold-grad': 'linear-gradient(135deg,#f4e3b4,#d4b26a 55%,#b6924a)',
+  '--partner-danger': '#ffb4a8',
+  '--partner-success': '#8de6b0',
+  '--partner-neon-pink': '#e0729e',
+};
+
+const partnerLightThemeVariables: PartnerThemeVariables = {
+  '--partner-bg': '#f4eddf',
+  '--partner-surface-1': 'rgba(255,255,255,.86)',
+  '--partner-surface-2': 'rgba(255,255,255,.78)',
+  '--partner-surface-3': 'rgba(255,255,255,.92)',
+  '--partner-nav-bg': 'rgba(255,250,241,.96)',
+  '--partner-header-bg': 'rgba(255,250,241,.88)',
+  '--partner-popover-bg': 'linear-gradient(180deg,rgba(255,252,247,.98),rgba(245,237,224,.98))',
+  '--partner-active-control-bg': 'rgba(180,132,48,.16)',
+  '--partner-border-soft': 'rgba(112,82,34,.12)',
+  '--partner-border-hair': 'rgba(112,82,34,.14)',
+  '--partner-border-gold-12': 'rgba(166,119,38,.18)',
+  '--partner-border-gold-22': 'rgba(166,119,38,.26)',
+  '--partner-border-gold-32': 'rgba(166,119,38,.34)',
+  '--partner-border-gold-40': 'rgba(166,119,38,.42)',
+  '--partner-text': '#241d14',
+  '--partner-text-2': '#5f5547',
+  '--partner-muted': '#8b7d6a',
+  '--partner-on-gold': '#23180a',
+  '--partner-gold': '#a67425',
+  '--partner-gold-bright': '#b98735',
+  '--partner-gold-pale': '#75511b',
+  '--partner-gold-grad': 'linear-gradient(135deg,#f8e8b2,#d7ab50 55%,#b98931)',
+  '--partner-danger': '#ad3e35',
+  '--partner-success': '#14834f',
+  '--partner-neon-pink': '#d9548b',
+};
+
+const readStoredPartnerTheme = (): PartnerTheme => {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  const storedTheme = window.localStorage.getItem(partnerThemeStorageKey);
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    return storedTheme;
+  }
+
+  return document.documentElement.classList.contains('vy-light') ? 'light' : 'dark';
 };
 
 type PartnerStore = {
@@ -1056,6 +1135,7 @@ function FormField({
 export default function PartnerPage() {
   const searchParams = useSearchParams();
   const requestedPanel = searchParams.get('panel');
+  const [partnerTheme, setPartnerTheme] = useState<PartnerTheme>(() => readStoredPartnerTheme());
   const [stores, setStores] = useState<PartnerStore[]>([]);
   const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);
   const [bookings, setBookings] = useState<PartnerBooking[]>([]);
@@ -1111,10 +1191,22 @@ export default function PartnerPage() {
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() =>
     readPartnerNotificationIds(),
   );
+  const partnerThemeVariables = partnerTheme === 'light'
+    ? partnerLightThemeVariables
+    : partnerDarkThemeVariables;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const cameraLoopRef = useRef<number | null>(null);
   const lastCameraPayloadRef = useRef('');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('vy-light', partnerTheme === 'light');
+    window.localStorage.setItem(partnerThemeStorageKey, partnerTheme);
+  }, [partnerTheme]);
+
+  const togglePartnerTheme = useCallback(() => {
+    setPartnerTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   const stopCameraScan = useCallback(() => {
     if (cameraLoopRef.current) {
@@ -4531,11 +4623,12 @@ export default function PartnerPage() {
   return (
     <main
       style={{
+        ...partnerThemeVariables,
         minHeight: '100vh',
         background: colors.bg,
         color: colors.text,
         fontFamily: 'var(--nl-font-sans)',
-      }}
+      } as React.CSSProperties}
     >
       <style>{`
         .partner-shell {
@@ -4869,7 +4962,7 @@ export default function PartnerPage() {
               justifyContent: 'space-between',
               gap: '16px',
               padding: '0 30px',
-              background: 'rgba(12,12,15,.72)',
+              background: colors.headerBg,
               backdropFilter: 'blur(14px)',
             }}
           >
@@ -4907,6 +5000,27 @@ export default function PartnerPage() {
               </span>
               <button
                 type="button"
+                onClick={togglePartnerTheme}
+                title="Chuyển giao diện sáng/tối"
+                aria-label="Chuyển giao diện sáng/tối"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  border: `1px solid ${colors.borderGold32}`,
+                  color: colors.gold,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: colors.surface2,
+                  cursor: 'pointer',
+                  flex: '0 0 auto',
+                }}
+              >
+                {partnerTheme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
+              </button>
+              <button
+                type="button"
                 onClick={() => setIsNotificationOpen((current) => !current)}
                 style={{
                   width: '38px',
@@ -4917,7 +5031,7 @@ export default function PartnerPage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: isNotificationOpen ? 'rgba(212,178,106,.16)' : colors.surface2,
+                  background: isNotificationOpen ? colors.activeControlBg : colors.surface2,
                   cursor: 'pointer',
                   position: 'relative',
                   boxShadow: unreadNotificationCount ? '0 0 0 3px rgba(224,114,158,.08)' : undefined,
@@ -4964,7 +5078,7 @@ export default function PartnerPage() {
                     zIndex: 80,
                     border: `1px solid ${colors.borderGold32}`,
                     borderRadius: '18px',
-                    background: 'linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98))',
+                    background: colors.popoverBg,
                     boxShadow: '0 26px 70px -28px rgba(0,0,0,.9)',
                     overflow: 'hidden',
                   }}
