@@ -804,6 +804,13 @@ export default function PartnerPage() {
   const [isSavingListing, setIsSavingListing] = useState(false);
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
   const [period, setPeriod] = useState<PeriodKey>('seven');
+  const [settlementFilters, setSettlementFilters] = useState({
+    code: '',
+    service: '',
+    fromDate: '',
+    toDate: '',
+    status: 'ALL',
+  });
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
   const [scanIssue, setScanIssue] = useState<PartnerScanIssue | null>(null);
@@ -1203,13 +1210,59 @@ export default function PartnerPage() {
   const canConfirmScan = scanIssue?.status === 'ISSUED';
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
 
-  const settlementRows = bills.slice(0, 8).map((bill) => ({
-        code: bill.billNumber ?? bill.id.slice(0, 8),
-        service: `${bill.coupon?.name ?? 'Hóa đơn'} · ${bill.store.name}`,
-        time: formatDateTime(bill.submittedAt),
-        amount: bill.discountVnd ?? bill.totalVnd ?? 0,
-        status: bill.status,
-      }));
+  const settlementRows = bills.map((bill) => {
+    const submittedAtMs = bill.submittedAt ? Date.parse(bill.submittedAt) : null;
+
+    return {
+      code: bill.billNumber ?? bill.id.slice(0, 8),
+      service: `${bill.coupon?.name ?? 'Hóa đơn'} · ${bill.store.name}`,
+      time: formatDateTime(bill.submittedAt),
+      amount: bill.discountVnd ?? bill.totalVnd ?? 0,
+      status: bill.status,
+      submittedAtMs:
+        submittedAtMs !== null && Number.isFinite(submittedAtMs) ? submittedAtMs : null,
+    };
+  });
+  const settlementStatusOptions = Array.from(new Set(settlementRows.map((row) => row.status)));
+  const settlementFromMs = settlementFilters.fromDate
+    ? new Date(`${settlementFilters.fromDate}T00:00:00`).getTime()
+    : null;
+  const settlementToMs = settlementFilters.toDate
+    ? new Date(`${settlementFilters.toDate}T23:59:59.999`).getTime()
+    : null;
+  const settlementCodeQuery = settlementFilters.code.trim().toLowerCase();
+  const settlementServiceQuery = settlementFilters.service.trim().toLowerCase();
+  const filteredSettlementRows = settlementRows.filter((row) => {
+    const matchesCode = !settlementCodeQuery || row.code.toLowerCase().includes(settlementCodeQuery);
+    const matchesService =
+      !settlementServiceQuery || row.service.toLowerCase().includes(settlementServiceQuery);
+    const matchesStatus = settlementFilters.status === 'ALL' || row.status === settlementFilters.status;
+    const matchesFrom =
+      settlementFromMs === null || (row.submittedAtMs !== null && row.submittedAtMs >= settlementFromMs);
+    const matchesTo =
+      settlementToMs === null || (row.submittedAtMs !== null && row.submittedAtMs <= settlementToMs);
+
+    return matchesCode && matchesService && matchesStatus && matchesFrom && matchesTo;
+  });
+  const hasSettlementFilters = Boolean(
+    settlementFilters.code.trim() ||
+      settlementFilters.service.trim() ||
+      settlementFilters.fromDate ||
+      settlementFilters.toDate ||
+      settlementFilters.status !== 'ALL',
+  );
+  const updateSettlementFilter = (field: keyof typeof settlementFilters, value: string) => {
+    setSettlementFilters((current) => ({ ...current, [field]: value }));
+  };
+  const clearSettlementFilters = () => {
+    setSettlementFilters({
+      code: '',
+      service: '',
+      fromDate: '',
+      toDate: '',
+      status: 'ALL',
+    });
+  };
 
   const bookingTrendBars = useMemo(() => {
     const rows = dashboard?.weeklyBookings ?? [];
@@ -2265,11 +2318,73 @@ export default function PartnerPage() {
           }
         />
 
+        <div
+          className="partner-settlement-filter-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.1fr 1.4fr .85fr .85fr .9fr auto',
+            gap: '10px',
+            alignItems: 'end',
+            marginBottom: '16px',
+          }}
+        >
+          <FormField label="Mã giao dịch">
+            <input
+              value={settlementFilters.code}
+              onChange={(event) => updateSettlementFilter('code', event.target.value)}
+              placeholder="VD: BILL-2026..."
+              style={inputStyle}
+            />
+          </FormField>
+          <FormField label="Dịch vụ / Coupon">
+            <input
+              value={settlementFilters.service}
+              onChange={(event) => updateSettlementFilter('service', event.target.value)}
+              placeholder="Tên dịch vụ, coupon hoặc quán"
+              style={inputStyle}
+            />
+          </FormField>
+          <FormField label="Từ ngày">
+            <input
+              value={settlementFilters.fromDate}
+              onChange={(event) => updateSettlementFilter('fromDate', event.target.value)}
+              type="date"
+              style={inputStyle}
+            />
+          </FormField>
+          <FormField label="Đến ngày">
+            <input
+              value={settlementFilters.toDate}
+              onChange={(event) => updateSettlementFilter('toDate', event.target.value)}
+              type="date"
+              style={inputStyle}
+            />
+          </FormField>
+          <FormField label="Trạng thái">
+            <select
+              value={settlementFilters.status}
+              onChange={(event) => updateSettlementFilter('status', event.target.value)}
+              style={inputStyle}
+            >
+              <option value="ALL">Tất cả</option>
+              {settlementStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <GhostButton disabled={!hasSettlementFilters} onClick={clearSettlementFilters}>
+            Xóa lọc
+          </GhostButton>
+        </div>
+
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '920px' }}>
             <thead>
               <tr>
                 {[
+                  'STT',
                   'Mã giao dịch',
                   'Dịch vụ / Coupon',
                   'Thời gian',
@@ -2294,9 +2409,20 @@ export default function PartnerPage() {
               </tr>
             </thead>
             <tbody>
-              {settlementRows.length ? (
-                settlementRows.map((row) => (
-                  <tr key={row.code}>
+              {filteredSettlementRows.length ? (
+                filteredSettlementRows.map((row, index) => (
+                  <tr key={`${row.code}-${index}`}>
+                    <td
+                      style={{
+                        padding: '14px 12px',
+                        color: colors.text2,
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        borderBottom: `1px solid ${colors.borderHair}`,
+                      }}
+                    >
+                      {index + 1}
+                    </td>
                     <td
                       style={{
                         padding: '14px 12px',
@@ -2359,7 +2485,7 @@ export default function PartnerPage() {
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     style={{
                       padding: '18px 12px',
                       color: colors.text2,
@@ -2367,7 +2493,9 @@ export default function PartnerPage() {
                       textAlign: 'center',
                     }}
                   >
-                    Chưa có usage log trong phạm vi quán của partner.
+                    {settlementRows.length
+                      ? 'Không có usage log phù hợp với bộ lọc đang chọn.'
+                      : 'Chưa có usage log trong phạm vi quán của partner.'}
                   </td>
                 </tr>
               )}
@@ -3307,6 +3435,9 @@ export default function PartnerPage() {
         .partner-media-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
+        .partner-settlement-filter-grid > * {
+          min-width: 0;
+        }
         @media (max-width: 1180px) {
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -3322,6 +3453,9 @@ export default function PartnerPage() {
           .partner-scan-grid,
           .partner-settings-grid {
             grid-template-columns: 1fr;
+          }
+          .partner-settlement-filter-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
         }
         @media (max-width: 860px) {
@@ -3357,8 +3491,9 @@ export default function PartnerPage() {
           .partner-hour-row,
           .partner-listing-toolbar,
           .partner-media-grid,
-          .partner-store-scope-grid {
-            grid-template-columns: 1fr;
+          .partner-store-scope-grid,
+          .partner-settlement-filter-grid {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>
