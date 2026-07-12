@@ -7,7 +7,6 @@ import {
   Check,
   ChevronLeft,
   Clock,
-  Mail,
   MessageCircle,
   QrCode,
   ReceiptText,
@@ -58,8 +57,6 @@ const historyPageSize = 5;
 const { bookingDateWindowDays } = bookingValidationLimits;
 const confirmedStatuses = new Set(["CONFIRMED", "CHECKED_IN", "COMPLETED"]);
 const isConfirmedStatus = (status: string) => confirmedStatuses.has(status.trim().toUpperCase());
-const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@vietyoru.vn";
-const supportMailHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Vietyoru booking support")}`;
 const supportCancelMessage =
   "Chỉ có thể hủy booking trước giờ hẹn ít nhất 1 giờ. Nếu cần đổi thông tin hoặc hủy sát giờ, vui lòng liên hệ Admin qua Mail.";
 const missingGuestCancelIdentityMessage =
@@ -1305,12 +1302,7 @@ function BookingCard({
                     ? "Hủy đặt chỗ"
                     : "Quá giờ"}
               </button>
-            ) : (
-              <a href={supportMailHref} className={`${styles.ghostCta} ${styles.wideCta}`}>
-                <Mail size={14} />
-                Mail Admin
-              </a>
-            )}
+            ) : null}
           </>
         ) : group === "Hoàn tất" ? (
           <>

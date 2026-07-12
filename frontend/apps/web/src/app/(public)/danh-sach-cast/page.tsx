@@ -24,6 +24,7 @@ import {
   type PublicArea,
   type PublicCast,
 } from "@/lib/api/discovery";
+import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
@@ -139,6 +140,9 @@ const compactLanguageLabels: Record<string, string> = {
 const favoriteCounts = ["1.2k", "1.0k", "947", "880", "812", "760", "690", "642"];
 const recentSearches = ["Yuki", "Mei", "Cast Hoàn Kiếm"];
 const popularKeywords = ["Nói tiếng Nhật", "Top ranking", "Còn lịch tối nay", "日本語 N1"];
+
+const toRankingCity = (cityCode: string): RankingCity =>
+  cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
 
 const castCopyVi: CastSearchCopy = {
   all: "Tất cả",
@@ -323,6 +327,9 @@ export default function Page() {
   const [storeSlug, setStoreSlug] = useState("");
   const [priceRange, setPriceRange] = useState<PriceRange>("");
   const [sort, setSort] = useState<DiscoverySort>("newest");
+  const [topRankingOnly, setTopRankingOnly] = useState(false);
+  const [topRankingCastSlugs, setTopRankingCastSlugs] = useState<string[]>([]);
+  const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
@@ -395,6 +402,36 @@ export default function Page() {
   }, [area, category, city, coords, hasActiveCoupon, language, query, sort]);
 
   useEffect(() => {
+    if (!topRankingOnly) {
+      queueMicrotask(() => {
+        setTopRankingCastSlugs([]);
+        setTopRankingLoading(false);
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setTopRankingLoading(true);
+    });
+
+    rankingsApi
+      .list({ targetType: "CAST", city: toRankingCity(city), limit: 5 }, { signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        setTopRankingCastSlugs(response.data.slice(0, 5).map((item) => item.slug).filter(Boolean));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setTopRankingCastSlugs([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTopRankingLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [city, topRankingOnly]);
+
+  useEffect(() => {
     if (!isFilterOpen) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -435,29 +472,37 @@ export default function Page() {
     [activeLanguage, areas, copy.all],
   );
 
-  const visibleCasts = useMemo(
-    () =>
-      sortBySearchRelevance(
-        casts
-          .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
-          .filter((cast) => matchesPriceRange(priceRange, cast.hourlyRateVnd)),
-        query,
-        (cast) => ({
-          primary: [cast.name, cast.publicAlias, cast.stageName],
-          secondary: [
-            cast.publicHeadline,
-            cast.store.name,
-            cast.store.category,
-            cast.store.area?.name,
-            cast.store.district,
-            cast.store.city,
-            cast.languages.join(" "),
-            cast.tags.join(" "),
-          ],
-        }),
-      ),
-    [casts, priceRange, query, storeSlug],
+  const topRankingOrder = useMemo(
+    () => new Map(topRankingCastSlugs.map((slug, index) => [slug, index])),
+    [topRankingCastSlugs],
   );
+  const visibleCasts = useMemo(() => {
+    const filteredCasts = casts
+      .filter((cast) => !storeSlug || cast.store.slug === storeSlug)
+      .filter((cast) => matchesPriceRange(priceRange, cast.hourlyRateVnd))
+      .filter((cast) => !topRankingOnly || topRankingOrder.has(cast.slug));
+    const searchSortedCasts = sortBySearchRelevance(filteredCasts, query, (cast) => ({
+      primary: [cast.name, cast.publicAlias, cast.stageName],
+      secondary: [
+        cast.publicHeadline,
+        cast.store.name,
+        cast.store.category,
+        cast.store.area?.name,
+        cast.store.district,
+        cast.store.city,
+        cast.languages.join(" "),
+        cast.tags.join(" "),
+      ],
+    }));
+
+    if (!topRankingOnly) return searchSortedCasts;
+
+    return [...searchSortedCasts].sort(
+      (left, right) =>
+        (topRankingOrder.get(left.slug) ?? Number.MAX_SAFE_INTEGER) -
+        (topRankingOrder.get(right.slug) ?? Number.MAX_SAFE_INTEGER),
+    );
+  }, [casts, priceRange, query, storeSlug, topRankingOnly, topRankingOrder]);
 
   const suggestions = useMemo(() => visibleCasts.slice(0, 4), [visibleCasts]);
   const cityLabel = getCastCityLabel(city, activeLanguage);
@@ -496,9 +541,11 @@ export default function Page() {
     language,
     storeSlug,
     priceRange,
+    topRankingOnly,
     sort !== "newest",
     hasActiveCoupon,
   ].filter(Boolean).length;
+  const isResultsLoading = isLoading || isTopRankingLoading;
   const showSuggestions = isSearchFocused && query.trim().length > 0;
 
   const resetFilters = () => {
@@ -507,6 +554,7 @@ export default function Page() {
     setLanguage("");
     setStoreSlug("");
     setPriceRange("");
+    setTopRankingOnly(false);
     setHasActiveCoupon(false);
     setSort("newest");
   };
@@ -685,8 +733,8 @@ export default function Page() {
             </button>
             <button
               type="button"
-              className={`cast-chip ${sort === "priority" ? "is-active" : ""}`}
-              onClick={() => setSort((current) => (current === "priority" ? "newest" : "priority"))}
+              className={`cast-chip ${topRankingOnly ? "is-active" : ""}`}
+              onClick={() => setTopRankingOnly((current) => !current)}
             >
               {copy.topRanking}
             </button>
@@ -717,7 +765,7 @@ export default function Page() {
         <section className="cast-results-section" aria-label={copy.listAria}>
           <div className="cast-results-head">
             <span>
-              <b>{visibleCasts.length} cast</b>
+              <b>{isResultsLoading ? "..." : visibleCasts.length} cast</b>
               <span> · {cityLabel}</span>
             </span>
 
@@ -731,7 +779,7 @@ export default function Page() {
             />
           </div>
 
-          {isLoading ? (
+          {isResultsLoading ? (
             <LoadingSkeleton />
           ) : visibleCasts.length > 0 ? (
             <div className="cast-card-grid">
@@ -775,6 +823,7 @@ export default function Page() {
           storeSlug={storeSlug}
           total={visibleCasts.length}
           hasActiveCoupon={hasActiveCoupon}
+          topRankingOnly={topRankingOnly}
           onArea={setArea}
           onCategory={setCategory}
           onCity={handleCityChange}
@@ -785,6 +834,7 @@ export default function Page() {
           onSort={handleSortChange}
           onStore={setStoreSlug}
           onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
+          onToggleTopRanking={() => setTopRankingOnly((current) => !current)}
         />
       ) : null}
     </main>
@@ -1061,6 +1111,7 @@ function MobileFilterSheet({
   subtitle,
   total,
   hasActiveCoupon,
+  topRankingOnly,
   onArea,
   onCategory,
   onCity,
@@ -1071,6 +1122,7 @@ function MobileFilterSheet({
   onSort,
   onStore,
   onToggleCoupon,
+  onToggleTopRanking,
 }: {
   area: string;
   areaOptions: Option[];
@@ -1090,6 +1142,7 @@ function MobileFilterSheet({
   storeSlug: string;
   total: number;
   hasActiveCoupon: boolean;
+  topRankingOnly: boolean;
   onArea: (value: string) => void;
   onCategory: (value: string) => void;
   onCity: (value: string) => void;
@@ -1100,6 +1153,7 @@ function MobileFilterSheet({
   onSort: (value: DiscoverySort) => void;
   onStore: (value: string) => void;
   onToggleCoupon: () => void;
+  onToggleTopRanking: () => void;
 }) {
   const sheet = (
     <div className="cast-sheet-backdrop" role="presentation" onMouseDown={onClose}>
@@ -1182,6 +1236,21 @@ function MobileFilterSheet({
               aria-pressed={hasActiveCoupon}
               className={hasActiveCoupon ? "is-on" : ""}
               onClick={onToggleCoupon}
+            >
+              <b />
+            </button>
+          </div>
+
+          <div className="cast-toggle-row">
+            <span>
+              <i />
+              {copy.topRanking}
+            </span>
+            <button
+              type="button"
+              aria-pressed={topRankingOnly}
+              className={topRankingOnly ? "is-on" : ""}
+              onClick={onToggleTopRanking}
             >
               <b />
             </button>
@@ -2283,6 +2352,11 @@ const castSearchCss = `
   background: rgba(255, 255, 255, 0.05);
   color: var(--vy-muted);
   padding: 0 17px;
+  white-space: nowrap;
+}
+
+.cast-reset-button svg {
+  flex: none;
 }
 
 .cast-apply-button {

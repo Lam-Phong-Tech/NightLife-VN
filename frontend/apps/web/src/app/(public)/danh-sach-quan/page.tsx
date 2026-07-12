@@ -18,6 +18,7 @@ import {
 
 import { discoveryApi, type DiscoverySort, type PublicArea, type PublicStore } from "@/lib/api/discovery";
 import { resolveClientUrl } from "@/lib/api/client";
+import { rankingsApi, type RankingCity } from "@/lib/api/rankings";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
@@ -73,7 +74,7 @@ type VenueSearchCopy = {
   nearMe: string;
   openFilters: string;
   openNow: string;
-  ratingUp: string;
+  topRanking: string;
   resetFilters: string;
   saveVenue: string;
   searchAria: string;
@@ -181,7 +182,7 @@ const venueCopyVi: VenueSearchCopy = {
   nearMe: "Gần tôi",
   openFilters: "Mở bộ lọc",
   openNow: "Đang mở",
-  ratingUp: "4.5★ trở lên",
+  topRanking: "Top ranking",
   resetFilters: "Đặt lại bộ lọc",
   saveVenue: "Lưu quán",
   searchAria: "Tìm và lọc quán",
@@ -216,7 +217,7 @@ const venueCopyEn: VenueSearchCopy = {
   nearMe: "Nearby",
   openFilters: "Open filters",
   openNow: "Open now",
-  ratingUp: "4.5★ and up",
+  topRanking: "Top ranking",
   resetFilters: "Reset filters",
   saveVenue: "Save venue",
   searchAria: "Search and filter venues",
@@ -286,6 +287,9 @@ const getLocalizedAreaLabel = (areaName: string, language: LanguageCode) => {
   if (language === "en") return stripVietnameseMarks(areaName);
   return translateText(base, language);
 };
+
+const toRankingCity = (cityCode: string): RankingCity =>
+  cityCode === "hcm" ? "hcm" : cityCode === "hn" ? "hn" : "all";
 
 const formatVenueCount = (count: number, language: LanguageCode) => {
   if (language === "en") return `${count} ${count === 1 ? "venue" : "venues"}`;
@@ -357,7 +361,9 @@ export default function Page() {
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState<DiscoverySort>("priority");
   const [hasActiveCoupon, setHasActiveCoupon] = useState(false);
-  const [ratingOnly, setRatingOnly] = useState(false);
+  const [topRankingOnly, setTopRankingOnly] = useState(false);
+  const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
+  const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [openNow, setOpenNow] = useState(true);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
@@ -430,6 +436,36 @@ export default function Page() {
   }, [area, category, city, coords, hasActiveCoupon, query, sort]);
 
   useEffect(() => {
+    if (!topRankingOnly) {
+      queueMicrotask(() => {
+        setTopRankingStoreSlugs([]);
+        setTopRankingLoading(false);
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) setTopRankingLoading(true);
+    });
+
+    rankingsApi
+      .list({ targetType: "STORE", city: toRankingCity(city), limit: 5 }, { signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        setTopRankingStoreSlugs(response.data.slice(0, 5).map((item) => item.slug).filter(Boolean));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setTopRankingStoreSlugs([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTopRankingLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [city, topRankingOnly]);
+
+  useEffect(() => {
     if (!isFilterSheetOpen) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -446,9 +482,13 @@ export default function Page() {
     };
   }, [isFilterSheetOpen]);
 
-  const venues = useMemo(
-    () =>
-      sortBySearchRelevance(stores, query, (store) => ({
+  const topRankingOrder = useMemo(
+    () => new Map(topRankingStoreSlugs.map((slug, index) => [slug, index])),
+    [topRankingStoreSlugs],
+  );
+
+  const venues = useMemo(() => {
+    const searchSortedVenues = sortBySearchRelevance(stores, query, (store) => ({
         primary: [store.name],
         secondary: [
           store.category,
@@ -464,10 +504,17 @@ export default function Page() {
         ],
       }))
         .map((store) => toVenueView(store, activeLanguage))
-        .filter((venue) => !ratingOnly || venue.rating === null || venue.rating >= 4.5)
-        .filter((venue) => !openNow || venue.isOpenNow),
-    [activeLanguage, openNow, query, ratingOnly, stores],
-  );
+        .filter((venue) => !openNow || venue.isOpenNow)
+        .filter((venue) => !topRankingOnly || topRankingOrder.has(venue.id));
+
+    if (!topRankingOnly) return searchSortedVenues;
+
+    return [...searchSortedVenues].sort(
+      (left, right) =>
+        (topRankingOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+        (topRankingOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+    );
+  }, [activeLanguage, openNow, query, stores, topRankingOnly, topRankingOrder]);
 
   const cityLabel = getLocalizedCityLabel(city, activeLanguage);
   const selectedCityLabel = cityLabel;
@@ -561,9 +608,10 @@ export default function Page() {
     category,
     sort !== "priority",
     hasActiveCoupon,
-    ratingOnly,
+    topRankingOnly,
     !openNow,
   ].filter(Boolean).length;
+  const isResultsLoading = isLoading || isTopRankingLoading;
 
   const resetFilters = () => {
     setCity("hn");
@@ -571,10 +619,16 @@ export default function Page() {
     setCategory("");
     setSort("priority");
     setHasActiveCoupon(false);
-    setRatingOnly(false);
+    setTopRankingOnly(false);
     setOpenNow(true);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
+  };
+
+  const toggleTopRankingOnly = () => {
+    const nextValue = !topRankingOnly;
+    setTopRankingOnly(nextValue);
+    if (nextValue) setOpenNow(false);
   };
 
   const toggleVenueFavorite = (venue: VenueView) => {
@@ -708,10 +762,10 @@ export default function Page() {
           </button>
           <button
             type="button"
-            className={`venue-chip ${ratingOnly ? "is-active" : ""}`}
-            onClick={() => setRatingOnly((current) => !current)}
+            className={`venue-chip ${topRankingOnly ? "is-active" : ""}`}
+            onClick={toggleTopRankingOnly}
           >
-            {copy.ratingUp}
+            {copy.topRanking}
           </button>
           {categoryChips.map((chip) => (
             <button
@@ -727,7 +781,7 @@ export default function Page() {
 
         <div className="venue-result-bar">
           <div>
-            <strong>{isLoading ? "..." : formatVenueCount(venues.length, activeLanguage)}</strong>
+            <strong>{isResultsLoading ? "..." : formatVenueCount(venues.length, activeLanguage)}</strong>
             <span> · {cityLabel}</span>
           </div>
 
@@ -772,7 +826,7 @@ export default function Page() {
         {error ? <div className="venue-error">{translateText(error, activeLanguage)}</div> : null}
 
         <section className="venue-list" aria-label={copy.listAria}>
-          {isLoading ? (
+          {isResultsLoading ? (
             <VenueSkeletons />
           ) : venues.length > 0 ? (
             venues.map((venue) => (
@@ -805,7 +859,7 @@ export default function Page() {
           copy={copy}
           hasActiveCoupon={hasActiveCoupon}
           openNow={openNow}
-          ratingOnly={ratingOnly}
+          topRankingOnly={topRankingOnly}
           sort={sort}
           sortOptions={localizedSortOptions}
           subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
@@ -817,7 +871,7 @@ export default function Page() {
           onSort={handleSortChange}
           onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
           onToggleOpenNow={() => setOpenNow((current) => !current)}
-          onToggleRating={() => setRatingOnly((current) => !current)}
+          onToggleTopRanking={toggleTopRankingOnly}
         />
       ) : null}
     </main>
@@ -835,7 +889,7 @@ function MobileVenueFilterSheet({
   copy,
   hasActiveCoupon,
   openNow,
-  ratingOnly,
+  topRankingOnly,
   sort,
   sortOptions,
   subtitle,
@@ -847,7 +901,7 @@ function MobileVenueFilterSheet({
   onSort,
   onToggleCoupon,
   onToggleOpenNow,
-  onToggleRating,
+  onToggleTopRanking,
 }: {
   area: string;
   areaOptions: FilterOption[];
@@ -859,7 +913,7 @@ function MobileVenueFilterSheet({
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
   openNow: boolean;
-  ratingOnly: boolean;
+  topRankingOnly: boolean;
   sort: DiscoverySort;
   sortOptions: Array<{ value: DiscoverySort; label: string }>;
   subtitle: string;
@@ -871,7 +925,7 @@ function MobileVenueFilterSheet({
   onSort: (value: DiscoverySort) => void;
   onToggleCoupon: () => void;
   onToggleOpenNow: () => void;
-  onToggleRating: () => void;
+  onToggleTopRanking: () => void;
 }) {
   const sheet = (
     <div className="venue-filter-backdrop" role="presentation" onMouseDown={onClose}>
@@ -929,10 +983,10 @@ function MobileVenueFilterSheet({
               </button>
               <button
                 type="button"
-                className={ratingOnly ? "is-active" : ""}
-                onClick={onToggleRating}
+                className={topRankingOnly ? "is-active" : ""}
+                onClick={onToggleTopRanking}
               >
-                {copy.ratingUp}
+                {copy.topRanking}
               </button>
             </div>
           </section>
@@ -1804,7 +1858,7 @@ const venueSearchCss = `
 
   .venue-filter-actions {
     display: grid;
-    grid-template-columns: minmax(0, .78fr) minmax(0, 1.82fr);
+    grid-template-columns: minmax(126px, .98fr) minmax(0, 1.62fr);
     gap: 10px;
     padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--vy-border);
@@ -1828,6 +1882,12 @@ const venueSearchCss = `
     border: 1px solid var(--vy-border);
     background: var(--vy-surface-1);
     color: var(--vy-muted);
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+
+  .venue-filter-reset svg {
+    flex: none;
   }
 
   .venue-filter-apply {

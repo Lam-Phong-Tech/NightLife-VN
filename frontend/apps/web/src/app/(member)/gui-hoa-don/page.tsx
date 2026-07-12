@@ -657,7 +657,7 @@ export default function Page() {
   };
 
   return (
-    <main className="nl-bill-page" style={{ minHeight: "100vh", background: colors.bg, color: colors.text }}>
+    <main className="nl-bill-page" style={{ background: colors.bg, color: colors.text }}>
       <section className="nl-bill-shell">
         <Link
           href="/tai-khoan"
@@ -974,6 +974,7 @@ export default function Page() {
       <style jsx>{`
         .nl-bill-page {
           width: 100%;
+          min-height: 100vh;
           overflow-x: hidden;
         }
 
@@ -1535,8 +1536,12 @@ export default function Page() {
         }
 
         @media (max-width: 620px) {
+          .nl-bill-page {
+            min-height: auto !important;
+          }
+
           .nl-bill-shell {
-            padding: 14px 10px calc(92px + env(safe-area-inset-bottom));
+            padding: 14px 10px 18px;
           }
 
           .nl-bill-form,
