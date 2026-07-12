@@ -3056,11 +3056,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: calc(
-              var(--store-mobile-nav-height) +
-              var(--store-mobile-cta-height) +
-              18px
-            );
+            padding-bottom: 18px;
           }
 
           .nl-page-content:has(.store-detail-page) {
