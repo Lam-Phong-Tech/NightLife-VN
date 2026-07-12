@@ -158,6 +158,13 @@ type PartnerListingDraftResponse = {
   draft: PartnerListingDraft;
 };
 
+type ListingValidationMode = 'draft' | 'submit';
+type ListingValidationErrors = Record<string, string>;
+type ListingValidationResult = {
+  errors: ListingValidationErrors;
+  firstTab: ListingTabKey | null;
+};
+
 type PartnerCoupon = {
   id: string;
   code: string;
@@ -517,6 +524,206 @@ const toDateTimeLocalValue = (value: Date | string | null | undefined) => {
 
 const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ''));
 
+const isBlank = (value?: string | null) => !value?.trim();
+const hasText = (value?: string | null) => Boolean(value?.trim());
+const splitInlineList = (value?: string | null) =>
+  (value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const isValidUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
+};
+
+const openingHourPattern = /^([01]\d|2[0-3]):[0-5]\d\s*[-–]\s*([01]\d|2[0-3]):[0-5]\d$/;
+const phonePattern = /^\+?[0-9\s().-]{8,18}$/;
+
+const tabFromListingErrorPath = (path: string): ListingTabKey => {
+  if (path.startsWith('castProfiles.')) return 'cast';
+  if (path.startsWith('pricingItems.') || path.startsWith('menuGroups.') || path === 'priceRange' || path === 'menuSummary') {
+    return 'pricing';
+  }
+  if (
+    path === 'coverImageUrl' ||
+    path.startsWith('galleryUrls.') ||
+    path.startsWith('videoUrls.') ||
+    path.startsWith('mediaUrls.')
+  ) {
+    return 'media';
+  }
+  return 'store';
+};
+
+const validateListingDraft = (
+  draft: PartnerListingDraft,
+  mode: ListingValidationMode,
+): ListingValidationResult => {
+  const errors: ListingValidationErrors = {};
+  const requireOnSubmit = (path: string, value: string | null | undefined, message: string) => {
+    if (mode === 'submit' && isBlank(value)) {
+      errors[path] = message;
+    }
+  };
+  const addFormatError = (path: string, value: string | null | undefined, message: string) => {
+    if (hasText(value) && !isValidUrl(value!.trim())) {
+      errors[path] = message;
+    }
+  };
+
+  if (isBlank(draft.storeName)) {
+    errors.storeName = 'Nhập tên quán.';
+  } else if (draft.storeName.trim().length < 2) {
+    errors.storeName = 'Tên quán cần ít nhất 2 ký tự.';
+  }
+
+  const category = draft.storeCategory || draft.businessType;
+  requireOnSubmit('storeCategory', category, 'Chọn loại hình quán.');
+  requireOnSubmit('area', draft.area, 'Nhập khu vực hiển thị.');
+  requireOnSubmit('storeCity', draft.storeCity, 'Nhập tỉnh/thành phố.');
+  requireOnSubmit('storeDistrict', draft.storeDistrict, 'Nhập quận/khu.');
+  requireOnSubmit('streetAddress', draft.streetAddress, 'Nhập số nhà, tên đường.');
+  requireOnSubmit('description', draft.description, 'Nhập mô tả quán.');
+
+  if (hasText(draft.phone) && !phonePattern.test(draft.phone.trim())) {
+    errors.phone = 'Số điện thoại chỉ gồm số, dấu +, khoảng trắng hoặc dấu chấm/gạch.';
+  }
+  addFormatError('mapUrl', draft.mapUrl, 'Link Google Maps phải bắt đầu bằng http hoặc https.');
+
+  const openingItems = draft.openingHourItems.length ? draft.openingHourItems : defaultListingOpeningHours();
+  const openDays = openingItems.filter((item) => !item.isOff);
+  if (mode === 'submit' && !openDays.length) {
+    errors.openingHours = 'Cần có ít nhất một ngày mở cửa.';
+  }
+  openingItems.forEach((item, index) => {
+    const path = `openingHourItems.${index}.hours`;
+    if (item.isOff) return;
+    if (mode === 'submit' && isBlank(item.hours)) {
+      errors[path] = `Nhập giờ mở cửa cho ${item.day}.`;
+      return;
+    }
+    if (hasText(item.hours) && !openingHourPattern.test(item.hours!.trim())) {
+      errors[path] = 'Định dạng giờ phải là HH:mm - HH:mm.';
+    }
+  });
+  if (hasText(draft.openingHours) && !openingHourPattern.test(draft.openingHours.trim())) {
+    errors.openingHours = 'Tóm tắt giờ mở cửa phải là HH:mm - HH:mm.';
+  }
+
+  draft.castProfiles.forEach((cast, index) => {
+    const rowHasData = Boolean(
+      cast.stageName.trim() ||
+        cast.publicHeadline?.trim() ||
+        cast.bio?.trim() ||
+        cast.zodiacSign?.trim() ||
+        cast.measurements?.trim() ||
+        cast.birthMonth ||
+        cast.heightCm ||
+        cast.hourlyRateVnd ||
+        cast.tags?.length ||
+        cast.languages?.length ||
+        cast.hobbies?.length ||
+        cast.youtubeLinks?.length ||
+        cast.mediaUrls?.length,
+    );
+    if (!rowHasData) return;
+
+    if (isBlank(cast.stageName)) {
+      errors[`castProfiles.${index}.stageName`] = 'Nhập tên cast.';
+    }
+    if (cast.birthMonth !== undefined && (cast.birthMonth < 1 || cast.birthMonth > 12)) {
+      errors[`castProfiles.${index}.birthMonth`] = 'Tháng sinh phải từ 1 đến 12.';
+    }
+    if (cast.heightCm !== undefined && (cast.heightCm < 120 || cast.heightCm > 220)) {
+      errors[`castProfiles.${index}.heightCm`] = 'Chiều cao hợp lệ trong khoảng 120 - 220 cm.';
+    }
+    if (cast.hourlyRateVnd !== undefined && cast.hourlyRateVnd < 0) {
+      errors[`castProfiles.${index}.hourlyRateVnd`] = 'Giá theo giờ không được âm.';
+    }
+    splitInlineList(cast.youtubeLinks?.join(',')).forEach((url, urlIndex) => {
+      if (!isValidUrl(url)) {
+        errors[`castProfiles.${index}.youtubeLinks`] = `YouTube URL thứ ${urlIndex + 1} không hợp lệ.`;
+      }
+    });
+    splitInlineList(cast.mediaUrls?.join(',')).forEach((url, urlIndex) => {
+      if (!isValidUrl(url)) {
+        errors[`castProfiles.${index}.mediaUrls`] = `Ảnh cast URL thứ ${urlIndex + 1} không hợp lệ.`;
+      }
+    });
+  });
+
+  requireOnSubmit('priceRange', draft.priceRange, 'Nhập khoảng giá tổng quan.');
+  draft.pricingItems.forEach((item, index) => {
+    const rowHasData = hasText(item.label) || hasText(item.value) || hasText(item.note);
+    if (!rowHasData) return;
+    if (isBlank(item.label)) {
+      errors[`pricingItems.${index}.label`] = 'Nhập tên gói.';
+    }
+    if (isBlank(item.value)) {
+      errors[`pricingItems.${index}.value`] = 'Nhập mức giá.';
+    }
+  });
+
+  draft.menuGroups.forEach((group, groupIndex) => {
+    const groupHasData =
+      hasText(group.name) ||
+      group.items.some((item) =>
+        Boolean(hasText(item.name) || hasText(item.description) || hasText(item.imageUrl)),
+      );
+    if (!groupHasData) return;
+    if (isBlank(group.name)) {
+      errors[`menuGroups.${groupIndex}.name`] = 'Nhập tên nhóm menu.';
+    }
+    group.items.forEach((item, itemIndex) => {
+      const itemHasData = Boolean(hasText(item.name) || hasText(item.description) || hasText(item.imageUrl));
+      if (!itemHasData) return;
+      if (isBlank(item.name)) {
+        errors[`menuGroups.${groupIndex}.items.${itemIndex}.name`] = 'Nhập tên món/dịch vụ.';
+      }
+      addFormatError(
+        `menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`,
+        item.imageUrl,
+        'Ảnh món URL phải bắt đầu bằng http hoặc https.',
+      );
+    });
+  });
+
+  requireOnSubmit('coverImageUrl', draft.coverImageUrl, 'Nhập ảnh bìa của quán.');
+  addFormatError('coverImageUrl', draft.coverImageUrl, 'Cover image URL phải bắt đầu bằng http hoặc https.');
+  draft.galleryUrls.forEach((url, index) => {
+    if (isBlank(url)) {
+      errors[`galleryUrls.${index}`] = 'Nhập URL ảnh hoặc xóa dòng này.';
+    } else if (!isValidUrl(url.trim())) {
+      errors[`galleryUrls.${index}`] = 'URL ảnh phải bắt đầu bằng http hoặc https.';
+    }
+  });
+  draft.videoUrls.forEach((url, index) => {
+    if (isBlank(url)) {
+      errors[`videoUrls.${index}`] = 'Nhập URL video hoặc xóa dòng này.';
+    } else if (!isValidUrl(url.trim())) {
+      errors[`videoUrls.${index}`] = 'URL video phải bắt đầu bằng http hoặc https.';
+    }
+  });
+  draft.mediaUrls.forEach((url, index) => {
+    if (isBlank(url)) {
+      errors[`mediaUrls.${index}`] = 'Nhập URL media hoặc xóa dòng này.';
+    } else if (!isValidUrl(url.trim())) {
+      errors[`mediaUrls.${index}`] = 'URL media phải bắt đầu bằng http hoặc https.';
+    }
+  });
+
+  const firstErrorPath = Object.keys(errors)[0];
+  return {
+    errors,
+    firstTab: firstErrorPath ? tabFromListingErrorPath(firstErrorPath) : null,
+  };
+};
+
 const emptyListingDraft: PartnerListingDraft = {
   storeName: '',
   businessType: '',
@@ -832,6 +1039,7 @@ export default function PartnerPage() {
   const [listingReview, setListingReview] = useState<PartnerListingReview>(null);
   const [listingContentId, setListingContentId] = useState<string | null>(null);
   const [listingNotice, setListingNotice] = useState('');
+  const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [isListingLoading, setIsListingLoading] = useState(false);
   const [isSavingListing, setIsSavingListing] = useState(false);
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
@@ -1541,6 +1749,7 @@ export default function PartnerPage() {
     const draft = response.draft;
     setListingContentId(response.contentId);
     setListingReview(response.review);
+    setListingErrors({});
     setListingDraft({
       ...emptyListingDraft,
       ...draft,
@@ -1597,11 +1806,22 @@ export default function PartnerPage() {
     };
   }, [applyListingDraftResponse, listingStoreId]);
 
+  const clearListingErrorsFor = (path: string) => {
+    setListingErrors((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([key]) => key !== path && !key.startsWith(`${path}.`)),
+      );
+      return Object.keys(next).length === Object.keys(current).length ? current : next;
+    });
+  };
+
   const updateListingField = (key: keyof PartnerListingDraft, value: string) => {
+    clearListingErrorsFor(String(key));
     setListingDraft((current) => ({ ...current, [key]: value }));
   };
 
   const updateListingTags = (value: string) => {
+    clearListingErrorsFor('tags');
     setListingDraft((current) => ({
       ...current,
       tags: value
@@ -1617,6 +1837,10 @@ export default function PartnerPage() {
     key: keyof PartnerListingOpeningHour,
     value: string | boolean,
   ) => {
+    clearListingErrorsFor(`openingHourItems.${index}.${String(key)}`);
+    if (key === 'isOff') {
+      clearListingErrorsFor(`openingHourItems.${index}.hours`);
+    }
     setListingDraft((current) => ({
       ...current,
       openingHourItems: (current.openingHourItems.length
@@ -1629,6 +1853,7 @@ export default function PartnerPage() {
   };
 
   const updateGalleryUrl = (index: number, value: string) => {
+    clearListingErrorsFor(`galleryUrls.${index}`);
     setListingDraft((current) => ({
       ...current,
       galleryUrls: current.galleryUrls.map((item, itemIndex) =>
@@ -1638,6 +1863,7 @@ export default function PartnerPage() {
   };
 
   const addGalleryUrl = () => {
+    clearListingErrorsFor('galleryUrls');
     setListingDraft((current) => ({
       ...current,
       galleryUrls: [...current.galleryUrls, ''],
@@ -1645,6 +1871,7 @@ export default function PartnerPage() {
   };
 
   const removeGalleryUrl = (index: number) => {
+    clearListingErrorsFor('galleryUrls');
     setListingDraft((current) => ({
       ...current,
       galleryUrls: current.galleryUrls.filter((_, itemIndex) => itemIndex !== index),
@@ -1652,6 +1879,7 @@ export default function PartnerPage() {
   };
 
   const updateVideoUrl = (index: number, value: string) => {
+    clearListingErrorsFor(`videoUrls.${index}`);
     setListingDraft((current) => ({
       ...current,
       videoUrls: current.videoUrls.map((item, itemIndex) =>
@@ -1661,6 +1889,7 @@ export default function PartnerPage() {
   };
 
   const addVideoUrl = () => {
+    clearListingErrorsFor('videoUrls');
     setListingDraft((current) => ({
       ...current,
       videoUrls: [...current.videoUrls, ''],
@@ -1668,6 +1897,7 @@ export default function PartnerPage() {
   };
 
   const removeVideoUrl = (index: number) => {
+    clearListingErrorsFor('videoUrls');
     setListingDraft((current) => ({
       ...current,
       videoUrls: current.videoUrls.filter((_, itemIndex) => itemIndex !== index),
@@ -1679,6 +1909,7 @@ export default function PartnerPage() {
     key: keyof PartnerListingPricing,
     value: string,
   ) => {
+    clearListingErrorsFor(`pricingItems.${index}.${String(key)}`);
     setListingDraft((current) => ({
       ...current,
       pricingItems: current.pricingItems.map((item, itemIndex) =>
@@ -1688,6 +1919,7 @@ export default function PartnerPage() {
   };
 
   const addPricingItem = () => {
+    clearListingErrorsFor('pricingItems');
     setListingDraft((current) => ({
       ...current,
       pricingItems: [...current.pricingItems, { label: '', value: '', note: '' }],
@@ -1695,6 +1927,7 @@ export default function PartnerPage() {
   };
 
   const removePricingItem = (index: number) => {
+    clearListingErrorsFor('pricingItems');
     setListingDraft((current) => ({
       ...current,
       pricingItems: current.pricingItems.filter((_, itemIndex) => itemIndex !== index),
@@ -1702,6 +1935,7 @@ export default function PartnerPage() {
   };
 
   const updateMenuGroupName = (index: number, value: string) => {
+    clearListingErrorsFor(`menuGroups.${index}.name`);
     setListingDraft((current) => ({
       ...current,
       menuGroups: current.menuGroups.map((group, groupIndex) =>
@@ -1711,6 +1945,7 @@ export default function PartnerPage() {
   };
 
   const addMenuGroup = () => {
+    clearListingErrorsFor('menuGroups');
     setListingDraft((current) => ({
       ...current,
       menuGroups: [...current.menuGroups, { name: '', items: [] }],
@@ -1718,6 +1953,7 @@ export default function PartnerPage() {
   };
 
   const removeMenuGroup = (index: number) => {
+    clearListingErrorsFor('menuGroups');
     setListingDraft((current) => ({
       ...current,
       menuGroups: current.menuGroups.filter((_, groupIndex) => groupIndex !== index),
@@ -1730,6 +1966,7 @@ export default function PartnerPage() {
     key: keyof PartnerListingMenuItem,
     value: string | boolean,
   ) => {
+    clearListingErrorsFor(`menuGroups.${groupIndex}.items.${itemIndex}.${String(key)}`);
     setListingDraft((current) => ({
       ...current,
       menuGroups: current.menuGroups.map((group, currentGroupIndex) =>
@@ -1746,6 +1983,7 @@ export default function PartnerPage() {
   };
 
   const addMenuItem = (groupIndex: number) => {
+    clearListingErrorsFor(`menuGroups.${groupIndex}.items`);
     setListingDraft((current) => ({
       ...current,
       menuGroups: current.menuGroups.map((group, currentGroupIndex) =>
@@ -1763,6 +2001,7 @@ export default function PartnerPage() {
   };
 
   const removeMenuItem = (groupIndex: number, itemIndex: number) => {
+    clearListingErrorsFor(`menuGroups.${groupIndex}.items`);
     setListingDraft((current) => ({
       ...current,
       menuGroups: current.menuGroups.map((group, currentGroupIndex) =>
@@ -1781,6 +2020,7 @@ export default function PartnerPage() {
     key: keyof PartnerListingCast,
     value: string | string[] | number | undefined,
   ) => {
+    clearListingErrorsFor(`castProfiles.${index}.${String(key)}`);
     setListingDraft((current) => ({
       ...current,
       castProfiles: current.castProfiles.map((item, itemIndex) =>
@@ -1790,6 +2030,7 @@ export default function PartnerPage() {
   };
 
   const addCastProfile = () => {
+    clearListingErrorsFor('castProfiles');
     setListingDraft((current) => ({
       ...current,
       castProfiles: [
@@ -1809,6 +2050,7 @@ export default function PartnerPage() {
   };
 
   const removeCastProfile = (index: number) => {
+    clearListingErrorsFor('castProfiles');
     setListingDraft((current) => ({
       ...current,
       castProfiles: current.castProfiles.filter((_, itemIndex) => itemIndex !== index),
@@ -1816,6 +2058,7 @@ export default function PartnerPage() {
   };
 
   const updateMediaUrl = (index: number, value: string) => {
+    clearListingErrorsFor(`mediaUrls.${index}`);
     setListingDraft((current) => ({
       ...current,
       mediaUrls: current.mediaUrls.map((item, itemIndex) =>
@@ -1825,6 +2068,7 @@ export default function PartnerPage() {
   };
 
   const addMediaUrl = () => {
+    clearListingErrorsFor('mediaUrls');
     setListingDraft((current) => ({
       ...current,
       mediaUrls: [...current.mediaUrls, ''],
@@ -1832,6 +2076,7 @@ export default function PartnerPage() {
   };
 
   const removeMediaUrl = (index: number) => {
+    clearListingErrorsFor('mediaUrls');
     setListingDraft((current) => ({
       ...current,
       mediaUrls: current.mediaUrls.filter((_, itemIndex) => itemIndex !== index),
@@ -1882,9 +2127,73 @@ export default function PartnerPage() {
     };
   };
 
+  const listingErrorCount = Object.keys(listingErrors).length;
+  const listingErrorCounts = useMemo(
+    () =>
+      Object.keys(listingErrors).reduce<Record<ListingTabKey, number>>(
+        (counts, path) => ({
+          ...counts,
+          [tabFromListingErrorPath(path)]: counts[tabFromListingErrorPath(path)] + 1,
+        }),
+        { store: 0, cast: 0, pricing: 0, media: 0 },
+      ),
+    [listingErrors],
+  );
+
+  const listingInputStyle = (path: string, extra?: React.CSSProperties): React.CSSProperties => ({
+    ...inputStyle,
+    ...(listingErrors[path]
+      ? {
+          borderColor: 'rgba(255,180,168,.76)',
+          background: 'rgba(255,180,168,.055)',
+          boxShadow: '0 0 0 1px rgba(255,180,168,.14)',
+        }
+      : null),
+    ...extra,
+  });
+
+  const listingErrorText = (path: string) =>
+    listingErrors[path] ? (
+      <span
+        style={{
+          color: colors.danger,
+          fontSize: '11.5px',
+          fontWeight: 800,
+          lineHeight: 1.45,
+        }}
+      >
+        {listingErrors[path]}
+      </span>
+    ) : null;
+
+  const validateListingBeforeAction = (mode: ListingValidationMode) => {
+    if (!listingStoreId) {
+      setListingNotice('Cần chọn quán trước khi lưu hoặc gửi duyệt.');
+      setListingErrors({});
+      return false;
+    }
+
+    const validation = validateListingDraft(listingDraft, mode);
+    setListingErrors(validation.errors);
+
+    const count = Object.keys(validation.errors).length;
+    if (count) {
+      if (validation.firstTab) {
+        setListingTab(validation.firstTab);
+      }
+      setListingNotice(
+        mode === 'submit'
+          ? `Còn ${count} lỗi cần sửa trước khi gửi Admin duyệt.`
+          : `Còn ${count} lỗi cần sửa trước khi lưu bản nháp.`,
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const saveListingDraft = async () => {
-    if (!listingStoreId || !listingDraft.storeName.trim()) {
-      setListingNotice('Cần chọn quán và nhập tên quán trước khi lưu.');
+    if (!validateListingBeforeAction('draft')) {
       return;
     }
 
@@ -1910,8 +2219,7 @@ export default function PartnerPage() {
   };
 
   const submitListingDraft = async () => {
-    if (!listingStoreId || !listingDraft.storeName.trim()) {
-      setListingNotice('Cần chọn quán và nhập tên quán trước khi gửi duyệt.');
+    if (!validateListingBeforeAction('submit')) {
       return;
     }
 
@@ -2731,16 +3039,18 @@ export default function PartnerPage() {
                     value={cast.stageName}
                     onChange={(event) => updateCastProfile(index, 'stageName', event.target.value)}
                     placeholder="VD: Yuki"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.stageName`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.stageName`)}
                 </FormField>
                 <FormField label="Headline hiển thị">
                   <input
                     value={cast.publicHeadline ?? ''}
                     onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
                     placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.publicHeadline`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.publicHeadline`)}
                 </FormField>
                 <FormField label="Ngôn ngữ">
                   <input
@@ -2753,8 +3063,9 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="vi, en, ja"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.languages`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.languages`)}
                 </FormField>
                 <FormField label="Tags">
                   <input
@@ -2767,8 +3078,9 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="hostess, english"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.tags`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.tags`)}
                 </FormField>
                 <FormField label="Sở thích">
                   <input
@@ -2781,8 +3093,9 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="spa, cocktail"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.hobbies`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.hobbies`)}
                 </FormField>
                 <FormField label="Tháng sinh">
                   <input
@@ -2796,16 +3109,18 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="1 - 12"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.birthMonth`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.birthMonth`)}
                 </FormField>
                 <FormField label="Cung">
                   <input
                     value={cast.zodiacSign ?? ''}
                     onChange={(event) => updateCastProfile(index, 'zodiacSign', event.target.value)}
                     placeholder="VD: Leo"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.zodiacSign`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.zodiacSign`)}
                 </FormField>
                 <FormField label="Chiều cao">
                   <input
@@ -2819,16 +3134,18 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="VD: 165"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.heightCm`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.heightCm`)}
                 </FormField>
                 <FormField label="Số đo">
                   <input
                     value={cast.measurements ?? ''}
                     onChange={(event) => updateCastProfile(index, 'measurements', event.target.value)}
                     placeholder="VD: 82-58-84"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.measurements`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.measurements`)}
                 </FormField>
                 <FormField label="Giá theo giờ">
                   <input
@@ -2842,8 +3159,9 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="VD: 1200000"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.hourlyRateVnd`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.hourlyRateVnd`)}
                 </FormField>
                 <FormField label="YouTube URL">
                   <input
@@ -2856,8 +3174,9 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="https://youtube.com/..."
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.youtubeLinks`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.youtubeLinks`)}
                 </FormField>
                 <FormField label="Ảnh cast URL">
                   <input
@@ -2870,8 +3189,9 @@ export default function PartnerPage() {
                       )
                     }
                     placeholder="https://.../cast.jpg"
-                    style={inputStyle}
+                    style={listingInputStyle(`castProfiles.${index}.mediaUrls`)}
                   />
+                  {listingErrorText(`castProfiles.${index}.mediaUrls`)}
                 </FormField>
               </div>
               <FormField label="Mô tả cast">
@@ -2879,8 +3199,9 @@ export default function PartnerPage() {
                   value={cast.bio ?? ''}
                   onChange={(event) => updateCastProfile(index, 'bio', event.target.value)}
                   placeholder="Thông tin nổi bật của cast"
-                  style={{ ...inputStyle, marginTop: '10px', minHeight: '86px', resize: 'vertical', padding: '12px' }}
+                  style={listingInputStyle(`castProfiles.${index}.bio`, { marginTop: '10px', minHeight: '86px', resize: 'vertical', padding: '12px' })}
                 />
+                {listingErrorText(`castProfiles.${index}.bio`)}
               </FormField>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                 <GhostButton onClick={() => removeCastProfile(index)}>
@@ -2906,16 +3227,18 @@ export default function PartnerPage() {
               value={listingDraft.priceRange}
               onChange={(event) => updateListingField('priceRange', event.target.value)}
               placeholder="VD: 500.000đ - 3.000.000đ"
-              style={inputStyle}
+              style={listingInputStyle('priceRange')}
             />
+            {listingErrorText('priceRange')}
           </FormField>
           <FormField label="Tóm tắt thực đơn / mức giá">
             <textarea
               value={listingDraft.menuSummary}
               onChange={(event) => updateListingField('menuSummary', event.target.value)}
               placeholder="VD: Bottle service, cocktail, set VIP..."
-              style={{ ...inputStyle, minHeight: '88px', resize: 'vertical', padding: '12px' }}
+              style={listingInputStyle('menuSummary', { minHeight: '88px', resize: 'vertical', padding: '12px' })}
             />
+            {listingErrorText('menuSummary')}
           </FormField>
           <div className="partner-listing-section" style={{ margin: 0 }}>
             <div className="partner-listing-section-title">Nhóm menu giống form Admin</div>
@@ -2932,8 +3255,9 @@ export default function PartnerPage() {
                       value={group.name}
                       onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
                       placeholder="VD: VIP packages"
-                      style={inputStyle}
+                      style={listingInputStyle(`menuGroups.${groupIndex}.name`)}
                     />
+                    {listingErrorText(`menuGroups.${groupIndex}.name`)}
                   </FormField>
                   <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
                     <GhostButton onClick={() => addMenuItem(groupIndex)}>
@@ -2953,35 +3277,39 @@ export default function PartnerPage() {
                         value={item.name}
                         onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
                         placeholder="VD: VIP table"
-                        style={inputStyle}
+                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
                       />
+                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
                     </FormField>
                     <FormField label="Mô tả">
                       <input
                         value={item.description ?? ''}
                         onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
                         placeholder="Mô tả ngắn"
-                        style={inputStyle}
+                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
                       />
+                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
                     </FormField>
                     <FormField label="Mức chi phí">
                       <select
                         value={item.priceTier ?? '$$'}
                         onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'priceTier', event.target.value)}
-                        style={{ ...inputStyle, appearance: 'none' }}
+                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`, { appearance: 'none' })}
                       >
                         <option value="$$">$$</option>
                         <option value="$$$">$$$</option>
                         <option value="$$$$">$$$$</option>
                       </select>
+                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
                     </FormField>
                     <FormField label="Ảnh món URL">
                       <input
                         value={item.imageUrl ?? ''}
                         onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
                         placeholder="https://..."
-                        style={inputStyle}
+                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
                       />
+                      {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
                     </FormField>
                     <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
                       <button
@@ -3017,24 +3345,27 @@ export default function PartnerPage() {
                   value={item.label}
                   onChange={(event) => updatePricingItem(index, 'label', event.target.value)}
                   placeholder="VD: Phòng VIP"
-                  style={inputStyle}
+                  style={listingInputStyle(`pricingItems.${index}.label`)}
                 />
+                {listingErrorText(`pricingItems.${index}.label`)}
               </FormField>
               <FormField label="Mức giá">
                 <input
                   value={item.value}
                   onChange={(event) => updatePricingItem(index, 'value', event.target.value)}
                   placeholder="VD: 2.500.000đ - 6.000.000đ"
-                  style={inputStyle}
+                  style={listingInputStyle(`pricingItems.${index}.value`)}
                 />
+                {listingErrorText(`pricingItems.${index}.value`)}
               </FormField>
               <FormField label="Ghi chú">
                 <input
                   value={item.note ?? ''}
                   onChange={(event) => updatePricingItem(index, 'note', event.target.value)}
                   placeholder="VD: Ưu tiên khách VIP"
-                  style={inputStyle}
+                  style={listingInputStyle(`pricingItems.${index}.note`)}
                 />
+                {listingErrorText(`pricingItems.${index}.note`)}
               </FormField>
               <div style={{ display: 'flex', alignItems: 'end' }}>
                 <GhostButton onClick={() => removePricingItem(index)}>
@@ -3062,8 +3393,9 @@ export default function PartnerPage() {
                 value={listingDraft.coverImageUrl}
                 onChange={(event) => updateListingField('coverImageUrl', event.target.value)}
                 placeholder="https://.../cover.jpg"
-                style={inputStyle}
+                style={listingInputStyle('coverImageUrl')}
               />
+              {listingErrorText('coverImageUrl')}
             </FormField>
           </section>
 
@@ -3081,8 +3413,9 @@ export default function PartnerPage() {
                     value={url}
                     onChange={(event) => updateGalleryUrl(index, event.target.value)}
                     placeholder="https://..."
-                    style={inputStyle}
+                    style={listingInputStyle(`galleryUrls.${index}`)}
                   />
+                  {listingErrorText(`galleryUrls.${index}`)}
                 </FormField>
                 <div style={{ display: 'flex', alignItems: 'end' }}>
                   <GhostButton onClick={() => removeGalleryUrl(index)}>
@@ -3112,8 +3445,9 @@ export default function PartnerPage() {
                     value={url}
                     onChange={(event) => updateVideoUrl(index, event.target.value)}
                     placeholder="https://youtube.com/..."
-                    style={inputStyle}
+                    style={listingInputStyle(`videoUrls.${index}`)}
                   />
+                  {listingErrorText(`videoUrls.${index}`)}
                 </FormField>
                 <div style={{ display: 'flex', alignItems: 'end' }}>
                   <GhostButton onClick={() => removeVideoUrl(index)}>
@@ -3139,8 +3473,9 @@ export default function PartnerPage() {
                       value={url}
                       onChange={(event) => updateMediaUrl(index, event.target.value)}
                       placeholder="https://..."
-                      style={inputStyle}
+                      style={listingInputStyle(`mediaUrls.${index}`)}
                     />
+                    {listingErrorText(`mediaUrls.${index}`)}
                   </FormField>
                   <div style={{ display: 'flex', alignItems: 'end' }}>
                     <GhostButton onClick={() => removeMediaUrl(index)}>
@@ -3174,20 +3509,22 @@ export default function PartnerPage() {
                 value={listingDraft.storeName}
                 onChange={(event) => updateListingField('storeName', event.target.value)}
                 placeholder="VD: Vietyoru Lounge"
-                style={inputStyle}
+                style={listingInputStyle('storeName')}
               />
+              {listingErrorText('storeName')}
             </FormField>
             <FormField label="Loại hình">
               <select
                 value={listingDraft.storeCategory || listingDraft.businessType || 'CLUB'}
-                onChange={(event) =>
+                onChange={(event) => {
+                  clearListingErrorsFor('storeCategory');
                   setListingDraft((current) => ({
                     ...current,
                     storeCategory: event.target.value,
                     businessType: event.target.value,
-                  }))
-                }
-                style={{ ...inputStyle, appearance: 'none' }}
+                  }));
+                }}
+                style={listingInputStyle('storeCategory', { appearance: 'none' })}
               >
                 <option value="CLUB">Club</option>
                 <option value="LOUNGE">Lounge</option>
@@ -3197,14 +3534,16 @@ export default function PartnerPage() {
                 <option value="MASSAGE_SPA">Massage & Spa</option>
                 <option value="RESTAURANT">Nhà hàng</option>
               </select>
+              {listingErrorText('storeCategory')}
             </FormField>
             <FormField label="Khu vực hiển thị">
               <input
                 value={listingDraft.area}
                 onChange={(event) => updateListingField('area', event.target.value)}
                 placeholder="VD: Quận 1, TP.HCM"
-                style={inputStyle}
+                style={listingInputStyle('area')}
               />
+              {listingErrorText('area')}
             </FormField>
           </div>
         </section>
@@ -3217,48 +3556,54 @@ export default function PartnerPage() {
                 value={listingDraft.storeCity}
                 onChange={(event) => updateListingField('storeCity', event.target.value)}
                 placeholder="VD: Hồ Chí Minh"
-                style={inputStyle}
+                style={listingInputStyle('storeCity')}
               />
+              {listingErrorText('storeCity')}
             </FormField>
             <FormField label="Quận / khu">
               <input
                 value={listingDraft.storeDistrict}
                 onChange={(event) => updateListingField('storeDistrict', event.target.value)}
                 placeholder="VD: Quận 1"
-                style={inputStyle}
+                style={listingInputStyle('storeDistrict')}
               />
+              {listingErrorText('storeDistrict')}
             </FormField>
             <FormField label="Phường/Xã">
               <input
                 value={listingDraft.ward}
                 onChange={(event) => updateListingField('ward', event.target.value)}
                 placeholder="VD: Bến Nghé"
-                style={inputStyle}
+                style={listingInputStyle('ward')}
               />
+              {listingErrorText('ward')}
             </FormField>
             <FormField label="Số nhà, tên đường">
               <input
                 value={listingDraft.streetAddress}
                 onChange={(event) => updateListingField('streetAddress', event.target.value)}
                 placeholder="VD: 12 Nguyễn Huệ"
-                style={inputStyle}
+                style={listingInputStyle('streetAddress')}
               />
+              {listingErrorText('streetAddress')}
             </FormField>
             <FormField label="Số điện thoại">
               <input
                 value={listingDraft.phone}
                 onChange={(event) => updateListingField('phone', event.target.value)}
                 placeholder="VD: 0901234567"
-                style={inputStyle}
+                style={listingInputStyle('phone')}
               />
+              {listingErrorText('phone')}
             </FormField>
             <FormField label="Link Google Maps">
               <input
                 value={listingDraft.mapUrl}
                 onChange={(event) => updateListingField('mapUrl', event.target.value)}
                 placeholder="Dán link Google Maps"
-                style={inputStyle}
+                style={listingInputStyle('mapUrl')}
               />
+              {listingErrorText('mapUrl')}
             </FormField>
           </div>
         </section>
@@ -3277,13 +3622,16 @@ export default function PartnerPage() {
                 >
                   {item.isOff ? 'Nghỉ' : 'Mở'}
                 </button>
-                <input
-                  value={item.hours ?? ''}
-                  disabled={item.isOff}
-                  onChange={(event) => updateOpeningHourItem(index, 'hours', event.target.value)}
-                  placeholder="VD: 19:00 - 02:00"
-                  style={inputStyle}
-                />
+                <div style={{ display: 'grid', gap: '6px', minWidth: 0 }}>
+                  <input
+                    value={item.hours ?? ''}
+                    disabled={item.isOff}
+                    onChange={(event) => updateOpeningHourItem(index, 'hours', event.target.value)}
+                    placeholder="VD: 19:00 - 02:00"
+                    style={listingInputStyle(`openingHourItems.${index}.hours`)}
+                  />
+                  {listingErrorText(`openingHourItems.${index}.hours`)}
+                </div>
               </div>
             ))}
           </div>
@@ -3292,8 +3640,9 @@ export default function PartnerPage() {
               value={listingDraft.openingHours}
               onChange={(event) => updateListingField('openingHours', event.target.value)}
               placeholder="VD: 19:00 - 04:00"
-              style={inputStyle}
+              style={listingInputStyle('openingHours')}
             />
+            {listingErrorText('openingHours')}
           </FormField>
         </section>
 
@@ -3305,24 +3654,27 @@ export default function PartnerPage() {
                 value={listingDraft.tags.join(', ')}
                 onChange={(event) => updateListingTags(event.target.value)}
                 placeholder="VD: Club, Phòng VIP, DJ hàng đầu"
-                style={inputStyle}
+                style={listingInputStyle('tags')}
               />
+              {listingErrorText('tags')}
             </FormField>
             <FormField label="Mô tả quán" className="partner-field-wide">
               <textarea
                 value={listingDraft.description}
                 onChange={(event) => updateListingField('description', event.target.value)}
                 placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
-                style={{ ...inputStyle, minHeight: '132px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
+                style={listingInputStyle('description', { minHeight: '132px', resize: 'vertical', padding: '12px', lineHeight: 1.5 })}
               />
+              {listingErrorText('description')}
             </FormField>
             <FormField label="Ghi chú gửi Admin" className="partner-field-wide">
               <textarea
                 value={listingDraft.note}
                 onChange={(event) => updateListingField('note', event.target.value)}
                 placeholder="Ghi chú nội bộ cho Admin khi duyệt nội dung"
-                style={{ ...inputStyle, minHeight: '86px', resize: 'vertical', padding: '12px', lineHeight: 1.5 }}
+                style={listingInputStyle('note', { minHeight: '86px', resize: 'vertical', padding: '12px', lineHeight: 1.5 })}
               />
+              {listingErrorText('note')}
             </FormField>
           </div>
         </section>
@@ -3349,7 +3701,7 @@ export default function PartnerPage() {
             ? 'Bản nháp đã lưu'
             : 'Chưa có bản nháp';
   const isListingBusy = isListingLoading || isSavingListing || isSubmittingListing;
-  const canWriteListing = Boolean(listingStoreId && listingDraft.storeName.trim()) && !isListingBusy;
+  const canWriteListing = Boolean(listingStoreId) && !isListingBusy;
 
   const renderListingPanel = () => (
     <PanelCard>
@@ -3387,6 +3739,11 @@ export default function PartnerPage() {
           }}
         >
           {listingNotice || 'Nhập nội dung, lưu nháp hoặc gửi Admin duyệt để public sau khi được xác nhận.'}
+          {listingErrorCount ? (
+            <div style={{ marginTop: '4px', color: colors.danger, fontWeight: 900 }}>
+              Còn {listingErrorCount} trường cần kiểm tra.
+            </div>
+          ) : null}
           {listingReview?.submittedAt ? (
             <div style={{ marginTop: '4px', color: colors.muted }}>
               Gửi gần nhất: {formatDateTime(listingReview.submittedAt)}
@@ -3409,11 +3766,32 @@ export default function PartnerPage() {
               background: listingTab === tab.key ? colors.goldGrad : colors.surface3,
               color: listingTab === tab.key ? colors.onGold : colors.text2,
               padding: '0 13px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
               fontWeight: 800,
               cursor: 'pointer',
             }}
           >
             {tab.label}
+            {listingErrorCounts[tab.key] ? (
+              <span
+                style={{
+                  minWidth: '20px',
+                  height: '20px',
+                  borderRadius: '999px',
+                  background: listingTab === tab.key ? 'rgba(36,26,10,.18)' : 'rgba(255,180,168,.14)',
+                  color: listingTab === tab.key ? colors.onGold : colors.danger,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 950,
+                }}
+              >
+                {listingErrorCounts[tab.key]}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
