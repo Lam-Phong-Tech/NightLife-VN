@@ -22,7 +22,11 @@ export function CastBookingCTA({
 }: CastBookingCTAProps) {
   if (variant === "mobile") {
     return (
-      <section className="cast-booking-cta mobile" data-testid="cast-booking-cta-mobile">
+      <section
+        className="cast-booking-cta mobile nl-scroll-reveal-skip"
+        data-no-scroll-reveal="true"
+        data-testid="cast-booking-cta-mobile"
+      >
         <button
           type="button"
           className={`cast-booking-favorite${isFavorite ? " is-active" : ""}`}

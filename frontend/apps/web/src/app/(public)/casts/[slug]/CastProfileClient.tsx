@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { ApiError, apiClient } from "@/lib/api/client";
@@ -49,6 +50,7 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
   );
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = gallery[Math.min(activeMediaIndex, gallery.length - 1)] ?? gallery[0]!;
   const favoriteImage = gallery.find((item) => item.type === "IMAGE")?.url;
   const favoriteSnapshot = useMemo(
@@ -68,6 +70,18 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
       data: { targetType: "CAST", targetId: profile.id },
     }).catch(() => undefined);
   }, [profile.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) setPortalTarget(document.body);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -211,15 +225,6 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
             onTrack={track}
           />
           <CastRelatedCasts relatedCasts={relatedCasts} variant="mobile" onTrack={track} />
-          <CastBookingCTA
-            profile={profile}
-            area={area}
-            bookingHref={bookingHref}
-            variant="mobile"
-            isFavorite={isFavorite}
-            onToggleFavorite={toggleFavorite}
-            onTrack={track}
-          />
         </div>
 
         <div className="hidden md:block cast-desktop">
@@ -282,6 +287,20 @@ export default function CastProfileClient({ cast }: CastProfileClientProps) {
           </div>
         </div>
       </main>
+      {portalTarget
+        ? createPortal(
+            <CastBookingCTA
+              profile={profile}
+              area={area}
+              bookingHref={bookingHref}
+              variant="mobile"
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
+              onTrack={track}
+            />,
+            portalTarget,
+          )
+        : null}
       <CastProfileStyles />
     </>
   );

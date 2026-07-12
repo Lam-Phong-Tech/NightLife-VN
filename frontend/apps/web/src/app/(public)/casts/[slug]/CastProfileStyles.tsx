@@ -648,19 +648,24 @@ export function CastProfileStyles() {
       }
 
       .cast-booking-cta.mobile {
-        position: fixed;
+        --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
+        --cast-mobile-cta-height: 76px;
+        position: fixed !important;
         z-index: 70;
-        left: 0;
-        right: 0;
-        bottom: calc(74px + env(safe-area-inset-bottom));
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        bottom: var(--cast-mobile-nav-height) !important;
         display: flex;
         align-items: center;
         gap: 11px;
-        min-height: 76px;
-        margin: 0;
-        padding: 12px 16px;
+        height: var(--cast-mobile-cta-height);
+        min-height: var(--cast-mobile-cta-height);
+        margin: 0 !important;
+        padding: 10px 14px;
         background: rgba(255,250,240,.98);
         border-top: 1px solid rgba(212,178,106,.30);
+        box-sizing: border-box;
         box-shadow: 0 -16px 34px rgba(80,61,27,.14);
         backdrop-filter: blur(12px);
         transform: translateZ(0);
@@ -715,6 +720,12 @@ export function CastProfileStyles() {
         line-height: 1.15;
         opacity: .82;
         white-space: nowrap;
+      }
+
+      @media (min-width: 768px) {
+        .cast-booking-cta.mobile {
+          display: none !important;
+        }
       }
 
       .cast-desktop {
