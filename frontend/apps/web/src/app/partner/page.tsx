@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Camera,
   CheckCircle2,
+  ChevronDown,
   Eye,
   FileClock,
   FileText,
@@ -1189,6 +1190,142 @@ function FormField({
   );
 }
 
+function ThemedListingSelect({
+  value,
+  onChange,
+  placeholder,
+  options,
+  hasError,
+  disabled,
+  ariaLabel,
+  compact,
+  style,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  options: { value: string; label: string }[];
+  hasError?: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
+  compact?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value);
+
+  return (
+    <div
+      onBlur={(event) => {
+        const nextFocus = event.relatedTarget;
+        if (!nextFocus || !event.currentTarget.contains(nextFocus as Node)) {
+          setIsOpen(false);
+        }
+      }}
+      style={{
+        position: 'relative',
+        minWidth: compact ? '96px' : undefined,
+        ...style,
+      }}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((current) => (disabled ? false : !current))}
+        aria-label={ariaLabel ?? placeholder}
+        aria-expanded={isOpen}
+        style={{
+          width: '100%',
+          minHeight: compact ? '34px' : '44px',
+          border: `1px solid ${hasError ? colors.danger : colors.borderGold22}`,
+          borderRadius: compact ? '9px' : '12px',
+          background: colors.surface2,
+          color: selectedOption ? colors.text : colors.muted,
+          font: 'inherit',
+          fontSize: compact ? '12px' : '13px',
+          fontWeight: 900,
+          padding: compact ? '0 8px' : '0 12px',
+          outline: 'none',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          opacity: disabled ? 0.65 : 1,
+          textAlign: 'left',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selectedOption?.label ?? placeholder}
+        </span>
+        <ChevronDown
+          size={compact ? 14 : 16}
+          style={{ flex: '0 0 auto', color: colors.goldBright }}
+        />
+      </button>
+      {isOpen && !disabled ? (
+        <div
+          className="partner-themed-select-menu"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
+            zIndex: 180,
+            maxHeight: compact ? '220px' : '280px',
+            overflowY: 'auto',
+            border: `1px solid ${colors.borderGold32}`,
+            borderRadius: '12px',
+            background: colors.popoverBg,
+            boxShadow: '0 24px 50px -26px rgba(0,0,0,.86)',
+            padding: '6px',
+          }}
+        >
+          {options.length ? (
+            options.map((option) => {
+              const selected = option.value === value;
+              return (
+                <button
+                  key={`${option.value}-${option.label}`}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    minHeight: compact ? '32px' : '36px',
+                    border: 0,
+                    borderRadius: '9px',
+                    background: selected ? colors.goldGrad : 'transparent',
+                    color: selected ? colors.onGold : colors.text,
+                    font: 'inherit',
+                    fontSize: compact ? '12px' : '12.5px',
+                    fontWeight: selected ? 900 : 800,
+                    textAlign: 'left',
+                    padding: '0 10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })
+          ) : (
+            <div style={{ padding: '10px', color: colors.muted, fontSize: '12px', fontWeight: 800 }}>
+              Chưa có dữ liệu
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ListingTimeSelect({
   value,
   onChange,
@@ -1201,32 +1338,14 @@ function ListingTimeSelect({
   hasError?: boolean;
 }) {
   return (
-    <select
+    <ThemedListingSelect
       value={value}
-      onChange={(event) => onChange(event.target.value)}
-      aria-label={placeholder}
-      style={{
-        minWidth: '88px',
-        height: '34px',
-        border: `1px solid ${hasError ? colors.danger : colors.borderGold22}`,
-        borderRadius: '9px',
-        background: colors.surface2,
-        color: value ? colors.goldPale : colors.muted,
-        font: 'inherit',
-        fontSize: '12px',
-        fontWeight: 900,
-        padding: '0 9px',
-        outline: 'none',
-        cursor: 'pointer',
-      }}
-    >
-      <option value="">{placeholder}</option>
-      {listingTimeOptions.map((time) => (
-        <option key={time} value={time}>
-          {time}
-        </option>
-      ))}
-    </select>
+      onChange={onChange}
+      placeholder={placeholder}
+      options={listingTimeOptions.map((time) => ({ value: time, label: time }))}
+      hasError={hasError}
+      compact
+    />
   );
 }
 
@@ -1681,8 +1800,20 @@ export default function PartnerPage() {
 
     const loadPartnerData = async () => {
       try {
-        const [storeData, couponData, bookingData, billData, dashboardData] = await Promise.all([
-          apiClient<PartnerStore[]>('/partner/stores'),
+        const storeData = await apiClient<PartnerStore[]>('/partner/stores');
+
+        if (!isMounted) return;
+
+        setStores(storeData);
+        setListingStoreId((current) => current || storeData[0]?.id || '');
+        setBillStoreId((current) => current || storeData[0]?.id || '');
+        setStatusMessage(
+          storeData.length
+            ? 'Dữ liệu đang hiển thị theo phạm vi quán của tài khoản Partner.'
+            : 'Tài khoản Partner chưa được gán quán. Admin cần cấp quyền quán trước khi đăng thông tin.',
+        );
+
+        const [couponResult, bookingResult, billResult, dashboardResult] = await Promise.allSettled([
           apiClient<PartnerCoupon[]>('/partner/coupons'),
           apiClient<PartnerBooking[]>('/partner/bookings'),
           apiClient<PartnerBill[]>('/partner/bills'),
@@ -1693,14 +1824,18 @@ export default function PartnerPage() {
 
         if (!isMounted) return;
 
-        setStores(storeData);
-        setListingStoreId((current) => current || storeData[0]?.id || '');
-        setBillStoreId((current) => current || storeData[0]?.id || '');
+        const couponData = couponResult.status === 'fulfilled' ? couponResult.value : [];
+        const bookingData = bookingResult.status === 'fulfilled' ? bookingResult.value : [];
+        const billData = billResult.status === 'fulfilled' ? billResult.value : [];
+        const dashboardData = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
+
         setCoupons(couponData);
         setBookings(bookingData);
         setBills(billData);
         setDashboard(dashboardData);
-        setStatusMessage('Dữ liệu đang hiển thị theo phạm vi quán của tài khoản Partner.');
+        if ([couponResult, bookingResult, billResult, dashboardResult].some((result) => result.status === 'rejected')) {
+          setStatusMessage('Đã tải quán partner. Một số dữ liệu phụ đang lỗi tạm thời, vui lòng tải lại sau.');
+        }
       } catch (error) {
         if (!isMounted) return;
 
@@ -1772,8 +1907,9 @@ export default function PartnerPage() {
     return () => window.clearTimeout(timer);
   }, [scanCouponPayload, searchParams]);
 
-  const storeName = stores[0]?.name ?? 'Vietyoru Partner';
-  const activeStoreStatus = stores[0]?.status ?? 'Chưa gán quán';
+  const activePartnerStore = stores.find((store) => store.id === listingStoreId) ?? stores[0] ?? null;
+  const storeName = activePartnerStore?.name ?? bookings[0]?.store.name ?? bills[0]?.store?.name ?? 'Chưa gán quán';
+  const activeStoreStatus = activePartnerStore?.status ?? (stores.length ? 'ACTIVE' : 'Chưa gán quán');
   const usedCouponCount = coupons.reduce((sum, item) => sum + item.usedCount, 0);
   const activeCoupons = coupons.filter((coupon) => coupon.status === 'ACTIVE').length;
   const totalDiscount = bills.reduce((sum, bill) => sum + (bill.discountVnd ?? 0), 0);
@@ -3595,18 +3731,15 @@ export default function PartnerPage() {
             />
           </FormField>
           <FormField label="Trạng thái">
-            <select
+            <ThemedListingSelect
               value={settlementFilters.status}
-              onChange={(event) => updateSettlementFilter('status', event.target.value)}
-              style={inputStyle}
-            >
-              <option value="ALL">Tất cả</option>
-              {settlementStatusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => updateSettlementFilter('status', value)}
+              placeholder="Tất cả"
+              options={[
+                { value: 'ALL', label: 'Tất cả' },
+                ...settlementStatusOptions.map((status) => ({ value: status, label: status })),
+              ]}
+            />
           </FormField>
           <GhostButton disabled={!hasSettlementFilters} onClick={clearSettlementFilters}>
             Xóa lọc
@@ -4009,15 +4142,17 @@ export default function PartnerPage() {
                       {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
                     </FormField>
                     <FormField label="Mức chi phí">
-                      <select
+                      <ThemedListingSelect
                         value={item.priceTier ?? '$$'}
-                        onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'priceTier', event.target.value)}
-                        style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`, { appearance: 'none' })}
-                      >
-                        <option value="$$">$$</option>
-                        <option value="$$$">$$$</option>
-                        <option value="$$$$">$$$$</option>
-                      </select>
+                        onChange={(value) => updateMenuItem(groupIndex, itemIndex, 'priceTier', value)}
+                        placeholder="-- Chọn mức --"
+                        hasError={Boolean(listingErrors[`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`])}
+                        options={[
+                          { value: '$$', label: '$$' },
+                          { value: '$$$', label: '$$$' },
+                          { value: '$$$$', label: '$$$$' },
+                        ]}
+                      />
                       {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
                     </FormField>
                     <FormField label="Ảnh món URL">
@@ -4232,26 +4367,28 @@ export default function PartnerPage() {
               {listingErrorText('storeName')}
             </FormField>
             <FormField label="Loại hình">
-              <select
+              <ThemedListingSelect
                 value={listingDraft.storeCategory || listingDraft.businessType || 'CLUB'}
-                onChange={(event) => {
+                onChange={(value) => {
                   clearListingErrorsFor('storeCategory');
                   setListingDraft((current) => ({
                     ...current,
-                    storeCategory: event.target.value,
-                    businessType: event.target.value,
+                    storeCategory: value,
+                    businessType: value,
                   }));
                 }}
-                style={listingInputStyle('storeCategory', { appearance: 'none' })}
-              >
-                <option value="CLUB">Club</option>
-                <option value="LOUNGE">Lounge</option>
-                <option value="BAR">Bar</option>
-                <option value="GIRLS_BAR">Girls Bar</option>
-                <option value="KARAOKE">Karaoke</option>
-                <option value="MASSAGE_SPA">Massage & Spa</option>
-                <option value="RESTAURANT">Nhà hàng</option>
-              </select>
+                placeholder="-- Chọn loại hình --"
+                hasError={Boolean(listingErrors.storeCategory)}
+                options={[
+                  { value: 'CLUB', label: 'Club' },
+                  { value: 'LOUNGE', label: 'Lounge' },
+                  { value: 'BAR', label: 'Bar' },
+                  { value: 'GIRLS_BAR', label: 'Girls Bar' },
+                  { value: 'KARAOKE', label: 'Karaoke' },
+                  { value: 'MASSAGE_SPA', label: 'Massage & Spa' },
+                  { value: 'RESTAURANT', label: 'Nhà hàng' },
+                ]}
+              />
               {listingErrorText('storeCategory')}
             </FormField>
             <FormField label="Khu vực hiển thị">
@@ -4270,10 +4407,9 @@ export default function PartnerPage() {
           <div className="partner-listing-section-title">Vị trí & liên hệ</div>
           <div className="partner-listing-grid">
             <FormField label="Tỉnh/Thành phố">
-              <select
+              <ThemedListingSelect
                 value={selectedProvinceCode || (listingDraft.storeCity ? '__current' : '')}
-                onChange={(event) => {
-                  const code = event.target.value;
+                onChange={(code) => {
                   if (code === '__current') return;
                   const province = provinces.find((item) => String(item.code) === code);
                   const city =
@@ -4293,18 +4429,18 @@ export default function PartnerPage() {
                   clearListingErrorsFor('storeCity');
                   clearListingErrorsFor('ward');
                 }}
-                style={listingInputStyle('storeCity', { appearance: 'none', cursor: 'pointer' })}
-              >
-                <option value="">-- Chọn Tỉnh/Thành --</option>
-                {!selectedProvinceCode && listingDraft.storeCity ? (
-                  <option value="__current">{listingDraft.storeCity}</option>
-                ) : null}
-                {provinces.map((province) => (
-                  <option key={province.code} value={province.code}>
-                    {province.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="-- Chọn Tỉnh/Thành --"
+                hasError={Boolean(listingErrors.storeCity)}
+                options={[
+                  ...(!selectedProvinceCode && listingDraft.storeCity
+                    ? [{ value: '__current', label: listingDraft.storeCity }]
+                    : []),
+                  ...provinces.map((province) => ({
+                    value: String(province.code),
+                    label: province.name,
+                  })),
+                ]}
+              />
               {listingErrorText('storeCity')}
             </FormField>
             <FormField label="Quận / khu">
@@ -4317,32 +4453,27 @@ export default function PartnerPage() {
               {listingErrorText('storeDistrict')}
             </FormField>
             <FormField label="Phường/Xã">
-              <select
+              <ThemedListingSelect
                 value={selectedWardCode || (listingDraft.ward ? '__current' : '')}
-                onChange={(event) => {
-                  const code = event.target.value;
+                onChange={(code) => {
                   if (code === '__current') return;
                   const ward = wards.find((item) => String(item.code) === code);
                   setSelectedWardCode(code);
                   updateListingField('ward', ward?.name ?? '');
                 }}
                 disabled={!selectedProvinceCode && !listingDraft.ward}
-                style={listingInputStyle('ward', {
-                  appearance: 'none',
-                  cursor: selectedProvinceCode || listingDraft.ward ? 'pointer' : 'not-allowed',
-                  opacity: selectedProvinceCode || listingDraft.ward ? 1 : 0.72,
-                })}
-              >
-                <option value="">-- Chọn Phường/Xã --</option>
-                {!selectedWardCode && listingDraft.ward ? (
-                  <option value="__current">{listingDraft.ward}</option>
-                ) : null}
-                {wards.map((ward) => (
-                  <option key={ward.code} value={ward.code}>
-                    {ward.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="-- Chọn Phường/Xã --"
+                hasError={Boolean(listingErrors.ward)}
+                options={[
+                  ...(!selectedWardCode && listingDraft.ward
+                    ? [{ value: '__current', label: listingDraft.ward }]
+                    : []),
+                  ...wards.map((ward) => ({
+                    value: String(ward.code),
+                    label: ward.name,
+                  })),
+                ]}
+              />
               {listingErrorText('ward')}
             </FormField>
             <FormField label="Số nhà, tên đường">
@@ -4564,18 +4695,16 @@ export default function PartnerPage() {
 
       <div className="partner-listing-toolbar">
         <FormField label="Quán cần cập nhật">
-          <select
+          <ThemedListingSelect
             value={listingStoreId}
-            onChange={(event) => setListingStoreId(event.target.value)}
-            disabled={isListingBusy}
-            style={inputStyle}
-          >
-            {stores.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name} - {store.district ?? store.city ?? store.status}
-              </option>
-            ))}
-          </select>
+            onChange={setListingStoreId}
+            disabled={isListingBusy || !stores.length}
+            placeholder={stores.length ? '-- Chọn quán --' : 'Đang tải quán được cấp quyền...'}
+            options={stores.map((store) => ({
+              value: store.id,
+              label: `${store.name} - ${store.district ?? store.city ?? store.status}`,
+            }))}
+          />
         </FormField>
         <div
           style={{
@@ -4764,23 +4893,20 @@ export default function PartnerPage() {
           style={{ display: 'grid', gap: '14px', marginTop: '16px' }}
         >
           <FormField label="Quán thuộc partner *">
-            <select
+            <ThemedListingSelect
               value={billStoreId}
               disabled={!stores.length}
-              onChange={(event) => {
-                setBillStoreId(event.target.value);
+              onChange={(value) => {
+                setBillStoreId(value);
                 setSelectedBillId(null);
                 setBillNotice(null);
               }}
-              style={{ ...inputStyle, appearance: 'none' }}
-            >
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name}
-                  {store.district ? ` - ${store.district}` : ''}
-                </option>
-              ))}
-            </select>
+              placeholder={stores.length ? '-- Chọn quán --' : 'Đang tải quán được cấp quyền...'}
+              options={stores.map((store) => ({
+                value: store.id,
+                label: `${store.name}${store.district ? ` - ${store.district}` : ''}`,
+              }))}
+            />
           </FormField>
 
           <div className="partner-bill-form-grid">
@@ -4805,18 +4931,18 @@ export default function PartnerPage() {
           </div>
 
           <FormField label="Liên kết booking">
-            <select
+            <ThemedListingSelect
               value={billBookingId}
-              onChange={(event) => setBillBookingId(event.target.value)}
-              style={{ ...inputStyle, appearance: 'none' }}
-            >
-              <option value="">Không liên kết booking</option>
-              {billBookingOptions.map((booking) => (
-                <option key={booking.id} value={booking.id}>
-                  {formatDateTime(booking.scheduledAt)} - {booking.partySize} khách - {booking.store.name}
-                </option>
-              ))}
-            </select>
+              onChange={setBillBookingId}
+              placeholder="Không liên kết booking"
+              options={[
+                { value: '', label: 'Không liên kết booking' },
+                ...billBookingOptions.map((booking) => ({
+                  value: booking.id,
+                  label: `${formatDateTime(booking.scheduledAt)} - ${booking.partySize} khách - ${booking.store.name}`,
+                })),
+              ]}
+            />
           </FormField>
 
           <FormField label="Ảnh / chứng từ">
