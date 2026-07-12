@@ -2,17 +2,20 @@
 
 import Link from 'next/link';
 import {
+  AlertTriangle,
   Bell,
   CalendarDays,
   Camera,
   CheckCircle2,
   Eye,
   FileClock,
+  FileText,
   Home,
   ImagePlus,
   LogOut,
   QrCode,
   ReceiptText,
+  RefreshCcw,
   Save,
   Send,
   Settings,
@@ -28,6 +31,7 @@ import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiClient } from '@/lib/api/client';
+import { billApi } from '@/lib/api/bills';
 import { clearAuthSession } from '@/lib/auth/session';
 
 const colors = {
@@ -169,18 +173,24 @@ type PartnerBooking = {
   scheduledAt: string;
   partySize: number;
   totalVnd: number | null;
-  store: { name: string };
+  store: { id?: string; name: string };
 };
 
 type PartnerBill = {
   id: string;
+  storeId?: string | null;
   billNumber: string | null;
   status: string;
   totalVnd: number | null;
   discountVnd: number | null;
   submittedAt: string | null;
-  store: { name: string };
+  usedAt?: string | null;
+  submitterType?: string | null;
+  store?: { id?: string | null; name: string; slug?: string | null } | null;
+  booking?: { id: string; status: string; scheduledAt?: string | null } | null;
   coupon?: { code: string; name: string } | null;
+  couponIssue?: { id: string; code: string; status: string } | null;
+  media?: { id: string; originalName?: string | null }[];
 };
 
 type PartnerLiteDashboard = {
@@ -233,7 +243,8 @@ type BarcodeDetectorInstance = {
 };
 type BarcodeDetectorConstructor = new (options: { formats: string[] }) => BarcodeDetectorInstance;
 type BarcodeDetectorWindow = Window & { BarcodeDetector?: BarcodeDetectorConstructor };
-type PanelKey = 'overview' | 'scan' | 'settlement' | 'listing' | 'settings';
+const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'settings', 'bill'] as const;
+type PanelKey = (typeof panelKeys)[number];
 type ListingTabKey = 'store' | 'cast' | 'pricing' | 'media';
 type PeriodKey = 'today' | 'seven' | 'thirty';
 type OfflineScanQueueItem = {
@@ -254,6 +265,7 @@ const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
 const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
 const offlineScanQueueMaxAttempts = 3;
 const offlineScanQueueMaxItems = 25;
+const billSubmitDeadlineMs = 10 * 24 * 60 * 60 * 1000;
 const signedQrTokenPattern = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const bookingCodePattern = /^#?BK-[A-Z0-9-]{6,}$/i;
 const uuidPattern =
@@ -475,6 +487,9 @@ const writeOfflineScanQueue = (items: OfflineScanQueueItem[]) => {
   window.localStorage.setItem(offlineScanQueueKey, JSON.stringify(pruneOfflineScanQueue(items)));
 };
 
+const isPanelKey = (value: string | null): value is PanelKey =>
+  Boolean(value && (panelKeys as readonly string[]).includes(value));
+
 const moneyVnd = (value: number) => `${Math.abs(value).toLocaleString('vi-VN')}đ`;
 
 const formatDateTime = (value: string | null | undefined) => {
@@ -489,6 +504,18 @@ const formatDateTime = (value: string | null | undefined) => {
     minute: '2-digit',
   });
 };
+
+const toDateTimeLocalValue = (value: Date | string | null | undefined) => {
+  const date = value instanceof Date ? value : value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+const parseMoneyInput = (value: string) => Number(value.replace(/[^\d]/g, ''));
 
 const emptyListingDraft: PartnerListingDraft = {
   storeName: '',
@@ -550,6 +577,7 @@ const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'settlement', label: 'Đối soát', icon: FileClock },
   { key: 'listing', label: 'Đăng thông tin', icon: Camera },
   { key: 'settings', label: 'Cài đặt', icon: Settings },
+  { key: 'bill', label: 'Gửi hóa đơn', icon: ReceiptText },
 ];
 
 const periodItems: { key: PeriodKey; label: string }[] = [
@@ -564,6 +592,7 @@ const panelTitles: Record<PanelKey, { eyebrow: string; title: string }> = {
   settlement: { eyebrow: 'COUPON USAGE LOG', title: 'Đối soát coupon' },
   listing: { eyebrow: 'STORE CONTENT', title: 'Đăng thông tin quán' },
   settings: { eyebrow: 'ACCESS CONTROL', title: 'Cài đặt đối tác' },
+  bill: { eyebrow: 'PARTNER BILL', title: 'Gửi hóa đơn cho chủ quán' },
 };
 
 const cardStyle: React.CSSProperties = {
@@ -788,12 +817,15 @@ function FormField({
 
 export default function PartnerPage() {
   const searchParams = useSearchParams();
+  const requestedPanel = searchParams.get('panel');
   const [stores, setStores] = useState<PartnerStore[]>([]);
   const [coupons, setCoupons] = useState<PartnerCoupon[]>([]);
   const [bookings, setBookings] = useState<PartnerBooking[]>([]);
   const [bills, setBills] = useState<PartnerBill[]>([]);
   const [dashboard, setDashboard] = useState<PartnerLiteDashboard | null>(null);
-  const [activePanel, setActivePanel] = useState<PanelKey>('scan');
+  const [activePanel, setActivePanel] = useState<PanelKey>(() =>
+    isPanelKey(requestedPanel) ? requestedPanel : 'scan',
+  );
   const [listingTab, setListingTab] = useState<ListingTabKey>('store');
   const [listingStoreId, setListingStoreId] = useState('');
   const [listingDraft, setListingDraft] = useState<PartnerListingDraft>(emptyListingDraft);
@@ -811,6 +843,18 @@ export default function PartnerPage() {
     toDate: '',
     status: 'ALL',
   });
+  const [billStoreId, setBillStoreId] = useState('');
+  const [billAmountInput, setBillAmountInput] = useState('');
+  const [billUsedAt, setBillUsedAt] = useState(() => toDateTimeLocalValue(new Date()));
+  const [billBookingId, setBillBookingId] = useState('');
+  const [billEvidenceFile, setBillEvidenceFile] = useState<File | null>(null);
+  const [billNotice, setBillNotice] = useState<{
+    tone: 'success' | 'danger' | 'gold' | 'neutral';
+    message: string;
+  } | null>(null);
+  const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
+  const [billNowMs, setBillNowMs] = useState(0);
+  const [isSubmittingBill, setIsSubmittingBill] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Đang tải dữ liệu phân quyền theo store...');
   const [scanPayload, setScanPayload] = useState('');
   const [scanIssue, setScanIssue] = useState<PartnerScanIssue | null>(null);
@@ -1130,6 +1174,7 @@ export default function PartnerPage() {
 
         setStores(storeData);
         setListingStoreId((current) => current || storeData[0]?.id || '');
+        setBillStoreId((current) => current || storeData[0]?.id || '');
         setCoupons(couponData);
         setBookings(bookingData);
         setBills(billData);
@@ -1162,6 +1207,26 @@ export default function PartnerPage() {
       }
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
+  }, []);
+
+  useEffect(() => {
+    if (!isPanelKey(requestedPanel)) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setActivePanel(requestedPanel);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [requestedPanel]);
+
+  useEffect(() => {
+    const refreshBillClock = () => setBillNowMs(Date.now());
+
+    refreshBillClock();
+    const interval = window.setInterval(refreshBillClock, 60_000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -1215,7 +1280,7 @@ export default function PartnerPage() {
 
     return {
       code: bill.billNumber ?? bill.id.slice(0, 8),
-      service: `${bill.coupon?.name ?? 'Hóa đơn'} · ${bill.store.name}`,
+      service: `${bill.coupon?.name ?? 'Hóa đơn'} · ${bill.store?.name ?? 'Quán'}`,
       time: formatDateTime(bill.submittedAt),
       amount: bill.discountVnd ?? bill.totalVnd ?? 0,
       status: bill.status,
@@ -1262,6 +1327,149 @@ export default function PartnerPage() {
       toDate: '',
       status: 'ALL',
     });
+  };
+  const selectedBillStore =
+    stores.find((store) => store.id === billStoreId) ?? stores[0] ?? null;
+  const billAmount = useMemo(() => parseMoneyInput(billAmountInput), [billAmountInput]);
+  const billUsedAtDate = useMemo(() => new Date(billUsedAt), [billUsedAt]);
+  const isBillUsedAtInvalid = Number.isNaN(billUsedAtDate.getTime());
+  const isBillFutureUsage =
+    Boolean(billNowMs) && !isBillUsedAtInvalid && billUsedAtDate.getTime() > billNowMs;
+  const isBillPastDeadline =
+    Boolean(billNowMs) &&
+    !isBillUsedAtInvalid &&
+    billNowMs - billUsedAtDate.getTime() > billSubmitDeadlineMs;
+  const billBookingOptions = useMemo(
+    () =>
+      bookings.filter((booking) => {
+        if (!selectedBillStore) {
+          return true;
+        }
+
+        return (
+          booking.store.id === selectedBillStore.id ||
+          booking.store.name === selectedBillStore.name ||
+          !booking.store.id
+        );
+      }),
+    [bookings, selectedBillStore],
+  );
+  const scopedBillRows = useMemo(
+    () =>
+      bills
+        .filter((bill) => {
+          if (!selectedBillStore) {
+            return true;
+          }
+
+          return (
+            bill.storeId === selectedBillStore.id ||
+            bill.store?.id === selectedBillStore.id ||
+            bill.store?.name === selectedBillStore.name
+          );
+        })
+        .slice()
+        .sort((first, second) => {
+          const firstDate = Date.parse(first.usedAt ?? first.submittedAt ?? '');
+          const secondDate = Date.parse(second.usedAt ?? second.submittedAt ?? '');
+          return (Number.isFinite(secondDate) ? secondDate : 0) - (Number.isFinite(firstDate) ? firstDate : 0);
+        }),
+    [bills, selectedBillStore],
+  );
+  const canSubmitPartnerBill =
+    !isSubmittingBill &&
+    Boolean(billNowMs) &&
+    Boolean(selectedBillStore) &&
+    billAmount > 0 &&
+    Boolean(billUsedAt) &&
+    !isBillUsedAtInvalid &&
+    !isBillFutureUsage &&
+    !isBillPastDeadline;
+
+  const handleBillAmountChange = (value: string) => {
+    const parsed = parseMoneyInput(value);
+    setBillAmountInput(parsed ? parsed.toLocaleString('vi-VN') : '');
+  };
+
+  const handleBillFileChange = (input: HTMLInputElement) => {
+    setBillEvidenceFile(input.files?.[0] ?? null);
+  };
+
+  const refreshPartnerBills = async (fallbackBill: PartnerBill) => {
+    try {
+      const nextBills = await billApi.listPartnerBills();
+      setBills(nextBills as PartnerBill[]);
+    } catch {
+      setBills((current) => [fallbackBill, ...current].slice(0, 40));
+    }
+  };
+
+  const fillBillFormFromRow = (bill: PartnerBill) => {
+    const nextStoreId = bill.storeId ?? bill.store?.id ?? selectedBillStore?.id ?? '';
+    if (nextStoreId) {
+      setBillStoreId(nextStoreId);
+    }
+    setSelectedBillId(bill.id);
+    setBillAmountInput(bill.totalVnd ? bill.totalVnd.toLocaleString('vi-VN') : '');
+    setBillUsedAt(toDateTimeLocalValue(bill.usedAt ?? bill.submittedAt ?? new Date()));
+    setBillBookingId(bill.booking?.id ?? '');
+    setBillNotice({
+      tone: 'gold',
+      message: `Đã điền thông tin từ hóa đơn ${bill.billNumber ?? bill.id.slice(0, 8)} lên form.`,
+    });
+  };
+
+  const submitPartnerBill = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBillNotice(null);
+
+    if (!canSubmitPartnerBill || !selectedBillStore) {
+      setBillNotice({
+        tone: 'danger',
+        message: 'Kiểm tra lại quán, tổng tiền bill gốc và thời gian sử dụng trước khi gửi.',
+      });
+      return;
+    }
+
+    setIsSubmittingBill(true);
+    try {
+      const bill = (await billApi.submitPartnerBill({
+        storeId: selectedBillStore.id,
+        bookingId: billBookingId || undefined,
+        totalVnd: billAmount,
+        usedAt: billUsedAtDate.toISOString(),
+      })) as PartnerBill;
+
+      let uploadWarning = '';
+      if (billEvidenceFile) {
+        try {
+          await billApi.uploadEvidence(bill.id, billEvidenceFile);
+        } catch {
+          uploadWarning = ' Bill đã gửi, nhưng ảnh/chứng từ chưa upload được.';
+        }
+      }
+
+      const normalizedBill: PartnerBill = {
+        ...bill,
+        storeId: bill.storeId ?? selectedBillStore.id,
+        store: bill.store ?? selectedBillStore,
+      };
+
+      await refreshPartnerBills(normalizedBill);
+      setSelectedBillId(normalizedBill.id);
+      setBillEvidenceFile(null);
+      setBillNotice({
+        tone: uploadWarning ? 'gold' : 'success',
+        message: `Đã gửi bill ${normalizedBill.billNumber ?? normalizedBill.id.slice(0, 8)} để Admin duyệt.${uploadWarning}`,
+      });
+    } catch (error) {
+      setBillNotice({
+        tone: 'danger',
+        message: error instanceof ApiError ? error.message : 'Chưa gửi được bill. Vui lòng thử lại.',
+      });
+    } finally {
+      setIsSubmittingBill(false);
+    }
   };
 
   const bookingTrendBars = useMemo(() => {
@@ -3310,6 +3518,282 @@ export default function PartnerPage() {
     </div>
   );
 
+  const renderBillPanel = () => (
+    <div className="partner-bill-panel-grid">
+      <PanelCard>
+        <SectionHeading
+          eyebrow="SUBMIT BILL"
+          title="Form gửi hóa đơn"
+          action={
+            <StatusPill tone={stores.length === 1 ? 'success' : 'gold'}>
+              {stores.length ? `${stores.length} quán thuộc partner` : 'Đang tải quán'}
+            </StatusPill>
+          }
+        />
+        <form
+          onSubmit={submitPartnerBill}
+          style={{ display: 'grid', gap: '14px', marginTop: '16px' }}
+        >
+          <FormField label="Quán thuộc partner *">
+            <select
+              value={billStoreId}
+              disabled={!stores.length}
+              onChange={(event) => {
+                setBillStoreId(event.target.value);
+                setSelectedBillId(null);
+                setBillNotice(null);
+              }}
+              style={{ ...inputStyle, appearance: 'none' }}
+            >
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                  {store.district ? ` - ${store.district}` : ''}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <div className="partner-bill-form-grid">
+            <FormField label="Tổng tiền bill gốc *">
+              <input
+                inputMode="numeric"
+                placeholder="VD: 1.800.000"
+                value={billAmountInput}
+                onChange={(event) => handleBillAmountChange(event.target.value)}
+                style={inputStyle}
+              />
+            </FormField>
+            <FormField label="Thời gian sử dụng *">
+              <input
+                type="datetime-local"
+                value={billUsedAt}
+                onInput={(event) => setBillUsedAt(event.currentTarget.value)}
+                onChange={(event) => setBillUsedAt(event.target.value)}
+                style={inputStyle}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Liên kết booking">
+            <select
+              value={billBookingId}
+              onChange={(event) => setBillBookingId(event.target.value)}
+              style={{ ...inputStyle, appearance: 'none' }}
+            >
+              <option value="">Không liên kết booking</option>
+              {billBookingOptions.map((booking) => (
+                <option key={booking.id} value={booking.id}>
+                  {formatDateTime(booking.scheduledAt)} - {booking.partySize} khách - {booking.store.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="Ảnh / chứng từ">
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <label
+                style={{
+                  minHeight: '42px',
+                  borderRadius: '11px',
+                  border: `1px solid ${colors.borderGold22}`,
+                  background: colors.surface2,
+                  color: colors.gold,
+                  padding: '0 14px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <ImagePlus size={16} />
+                {billEvidenceFile ? 'Đổi file' : 'Chọn file'}
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onInput={(event) => handleBillFileChange(event.currentTarget)}
+                  onChange={(event) => handleBillFileChange(event.currentTarget)}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              {billEvidenceFile ? (
+                <span
+                  style={{
+                    ...softCardStyle,
+                    minHeight: '38px',
+                    padding: '0 11px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: colors.text2,
+                    fontSize: '12px',
+                    minWidth: 0,
+                    maxWidth: '100%',
+                  }}
+                >
+                  <FileText size={14} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {billEvidenceFile.name}
+                  </span>
+                </span>
+              ) : (
+                <span style={{ color: colors.muted, fontSize: '12px', lineHeight: 1.5 }}>
+                  Upload chứng từ sau khi bill tạo sẽ gắn media PROTECTED.
+                </span>
+              )}
+            </div>
+          </FormField>
+
+          <div
+            style={{
+              ...softCardStyle,
+              padding: '12px',
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'flex-start',
+              color: isBillFutureUsage || isBillPastDeadline ? colors.danger : colors.goldPale,
+              fontSize: '12px',
+              fontWeight: 800,
+              lineHeight: 1.55,
+            }}
+          >
+            <AlertTriangle size={16} style={{ marginTop: '2px', flex: '0 0 auto' }} />
+            <span>
+              Chỉ nhập tổng tiền bill gốc. Bill quá 10 ngày hoặc thời gian tương lai sẽ không được nhận.
+            </span>
+          </div>
+
+          {billNotice ? (
+            <div
+              style={{
+                ...softCardStyle,
+                padding: '12px',
+                color:
+                  billNotice.tone === 'success'
+                    ? colors.success
+                    : billNotice.tone === 'danger'
+                      ? colors.danger
+                      : colors.goldPale,
+                fontSize: '12.5px',
+                fontWeight: 800,
+                lineHeight: 1.55,
+              }}
+            >
+              {billNotice.message}
+            </div>
+          ) : null}
+
+          <PrimaryButton disabled={!canSubmitPartnerBill} type="submit">
+            {isSubmittingBill ? <RefreshCcw size={16} /> : <Send size={16} />}
+            {isSubmittingBill ? 'Đang gửi bill' : 'Gửi bill Partner'}
+          </PrimaryButton>
+        </form>
+      </PanelCard>
+
+      <PanelCard>
+        <SectionHeading
+          eyebrow="STORE BILLS"
+          title="Hóa đơn của quán"
+          action={<StatusPill tone="gold">{scopedBillRows.length} hóa đơn</StatusPill>}
+        />
+        <p style={{ margin: '10px 0 14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+          Bấm vào một dòng hóa đơn để tự điền tổng tiền, thời gian sử dụng, booking và quán lên form gửi hóa đơn.
+        </p>
+        <div
+          className="partner-bill-table-scroll"
+          style={{ overflowX: 'auto', borderRadius: '14px', border: `1px solid ${colors.borderHair}` }}
+        >
+          <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ color: colors.muted, fontSize: '11px', textAlign: 'left' }}>
+                {['STT', 'Mã hóa đơn', 'Quán', 'Tổng tiền', 'Thời gian', 'Booking', 'Trạng thái'].map((header) => (
+                  <th
+                    key={header}
+                    style={{
+                      padding: '12px',
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scopedBillRows.length ? (
+                scopedBillRows.map((bill, index) => {
+                  const active = selectedBillId === bill.id;
+                  const billCode = bill.billNumber ?? bill.id.slice(0, 8);
+
+                  return (
+                    <tr
+                      key={bill.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => fillBillFormFromRow(bill)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          fillBillFormFromRow(bill);
+                        }
+                      }}
+                      style={{
+                        cursor: 'pointer',
+                        background: active ? 'rgba(212,178,106,.12)' : 'transparent',
+                      }}
+                    >
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontWeight: 800 }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldBright, fontSize: '12px', fontWeight: 900 }}>
+                        {billCode}
+                      </td>
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text, fontSize: '12.5px', fontWeight: 800 }}>
+                        {bill.store?.name ?? selectedBillStore?.name ?? 'Quán'}
+                      </td>
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.goldPale, fontSize: '12.5px', fontWeight: 900 }}>
+                        {moneyVnd(bill.totalVnd ?? 0)}
+                      </td>
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
+                        {formatDateTime(bill.usedAt ?? bill.submittedAt)}
+                      </td>
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}`, color: colors.text2, fontSize: '12px' }}>
+                        {bill.booking ? `${bill.booking.status} · ${formatDateTime(bill.booking.scheduledAt)}` : 'Không liên kết'}
+                      </td>
+                      <td style={{ padding: '13px 12px', borderBottom: `1px solid ${colors.borderHair}` }}>
+                        <StatusPill tone={bill.status === 'VERIFIED' || bill.status === 'PAID' ? 'success' : bill.status === 'REJECTED' ? 'danger' : 'gold'}>
+                          {bill.status}
+                        </StatusPill>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      padding: '18px 12px',
+                      color: colors.text2,
+                      fontSize: '13px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Chưa có hóa đơn trong quán đang chọn.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </PanelCard>
+    </div>
+  );
+
   const renderActivePanel = () => {
     if (activePanel === 'scan') {
       return renderScanPanel();
@@ -3322,6 +3806,9 @@ export default function PartnerPage() {
     }
     if (activePanel === 'settings') {
       return renderSettingsPanel();
+    }
+    if (activePanel === 'bill') {
+      return renderBillPanel();
     }
     return renderOverviewPanel();
   };
@@ -3351,11 +3838,20 @@ export default function PartnerPage() {
         }
         .partner-overview-grid,
         .partner-scan-grid,
-        .partner-settings-grid {
+        .partner-settings-grid,
+        .partner-bill-panel-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.28fr) minmax(340px, .72fr);
           gap: 14px;
           margin-top: 14px;
+        }
+        .partner-bill-panel-grid {
+          grid-template-columns: minmax(340px, .85fr) minmax(0, 1.15fr);
+        }
+        .partner-bill-form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
         }
         .partner-settlement-summary,
         .partner-listing-grid,
@@ -3451,7 +3947,8 @@ export default function PartnerPage() {
           }
           .partner-overview-grid,
           .partner-scan-grid,
-          .partner-settings-grid {
+          .partner-settings-grid,
+          .partner-bill-panel-grid {
             grid-template-columns: 1fr;
           }
           .partner-settlement-filter-grid {
@@ -3492,7 +3989,8 @@ export default function PartnerPage() {
           .partner-listing-toolbar,
           .partner-media-grid,
           .partner-store-scope-grid,
-          .partner-settlement-filter-grid {
+          .partner-settlement-filter-grid,
+          .partner-bill-form-grid {
             grid-template-columns: 1fr !important;
           }
         }
@@ -3586,30 +4084,6 @@ export default function PartnerPage() {
               );
             })}
           </nav>
-
-          <Link
-            href="/partner/gui-hoa-don"
-            style={{
-              minHeight: '52px',
-              width: '100%',
-              borderRadius: '12px',
-              padding: '0 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '11px',
-              color: colors.text2,
-              background: 'transparent',
-              fontSize: '13px',
-              fontWeight: 600,
-              textAlign: 'left',
-              textDecoration: 'none',
-            }}
-          >
-            <ReceiptText size={18} strokeWidth={1.7} />
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block' }}>Gửi hóa đơn</span>
-            </span>
-          </Link>
 
           <div
             style={{

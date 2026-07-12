@@ -1,8 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import PartnerBillSubmitPage from "../src/app/partner/gui-hoa-don/page";
+import PartnerPage from "../src/app/partner/page";
 
 const mocks = vi.hoisted(() => ({
+  apiClient: vi.fn(),
   listMemberBills: vi.fn(),
   listPartnerBills: vi.fn(),
   listPartnerStores: vi.fn(),
@@ -25,10 +26,19 @@ vi.mock("@/lib/api/client", () => {
   }
 
   return {
+    apiClient: mocks.apiClient,
     ApiError,
     translateApiMessage: vi.fn((message?: string, _status?: number, fallback?: string) => message ?? fallback ?? ""),
   };
 });
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams("panel=bill"),
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  clearAuthSession: vi.fn(),
+}));
 
 vi.mock("@/lib/api/bills", () => ({
   billApi: {
@@ -97,12 +107,55 @@ const partnerBills = [
     usedAt: "2026-07-03T16:00:00.000Z",
     submittedAt: "2026-07-03T17:00:00.000Z",
     store: { id: "store-velvet", name: "Velvet Club", slug: "velvet-club" },
-    media: [{ id: "media-1", storageKey: "proof.png", originalName: "proof.png", mimeType: "image/png", access: "PROTECTED", url: "/storage/files/proof.png" }],
+    media: [
+      {
+        id: "media-1",
+        storageKey: "proof.png",
+        originalName: "proof.png",
+        mimeType: "image/png",
+        access: "PROTECTED",
+        url: "/storage/files/proof.png",
+      },
+    ],
   },
 ];
 
+const dashboardLite = {
+  period: "seven",
+  from: "2026-07-03T00:00:00.000Z",
+  to: "2026-07-10T23:59:59.999Z",
+  bookingCount: 0,
+  profileViewCount: 0,
+  customerArrivalCount: 0,
+  customerArrivalSource: "QR_USED",
+  qrUsedCount: 0,
+  billApprovedCount: 0,
+  storeCount: 2,
+  stores: [],
+  weeklyBookings: [],
+  privacy: { customerDetailVisible: false, note: "masked" },
+};
+
+const listingDraftResponse = {
+  contentId: null,
+  savedAt: null,
+  publishedAt: null,
+  review: null,
+  draft: {},
+  message: "Draft loaded",
+};
+
 describe("Partner bill submit page", () => {
   beforeEach(() => {
+    mocks.apiClient.mockImplementation((path: string) => {
+      if (path === "/partner/stores") return Promise.resolve(partnerStores);
+      if (path === "/partner/coupons") return Promise.resolve([]);
+      if (path === "/partner/bookings") return Promise.resolve([]);
+      if (path === "/partner/bills") return Promise.resolve(partnerBills);
+      if (path.startsWith("/partner/dashboard-lite")) return Promise.resolve(dashboardLite);
+      if (path.startsWith("/partner/listing-draft/")) return Promise.resolve(listingDraftResponse);
+      return Promise.reject(new Error(`Unhandled apiClient path ${path}`));
+    });
     mocks.listPartnerStores.mockResolvedValue(partnerStores);
     mocks.listPartnerBills.mockResolvedValue(partnerBills);
     mocks.submitPartnerBill.mockResolvedValue({
@@ -132,24 +185,23 @@ describe("Partner bill submit page", () => {
     vi.clearAllMocks();
   });
 
-  it("loads partner stores only and submits through the partner bill API", async () => {
-    render(<PartnerBillSubmitPage />);
+  it("renders inside the partner shell and submits through the partner bill API", async () => {
+    render(<PartnerPage />);
 
     await screen.findByText("2 quán thuộc partner");
-    expect(mocks.listPartnerStores).toHaveBeenCalledTimes(1);
+    expect(mocks.apiClient).toHaveBeenCalledWith("/partner/stores");
+    expect(mocks.listPartnerStores).not.toHaveBeenCalled();
     expect(mocks.listStores).not.toHaveBeenCalled();
 
-    const amountInput = document.querySelector<HTMLInputElement>("#partner-bill-total");
-    const usedAtInput = document.querySelector<HTMLInputElement>("#partner-bill-used-at");
+    const amountInput = screen.getByLabelText("Tổng tiền bill gốc *") as HTMLInputElement;
+    const usedAtInput = screen.getByLabelText("Thời gian sử dụng *") as HTMLInputElement;
     const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
-    const form = document.querySelector<HTMLFormElement>("form.partner-bill-form");
-    expect(amountInput).not.toBeNull();
-    expect(usedAtInput).not.toBeNull();
+    const form = amountInput.closest("form") as HTMLFormElement | null;
     expect(fileInput).not.toBeNull();
     expect(form).not.toBeNull();
 
-    fireEvent.change(amountInput!, { target: { value: "1800000" } });
-    fireEvent.change(usedAtInput!, {
+    fireEvent.change(amountInput, { target: { value: "1800000" } });
+    fireEvent.change(usedAtInput, {
       target: { value: toDatetimeLocalValue(new Date()) },
     });
     await waitFor(() => {
@@ -163,7 +215,7 @@ describe("Partner bill submit page", () => {
     await waitFor(() => {
       expect(mocks.submitPartnerBill).toHaveBeenCalledWith(
         expect.objectContaining({
-          storeSlug: "neon-club",
+          storeId: "store-neon",
           totalVnd: 1800000,
         }),
       );
@@ -172,19 +224,21 @@ describe("Partner bill submit page", () => {
     expect(mocks.uploadEvidence).toHaveBeenCalledWith("bill-partner-1", expect.any(File));
   });
 
-  it("shows partner bill history filtered by the selected store scope", async () => {
-    render(<PartnerBillSubmitPage />);
+  it("shows partner bill table filtered by store and fills the form from a selected bill", async () => {
+    render(<PartnerPage />);
 
     await screen.findByText("BILL-NEON");
     expect(screen.queryByText("BILL-VELVET")).not.toBeInTheDocument();
 
-    const storeSelect = document.querySelector<HTMLSelectElement>("#partner-bill-store");
-    expect(storeSelect).not.toBeNull();
-    fireEvent.change(storeSelect!, { target: { value: "velvet-club" } });
+    const storeSelect = screen.getByLabelText("Quán thuộc partner *") as HTMLSelectElement;
+    fireEvent.change(storeSelect, { target: { value: "store-velvet" } });
 
     await waitFor(() => {
       expect(screen.getByText("BILL-VELVET")).toBeInTheDocument();
     });
     expect(screen.queryByText("BILL-NEON")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("BILL-VELVET"));
+    expect(screen.getByLabelText("Tổng tiền bill gốc *")).toHaveValue("2.200.000");
   });
 });
