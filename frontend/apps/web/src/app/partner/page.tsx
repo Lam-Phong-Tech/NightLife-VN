@@ -252,6 +252,20 @@ type BarcodeDetectorConstructor = new (options: { formats: string[] }) => Barcod
 type BarcodeDetectorWindow = Window & { BarcodeDetector?: BarcodeDetectorConstructor };
 const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'settings', 'bill'] as const;
 type PanelKey = (typeof panelKeys)[number];
+type PartnerNotificationTone = 'gold' | 'success' | 'warning' | 'danger' | 'info';
+type PartnerNotification = {
+  id: string;
+  category: string;
+  title: string;
+  message: string;
+  meta: string;
+  actionLabel: string;
+  panel: PanelKey;
+  listingTab?: ListingTabKey;
+  tone: PartnerNotificationTone;
+  icon: LucideIcon;
+  unread: boolean;
+};
 type ListingTabKey = 'store' | 'cast' | 'pricing' | 'media';
 type PeriodKey = 'today' | 'seven' | 'thirty';
 type OfflineScanQueueItem = {
@@ -269,6 +283,7 @@ type NormalizedScanPayload = {
 };
 
 const offlineScanQueueKey = 'nightlife:offline-coupon-scans';
+const partnerNotificationReadKey = 'nightlife:partner-notification-read-ids';
 const offlineScanQueueTtlMs = 24 * 60 * 60 * 1000;
 const offlineScanQueueMaxAttempts = 3;
 const offlineScanQueueMaxItems = 25;
@@ -481,6 +496,22 @@ const readOfflineScanQueue = (): OfflineScanQueueItem[] => {
       window.localStorage.setItem(offlineScanQueueKey, JSON.stringify(queue));
     }
     return queue;
+  } catch {
+    return [];
+  }
+};
+
+const readPartnerNotificationIds = (): string[] => {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(partnerNotificationReadKey);
+    const parsed = rawValue ? JSON.parse(rawValue) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string').slice(-80)
+      : [];
   } catch {
     return [];
   }
@@ -1076,6 +1107,10 @@ export default function PartnerPage() {
     'idle' | 'starting' | 'active' | 'unsupported' | 'error'
   >('idle');
   const [cameraMessage, setCameraMessage] = useState('');
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() =>
+    readPartnerNotificationIds(),
+  );
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const cameraLoopRef = useRef<number | null>(null);
@@ -1482,6 +1517,309 @@ export default function PartnerPage() {
       : 'Không kèm dữ liệu booking chi tiết';
   const canConfirmScan = scanIssue?.status === 'ISSUED';
   const cameraActive = cameraStatus === 'active' || cameraStatus === 'starting';
+  const listingErrorCount = Object.keys(listingErrors).length;
+
+  const persistReadNotifications = useCallback(
+    (ids: string[]) => {
+      const nextIds = Array.from(new Set(ids)).slice(-80);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(partnerNotificationReadKey, JSON.stringify(nextIds));
+      }
+      return nextIds;
+    },
+    [],
+  );
+
+  const markNotificationsRead = useCallback(
+    (ids: string[]) => {
+      if (!ids.length) {
+        return;
+      }
+      setReadNotificationIds((current) => persistReadNotifications([...current, ...ids]));
+    },
+    [persistReadNotifications],
+  );
+
+  const partnerNotifications = useMemo<PartnerNotification[]>(() => {
+    const readIds = new Set(readNotificationIds);
+    const notifications: Omit<PartnerNotification, 'unread'>[] = [];
+    const nowMs = billNowMs;
+    const pendingBookingStatuses = new Set(['PENDING', 'NEW', 'REQUESTED', 'WAITING', 'AWAITING_CONFIRMATION']);
+    const upcomingBookingStatuses = new Set(['CONFIRMED', 'APPROVED', 'BOOKED']);
+    const pendingBookings = bookings.filter((booking) =>
+      pendingBookingStatuses.has(booking.status.toUpperCase()),
+    );
+    const upcomingBookings = bookings.filter((booking) => {
+      const scheduledAtMs = Date.parse(booking.scheduledAt);
+      return (
+        upcomingBookingStatuses.has(booking.status.toUpperCase()) &&
+        Number.isFinite(scheduledAtMs) &&
+        (!nowMs || scheduledAtMs >= nowMs)
+      );
+    });
+    const rejectedBills = bills.filter((bill) =>
+      ['REJECTED', 'DECLINED', 'CANCELLED'].includes(bill.status.toUpperCase()),
+    );
+    const pendingBills = bills.filter((bill) =>
+      ['SUBMITTED', 'PENDING', 'PENDING_REVIEW', 'REVIEWING'].includes(bill.status.toUpperCase()),
+    );
+    const approvedBills = bills.filter((bill) =>
+      ['VERIFIED', 'APPROVED', 'COMPLETED'].includes(bill.status.toUpperCase()),
+    );
+    const limitedCoupons = coupons.filter((coupon) => {
+      if (coupon.status !== 'ACTIVE' || coupon.usageLimit === null) {
+        return false;
+      }
+      return Math.max(0, coupon.usageLimit - coupon.usedCount) <= 3;
+    });
+
+    if (pendingBookings.length) {
+      const firstBooking = pendingBookings[0]!;
+      notifications.push({
+        id: `booking-pending:${pendingBookings.map((booking) => `${booking.id}:${booking.status}`).join('|')}`,
+        category: 'Đặt chỗ',
+        title: `${pendingBookings.length} booking mới cần xử lý`,
+        message: `${firstBooking.store.name} có yêu cầu ${firstBooking.partySize} khách lúc ${formatDateTime(firstBooking.scheduledAt)}. Kiểm tra để xác nhận hoặc điều phối kịp thời.`,
+        meta: `${storeName} - chờ xác nhận`,
+        actionLabel: 'Mở quét QR',
+        panel: 'scan',
+        tone: 'gold',
+        icon: CalendarDays,
+      });
+    } else if (upcomingBookings.length) {
+      const nextBooking = upcomingBookings
+        .slice()
+        .sort((first, second) => Date.parse(first.scheduledAt) - Date.parse(second.scheduledAt))[0]!;
+      notifications.push({
+        id: `booking-upcoming:${nextBooking.id}:${nextBooking.scheduledAt}`,
+        category: 'Khách sắp đến',
+        title: 'Có booking sắp tới tại quán',
+        message: `${nextBooking.partySize} khách đã được xác nhận cho ${formatDateTime(nextBooking.scheduledAt)}. Chuẩn bị check-in bằng QR khi khách tới nơi.`,
+        meta: nextBooking.store.name,
+        actionLabel: 'Chuẩn bị quét',
+        panel: 'scan',
+        tone: 'info',
+        icon: TicketCheck,
+      });
+    }
+
+    if (scanIssue) {
+      notifications.push({
+        id: `scan-result:${scanIssue.scanType ?? 'COUPON'}:${scanIssue.id}:${scanIssue.status}`,
+        category: scanIssue.scanType === 'BOOKING_QR' ? 'QR đặt chỗ' : 'QR coupon',
+        title:
+          scanIssue.status === 'ISSUED'
+            ? 'QR hợp lệ, cần xác nhận check-in'
+            : `QR đã ở trạng thái ${scanIssue.statusLabel ?? scanIssue.status}`,
+        message: `${scanIssue.code} áp dụng tại ${scanIssue.coupon?.store?.name ?? storeName}. Kiểm tra trạng thái trước khi bấm xác nhận cho khách.`,
+        meta: scanIssue.expiresAt ? `Hạn: ${formatDateTime(scanIssue.expiresAt)}` : 'Đang hiển thị kết quả quét',
+        actionLabel: 'Xem kết quả QR',
+        panel: 'scan',
+        tone: scanIssue.status === 'ISSUED' ? 'success' : 'warning',
+        icon: QrCode,
+      });
+    }
+
+    if (offlineScanQueue.length) {
+      const retryCount = offlineScanQueue.reduce((sum, item) => sum + item.attempts, 0);
+      notifications.push({
+        id: `offline-queue:${offlineScanQueue.map((item) => `${item.payload}:${item.attempts}`).join('|')}`,
+        category: 'QR offline',
+        title: `${offlineScanQueue.length} mã QR đang chờ gửi lại`,
+        message: `Có mã được lưu khi mất mạng${retryCount ? `, đã thử gửi lại ${retryCount} lần` : ''}. Mở màn quét để gửi offline queue lên hệ thống.`,
+        meta: 'Tự xóa sau 24h hoặc 3 lần lỗi',
+        actionLabel: 'Gửi offline queue',
+        panel: 'scan',
+        tone: 'warning',
+        icon: RefreshCcw,
+      });
+    }
+
+    if (rejectedBills.length) {
+      const firstBill = rejectedBills[0]!;
+      notifications.push({
+        id: `bill-rejected:${rejectedBills.map((bill) => `${bill.id}:${bill.status}`).join('|')}`,
+        category: 'Hóa đơn',
+        title: `${rejectedBills.length} bill bị từ chối`,
+        message: `${firstBill.billNumber ?? firstBill.id.slice(0, 8)} cần kiểm tra lại số tiền hoặc chứng từ trước khi gửi lại cho Admin.`,
+        meta: firstBill.store?.name ?? storeName,
+        actionLabel: 'Sửa bill',
+        panel: 'bill',
+        tone: 'danger',
+        icon: AlertTriangle,
+      });
+    } else if (pendingBills.length) {
+      notifications.push({
+        id: `bill-pending:${pendingBills.map((bill) => `${bill.id}:${bill.status}:${bill.submittedAt}`).join('|')}`,
+        category: 'Hóa đơn',
+        title: `${pendingBills.length} bill đang chờ đối soát`,
+        message: `Admin đang kiểm tra hóa đơn trong phạm vi ${storeName}. Theo dõi trạng thái để biết bill nào cần bổ sung.`,
+        meta: totalDiscount ? `Tổng giảm giá ${moneyVnd(totalDiscount)}` : 'Chờ duyệt',
+        actionLabel: 'Xem bill',
+        panel: 'bill',
+        tone: 'gold',
+        icon: ReceiptText,
+      });
+    } else if (approvedBills.length) {
+      const latestBill = approvedBills[0]!;
+      notifications.push({
+        id: `bill-approved:${latestBill.id}:${latestBill.status}`,
+        category: 'Đối soát',
+        title: 'Có bill đã được xác thực',
+        message: `${latestBill.billNumber ?? latestBill.id.slice(0, 8)} đã được ghi nhận vào usage log của quán.`,
+        meta: latestBill.discountVnd ? `Giảm giá ${moneyVnd(latestBill.discountVnd)}` : 'Đã xác thực',
+        actionLabel: 'Xem usage log',
+        panel: 'settlement',
+        tone: 'success',
+        icon: CheckCircle2,
+      });
+    }
+
+    if (limitedCoupons.length) {
+      const firstCoupon = limitedCoupons[0]!;
+      const remaining = firstCoupon.usageLimit === null ? 0 : Math.max(0, firstCoupon.usageLimit - firstCoupon.usedCount);
+      notifications.push({
+        id: `coupon-low:${limitedCoupons.map((coupon) => `${coupon.id}:${coupon.usedCount}/${coupon.usageLimit}`).join('|')}`,
+        category: 'Coupon',
+        title: `${limitedCoupons.length} coupon gần hết lượt`,
+        message: `${firstCoupon.name} chỉ còn ${remaining} lượt trong giới hạn hiện tại. Theo dõi usage log để chủ động đối soát.`,
+        meta: firstCoupon.code,
+        actionLabel: 'Xem đối soát',
+        panel: 'settlement',
+        tone: 'warning',
+        icon: TicketCheck,
+      });
+    } else if (usedCouponCount) {
+      notifications.push({
+        id: `coupon-used:${usedCouponCount}:${totalDiscount}`,
+        category: 'Coupon',
+        title: `${usedCouponCount} lượt coupon đã sử dụng`,
+        message: `Các lượt coupon đã chuyển USED sẽ xuất hiện trong bảng đối soát để partner kiểm tra theo mã giao dịch.`,
+        meta: `${activeCoupons} coupon đang hoạt động`,
+        actionLabel: 'Xem usage log',
+        panel: 'settlement',
+        tone: 'success',
+        icon: TicketCheck,
+      });
+    }
+
+    if (listingReview?.status === 'REJECTED') {
+      notifications.push({
+        id: `listing-rejected:${listingReview.id}:${listingReview.reviewedAt ?? listingReview.submittedAt}`,
+        category: 'Đăng tin',
+        title: 'Nội dung quán bị từ chối',
+        message: listingReview.reviewReason || 'Admin cần partner chỉnh lại thông tin quán, cast, bảng giá hoặc ảnh/video trước khi duyệt.',
+        meta: storeName,
+        actionLabel: 'Sửa đăng tin',
+        panel: 'listing',
+        listingTab: 'store',
+        tone: 'danger',
+        icon: FileText,
+      });
+    } else if (listingReview?.status === 'PENDING_REVIEW') {
+      notifications.push({
+        id: `listing-pending:${listingReview.id}:${listingReview.submittedAt}`,
+        category: 'Đăng tin',
+        title: 'Bản đăng tin đang chờ Admin duyệt',
+        message: 'Thông tin quán đã gửi duyệt. Khi Admin xử lý, trạng thái trong màn Đăng thông tin sẽ cập nhật theo từng quán.',
+        meta: `Gửi lúc ${formatDateTime(listingReview.submittedAt)}`,
+        actionLabel: 'Xem bản nháp',
+        panel: 'listing',
+        tone: 'gold',
+        icon: FileText,
+      });
+    } else if (listingReview?.status === 'APPROVED') {
+      notifications.push({
+        id: `listing-approved:${listingReview.id}:${listingReview.reviewedAt ?? listingReview.submittedAt}`,
+        category: 'Đăng tin',
+        title: 'Thông tin quán đã được duyệt',
+        message: 'Nội dung public của quán đã đồng bộ theo bản Admin duyệt. Có thể tiếp tục cập nhật bản nháp mới khi cần.',
+        meta: storeName,
+        actionLabel: 'Xem thông tin',
+        panel: 'listing',
+        tone: 'success',
+        icon: CheckCircle2,
+      });
+    } else if (listingContentId) {
+      notifications.push({
+        id: `listing-draft:${listingContentId}:${listingErrorCount}`,
+        category: 'Đăng tin',
+        title: listingErrorCount ? `Bản nháp còn ${listingErrorCount} lỗi cần sửa` : 'Bản nháp đăng tin đã được lưu',
+        message: listingErrorCount
+          ? 'Kiểm tra các tab Thông tin quán, Cast, Bảng giá và Ảnh/Video để gửi duyệt.'
+          : 'Bản nháp đã lưu, có thể gửi Admin duyệt khi dữ liệu đã đủ.',
+        meta: storeName,
+        actionLabel: listingErrorCount ? 'Sửa lỗi' : 'Gửi duyệt',
+        panel: 'listing',
+        tone: listingErrorCount ? 'warning' : 'info',
+        icon: FileText,
+      });
+    }
+
+    if (!stores.length) {
+      notifications.push({
+        id: 'store-access:empty',
+        category: 'Phân quyền',
+        title: 'Tài khoản chưa được gán quán',
+        message: 'Partner cần được Admin cấp quyền một quán trước khi quét QR, gửi bill hoặc đăng thông tin.',
+        meta: 'Liên hệ Admin',
+        actionLabel: 'Xem cài đặt',
+        panel: 'settings',
+        tone: 'danger',
+        icon: ShieldCheck,
+      });
+    } else if (scopedStoreCount > 1) {
+      notifications.push({
+        id: `store-access:multiple:${scopedStoreCount}`,
+        category: 'Phân quyền',
+        title: 'Tài khoản đang có nhiều hơn 1 quán',
+        message: 'Mỗi tài khoản partner chỉ nên quản lý một quán. Kiểm tra phạm vi để Admin thu gọn quyền nếu cần.',
+        meta: `${scopedStoreCount} quán trong scope`,
+        actionLabel: 'Xem cài đặt',
+        panel: 'settings',
+        tone: 'warning',
+        icon: ShieldCheck,
+      });
+    }
+
+    return notifications
+      .map((notification) => ({
+        ...notification,
+        unread: !readIds.has(notification.id),
+      }))
+      .slice(0, 8);
+  }, [
+    activeCoupons,
+    bills,
+    billNowMs,
+    bookings,
+    coupons,
+    listingContentId,
+    listingErrorCount,
+    listingReview,
+    offlineScanQueue,
+    readNotificationIds,
+    scopedStoreCount,
+    scanIssue,
+    storeName,
+    stores.length,
+    totalDiscount,
+    usedCouponCount,
+  ]);
+  const unreadNotificationCount = partnerNotifications.filter((notification) => notification.unread).length;
+
+  const openPartnerNotification = (notification: PartnerNotification) => {
+    markNotificationsRead([notification.id]);
+    setActivePanel(notification.panel);
+    if (notification.listingTab) {
+      setListingTab(notification.listingTab);
+    }
+    setIsNotificationOpen(false);
+  };
+
+  const markAllNotificationsRead = () => {
+    markNotificationsRead(partnerNotifications.map((notification) => notification.id));
+  };
 
   const settlementRows = bills.map((bill) => {
     const submittedAtMs = bill.submittedAt ? Date.parse(bill.submittedAt) : null;
@@ -2127,7 +2465,6 @@ export default function PartnerPage() {
     };
   };
 
-  const listingErrorCount = Object.keys(listingErrors).length;
   const listingErrorCounts = useMemo(
     () =>
       Object.keys(listingErrors).reduce<Record<ListingTabKey, number>>(
@@ -4312,6 +4649,9 @@ export default function PartnerPage() {
         .partner-settlement-filter-grid > * {
           min-width: 0;
         }
+        .partner-notification-popover button {
+          font-family: inherit;
+        }
         @media (max-width: 1180px) {
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -4359,6 +4699,13 @@ export default function PartnerPage() {
             min-height: auto !important;
             align-items: flex-start !important;
             flex-direction: column !important;
+          }
+          .partner-notification-popover {
+            top: 86px !important;
+            left: 18px !important;
+            right: 18px !important;
+            width: auto !important;
+            max-height: calc(100vh - 116px) !important;
           }
           .partner-metric-grid,
           .partner-settlement-summary,
@@ -4560,6 +4907,7 @@ export default function PartnerPage() {
               </span>
               <button
                 type="button"
+                onClick={() => setIsNotificationOpen((current) => !current)}
                 style={{
                   width: '38px',
                   height: '38px',
@@ -4569,26 +4917,250 @@ export default function PartnerPage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: colors.surface2,
+                  background: isNotificationOpen ? 'rgba(212,178,106,.16)' : colors.surface2,
                   cursor: 'pointer',
                   position: 'relative',
+                  boxShadow: unreadNotificationCount ? '0 0 0 3px rgba(224,114,158,.08)' : undefined,
                 }}
-                aria-label="Thông báo"
+                aria-label={`Thông báo đối tác${unreadNotificationCount ? `, ${unreadNotificationCount} chưa đọc` : ''}`}
+                aria-expanded={isNotificationOpen}
               >
                 <Bell size={17} />
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '8px',
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    background: colors.neonPink,
-                  }}
-                />
+                {unreadNotificationCount ? (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      right: '-3px',
+                      top: '-4px',
+                      minWidth: '17px',
+                      height: '17px',
+                      borderRadius: '999px',
+                      padding: '0 5px',
+                      background: colors.neonPink,
+                      color: '#fff',
+                      border: `2px solid ${colors.bg}`,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '9px',
+                      fontWeight: 900,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                ) : null}
               </button>
+              {isNotificationOpen ? (
+                <div
+                  className="partner-notification-popover"
+                  style={{
+                    position: 'fixed',
+                    top: '84px',
+                    right: '30px',
+                    width: '390px',
+                    maxWidth: 'calc(100vw - 36px)',
+                    zIndex: 80,
+                    border: `1px solid ${colors.borderGold32}`,
+                    borderRadius: '18px',
+                    background: 'linear-gradient(180deg,rgba(28,27,31,.98),rgba(12,12,15,.98))',
+                    boxShadow: '0 26px 70px -28px rgba(0,0,0,.9)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '14px 14px 12px',
+                      borderBottom: `1px solid ${colors.borderHair}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ color: colors.text, fontSize: '15px', fontWeight: 900 }}>
+                        Thông báo đối tác
+                      </div>
+                      <div style={{ marginTop: '3px', color: colors.muted, fontSize: '11px' }}>
+                        Tách theo booking, QR, bill, coupon và đăng tin
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={markAllNotificationsRead}
+                      disabled={!unreadNotificationCount}
+                      style={{
+                        minHeight: '30px',
+                        border: `1px solid ${colors.borderGold22}`,
+                        borderRadius: '999px',
+                        background: unreadNotificationCount ? 'rgba(212,178,106,.12)' : colors.surface2,
+                        color: unreadNotificationCount ? colors.goldBright : colors.muted,
+                        padding: '0 10px',
+                        fontSize: '10.5px',
+                        fontWeight: 900,
+                        cursor: unreadNotificationCount ? 'pointer' : 'not-allowed',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Đã đọc
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: '420px', overflowY: 'auto', padding: '8px' }}>
+                    {partnerNotifications.length ? (
+                      partnerNotifications.map((notification) => {
+                        const Icon = notification.icon;
+                        const accent =
+                          notification.tone === 'danger'
+                            ? colors.danger
+                            : notification.tone === 'success'
+                              ? colors.success
+                              : notification.tone === 'warning'
+                                ? colors.goldPale
+                                : notification.tone === 'info'
+                                  ? '#9bc7ff'
+                                  : colors.goldBright;
+
+                        return (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            onClick={() => openPartnerNotification(notification)}
+                            style={{
+                              width: '100%',
+                              border: `1px solid ${notification.unread ? colors.borderGold32 : colors.borderHair}`,
+                              borderRadius: '14px',
+                              background: notification.unread
+                                ? 'linear-gradient(90deg,rgba(212,178,106,.15),rgba(255,255,255,.035))'
+                                : colors.surface2,
+                              color: colors.text,
+                              padding: '12px',
+                              display: 'grid',
+                              gridTemplateColumns: '34px minmax(0,1fr)',
+                              gap: '10px',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              marginBottom: '8px',
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: '34px',
+                                height: '34px',
+                                borderRadius: '11px',
+                                border: `1px solid ${colors.borderGold22}`,
+                                background: 'rgba(212,178,106,.11)',
+                                color: accent,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Icon size={17} />
+                            </span>
+                            <span style={{ minWidth: 0 }}>
+                              <span
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '8px',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    color: accent,
+                                    fontSize: '10px',
+                                    fontWeight: 900,
+                                    letterSpacing: '.8px',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  {notification.category}
+                                </span>
+                                {notification.unread ? (
+                                  <span
+                                    style={{
+                                      width: '7px',
+                                      height: '7px',
+                                      borderRadius: '50%',
+                                      background: colors.neonPink,
+                                      flex: '0 0 auto',
+                                    }}
+                                  />
+                                ) : null}
+                              </span>
+                              <span
+                                style={{
+                                  display: 'block',
+                                  marginTop: '4px',
+                                  fontSize: '13px',
+                                  fontWeight: 900,
+                                  lineHeight: 1.35,
+                                }}
+                              >
+                                {notification.title}
+                              </span>
+                              <span
+                                style={{
+                                  display: 'block',
+                                  marginTop: '5px',
+                                  color: colors.text2,
+                                  fontSize: '11.5px',
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {notification.message}
+                              </span>
+                              <span
+                                style={{
+                                  marginTop: '8px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '10px',
+                                  color: colors.muted,
+                                  fontSize: '10.5px',
+                                  fontWeight: 800,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    minWidth: 0,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {notification.meta}
+                                </span>
+                                <span style={{ color: colors.goldBright, flex: '0 0 auto' }}>
+                                  {notification.actionLabel}
+                                </span>
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div
+                        style={{
+                          border: `1px dashed ${colors.borderGold22}`,
+                          borderRadius: '14px',
+                          padding: '16px',
+                          color: colors.text2,
+                          fontSize: '12.5px',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        Chưa có thông báo cần xử lý. Khi có booking, QR offline, bill, coupon hoặc trạng thái đăng tin mới,
+                        hệ thống sẽ tách thành từng thông báo riêng.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={logout}
