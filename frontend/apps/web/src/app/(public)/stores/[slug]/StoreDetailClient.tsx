@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   CalendarDays,
   ChevronLeft,
@@ -764,10 +765,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     () => hasMemberFavoriteAccess() && isFavoriteStore(store.slug),
   );
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const recommendedStores = useMemo(
     () => personalizeRelatedStores(store.relatedStores),
     [store.relatedStores],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) setPortalTarget(document.body);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const authUser = getAuthUser();
@@ -1384,7 +1398,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <RelatedStores stores={recommendedStores} />
       </section>
 
-      <div className="store-mobile-footer-cta">
+      {portalTarget ? createPortal(
+        <div className="store-mobile-footer-cta nl-scroll-reveal-skip" data-no-scroll-reveal>
         <Link
           data-testid="store-booking-cta-mobile"
           className="primary-action"
@@ -1397,7 +1412,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <small>Gửi yêu cầu · không thu cọc</small>
           </span>
         </Link>
-      </div>
+        </div>,
+        portalTarget,
+      ) : null}
 
       {isLightboxOpen && lightboxMedia ? (
         <div
@@ -3233,6 +3250,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .store-mobile-footer-cta {
+            --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
+            --store-mobile-cta-height: 76px;
             position: fixed !important;
             left: 0 !important;
             right: 0 !important;
