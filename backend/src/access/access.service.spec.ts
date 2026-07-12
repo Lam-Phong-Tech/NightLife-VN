@@ -71,7 +71,7 @@ describe('AccessService', () => {
     });
   });
 
-  it('merges owned partner stores with per-store delegated permissions', async () => {
+  it('limits partner scope to one primary store and prefers delegated permissions', async () => {
     prisma.store.findMany.mockResolvedValue([{ id: 'owned-store' }] as never);
     prisma.storePermission.findMany.mockResolvedValue([
       { storeId: 'delegated-store' },
@@ -83,7 +83,25 @@ describe('AccessService', () => {
         { id: 'partner-1', role: 'PARTNER' },
         'coupon.scan',
       ),
-    ).resolves.toEqual(['owned-store', 'delegated-store']);
+    ).resolves.toEqual(['delegated-store']);
+
+    expect(prisma.store.findMany).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        OR: [
+          { ownerId: 'partner-1' },
+          {
+            partnerAccount: {
+              userId: 'partner-1',
+              deletedAt: null,
+              status: { in: ['ACTIVE', 'PENDING_REVIEW'] },
+            },
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
 
     expect(prisma.storePermission.findMany).toHaveBeenCalledWith({
       where: {
@@ -92,6 +110,7 @@ describe('AccessService', () => {
         status: 'ACTIVE',
         permissions: { has: 'coupon.scan' },
       },
+      orderBy: { createdAt: 'desc' },
       select: { storeId: true },
     });
   });

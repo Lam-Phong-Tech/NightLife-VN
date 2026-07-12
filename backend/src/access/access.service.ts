@@ -220,6 +220,7 @@ export class AccessService {
           },
         ],
       },
+      orderBy: { createdAt: 'desc' },
       select: { id: true },
     });
 
@@ -230,15 +231,13 @@ export class AccessService {
         status: 'ACTIVE',
         ...(permissionKey ? { permissions: { has: permissionKey } } : {}),
       },
+      orderBy: { createdAt: 'desc' },
       select: { storeId: true },
     });
 
-    return Array.from(
-      new Set([
-        ...stores.map((store) => store.id),
-        ...delegatedStores.map((permission) => permission.storeId),
-      ]),
-    );
+    const primaryStoreId = delegatedStores[0]?.storeId ?? stores[0]?.id;
+
+    return primaryStoreId ? [primaryStoreId] : [];
   }
 
   async getDelegatedStoreIds(userId: string, permissionKey?: string) {

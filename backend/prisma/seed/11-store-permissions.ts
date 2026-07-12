@@ -21,9 +21,24 @@ export async function seedStorePermissions(
     return;
   }
 
-  const scopedStores = ['moonlight-bar', 'velvet-club']
+  const scopedStores = ['velvet-club']
     .map((slug) => stores[slug])
     .filter(Boolean);
+  const scopedStoreIds = scopedStores.map((store) => store.id);
+
+  if (scopedStoreIds.length) {
+    await prisma.storePermission.updateMany({
+      where: {
+        userId: demoPartner.id,
+        deletedAt: null,
+        storeId: { notIn: scopedStoreIds },
+      },
+      data: {
+        status: 'DELETED',
+        deletedAt: new Date(),
+      },
+    });
+  }
 
   for (const store of scopedStores) {
     await prisma.storePermission.upsert({

@@ -3209,8 +3209,8 @@ export default function PartnerPage() {
     >
       <style>{`
         .partner-shell {
-          display: grid;
-          grid-template-columns: 252px minmax(0, 1fr);
+          display: block;
+          padding-left: 252px;
           min-height: 100vh;
         }
         .partner-content {
@@ -3326,11 +3326,15 @@ export default function PartnerPage() {
         }
         @media (max-width: 860px) {
           .partner-shell {
-            grid-template-columns: 1fr;
+            padding-left: 0;
           }
           .partner-sidebar {
             position: static !important;
+            inset: auto !important;
+            width: auto !important;
+            height: auto !important;
             min-height: auto !important;
+            overflow: visible !important;
             border-right: 0 !important;
             border-bottom: 1px solid ${colors.borderGold12};
           }
@@ -3363,10 +3367,15 @@ export default function PartnerPage() {
         <aside
           className="partner-sidebar"
           style={{
-            position: 'sticky',
+            position: 'fixed',
             top: 0,
-            alignSelf: 'start',
+            left: 0,
+            bottom: 0,
+            width: '252px',
+            height: '100vh',
             minHeight: '100vh',
+            overflowY: 'auto',
+            zIndex: 10,
             borderRight: `1px solid ${colors.borderGold12}`,
             background: colors.navBg,
             padding: '22px 16px',
