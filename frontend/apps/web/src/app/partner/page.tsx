@@ -5,9 +5,11 @@ import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
 import {
   AlertTriangle,
+  ArrowLeft,
   Bell,
   CalendarDays,
   Camera,
+  ChevronRight,
   CheckCircle2,
   ChevronDown,
   Eye,
@@ -17,6 +19,7 @@ import {
   ImagePlus,
   LogOut,
   Moon,
+  Plus,
   QrCode,
   ReceiptText,
   RefreshCcw,
@@ -400,6 +403,24 @@ const uuidPattern =
 const listingOpeningDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
 const defaultListingOpeningSlot = '19:00 - 02:00';
 const listingTimeOptions = Array.from({ length: 24 }, (_, index) => `${String(index).padStart(2, '0')}:00`);
+const listingBirthMonthOptions = Array.from({ length: 12 }, (_, index) => ({
+  value: String(index + 1),
+  label: `Tháng ${index + 1}`,
+}));
+const listingZodiacOptions = [
+  'Aries',
+  'Taurus',
+  'Gemini',
+  'Cancer',
+  'Leo',
+  'Virgo',
+  'Libra',
+  'Scorpio',
+  'Sagittarius',
+  'Capricorn',
+  'Aquarius',
+  'Pisces',
+].map((zodiac) => ({ value: zodiac, label: zodiac }));
 const suggestedListingTags = [
   'Club',
   'Phòng VIP',
@@ -1369,6 +1390,8 @@ export default function PartnerPage() {
   const [listingNotice, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
+  const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
+  const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
   const [provinces, setProvinces] = useState<VietnamProvince[]>([]);
   const [wards, setWards] = useState<VietnamWard[]>([]);
   const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
@@ -2648,7 +2671,11 @@ export default function PartnerPage() {
       const rows = current.openingHourItems.length
         ? current.openingHourItems
         : defaultListingOpeningHours();
-      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex];
+      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex] ?? {
+        day: listingOpeningDays[rowIndex] ?? 'Ngày',
+        isOff: false,
+        hours: defaultListingOpeningSlot,
+      };
       const slots = splitOpeningHourSlots(target.hours);
       while (slots.length <= slotIndex) {
         slots.push(defaultListingOpeningSlot);
@@ -2675,7 +2702,11 @@ export default function PartnerPage() {
       const rows = current.openingHourItems.length
         ? current.openingHourItems
         : defaultListingOpeningHours();
-      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex];
+      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex] ?? {
+        day: listingOpeningDays[rowIndex] ?? 'Ngày',
+        isOff: false,
+        hours: defaultListingOpeningSlot,
+      };
       const slots = splitOpeningHourSlots(target.hours);
 
       return {
@@ -2695,7 +2726,11 @@ export default function PartnerPage() {
       const rows = current.openingHourItems.length
         ? current.openingHourItems
         : defaultListingOpeningHours();
-      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex];
+      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex] ?? {
+        day: listingOpeningDays[rowIndex] ?? 'Ngày',
+        isOff: false,
+        hours: defaultListingOpeningSlot,
+      };
       const slots = splitOpeningHourSlots(target.hours).filter((_, index) => index !== slotIndex);
 
       return {
@@ -2884,12 +2919,26 @@ export default function PartnerPage() {
     }));
   };
 
+  const isEmptyCastProfile = (cast: PartnerListingCast) =>
+    !hasText(cast.stageName) &&
+    !hasText(cast.publicHeadline) &&
+    !hasText(cast.bio) &&
+    !hasText(cast.zodiacSign) &&
+    !hasText(cast.measurements) &&
+    !cast.birthMonth &&
+    !cast.heightCm &&
+    !cast.hourlyRateVnd &&
+    !(cast.tags?.length) &&
+    !(cast.languages?.length) &&
+    !(cast.hobbies?.length) &&
+    !(cast.youtubeLinks?.length) &&
+    !(cast.mediaUrls?.length);
+
   const addCastProfile = () => {
     clearListingErrorsFor('castProfiles');
     setListingDraft((current) => ({
       ...current,
       castProfiles: [
-        ...current.castProfiles,
         {
           stageName: '',
           publicHeadline: '',
@@ -2900,8 +2949,11 @@ export default function PartnerPage() {
           youtubeLinks: [],
           mediaUrls: [],
         },
+        ...current.castProfiles,
       ],
     }));
+    setActiveCastProfileIndex(0);
+    setIsAddingCastProfile(true);
   };
 
   const removeCastProfile = (index: number) => {
@@ -2910,6 +2962,35 @@ export default function PartnerPage() {
       ...current,
       castProfiles: current.castProfiles.filter((_, itemIndex) => itemIndex !== index),
     }));
+    setActiveCastProfileIndex((current) => {
+      if (current === null) return null;
+      if (current === index) return null;
+      return current > index ? current - 1 : current;
+    });
+    setIsAddingCastProfile(false);
+  };
+
+  const openCastProfileForm = (index: number) => {
+    setActiveCastProfileIndex(index);
+    setIsAddingCastProfile(false);
+  };
+
+  const closeCastProfileForm = () => {
+    const activeCast = activeCastProfileIndex === null
+      ? null
+      : listingDraft.castProfiles[activeCastProfileIndex];
+
+    if (isAddingCastProfile && activeCast && isEmptyCastProfile(activeCast)) {
+      removeCastProfile(activeCastProfileIndex ?? 0);
+    }
+
+    setActiveCastProfileIndex(null);
+    setIsAddingCastProfile(false);
+  };
+
+  const saveCastProfileForm = () => {
+    setActiveCastProfileIndex(null);
+    setIsAddingCastProfile(false);
   };
 
   const updateMediaUrl = (index: number, value: string) => {
@@ -3873,201 +3954,292 @@ export default function PartnerPage() {
     </>
   );
 
+  const renderCastProfileForm = (cast: PartnerListingCast, index: number) => (
+    <div style={{ display: 'grid', gap: '14px' }}>
+      <div className="partner-cast-form-header">
+        <button
+          type="button"
+          onClick={closeCastProfileForm}
+          aria-label="Quay lại bảng cast"
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            border: `1px solid ${colors.borderGold22}`,
+            background: colors.surface2,
+            color: colors.gold,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flex: '0 0 auto',
+          }}
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: colors.gold, fontSize: '10px', fontWeight: 900, letterSpacing: '1.7px' }}>
+            {isAddingCastProfile ? 'THÊM CAST' : 'CHỈNH SỬA CAST'}
+          </div>
+          <h3 style={{ margin: '4px 0 0', color: colors.text, fontSize: '20px', fontWeight: 900 }}>
+            {cast.stageName.trim() || 'Thông tin cast mới'}
+          </h3>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {!isAddingCastProfile ? (
+            <GhostButton onClick={() => removeCastProfile(index)}>
+              <XCircle size={16} />
+              Xóa cast
+            </GhostButton>
+          ) : null}
+          <PrimaryButton onClick={saveCastProfileForm}>
+            <Save size={16} />
+            Lưu cast
+          </PrimaryButton>
+        </div>
+      </div>
+
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Thông tin cơ bản</div>
+        <div className="partner-listing-grid">
+          <FormField label="Tên cast">
+            <input
+              value={cast.stageName}
+              onChange={(event) => updateCastProfile(index, 'stageName', event.target.value)}
+              placeholder="VD: Yuki"
+              style={listingInputStyle(`castProfiles.${index}.stageName`)}
+            />
+            {listingErrorText(`castProfiles.${index}.stageName`)}
+          </FormField>
+          <FormField label="Quán trực thuộc">
+            <input
+              value={listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý'}
+              readOnly
+              style={{ ...listingInputStyle(`castProfiles.${index}.storeName`), color: colors.goldPale }}
+            />
+          </FormField>
+          <FormField label="Headline hiển thị">
+            <input
+              value={cast.publicHeadline ?? ''}
+              onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
+              placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
+              style={listingInputStyle(`castProfiles.${index}.publicHeadline`)}
+            />
+            {listingErrorText(`castProfiles.${index}.publicHeadline`)}
+          </FormField>
+          <FormField label="Ngôn ngữ">
+            <input
+              value={cast.languages?.join(', ') ?? ''}
+              onChange={(event) => updateCastProfile(index, 'languages', splitInlineList(event.target.value))}
+              placeholder="vi, en, ja"
+              style={listingInputStyle(`castProfiles.${index}.languages`)}
+            />
+            {listingErrorText(`castProfiles.${index}.languages`)}
+          </FormField>
+          <FormField label="Tags / từ khóa">
+            <input
+              value={cast.tags?.join(', ') ?? ''}
+              onChange={(event) => updateCastProfile(index, 'tags', splitInlineList(event.target.value))}
+              placeholder="spa, gentle, quiet, 20s"
+              style={listingInputStyle(`castProfiles.${index}.tags`)}
+            />
+            {listingErrorText(`castProfiles.${index}.tags`)}
+          </FormField>
+          <FormField label="Sở thích">
+            <input
+              value={cast.hobbies?.join(', ') ?? ''}
+              onChange={(event) => updateCastProfile(index, 'hobbies', splitInlineList(event.target.value))}
+              placeholder="reading, tea, nature"
+              style={listingInputStyle(`castProfiles.${index}.hobbies`)}
+            />
+            {listingErrorText(`castProfiles.${index}.hobbies`)}
+          </FormField>
+        </div>
+      </section>
+
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Hồ sơ cast</div>
+        <div className="partner-listing-grid">
+          <FormField label="Tháng sinh">
+            <ThemedListingSelect
+              value={cast.birthMonth ? String(cast.birthMonth) : ''}
+              onChange={(value) => updateCastProfile(index, 'birthMonth', value ? Number(value) : undefined)}
+              placeholder="-- Chọn tháng --"
+              options={listingBirthMonthOptions}
+              hasError={Boolean(listingErrors[`castProfiles.${index}.birthMonth`])}
+            />
+            {listingErrorText(`castProfiles.${index}.birthMonth`)}
+          </FormField>
+          <FormField label="Cung Hoàng Đạo">
+            <ThemedListingSelect
+              value={cast.zodiacSign ?? ''}
+              onChange={(value) => updateCastProfile(index, 'zodiacSign', value)}
+              placeholder="-- Chọn cung --"
+              options={listingZodiacOptions}
+              hasError={Boolean(listingErrors[`castProfiles.${index}.zodiacSign`])}
+            />
+            {listingErrorText(`castProfiles.${index}.zodiacSign`)}
+          </FormField>
+          <FormField label="Số đo (V1 - V2 - V3)">
+            <input
+              value={cast.measurements ?? ''}
+              onChange={(event) => updateCastProfile(index, 'measurements', event.target.value)}
+              placeholder="VD: 82-58-84"
+              style={listingInputStyle(`castProfiles.${index}.measurements`)}
+            />
+            {listingErrorText(`castProfiles.${index}.measurements`)}
+          </FormField>
+          <FormField label="Chiều cao">
+            <input
+              inputMode="numeric"
+              value={cast.heightCm ? String(cast.heightCm) : ''}
+              onChange={(event) => updateCastProfile(index, 'heightCm', event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined)}
+              placeholder="VD: 165"
+              style={listingInputStyle(`castProfiles.${index}.heightCm`)}
+            />
+            {listingErrorText(`castProfiles.${index}.heightCm`)}
+          </FormField>
+          <FormField label="Giá theo giờ">
+            <input
+              inputMode="numeric"
+              value={cast.hourlyRateVnd ? String(cast.hourlyRateVnd) : ''}
+              onChange={(event) => updateCastProfile(index, 'hourlyRateVnd', event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined)}
+              placeholder="VD: 1200000"
+              style={listingInputStyle(`castProfiles.${index}.hourlyRateVnd`)}
+            />
+            {listingErrorText(`castProfiles.${index}.hourlyRateVnd`)}
+          </FormField>
+          <FormField label="Lời chào / mô tả cast" className="partner-field-wide">
+            <textarea
+              value={cast.bio ?? ''}
+              onChange={(event) => updateCastProfile(index, 'bio', event.target.value)}
+              placeholder="Thông tin nổi bật của cast"
+              style={listingInputStyle(`castProfiles.${index}.bio`, { minHeight: '104px', resize: 'vertical', padding: '12px', lineHeight: 1.5 })}
+            />
+            {listingErrorText(`castProfiles.${index}.bio`)}
+          </FormField>
+        </div>
+      </section>
+
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Ảnh / Video</div>
+        <div className="partner-listing-grid">
+          <FormField label="Ảnh đại diện / album ảnh" className="partner-field-wide">
+            <input
+              value={cast.mediaUrls?.join(', ') ?? ''}
+              onChange={(event) => updateCastProfile(index, 'mediaUrls', splitInlineList(event.target.value))}
+              placeholder="https://.../cast.jpg, https://.../album.jpg"
+              style={listingInputStyle(`castProfiles.${index}.mediaUrls`)}
+            />
+            {listingErrorText(`castProfiles.${index}.mediaUrls`)}
+            <span style={{ color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
+              Nhập nhiều ảnh bằng dấu phẩy. Ảnh đầu tiên sẽ dùng làm ảnh đại diện.
+            </span>
+          </FormField>
+          <FormField label="Video YouTube" className="partner-field-wide">
+            <input
+              value={cast.youtubeLinks?.join(', ') ?? ''}
+              onChange={(event) => updateCastProfile(index, 'youtubeLinks', splitInlineList(event.target.value))}
+              placeholder="https://youtube.com/..."
+              style={listingInputStyle(`castProfiles.${index}.youtubeLinks`)}
+            />
+            {listingErrorText(`castProfiles.${index}.youtubeLinks`)}
+          </FormField>
+        </div>
+      </section>
+    </div>
+  );
+
+  const renderCastTable = () => (
+    <div style={{ display: 'grid', gap: '14px' }}>
+      <div className="partner-cast-toolbar">
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <StatusPill tone="gold">Tất cả {listingDraft.castProfiles.length}</StatusPill>
+          <StatusPill tone="success">Đã nhập {listingDraft.castProfiles.filter((cast) => cast.stageName.trim()).length}</StatusPill>
+          <StatusPill>Thiếu tên {listingDraft.castProfiles.filter((cast) => !cast.stageName.trim()).length}</StatusPill>
+        </div>
+        <PrimaryButton onClick={addCastProfile}>
+          <Plus size={16} />
+          Thêm cast
+        </PrimaryButton>
+      </div>
+
+      {!listingDraft.castProfiles.length ? (
+        <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+          Chưa có cast trong bản nháp. Bấm Thêm cast để nhập dữ liệu thật của quán.
+        </div>
+      ) : (
+        <div className="partner-cast-table-wrap">
+          <table className="partner-cast-table">
+            <thead>
+              <tr>
+                {['STT', 'Cast', 'Quán trực thuộc', 'Ngôn ngữ', 'Tags', 'Trạng thái', ''].map((heading) => (
+                  <th key={heading}>{heading}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {listingDraft.castProfiles.map((cast, index) => {
+                const avatarUrl = cast.mediaUrls?.[0];
+                const hasRequiredName = cast.stageName.trim();
+                return (
+                  <tr key={`${cast.stageName || 'draft-cast'}-${index}`}>
+                    <td>{index + 1}</td>
+                    <td>
+                      <div className="partner-cast-cell">
+                        <span
+                          className="partner-cast-avatar"
+                          style={{
+                            background: avatarUrl
+                              ? `linear-gradient(180deg,rgba(12,12,15,.08),rgba(12,12,15,.58)), url('${avatarUrl}') center/cover`
+                              : colors.surface3,
+                          }}
+                        >
+                          {!avatarUrl ? <UsersRound size={18} /> : null}
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span className="partner-cast-name">{hasRequiredName || 'Draft cast'}</span>
+                          <span className="partner-cast-sub">{cast.zodiacSign || cast.publicHeadline || '---'}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>{listingDraft.storeName || activePartnerStore?.name || 'Quán đang quản lý'}</td>
+                    <td>{cast.languages?.length ? cast.languages.join(' · ') : '---'}</td>
+                    <td>{cast.tags?.length ? cast.tags.join(', ') : '---'}</td>
+                    <td>
+                      <StatusPill tone={hasRequiredName ? 'success' : 'gold'}>
+                        {hasRequiredName ? 'Đã nhập' : 'Bản nháp'}
+                      </StatusPill>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => openCastProfileForm(index)}
+                        aria-label={`Sửa cast ${cast.stageName || index + 1}`}
+                        className="partner-cast-edit"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
   const renderListingTab = () => {
     if (listingTab === 'cast') {
-      return (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {!listingDraft.castProfiles.length ? (
-            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-              Chưa có cast trong bản nháp. Bấm Thêm cast để nhập dữ liệu thật của quán.
-            </div>
-          ) : null}
-          {listingDraft.castProfiles.map((cast, index) => (
-            <div key={`${cast.stageName}-${index}`} style={{ ...softCardStyle, padding: '14px' }}>
-              <div className="partner-listing-grid">
-                <FormField label="Tên cast">
-                  <input
-                    value={cast.stageName}
-                    onChange={(event) => updateCastProfile(index, 'stageName', event.target.value)}
-                    placeholder="VD: Yuki"
-                    style={listingInputStyle(`castProfiles.${index}.stageName`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.stageName`)}
-                </FormField>
-                <FormField label="Headline hiển thị">
-                  <input
-                    value={cast.publicHeadline ?? ''}
-                    onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
-                    placeholder="VD: Hỗ trợ khách thích không gian yên tĩnh"
-                    style={listingInputStyle(`castProfiles.${index}.publicHeadline`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.publicHeadline`)}
-                </FormField>
-                <FormField label="Ngôn ngữ">
-                  <input
-                    value={cast.languages?.join(', ') ?? ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'languages',
-                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
-                      )
-                    }
-                    placeholder="vi, en, ja"
-                    style={listingInputStyle(`castProfiles.${index}.languages`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.languages`)}
-                </FormField>
-                <FormField label="Tags">
-                  <input
-                    value={cast.tags?.join(', ') ?? ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'tags',
-                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
-                      )
-                    }
-                    placeholder="hostess, english"
-                    style={listingInputStyle(`castProfiles.${index}.tags`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.tags`)}
-                </FormField>
-                <FormField label="Sở thích">
-                  <input
-                    value={cast.hobbies?.join(', ') ?? ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'hobbies',
-                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
-                      )
-                    }
-                    placeholder="spa, cocktail"
-                    style={listingInputStyle(`castProfiles.${index}.hobbies`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.hobbies`)}
-                </FormField>
-                <FormField label="Tháng sinh">
-                  <input
-                    inputMode="numeric"
-                    value={cast.birthMonth ? String(cast.birthMonth) : ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'birthMonth',
-                        event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined,
-                      )
-                    }
-                    placeholder="1 - 12"
-                    style={listingInputStyle(`castProfiles.${index}.birthMonth`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.birthMonth`)}
-                </FormField>
-                <FormField label="Cung">
-                  <input
-                    value={cast.zodiacSign ?? ''}
-                    onChange={(event) => updateCastProfile(index, 'zodiacSign', event.target.value)}
-                    placeholder="VD: Leo"
-                    style={listingInputStyle(`castProfiles.${index}.zodiacSign`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.zodiacSign`)}
-                </FormField>
-                <FormField label="Chiều cao">
-                  <input
-                    inputMode="numeric"
-                    value={cast.heightCm ? String(cast.heightCm) : ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'heightCm',
-                        event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined,
-                      )
-                    }
-                    placeholder="VD: 165"
-                    style={listingInputStyle(`castProfiles.${index}.heightCm`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.heightCm`)}
-                </FormField>
-                <FormField label="Số đo">
-                  <input
-                    value={cast.measurements ?? ''}
-                    onChange={(event) => updateCastProfile(index, 'measurements', event.target.value)}
-                    placeholder="VD: 82-58-84"
-                    style={listingInputStyle(`castProfiles.${index}.measurements`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.measurements`)}
-                </FormField>
-                <FormField label="Giá theo giờ">
-                  <input
-                    inputMode="numeric"
-                    value={cast.hourlyRateVnd ? String(cast.hourlyRateVnd) : ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'hourlyRateVnd',
-                        event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined,
-                      )
-                    }
-                    placeholder="VD: 1200000"
-                    style={listingInputStyle(`castProfiles.${index}.hourlyRateVnd`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.hourlyRateVnd`)}
-                </FormField>
-                <FormField label="YouTube URL">
-                  <input
-                    value={cast.youtubeLinks?.join(', ') ?? ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'youtubeLinks',
-                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
-                      )
-                    }
-                    placeholder="https://youtube.com/..."
-                    style={listingInputStyle(`castProfiles.${index}.youtubeLinks`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.youtubeLinks`)}
-                </FormField>
-                <FormField label="Ảnh cast URL">
-                  <input
-                    value={cast.mediaUrls?.join(', ') ?? ''}
-                    onChange={(event) =>
-                      updateCastProfile(
-                        index,
-                        'mediaUrls',
-                        event.target.value.split(',').map((item) => item.trim()).filter(Boolean),
-                      )
-                    }
-                    placeholder="https://.../cast.jpg"
-                    style={listingInputStyle(`castProfiles.${index}.mediaUrls`)}
-                  />
-                  {listingErrorText(`castProfiles.${index}.mediaUrls`)}
-                </FormField>
-              </div>
-              <FormField label="Mô tả cast">
-                <textarea
-                  value={cast.bio ?? ''}
-                  onChange={(event) => updateCastProfile(index, 'bio', event.target.value)}
-                  placeholder="Thông tin nổi bật của cast"
-                  style={listingInputStyle(`castProfiles.${index}.bio`, { marginTop: '10px', minHeight: '86px', resize: 'vertical', padding: '12px' })}
-                />
-                {listingErrorText(`castProfiles.${index}.bio`)}
-              </FormField>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <GhostButton onClick={() => removeCastProfile(index)}>
-                  <XCircle size={16} />
-                  Xóa cast
-                </GhostButton>
-              </div>
-            </div>
-          ))}
-          <GhostButton onClick={addCastProfile}>
-            <UsersRound size={16} />
-            Thêm cast
-          </GhostButton>
-        </div>
-      );
+      const activeCast = activeCastProfileIndex === null
+        ? null
+        : listingDraft.castProfiles[activeCastProfileIndex];
+
+      return activeCast && activeCastProfileIndex !== null
+        ? renderCastProfileForm(activeCast, activeCastProfileIndex)
+        : renderCastTable();
     }
 
     if (listingTab === 'pricing') {
@@ -5452,6 +5624,89 @@ export default function PartnerPage() {
           margin-bottom: 16px;
           max-width: 780px;
         }
+        .partner-cast-toolbar,
+        .partner-cast-form-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          justify-content: space-between;
+        }
+        .partner-cast-table-wrap {
+          overflow-x: auto;
+          border: 1px solid ${colors.borderSoft};
+          border-radius: 16px;
+          background: ${colors.surface1};
+        }
+        .partner-cast-table {
+          width: 100%;
+          min-width: 920px;
+          border-collapse: collapse;
+        }
+        .partner-cast-table th,
+        .partner-cast-table td {
+          padding: 14px;
+          text-align: left;
+          border-bottom: 1px solid ${colors.borderHair};
+          color: ${colors.text2};
+          font-size: 12px;
+          vertical-align: middle;
+        }
+        .partner-cast-table th {
+          color: ${colors.muted};
+          font-size: 10.5px;
+          font-weight: 900;
+          letter-spacing: .9px;
+          text-transform: uppercase;
+        }
+        .partner-cast-table tbody tr:last-child td {
+          border-bottom: 0;
+        }
+        .partner-cast-cell {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          min-width: 0;
+        }
+        .partner-cast-avatar {
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          border: 1px solid ${colors.borderGold22};
+          color: ${colors.gold};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+        }
+        .partner-cast-name,
+        .partner-cast-sub {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .partner-cast-name {
+          color: ${colors.text};
+          font-size: 13.5px;
+          font-weight: 900;
+        }
+        .partner-cast-sub {
+          margin-top: 3px;
+          color: ${colors.muted};
+          font-size: 11px;
+        }
+        .partner-cast-edit {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 1px solid ${colors.borderSoft};
+          background: ${colors.surface2};
+          color: ${colors.gold};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
         .partner-media-grid {
           grid-template-columns: repeat(4, minmax(0, 1fr));
         }
@@ -5526,6 +5781,11 @@ export default function PartnerPage() {
           .partner-settlement-filter-grid,
           .partner-bill-form-grid {
             grid-template-columns: 1fr !important;
+          }
+          .partner-cast-toolbar,
+          .partner-cast-form-header {
+            align-items: stretch;
+            flex-direction: column;
           }
         }
       `}</style>
