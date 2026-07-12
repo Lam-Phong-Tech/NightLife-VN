@@ -371,10 +371,6 @@ export default function Page() {
     };
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeCategory, searchTerm]);
-
   const categoryOptions = useMemo(() => {
     const counts = coupons.reduce<Record<string, number>>((acc, coupon) => {
       acc[coupon.store.category] = (acc[coupon.store.category] ?? 0) + 1;
@@ -435,13 +431,22 @@ export default function Page() {
   const couponStartIndex = (currentCouponPage - 1) * couponPageSize;
   const paginatedCoupons = filteredCoupons.slice(couponStartIndex, couponStartIndex + couponPageSize);
   const shouldShowPagination = !isLoading && !loadError && filteredCoupons.length > couponPageSize;
-  const hasActiveCouponFilter = searchTerm.trim().length > 0 || activeCategory !== "ALL";
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  const updateSearchTerm = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const updateCategory = (category: string) => {
+    setActiveCategory(category);
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setActiveCategory("ALL");
+    setCurrentPage(1);
+  };
 
   return (
     <main className="coupon-page">
@@ -459,7 +464,7 @@ export default function Page() {
             <Search size={17} />
             <input
               aria-label="Tìm ưu đãi"
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => updateSearchTerm(event.target.value)}
               placeholder="Tìm quán, khu vực hoặc ưu đãi..."
               type="search"
               value={searchTerm}
@@ -474,7 +479,7 @@ export default function Page() {
           </section>
         ) : null}
 
-        <section className={`coupon-content${hasActiveCouponFilter ? " is-filtering" : ""}`}>
+        <section className="coupon-content">
           <aside className="coupon-panel" aria-label="Bộ lọc ưu đãi">
             <div className="panel-card featured-card">
               <span className="panel-icon">
@@ -500,7 +505,7 @@ export default function Page() {
               <div className="filter-list">
                 <button
                   className={activeCategory === "ALL" ? "active" : ""}
-                  onClick={() => setActiveCategory("ALL")}
+                  onClick={() => updateCategory("ALL")}
                   type="button"
                 >
                   <span>Tất cả</span>
@@ -510,7 +515,7 @@ export default function Page() {
                   <button
                     className={activeCategory === option.category ? "active" : ""}
                     key={option.category}
-                    onClick={() => setActiveCategory(option.category)}
+                    onClick={() => updateCategory(option.category)}
                     type="button"
                   >
                     <span>{option.label}</span>
@@ -534,10 +539,7 @@ export default function Page() {
               </div>
               {searchTerm || activeCategory !== "ALL" ? (
                 <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setActiveCategory("ALL");
-                  }}
+                  onClick={clearFilters}
                   type="button"
                 >
                   Xóa lọc
@@ -559,10 +561,7 @@ export default function Page() {
                 <h2>Chưa có coupon phù hợp</h2>
                 <p>Thử đổi bộ lọc hoặc tìm theo tên quán/khu vực khác.</p>
                 <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setActiveCategory("ALL");
-                  }}
+                  onClick={clearFilters}
                   type="button"
                 >
                   Xem tất cả ưu đãi
@@ -1357,23 +1356,6 @@ export default function Page() {
           .coupon-panel {
             position: static;
             grid-template-columns: 1fr 1fr;
-          }
-
-          .coupon-content.is-filtering {
-            gap: 12px;
-          }
-
-          .coupon-content.is-filtering .coupon-results {
-            order: 1;
-          }
-
-          .coupon-content.is-filtering .coupon-panel {
-            order: 2;
-          }
-
-          .coupon-content.is-filtering .featured-card,
-          .coupon-content.is-filtering .note-card {
-            display: none;
           }
 
           .note-card {
