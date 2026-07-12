@@ -566,6 +566,16 @@
   backdrop-filter: blur(12px);
 }
 
+:global(html.vy-light) .bookingStickyCta,
+:global(html.vy-light) .bottomActions {
+  border-top-color: rgba(168, 124, 52, 0.18);
+  background:
+    linear-gradient(180deg, rgba(250, 246, 238, 0.82), rgba(244, 236, 223, 0.98)),
+    #f4ecdf;
+  box-shadow: 0 -16px 36px -30px rgba(80, 55, 18, 0.5);
+  backdrop-filter: blur(14px);
+}
+
 .bookingStickyCta {
   position: sticky;
   bottom: 0;
@@ -597,6 +607,12 @@
   gap: 2px;
   background: linear-gradient(135deg, #f0dda8, #d4b26a 55%, #b6924a);
   color: #241a0a;
+}
+
+:global(html.vy-light) .primaryCta {
+  background: linear-gradient(135deg, #f9eab9 0%, #e4bf62 58%, #c79a38 100%);
+  color: #241a0a;
+  box-shadow: 0 14px 28px -20px rgba(110, 78, 23, 0.62);
 }
 
 .primaryCta strong {
@@ -910,6 +926,29 @@
   font-weight: 850;
   line-height: 1;
   cursor: pointer;
+}
+
+:global(html.vy-light) .qrPanel {
+  border-color: rgba(168, 124, 52, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 248, 232, 0.96), rgba(248, 240, 227, 0.98)),
+    #f8f0e3;
+  box-shadow: 0 16px 34px -30px rgba(80, 55, 18, 0.45);
+}
+
+:global(html.vy-light) .qrBox {
+  border-color: rgba(168, 124, 52, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+:global(html.vy-light) .qrCopy strong {
+  color: #9b7126;
+}
+
+:global(html.vy-light) .qrDownloadButton {
+  background: linear-gradient(135deg, #f9eab9 0%, #e4bf62 58%, #c79a38 100%);
+  color: #241a0a;
+  box-shadow: 0 13px 26px -19px rgba(110, 78, 23, 0.58);
 }
 
 .historyIntro {
@@ -1412,6 +1451,13 @@
     backdrop-filter: none;
   }
 
+  :global(html.vy-light) .bookingStickyCta {
+    background:
+      linear-gradient(180deg, rgba(250, 246, 238, 0.72), rgba(244, 236, 223, 0.98)),
+      #f4ecdf;
+    backdrop-filter: none;
+  }
+
   .bookingStickyCta .primaryCta {
     width: min(100%, 380px);
     min-height: 48px;
@@ -1421,6 +1467,13 @@
   .confirmFrame .bottomActions {
     padding: 16px 24px 24px;
     background: rgba(255, 255, 255, 0.018);
+    backdrop-filter: none;
+  }
+
+  :global(html.vy-light) .confirmFrame .bottomActions {
+    background:
+      linear-gradient(180deg, rgba(250, 246, 238, 0.72), rgba(244, 236, 223, 0.98)),
+      #f4ecdf;
     backdrop-filter: none;
   }
 
@@ -1524,6 +1577,10 @@
     box-shadow: 0 -18px 36px -26px rgba(0, 0, 0, 0.86);
   }
 
+  :global(html.vy-light) .bookingStickyCta {
+    box-shadow: 0 -18px 36px -30px rgba(80, 55, 18, 0.48);
+  }
+
   .bookingFormPage .bookingStickyCta {
     position: static;
     right: auto;
@@ -1531,6 +1588,13 @@
     left: auto;
     z-index: auto;
     margin-top: 8px;
+    box-shadow: none;
+  }
+
+  :global(html.vy-light) .bookingFormPage .bookingStickyCta {
+    background:
+      linear-gradient(180deg, rgba(250, 246, 238, 0.76), rgba(244, 236, 223, 0.98)),
+      #f4ecdf;
     box-shadow: none;
   }
 
