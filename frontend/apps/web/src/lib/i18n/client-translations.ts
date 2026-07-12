@@ -2,6 +2,7 @@
 
 export type LanguageCode = "vi" | "en" | "ja" | "ko" | "zh";
 
+export const defaultLanguageCode: LanguageCode = "ja";
 export const languageStorageKey = "vietyoru.language";
 export const languageCookieName = "vietyoru_language";
 export const languageChangedEvent = "vietyoru:language-change";
@@ -23,6 +24,34 @@ type TranslationEntry = {
 } & TranslationSet;
 
 const entries: TranslationEntry[] = [
+  {
+    vi: "Chưa kết nối được dữ liệu quán.",
+    en: "Could not connect to venue data.",
+    ja: "店舗データに接続できませんでした。",
+    ko: "매장 데이터에 연결할 수 없습니다.",
+    zh: "无法连接店铺数据。",
+  },
+  {
+    vi: "Chưa có quán phù hợp",
+    en: "No matching venues yet",
+    ja: "条件に合う店舗はありません",
+    ko: "조건에 맞는 매장이 없습니다",
+    zh: "暂无符合条件的店铺",
+  },
+  {
+    vi: "Đổi khu vực, loại hình hoặc từ khóa để xem thêm.",
+    en: "Change area, category, or keyword to see more.",
+    ja: "エリア、ジャンル、キーワードを変更してさらに表示してください。",
+    ko: "지역, 카테고리 또는 키워드를 바꾸면 더 볼 수 있습니다.",
+    zh: "更换区域、类型或关键词以查看更多。",
+  },
+  {
+    vi: "Không tải được danh sách ưu đãi từ backend.",
+    en: "Could not load the deal list from backend.",
+    ja: "バックエンドから特典一覧を読み込めませんでした。",
+    ko: "백엔드에서 혜택 목록을 불러올 수 없습니다.",
+    zh: "无法从后端加载优惠列表。",
+  },
   {
     vi: "Trang chủ",
     en: "Home",
@@ -6254,13 +6283,13 @@ export function isLanguageCode(value: string | null): value is LanguageCode {
 }
 
 export function readStoredLanguage(): LanguageCode {
-  if (typeof window === "undefined") return "vi";
+  if (typeof window === "undefined") return defaultLanguageCode;
 
   try {
     const storedLanguage = window.localStorage.getItem(languageStorageKey);
     if (isLanguageCode(storedLanguage)) return storedLanguage;
   } catch {
-    return "vi";
+    return defaultLanguageCode;
   }
 
   const cookieValue = document.cookie
@@ -6270,7 +6299,7 @@ export function readStoredLanguage(): LanguageCode {
     ?.split("=")
     .at(1);
 
-  return isLanguageCode(cookieValue ?? null) ? (cookieValue as LanguageCode) : "vi";
+  return isLanguageCode(cookieValue ?? null) ? (cookieValue as LanguageCode) : defaultLanguageCode;
 }
 
 export function storeLanguagePreference(language: LanguageCode) {

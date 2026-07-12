@@ -4,6 +4,7 @@ import { Check, ChevronDown, Globe, X } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  defaultLanguageCode,
   languageChangedEvent,
   languageHtmlLang,
   readStoredLanguage,
@@ -52,7 +53,11 @@ const languages: LanguageOption[] = [
 ];
 
 function getLanguage(code: LanguageCode) {
-  return languages.find((language) => language.code === code) || defaultLanguage;
+  return (
+    languages.find((language) => language.code === code) ||
+    languages.find((language) => language.code === defaultLanguageCode) ||
+    defaultLanguage
+  );
 }
 
 function storeLanguage(language: LanguageOption) {
@@ -63,8 +68,8 @@ function storeLanguage(language: LanguageOption) {
 }
 
 export function LanguagePicker({ isMobile }: { isMobile: boolean }) {
-  const [activeCode, setActiveCode] = useState<LanguageCode>("vi");
-  const [draftCode, setDraftCode] = useState<LanguageCode>("vi");
+  const [activeCode, setActiveCode] = useState<LanguageCode>(defaultLanguageCode);
+  const [draftCode, setDraftCode] = useState<LanguageCode>(defaultLanguageCode);
   const [isOpen, setIsOpen] = useState(false);
 
   const activeLanguage = useMemo(() => getLanguage(activeCode), [activeCode]);

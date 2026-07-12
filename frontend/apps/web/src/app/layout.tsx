@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: `${siteConfig.name} | ${siteConfig.tagline}`,
     description: siteConfig.description,
-    locale: "vi_VN",
+    locale: "ja_JP",
     type: "website",
   },
   twitter: {
@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -44,7 +44,6 @@ export default function RootLayout({
                   var isAdmin = window.location.pathname.startsWith('/admin');
                   var key = isAdmin ? 'vy-admin-theme' : 'vy-user-theme';
                   var t = localStorage.getItem(key);
-                  if (!isAdmin && !t && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
                   if (t === 'light') document.documentElement.classList.add(isAdmin ? 'vy-admin-light' : 'vy-light');
                 } catch (e) { /* private mode */ }
               })();

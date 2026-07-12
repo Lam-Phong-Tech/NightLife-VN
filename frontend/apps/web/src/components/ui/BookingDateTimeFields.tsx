@@ -28,7 +28,7 @@ import {
 } from "@/lib/i18n/use-active-language";
 
 dayjs.extend(customParseFormat);
-dayjs.locale("vi");
+dayjs.locale("ja");
 
 const antdLocales = {
   vi: viVN,

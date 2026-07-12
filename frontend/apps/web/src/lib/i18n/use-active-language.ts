@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  defaultLanguageCode,
   languageChangedEvent,
   readStoredLanguage,
   type LanguageCode,
@@ -18,7 +19,7 @@ export const intlLocaleByLanguage: Record<LanguageCode, string> = {
 };
 
 export function useActiveLanguage() {
-  const [language, setLanguage] = useState<LanguageCode>("vi");
+  const [language, setLanguage] = useState<LanguageCode>(defaultLanguageCode);
 
   useEffect(() => {
     const syncLanguage = (event?: Event) => {

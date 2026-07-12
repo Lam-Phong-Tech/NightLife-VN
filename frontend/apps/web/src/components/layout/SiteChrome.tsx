@@ -32,6 +32,7 @@ import {
 } from "@/lib/api/appearance";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
+  defaultLanguageCode,
   languageChangedEvent,
   readStoredLanguage,
   translateText,
@@ -1370,7 +1371,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [isNotificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
-  const [activeLanguage, setActiveLanguage] = useState<LanguageCode>("vi");
+  const [activeLanguage, setActiveLanguage] = useState<LanguageCode>(defaultLanguageCode);
   const notificationIdsRef = useRef(new Set<string>());
   const optimisticNotificationIdsRef = useRef(new Set<string>());
   const hideChrome = hiddenChromePaths.some(

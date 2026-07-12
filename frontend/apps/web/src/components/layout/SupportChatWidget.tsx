@@ -45,7 +45,7 @@ type SupportChatWidgetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function formatChatTime(date: Date, language: LanguageCode = "vi") {
+function formatChatTime(date: Date, language: LanguageCode = "ja") {
   return new Intl.DateTimeFormat(intlLocaleByLanguage[language], {
     hour: "2-digit",
     minute: "2-digit",
