@@ -1384,7 +1384,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         <RelatedStores stores={recommendedStores} />
       </section>
 
-      <div className="mobile-cta">
+      <div className="store-mobile-footer-cta">
         <Link
           data-testid="store-booking-cta-mobile"
           className="primary-action"
@@ -2952,7 +2952,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.35;
         }
 
-        .mobile-cta {
+        .store-mobile-footer-cta {
           display: none;
         }
 
@@ -3232,42 +3232,46 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             height: 118px;
           }
 
-          .mobile-cta {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: var(--store-mobile-nav-height);
+          .store-mobile-footer-cta {
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            top: auto !important;
+            bottom: var(--store-mobile-nav-height) !important;
             z-index: 70;
             display: grid;
             grid-template-columns: minmax(0, 1fr);
             align-items: center;
-            min-height: var(--store-mobile-cta-height);
+            height: var(--store-mobile-cta-height);
+            margin: 0 !important;
             padding: 10px 12px;
             background: color-mix(in srgb, var(--vy-bg) 94%, #f0dda8 6%);
             border-top: 1px solid rgba(212, 178, 106, .34);
+            box-sizing: border-box;
             box-shadow: 0 -12px 30px rgba(105, 75, 21, .16);
             backdrop-filter: blur(14px);
+            transform: translateZ(0);
           }
 
-          .mobile-cta div span,
-          .mobile-cta div strong {
+          .store-mobile-footer-cta div span,
+          .store-mobile-footer-cta div strong {
             display: block;
           }
 
-          .mobile-cta div span {
+          .store-mobile-footer-cta div span {
             color: var(--vy-muted);
             font-size: 11px;
             font-weight: 800;
           }
 
-          .mobile-cta div strong {
+          .store-mobile-footer-cta div strong {
             margin-top: 3px;
             color: var(--vy-text);
             font-size: 16px;
             line-height: 1.2;
           }
 
-          .mobile-cta .primary-action {
+          .store-mobile-footer-cta .primary-action {
             min-height: 52px;
             padding: 0 14px;
             width: 100%;
@@ -3276,13 +3280,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             pointer-events: auto;
           }
 
-          .mobile-cta .primary-action span {
+          .store-mobile-footer-cta .primary-action span {
             display: grid;
             gap: 2px;
             line-height: 1.15;
           }
 
-          .mobile-cta .primary-action small {
+          .store-mobile-footer-cta .primary-action small {
             font-size: 10px;
             font-weight: 700;
             opacity: .82;
