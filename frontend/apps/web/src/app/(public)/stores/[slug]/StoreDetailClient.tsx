@@ -1460,6 +1460,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
       <style>{`
         .store-detail-page {
+          --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
+          --store-mobile-cta-height: 56px;
+          --store-mobile-cta-gap: 10px;
           min-height: 100vh;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -3037,7 +3040,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: 0;
+            padding-bottom: calc(
+              var(--store-mobile-nav-height) +
+              var(--store-mobile-cta-height) +
+              var(--store-mobile-cta-gap) +
+              24px
+            );
+          }
+
+          .nl-page-content:has(.store-detail-page) {
+            scroll-padding-bottom: calc(164px + env(safe-area-inset-bottom)) !important;
           }
 
           .detail-shell {
@@ -3224,19 +3236,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
           .mobile-cta {
             position: fixed;
-            left: 0;
-            right: 0;
-            bottom: calc(74px + env(safe-area-inset-bottom));
+            left: max(12px, env(safe-area-inset-left));
+            right: max(12px, env(safe-area-inset-right));
+            bottom: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-gap));
             z-index: 70;
             display: grid;
             grid-template-columns: minmax(0, 1fr);
             align-items: center;
-            min-height: 76px;
-            padding: 10px 14px;
-            background: linear-gradient(180deg, rgba(255, 250, 240, .96), rgba(247, 239, 224, .98));
-            border-top: 1px solid rgba(212, 178, 106, .34);
-            box-shadow: 0 -12px 30px rgba(105, 75, 21, .16);
-            backdrop-filter: blur(12px);
+            min-height: var(--store-mobile-cta-height);
+            padding: 0;
+            pointer-events: none;
           }
 
           .mobile-cta div span,
@@ -3258,9 +3267,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           }
 
           .mobile-cta .primary-action {
-            min-height: 52px;
-            padding: 0 12px;
+            min-height: var(--store-mobile-cta-height);
+            padding: 0 14px;
             width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 12px 28px rgba(105, 75, 21, .2);
+            pointer-events: auto;
           }
 
           .mobile-cta .primary-action span {
