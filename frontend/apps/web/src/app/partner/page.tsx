@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
 import {
   AlertTriangle,
   Bell,
@@ -137,6 +139,27 @@ const readStoredPartnerTheme = (): PartnerTheme => {
 
   return document.documentElement.classList.contains('vy-light') ? 'light' : 'dark';
 };
+
+const ReactQuill = dynamic(() => import('react-quill-new'), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        minHeight: '158px',
+        borderRadius: '12px',
+        border: `1px solid ${colors.borderHair}`,
+        background: colors.surface2,
+        color: colors.muted,
+        display: 'grid',
+        placeItems: 'center',
+        fontSize: '13px',
+        fontWeight: 700,
+      }}
+    >
+      Đang tải Editor...
+    </div>
+  ),
+});
 
 type PartnerStore = {
   id: string;
@@ -329,6 +352,8 @@ type BarcodeDetectorInstance = {
 };
 type BarcodeDetectorConstructor = new (options: { formats: string[] }) => BarcodeDetectorInstance;
 type BarcodeDetectorWindow = Window & { BarcodeDetector?: BarcodeDetectorConstructor };
+type VietnamProvince = { code: number; name: string };
+type VietnamWard = { code: number; name: string };
 const panelKeys = ['overview', 'scan', 'settlement', 'listing', 'settings', 'bill'] as const;
 type PanelKey = (typeof panelKeys)[number];
 type PartnerNotificationTone = 'gold' | 'success' | 'warning' | 'danger' | 'info';
@@ -372,9 +397,23 @@ const bookingCodePattern = /^#?BK-[A-Z0-9-]{6,}$/i;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const listingOpeningDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+const defaultListingOpeningSlot = '19:00 - 02:00';
+const listingTimeOptions = Array.from({ length: 24 }, (_, index) => `${String(index).padStart(2, '0')}:00`);
+const suggestedListingTags = [
+  'Club',
+  'Phòng VIP',
+  'Hỗ trợ tiếng Nhật',
+  'DJ hàng đầu',
+  'Nhạc hay',
+  'Không gian đẹp',
+  'Cocktail',
+  'Rooftop',
+  'Sang trọng',
+  'Sôi động',
+];
 
 const defaultListingOpeningHours = (): PartnerListingOpeningHour[] =>
-  listingOpeningDays.map((day) => ({ day, isOff: false, hours: '' }));
+  listingOpeningDays.map((day) => ({ day, isOff: false, hours: defaultListingOpeningSlot }));
 
 const isSignedQrPayload = (value: string) => {
   if (signedQrTokenPattern.test(value)) {
@@ -653,6 +692,24 @@ const isValidUrl = (value: string) => {
 
 const openingHourPattern = /^([01]\d|2[0-3]):[0-5]\d\s*[-–]\s*([01]\d|2[0-3]):[0-5]\d$/;
 const phonePattern = /^\+?[0-9\s().-]{8,18}$/;
+const splitOpeningHourSlots = (value?: string | null) =>
+  (value ?? '')
+    .split(',')
+    .map((slot) => slot.trim())
+    .filter(Boolean);
+
+const splitOpeningHourSlot = (slot?: string | null) => {
+  const [open = '', close = ''] = (slot ?? '').split(/\s*[-–]\s*/);
+  return { open: open.trim(), close: close.trim() };
+};
+
+const formatOpeningHourSlot = (open: string, close: string) =>
+  open || close ? `${open || '19:00'} - ${close || '02:00'}` : '';
+
+const hasValidOpeningHourSlots = (value?: string | null) => {
+  const slots = splitOpeningHourSlots(value);
+  return slots.length > 0 && slots.every((slot) => openingHourPattern.test(slot));
+};
 
 const tabFromListingErrorPath = (path: string): ListingTabKey => {
   if (path.startsWith('castProfiles.')) return 'cast';
@@ -717,11 +774,11 @@ const validateListingDraft = (
       errors[path] = `Nhập giờ mở cửa cho ${item.day}.`;
       return;
     }
-    if (hasText(item.hours) && !openingHourPattern.test(item.hours!.trim())) {
-      errors[path] = 'Định dạng giờ phải là HH:mm - HH:mm.';
+    if (hasText(item.hours) && !hasValidOpeningHourSlots(item.hours)) {
+      errors[path] = 'Định dạng giờ phải là HH:mm - HH:mm, có thể thêm nhiều khung bằng dấu phẩy.';
     }
   });
-  if (hasText(draft.openingHours) && !openingHourPattern.test(draft.openingHours.trim())) {
+  if (hasText(draft.openingHours) && !hasValidOpeningHourSlots(draft.openingHours)) {
     errors.openingHours = 'Tóm tắt giờ mở cửa phải là HH:mm - HH:mm.';
   }
 
@@ -1132,6 +1189,47 @@ function FormField({
   );
 }
 
+function ListingTimeSelect({
+  value,
+  onChange,
+  placeholder,
+  hasError,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  hasError?: boolean;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label={placeholder}
+      style={{
+        minWidth: '88px',
+        height: '34px',
+        border: `1px solid ${hasError ? colors.danger : colors.borderGold22}`,
+        borderRadius: '9px',
+        background: colors.surface2,
+        color: value ? colors.goldPale : colors.muted,
+        font: 'inherit',
+        fontSize: '12px',
+        fontWeight: 900,
+        padding: '0 9px',
+        outline: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      <option value="">{placeholder}</option>
+      {listingTimeOptions.map((time) => (
+        <option key={time} value={time}>
+          {time}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 export default function PartnerPage() {
   const searchParams = useSearchParams();
   const requestedPanel = searchParams.get('panel');
@@ -1151,6 +1249,11 @@ export default function PartnerPage() {
   const [listingContentId, setListingContentId] = useState<string | null>(null);
   const [listingNotice, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
+  const [listingTagInput, setListingTagInput] = useState('');
+  const [provinces, setProvinces] = useState<VietnamProvince[]>([]);
+  const [wards, setWards] = useState<VietnamWard[]>([]);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
+  const [selectedWardCode, setSelectedWardCode] = useState('');
   const [isListingLoading, setIsListingLoading] = useState(false);
   const [isSavingListing, setIsSavingListing] = useState(false);
   const [isSubmittingListing, setIsSubmittingListing] = useState(false);
@@ -1207,6 +1310,89 @@ export default function PartnerPage() {
   const togglePartnerTheme = useCallback(() => {
     setPartnerTheme((current) => (current === 'dark' ? 'light' : 'dark'));
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch('https://provinces.open-api.vn/api/v2/p/', { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data: VietnamProvince[]) => {
+        if (Array.isArray(data)) {
+          setProvinces(data);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProvinceCode) {
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch(`https://provinces.open-api.vn/api/v2/p/${selectedProvinceCode}?depth=2`, {
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { wards?: VietnamWard[] } | null) => {
+        setWards(Array.isArray(data?.wards) ? data.wards : []);
+      })
+      .catch(() => setWards([]));
+
+    return () => controller.abort();
+  }, [selectedProvinceCode]);
+
+  useEffect(() => {
+    if (!provinces.length || selectedProvinceCode || !listingDraft.storeCity) {
+      return;
+    }
+
+    const city = listingDraft.storeCity.toLowerCase();
+    const matchedProvince = provinces.find((province) => {
+      const name = province.name.toLowerCase();
+      return (
+        name.includes(city) ||
+        city.includes(name) ||
+        (city.includes('hanoi') && name.includes('hà nội')) ||
+        (city.includes('ha noi') && name.includes('hà nội')) ||
+        (city.includes('ho chi minh') && name.includes('hồ chí minh'))
+      );
+    });
+
+    if (!matchedProvince) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSelectedProvinceCode(String(matchedProvince.code));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [listingDraft.storeCity, provinces, selectedProvinceCode]);
+
+  useEffect(() => {
+    if (!wards.length || selectedWardCode || !listingDraft.ward) {
+      return;
+    }
+
+    const ward = listingDraft.ward.toLowerCase();
+    const matchedWard = wards.find((item) => {
+      const name = item.name.toLowerCase();
+      return name.includes(ward) || ward.includes(name);
+    });
+
+    if (!matchedWard) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSelectedWardCode(String(matchedWard.code));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [listingDraft.ward, selectedWardCode, wards]);
 
   const stopCameraScan = useCallback(() => {
     if (cameraLoopRef.current) {
@@ -2262,6 +2448,39 @@ export default function PartnerPage() {
     }));
   };
 
+  const addListingTag = (tag: string) => {
+    const nextTag = tag.trim();
+    if (!nextTag) return;
+
+    clearListingErrorsFor('tags');
+    setListingDraft((current) => {
+      const existing = new Set(current.tags.map((item) => item.toLowerCase()));
+      if (existing.has(nextTag.toLowerCase())) {
+        return current;
+      }
+
+      return {
+        ...current,
+        tags: [...current.tags, nextTag].slice(0, 16),
+      };
+    });
+  };
+
+  const removeListingTag = (tag: string) => {
+    clearListingErrorsFor('tags');
+    setListingDraft((current) => ({
+      ...current,
+      tags: current.tags.filter((item) => item !== tag),
+    }));
+  };
+
+  const submitListingTagInput = () => {
+    const nextTag = listingTagInput.trim();
+    if (!nextTag) return;
+    addListingTag(nextTag);
+    setListingTagInput('');
+  };
+
   const updateOpeningHourItem = (
     index: number,
     key: keyof PartnerListingOpeningHour,
@@ -2280,6 +2499,76 @@ export default function PartnerPage() {
         itemIndex === index ? { ...item, [key]: value } : item,
       ),
     }));
+  };
+
+  const updateOpeningHourSlot = (
+    rowIndex: number,
+    slotIndex: number,
+    key: 'open' | 'close',
+    value: string,
+  ) => {
+    clearListingErrorsFor(`openingHourItems.${rowIndex}.hours`);
+    setListingDraft((current) => {
+      const rows = current.openingHourItems.length
+        ? current.openingHourItems
+        : defaultListingOpeningHours();
+      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex];
+      const slots = splitOpeningHourSlots(target.hours);
+      while (slots.length <= slotIndex) {
+        slots.push(defaultListingOpeningSlot);
+      }
+
+      const currentSlot = splitOpeningHourSlot(slots[slotIndex] || defaultListingOpeningSlot);
+      slots[slotIndex] = formatOpeningHourSlot(
+        key === 'open' ? value : currentSlot.open,
+        key === 'close' ? value : currentSlot.close,
+      );
+
+      return {
+        ...current,
+        openingHourItems: rows.map((item, index) =>
+          index === rowIndex ? { ...item, hours: slots.join(', ') } : item,
+        ),
+      };
+    });
+  };
+
+  const addOpeningHourSlot = (rowIndex: number) => {
+    clearListingErrorsFor(`openingHourItems.${rowIndex}.hours`);
+    setListingDraft((current) => {
+      const rows = current.openingHourItems.length
+        ? current.openingHourItems
+        : defaultListingOpeningHours();
+      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex];
+      const slots = splitOpeningHourSlots(target.hours);
+
+      return {
+        ...current,
+        openingHourItems: rows.map((item, index) =>
+          index === rowIndex
+            ? { ...item, hours: [...slots, defaultListingOpeningSlot].join(', ') }
+            : item,
+        ),
+      };
+    });
+  };
+
+  const removeOpeningHourSlot = (rowIndex: number, slotIndex: number) => {
+    clearListingErrorsFor(`openingHourItems.${rowIndex}.hours`);
+    setListingDraft((current) => {
+      const rows = current.openingHourItems.length
+        ? current.openingHourItems
+        : defaultListingOpeningHours();
+      const target = rows[rowIndex] ?? defaultListingOpeningHours()[rowIndex];
+      const slots = splitOpeningHourSlots(target.hours).filter((_, index) => index !== slotIndex);
+
+      return {
+        ...current,
+        openingHourItems: rows.map((item, index) =>
+          index === rowIndex ? { ...item, hours: slots.join(', ') } : item,
+        ),
+      };
+    });
   };
 
   const updateGalleryUrl = (index: number, value: string) => {
@@ -3981,12 +4270,41 @@ export default function PartnerPage() {
           <div className="partner-listing-section-title">Vị trí & liên hệ</div>
           <div className="partner-listing-grid">
             <FormField label="Tỉnh/Thành phố">
-              <input
-                value={listingDraft.storeCity}
-                onChange={(event) => updateListingField('storeCity', event.target.value)}
-                placeholder="VD: Hồ Chí Minh"
-                style={listingInputStyle('storeCity')}
-              />
+              <select
+                value={selectedProvinceCode || (listingDraft.storeCity ? '__current' : '')}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  if (code === '__current') return;
+                  const province = provinces.find((item) => String(item.code) === code);
+                  const city =
+                    code === '79'
+                      ? 'Ho Chi Minh City'
+                      : code === '1'
+                        ? 'Hanoi'
+                        : province?.name ?? '';
+                  setSelectedProvinceCode(code);
+                  setSelectedWardCode('');
+                  setWards([]);
+                  setListingDraft((current) => ({
+                    ...current,
+                    storeCity: city,
+                    ward: '',
+                  }));
+                  clearListingErrorsFor('storeCity');
+                  clearListingErrorsFor('ward');
+                }}
+                style={listingInputStyle('storeCity', { appearance: 'none', cursor: 'pointer' })}
+              >
+                <option value="">-- Chọn Tỉnh/Thành --</option>
+                {!selectedProvinceCode && listingDraft.storeCity ? (
+                  <option value="__current">{listingDraft.storeCity}</option>
+                ) : null}
+                {provinces.map((province) => (
+                  <option key={province.code} value={province.code}>
+                    {province.name}
+                  </option>
+                ))}
+              </select>
               {listingErrorText('storeCity')}
             </FormField>
             <FormField label="Quận / khu">
@@ -3999,12 +4317,32 @@ export default function PartnerPage() {
               {listingErrorText('storeDistrict')}
             </FormField>
             <FormField label="Phường/Xã">
-              <input
-                value={listingDraft.ward}
-                onChange={(event) => updateListingField('ward', event.target.value)}
-                placeholder="VD: Bến Nghé"
-                style={listingInputStyle('ward')}
-              />
+              <select
+                value={selectedWardCode || (listingDraft.ward ? '__current' : '')}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  if (code === '__current') return;
+                  const ward = wards.find((item) => String(item.code) === code);
+                  setSelectedWardCode(code);
+                  updateListingField('ward', ward?.name ?? '');
+                }}
+                disabled={!selectedProvinceCode && !listingDraft.ward}
+                style={listingInputStyle('ward', {
+                  appearance: 'none',
+                  cursor: selectedProvinceCode || listingDraft.ward ? 'pointer' : 'not-allowed',
+                  opacity: selectedProvinceCode || listingDraft.ward ? 1 : 0.72,
+                })}
+              >
+                <option value="">-- Chọn Phường/Xã --</option>
+                {!selectedWardCode && listingDraft.ward ? (
+                  <option value="__current">{listingDraft.ward}</option>
+                ) : null}
+                {wards.map((ward) => (
+                  <option key={ward.code} value={ward.code}>
+                    {ward.name}
+                  </option>
+                ))}
+              </select>
               {listingErrorText('ward')}
             </FormField>
             <FormField label="Số nhà, tên đường">
@@ -4040,29 +4378,70 @@ export default function PartnerPage() {
         <section className="partner-listing-section">
           <div className="partner-listing-section-title">Giờ mở cửa theo ngày</div>
           <div className="partner-hour-list">
-            {openingRows.map((item, index) => (
-              <div key={`${item.day}-${index}`} className="partner-hour-row">
-                <strong>{item.day}</strong>
-                <button
-                  type="button"
-                  onClick={() => updateOpeningHourItem(index, 'isOff', !item.isOff)}
-                  aria-pressed={!item.isOff}
-                  className="partner-toggle-button"
-                >
-                  {item.isOff ? 'Nghỉ' : 'Mở'}
-                </button>
-                <div style={{ display: 'grid', gap: '6px', minWidth: 0 }}>
-                  <input
-                    value={item.hours ?? ''}
-                    disabled={item.isOff}
-                    onChange={(event) => updateOpeningHourItem(index, 'hours', event.target.value)}
-                    placeholder="VD: 19:00 - 02:00"
-                    style={listingInputStyle(`openingHourItems.${index}.hours`)}
-                  />
-                  {listingErrorText(`openingHourItems.${index}.hours`)}
+            {openingRows.map((item, index) => {
+              const slots = splitOpeningHourSlots(item.hours);
+              const visibleSlots = slots.length ? slots : [defaultListingOpeningSlot];
+              const hasHourError = Boolean(listingErrors[`openingHourItems.${index}.hours`]);
+
+              return (
+                <div key={`${item.day}-${index}`} className="partner-hour-row">
+                  <strong>{item.day}</strong>
+                  <div className="partner-hour-slots">
+                    {!item.isOff ? (
+                      visibleSlots.map((slot, slotIndex) => {
+                        const slotParts = splitOpeningHourSlot(slot);
+
+                        return (
+                          <div key={`${slot}-${slotIndex}`} className="partner-hour-slot">
+                            <ListingTimeSelect
+                              value={slotParts.open}
+                              onChange={(value) => updateOpeningHourSlot(index, slotIndex, 'open', value)}
+                              placeholder="Mở lúc"
+                              hasError={hasHourError}
+                            />
+                            <span>–</span>
+                            <ListingTimeSelect
+                              value={slotParts.close}
+                              onChange={(value) => updateOpeningHourSlot(index, slotIndex, 'close', value)}
+                              placeholder="Đóng lúc"
+                              hasError={hasHourError}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeOpeningHourSlot(index, slotIndex)}
+                              className="partner-hour-remove"
+                              aria-label={`Xóa khung giờ ${item.day}`}
+                            >
+                              <XCircle size={13} />
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <span className="partner-hour-off">Nghỉ cả ngày</span>
+                    )}
+                    {!item.isOff ? (
+                      <button
+                        type="button"
+                        onClick={() => addOpeningHourSlot(index)}
+                        className="partner-hour-add"
+                      >
+                        + Khung giờ
+                      </button>
+                    ) : null}
+                    {listingErrorText(`openingHourItems.${index}.hours`)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateOpeningHourItem(index, 'isOff', !item.isOff)}
+                    aria-pressed={!item.isOff}
+                    className="partner-toggle-button"
+                  >
+                    {item.isOff ? 'Nghỉ' : 'Mở'}
+                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <FormField label="Tóm tắt giờ mở cửa" style={{ marginTop: '12px' }}>
             <input
@@ -4079,19 +4458,62 @@ export default function PartnerPage() {
           <div className="partner-listing-section-title">Nội dung hiển thị</div>
           <div className="partner-listing-grid">
             <FormField label="Tags / thẻ nổi bật" className="partner-field-wide">
+              <div className="partner-admin-tag-suggestions">
+                {suggestedListingTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => addListingTag(tag)}
+                    className="partner-admin-tag-suggestion"
+                  >
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+              <div className="partner-admin-tag-box">
+                {listingDraft.tags.map((tag) => (
+                  <span key={tag} className="partner-admin-tag-chip">
+                    {tag}
+                    <button type="button" onClick={() => removeListingTag(tag)} aria-label={`Xóa ${tag}`}>
+                      <XCircle size={12} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  value={listingTagInput}
+                  onChange={(event) => setListingTagInput(event.target.value)}
+                  onBlur={submitListingTagInput}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      submitListingTagInput();
+                    }
+                  }}
+                  placeholder="Gõ tag và nhấn Enter..."
+                />
+              </div>
               <input
                 value={listingDraft.tags.join(', ')}
                 onChange={(event) => updateListingTags(event.target.value)}
-                placeholder="VD: Club, Phòng VIP, DJ hàng đầu"
-                style={listingInputStyle('tags')}
+                aria-label="Tags dạng text"
+                className="partner-admin-tag-fallback"
               />
               {listingErrorText('tags')}
             </FormField>
             <FormField label="Mô tả quán" className="partner-field-wide">
+              <div className="partner-quill-shell">
+                <ReactQuill
+                  theme="snow"
+                  value={listingDraft.description}
+                  onChange={(value) => updateListingField('description', value)}
+                />
+              </div>
               <textarea
                 value={listingDraft.description}
                 onChange={(event) => updateListingField('description', event.target.value)}
                 placeholder="Không gian, dịch vụ nổi bật, lưu ý khi đặt bàn..."
+                aria-label="Mô tả quán dạng text"
+                className="partner-quill-fallback"
                 style={listingInputStyle('description', { minHeight: '132px', resize: 'vertical', padding: '12px', lineHeight: 1.5 })}
               />
               {listingErrorText('description')}
@@ -4680,7 +5102,7 @@ export default function PartnerPage() {
         .partner-listing-section {
           border: 1px solid ${colors.borderSoft};
           border-radius: 14px;
-          background: rgba(255,255,255,.025);
+          background: ${colors.surface1};
           padding: 14px;
           display: grid;
           gap: 12px;
@@ -4698,17 +5120,78 @@ export default function PartnerPage() {
         }
         .partner-hour-row {
           display: grid;
-          grid-template-columns: 72px 72px minmax(0, 1fr);
+          grid-template-columns: 72px minmax(0, 1fr) 64px;
           gap: 10px;
-          align-items: center;
+          align-items: start;
           border: 1px solid ${colors.borderHair};
           border-radius: 12px;
-          background: rgba(0,0,0,.16);
+          background: ${colors.surface2};
           padding: 9px 10px;
         }
         .partner-hour-row strong {
           color: ${colors.text};
           font-size: 12px;
+          line-height: 34px;
+        }
+        .partner-hour-slots {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 7px;
+          min-width: 0;
+        }
+        .partner-hour-slot {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          min-height: 38px;
+          border: 1px solid ${colors.borderGold22};
+          border-radius: 10px;
+          background: ${colors.surface1};
+          padding: 3px 5px 3px 8px;
+        }
+        .partner-hour-slot > span {
+          color: ${colors.muted};
+          font-weight: 900;
+        }
+        .partner-hour-remove {
+          width: 24px;
+          height: 24px;
+          border: 0;
+          border-radius: 8px;
+          background: transparent;
+          color: ${colors.muted};
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .partner-hour-remove:hover {
+          background: rgba(255,180,168,.14);
+          color: ${colors.danger};
+        }
+        .partner-hour-add {
+          min-height: 38px;
+          border-radius: 10px;
+          border: 1.5px dashed ${colors.borderGold32};
+          background: transparent;
+          color: ${colors.muted};
+          font: inherit;
+          font-size: 11px;
+          font-weight: 900;
+          cursor: pointer;
+          padding: 0 11px;
+          white-space: nowrap;
+        }
+        .partner-hour-add:hover {
+          color: ${colors.goldBright};
+          border-color: ${colors.borderGold40};
+        }
+        .partner-hour-off {
+          color: ${colors.muted};
+          font-size: 12px;
+          font-style: italic;
+          line-height: 34px;
         }
         .partner-toggle-button {
           min-height: 38px;
@@ -4727,6 +5210,113 @@ export default function PartnerPage() {
         }
         .partner-field-wide {
           grid-column: 1 / -1;
+        }
+        .partner-admin-tag-suggestions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin-bottom: 10px;
+        }
+        .partner-admin-tag-suggestion {
+          border: 1px solid ${colors.borderHair};
+          border-radius: 999px;
+          background: ${colors.surface3};
+          color: ${colors.text2};
+          font: inherit;
+          font-size: 11px;
+          font-weight: 800;
+          padding: 6px 10px;
+          cursor: pointer;
+        }
+        .partner-admin-tag-suggestion:hover {
+          border-color: ${colors.borderGold32};
+          color: ${colors.goldBright};
+        }
+        .partner-admin-tag-box {
+          min-height: 46px;
+          border: 1px solid ${colors.borderHair};
+          border-radius: 12px;
+          background: ${colors.surface2};
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          padding: 8px;
+        }
+        .partner-admin-tag-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          border-radius: 8px;
+          border: 1px solid ${colors.borderGold32};
+          background: ${colors.activeControlBg};
+          color: ${colors.goldPale};
+          padding: 5px 8px;
+          font-size: 11px;
+          font-weight: 900;
+        }
+        .partner-admin-tag-chip button {
+          border: 0;
+          background: transparent;
+          color: inherit;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          padding: 0;
+        }
+        .partner-admin-tag-box input {
+          flex: 1 1 160px;
+          min-width: 120px;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: ${colors.text};
+          font: inherit;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 6px 4px;
+        }
+        .partner-admin-tag-fallback,
+        .partner-quill-fallback {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+          white-space: nowrap;
+        }
+        .partner-quill-shell {
+          overflow: hidden;
+          border-radius: 12px;
+          border: 1px solid ${colors.borderHair};
+          background: ${colors.surface2};
+        }
+        .partner-quill-shell .ql-toolbar {
+          border: 0 !important;
+          border-bottom: 1px solid ${colors.borderHair} !important;
+          background: ${colors.surface3};
+        }
+        .partner-quill-shell .ql-container {
+          border: 0 !important;
+          color: ${colors.text};
+          font-family: inherit;
+          font-size: 13px;
+        }
+        .partner-quill-shell .ql-editor {
+          min-height: 136px;
+          color: ${colors.text};
+          line-height: 1.55;
+        }
+        .partner-quill-shell .ql-editor.ql-blank::before {
+          color: ${colors.muted};
+          font-style: normal;
+        }
+        .partner-quill-shell .ql-stroke {
+          stroke: ${colors.text2} !important;
+        }
+        .partner-quill-shell .ql-fill {
+          fill: ${colors.text2} !important;
         }
         .partner-listing-toolbar {
           display: grid;
