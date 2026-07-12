@@ -53,6 +53,13 @@ const entries: TranslationEntry[] = [
     zh: "无法从后端加载优惠列表。",
   },
   {
+    vi: "Bạn đã có một booking đang hoạt động tại quán này trong khung giờ đã chọn.",
+    en: "You already have an active booking at this venue for the selected time slot.",
+    ja: "選択した時間帯には、この店舗で有効な予約がすでにあります。",
+    ko: "선택한 시간대에 이 매장의 활성 예약이 이미 있습니다.",
+    zh: "你在该店铺的所选时段已有一个有效预约。",
+  },
+  {
     vi: "Trang chủ",
     en: "Home",
     ja: "ホーム",
@@ -4520,6 +4527,34 @@ const dynamicPhraseEntries: TranslationEntry[] = [
     ja: "この日は予約可能な時間帯がありません。",
     ko: "이 날짜에는 예약 가능한 시간대가 없습니다.",
     zh: "该店铺当天没有可预订时段。",
+  },
+  {
+    vi: "Đang tải khung giờ của quán. Vui lòng thử lại sau vài giây.",
+    en: "Loading this venue's time slots. Please try again in a few seconds.",
+    ja: "店舗の時間帯を読み込み中です。数秒後にもう一度お試しください。",
+    ko: "매장의 시간대를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.",
+    zh: "正在加载该店铺的时间段。请几秒后再试。",
+  },
+  {
+    vi: "Thiếu thông tin quán hoặc cast để đặt chỗ.",
+    en: "Missing venue or cast information for this reservation.",
+    ja: "予約に必要な店舗またはキャスト情報が不足しています。",
+    ko: "예약에 필요한 매장 또는 캐스트 정보가 없습니다.",
+    zh: "缺少本次预订所需的店铺或 Cast 信息。",
+  },
+  {
+    vi: "Không gửi được yêu cầu đặt bàn.",
+    en: "Could not send the table reservation request.",
+    ja: "席予約リクエストを送信できませんでした。",
+    ko: "테이블 예약 요청을 보낼 수 없습니다.",
+    zh: "无法发送订桌请求。",
+  },
+  {
+    vi: "Không gửi được yêu cầu đặt chỗ.",
+    en: "Could not send the reservation request.",
+    ja: "予約リクエストを送信できませんでした。",
+    ko: "예약 요청을 보낼 수 없습니다.",
+    zh: "无法发送预订请求。",
   },
   {
     vi: "Chọn buổi đặt bàn",

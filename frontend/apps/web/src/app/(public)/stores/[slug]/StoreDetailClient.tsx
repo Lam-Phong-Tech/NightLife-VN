@@ -23,7 +23,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
-import { ApiError, apiClient, getAuthToken } from "@/lib/api/client";
+import { ApiError, apiClient, getAuthToken, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
@@ -67,6 +67,21 @@ type StoreDetailClientProps = {
 };
 
 type IntroLanguageKey = Extract<LanguageCode, "vi" | "en" | "ja">;
+
+const localizedApiErrorMessage = (
+  error: unknown,
+  language: LanguageCode,
+  fallback: string,
+) => {
+  const vietnameseMessage =
+    error instanceof ApiError
+      ? translateApiMessage(error.message, error.status, fallback)
+      : error instanceof Error
+        ? translateApiMessage(error.message, undefined, fallback)
+        : fallback;
+
+  return translateText(vietnameseMessage, language);
+};
 
 type IntroLine = {
   key: IntroLanguageKey;
@@ -973,7 +988,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setBookingErrorMessage("");
 
     if (!selectedTime) {
-      setBookingErrorMessage("Quán không có khung giờ đặt bàn trong ngày này.");
+      setBookingErrorMessage(
+        translateText("Quán không có khung giờ đặt bàn trong ngày này.", activeLanguage),
+      );
       return;
     }
 
@@ -1004,7 +1021,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     });
 
     if (validationError) {
-      setBookingErrorMessage(validationError);
+      setBookingErrorMessage(translateText(validationError, activeLanguage));
       return;
     }
 
@@ -1048,8 +1065,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       }
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt bàn.";
-      setBookingErrorMessage(message);
+      setBookingErrorMessage(
+        localizedApiErrorMessage(error, activeLanguage, "Không gửi được yêu cầu đặt bàn."),
+      );
     } finally {
       setIsBookingSubmitting(false);
     }

@@ -138,6 +138,8 @@ const exactMessageTranslations: Record<string, string> = {
   "ranking target not found": "Không tìm thấy mục xếp hạng.",
   "scheduledat must be a valid iso date": "Thời gian đặt chỗ không hợp lệ.",
   "scheduledat cannot be in the past": "Thời gian đặt chỗ không được ở quá khứ.",
+  "you already have an active booking at this store for this time slot":
+    "Bạn đã có một booking đang hoạt động tại quán này trong khung giờ đã chọn.",
   "slug is required": "Thiếu mã đường dẫn.",
   "store not found": "Không tìm thấy quán.",
   "storeid or storeslug is required": "Vui lòng chọn quán.",

@@ -13,11 +13,12 @@ import {
   UserRound,
 } from "lucide-react";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
-import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import { bookingApi, rememberLastBooking, type CreateBookingPayload } from "@/lib/api/bookings";
+import { ApiError, translateApiMessage } from "@/lib/api/client";
 import { getCastDetail } from "@/lib/api/cast-detail";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { getStoreDetail } from "@/lib/api/store-detail";
+import { getAuthUser, type AuthUser } from "@/lib/auth/session";
 import {
   buildBookingTimeSlotGroups,
   buildScheduledAtFromBookingSlot,
@@ -31,7 +32,7 @@ import {
   validateBookingFormFields,
 } from "@/lib/booking-validation";
 import { translateText } from "@/lib/i18n/client-translations";
-import { useActiveLanguage } from "@/lib/i18n/use-active-language";
+import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
 
 const { bookingDateWindowDays, maxGuests } = bookingValidationLimits;
@@ -71,6 +72,21 @@ const defaultContext: BookingContext = {
 };
 
 const isMemberUser = (user: AuthUser | null) => user?.role?.toUpperCase() === "USER";
+
+const localizedApiErrorMessage = (
+  error: unknown,
+  language: LanguageCode,
+  fallback: string,
+) => {
+  const vietnameseMessage =
+    error instanceof ApiError
+      ? translateApiMessage(error.message, error.status, fallback)
+      : error instanceof Error
+        ? translateApiMessage(error.message, undefined, fallback)
+        : fallback;
+
+  return translateText(vietnameseMessage, language);
+};
 
 const toDateInputValue = (date: Date) => {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -330,12 +346,19 @@ export default function Page() {
     const trimmedNote = normalizeBookingNote(note);
 
     if (!bookingTime) {
-      setErrorMessage("Quán không có khung giờ đặt bàn trong ngày này.");
+      setErrorMessage(
+        translateText("Quán không có khung giờ đặt bàn trong ngày này.", activeLanguage),
+      );
       return;
     }
 
     if (!storeHoursResolved) {
-      setErrorMessage("Đang tải khung giờ của quán. Vui lòng thử lại sau vài giây.");
+      setErrorMessage(
+        translateText(
+          "Đang tải khung giờ của quán. Vui lòng thử lại sau vài giây.",
+          activeLanguage,
+        ),
+      );
       return;
     }
 
@@ -363,12 +386,14 @@ export default function Page() {
     setNote(trimmedNote);
 
     if (validationError) {
-      setErrorMessage(validationError);
+      setErrorMessage(translateText(validationError, activeLanguage));
       return;
     }
 
     if (!context.storeSlug && !context.castSlug) {
-      setErrorMessage("Thiếu thông tin quán hoặc cast để đặt chỗ.");
+      setErrorMessage(
+        translateText("Thiếu thông tin quán hoặc cast để đặt chỗ.", activeLanguage),
+      );
       return;
     }
 
@@ -401,8 +426,9 @@ export default function Page() {
       }
       router.push(`/xac-nhan?bookingId=${booking.id}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Không gửi được yêu cầu đặt chỗ.";
-      setErrorMessage(message);
+      setErrorMessage(
+        localizedApiErrorMessage(error, activeLanguage, "Không gửi được yêu cầu đặt chỗ."),
+      );
     } finally {
       setIsSubmitting(false);
     }
