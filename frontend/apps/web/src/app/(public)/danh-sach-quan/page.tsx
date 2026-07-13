@@ -306,6 +306,18 @@ const formatVenueApplyLabel = (count: number, language: LanguageCode) => {
   return `${translateText("Xem", language)} ${formatVenueCount(count, language)}`;
 };
 
+const formatVenueSearchTitle = (
+  cityLabel: string,
+  language: LanguageCode,
+  copy: VenueSearchCopy,
+) => {
+  if (language === "en") return `${copy.titlePrefix} ${cityLabel}`;
+  if (language === "ja") return `${cityLabel}のナイトスポットを探す`;
+  if (language === "ko") return `${cityLabel} 나이트 장소 찾기`;
+  if (language === "zh") return `查找${cityLabel}夜生活场所`;
+  return `${copy.titlePrefix} ${cityLabel}`;
+};
+
 const getLocalizedCategoryTags = (category: string, fallback: string, language: LanguageCode) =>
   (categoryTags[category] ?? [fallback]).map((tag) => translateText(tag, language));
 
@@ -336,6 +348,10 @@ const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
   const image = backendImage ?? emptyVenueImage;
   const { label: statusLabel, isOpen } = openingStatus(store, language);
   const adminTags = store.tags?.filter(Boolean) ?? [];
+  const localizedAdminTags = adminTags.map((tag) => translateText(tag, language));
+  const localizedDealLabel = store.activeCoupon?.name
+    ? translateText(store.activeCoupon.name, language)
+    : "";
 
   return {
     id: store.slug,
@@ -346,9 +362,13 @@ const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
     distanceLabel: formatDistance(store.distanceKm, language),
     priceLabel: formatPriceTier(store.priceReference?.startingFromVnd),
     rating: null,
-    tags: (adminTags.length ? adminTags : getLocalizedCategoryTags(store.category, categoryLabel, language)).slice(0, 3),
+    tags: (
+      localizedAdminTags.length
+        ? localizedAdminTags
+        : getLocalizedCategoryTags(store.category, categoryLabel, language)
+    ).slice(0, 3),
     statusLabel,
-    dealLabel: store.activeCoupon?.name ?? adminTags[0] ?? categoryLabel,
+    dealLabel: localizedDealLabel || localizedAdminTags[0] || categoryLabel,
     image,
     isOpenNow: isOpen,
   };
@@ -664,7 +684,7 @@ export default function Page() {
           <div className="venue-search-title">
             <h1>
               <span className="venue-title-desktop">
-                {copy.titlePrefix} {cityLabel}
+                {formatVenueSearchTitle(cityLabel, activeLanguage, copy)}
               </span>
               <span className="venue-title-mobile">{copy.mobileTitle}</span>
             </h1>

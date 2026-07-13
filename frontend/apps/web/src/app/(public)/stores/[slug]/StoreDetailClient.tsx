@@ -170,8 +170,26 @@ const nationalitiesFromLanguages = (languages: string[]) =>
     ),
   );
 
-const formatNationalities = (languages: string[]) =>
-  nationalitiesFromLanguages(languages).join(", ");
+const formatNationalities = (languages: string[], language: LanguageCode) =>
+  nationalitiesFromLanguages(languages)
+    .map((nationality) => translateText(nationality, language))
+    .join(" · ");
+
+const localizedStoreParts = (parts: Array<string | null | undefined>, language: LanguageCode) =>
+  parts
+    .filter((part): part is string => Boolean(part))
+    .map((part) => translateText(part, language))
+    .join(" · ");
+
+const formatStoreCastCount = (count: number, language: LanguageCode) =>
+  translateText(`${count} cast`, language);
+
+const formatStoreReviewSummary = (language: LanguageCode) => {
+  if (language === "ja") return "4.8 (18件の評価)";
+  if (language === "ko") return "4.8 (리뷰 18개)";
+  if (language === "zh") return "4.8 (18条评价)";
+  return `4.8 (18 ${translateText("đánh giá", language)})`;
+};
 
 const markerToIntroKey = (marker: string) => {
   const normalized = marker.toUpperCase();
@@ -362,18 +380,24 @@ function SectionTitle({
   meta?: string;
   id?: string;
 }) {
+  const activeLanguage = useActiveLanguage();
+  const localizedTitle = translateText(title, activeLanguage);
+  const localizedKicker =
+    kicker && kickerTone !== "address" ? translateText(kicker, activeLanguage) : kicker;
+  const localizedMeta = meta ? translateText(meta, activeLanguage) : "";
+
   return (
     <div className="section-title" id={id}>
       <div>
-        <h2>{title}</h2>
-        {kicker ? (
+        <h2>{localizedTitle}</h2>
+        {localizedKicker ? (
           <span className={kickerTone === "address" ? "section-kicker-address" : undefined}>
-            {kicker}
+            {localizedKicker}
           </span>
         ) : null}
       </div>
       <i aria-hidden="true" />
-      {meta ? <small>{meta}</small> : null}
+      {localizedMeta ? <small>{localizedMeta}</small> : null}
     </div>
   );
 }
@@ -399,12 +423,14 @@ function IconButton({
 }
 
 function CastRail({ store }: { store: PublicStoreDetail }) {
+  const activeLanguage = useActiveLanguage();
+
   if (!store.casts.length) {
     return (
       <EmptyState
         icon={<Users size={20} />}
-        title="Chưa có cast công khai"
-        body="Quán sẽ cập nhật hồ sơ cast khi lịch phục vụ sẵn sàng."
+        title={translateText("Chưa có cast công khai", activeLanguage)}
+        body={translateText("Quán sẽ cập nhật hồ sơ cast khi lịch phục vụ sẵn sàng.", activeLanguage)}
       />
     );
   }
@@ -425,7 +451,7 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
             <strong>{cast.publicAlias || cast.stageName}</strong>
             <small>
               <Star size={11} fill="currentColor" />
-              {formatNationalities(cast.languages) || "Cast"}
+              {formatNationalities(cast.languages, activeLanguage) || translateText("Cast", activeLanguage)}
             </small>
           </Link>
         );
@@ -435,6 +461,7 @@ function CastRail({ store }: { store: PublicStoreDetail }) {
 }
 
 function PriceMenu({ store }: { store: PublicStoreDetail }) {
+  const activeLanguage = useActiveLanguage();
   const items = store.priceReference.items;
   const menuGroups = Array.from(
     new Set(items.map((item) => item.group).filter((group): group is string => Boolean(group))),
@@ -443,10 +470,10 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
   return (
     <section className="menu-panel">
       {menuGroups.length ? (
-        <div className="menu-chips hscroll" aria-label="Nhóm thực đơn">
+        <div className="menu-chips hscroll" aria-label={translateText("Nhóm thực đơn", activeLanguage)}>
           {menuGroups.map((chip, index) => (
             <span className={index === 0 ? "active" : undefined} key={chip}>
-              {chip}
+              {translateText(chip, activeLanguage)}
             </span>
           ))}
         </div>
@@ -469,22 +496,27 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
                   {item.hot ? <em>HOT</em> : null}
                 </strong>
                 <small>
-                  {item.note ||
-                    item.group ||
-                    (item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán")}
+                  {item.note
+                    ? translateText(item.note, activeLanguage)
+                    : item.group
+                      ? translateText(item.group, activeLanguage)
+                      : translateText(
+                          item.unit === "hour" ? "Giá tham khảo theo giờ" : "Giá tham khảo tại quán",
+                          activeLanguage,
+                        )}
                 </small>
               </span>
               <b>
                 {item.displayPrice || formatPriceTier(item.amountVnd)}
-                {item.unit === "hour" ? "/giờ" : ""}
+                {item.unit === "hour" ? translateText("/giờ", activeLanguage) : ""}
               </b>
             </div>
           ))
         ) : (
           <EmptyState
             icon={<WalletCards size={20} />}
-            title="Chưa có bảng giá"
-            body="Quán chưa công khai thực đơn tham khảo."
+            title={translateText("Chưa có bảng giá", activeLanguage)}
+            body={translateText("Quán chưa công khai thực đơn tham khảo.", activeLanguage)}
           />
         )}
       </div>
@@ -493,7 +525,10 @@ function PriceMenu({ store }: { store: PublicStoreDetail }) {
         <Info size={15} />
         <span>
           {store.priceReference.note ||
-            "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ."}
+            translateText(
+              "Giá chỉ dùng để tham khảo, có thể thay đổi theo ngày và khung giờ.",
+              activeLanguage,
+            )}
         </span>
       </div>
     </section>
@@ -509,13 +544,14 @@ function HoursList({
   today: string;
   openingHours: ReturnType<typeof normalizeStoreOpeningHours>;
 }) {
+  const activeLanguage = useActiveLanguage();
   const summary = rawOpeningSummary(store);
 
   if (summary) {
     return (
       <div className="hours-list">
         <div className="today">
-          <span>Giờ mở cửa</span>
+          <span>{translateText("Giờ mở cửa", activeLanguage)}</span>
           <strong>{summary}</strong>
         </div>
       </div>
@@ -526,8 +562,12 @@ function HoursList({
     <div className="hours-list">
       {weekdayLabels.map(([key, label]) => (
         <div className={key === today ? "today" : undefined} key={key}>
-          <span>{key === today ? `Hôm nay · ${label}` : label}</span>
-          <strong>{openingText(openingHours?.[key])}</strong>
+          <span>
+            {key === today
+              ? `${translateText("Hôm nay", activeLanguage)} · ${translateText(label, activeLanguage)}`
+              : translateText(label, activeLanguage)}
+          </span>
+          <strong>{translateText(openingText(openingHours?.[key]), activeLanguage)}</strong>
         </div>
       ))}
     </div>
@@ -545,6 +585,8 @@ function MapBlock({
   mapsUrl: string;
   onMapClick: () => void;
 }) {
+  const activeLanguage = useActiveLanguage();
+
   return (
     <div className="map-block">
       {embedUrl ? (
@@ -566,7 +608,7 @@ function MapBlock({
           onClick={onMapClick}
         >
           <Navigation size={15} />
-          Chỉ đường
+          {translateText("Chỉ đường", activeLanguage)}
         </a>
       ) : null}
     </div>
@@ -639,7 +681,7 @@ function BookingCard({
   onSubmit: () => void;
 }) {
   return (
-    <aside className="booking-card" aria-label="Đặt bàn">
+    <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
       <form
         {...bookingFormAutofillBlockProps}
         className="booking-card-form"
@@ -651,15 +693,15 @@ function BookingCard({
       >
         <div className="booking-card-head">
           <span>
-            <strong>Đặt bàn</strong>
-            <small>Gửi yêu cầu · Admin xác nhận</small>
+            <strong>{translateText("Đặt bàn", activeLanguage)}</strong>
+            <small>{translateText("Gửi yêu cầu · Admin xác nhận", activeLanguage)}</small>
           </span>
           <b>{formatPriceTier(store.priceReference.startingFromVnd)}</b>
         </div>
 
         <div className="booking-form-grid booking-contact-grid">
           <label className="booking-field booking-input-field">
-            <span>Họ tên</span>
+            <span>{translateText("Họ tên", activeLanguage)}</span>
             <input
               {...bookingInputAutofillBlockProps}
               name="nl-booking-store-display"
@@ -669,7 +711,7 @@ function BookingCard({
                 onFieldTouched("guestName");
                 onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value));
               }}
-              placeholder="Vui lòng nhập họ tên"
+              placeholder={translateText("Vui lòng nhập họ tên", activeLanguage)}
             />
             <BookingFieldError
               activeLanguage={activeLanguage}
@@ -677,7 +719,7 @@ function BookingCard({
             />
           </label>
           <label className="booking-field booking-input-field">
-            <span>Email</span>
+            <span>{translateText("Email", activeLanguage)}</span>
             <input
               {...bookingInputAutofillBlockProps}
               type="email"
@@ -688,7 +730,7 @@ function BookingCard({
                 onFieldTouched("email");
                 onEmailChange(event.target.value);
               }}
-              placeholder="Vui lòng nhập email"
+              placeholder={translateText("Vui lòng nhập email", activeLanguage)}
               inputMode="email"
             />
             <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.email} />
@@ -697,11 +739,11 @@ function BookingCard({
 
         <div className="booking-schedule-grid">
           <div className="booking-field booking-guest-field">
-            <span>Số người</span>
+            <span>{translateText("Số người", activeLanguage)}</span>
             <div className="guest-stepper">
               <button
                 type="button"
-                aria-label="Giảm số khách"
+                aria-label={translateText("Giảm số khách", activeLanguage)}
                 onClick={() => {
                   onFieldTouched("guestCount");
                   onGuestCountChange(Math.max(1, guestCount - 1));
@@ -713,7 +755,7 @@ function BookingCard({
               <strong>{translateText(`${guestCount} người`, activeLanguage)}</strong>
               <button
                 type="button"
-                aria-label="Tăng số khách"
+                aria-label={translateText("Tăng số khách", activeLanguage)}
                 onClick={() => {
                   onFieldTouched("guestCount");
                   onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1));
@@ -749,7 +791,9 @@ function BookingCard({
           />
         </div>
 
-        <label className="booking-note-label">Ghi chú tuỳ chọn</label>
+        <label className="booking-note-label">
+          {translateText("Ghi chú tuỳ chọn", activeLanguage)}
+        </label>
         <textarea
           {...bookingNoteAutofillBlockProps}
           className="booking-note-box"
@@ -760,7 +804,7 @@ function BookingCard({
             onFieldTouched("note");
             onNoteChange(event.target.value);
           }}
-          placeholder="Vui lòng nhập ghi chú nếu có"
+          placeholder={translateText("Vui lòng nhập ghi chú nếu có", activeLanguage)}
         />
         <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.note} />
 
@@ -774,13 +818,18 @@ function BookingCard({
           onClick={onSubmit}
         >
           <CalendarDays size={18} />
-          {isSubmitting ? "Đang gửi yêu cầu..." : "Gửi yêu cầu đặt bàn"}
+          {isSubmitting
+            ? translateText("Đang gửi yêu cầu...", activeLanguage)
+            : translateText("Gửi yêu cầu đặt bàn", activeLanguage)}
         </button>
 
         <div className="booking-safe">
           <ShieldCheck size={15} />
           <span>
-            Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.
+            {translateText(
+              "Không thanh toán online · không thu cọc · có thể hủy trước giờ hẹn theo chính sách quán.",
+              activeLanguage,
+            )}
           </span>
         </div>
       </form>
@@ -788,7 +837,13 @@ function BookingCard({
   );
 }
 
-function RelatedStores({ stores }: { stores: RelatedStore[] }) {
+function RelatedStores({
+  stores,
+  activeLanguage,
+}: {
+  stores: RelatedStore[];
+  activeLanguage: LanguageCode;
+}) {
   if (!stores.length) return null;
 
   return (
@@ -807,14 +862,12 @@ function RelatedStores({ stores }: { stores: RelatedStore[] }) {
             />
             <span className="related-copy">
               <strong>{readableName(related.name)}</strong>
-              <small>{recommendationLabel(related)}</small>
+              <small>{translateText(recommendationLabel(related), activeLanguage)}</small>
               <em>
-                {[
-                  categoryLabels[related.category] ?? related.category,
-                  related.area?.name ?? related.district,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+                {localizedStoreParts(
+                  [categoryLabels[related.category] ?? related.category, related.area?.name ?? related.district],
+                  activeLanguage,
+                )}
               </em>
             </span>
           </Link>
@@ -896,7 +949,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const heroBackground = mediaBackground(heroMedia);
   const galleryTiles = gallery.slice(0, 5);
   const tourMedia = videoGallery;
-  const location = [store.area?.name, store.district, store.city].filter(Boolean).join(" · ");
+  const location = localizedStoreParts([store.area?.name, store.district, store.city], activeLanguage);
   const addressText = storeAddressText(store);
   const mapsUrl = plainMapsUrl(store);
   const embedUrl = mapEmbedUrl(store);
@@ -906,9 +959,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     [store.openingHours],
   );
   const openingSummary = rawOpeningSummary(store);
-  const todayOpening = openingSummary ?? openingText(normalizedOpeningHours?.[today]);
-  const openNow = todayOpening !== "Nghỉ" && todayOpening !== "Chưa cập nhật";
-  const categoryLabel = categoryLabels[store.category] ?? store.category;
+  const rawTodayOpening = openingSummary ?? openingText(normalizedOpeningHours?.[today]);
+  const todayOpening = translateText(rawTodayOpening, activeLanguage);
+  const openNow = rawTodayOpening !== "Nghỉ" && rawTodayOpening !== "Chưa cập nhật";
+  const categoryLabel = translateText(categoryLabels[store.category] ?? store.category, activeLanguage);
+  const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
   const priceText = priceRangeText(store);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
@@ -920,6 +975,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     new Set(store.casts.flatMap((cast) => nationalitiesFromLanguages(cast.languages))),
   )
     .slice(0, 3)
+    .map((nationality) => translateText(nationality, activeLanguage))
     .join(" · ");
   const languageCards = useMemo(() => {
     const languageCounts = new Map<string, number>();
@@ -935,18 +991,18 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       .sort((left, right) => right[1] - left[1])
       .slice(0, 2)
       .map(([language, count]) => ({
-        label: `Nói tiếng ${language}`,
+        label: translateText(`Nói tiếng ${language}`, activeLanguage),
         value: `${Math.round((count / totalCasts) * 100)}%`,
       }));
 
     return [
       ...cards,
       {
-        label: "Quốc tịch cast",
-        value: nationalityText || "Đang cập nhật",
+        label: translateText("Quốc tịch cast", activeLanguage),
+        value: nationalityText || translateText("Đang cập nhật", activeLanguage),
       },
     ];
-  }, [nationalityText, store.casts]);
+  }, [activeLanguage, nationalityText, store.casts]);
 
   const dateOptions = useMemo(
     () =>
@@ -1182,9 +1238,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
       <section className="detail-shell">
         <nav className="desktop-breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Trang chủ</Link>
+          <Link href="/">{translateText("Trang chủ", activeLanguage)}</Link>
           <span>/</span>
-          <Link href="/danh-sach-quan">Tìm quán</Link>
+          <Link href="/danh-sach-quan">{translateText("Tìm quán", activeLanguage)}</Link>
           <span>/</span>
           <strong>{displayName}</strong>
         </nav>
@@ -1196,13 +1252,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <Link
                   className="round-action hero-back"
                   href="/danh-sach-quan"
-                  aria-label="Quay lại danh sách quán"
+                  aria-label={translateText("Quay lại danh sách quán", activeLanguage)}
                 >
                   <ChevronLeft size={20} />
                 </Link>
                 <div className="hero-actions">
                   <IconButton
-                    label={isFavorite ? "Bỏ lưu quán" : "Lưu quán"}
+                    label={translateText(isFavorite ? "Bỏ lưu quán" : "Lưu quán", activeLanguage)}
                     className={`store-favorite-action${isFavorite ? " is-active" : ""}`}
                     onClick={toggleFavorite}
                   >
@@ -1241,7 +1297,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   onClick={() => openGallery(gallery.indexOf(tourMedia[0]!))}
                 >
                   <Play size={13} fill="currentColor" />
-                  Video quán
+                  {translateText("Video quán", activeLanguage)}
                 </button>
               ) : null}
 
@@ -1251,16 +1307,21 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   <span>{[categoryLabel, location].filter(Boolean).join(" · ")}</span>
                   <b className={openNow ? "open" : "closed"}>
                     <i />
-                    {openNow ? `Đang mở · ${todayOpening}` : "Đang nghỉ"}
+                    {openNow
+                      ? translateText(`Đang mở · ${todayOpening}`, activeLanguage)
+                      : translateText("Đang nghỉ", activeLanguage)}
                   </b>
                 </div>
               </div>
             </section>
 
             {galleryTiles.length ? (
-              <div className="mobile-gallery-strip" aria-label="Thư viện ảnh của quán">
+              <div
+                className="mobile-gallery-strip"
+                aria-label={translateText("Thư viện ảnh của quán", activeLanguage)}
+              >
                 <div className="mobile-gallery-head">
-                  <span>Thư viện ảnh</span>
+                  <span>{translateText("Thư viện ảnh", activeLanguage)}</span>
                   <small>
                     {selectedGalleryIndex + 1}/{gallery.length}
                   </small>
@@ -1272,7 +1333,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       className={index === selectedGalleryIndex ? "active" : undefined}
                       type="button"
                       style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                      aria-label={`Mở nội dung ${index + 1}`}
+                      aria-label={translateText(`Mở nội dung ${index + 1}`, activeLanguage)}
                       onClick={() => openGallery(index)}
                     >
                       {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
@@ -1285,17 +1346,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             <div className="quick-stats">
               <div>
                 <strong>{todayOpening}</strong>
-                <span>Giờ mở cửa</span>
+                <span>{translateText("Giờ mở cửa", activeLanguage)}</span>
               </div>
               <i />
               <div>
                 <strong>{priceText}</strong>
-                <span>Khoảng giá</span>
+                <span>{translateText("Khoảng giá", activeLanguage)}</span>
               </div>
               <i />
               <div>
-                <strong>{store.casts.length || 0} cast</strong>
-                <span>Đang phục vụ</span>
+                <strong>{formatStoreCastCount(store.casts.length || 0, activeLanguage)}</strong>
+                <span>{translateText("Đang phục vụ", activeLanguage)}</span>
               </div>
             </div>
 
@@ -1308,7 +1369,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   onClick={() => trackStoreDetailClick(store, "map", { surface: "hero-action" })}
                 >
                   <Navigation size={16} />
-                  Chỉ đường
+                  {translateText("Chỉ đường", activeLanguage)}
                 </a>
               ) : null}
               {phoneHref ? (
@@ -1317,12 +1378,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   onClick={() => trackStoreDetailClick(store, "call", { surface: "hero-action" })}
                 >
                   <PhoneCall size={16} />
-                  Gọi điện
+                  {translateText("Gọi điện", activeLanguage)}
                 </a>
               ) : null}
               <a href="#menu">
                 <WalletCards size={16} />
-                Thực đơn
+                {translateText("Thực đơn", activeLanguage)}
               </a>
             </div>
 
@@ -1334,7 +1395,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                     className={index === selectedGalleryIndex ? "active" : undefined}
                     type="button"
                     style={{ backgroundImage: galleryBackground(item, heroImage) }}
-                    aria-label={`Mở nội dung ${index + 1}`}
+                    aria-label={translateText(`Mở nội dung ${index + 1}`, activeLanguage)}
                     onClick={() => openGallery(index)}
                   >
                     {item.type === "VIDEO" ? <Play size={14} fill="currentColor" /> : null}
@@ -1358,7 +1419,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       }
                     >
                       <Play size={18} fill="currentColor" />
-                      <span>{item.purpose || "Video quán"}</span>
+                      <span>{item.purpose || translateText("Video quán", activeLanguage)}</span>
                     </button>
                   ))}
                 </div>
@@ -1382,27 +1443,27 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <h1>{displayName}</h1>
                 <p>
                   <Star size={15} fill="currentColor" />
-                  4.8 (18 đánh giá) · {[categoryLabel, location].filter(Boolean).join(" · ")}
+                  {formatStoreReviewSummary(activeLanguage)} · {[categoryLabel, location].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <b className={openNow ? "open-pill" : "closed-pill"}>
                 <i />
-                {openNow ? "Đang mở" : "Đang nghỉ"}
+                {translateText(openNow ? "Đang mở" : "Đang nghỉ", activeLanguage)}
               </b>
             </div>
 
             <div className="desktop-stats">
               <div>
                 <strong>{todayOpening}</strong>
-                <span>Giờ mở cửa</span>
+                <span>{translateText("Giờ mở cửa", activeLanguage)}</span>
               </div>
               <div>
                 <strong>{priceText}</strong>
-                <span>Khoảng giá</span>
+                <span>{translateText("Khoảng giá", activeLanguage)}</span>
               </div>
               <div>
-                <strong>{store.casts.length} cast</strong>
-                <span>Đang phục vụ</span>
+                <strong>{formatStoreCastCount(store.casts.length, activeLanguage)}</strong>
+                <span>{translateText("Đang phục vụ", activeLanguage)}</span>
               </div>
             </div>
 
@@ -1437,7 +1498,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
             <section className="desktop-about-inline">
               <div className="feature-chips">
-                {[categoryLabel, ...(store.tags || [])].map((chip) => (
+                {featureChips.map((chip) => (
                   <span key={chip}>{chip}</span>
                 ))}
               </div>
@@ -1448,7 +1509,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               <SectionTitle title="Giới thiệu" />
               <IntroCopy text={introText} />
               <div className="feature-chips">
-                {[categoryLabel, ...(store.tags || [])].map((chip) => (
+                {featureChips.map((chip) => (
                   <span key={chip}>{chip}</span>
                 ))}
               </div>
@@ -1477,7 +1538,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                       }
                     >
                       <Play size={18} fill="currentColor" />
-                      <span>{item.purpose || "Video quán"}</span>
+                      <span>{item.purpose || translateText("Video quán", activeLanguage)}</span>
                     </button>
                   ))}
                 </div>
@@ -1485,7 +1546,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             ) : null}
 
             <section>
-              <SectionTitle title="Cast đang làm" meta={`${store.casts.length} cast`} />
+              <SectionTitle title="Cast đang làm" meta={formatStoreCastCount(store.casts.length, activeLanguage)} />
               <CastRail store={store} />
             </section>
 
@@ -1511,7 +1572,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           </div>
         </div>
 
-        <RelatedStores stores={recommendedStores} />
+        <RelatedStores stores={recommendedStores} activeLanguage={activeLanguage} />
       </section>
 
       {portalTarget ? createPortal(
@@ -1524,8 +1585,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         >
           <CalendarDays size={17} />
           <span>
-            Đặt bàn ngay
-            <small>Gửi yêu cầu · không thu cọc</small>
+            {translateText("Đặt bàn ngay", activeLanguage)}
+            <small>{translateText("Gửi yêu cầu · không thu cọc", activeLanguage)}</small>
           </span>
         </Link>
         </div>,
