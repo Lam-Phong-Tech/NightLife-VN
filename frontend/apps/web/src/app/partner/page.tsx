@@ -19,6 +19,7 @@ import {
   ImagePlus,
   LogOut,
   Moon,
+  Play,
   Plus,
   QrCode,
   ReceiptText,
@@ -38,7 +39,7 @@ import {
 import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, apiClient, apiFormDataClient } from '@/lib/api/client';
+import { ApiError, apiClient, apiFormDataClient, resolveClientUrl } from '@/lib/api/client';
 import { billApi } from '@/lib/api/bills';
 import { clearAuthSession } from '@/lib/auth/session';
 
@@ -3230,6 +3231,473 @@ export default function PartnerPage() {
     );
   };
 
+  const listingMediaUrl = (url: string) => resolveClientUrl(url.trim()) || url.trim();
+
+  const getListingYoutubeId = (url: string) => {
+    const trimmed = url.trim();
+    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+    return match?.[1] ?? null;
+  };
+
+  const getListingYoutubeThumb = (url: string) => {
+    const videoId = getListingYoutubeId(url);
+    return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+  };
+
+  const isListingVideoUrl = (url: string) => {
+    const trimmed = url.trim();
+    return Boolean(
+      getListingYoutubeId(trimmed) ||
+        /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(trimmed),
+    );
+  };
+
+  const renderListingUploadTile = (options: {
+    key: string;
+    label: string;
+    loadingLabel: string;
+    kind: 'image' | 'video';
+    multiple?: boolean;
+    purpose: string;
+    successLabel: string;
+    onUploaded: (urls: string[]) => void;
+    minHeight?: number | string;
+    aspectRatio?: string;
+  }) => {
+    const isBusy = listingUploadKey === options.key;
+    const isDisabled = Boolean(listingUploadKey);
+
+    return (
+      <label
+        style={{
+          minHeight: options.minHeight ?? 120,
+          aspectRatio: options.aspectRatio,
+          borderRadius: '14px',
+          border: `1.5px dashed ${colors.borderGold32}`,
+          background: colors.surface2,
+          color: colors.gold,
+          padding: '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          fontWeight: 900,
+          fontSize: '12px',
+          cursor: isDisabled ? 'wait' : 'pointer',
+          opacity: isDisabled && !isBusy ? 0.56 : 1,
+          textAlign: 'center',
+        }}
+      >
+        {options.kind === 'image' ? <ImagePlus size={20} /> : <Upload size={20} />}
+        <span>{isBusy ? options.loadingLabel : options.label}</span>
+        <input
+          type="file"
+          accept={
+            options.kind === 'image'
+              ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
+              : 'video/mp4,video/webm'
+          }
+          multiple={options.multiple}
+          disabled={isDisabled}
+          onChange={(event) => {
+            const files = Array.from(event.currentTarget.files ?? []);
+            event.currentTarget.value = '';
+            void uploadListingFiles(files, options);
+          }}
+          style={{ display: 'none' }}
+        />
+      </label>
+    );
+  };
+
+  const renderListingMediaRemove = (label: string, onClick: () => void) => (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      style={{
+        position: 'absolute',
+        top: '8px',
+        right: '8px',
+        width: '26px',
+        height: '26px',
+        borderRadius: '50%',
+        border: '1px solid rgba(255,255,255,.18)',
+        background: 'rgba(0,0,0,.62)',
+        color: '#fff',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        zIndex: 3,
+      }}
+    >
+      <XCircle size={15} />
+    </button>
+  );
+
+  const renderListingImagePreview = (url: string, options: {
+    label: string;
+    onRemove: () => void;
+    minHeight?: number | string;
+    aspectRatio?: string;
+  }) => (
+    <div
+      style={{
+        position: 'relative',
+        minHeight: options.minHeight ?? 128,
+        aspectRatio: options.aspectRatio,
+        borderRadius: '14px',
+        overflow: 'hidden',
+        border: `1px solid ${colors.borderGold22}`,
+        background: colors.surface2,
+      }}
+    >
+      <span
+        role="img"
+        aria-label={options.label}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          background: `url("${listingMediaUrl(url)}") center/cover no-repeat`,
+        }}
+      />
+      {renderListingMediaRemove(options.label, options.onRemove)}
+    </div>
+  );
+
+  const renderListingVideoPreview = (url: string, index: number, onRemove: () => void) => {
+    const youtubeThumb = getListingYoutubeThumb(url);
+    const source = listingMediaUrl(url);
+
+    return (
+      <div
+        key={`${url}-${index}`}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '132px minmax(0, 1fr) auto',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '10px',
+          borderRadius: '14px',
+          border: `1px solid ${colors.borderGold22}`,
+          background: colors.surface2,
+        }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            height: '78px',
+            borderRadius: '11px',
+            overflow: 'hidden',
+            background: colors.surface3,
+          }}
+        >
+          {youtubeThumb ? (
+            <span
+              role="img"
+              aria-label={`Video ${index + 1}`}
+              style={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                background: `url("${youtubeThumb}") center/cover no-repeat`,
+              }}
+            />
+          ) : (
+            <video
+              src={source}
+              muted
+              playsInline
+              preload="metadata"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          )}
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              margin: 'auto',
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              background: 'rgba(12,12,15,.62)',
+              border: '1px solid rgba(255,255,255,.25)',
+              color: colors.goldPale,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Play size={15} fill="currentColor" />
+          </span>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: colors.text, fontSize: '12.5px', fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {youtubeThumb ? 'Video YouTube' : 'Video tải lên'}
+          </div>
+          <div title={url} style={{ marginTop: '4px', color: colors.muted, fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {url}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Xóa video ${index + 1}`}
+          style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '10px',
+            border: `1px solid ${colors.borderSoft}`,
+            background: colors.surface3,
+            color: colors.text2,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <XCircle size={16} />
+        </button>
+      </div>
+    );
+  };
+
+  const renderStoreMediaSections = () => (
+    <>
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Ảnh bìa (Tối đa 15MB)</div>
+        {listingDraft.coverImageUrl.trim()
+          ? renderListingImagePreview(listingDraft.coverImageUrl, {
+              label: 'Xóa ảnh bìa',
+              minHeight: 168,
+              onRemove: () => updateListingField('coverImageUrl', ''),
+            })
+          : renderListingUploadTile({
+              key: 'store-cover-image',
+              label: 'Tải ảnh bìa',
+              loadingLabel: 'Đang tải ảnh bìa...',
+              kind: 'image',
+              purpose: 'PARTNER_STORE_COVER',
+              successLabel: 'ảnh bìa',
+              minHeight: 168,
+              onUploaded: ([url]) => {
+                if (!url) return;
+                updateListingField('coverImageUrl', url);
+              },
+            })}
+        <FormField label="Cover image URL" style={{ marginTop: '10px' }}>
+          <input
+            value={listingDraft.coverImageUrl}
+            onChange={(event) => updateListingField('coverImageUrl', event.target.value)}
+            placeholder="https://.../cover.jpg"
+            style={listingInputStyle('coverImageUrl')}
+          />
+          {listingErrorText('coverImageUrl')}
+        </FormField>
+      </section>
+
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Album ảnh</div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(126px, 1fr))',
+            gap: '12px',
+          }}
+        >
+          {listingDraft.galleryUrls.map((url, index) => (
+            url.trim() ? (
+              <div key={`${url}-${index}`}>
+                {renderListingImagePreview(url, {
+                  label: `Xóa ảnh album ${index + 1}`,
+                  aspectRatio: '1 / 1',
+                  onRemove: () => removeGalleryUrl(index),
+                })}
+                {listingErrorText(`galleryUrls.${index}`)}
+              </div>
+            ) : (
+              <div key={`empty-gallery-${index}`} style={{ ...softCardStyle, padding: '12px', display: 'grid', gap: '8px' }}>
+                <FormField label={`Ảnh album ${index + 1}`}>
+                  <input
+                    value={url}
+                    onChange={(event) => updateGalleryUrl(index, event.target.value)}
+                    placeholder="https://..."
+                    style={listingInputStyle(`galleryUrls.${index}`)}
+                  />
+                  {listingErrorText(`galleryUrls.${index}`)}
+                </FormField>
+                <GhostButton onClick={() => removeGalleryUrl(index)}>
+                  <XCircle size={16} />
+                  Xóa
+                </GhostButton>
+              </div>
+            )
+          ))}
+          {renderListingUploadTile({
+            key: 'store-gallery-images',
+            label: 'Tải lên',
+            loadingLabel: 'Đang tải...',
+            kind: 'image',
+            multiple: true,
+            purpose: 'PARTNER_STORE_GALLERY',
+            successLabel: 'ảnh album',
+            aspectRatio: '1 / 1',
+            onUploaded: (urls) => {
+              clearListingErrorsFor('galleryUrls');
+              setListingDraft((current) => ({
+                ...current,
+                galleryUrls: [...current.galleryUrls.filter(Boolean), ...urls],
+              }));
+            },
+          })}
+        </div>
+        {!listingDraft.galleryUrls.length ? (
+          <div style={{ color: colors.muted, fontSize: '12px', marginTop: '8px' }}>
+            Chưa có ảnh album. Tải ảnh từ máy hoặc thêm URL ảnh thật của quán.
+          </div>
+        ) : null}
+        <div style={{ marginTop: '10px' }}>
+          <GhostButton onClick={addGalleryUrl}>
+            <ImagePlus size={16} />
+            Thêm URL ảnh
+          </GhostButton>
+        </div>
+      </section>
+
+      <section className="partner-listing-section">
+        <div className="partner-listing-section-title">Video quán</div>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {listingDraft.videoUrls.map((url, index) => (
+            url.trim() ? (
+              <div key={`${url}-${index}`}>
+                {renderListingVideoPreview(url, index, () => removeVideoUrl(index))}
+                {listingErrorText(`videoUrls.${index}`)}
+              </div>
+            ) : (
+              <div key={`empty-video-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '12px' }}>
+                <FormField label={`Video ${index + 1}`}>
+                  <input
+                    value={url}
+                    onChange={(event) => updateVideoUrl(index, event.target.value)}
+                    placeholder="https://youtube.com/..."
+                    style={listingInputStyle(`videoUrls.${index}`)}
+                  />
+                  {listingErrorText(`videoUrls.${index}`)}
+                </FormField>
+                <div style={{ display: 'flex', alignItems: 'end' }}>
+                  <GhostButton onClick={() => removeVideoUrl(index)}>
+                    <XCircle size={16} />
+                    Xóa
+                  </GhostButton>
+                </div>
+              </div>
+            )
+          ))}
+          {!listingDraft.videoUrls.length ? (
+            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Chưa có video. Có thể tải video từ máy, dán YouTube hoặc URL video đã tải lên.
+            </div>
+          ) : null}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+          {renderListingUploadButton({
+            key: 'store-videos',
+            label: 'Tải video từ máy',
+            loadingLabel: 'Đang tải video...',
+            kind: 'video',
+            multiple: true,
+            purpose: 'PARTNER_STORE_VIDEO',
+            successLabel: 'video quán',
+            onUploaded: (urls) => {
+              clearListingErrorsFor('videoUrls');
+              setListingDraft((current) => ({
+                ...current,
+                videoUrls: [...current.videoUrls.filter(Boolean), ...urls],
+              }));
+            },
+          })}
+          <GhostButton onClick={addVideoUrl}>
+            <ImagePlus size={16} />
+            Thêm URL video
+          </GhostButton>
+        </div>
+      </section>
+
+      {listingDraft.mediaUrls.length ? (
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Media cũ</div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(126px, 1fr))',
+              gap: '12px',
+            }}
+          >
+            {listingDraft.mediaUrls.map((url, index) => (
+              url.trim() ? (
+                <div key={`${url}-${index}`}>
+                  {isListingVideoUrl(url)
+                    ? renderListingVideoPreview(url, index, () => removeMediaUrl(index))
+                    : renderListingImagePreview(url, {
+                        label: `Xóa media ${index + 1}`,
+                        aspectRatio: '1 / 1',
+                        onRemove: () => removeMediaUrl(index),
+                      })}
+                  {listingErrorText(`mediaUrls.${index}`)}
+                </div>
+              ) : (
+                <div key={`empty-media-${index}`} style={{ ...softCardStyle, padding: '12px', display: 'grid', gap: '8px' }}>
+                  <FormField label="Media URL">
+                    <input
+                      value={url}
+                      onChange={(event) => updateMediaUrl(index, event.target.value)}
+                      placeholder="https://..."
+                      style={listingInputStyle(`mediaUrls.${index}`)}
+                    />
+                    {listingErrorText(`mediaUrls.${index}`)}
+                  </FormField>
+                  <GhostButton onClick={() => removeMediaUrl(index)}>
+                    <XCircle size={16} />
+                    Xóa
+                  </GhostButton>
+                </div>
+              )
+            ))}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+            {renderListingUploadButton({
+              key: 'store-legacy-media',
+              label: 'Tải media từ máy',
+              loadingLabel: 'Đang tải media...',
+              kind: 'image',
+              multiple: true,
+              purpose: 'PARTNER_STORE_MEDIA',
+              successLabel: 'media khác',
+              onUploaded: (urls) => {
+                clearListingErrorsFor('mediaUrls');
+                setListingDraft((current) => ({
+                  ...current,
+                  mediaUrls: [...current.mediaUrls.filter(Boolean), ...urls],
+                }));
+              },
+            })}
+            <GhostButton onClick={addMediaUrl}>
+              <ImagePlus size={16} />
+              Thêm URL media
+            </GhostButton>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+
   const validateListingBeforeAction = (mode: ListingValidationMode) => {
     if (!listingStoreId) {
       setListingNotice('Cần chọn quán trước khi lưu hoặc gửi duyệt.');
@@ -4582,115 +5050,10 @@ export default function PartnerPage() {
     if (listingTab === 'media') {
       return (
         <div className="partner-listing-form">
-          <section className="partner-listing-section">
-            <div className="partner-listing-section-title">Ảnh bìa</div>
-            <FormField label="Cover image URL">
-              <input
-                value={listingDraft.coverImageUrl}
-                onChange={(event) => updateListingField('coverImageUrl', event.target.value)}
-                placeholder="https://.../cover.jpg"
-                style={listingInputStyle('coverImageUrl')}
-              />
-              {listingErrorText('coverImageUrl')}
-            </FormField>
-          </section>
-
-          <section className="partner-listing-section">
-            <div className="partner-listing-section-title">Album ảnh</div>
-            {!listingDraft.galleryUrls.length ? (
-              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-                Chưa có ảnh album. Bấm Thêm ảnh để nhập ảnh thật của quán.
-              </div>
-            ) : null}
-            {listingDraft.galleryUrls.map((url, index) => (
-              <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-                <FormField label={`Ảnh album ${index + 1}`}>
-                  <input
-                    value={url}
-                    onChange={(event) => updateGalleryUrl(index, event.target.value)}
-                    placeholder="https://..."
-                    style={listingInputStyle(`galleryUrls.${index}`)}
-                  />
-                  {listingErrorText(`galleryUrls.${index}`)}
-                </FormField>
-                <div style={{ display: 'flex', alignItems: 'end' }}>
-                  <GhostButton onClick={() => removeGalleryUrl(index)}>
-                    <XCircle size={16} />
-                    Xóa
-                  </GhostButton>
-                </div>
-              </div>
-            ))}
-            <GhostButton onClick={addGalleryUrl}>
-              <ImagePlus size={16} />
-              Thêm ảnh
-            </GhostButton>
-          </section>
-
-          <section className="partner-listing-section">
-            <div className="partner-listing-section-title">Video quán</div>
-            {!listingDraft.videoUrls.length ? (
-              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-                Chưa có video. Có thể dán YouTube hoặc URL video đã tải lên.
-              </div>
-            ) : null}
-            {listingDraft.videoUrls.map((url, index) => (
-              <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-                <FormField label={`Video ${index + 1}`}>
-                  <input
-                    value={url}
-                    onChange={(event) => updateVideoUrl(index, event.target.value)}
-                    placeholder="https://youtube.com/..."
-                    style={listingInputStyle(`videoUrls.${index}`)}
-                  />
-                  {listingErrorText(`videoUrls.${index}`)}
-                </FormField>
-                <div style={{ display: 'flex', alignItems: 'end' }}>
-                  <GhostButton onClick={() => removeVideoUrl(index)}>
-                    <XCircle size={16} />
-                    Xóa
-                  </GhostButton>
-                </div>
-              </div>
-            ))}
-            <GhostButton onClick={addVideoUrl}>
-              <ImagePlus size={16} />
-              Thêm video
-            </GhostButton>
-          </section>
-
-          {listingDraft.mediaUrls.length ? (
-            <section className="partner-listing-section">
-              <div className="partner-listing-section-title">Media cũ</div>
-              {listingDraft.mediaUrls.map((url, index) => (
-                <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-                  <FormField label="Media URL">
-                    <input
-                      value={url}
-                      onChange={(event) => updateMediaUrl(index, event.target.value)}
-                      placeholder="https://..."
-                      style={listingInputStyle(`mediaUrls.${index}`)}
-                    />
-                    {listingErrorText(`mediaUrls.${index}`)}
-                  </FormField>
-                  <div style={{ display: 'flex', alignItems: 'end' }}>
-                    <GhostButton onClick={() => removeMediaUrl(index)}>
-                      <XCircle size={16} />
-                      Xóa
-                    </GhostButton>
-                  </div>
-                </div>
-              ))}
-              <GhostButton onClick={addMediaUrl}>
-                <ImagePlus size={16} />
-                Thêm media khác
-              </GhostButton>
-            </section>
-          ) : null}
+          {renderStoreMediaSections()}
         </div>
       );
     }
-
     const openingRows = listingDraft.openingHourItems.length
       ? listingDraft.openingHourItems
       : defaultListingOpeningHours();
@@ -5004,179 +5367,7 @@ export default function PartnerPage() {
           </div>
         </section>
 
-        <section className="partner-listing-section">
-          <div className="partner-listing-section-title">Ảnh bìa</div>
-          <FormField label="Cover image URL">
-            <input
-              value={listingDraft.coverImageUrl}
-              onChange={(event) => updateListingField('coverImageUrl', event.target.value)}
-              placeholder="https://.../cover.jpg"
-              style={listingInputStyle('coverImageUrl')}
-            />
-            {listingErrorText('coverImageUrl')}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {renderListingUploadButton({
-                key: 'store-cover-image',
-                label: 'Tải ảnh bìa từ máy',
-                loadingLabel: 'Đang tải ảnh bìa...',
-                kind: 'image',
-                purpose: 'PARTNER_STORE_COVER',
-                successLabel: 'ảnh bìa',
-                onUploaded: ([url]) => {
-                  if (!url) return;
-                  updateListingField('coverImageUrl', url);
-                },
-              })}
-            </div>
-          </FormField>
-        </section>
-
-        <section className="partner-listing-section">
-          <div className="partner-listing-section-title">Album ảnh</div>
-          {!listingDraft.galleryUrls.length ? (
-            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-              Chưa có ảnh album. Bấm Thêm ảnh để nhập ảnh thật của quán.
-            </div>
-          ) : null}
-          {listingDraft.galleryUrls.map((url, index) => (
-            <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-              <FormField label={`Ảnh album ${index + 1}`}>
-                <input
-                  value={url}
-                  onChange={(event) => updateGalleryUrl(index, event.target.value)}
-                  placeholder="https://..."
-                  style={listingInputStyle(`galleryUrls.${index}`)}
-                />
-                {listingErrorText(`galleryUrls.${index}`)}
-              </FormField>
-              <div style={{ display: 'flex', alignItems: 'end' }}>
-                <GhostButton onClick={() => removeGalleryUrl(index)}>
-                  <XCircle size={16} />
-                  Xóa
-                </GhostButton>
-              </div>
-            </div>
-          ))}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {renderListingUploadButton({
-              key: 'store-gallery-images',
-              label: 'Tải ảnh album từ máy',
-              loadingLabel: 'Đang tải ảnh...',
-              kind: 'image',
-              multiple: true,
-              purpose: 'PARTNER_STORE_GALLERY',
-              successLabel: 'ảnh album',
-              onUploaded: (urls) => {
-                clearListingErrorsFor('galleryUrls');
-                setListingDraft((current) => ({
-                  ...current,
-                  galleryUrls: [...current.galleryUrls.filter(Boolean), ...urls],
-                }));
-              },
-            })}
-            <GhostButton onClick={addGalleryUrl}>
-              <ImagePlus size={16} />
-              Thêm URL ảnh
-            </GhostButton>
-          </div>
-        </section>
-
-        <section className="partner-listing-section">
-          <div className="partner-listing-section-title">Video quán</div>
-          {!listingDraft.videoUrls.length ? (
-            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
-              Chưa có video. Có thể dán YouTube hoặc URL video đã tải lên.
-            </div>
-          ) : null}
-          {listingDraft.videoUrls.map((url, index) => (
-            <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-              <FormField label={`Video ${index + 1}`}>
-                <input
-                  value={url}
-                  onChange={(event) => updateVideoUrl(index, event.target.value)}
-                  placeholder="https://youtube.com/..."
-                  style={listingInputStyle(`videoUrls.${index}`)}
-                />
-                {listingErrorText(`videoUrls.${index}`)}
-              </FormField>
-              <div style={{ display: 'flex', alignItems: 'end' }}>
-                <GhostButton onClick={() => removeVideoUrl(index)}>
-                  <XCircle size={16} />
-                  Xóa
-                </GhostButton>
-              </div>
-            </div>
-          ))}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {renderListingUploadButton({
-              key: 'store-videos',
-              label: 'Tải video từ máy',
-              loadingLabel: 'Đang tải video...',
-              kind: 'video',
-              multiple: true,
-              purpose: 'PARTNER_STORE_VIDEO',
-              successLabel: 'video quán',
-              onUploaded: (urls) => {
-                clearListingErrorsFor('videoUrls');
-                setListingDraft((current) => ({
-                  ...current,
-                  videoUrls: [...current.videoUrls.filter(Boolean), ...urls],
-                }));
-              },
-            })}
-            <GhostButton onClick={addVideoUrl}>
-              <ImagePlus size={16} />
-              Thêm URL video
-            </GhostButton>
-          </div>
-        </section>
-
-        {listingDraft.mediaUrls.length ? (
-          <section className="partner-listing-section">
-            <div className="partner-listing-section-title">Media cũ</div>
-            {listingDraft.mediaUrls.map((url, index) => (
-              <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
-                <FormField label="Media URL">
-                  <input
-                    value={url}
-                    onChange={(event) => updateMediaUrl(index, event.target.value)}
-                    placeholder="https://..."
-                    style={listingInputStyle(`mediaUrls.${index}`)}
-                  />
-                  {listingErrorText(`mediaUrls.${index}`)}
-                </FormField>
-                <div style={{ display: 'flex', alignItems: 'end' }}>
-                  <GhostButton onClick={() => removeMediaUrl(index)}>
-                    <XCircle size={16} />
-                    Xóa
-                  </GhostButton>
-                </div>
-              </div>
-            ))}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {renderListingUploadButton({
-                key: 'store-legacy-media',
-                label: 'Tải media từ máy',
-                loadingLabel: 'Đang tải media...',
-                kind: 'image',
-                multiple: true,
-                purpose: 'PARTNER_STORE_MEDIA',
-                successLabel: 'media khác',
-                onUploaded: (urls) => {
-                  clearListingErrorsFor('mediaUrls');
-                  setListingDraft((current) => ({
-                    ...current,
-                    mediaUrls: [...current.mediaUrls.filter(Boolean), ...urls],
-                  }));
-                },
-              })}
-              <GhostButton onClick={addMediaUrl}>
-                <ImagePlus size={16} />
-                Thêm URL media
-              </GhostButton>
-            </div>
-          </section>
-        ) : null}
+        {renderStoreMediaSections()}
 
         <section className="partner-listing-section">
           <div className="partner-listing-section-title">Thực đơn & mức giá</div>
