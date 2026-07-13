@@ -118,7 +118,7 @@ export default function AdminPermissionsPage() {
     showToast('Đã cập nhật cấu hình quyền');
   };
 
-  const matrixGridCols = isSuperAdmin ? '1fr repeat(5, 70px)' : '1fr repeat(4, 70px)';
+  const matrixGridCols = isSuperAdmin ? '1fr repeat(5, 100px)' : '1fr repeat(4, 100px)';
 
   const renderCapRow = (c: CapRow, idx: number, section: string) => {
     return (
@@ -148,11 +148,11 @@ export default function AdminPermissionsPage() {
         {/* Header Row */}
         <div style={{ display: 'grid', gridTemplateColumns: matrixGridCols, gap: '10px', padding: '16px 20px', borderBottom: `1px solid ${colors.borderSoft}`, background: 'rgba(255,255,255,.02)', alignItems: 'center' }}>
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '.8px', color: '#8c8679', textTransform: 'uppercase' }}>Chức năng</span>
-          {isSuperAdmin && <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#e3c27e' }}>Admin</span>}
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Operator</span>
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Partner</span>
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Staff</span>
-          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>User</span>
+          {isSuperAdmin && <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#e3c27e' }}>Quản trị viên</span>}
+          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên vận hành</span>
+          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Đối tác</span>
+          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Nhân viên quán</span>
+          <span style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#c5c0b6' }}>Người dùng</span>
         </div>
         
         {/* 1. Hệ thống & Admin */}
