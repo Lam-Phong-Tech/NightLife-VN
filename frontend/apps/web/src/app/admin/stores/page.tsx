@@ -864,7 +864,23 @@ function AdminStoresContent() {
   const handleHardDeleteStore = async () => {
     feedback.showModal({
       title: 'Xóa vĩnh viễn quán',
-      description: 'CẢNH BÁO: Bạn có chắc muốn xóa VĨNH VIỄN quán này khỏi cơ sở dữ liệu? (Chỉ Super Admin mới có quyền này)',
+      description: (
+        <div style={{ textAlign: 'left', marginTop: '12px' }}>
+          <div style={{ color: '#e88b99', fontWeight: 700, marginBottom: '8px' }}>
+            CẢNH BÁO: Xóa cứng quán sẽ xóa vĩnh viễn toàn bộ dữ liệu liên quan:
+          </div>
+          <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px', color: '#c5c0b6' }}>
+            <li>Xóa các quyền truy cập quán (StorePermission) và cấu hình hoa hồng (CommissionConfig).</li>
+            <li>Xóa các đơn đặt bàn (Booking), hóa đơn (Bill), tin nhắn/mã QR liên quan đến bàn đó.</li>
+            <li>Xóa các mã giảm giá (Coupon) đã phát hành của quán.</li>
+            <li>Xóa nhân viên (Cast) và các lượt yêu thích nhân viên.</li>
+            <li>Cuối cùng mới tiến hành xóa sạch dữ liệu Quán (Store).</li>
+          </ul>
+        </div>
+      ),
+      destructive: true,
+      primaryLabel: 'Xóa vĩnh viễn',
+      secondaryLabel: 'Hủy',
       onPrimary: async () => {
         try {
           await apiClient(`/admin/stores/${selectedStore?.id}?hard=true`, { method: 'DELETE' });

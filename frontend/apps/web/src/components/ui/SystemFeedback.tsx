@@ -44,7 +44,7 @@ type ToastState = ToastInput & {
 type ModalInput = {
   tone?: FeedbackTone;
   title: string;
-  description: string;
+  description: ReactNode;
   primaryLabel?: string;
   secondaryLabel?: string;
   onPrimary?: () => void;
@@ -373,7 +373,7 @@ function FeedbackModal({ modal, onClose }: { modal: ModalInput; onClose: () => v
           <Icon size={modal.destructive ? 27 : 28} strokeWidth={modal.destructive ? 1.9 : 2.2} />
         </span>
         <h2 id="nl-system-modal-title">{modal.title}</h2>
-        <p>{modal.description}</p>
+        <div className="nl-system-modal-desc">{modal.description}</div>
         <div className="nl-system-modal-actions">
           {modal.secondaryLabel ? (
             <button
@@ -607,6 +607,7 @@ const feedbackStyles = `
   }
 
   .nl-system-modal p,
+  .nl-system-modal-desc,
   .nl-system-sheet p {
     margin: 8px 0 0;
     color: #c5c0b6;
