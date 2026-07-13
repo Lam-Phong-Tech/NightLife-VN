@@ -1669,9 +1669,20 @@ export class NightlifeDataController {
   @Patch('admin/casts/:id')
   updateAdminCast(
     @Param('id') id: string,
-    @Body() dto: import('./dto/admin-cast.dto').UpdateAdminCastDto,
+    @Body() dto: any,
   ) {
     return this.nightlifeDataService.updateAdminCast(id, dto);
+  }
+
+  @Roles('ADMIN')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Delete('admin/casts/:id')
+  deleteAdminCast(
+    @Req() request: RequestWithUser,
+    @Param('id') id: string,
+    @Query('hard') hard?: string,
+  ) {
+    return this.nightlifeDataService.deleteAdminCast(request.user, id, hard === 'true');
   }
 
   @ApiOperation({ summary: 'Admin action: Approve or reject a bill' })

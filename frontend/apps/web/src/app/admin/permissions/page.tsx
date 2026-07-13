@@ -47,6 +47,12 @@ const INIT_VOUCHER: CapRow[] = [
   ['Quản lý lượt phát mã (Thu hồi/Xoay vòng QR)', 'canManageCouponIssue', 1, 0, 0, 0, 0],
 ];
 
+const INIT_CAST: CapRow[] = [
+  ['Quản lý hồ sơ Cast', 'canManageCast', 1, 1, 1, 1, 0],
+  ['Xoá mềm Cast (Soft Delete)', 'canSoftDeleteCast', 1, 0, 0, 0, 0],
+  ['Xoá cứng Cast (Hard Delete)', 'canHardDeleteCast', 0, 0, 0, 0, 0], // Only Super Admin
+];
+
 const INIT_BILL: CapRow[] = [
   ['Xem & tạo hoá đơn cho quán', 'canReviewBill', 1, 0, 1, 1, 0],
   ['Xem danh sách hoá đơn (Chưa thanh toán)', 'canViewPartnerBill', 1, 1, 1, 0, 0],
@@ -90,6 +96,7 @@ export default function AdminPermissionsPage() {
   const [capsBooking, setCapsBooking] = useState<CapRow[]>(INIT_BOOKING);
   const [capsStore, setCapsStore] = useState<CapRow[]>(INIT_STORE);
   const [capsVoucher, setCapsVoucher] = useState<CapRow[]>(INIT_VOUCHER);
+  const [capsCast, setCapsCast] = useState<CapRow[]>(INIT_CAST);
   const [capsBill, setCapsBill] = useState<CapRow[]>(INIT_BILL);
   const [capsUser, setCapsUser] = useState<CapRow[]>(INIT_USER);
   const [toast, setToast] = useState<string | null>(null);
@@ -113,6 +120,7 @@ export default function AdminPermissionsPage() {
     else if (section === 'booking') setCapsBooking(updater);
     else if (section === 'store') setCapsStore(updater);
     else if (section === 'voucher') setCapsVoucher(updater);
+    else if (section === 'cast') setCapsCast(updater);
     else if (section === 'bill') setCapsBill(updater);
     else if (section === 'user') setCapsUser(updater);
     showToast('Đã cập nhật cấu hình quyền');
@@ -171,12 +179,16 @@ export default function AdminPermissionsPage() {
         <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>4. Ưu đãi, QR &amp; Đối tác</div>
         {capsVoucher.map((c, i) => renderCapRow(c, i, 'voucher'))}
 
-        {/* 5. Hoá đơn & Doanh thu */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>5. Hoá đơn &amp; Báo cáo doanh thu</div>
+        {/* 5. Cast */}
+        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>5. Quản lý Cast</div>
+        {capsCast.map((c, i) => renderCapRow(c, i, 'cast'))}
+
+        {/* 6. Hoá đơn & Doanh thu */}
+        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>6. Hoá đơn &amp; Báo cáo doanh thu</div>
         {capsBill.map((c, i) => renderCapRow(c, i, 'bill'))}
 
-        {/* 6. User */}
-        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>6. Quyền khách hàng (User/Member)</div>
+        {/* 7. User */}
+        <div style={{ padding: '12px 20px 10px', background: 'rgba(212,178,106,.04)', fontSize: '11px', fontWeight: 700, letterSpacing: '1.1px', color: '#caa765', textTransform: 'uppercase', marginTop: '1px' }}>7. Quyền khách hàng (User/Member)</div>
         {capsUser.map((c, i) => renderCapRow(c, i, 'user'))}
 
       </div>

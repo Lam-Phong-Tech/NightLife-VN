@@ -17568,6 +17568,21 @@ export class NightlifeDataService {
 
     return updated;
   }
+
+  async deleteAdminCast(user: AuthenticatedUser, id: string, hard: boolean) {
+    const existing = await this.prisma.cast.findUniqueOrThrow({ where: { id } });
+    if (hard) {
+      if (user.role !== 'SUPER_ADMIN') {
+        throw new Error('Only Super Admin can hard delete casts');
+      }
+      return this.prisma.cast.delete({ where: { id } });
+    } else {
+      return this.prisma.cast.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+    }
+  }
   private generateSlug(name: string): string {
     return name
       .toLowerCase()

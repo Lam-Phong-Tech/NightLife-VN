@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, ChevronRight, Plus, Check, Play, Bell, Upload, Video } from 'lucide-react';
 import { apiClient, apiFormDataClient } from '@/lib/api/client';
+import { getAuthUser } from '@/lib/auth/session';
 import { AdminPagination, paginateAdminItems, adminPageSize } from '../components/AdminPagination';
 
 const colors = {
@@ -42,6 +43,15 @@ export default function AdminCastsPage() {
   const [casts, setCasts] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  
+  const [userRole, setUserRole] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const u = getAuthUser();
+      setUserRole(u?.role || null);
+    }
+  }, []);
   
   // Drawer state
   const [selectedCast, setSelectedCast] = useState<any>(null);
@@ -250,7 +260,7 @@ export default function AdminCastsPage() {
 
       if (isAddingCast && selectedCast) {
         await apiClient(`/admin/casts/${selectedCast.id}`, { method: 'PATCH', data: payload });
-        showToast('ÄÃ£ táº¡o Cast má»›i!');
+        showToast('Đã tạo Cast mới!');
       } else if (isAddingCast) {
         await apiClient('/admin/casts', { method: 'POST', data: payload });
         showToast('Đã tạo Cast mới!');
@@ -262,6 +272,19 @@ export default function AdminCastsPage() {
       fetchCasts();
     } catch (e: any) {
       showToast(e.message || 'Lỗi khi lưu Cast');
+    }
+  };
+
+  const handleDeleteCast = async (hard: boolean) => {
+    if (!selectedCast) return;
+    if (!window.confirm(hard ? 'Bạn có chắc chắn muốn xóa vĩnh viễn cast này?' : 'Bạn có chắc chắn muốn xóa (mềm) cast này?')) return;
+    try {
+      await apiClient(`/admin/casts/${selectedCast.id}${hard ? '?hard=true' : ''}`, { method: 'DELETE' });
+      showToast(hard ? 'Đã xóa vĩnh viễn cast' : 'Đã xóa mềm cast');
+      closeDrawer();
+      fetchCasts();
+    } catch (e: any) {
+      showToast(e.message || 'Lỗi khi xóa Cast');
     }
   };
 
@@ -1121,6 +1144,28 @@ export default function AdminCastsPage() {
               }}>
                 {isAddingCast ? 'Thêm mới Cast' : 'Lưu hồ sơ'}
               </button>
+              
+              {!isAddingCast && (
+                <>
+                  {['ADMIN', 'SUPER_ADMIN'].includes(userRole || '') && (
+                    <button onClick={() => handleDeleteCast(false)} style={{
+                      width: '100px', background: 'transparent', color: colors.gold, border: `1px solid ${colors.gold}`,
+                      height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
+                    }}>
+                      Xóa mềm
+                    </button>
+                  )}
+                  {userRole === 'SUPER_ADMIN' && (
+                    <button onClick={() => handleDeleteCast(true)} style={{
+                      width: '130px', background: 'transparent', color: colors.red, border: `1px solid ${colors.red}`,
+                      height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
+                    }}>
+                      Xóa vĩnh viễn
+                    </button>
+                  )}
+                </>
+              )}
+
               <button onClick={closeDrawer} style={{
                 width: '80px', background: 'transparent', color: colors.text, border: `1px solid ${colors.borderSoft}`,
                 height: '48px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer'
