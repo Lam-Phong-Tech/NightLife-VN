@@ -116,10 +116,10 @@ export default function AdminRolesPage() {
       
       const kmap: Record<string, [string, string]> = {
         super_admin:['Super Admin','linear-gradient(135deg,#e85050,#b52b2b)'],
-        admin:['Admin','linear-gradient(135deg,#f4e3b4,#b6924a)'],
-        operator:['Operator','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],
+        admin:['Quản trị viên','linear-gradient(135deg,#f4e3b4,#b6924a)'],
+        operator:['Nhân viên vận hành','linear-gradient(135deg,#8fb6e4,#4f6f9c)'],
         partner:['Đối tác','linear-gradient(135deg,#c9a86a,#8f6b32)'],
-        staff:['Staff','linear-gradient(135deg,#e79ab8,#b0607f)'],
+        staff:['Nhân viên quán','linear-gradient(135deg,#e79ab8,#b0607f)'],
         user:['Người dùng', 'linear-gradient(135deg,#9b958a,#57534b)']
       };
       const mapped = res.items.map(u => {
@@ -248,9 +248,9 @@ export default function AdminRolesPage() {
               {[
                 { id: 'all', label: 'Tất cả' }, 
                 ...(isSuperAdmin ? [{ id: 'super_admin', label: 'Super Admin' }] : []),
-                { id: 'admin', label: 'Admin' }, 
-                { id: 'operator', label: 'Operator' }, { id: 'partner', label: 'Đối tác' }, 
-                { id: 'staff', label: 'Staff' }, { id: 'muted', label: 'Chờ kích hoạt' },
+                { id: 'admin', label: 'Quản trị viên' }, 
+                { id: 'operator', label: 'Nhân viên vận hành' }, { id: 'partner', label: 'Đối tác' }, 
+                { id: 'staff', label: 'Nhân viên quán' }, { id: 'muted', label: 'Chờ kích hoạt' },
                 { id: 'disabled', label: 'Đã vô hiệu' }
               ].map(r => (
                 <span key={r.id} onClick={() => { setAccRole(r.id); setAccPage(0); }} style={{ fontSize: '11px', fontWeight: 600, padding: '5.5px 11px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap', ...(accRole === r.id ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#9b958a', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }) }}>
@@ -372,10 +372,10 @@ export default function AdminRolesPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Vai trò</div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   {[
-                    { id: 'admin', label: 'Admin' }, 
-                    { id: 'operator', label: 'Operator' }, 
+                    { id: 'admin', label: 'Quản trị viên' }, 
+                    { id: 'operator', label: 'Nhân viên vận hành' }, 
                     { id: 'partner', label: 'Đối tác (chủ quán)' }, 
-                    { id: 'staff', label: 'Staff (NV quán)' }
+                    { id: 'staff', label: 'Nhân viên quán' }
                   ].filter(k => isSuperAdmin || k.id !== 'admin').map(k => (
                     <span key={k.id} onClick={() => setAfKind(k.id)} style={{ fontSize: '11.5px', fontWeight: 600, padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap', ...(afKind === k.id ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#9b958a', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }) }}>
                       {k.label}
