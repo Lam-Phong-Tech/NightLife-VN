@@ -374,7 +374,8 @@ export default function AdminRolesPage() {
                     { id: 'admin', label: 'Quản trị viên' }, 
                     { id: 'operator', label: 'Nhân viên vận hành' }, 
                     { id: 'partner', label: 'Đối tác (chủ quán)' }, 
-                    { id: 'staff', label: 'Nhân viên quán' }
+                    { id: 'staff', label: 'Nhân viên quán' },
+                    { id: 'user', label: 'Người dùng' }
                   ].filter(k => isSuperAdmin || k.id !== 'admin').map(k => (
                     <span key={k.id} onClick={() => setAfKind(k.id)} style={{ fontSize: '11.5px', fontWeight: 600, padding: '7px 13px', borderRadius: '9px', cursor: 'pointer', whiteSpace: 'nowrap', ...(afKind === k.id ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#9b958a', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }) }}>
                       {k.label}
@@ -382,7 +383,7 @@ export default function AdminRolesPage() {
                   ))}
                 </div>
                 <div style={{ fontSize: '11px', color: '#57534b', marginTop: '8px', lineHeight: 1.5 }}>
-                  {afKind === 'admin' ? 'ADMIN — quản trị cấp cao nhất, toàn quyền quản lý hệ thống. Cân nhắc kỹ khi cấp.' : afKind === 'operator' ? 'OPERATOR — nhân viên vận hành: hỗ trợ, kiểm duyệt nội dung, CSKH.' : afKind === 'partner' ? 'PARTNER — chủ quán / quản lý cơ sở: toàn bộ quyền đối tác của quán mình.' : 'STAFF — nhân viên quán (lễ tân, phục vụ): xác nhận booking, quét mã QR, xác nhận check-in.'}
+                  {afKind === 'admin' ? 'ADMIN — quản trị cấp cao nhất, toàn quyền quản lý hệ thống. Cân nhắc kỹ khi cấp.' : afKind === 'operator' ? 'OPERATOR — nhân viên vận hành: hỗ trợ, kiểm duyệt nội dung, CSKH.' : afKind === 'partner' ? 'PARTNER — chủ quán / quản lý cơ sở: toàn bộ quyền đối tác của quán mình.' : afKind === 'staff' ? 'STAFF — nhân viên quán (lễ tân, phục vụ): xác nhận booking, quét mã QR, xác nhận check-in.' : 'USER — người dùng cuối: đặt bàn, nhận ưu đãi, xem lịch sử đặt bàn.'}
                 </div>
               </div>
               
