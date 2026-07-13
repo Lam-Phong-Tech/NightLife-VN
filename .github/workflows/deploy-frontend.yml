@@ -69,7 +69,7 @@ jobs:
           rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:/var/www/demonightlight.test9.io.vn"
 
       - name: Restart PM2 & Update DB
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}

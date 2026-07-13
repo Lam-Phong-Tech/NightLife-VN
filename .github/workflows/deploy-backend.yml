@@ -100,7 +100,7 @@ jobs:
           rsync -avz --delete -e "$SSH_CMD" --exclude '.git' --exclude '.github' --filter='P .env' --filter='P uploads' --filter='P public/uploads' --exclude 'node_modules' ./ "$USER@$SSH_HOST:$DEPLOY_DIR"
 
       - name: Backup, Migrate, Restart PM2 & Smoke
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
