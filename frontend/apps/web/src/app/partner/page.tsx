@@ -735,17 +735,6 @@ const hasValidOpeningHourSlots = (value?: string | null) => {
 
 const tabFromListingErrorPath = (path: string): ListingTabKey => {
   if (path.startsWith('castProfiles.')) return 'cast';
-  if (path.startsWith('pricingItems.') || path.startsWith('menuGroups.') || path === 'priceRange' || path === 'menuSummary') {
-    return 'pricing';
-  }
-  if (
-    path === 'coverImageUrl' ||
-    path.startsWith('galleryUrls.') ||
-    path.startsWith('videoUrls.') ||
-    path.startsWith('mediaUrls.')
-  ) {
-    return 'media';
-  }
   return 'store';
 };
 
@@ -963,8 +952,6 @@ function cleanListingText(value?: string | null) {
 const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'store', label: 'Thông tin quán' },
   { key: 'cast', label: 'Cast' },
-  { key: 'pricing', label: 'Bảng giá' },
-  { key: 'media', label: 'Ảnh / Video' },
 ];
 
 const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
@@ -2249,7 +2236,7 @@ export default function PartnerPage() {
     markNotificationsRead([notification.id]);
     setActivePanel(notification.panel);
     if (notification.listingTab) {
-      setListingTab(notification.listingTab);
+      setListingTab(notification.listingTab === 'cast' ? 'cast' : 'store');
     }
     setIsNotificationOpen(false);
   };
@@ -4018,7 +4005,7 @@ export default function PartnerPage() {
               style={{ ...listingInputStyle(`castProfiles.${index}.storeName`), color: colors.goldPale }}
             />
           </FormField>
-          <FormField label="Headline hiển thị">
+          <FormField label="Lời chào (greeting)">
             <input
               value={cast.publicHeadline ?? ''}
               onChange={(event) => updateCastProfile(index, 'publicHeadline', event.target.value)}
@@ -4109,7 +4096,7 @@ export default function PartnerPage() {
             />
             {listingErrorText(`castProfiles.${index}.hourlyRateVnd`)}
           </FormField>
-          <FormField label="Lời chào / mô tả cast" className="partner-field-wide">
+          <FormField label="Mô tả cast" className="partner-field-wide">
             <textarea
               value={cast.bio ?? ''}
               onChange={(event) => updateCastProfile(index, 'bio', event.target.value)}
@@ -4122,7 +4109,7 @@ export default function PartnerPage() {
       </section>
 
       <section className="partner-listing-section">
-        <div className="partner-listing-section-title">Ảnh / Video</div>
+        <div className="partner-listing-section-title">Ảnh đại diện, album và video</div>
         <div className="partner-listing-grid">
           <FormField label="Ảnh đại diện / album ảnh" className="partner-field-wide">
             <input
@@ -4830,6 +4817,277 @@ export default function PartnerPage() {
               />
               {listingErrorText('note')}
             </FormField>
+          </div>
+        </section>
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Ảnh bìa</div>
+          <FormField label="Cover image URL">
+            <input
+              value={listingDraft.coverImageUrl}
+              onChange={(event) => updateListingField('coverImageUrl', event.target.value)}
+              placeholder="https://.../cover.jpg"
+              style={listingInputStyle('coverImageUrl')}
+            />
+            {listingErrorText('coverImageUrl')}
+          </FormField>
+        </section>
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Album ảnh</div>
+          {!listingDraft.galleryUrls.length ? (
+            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Chưa có ảnh album. Bấm Thêm ảnh để nhập ảnh thật của quán.
+            </div>
+          ) : null}
+          {listingDraft.galleryUrls.map((url, index) => (
+            <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+              <FormField label={`Ảnh album ${index + 1}`}>
+                <input
+                  value={url}
+                  onChange={(event) => updateGalleryUrl(index, event.target.value)}
+                  placeholder="https://..."
+                  style={listingInputStyle(`galleryUrls.${index}`)}
+                />
+                {listingErrorText(`galleryUrls.${index}`)}
+              </FormField>
+              <div style={{ display: 'flex', alignItems: 'end' }}>
+                <GhostButton onClick={() => removeGalleryUrl(index)}>
+                  <XCircle size={16} />
+                  Xóa
+                </GhostButton>
+              </div>
+            </div>
+          ))}
+          <GhostButton onClick={addGalleryUrl}>
+            <ImagePlus size={16} />
+            Thêm ảnh
+          </GhostButton>
+        </section>
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Video quán</div>
+          {!listingDraft.videoUrls.length ? (
+            <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+              Chưa có video. Có thể dán YouTube hoặc URL video đã tải lên.
+            </div>
+          ) : null}
+          {listingDraft.videoUrls.map((url, index) => (
+            <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+              <FormField label={`Video ${index + 1}`}>
+                <input
+                  value={url}
+                  onChange={(event) => updateVideoUrl(index, event.target.value)}
+                  placeholder="https://youtube.com/..."
+                  style={listingInputStyle(`videoUrls.${index}`)}
+                />
+                {listingErrorText(`videoUrls.${index}`)}
+              </FormField>
+              <div style={{ display: 'flex', alignItems: 'end' }}>
+                <GhostButton onClick={() => removeVideoUrl(index)}>
+                  <XCircle size={16} />
+                  Xóa
+                </GhostButton>
+              </div>
+            </div>
+          ))}
+          <GhostButton onClick={addVideoUrl}>
+            <ImagePlus size={16} />
+            Thêm video
+          </GhostButton>
+        </section>
+
+        {listingDraft.mediaUrls.length ? (
+          <section className="partner-listing-section">
+            <div className="partner-listing-section-title">Media cũ</div>
+            {listingDraft.mediaUrls.map((url, index) => (
+              <div key={`${url}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+                <FormField label="Media URL">
+                  <input
+                    value={url}
+                    onChange={(event) => updateMediaUrl(index, event.target.value)}
+                    placeholder="https://..."
+                    style={listingInputStyle(`mediaUrls.${index}`)}
+                  />
+                  {listingErrorText(`mediaUrls.${index}`)}
+                </FormField>
+                <div style={{ display: 'flex', alignItems: 'end' }}>
+                  <GhostButton onClick={() => removeMediaUrl(index)}>
+                    <XCircle size={16} />
+                    Xóa
+                  </GhostButton>
+                </div>
+              </div>
+            ))}
+            <GhostButton onClick={addMediaUrl}>
+              <ImagePlus size={16} />
+              Thêm media khác
+            </GhostButton>
+          </section>
+        ) : null}
+
+        <section className="partner-listing-section">
+          <div className="partner-listing-section-title">Thực đơn & mức giá</div>
+          <div style={{ display: 'grid', gap: '12px' }}>
+            <FormField label="Khoảng giá tổng quan">
+              <input
+                value={listingDraft.priceRange}
+                onChange={(event) => updateListingField('priceRange', event.target.value)}
+                placeholder="VD: 500.000đ - 3.000.000đ"
+                style={listingInputStyle('priceRange')}
+              />
+              {listingErrorText('priceRange')}
+            </FormField>
+            <FormField label="Tóm tắt thực đơn / mức giá">
+              <textarea
+                value={listingDraft.menuSummary}
+                onChange={(event) => updateListingField('menuSummary', event.target.value)}
+                placeholder="VD: Bottle service, cocktail, set VIP..."
+                style={listingInputStyle('menuSummary', { minHeight: '88px', resize: 'vertical', padding: '12px' })}
+              />
+              {listingErrorText('menuSummary')}
+            </FormField>
+            <div className="partner-listing-section" style={{ margin: 0 }}>
+              <div className="partner-listing-section-title">Nhóm menu</div>
+              {!listingDraft.menuGroups.length ? (
+                <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+                  Chưa có nhóm menu. Bấm Thêm nhóm menu để nhập món, mô tả và mức chi phí.
+                </div>
+              ) : null}
+              {listingDraft.menuGroups.map((group, groupIndex) => (
+                <div key={`${group.name}-${groupIndex}`} style={{ ...softCardStyle, padding: '14px', display: 'grid', gap: '10px' }}>
+                  <div className="partner-listing-grid">
+                    <FormField label="Tên nhóm">
+                      <input
+                        value={group.name}
+                        onChange={(event) => updateMenuGroupName(groupIndex, event.target.value)}
+                        placeholder="VD: VIP packages"
+                        style={listingInputStyle(`menuGroups.${groupIndex}.name`)}
+                      />
+                      {listingErrorText(`menuGroups.${groupIndex}.name`)}
+                    </FormField>
+                    <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
+                      <GhostButton onClick={() => addMenuItem(groupIndex)}>
+                        <ReceiptText size={16} />
+                        Thêm món
+                      </GhostButton>
+                      <GhostButton onClick={() => removeMenuGroup(groupIndex)}>
+                        <XCircle size={16} />
+                        Xóa nhóm
+                      </GhostButton>
+                    </div>
+                  </div>
+                  {group.items.map((item, itemIndex) => (
+                    <div key={`${item.name}-${itemIndex}`} className="partner-listing-grid" style={{ borderTop: `1px solid ${colors.borderHair}`, paddingTop: '10px' }}>
+                      <FormField label="Tên món / dịch vụ">
+                        <input
+                          value={item.name}
+                          onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'name', event.target.value)}
+                          placeholder="VD: VIP table"
+                          style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
+                        />
+                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.name`)}
+                      </FormField>
+                      <FormField label="Mô tả">
+                        <input
+                          value={item.description ?? ''}
+                          onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'description', event.target.value)}
+                          placeholder="Mô tả ngắn"
+                          style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
+                        />
+                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.description`)}
+                      </FormField>
+                      <FormField label="Mức chi phí">
+                        <ThemedListingSelect
+                          value={item.priceTier ?? '$$'}
+                          onChange={(value) => updateMenuItem(groupIndex, itemIndex, 'priceTier', value)}
+                          placeholder="-- Chọn mức --"
+                          hasError={Boolean(listingErrors[`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`])}
+                          options={[
+                            { value: '$$', label: '$$' },
+                            { value: '$$$', label: '$$$' },
+                            { value: '$$$$', label: '$$$$' },
+                          ]}
+                        />
+                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.priceTier`)}
+                      </FormField>
+                      <FormField label="Ảnh món URL">
+                        <input
+                          value={item.imageUrl ?? ''}
+                          onChange={(event) => updateMenuItem(groupIndex, itemIndex, 'imageUrl', event.target.value)}
+                          placeholder="https://..."
+                          style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
+                        />
+                        {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
+                      </FormField>
+                      <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateMenuItem(groupIndex, itemIndex, 'isHot', !item.isHot)}
+                          className="partner-toggle-button"
+                        >
+                          {item.isHot ? 'HOT' : 'Không HOT'}
+                        </button>
+                        <GhostButton onClick={() => removeMenuItem(groupIndex, itemIndex)}>
+                          <XCircle size={16} />
+                          Xóa món
+                        </GhostButton>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <GhostButton onClick={addMenuGroup}>
+                <ReceiptText size={16} />
+                Thêm nhóm menu
+              </GhostButton>
+            </div>
+            {!listingDraft.pricingItems.length ? (
+              <div style={{ ...softCardStyle, padding: '14px', color: colors.text2, fontSize: '12.5px', lineHeight: 1.6 }}>
+                Chưa có dòng giá trong bản nháp. Bấm Thêm dòng giá để nhập bảng giá thật.
+              </div>
+            ) : null}
+            {listingDraft.pricingItems.map((item, index) => (
+              <div key={`${item.label}-${index}`} className="partner-listing-grid" style={{ ...softCardStyle, padding: '14px' }}>
+                <FormField label="Tên gói">
+                  <input
+                    value={item.label}
+                    onChange={(event) => updatePricingItem(index, 'label', event.target.value)}
+                    placeholder="VD: Phòng VIP"
+                    style={listingInputStyle(`pricingItems.${index}.label`)}
+                  />
+                  {listingErrorText(`pricingItems.${index}.label`)}
+                </FormField>
+                <FormField label="Mức giá">
+                  <input
+                    value={item.value}
+                    onChange={(event) => updatePricingItem(index, 'value', event.target.value)}
+                    placeholder="VD: 2.500.000đ - 6.000.000đ"
+                    style={listingInputStyle(`pricingItems.${index}.value`)}
+                  />
+                  {listingErrorText(`pricingItems.${index}.value`)}
+                </FormField>
+                <FormField label="Ghi chú">
+                  <input
+                    value={item.note ?? ''}
+                    onChange={(event) => updatePricingItem(index, 'note', event.target.value)}
+                    placeholder="VD: Ưu tiên khách VIP"
+                    style={listingInputStyle(`pricingItems.${index}.note`)}
+                  />
+                  {listingErrorText(`pricingItems.${index}.note`)}
+                </FormField>
+                <div style={{ display: 'flex', alignItems: 'end' }}>
+                  <GhostButton onClick={() => removePricingItem(index)}>
+                    <XCircle size={16} />
+                    Xóa
+                  </GhostButton>
+                </div>
+              </div>
+            ))}
+            <GhostButton onClick={addPricingItem}>
+              <ReceiptText size={16} />
+              Thêm dòng giá
+            </GhostButton>
           </div>
         </section>
       </div>
