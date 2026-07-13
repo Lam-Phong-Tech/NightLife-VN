@@ -500,6 +500,7 @@ type PartnerRequestCmsRecord = {
     name: string;
     slug: string;
     status: string;
+    category: StoreCategory;
   };
   notificationLog: {
     id: string;
@@ -14214,6 +14215,7 @@ export class NightlifeDataService {
           name: true,
           slug: true,
           status: true,
+          category: true,
         },
       },
       notificationLog: {
@@ -14395,6 +14397,7 @@ export class NightlifeDataService {
       draftStoreId: request.store.id,
       draftStoreName: request.store.name,
       draftStoreSlug: request.store.slug,
+      draftStoreCategory: request.store.category,
       draftCastIds: request.draftCastIds,
       draftMediaIds: request.draftMediaIds,
       draftContentIds: request.draftContentIds,

@@ -34,6 +34,7 @@ type ApiPartnerRequest = {
   draftStoreId?: string | null;
   draftStoreName?: string | null;
   draftStoreSlug?: string | null;
+  draftStoreCategory?: string | null;
   draftCastCount?: number | null;
   draftMediaCount?: number | null;
   draftContentCount?: number | null;
@@ -104,12 +105,12 @@ const formatSubmittedAt = (value?: string | null) => {
 };
 
 const joinTypeAndArea = (request: ApiPartnerRequest) => {
-  const parts = [request.businessType, request.area].map((part) => part?.trim()).filter(Boolean);
+  const parts = [request.businessType, request.draftStoreCategory, request.area].map((part) => part?.trim()).filter(Boolean);
   return parts.length ? parts.join(" · ") : "Chưa có loại hình";
 };
 
 const requestDescription = (request: ApiPartnerRequest) =>
-  cleanText(request.storeDescription ?? request.note ?? request.menuSummary, "Chưa có mô tả gửi kèm.");
+  cleanText(request.storeDescription ?? request.menuSummary, "Chưa có mô tả gửi kèm.");
 
 export default function AdminPartnersPage() {
   const [activeStatus, setActiveStatus] = useState<PartnerStatus>("PENDING_REVIEW");
@@ -447,6 +448,25 @@ export default function AdminPartnersPage() {
                 } menu`}
               />
             </div>
+
+            {selectedRequest.note ? (
+              <Section title="Ghi chú cho Admin">
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 12,
+                    background: "rgba(212,178,106,.05)",
+                    border: `1px solid ${colors.borderGold22}`,
+                    fontSize: 14,
+                    color: colors.gold,
+                    lineHeight: 1.65,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {selectedRequest.note}
+                </div>
+              </Section>
+            ) : null}
 
             <Section title="Giới thiệu quán">
               <div
