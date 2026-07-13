@@ -2662,12 +2662,13 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.45;
         }
 
-        .booking-field-error {
+        .booking-field .booking-field-error,
+        .booking-note-label .booking-field-error {
           display: block;
           margin-top: 6px;
-          color: #ff9caf;
+          color: #ff86a0;
           font-size: 11.5px;
-          font-weight: 760;
+          font-weight: 820;
           line-height: 1.35;
         }
 
@@ -2678,8 +2679,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           font-weight: 760;
         }
 
-        :global(html.vy-light) .booking-field-error {
-          color: #9b223a;
+        :global(html.vy-light) .booking-field .booking-field-error,
+        :global(html.vy-light) .booking-note-label .booking-field-error {
+          color: #b01632;
         }
 
         .primary-action {

@@ -707,11 +707,16 @@ function FieldError({
   activeLanguage: LanguageCode;
   message?: string;
 }) {
-  if (!message) return null;
+  const translatedMessage = message ? translateText(message, activeLanguage) : "\u00a0";
 
   return (
-    <span className={styles.fieldError} aria-live="polite">
-      {translateText(message, activeLanguage)}
+    <span
+      className={styles.fieldError}
+      data-empty={message ? undefined : "true"}
+      aria-live={message ? "polite" : "off"}
+      aria-hidden={message ? undefined : true}
+    >
+      {translatedMessage}
     </span>
   );
 }

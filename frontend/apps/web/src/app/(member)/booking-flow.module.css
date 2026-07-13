@@ -421,11 +421,16 @@
 
 .fieldError {
   display: block;
-  margin-top: 2px;
-  color: #ff9caf;
+  min-height: 16px;
+  margin-top: 3px;
+  color: #ff86a0;
   font-size: 11.5px;
-  font-weight: 760;
+  font-weight: 820;
   line-height: 1.35;
+}
+
+.fieldError[data-empty="true"] {
+  visibility: hidden;
 }
 
 .dateInput {
@@ -566,7 +571,7 @@
 }
 
 :global(html.vy-light) .fieldError {
-  color: #9b223a;
+  color: #b01632;
 }
 
 :global(html.vy-light) .stepValue {
