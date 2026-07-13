@@ -264,7 +264,6 @@ export default function AdminRolesPage() {
           <div style={{ background: colors.surface1, border: `1px solid ${colors.borderSoft}`, borderRadius: '16px', overflow: 'hidden' }}>
             {pagedAccs.map((a, idx) => (
               <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 16px', borderBottom: `1px solid ${colors.borderSoft2}`, opacity: a.disabled ? 0.55 : 1 }}>
-                <span style={{ width: '40px', height: '40px', flex: 'none', borderRadius: '11px', background: a.avaBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#241a0a', fontWeight: 700, fontSize: '15px' }}>{a.ini}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#f3f0ea' }}>{a.name}</div>
                   <div style={{ fontSize: '11px', color: '#57534b', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.email}</div>
