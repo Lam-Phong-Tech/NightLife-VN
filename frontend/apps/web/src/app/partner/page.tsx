@@ -705,6 +705,39 @@ const splitInlineList = (value?: string | null) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const safeListingText = (value: unknown) => {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+};
+
+const normalizeListingTextList = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => safeListingText(item).trim())
+      .filter(Boolean);
+  }
+
+  return splitInlineList(safeListingText(value));
+};
+
+const normalizeListingUrlList = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item.trim();
+        if (item && typeof item === 'object') {
+          const record = item as { url?: unknown; thumbnailUrl?: unknown; imageUrl?: unknown };
+          return safeListingText(record.url ?? record.thumbnailUrl ?? record.imageUrl).trim();
+        }
+        return safeListingText(item).trim();
+      })
+      .filter(Boolean);
+  }
+
+  return splitInlineList(safeListingText(value));
+};
+
 const isValidUrl = (value: string) => {
   try {
     const url = new URL(value);
@@ -2537,17 +2570,45 @@ export default function PartnerPage() {
     setListingDraft({
       ...emptyListingDraft,
       ...draft,
+      storeName: safeListingText(draft.storeName),
+      businessType: safeListingText(draft.businessType),
+      storeCategory: safeListingText(draft.storeCategory),
+      area: safeListingText(draft.area),
+      storeCity: safeListingText(draft.storeCity),
+      storeDistrict: safeListingText(draft.storeDistrict),
+      wardName: safeListingText(draft.wardName),
+      streetAddress: safeListingText(draft.streetAddress),
+      phone: safeListingText(draft.phone),
+      mapUrl: safeListingText(draft.mapUrl),
+      openingHours: safeListingText(draft.openingHours),
+      priceRange: safeListingText(draft.priceRange),
+      menuSummary: safeListingText(draft.menuSummary),
+      coverImageUrl: safeListingText(draft.coverImageUrl),
       description: cleanListingText(draft.description),
+      note: safeListingText(draft.note),
       openingHourItems: draft.openingHourItems?.length
         ? draft.openingHourItems
         : defaultListingOpeningHours(),
-      tags: draft.tags ?? [],
+      tags: normalizeListingTextList(draft.tags),
       menuGroups: draft.menuGroups ?? [],
-      galleryUrls: draft.galleryUrls ?? [],
-      videoUrls: draft.videoUrls ?? [],
+      galleryUrls: normalizeListingUrlList(draft.galleryUrls),
+      videoUrls: normalizeListingUrlList(draft.videoUrls),
       pricingItems: draft.pricingItems ?? [],
-      castProfiles: draft.castProfiles ?? [],
-      mediaUrls: draft.mediaUrls ?? [],
+      castProfiles: (draft.castProfiles ?? []).map((cast) => ({
+        ...cast,
+        stageName: safeListingText(cast.stageName),
+        storeName: safeListingText(cast.storeName),
+        publicHeadline: safeListingText(cast.publicHeadline),
+        bio: safeListingText(cast.bio),
+        zodiacSign: safeListingText(cast.zodiacSign),
+        measurements: safeListingText(cast.measurements),
+        tags: normalizeListingTextList(cast.tags),
+        languages: normalizeListingTextList(cast.languages),
+        hobbies: normalizeListingTextList(cast.hobbies),
+        mediaUrls: normalizeListingUrlList(cast.mediaUrls),
+        youtubeLinks: normalizeListingUrlList(cast.youtubeLinks),
+      })),
+      mediaUrls: normalizeListingUrlList(draft.mediaUrls),
     });
     setListingNotice(response.message);
   }, []);
@@ -3231,21 +3292,24 @@ export default function PartnerPage() {
     );
   };
 
-  const listingMediaUrl = (url: string) => resolveClientUrl(url.trim()) || url.trim();
+  const listingMediaUrl = (url: unknown) => {
+    const trimmed = safeListingText(url).trim();
+    return resolveClientUrl(trimmed) || trimmed;
+  };
 
-  const getListingYoutubeId = (url: string) => {
-    const trimmed = url.trim();
+  const getListingYoutubeId = (url: unknown) => {
+    const trimmed = safeListingText(url).trim();
     const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
     return match?.[1] ?? null;
   };
 
-  const getListingYoutubeThumb = (url: string) => {
+  const getListingYoutubeThumb = (url: unknown) => {
     const videoId = getListingYoutubeId(url);
     return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
   };
 
-  const isListingVideoUrl = (url: string) => {
-    const trimmed = url.trim();
+  const isListingVideoUrl = (url: unknown) => {
+    const trimmed = safeListingText(url).trim();
     return Boolean(
       getListingYoutubeId(trimmed) ||
         /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(trimmed),
@@ -3473,7 +3537,7 @@ export default function PartnerPage() {
     <>
       <section className="partner-listing-section">
         <div className="partner-listing-section-title">Ảnh bìa (Tối đa 15MB)</div>
-        {listingDraft.coverImageUrl.trim()
+        {safeListingText(listingDraft.coverImageUrl).trim()
           ? renderListingImagePreview(listingDraft.coverImageUrl, {
               label: 'Xóa ảnh bìa',
               minHeight: 168,
@@ -3513,7 +3577,7 @@ export default function PartnerPage() {
           }}
         >
           {listingDraft.galleryUrls.map((url, index) => (
-            url.trim() ? (
+            safeListingText(url).trim() ? (
               <div key={`${url}-${index}`}>
                 {renderListingImagePreview(url, {
                   label: `Xóa ảnh album ${index + 1}`,
@@ -3575,7 +3639,7 @@ export default function PartnerPage() {
         <div className="partner-listing-section-title">Video quán</div>
         <div style={{ display: 'grid', gap: '10px' }}>
           {listingDraft.videoUrls.map((url, index) => (
-            url.trim() ? (
+            safeListingText(url).trim() ? (
               <div key={`${url}-${index}`}>
                 {renderListingVideoPreview(url, index, () => removeVideoUrl(index))}
                 {listingErrorText(`videoUrls.${index}`)}
@@ -3641,7 +3705,7 @@ export default function PartnerPage() {
             }}
           >
             {listingDraft.mediaUrls.map((url, index) => (
-              url.trim() ? (
+              safeListingText(url).trim() ? (
                 <div key={`${url}-${index}`}>
                   {isListingVideoUrl(url)
                     ? renderListingVideoPreview(url, index, () => removeMediaUrl(index))
