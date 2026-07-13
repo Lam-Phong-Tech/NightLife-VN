@@ -286,6 +286,18 @@ jobs:
               [ "$users_count" -gt 0 ] 2>/dev/null && [ "$stores_count" -gt 0 ] 2>/dev/null
             }
 
+            nightlife_counts_empty() {
+              counts="$1"
+              old_ifs="$IFS"
+              IFS=","
+              set -- $counts
+              IFS="$old_ifs"
+              users_count="${1:-missing}"
+              stores_count="${2:-missing}"
+              areas_count="${3:-missing}"
+              [ "$users_count" = "0" ] && [ "$stores_count" = "0" ] && [ "$areas_count" = "0" ]
+            }
+
             baseline_legacy_migrations_if_schema_matches() {
               pg_db_url="$(database_url_for_pg_tools "$DATABASE_URL")"
               migration_table_exists="$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;" "$pg_db_url" 2>/dev/null || echo f)"
@@ -383,6 +395,8 @@ jobs:
             DATABASE_REPOINTED_FROM="$(extract_database_name_from_url "$DATABASE_URL")"
             DATABASE_REPOINTED_TO="$DATABASE_REPOINTED_FROM"
             DATABASE_REPOINT_BACKUP="none"
+            DATABASE_BOOTSTRAP_APPLIED="false"
+            DATABASE_BOOTSTRAP_REASON="not_needed"
             DEMO_UAT_DATABASE_NAME="${DEMO_UAT_DATABASE_NAME:-backend_db}"
             DATABASE_DATA_COUNTS="$(nightlife_table_counts "$DATABASE_URL" || true)"
             MIGRATION_BASELINE_APPLIED="false"
@@ -409,6 +423,10 @@ jobs:
                 DATABASE_DATA_COUNTS="$CANDIDATE_COUNTS"
                 echo "Repointed demo/UAT DATABASE_URL from db=$DATABASE_REPOINTED_FROM to db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
                 echo "Previous .env backup: $BACKEND_DIR/$DATABASE_REPOINT_BACKUP"
+              elif [ "$DATABASE_REPOINTED_FROM" = "$DEMO_UAT_DATABASE_NAME" ] && nightlife_counts_empty "$DATABASE_DATA_COUNTS"; then
+                DATABASE_BOOTSTRAP_APPLIED="pending"
+                DATABASE_BOOTSTRAP_REASON="empty_default_demo_uat_database"
+                echo "::warning::Current demo/UAT database $DATABASE_REPOINTED_FROM is empty. Continuing with guarded migrate + seed bootstrap."
               else
                 echo "::error::Cannot safely repoint demo/UAT database. Current db=$DATABASE_REPOINTED_FROM counts(users,stores,areas)=${DATABASE_DATA_COUNTS:-unavailable}; candidate db=$DEMO_UAT_DATABASE_NAME counts(users,stores,areas)=${CANDIDATE_COUNTS:-unavailable}. Refusing to create or deploy against an empty database."
                 exit 1
@@ -454,6 +472,17 @@ jobs:
 
             baseline_legacy_migrations_if_schema_matches
             pnpm exec prisma migrate deploy
+            if [ "$DATABASE_BOOTSTRAP_APPLIED" = "pending" ]; then
+              pnpm install --no-frozen-lockfile --prod=false || pnpm install --prod=false
+              pnpm run seed
+              DATABASE_DATA_COUNTS="$(nightlife_table_counts "$DATABASE_URL" || true)"
+              if ! nightlife_counts_ready "$DATABASE_DATA_COUNTS"; then
+                echo "::error::Demo/UAT database seed bootstrap did not create required data. Counts(users,stores,areas)=${DATABASE_DATA_COUNTS:-unavailable}"
+                exit 1
+              fi
+              DATABASE_BOOTSTRAP_APPLIED="true"
+              echo "Demo/UAT seed bootstrap completed: db=$DATABASE_REPOINTED_TO counts(users,stores,areas)=$DATABASE_DATA_COUNTS"
+            fi
             export PORT="$BACKEND_PORT"
             pm2 restart "$BACKEND_PM2_NAME" --update-env 2>/dev/null || pm2 start dist/src/main.js --name "$BACKEND_PM2_NAME" --update-env
             pm2 save
@@ -493,6 +522,8 @@ jobs:
               echo "database_repointed_to=$DATABASE_REPOINTED_TO"
               echo "database_repoint_env_backup=$DATABASE_REPOINT_BACKUP"
               echo "database_data_counts_users_stores_areas=$DATABASE_DATA_COUNTS"
+              echo "database_bootstrap_applied=$DATABASE_BOOTSTRAP_APPLIED"
+              echo "database_bootstrap_reason=$DATABASE_BOOTSTRAP_REASON"
               echo "migration_baseline_applied=$MIGRATION_BASELINE_APPLIED"
               echo "migration_baseline_reason=$MIGRATION_BASELINE_REASON"
               echo "migration_baseline_marked=$MIGRATION_BASELINE_MARKED"
