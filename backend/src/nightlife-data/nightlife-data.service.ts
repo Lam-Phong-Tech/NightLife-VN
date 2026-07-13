@@ -219,6 +219,7 @@ type BookingCancelTarget = {
 
 type BookingNotificationRecord = {
   id: string;
+  bookingCode?: string | null;
   storeId?: string | null;
   status: string;
   scheduledAt?: Date | string | null;
@@ -3329,7 +3330,7 @@ export class NightlifeDataService {
       select: this.bookingNotificationSelect(),
     });
     const booking = bookings.find((item) =>
-      this.bookingMatchesLookupCode(item.id, lookupCode),
+      this.bookingMatchesLookupCode(item.id, lookupCode, item.bookingCode),
     );
 
     if (!booking) {
@@ -4014,7 +4015,7 @@ export class NightlifeDataService {
       select,
     });
     const booking = candidates.find((item) =>
-      this.bookingMatchesLookupCode(item.id, lookupCode),
+      this.bookingMatchesLookupCode(item.id, lookupCode, item.bookingCode),
     );
 
     if (!booking) {
@@ -9887,7 +9888,7 @@ export class NightlifeDataService {
 
       const bookingCode = this.generateBookingCode();
 
-      return prisma.booking.create({
+      const booking = await prisma.booking.create({
         data: {
           bookingCode,
           userId: input.userId,
@@ -9907,6 +9908,11 @@ export class NightlifeDataService {
         },
         select: this.bookingNotificationSelect(),
       });
+
+      return {
+        ...booking,
+        bookingCode: booking.bookingCode ?? bookingCode,
+      };
     });
   }
 
@@ -10709,6 +10715,7 @@ export class NightlifeDataService {
         templateKey,
         payload: {
           bookingId: booking.id,
+          bookingCode: booking.bookingCode,
           status: booking.status,
           ...payload,
         },
@@ -11264,6 +11271,7 @@ export class NightlifeDataService {
   private bookingNotificationSelect() {
     return {
       id: true,
+      bookingCode: true,
       storeId: true,
       castId: true,
       status: true,
@@ -11329,6 +11337,7 @@ export class NightlifeDataService {
   private partnerBookingQrSelect() {
     return {
       id: true,
+      bookingCode: true,
       storeId: true,
       userId: true,
       guestId: true,
@@ -11784,6 +11793,7 @@ export class NightlifeDataService {
         templateKey,
         payload: {
           bookingId: booking.id,
+          bookingCode: booking.bookingCode,
           status: booking.status,
           reason: options.reason ?? null,
           actorType: options.actorType,
@@ -14924,18 +14934,30 @@ export class NightlifeDataService {
       .replace(/^#?BK[-_]?/i, '')
       .toLowerCase();
 
-    if (!/^[a-f0-9-]{8,36}$/.test(token)) {
+    if (!/^[a-z0-9-]{4,36}$/.test(token)) {
       throw new BadRequestException('bookingCode must be a valid booking code');
     }
 
     return token;
   }
 
-  private bookingMatchesLookupCode(bookingId: string, lookupCode: string) {
+  private bookingMatchesLookupCode(
+    bookingId: string,
+    lookupCode: string,
+    bookingCode?: string | null,
+  ) {
     const compactBookingId = bookingId.toLowerCase().replace(/-/g, '');
+    const compactBookingCode = this.cleanText(bookingCode)
+      .replace(/^#?BK[-_]?/i, '')
+      .toLowerCase()
+      .replace(/-/g, '');
     const compactLookup = lookupCode.toLowerCase().replace(/-/g, '');
 
-    return compactBookingId.startsWith(compactLookup);
+    return (
+      compactBookingId.startsWith(compactLookup) ||
+      (Boolean(compactBookingCode) &&
+        compactBookingCode.startsWith(compactLookup))
+    );
   }
 
   private bookingActorTypeFor(user: AuthenticatedUser): BookingStatusActorType {
