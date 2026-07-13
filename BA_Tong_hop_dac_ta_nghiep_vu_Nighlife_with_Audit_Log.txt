@@ -1,0 +1,2713 @@
+NightLife Vietnam - Đặc tả nghiệp vụ v3.3	Phiên bản v3.3
+
+[ LOGO CÔNG TY / ĐƠN VỊ ]
+
+TÀI LIỆU ĐẶC TẢ NGHIỆP VỤ
+
+NIGHTLIFE VIETNAM
+
+Tổng hợp tính năng & Phân chia Phase
+
+Bản cập nhật v3.3 - bổ sung Audit Log Admin CMS / Ranking
+
+TÀI LIỆU NỘI BỘ - CONFIDENTIAL
+
+Đơn vị thực hiện
+
+BA Support / Product Team
+
+Người lập
+
+Business Analyst
+
+Ngày lập
+
+13/07/2026
+
+Phiên bản
+
+v3.3
+
+Trạng thái
+
+Ready for Review - đã bổ sung Audit Log
+
+
+
+
+THÔNG TIN TÀI LIỆU
+
+Hạng mục
+
+Nội dung
+
+Tên tài liệu
+
+[BA] Tổng hợp đặc tả nghiệp vụ NightLife - bản có Audit Log
+
+Nguồn cập nhật
+
+Tài liệu gốc v3.2: Tổng hợp tính năng & Phân chia Phase, cập nhật Flow Booking kèm QR ưu đãi & quy tắc gửi bill.
+
+Phiên bản hiện tại
+
+v3.3 - bổ sung Audit Log Admin CMS, đặc biệt cho Ranking - Cast và Ranking - Quán.
+
+Phạm vi cập nhật
+
+Thêm RAN-09, ADM-14, entity Audit Log, dữ liệu tối thiểu, UI, phân quyền, acceptance criteria, test case và risk/gap/question liên quan audit.
+
+Đối tượng sử dụng
+
+Khách hàng, PM/Lead, BA, UI/UX, Dev, QA, Admin vận hành.
+
+Bảng 1: Thông tin tài liệu
+
+LỊCH SỬ THAY ĐỔI
+
+Phiên bản
+
+Ngày
+
+Người cập nhật
+
+Nội dung thay đổi
+
+v3.2
+
+02/07/2026
+
+BA/Product
+
+Gộp Booking + QR ưu đãi; cập nhật rule bill Member/VIP/Partner.
+
+v3.3
+
+13/07/2026
+
+BA Support
+
+Bổ sung Audit Log cho Admin CMS, Ranking, dữ liệu log, UI, phân quyền, AC và test case.
+
+Bảng 2: Lịch sử thay đổi tài liệu
+
+TÓM TẮT NỘI DUNG BỔ SUNG
+
+Tài liệu gốc chưa có Audit Log tổng quát cho thao tác Admin CMS. Bản v3.3 bổ sung lớp truy vết để biết tài khoản nào thao tác, role gì, thời điểm nào, tác động vào đối tượng nào, nội dung trước/sau thay đổi ra sao. Phần Ranking được bổ sung riêng vì MVP vận hành ranking thủ công và có rủi ro tranh chấp quảng cáo/VIP.
+
+
+
+MỤC LỤC
+
+Mục lục sẽ được cập nhật khi mở file trong Word: Ctrl+A rồi F9.
+
+Ghi chú: Mục lục là trường tự động. Khi mở file bằng Microsoft Word, bấm Ctrl+A rồi F9 để cập nhật số trang.
+
+
+
+
+1. BASELINE & MÔ HÌNH NGHIỆP VỤ
+
+NightLife là sàn trung gian/phễu dẫn khách, không phải hệ thống vận hành đặt bàn nội bộ. Hệ thống không quản lý order, không POS, không thanh toán online và không cho đặt món/lên đơn trên web. Menu/bảng giá chỉ để tham khảo.
+
+Luồng nghiệp vụ lõi: Khách xem quán/cast -> bấm Booking/CTA -> nhập form hoặc đăng nhập để autofill -> hệ thống tạo booking và sinh QR ưu đãi gắn booking -> hiển thị QR và gửi email cho Guest -> gửi Telegram cho Admin -> Admin điều phối offline với quán -> khách đến quán -> Partner scan/xác nhận QR -> bill được gửi bởi Member/VIP hoặc Partner nếu có -> Admin duyệt bill để ghi nhận doanh thu, hoa hồng và điểm.
+
+1.1. Phạm vi dịch vụ
+
+Dịch vụ lõi: Bar, Club, Lounge, Karaoke/KTV, Girls bar.
+
+Dịch vụ phễu: nhà hàng, quán ăn, massage, khách sạn, casino - chỉ hiển thị thông tin/menu/thông tin ưu đãi, nghiệp vụ nhẹ hơn.
+
+MVP tập trung HN và HCM, kèm tab Tổng hợp; Đà Nẵng và Hải Phòng không thuộc MVP.
+
+MVP ưu tiên tích điểm cho nhóm nightlife chính.
+
+1.2. Hạng khách v1 và mức giảm
+
+Hạng khách
+
+Điều kiện xác định
+
+Mức giảm
+
+Thời hạn QR/booking
+
+Guest / khách vãng lai
+
+Không đăng nhập, nhập form booking bằng email
+
+5%
+
+24 giờ từ ngày/giờ khách đặt đến quán
+
+Member
+
+Khách đăng nhập bằng tài khoản thường
+
+8%
+
+7 ngày từ ngày/giờ khách đặt đến quán
+
+VIP
+
+Khách đăng nhập bằng tài khoản VIP
+
+10%
+
+7 ngày từ ngày/giờ khách đặt đến quán
+
+Bảng 3: Hạng khách và mức giảm
+
+Mức giảm được snapshot tại thời điểm tạo booking và không tự động thay đổi nếu hạng khách thay đổi sau đó. Snapshot này dùng để đối soát bill, doanh thu, hoa hồng và điểm.
+
+2. QUY ƯỚC TRẠNG THÁI XÁC NHẬN & PHASE
+
+Hạng mục
+
+Nội dung
+
+Đã chốt
+
+Khách đã xác nhận; sẵn sàng đưa vào phase & viết user story chi tiết.
+
+Phase sau
+
+Có giá trị nhưng đồng ý để Phase 2/3, không bắt buộc cho MVP.
+
+Backlog
+
+Hạng mục chỉ xem xét lại nếu khách xác nhận bổ sung; không thuộc MVP/P1.
+
+Blocker
+
+0 blocker nghiệp vụ lớn sau cập nhật Flow Booking kèm QR.
+
+Bảng 4: Quy ước trạng thái xác nhận
+
+2.1. Quy ước Phase
+
+P0 - MVP bắt buộc: public site HN/HCM/Tổng hợp, tìm kiếm, chi tiết quán/cast, booking kèm QR ưu đãi, bill manual + Admin duyệt, ghi nhận điểm cơ bản, CMS cơ bản, tài khoản đối tác tối giản, thông báo qua Telegram/email, Audit Log các thao tác nhạy cảm.
+
+P1 - Tự động hóa & tối ưu: partner tự đăng thông tin, dashboard partner, quản lý đối tác + chat 1-1, paid ranking, chat khách realtime, báo cáo chi tiết, export audit, diff viewer, batch log nâng cao.
+
+P2 - Mở rộng: tour, video/SNS nâng cao, đa ngôn ngữ đầy đủ, BI dashboard, Bill Reversal tự động, audit archive/search nâng cao.
+
+3. TÍNH NĂNG THEO NHÓM CHỨC NĂNG
+
+Các nhóm tính năng dưới đây kế thừa bản v3.2 và bổ sung các hạng mục audit log cần thiết cho vận hành Admin CMS. Những dòng “Bổ sung” là nội dung mới đề xuất trong bản v3.3.
+
+3.A Public Website & Navigation
+
+Mặt tiền hệ thống: khách tìm địa điểm, xem nhanh thông tin và chuyển sang booking kèm QR ưu đãi.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+WEB-01
+
+Header/nav, menu danh mục, login/register, chọn ngôn ngữ
+
+P0
+
+Đã chốt
+
+Ưu tiên tiếng Nhật.
+
+WEB-02
+
+Hero slider/banner: sự kiện hot, quán nổi bật, cast mới
+
+P0
+
+Đã chốt
+
+Admin quản lý trong CMS.
+
+WEB-03
+
+Quick access grid: tìm quán, ưu đãi, album ảnh, tìm cast, sự kiện, blog
+
+P0
+
+Đã chốt
+
+CTA ưu đãi/booking dẫn về cùng form Booking kèm QR.
+
+WEB-04
+
+Video/SNS section trên trang chủ
+
+P2
+
+Phase sau
+
+Trang chủ phase sau; video tại Store Detail & Cast Profile vẫn P0.
+
+WEB-05
+
+New updates: quán/cast mới cập nhật
+
+P0
+
+Đã chốt
+
+Dùng publish date từ CMS.
+
+WEB-06
+
+Blog nổi bật + footer
+
+P0
+
+Đã chốt
+
+Liên quan SEO/legal.
+
+WEB-07
+
+Trang chủ mobile: cấu trúc rõ, ưu tiên ranking + CTA nhanh
+
+P0
+
+Đã chốt
+
+CTA Booking/ưu đãi thống nhất về một flow.
+
+Bảng 5: 3.A Public Website & Navigation
+
+3.B Search, Filter & Discovery
+
+Giúp khách tìm đúng địa điểm/cast theo nhu cầu, khu vực, loại hình.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+SEA-01
+
+Tìm nhanh theo tên quán / tên cast
+
+P0
+
+Đã chốt
+
+Thanh tìm Shop/Cast.
+
+SEA-02
+
+Tìm theo địa điểm gần nhất + khu vực thành phố
+
+P0
+
+Đã chốt
+
+Chỉ HN/HCM ở MVP; ĐN/HP không thuộc phạm vi.
+
+SEA-03
+
+Lọc theo loại hình: Bar, Club, Lounge, Girls bar, Karaoke, Massage/Spa, Nhà hàng, Casino
+
+P0
+
+Đã chốt
+
+Taxonomy cuối: 8 loại, tách riêng Club/Lounge/Girls bar.
+
+SEA-04
+
+Lọc theo ưu đãi/rating/lượt thích/view
+
+P1
+
+Đã chốt
+
+Mở khi có đủ dữ liệu thật ở P1.
+
+SEA-05
+
+Gợi ý địa điểm liên quan dưới trang chi tiết
+
+P0/P1
+
+Đã chốt
+
+P0 chọn thủ công bởi Admin; P1 tự động theo tag/khu vực.
+
+Bảng 6: 3.B Search, Filter & Discovery
+
+3.C Ranking Page & Ranking Control
+
+Giai đoạn đầu manual ranking; đây là nhóm cần audit vì Admin tự điều chỉnh thứ tự Cast/Quán.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+RAN-01
+
+Trang xếp hạng có tab khu vực HN, HCM, Tổng hợp
+
+P0
+
+Đã chốt
+
+Top 1-5 mỗi khu vực.
+
+RAN-02
+
+Lọc ranking theo danh mục
+
+P0
+
+Đã chốt
+
+Top Karaoke/Bar/Massage/Quán ăn.
+
+RAN-03
+
+Ranking card: ảnh, tên quán, khu vực, nút xem chi tiết/gọi ngay
+
+P0
+
+Đã chốt
+
+Chuyển đổi nhanh.
+
+RAN-04
+
+Chỉ số stars/hearts/views trong tháng
+
+P1
+
+Đã chốt
+
+P0 hiển thị thủ công; P1 đếm tự động.
+
+RAN-05
+
+Admin điều hướng ranking thủ công
+
+P0
+
+Đã chốt
+
+Manual ranking cho MVP.
+
+RAN-07
+
+Ranking giai đoạn đầu 100% thủ công; quán trả tiền tài trợ/quảng cáo có thể lên Top
+
+P0
+
+Đã chốt
+
+Không phụ thuộc thuật toán view/like/rating.
+
+RAN-08
+
+Ưu tiên thứ tự xếp hạng: Cast trước, rồi đến Quán
+
+P0
+
+Đã chốt
+
+Theo bản chốt 21/06/2026.
+
+RAN-09
+
+Audit Log cho thao tác thay đổi Ranking
+
+P0
+
+Bổ sung
+
+Ghi nhận tài khoản, role, thời điểm, Ranking - Cast/Quán, nội dung thay đổi, before/after và thời gian cập nhật gần nhất; UI hiển thị relative time.
+
+Bảng 7: 3.C Ranking Page & Ranking Control
+
+3.D Store Detail - Trang chi tiết địa điểm
+
+Trang chuyển đổi chính. Bảng giá/menu chỉ để tham khảo, không lên đơn trên web.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+STO-01
+
+Sidebar nhanh: logo/avatar, tên quán, SĐT click-to-call
+
+P0
+
+Đã chốt
+
+Theo ghi chú ảnh.
+
+STO-02
+
+Giờ mở/đóng cửa, ngày nghỉ lễ/định kỳ
+
+P0
+
+Đã chốt
+
+Admin nhập CMS.
+
+STO-03
+
+Địa chỉ + link Google Maps chỉ đường
+
+P0
+
+Đã chốt
+
+Quan trọng để khách tới quán.
+
+STO-04
+
+Đặc điểm nhân sự: tỷ lệ quốc tịch, khả năng ngôn ngữ
+
+P0
+
+Đã chốt
+
+Rất quan trọng với khách Nhật.
+
+STO-05
+
+Cast grid -> click sang profile cast
+
+P0
+
+Đã chốt
+
+Cast active/public thuộc quán có thể được chọn là cast mong muốn trong booking.
+
+STO-06
+
+Favorite quán/cast tại trang địa điểm
+
+P1
+
+Đã chốt
+
+Liên kết membership.
+
+STO-07
+
+Bảng giá - chỉ hiển thị
+
+P0
+
+Đã chốt
+
+P0 cơ bản; tách chi tiết P1.
+
+STO-08
+
+Campaign/discount: banner ưu đãi, thời gian áp dụng, first-time offer
+
+P0
+
+Đã chốt
+
+CTA ưu đãi dẫn về Booking kèm QR; không tách flow coupon độc lập.
+
+STO-09
+
+Booking trên trang quán -> tạo booking kèm QR -> gửi Admin điều phối
+
+P0
+
+Đã chốt
+
+Không gửi thẳng quán ở MVP; sau booking thành công hệ thống sinh QR.
+
+STO-10
+
+Gợi ý quán liên quan bên dưới
+
+P0/P1
+
+Đã chốt
+
+P0 chọn thủ công; P1 tự động.
+
+STO-11
+
+Album ảnh và video tại trang chi tiết quán
+
+P0
+
+Đã chốt
+
+Cho phép gắn link hoặc tải video lên.
+
+Bảng 8: 3.D Store Detail - Trang chi tiết địa điểm
+
+3.E Cast / Staff Profile - Trang chi tiết nhân viên
+
+Cast chỉ là thông tin mong muốn/tham chiếu trong booking, không giữ lịch.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+CAS-01
+
+Ảnh đại diện lớn, chất lượng cao
+
+P0
+
+Đã chốt
+
+Theo ghi chú ảnh.
+
+CAS-02
+
+Breadcrumbs: Trang chủ > Tìm quán > Quán > Nhân viên
+
+P0
+
+Đã chốt
+
+
+
+CAS-03
+
+Like/Favorite cast
+
+P1
+
+Đã chốt
+
+Phục vụ membership.
+
+CAS-04
+
+Ảnh/video tại trang Cast, KHÔNG hiển thị lịch trống
+
+P0
+
+Đã chốt
+
+Video & album ảnh được phép gắn link hoặc tải lên.
+
+CAS-05
+
+Booking từ profile cast -> dùng chung form booking, tự gắn cast_id
+
+P0
+
+Đã chốt
+
+Không giữ lịch cast; chỉ là mong muốn/tham chiếu để Admin điều phối offline.
+
+CAS-06
+
+Bio data & public fields: nickname, avatar/album, video, tháng sinh & cung HĐ, chiều cao, số đo nếu có, sở thích, tags, ngôn ngữ
+
+P0
+
+Đã chốt
+
+Không hiển thị ngày/năm sinh cụ thể.
+
+CAS-07
+
+Tags/keywords: độ tuổi, phong cách, ngôn ngữ, ngoại hình
+
+P0
+
+Đã chốt
+
+Phục vụ tìm kiếm/lọc.
+
+CAS-08
+
+Personal message/greeting
+
+P1
+
+Đã chốt
+
+Có kiểm duyệt nội dung trước khi public.
+
+CAS-09
+
+Gallery đa góc + lightbox/swipe mobile
+
+P0
+
+Đã chốt
+
+P0 cơ bản; nâng cao P1.
+
+CAS-10
+
+Sidebar liên kết ngược về quán chủ quản
+
+P0
+
+Đã chốt
+
+Để khách lấy địa chỉ/SĐT quán.
+
+CAS-11
+
+Admin kiểm duyệt dữ liệu cast trước khi public
+
+P0
+
+Đã chốt
+
+Admin kiểm duyệt dữ liệu được phép hiển thị.
+
+Bảng 9: 3.E Cast / Staff Profile - Trang chi tiết nhân viên
+
+3.F Booking & Notification
+
+Luồng chuyển đổi chính của MVP là Booking kèm QR ưu đãi. Không thanh toán online.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+BOO-01
+
+Khách bấm Booking/CTA từ trang quán hoặc trang cast
+
+P0
+
+Đã chốt
+
+Tất cả CTA liên quan ưu đãi/đặt bàn dẫn về cùng form booking.
+
+BOO-02
+
+Form booking cho Guest và khách đăng nhập
+
+P0
+
+Đã chốt
+
+Guest nhập email bắt buộc; Member/VIP autofill từ hồ sơ tài khoản.
+
+BOO-03
+
+Form tối thiểu: tên khách, email, quán, ngày đến, giờ đến, số người, cast mong muốn nếu có và ghi chú
+
+P0
+
+Đã chốt
+
+Số người bắt buộc, min 1, max 20.
+
+BOO-03B
+
+Booking theo cast không giữ lịch cast
+
+P0
+
+Đã chốt
+
+Không kiểm tra lịch trống, không khóa lịch, không cam kết cast khả dụng.
+
+BOO-03C
+
+Chọn cast mong muốn theo quán
+
+P0
+
+Đã chốt
+
+Booking từ cast profile tự gắn cast_id; booking từ quán cho chọn cast active/public.
+
+BOO-04
+
+Sau submit thành công, tạo booking trạng thái Mới và sinh QR ưu đãi
+
+P0
+
+Đã chốt
+
+QR hiển thị ngay trên màn hình thành công; Guest nhận email chứa booking và QR.
+
+BOO-05
+
+Gửi Telegram Admin khi có booking mới
+
+P0
+
+Đã chốt
+
+Gồm mã booking, khách, email, loại khách, mức giảm, quán, ngày/giờ, số người, cast, ghi chú, trạng thái và QR.
+
+BOO-06
+
+3 trạng thái booking: Mới / Đã hủy / Hoàn tất
+
+P0
+
+Đã chốt
+
+Hoàn tất khi khách đã đến và được xác nhận qua QR hoặc Admin.
+
+BOO-08A
+
+Hủy booking trước giờ hẹn tối thiểu 01 giờ
+
+P0
+
+Đã chốt
+
+Khi hủy, QR đi kèm bị vô hiệu và không dùng lại.
+
+BOO-08B
+
+Không sửa trực tiếp booking cũ
+
+P0
+
+Đã chốt
+
+Đổi giờ/số người/quán/cast thì hủy và đặt lại hoặc liên hệ hỗ trợ.
+
+BOO-08C
+
+Kênh hỗ trợ hủy/đổi booking
+
+P0
+
+Đã chốt
+
+Khách Nhật ưu tiên LINE OA; fallback Mail; nội bộ vẫn dùng Telegram.
+
+BOO-09
+
+Liên kết Booking - QR - Bill
+
+P0
+
+Đã chốt
+
+Phục vụ đối soát doanh thu, hoa hồng, điểm.
+
+Bảng 10: 3.F Booking & Notification
+
+3.G Membership, Point, Booking QR
+
+QR là mã ưu đãi sinh từ booking, dùng một lần, phục vụ check-in/áp ưu đãi và đối soát bill.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+MEM-01
+
+Đăng ký / đăng nhập thành viên
+
+P0
+
+Đã chốt
+
+Member/VIP dùng tài khoản để autofill và lưu lịch sử booking/QR.
+
+MEM-02
+
+Hạng khách v1: Guest / Member / VIP
+
+P0
+
+Đã chốt
+
+Guest 5%, Member 8%, VIP 10%; mức giảm snapshot tại thời điểm tạo booking.
+
+MEM-03
+
+Booking QR: mã, ảnh QR, booking_id, store_id, customer_type, discount_snapshot, hạn dùng, trạng thái
+
+P0
+
+Đã chốt
+
+QR không tách khỏi booking.
+
+MEM-04
+
+QR dùng một lần cho mỗi booking
+
+P0
+
+Đã chốt
+
+Sau Partner scan/xác nhận thành công, QR chuyển Đã sử dụng.
+
+MEM-04B
+
+Trạng thái QR: Còn hiệu lực / Đã sử dụng / Hết hạn / Vô hiệu
+
+P0
+
+Đã chốt
+
+Đã sử dụng = redeemed; Hết hạn = quá hạn chưa dùng; Vô hiệu = booking bị hủy.
+
+MEM-04C
+
+Hạn QR/booking tính từ ngày giờ khách đặt đến quán
+
+P0
+
+Đã chốt
+
+Guest 24h; Member/VIP 7 ngày; không tính từ thời điểm tạo booking.
+
+MEM-04D
+
+Email nhắc trước hết hạn 6 giờ và email hủy khi quá hạn
+
+P0
+
+Đã chốt
+
+Chỉ gửi nếu booking vẫn Mới và QR chưa dùng/chưa hoàn tất.
+
+MEM-05A
+
+QR dùng để khách nhận ưu đãi/check-in tại quán
+
+P0
+
+Đã chốt
+
+Partner Staff scan/xác nhận qua tài khoản Partner.
+
+MEM-05B
+
+Redeem/scan/validate QR
+
+P0
+
+Đã chốt
+
+Kiểm tra QR tồn tại, đúng booking, đúng quán, còn hiệu lực, chưa dùng, booking chưa hủy.
+
+MEM-06
+
+Lịch sử QR đã dùng
+
+P0
+
+Đã chốt
+
+Lưu ngày giờ scan, quán, booking, bill nếu có, giá trị giảm, người scan/xác nhận.
+
+MEM-07
+
+Ghi nhận điểm sau khi Admin duyệt bill
+
+P0
+
+Đã chốt
+
+Chỉ phát sinh điểm sau khi có bill được duyệt.
+
+MEM-07B
+
+Điểm có thời hạn 1 năm
+
+P0
+
+Đã chốt
+
+Quá hạn tự hủy; có log để Admin tra cứu.
+
+MEM-07C
+
+Hủy/hoàn bill -> đảo điểm
+
+P1/P2
+
+Đã chốt
+
+MVP xử lý ngoài hệ thống; P1 chỉnh điểm thủ công; P2 tự động.
+
+MEM-10
+
+Thông báo chương trình/đổi thưởng qua LINE/Mail
+
+P1
+
+Đã chốt
+
+P0 ưu tiên Admin notification và email nghiệp vụ booking/QR.
+
+Bảng 11: 3.G Membership, Point, Booking QR
+
+3.H Bill, Revenue & Commission
+
+Bill là bằng chứng khách đã dùng dịch vụ, dùng để đối soát doanh thu, hoa hồng và điểm.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+BIL-01
+
+Member/VIP hoặc chủ quán/Partner gửi hóa đơn; Guest không gửi bill trong MVP
+
+P0
+
+Đã chốt
+
+Bill phía khách yêu cầu đăng nhập Member/VIP; không triển khai POST /guest/bills.
+
+BIL-02
+
+Bill tối thiểu: tên quán, số tiền, thời gian, liên kết Booking/QR nếu có, địa điểm/cơ sở nếu có, ảnh nếu có
+
+P0
+
+Đã chốt
+
+Bắt buộc: quán + số tiền + thời gian; ưu tiên link bookingCode/QR.
+
+BIL-02B
+
+Bill chỉ ghi nhận tổng tiền, không nhập chi tiết từng món/dịch vụ
+
+P0
+
+Đã chốt
+
+
+
+BIL-02C
+
+Thời hạn gửi hóa đơn: trong vòng 10 ngày kể từ ngày khách dùng dịch vụ
+
+P0
+
+Đã chốt
+
+Quá hạn không nhận.
+
+BIL-03
+
+Bill ở trạng thái Pending Admin Approval trước khi ghi nhận
+
+P0
+
+Đã chốt
+
+
+
+BIL-04
+
+Admin duyệt/từ chối bill thủ công bằng mắt; từ chối có lý do
+
+P0
+
+Đã chốt
+
+Luồng từ chối có lý do đã chốt.
+
+BIL-05
+
+Sau duyệt: ghi nhận doanh thu, hoa hồng, điểm nếu đủ điều kiện, gửi Telegram
+
+P0
+
+Đã chốt
+
+Không có bill được duyệt thì không phát sinh điểm/doanh thu/hoa hồng.
+
+BIL-06
+
+Báo cáo doanh thu theo ngày/tháng/năm, quán, bill; tách doanh thu gộp/thuần/hoa hồng/giảm giá
+
+P0
+
+Đã chốt
+
+Tính theo ngày khách sử dụng dịch vụ.
+
+BIL-06B
+
+Xuất báo cáo ra Excel/PDF
+
+P2
+
+Đã chốt
+
+Sau MVP.
+
+BIL-09
+
+Commission cấu hình theo từng quán/thỏa thuận riêng
+
+P0
+
+Đã chốt
+
+Admin nhập % cụ thể khi onboard từng quán.
+
+BIL-10
+
+Tính lợi nhuận từng bill
+
+P1
+
+Phase sau
+
+Cần giá vốn/margin.
+
+BIL-11
+
+Hủy/hoàn tiền bill -> bản ghi điều chỉnh ngược, không xóa bill gốc
+
+P2
+
+Đã chốt
+
+MVP/P1 xử lý thủ công; P2 tự động.
+
+BIL-12
+
+Thứ tự ưu tiên xem báo cáo: ngày -> quán -> mã giảm giá -> khác
+
+P0
+
+Đã chốt
+
+Ảnh hưởng cấu trúc menu báo cáo.
+
+Bảng 12: 3.H Bill, Revenue & Commission
+
+3.I Partner Registration & Approval
+
+MVP Partner Account tối giản: đăng nhập, quét QR, xác nhận khách đến quán.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+PAR-01
+
+Form Join Us cho đối tác gửi thông tin
+
+P0
+
+Đã chốt
+
+Gửi CMS + Telegram/Zalo.
+
+PAR-02
+
+Admin duyệt đối tác trước khi hiển thị public
+
+P0
+
+Đã chốt
+
+
+
+PAR-03
+
+Admin tự nhập thông tin quán lấy từ đối tác
+
+P0
+
+Đã chốt
+
+Luồng chính ở MVP.
+
+PAR-04
+
+Đối tác có tài khoản riêng: đăng nhập, quét QR, xác nhận khách đến quán
+
+P0
+
+Đã chốt
+
+3 quyền lõi ở MVP; áp dụng cho Booking QR.
+
+PAR-04B
+
+Đối tác đăng thông tin quán, thực đơn/bảng giá, hình ảnh, video, cast
+
+P1
+
+Đã chốt
+
+Tất cả qua Admin duyệt trước khi public.
+
+PAR-05
+
+Chuyển form Join Us -> bài đăng chính thức 1 click
+
+P1
+
+Đã chốt
+
+Mapping form -> store profile.
+
+PAR-06
+
+Thông báo khi có yêu cầu hợp tác mới
+
+P0
+
+Đã chốt
+
+
+
+PAR-07
+
+Không yêu cầu giấy phép kinh doanh
+
+P0
+
+Đã chốt
+
+Nên xác nhận trách nhiệm bằng văn bản.
+
+PAR-08
+
+Đối tác xem dữ liệu tổng hợp tối thiểu của riêng quán họ
+
+P1
+
+Đã chốt
+
+Dashboard partner tối thiểu P1.
+
+Bảng 13: 3.I Partner Registration & Approval
+
+3.J Admin CMS & Dashboard
+
+Quản lý tập trung dữ liệu website và bổ sung Audit Log để truy vết thao tác vận hành.
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+ADM-01
+
+Dashboard: số quán, cast, bài viết, booking, bill, alert
+
+P0
+
+Đã chốt
+
+P0 thống kê cơ bản; nên có số Booking QR đã cấp/đã dùng/hết hạn.
+
+ADM-02
+
+CRUD địa điểm
+
+P0
+
+Đã chốt
+
+
+
+ADM-03
+
+CRUD nhân sự/cast
+
+P0
+
+Đã chốt
+
+Cast active/public mới được chọn trong booking.
+
+ADM-04
+
+Thư viện media tập trung + tối ưu ảnh/video
+
+P0
+
+Đã chốt
+
+P0 upload; tối ưu nâng cao P1.
+
+ADM-05
+
+Quản lý bảng giá/phụ phí/thuế
+
+P0
+
+Đã chốt
+
+P0 mô tả; cấu trúc chi tiết P1.
+
+ADM-06
+
+Quản lý campaign/discount/banner
+
+P0
+
+Đã chốt
+
+Áp vào booking QR theo snapshot mức giảm/hạng khách.
+
+ADM-07
+
+Ranking control thủ công
+
+P0
+
+Đã chốt
+
+Paid ranking sang P1.
+
+ADM-08
+
+Membership & point management
+
+P1
+
+Đã chốt
+
+Điểm cơ bản vẫn ghi nhận theo bill duyệt ở P0.
+
+ADM-09
+
+Bill/revenue/commission management
+
+P0
+
+Đã chốt
+
+Bill link Booking/QR để đối soát.
+
+ADM-09B
+
+Báo cáo doanh thu gộp/thuần/hoa hồng/giảm giá
+
+P0
+
+Đã chốt
+
+Ưu tiên ngày -> quán -> mã giảm giá/QR -> khác.
+
+ADM-10
+
+Bộ lọc tìm kiếm Admin trên dữ liệu lớn
+
+P1
+
+Đã chốt
+
+Mở khi dữ liệu CMS lớn.
+
+ADM-11
+
+Internal alerts thời gian thực
+
+P0
+
+Đã chốt
+
+P0 qua Telegram; bổ sung email nghiệp vụ QR cho khách.
+
+ADM-12
+
+Phân quyền Admin / Operator / Partner
+
+P0/P1
+
+Đã chốt
+
+Admin full; Partner P0 = login + quét QR + check-in; Operator P1.
+
+ADM-13
+
+Quản lý đối tác + Chat 1-1
+
+P1
+
+Đã chốt
+
+Dùng chung tầng chat realtime với BOO-07.
+
+ADM-14
+
+Audit Log thao tác Admin CMS
+
+P0/P1
+
+Bổ sung
+
+P0 ghi log các thao tác nhạy cảm: ranking, bill, booking, QR, commission, store/cast, partner, phân quyền. P1 thêm export, diff viewer, batch log.
+
+Bảng 14: 3.J Admin CMS & Dashboard
+
+3.K Blog, Tour, SEO & Legal
+
+ID
+
+Tính năng
+
+Phase
+
+Trạng thái
+
+Ghi chú
+
+CON-01
+
+Trang blog hiển thị bài viết hệ thống
+
+P0
+
+Đã chốt
+
+Dùng SEO + quảng bá quán.
+
+CON-02
+
+Trang chi tiết blog
+
+P0
+
+Đã chốt
+
+Thumbnail, nội dung trái, liên quan/ads phải.
+
+CON-03
+
+Trang tour chi tiết
+
+P2
+
+Phase sau
+
+Không thuộc nightlife core.
+
+CON-04
+
+Chính sách bảo mật + chính sách hoạt động
+
+P0
+
+Đã chốt
+
+Nội dung legal cuối từ khách.
+
+CON-05
+
+robots.txt, sitemap / Google Console
+
+P0
+
+Đã chốt
+
+Kỹ thuật cơ bản.
+
+CON-06
+
+SEO metadata cho store/cast/blog
+
+P0
+
+Đã chốt
+
+P0 title/meta description; structured data P1.
+
+Bảng 15: Blog, Tour, SEO & Legal
+
+3.L Notification & Communication
+
+P0 dùng Telegram cho nội bộ, email nghiệp vụ cho khách vãng lai và hỗ trợ LINE OA/Mail cho khách Nhật. Các notification quan trọng cũng nên liên kết với Audit Log khi có thao tác thủ công như gửi lại email QR hoặc thông báo bill.
+
+Mã
+
+Sự kiện
+
+Kênh
+
+Nội dung tối thiểu
+
+NOT-01
+
+Booking mới
+
+Telegram Admin
+
+Mã booking, tên khách, email, loại khách, mức giảm, quán, ngày/giờ, số người, cast mong muốn, ghi chú, trạng thái booking, trạng thái QR.
+
+NOT-02
+
+Booking thành công cho Guest
+
+Email khách
+
+Thông tin booking, quán, ngày/giờ, số người, QR ưu đãi, mức giảm, rule hết hạn, hướng dẫn đưa QR cho nhân viên quán.
+
+NOT-03
+
+QR/Booking sắp hết hạn
+
+Email khách
+
+Gửi trước thời điểm hết hạn 6 giờ nếu booking vẫn Mới và QR chưa dùng.
+
+NOT-04
+
+Booking bị hủy do quá hạn
+
+Email khách
+
+Thông báo booking đã bị hủy do quá hạn, QR không còn hiệu lực, hướng dẫn đặt lại nếu cần.
+
+NOT-05
+
+Khách hủy booking
+
+Telegram Admin + Email khách
+
+Thông báo booking đã hủy, QR bị vô hiệu.
+
+NOT-06
+
+Khách cần hỗ trợ đổi/hủy
+
+LINE OA hoặc Mail fallback
+
+Điều hướng sang LINE OA của Admin; fallback Mail nếu chưa setup LINE OA.
+
+NOT-07
+
+Bill mới/pending/duyệt/từ chối từ Member/VIP hoặc Partner
+
+Telegram Admin
+
+Template cần gồm lý do từ chối nếu có; không có bill từ Guest trong MVP.
+
+NOT-08
+
+Partner request mới
+
+Telegram Admin
+
+Bao gồm nội dung partner tự đăng ở P1 khi PAR-04B làm.
+
+Bảng 16: Notification & Communication
+
+3.M Audit Log Admin CMS - BỔ SUNG v3.3
+
+Audit Log là lớp truy vết độc lập để ghi lại mọi thao tác ghi dữ liệu quan trọng của Admin, Operator, Partner và System Cron. Audit Log không thay thế trạng thái nghiệp vụ, nhưng giúp trả lời: ai thao tác, role gì, lúc nào, trên module nào, đối tượng nào, trước/sau thay đổi ra sao và kết quả thành công hay thất bại.
+
+NGUYÊN TẮC CHỐT
+
+Audit Log phải là append-only theo hướng chỉ ghi thêm, không sửa/xóa bởi Admin thông thường. Các thao tác nhạy cảm như duyệt bill, sửa commission, chỉnh ranking, hủy booking, vô hiệu QR, chỉnh điểm hoặc đổi role phải có audit bắt buộc.
+
+
+
+4. ĐẶC TẢ CHI TIẾT AUDIT LOG
+
+4.1. Audit Log khác gì Business Log?
+
+Business Log phản ánh vòng đời nghiệp vụ của từng object, ví dụ QR đã scan, bill đã duyệt, booking đã hủy. Audit Log phản ánh hành động thao tác lên hệ thống, ví dụ Admin nào duyệt bill, Partner nào scan QR, System Cron nào tự hủy booking hết hạn. Một nghiệp vụ có thể tạo nhiều audit event nếu tác động đến nhiều đối tượng.
+
+Loại log
+
+Mục đích
+
+Ví dụ
+
+Đề xuất dùng
+
+Business Log
+
+Theo dõi trạng thái nghiệp vụ của object.
+
+QR Đã sử dụng, Bill Approved, Booking Đã hủy.
+
+Hiển thị trong màn chi tiết nghiệp vụ.
+
+Audit Log
+
+Truy vết hành động của actor lên hệ thống.
+
+Admin A duyệt bill BILL-001, trước/sau amount, IP thao tác.
+
+Phục vụ đối soát, điều tra, bảo mật, tranh chấp.
+
+Bảng 17: Phân biệt Business Log và Audit Log
+
+4.2. Phạm vi action cần audit
+
+Module
+
+Action code
+
+Phase
+
+Mô tả
+
+Reason
+
+Ranking
+
+RANKING_REORDER
+
+P0
+
+Admin/Operator thay đổi thứ tự Cast/Quán trong một scope ranking.
+
+Không bắt buộc, trừ paid/sponsored ranking.
+
+Ranking
+
+RANKING_ADD_ITEM
+
+P0
+
+Thêm Cast/Quán vào danh sách Top/Ranking thủ công.
+
+Không bắt buộc.
+
+Ranking
+
+RANKING_REMOVE_ITEM
+
+P0
+
+Gỡ Cast/Quán khỏi ranking.
+
+Nên bắt buộc nếu item đang sponsored.
+
+Booking
+
+BOOKING_ADMIN_CANCEL
+
+P0
+
+Admin hủy booking.
+
+Bắt buộc.
+
+Booking
+
+BOOKING_MANUAL_COMPLETE
+
+P0
+
+Admin xác nhận hoàn tất booking thủ công.
+
+Nên bắt buộc.
+
+QR
+
+QR_SCAN_SUCCESS / QR_SCAN_FAILED
+
+P0
+
+Partner scan/xác nhận QR; log cả fail quan trọng.
+
+Không.
+
+QR
+
+QR_INVALIDATE / QR_EXPIRE_CRON
+
+P0
+
+Admin/system vô hiệu/hết hạn QR.
+
+Bắt buộc nếu Admin thao tác.
+
+Bill
+
+BILL_APPROVE / BILL_REJECT
+
+P0
+
+Admin duyệt/từ chối bill.
+
+Bắt buộc với reject.
+
+Bill
+
+BILL_AMOUNT_UPDATE
+
+P0
+
+Admin sửa số tiền/tax/discount/link booking/QR.
+
+Bắt buộc.
+
+Commission
+
+COMMISSION_UPDATE
+
+P0
+
+Admin đổi % hoa hồng quán/campaign.
+
+Bắt buộc.
+
+Point
+
+POINT_ADJUST
+
+P1
+
+Admin chỉnh điểm thủ công khi hủy/hoàn bill hoặc xử lý khiếu nại.
+
+Bắt buộc.
+
+Store/Cast
+
+STORE_UPDATE / CAST_UPDATE
+
+P0
+
+Tạo/sửa/ẩn/hiện dữ liệu public.
+
+Nên bắt buộc với publish/unpublish.
+
+Partner
+
+PARTNER_APPROVE / PARTNER_REJECT
+
+P0
+
+Duyệt/từ chối partner hoặc tạo/deactivate partner account.
+
+Bắt buộc với reject/deactivate.
+
+Admin User
+
+ADMIN_ROLE_UPDATE / ACCOUNT_LOCK
+
+P0
+
+Tạo admin, đổi role, khóa tài khoản.
+
+Bắt buộc.
+
+Notification
+
+EMAIL_RESEND / TELEGRAM_MANUAL_SEND
+
+P1
+
+Gửi lại email QR/email hủy/thông báo thủ công.
+
+Không.
+
+Bảng 18: Danh sách action audit đề xuất
+
+4.3. Data model tối thiểu cho audit_logs
+
+Field
+
+Bắt buộc
+
+Ý nghĩa
+
+audit_id
+
+Có
+
+UUID/ULID duy nhất cho từng dòng log.
+
+occurred_at
+
+Có
+
+Thời điểm thao tác phát sinh theo timezone hệ thống.
+
+actor_type
+
+Có
+
+Admin / Operator / Partner / System.
+
+actor_account_id
+
+Có
+
+ID tài khoản thực hiện thao tác hoặc system job.
+
+actor_name / actor_email
+
+Có
+
+Snapshot thông tin tài khoản tại thời điểm thao tác.
+
+actor_role
+
+Có
+
+Role/quyền hạn tại thời điểm thao tác.
+
+module
+
+Có
+
+Ranking, Booking, QR, Bill, Store, Cast, Partner, Commission, Point, Admin User...
+
+action_code
+
+Có
+
+Mã hành động: RANKING_REORDER, BILL_APPROVE, STORE_UPDATE...
+
+entity_type
+
+Có
+
+Loại đối tượng bị tác động: Store, Cast, Booking, Bill, QR, Ranking Scope...
+
+entity_id / entity_display_code
+
+Có
+
+ID kỹ thuật và mã hiển thị như BK-000123, BILL-00099.
+
+before_data
+
+Có khi update
+
+JSON dữ liệu trước khi thay đổi; có thể chỉ lưu field thay đổi.
+
+after_data
+
+Có khi update
+
+JSON dữ liệu sau khi thay đổi; có thể chỉ lưu field thay đổi.
+
+changed_fields
+
+Có khi update
+
+Danh sách field bị thay đổi.
+
+change_summary
+
+Có
+
+Nội dung thay đổi/cập nhật ở dạng dễ đọc cho Admin.
+
+reason
+
+Bắt buộc với action nhạy cảm
+
+Lý do hủy/từ chối/chỉnh tiền/chỉnh điểm/đổi commission.
+
+result
+
+Có
+
+Success / Failed; log cả thao tác thất bại quan trọng.
+
+ip_address / user_agent
+
+Nên có
+
+Phục vụ bảo mật và điều tra sự cố.
+
+request_id / correlation_id
+
+Nên có
+
+Trace API request và gom event trong cùng flow.
+
+batch_id
+
+Không
+
+Dùng khi thao tác hàng loạt hoặc drag/drop làm đổi nhiều item.
+
+metadata
+
+Không
+
+JSON phụ trợ: store_id, booking_id, bill_id, qr_id, ranking_scope...
+
+Bảng 19: Field tối thiểu cho bảng audit_logs
+
+4.4. Audit Log cho Ranking - Cast / Ranking - Quán
+
+Đối với Ranking trong Admin CMS, hệ thống cần ghi nhận tối thiểu: tài khoản thao tác, quyền hạn/role, thời điểm thao tác, hạng mục bị thay đổi là Ranking - Cast hay Ranking - Quán, nội dung thay đổi/cập nhật, thời gian cập nhật gần nhất. UI có thể hiển thị thêm dạng tương đối như “30 phút trước” hoặc “1 giờ 45 phút trước”.
+
+Field
+
+Bắt buộc
+
+Ghi chú
+
+actor_account_id
+
+Có
+
+ID tài khoản thực hiện thao tác.
+
+actor_name / actor_email
+
+Có
+
+Tên/email hiển thị trong Audit Log.
+
+actor_role
+
+Có
+
+Super Admin / Admin / Operator tại thời điểm thao tác.
+
+occurred_at
+
+Có
+
+Thời điểm thực hiện thao tác.
+
+ranking_type
+
+Có
+
+CAST hoặc STORE.
+
+ranking_label
+
+Có
+
+Hiển thị: Ranking - Cast hoặc Ranking - Quán.
+
+ranking_scope
+
+Có
+
+HN / HCM / Tổng hợp / danh mục như Bar, Karaoke, Massage...
+
+action_code
+
+Có
+
+RANKING_ADD_ITEM, RANKING_REMOVE_ITEM, RANKING_REORDER, RANKING_UPDATE_ITEM.
+
+entity_id / entity_name
+
+Có
+
+Cast hoặc Quán bị tác động.
+
+before_order
+
+Có khi reorder
+
+Danh sách thứ tự trước khi kéo thả/cập nhật.
+
+after_order
+
+Có khi reorder
+
+Danh sách thứ tự sau khi kéo thả/cập nhật.
+
+before_data / after_data
+
+Có khi update
+
+Trạng thái, vị trí, sponsored flag, publish flag trước/sau.
+
+change_summary
+
+Có
+
+Mô tả nghiệp vụ: Store A từ #3 lên #1, Cast Y được bật ranking...
+
+last_updated_at
+
+Có
+
+Thời gian cập nhật gần nhất của ranking item/scope.
+
+relative_time_display
+
+Không lưu DB
+
+UI tự tính từ last_updated_at: Vừa xong / 30 phút trước / 1 giờ 45 phút trước.
+
+Bảng 20: Field tối thiểu cho Audit Log Ranking
+
+4.5. Cách lưu khi một thao tác làm thay đổi nhiều bản ghi
+
+Nếu một thao tác drag/drop hoặc bulk action tác động nhiều bản ghi, hệ thống không chỉ lưu một dòng tổng quát. Cần dùng batch_id hoặc correlation_id để gom nhóm và vẫn có log chi tiết theo từng đối tượng khi cần drill-down.
+
+Tình huống
+
+Cách lưu khuyến nghị
+
+Lợi ích
+
+Admin kéo Ranking - Quán làm đổi vị trí 5 quán
+
+1 event RANKING_REORDER có before_order và after_order; P1 có thể thêm event con theo từng quán.
+
+Nhìn được toàn bộ thứ tự trước/sau, không rời rạc.
+
+Admin duyệt 50 bill
+
+1 event cha BILL_APPROVE_BATCH + 50 event con BILL_APPROVE gắn cùng batch_id.
+
+Vừa xem được tổng quan, vừa truy từng bill.
+
+Cron tự hủy 200 booking hết hạn
+
+1 event cha BOOKING_EXPIRE_CRON_RUN + event con BOOKING_AUTO_CANCEL_EXPIRED theo từng booking.
+
+Debug được cron và từng booking bị tác động.
+
+Admin upload 10 ảnh store
+
+MVP: 1 event STORE_MEDIA_UPLOAD có danh sách media_id; P1: event con từng media.
+
+Không làm phình log quá mức ở MVP.
+
+Bảng 21: Quy tắc lưu audit cho thao tác nhiều bản ghi
+
+4.6. UI/UX cho màn Audit Log
+
+Màn tổng: Admin CMS > Audit Log, hiển thị bảng Thời gian | Người thao tác | Role | Module | Hành động | Đối tượng | Kết quả | IP.
+
+Bộ lọc: thời gian, tài khoản, role, module, action_code, entity_type, entity_code, store, booking, bill, ranking_type, batch_id, result.
+
+Detail log: hiển thị before_data, after_data, changed_fields, change_summary, reason, request_id, correlation_id, các event cùng batch.
+
+Timeline trong chi tiết object: Booking/Bill/Store/Cast/Ranking scope có tab “Lịch sử thao tác”.
+
+Relative time: DB lưu occurred_at/last_updated_at; UI tự tính “Vừa xong”, “30 phút trước”, “1 giờ 45 phút trước”, hoặc ngày/giờ đầy đủ nếu trên 24h.
+
+4.7. Phân quyền xem Audit Log
+
+Role
+
+Quyền đề xuất
+
+Super Admin
+
+Xem toàn bộ audit, filter nâng cao, export, xem security/admin-role logs.
+
+Admin
+
+Xem audit nghiệp vụ: booking, bill, QR, store/cast, ranking, partner; không xem security log nhạy cảm nếu không được cấp quyền.
+
+Operator
+
+Xem audit trong phạm vi công việc được phân công; P1 mới mở nếu cần.
+
+Partner
+
+Không xem audit nội bộ; chỉ xem lịch sử scan/bill của quán mình nếu P1 dashboard partner bật.
+
+System
+
+Chỉ ghi log; không có UI.
+
+Bảng 22: Phân quyền xem Audit Log
+
+5. CÁC LUỒNG NGHIỆP VỤ CHÍNH - CẬP NHẬT
+
+FLOW A - Booking kèm QR ưu đãi P0
+
+Khách xem quán/cast -> bấm Booking/CTA -> hệ thống mở form -> tạo booking trạng thái Mới -> sinh QR ưu đãi gắn booking_id -> gửi email/Telegram -> Partner scan QR -> QR Đã sử dụng -> liên kết booking/QR/bill để đối soát.
+
+FLOW B - Không còn coupon/QR độc lập trong MVP
+
+QR chỉ sinh sau khi booking thành công và luôn gắn booking_id. Không có flow lấy coupon/QR riêng trước hoặc ngoài booking.
+
+FLOW C - Ghi nhận Bill P0
+
+Member/VIP hoặc Partner gửi bill trong vòng 10 ngày; Guest không gửi bill. Bill Pending Admin Approval; Admin duyệt/từ chối; sau duyệt ghi nhận doanh thu, hoa hồng và điểm.
+
+FLOW D - Partner onboarding & vận hành P0
+
+Đối tác điền Join Us -> request vào CMS + Telegram -> Admin kiểm duyệt -> Admin nhập thông tin quán/cast -> Partner có tài khoản đăng nhập, quét QR, xác nhận check-in.
+
+FLOW E - Ranking / Ads P0
+
+Admin cấu hình ranking 100% thủ công, tự đưa quán/cast lên Top. Bản v3.3 bổ sung audit bắt buộc cho thao tác thay đổi Ranking - Cast và Ranking - Quán.
+
+FLOW F - Membership / Point P0
+
+Member/VIP có thể gửi bill nếu muốn ghi nhận lịch sử/điểm; Admin duyệt bill; hệ thống ghi nhận điểm 1.000.000đ = 10 điểm; điểm hết hạn sau 1 năm.
+
+FLOW G - Audit Log P0/P1
+
+Mọi thao tác ghi dữ liệu quan trọng trong Admin CMS/Partner/System tạo audit event. Event được lưu append-only, gắn actor, role, action, object, before/after, result và reason nếu là thao tác nhạy cảm.
+
+6. DỮ LIỆU CHÍNH CẦN QUẢN LÝ - CẬP NHẬT
+
+Entity
+
+Thông tin chính sau cập nhật
+
+Phase
+
+User / Member / VIP
+
+Đăng nhập, hồ sơ, email, ngôn ngữ, hạng khách, điểm, lịch sử booking/QR/bill/favorite. Member/VIP có quyền gửi bill nhưng không bắt buộc.
+
+P0/P1
+
+Guest
+
+Khách chưa đăng ký nhập booking bằng email; lưu tên, email, booking history tối thiểu, QR đã cấp, trạng thái email, thời hạn QR/booking 24h. Guest không gửi bill MVP.
+
+P0
+
+Partner / Store
+
+Tên quán, loại hình, khu vực, địa chỉ, maps, giờ, liên hệ, trạng thái hợp tác, album ảnh, video, % hoa hồng thỏa thuận.
+
+P0
+
+Partner Account
+
+Tài khoản đối tác: đăng nhập, quét QR, xác nhận khách đến quán.
+
+P0
+
+Cast / Staff
+
+Public fields theo CAS-06; không lưu/hiển thị lịch trống; có thể chọn làm cast mong muốn nếu active/public và thuộc quán.
+
+P0
+
+Booking
+
+Người đặt, email, customer_type, discount_snapshot, store_id, cast_id nullable, ngày/giờ đến, số người 1-20, ghi chú, trạng thái, nguồn gửi, liên kết QR/Bill.
+
+P0
+
+Booking QR
+
+Mã, ảnh QR, booking_id, store_id, discount_snapshot, hạn dùng, trạng thái, scan log, lịch sử dùng.
+
+P0
+
+Bill
+
+Quán, người gửi, thời gian dùng dịch vụ, tổng tiền, giảm giá/phí/thuế nếu có, ảnh, trạng thái duyệt, lý do từ chối, link Booking/QR, thời hạn 10 ngày.
+
+P0
+
+Commission / Revenue
+
+Tỷ lệ hoa hồng snapshot, % giảm giá snapshot, doanh thu gộp/thuần, tiền giảm giá, hoa hồng Admin, lợi nhuận P1.
+
+P0/P1
+
+Point / Loyalty
+
+Điểm tích lũy 1tr = 10đ trên bill GỐC sau khi Admin duyệt; không có bill duyệt thì không phát sinh điểm.
+
+P0
+
+Notification Log
+
+Kênh Telegram/LINE OA/Mail, nội dung, người nhận, thời gian, trạng thái gửi; P0 cần log email QR/email nhắc/email hủy.
+
+P0/P1
+
+Audit Log
+
+actor, role, occurred_at, module, action_code, entity, before/after, changed_fields, reason, result, request_id, correlation_id, batch_id; riêng Ranking phân biệt Ranking - Cast và Ranking - Quán.
+
+P0/P1
+
+Bảng 23: Dữ liệu chính cần quản lý
+
+6.1. Field tối thiểu cho Booking
+
+Field
+
+Bắt buộc
+
+Ghi chú
+
+booking_id
+
+Có
+
+Mã booking duy nhất.
+
+customer_type
+
+Có
+
+Guest / Member / VIP.
+
+customer_name
+
+Có
+
+Guest nhập; Member/VIP autofill.
+
+customer_email
+
+Có
+
+Guest bắt buộc để nhận QR; Member/VIP lấy từ profile.
+
+store_id
+
+Có
+
+Quán được booking.
+
+cast_id
+
+Không
+
+Cast mong muốn, nullable; chỉ cast active/public thuộc quán.
+
+booking_date_time
+
+Có
+
+Ngày giờ khách đặt đến quán.
+
+party_size
+
+Có
+
+Số người min 1, max 20.
+
+note
+
+Không
+
+Ghi chú của khách.
+
+discount_snapshot
+
+Có
+
+5% / 8% / 10%.
+
+status
+
+Có
+
+Mới / Đã hủy / Hoàn tất.
+
+cancel_reason
+
+Không
+
+Lý do hủy nếu có: khách hủy, Admin hủy, quá hạn, khác.
+
+Bảng 24: Field tối thiểu cho Booking
+
+6.2. Field tối thiểu cho Booking QR
+
+Field
+
+Bắt buộc
+
+Ghi chú
+
+qr_id
+
+Có
+
+Mã QR record duy nhất.
+
+booking_id
+
+Có
+
+Mỗi QR gắn với một booking.
+
+qr_code/token
+
+Có
+
+Token/mã dùng để render QR.
+
+store_id
+
+Có
+
+Dùng validate đúng quán khi scan.
+
+discount_snapshot
+
+Có
+
+Mức giảm tại thời điểm tạo booking.
+
+valid_from
+
+Có
+
+Có thể là thời điểm tạo booking hoặc cấu hình theo rule vận hành.
+
+expires_at
+
+Có
+
+Guest: booking_time + 24h; Member/VIP: booking_time + 7 ngày.
+
+status
+
+Có
+
+Còn hiệu lực / Đã sử dụng / Hết hạn / Vô hiệu.
+
+used_at
+
+Không
+
+Thời điểm QR được scan/xác nhận.
+
+scanned_by_partner_account_id
+
+Không
+
+Nhân viên quán scan/xác nhận.
+
+Bảng 25: Field tối thiểu cho Booking QR
+
+7. PHẠM VI KHÔNG THUỘC MVP
+
+Hạng mục không thuộc MVP
+
+Đề xuất
+
+Lý do/Ghi chú
+
+Thanh toán online trực tiếp trên web
+
+Baseline
+
+Mô hình không phải e-commerce/checkout.
+
+Đặt món/lên đơn/chọn dịch vụ trên web trước khi tới quán
+
+Baseline
+
+Menu chỉ để tham khảo.
+
+Nhập chi tiết từng món/dịch vụ trên hóa đơn
+
+Baseline
+
+Phiên bản đầu chỉ ghi nhận tổng tiền hóa đơn.
+
+Tích hợp POS tại quán
+
+Baseline
+
+Không quản lý vận hành nội bộ quán.
+
+Hiển thị lịch trống của Cast
+
+Backlog
+
+Khó kiểm soát; cast chỉ là mong muốn/tham chiếu.
+
+Lấy coupon/QR độc lập ngoài booking
+
+Không thuộc MVP
+
+v3.2 đã gộp vào Flow A.
+
+Partner tự đăng thông tin quán/cast
+
+P1
+
+MVP Admin nhập thay qua PAR-03.
+
+Tự động duyệt bill dưới ngưỡng tiền
+
+P2
+
+Chưa có rule gian lận/bill trùng.
+
+Bill Reversal tự động
+
+P2
+
+MVP/P1 xử lý thủ công.
+
+Audit search engine/immutable storage nâng cao
+
+P2
+
+MVP chỉ cần audit table append-only; P2 mới cần log pipeline/search/archive chuyên biệt.
+
+Bảng 26: Phạm vi không thuộc MVP
+
+8. THỨ TỰ TRIỂN KHAI MVP ĐỀ XUẤT - CẬP NHẬT
+
+Bước
+
+Hạng mục
+
+Kết quả cập nhật
+
+1
+
+Khóa scope P0 & cấu hình ban đầu
+
+Confirm MVP chỉ có 1 flow Booking kèm QR; Guest/Member/VIP = 5%/8%/10%; hạn QR; số người tối đa 20; audit P0 cho thao tác nhạy cảm.
+
+2
+
+Thiết kế data model lõi
+
+Booking, QR, Bill, Commission, Point, Notification Log và Audit Log.
+
+3
+
+Public Website core
+
+Trang chủ, search, ranking, store detail, cast profile; dẫn về cùng form Booking.
+
+4
+
+Booking + QR + Notification
+
+Submit booking -> QR -> email Guest -> Telegram Admin; rule hủy/đổi/hết hạn.
+
+5
+
+Partner Account tối giản
+
+Partner đăng nhập, scan QR, xác nhận khách đến; scan success/fail có log.
+
+6
+
+Email scheduler / Cron
+
+Gửi email nhắc, tự hủy booking/QR quá hạn; cron run có audit event.
+
+7
+
+Bill manual + Admin approval
+
+Member/VIP hoặc Partner gửi bill; Admin duyệt/từ chối; thao tác bill có audit bắt buộc.
+
+8
+
+Admin CMS + báo cáo
+
+CMS quản lý booking, QR, bill, doanh thu, store/cast, ranking.
+
+8A
+
+Audit Log Admin CMS
+
+Bổ sung RAN-09/ADM-14: ghi log ranking, bill, booking, QR, commission, store/cast, partner, admin role; UI filter cơ bản.
+
+9
+
+QA/UAT
+
+Test E2E booking/QR/bill + test audit log đầy đủ người thao tác, role, thời điểm, before/after.
+
+10
+
+P1 sau MVP ổn định
+
+Partner dashboard, chat, export audit, diff viewer, batch log, cảnh báo bất thường, archive/search nâng cao.
+
+Bảng 27: Thứ tự triển khai MVP đề xuất
+
+9. ACCEPTANCE CRITERIA TRỌNG TÂM CHO DEV/TEST
+
+Nhóm
+
+Acceptance Criteria
+
+Booking form
+
+Guest bắt buộc nhập email. Member/VIP autofill email/tên từ profile. Số người chỉ nhận 1-20. Booking từ cast profile tự gắn cast_id.
+
+Cast mong muốn
+
+Chỉ hiển thị cast active/public thuộc quán. Không hiển thị lịch trống. UI phải ghi rõ cast là mong muốn, chưa phải xác nhận giữ lịch.
+
+Tạo booking
+
+Submit thành công tạo booking trạng thái Mới, sinh QR gắn booking_id, snapshot mức giảm theo hạng khách.
+
+QR hiển thị/gửi email
+
+QR hiển thị ngay trên màn thành công. Guest nhận email có thông tin booking và QR.
+
+Telegram Admin
+
+Telegram có đủ thông tin booking, email, quán, ngày giờ, số người, cast mong muốn, mức giảm, QR status.
+
+Hết hạn
+
+Guest: expires_at = booking_date_time + 24h. Member/VIP: expires_at = booking_date_time + 7 ngày. Email nhắc trước expires_at 6h. Quá hạn thì booking Đã hủy, QR Hết hạn/Vô hiệu.
+
+Hủy/đổi
+
+Hủy trước giờ hẹn >= 1h thì booking Đã hủy, QR Vô hiệu. Không sửa trực tiếp booking cũ; đổi thì hủy và tạo booking mới.
+
+Scan QR
+
+Partner scan QR hợp lệ thì QR Đã sử dụng, ghi lịch sử/log. QR đã dùng/hết hạn/vô hiệu không dùng lại được.
+
+Bill quyền gửi/link
+
+Guest không gửi được bill trong MVP. Form/API gửi bill phía khách yêu cầu đăng nhập Member/VIP. Partner có thể gửi bill theo luồng đối soát nếu bật.
+
+Audit Log - ghi nhận thao tác
+
+Mọi thao tác ghi dữ liệu quan trọng trong Admin CMS phải sinh audit log, tối thiểu với ranking, bill, booking, QR, commission, store/cast, partner, admin role.
+
+Audit Log - Ranking
+
+Khi thay đổi Ranking - Cast hoặc Ranking - Quán, hệ thống phải lưu tài khoản thao tác, role, thời điểm, loại ranking, scope, nội dung thay đổi, before/after và last_updated_at.
+
+Audit Log - before/after
+
+Với thao tác update/reorder, hệ thống phải lưu được changed_fields hoặc before_order/after_order để truy vết dữ liệu trước/sau.
+
+Audit Log - bulk action
+
+Nếu thao tác ảnh hưởng nhiều item, hệ thống phải có batch_id/correlation_id và vẫn xem được từng item bị ảnh hưởng.
+
+Audit Log - phân quyền
+
+Partner không xem audit nội bộ. Admin/Super Admin xem theo quyền; log security chỉ Super Admin xem.
+
+Audit Log - immutable
+
+Admin thường không được sửa/xóa audit log; mọi thay đổi log nếu có phải qua cơ chế kỹ thuật đặc biệt và được ghi nhận.
+
+Bảng 28: Acceptance Criteria trọng tâm
+
+10. TEST CASE / UAT GỢI Ý CHO AUDIT LOG
+
+Test ID
+
+Kịch bản
+
+Bước chính
+
+Expected result
+
+TC-AUD-RAN-001
+
+Admin đổi thứ tự Ranking - Quán
+
+Admin kéo Store C từ vị trí #3 lên #1 trong HCM/Bar.
+
+Audit log có actor, role, ranking_type=STORE, before_order, after_order, occurred_at, last_updated_at.
+
+TC-AUD-RAN-002
+
+Admin đổi thứ tự Ranking - Cast
+
+Admin bật Cast Y lên vị trí #2 trong HN.
+
+Audit log hiển thị Ranking - Cast, entity_name Cast Y, before/after trạng thái và vị trí.
+
+TC-AUD-RAN-003
+
+UI relative time
+
+Sau khi cập nhật ranking 30 phút, xem màn ranking.
+
+UI hiển thị cập nhật 30 phút trước; DB vẫn lưu last_updated_at dạng timestamp.
+
+TC-AUD-BIL-001
+
+Admin duyệt bill
+
+Admin duyệt bill Pending có link Booking/QR.
+
+Audit log BILL_APPROVE, actor, role, bill_id, amount, point/commission metadata.
+
+TC-AUD-BIL-002
+
+Admin từ chối bill thiếu lý do
+
+Admin bấm từ chối bill nhưng bỏ trống reason.
+
+Hệ thống chặn thao tác và hiển thị lỗi bắt buộc nhập lý do.
+
+TC-AUD-QR-001
+
+Partner scan QR thành công
+
+Partner scan QR hợp lệ đúng quán.
+
+Audit/scan log có partner_account_id, store_id, qr_id, booking_id, used_at, result=Success.
+
+TC-AUD-QR-002
+
+Partner scan QR hết hạn
+
+Partner scan QR đã hết hạn.
+
+Log result=Failed, reason=Expired, không đổi QR sang Đã sử dụng.
+
+TC-AUD-SEC-001
+
+Operator xem security audit
+
+Operator truy cập log đổi role Admin.
+
+Bị chặn theo phân quyền.
+
+TC-AUD-BATCH-001
+
+Duyệt nhiều bill cùng lúc
+
+Admin chọn 10 bill và bấm duyệt hàng loạt.
+
+Có batch_id chung và 10 audit event con theo từng bill.
+
+Bảng 29: Test case/UAT cho Audit Log
+
+11. RISK / GAP / QUESTION LOG LIÊN QUAN AUDIT
+
+ID
+
+Vấn đề
+
+Impact
+
+Mức độ
+
+Đề xuất xử lý
+
+RISK-AUD-001
+
+Thiếu Audit Log cho ranking thủ công
+
+Không truy vết được ai đưa quán/cast lên Top, dễ tranh chấp quảng cáo/VIP.
+
+High
+
+Bổ sung RAN-09 P0 và ghi before_order/after_order.
+
+RISK-AUD-002
+
+Không lưu role snapshot
+
+Sau này role thay đổi sẽ không biết tại thời điểm thao tác người dùng có quyền gì.
+
+Medium
+
+Lưu actor_role trong audit log.
+
+RISK-AUD-003
+
+Không lưu before/after
+
+Khó điều tra khi bill/commission/ranking bị sửa sai.
+
+High
+
+Bắt buộc lưu changed_fields hoặc before_data/after_data cho update.
+
+GAP-AUD-001
+
+Chưa chốt retention log
+
+Chưa biết lưu audit bao lâu và archive thế nào.
+
+Medium
+
+PM/Tech Lead chốt retention MVP/P1.
+
+QUESTION-AUD-001
+
+Ai được xem/export audit log?
+
+Cần xác nhận Super Admin/Admin/Operator scope.
+
+High
+
+Chốt với PO/PM trước khi code màn Audit Log.
+
+Bảng 30: Risk/GAP/Question Log cho Audit Log
+
+12. KẾT LUẬN & KHUYẾN NGHỊ BA
+
+Tài liệu v3.3 nên được dùng làm baseline nghiệp vụ khi bổ sung Audit Log cho NightLife. Phần quan trọng nhất cần đưa vào P0 là RAN-09 và ADM-14 vì hệ thống đang có nhiều thao tác thủ công liên quan ranking, bill, commission, QR và booking. Nếu không có audit, đội vận hành sẽ khó truy vết tranh chấp, debug lỗi hoặc xác định trách nhiệm thao tác.
+
+Chốt P0: Audit Log cho ranking, bill approval, booking cancel/complete, QR scan/invalidate/expire, commission update, store/cast publish/unpublish, partner approval và admin role.
+
+Chốt UI: Màn Audit Log tổng + timeline trong chi tiết Booking/Bill/Store/Cast/Ranking scope.
+
+Chốt data: Không lưu text relative time vào DB; chỉ lưu timestamp, UI tự tính.
+
+Chốt vận hành: Các thao tác nhạy cảm bắt buộc nhập reason và audit log không được sửa/xóa bởi Admin thông thường.
+
+Trang 1 / 1
