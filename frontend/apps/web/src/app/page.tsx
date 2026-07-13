@@ -287,6 +287,9 @@ type HomeContentItem = {
   desc: string;
   href: string;
   icon: typeof BookOpen;
+  kicker: string;
+  meta?: string;
+  img?: string;
 };
 
 type ServiceRegion = (typeof serviceRegionTabs)[number]["id"];
@@ -300,6 +303,19 @@ function regionToCityCode(region: ServiceRegion): "all" | "hn" | "hcm" {
 function backgroundFromUrl(value?: string | null) {
   const url = resolveClientUrl(value);
   return url ? `url(${JSON.stringify(url)}) center/cover` : undefined;
+}
+
+function isUsableContentImage(value?: string | null) {
+  const url = resolveClientUrl(value);
+  return Boolean(url && !/placehold\.co|placeholder/i.test(url));
+}
+
+function formatVnd(value: number) {
+  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
+}
+
+function firstContentImage(...values: Array<string | null | undefined>) {
+  return values.find((value) => isUsableContentImage(value));
 }
 
 function storeImage(store: PublicStore, index: number) {
@@ -493,23 +509,72 @@ function mapTourToHomeItem(tour: PublicTourItem): HomeContentItem {
     .map((stop) => stop.name)
     .join(" · ");
 
+  const stopImage = tour.stops.find((stop) => isUsableContentImage(stop.thumbnailUrl))?.thumbnailUrl;
+  const meta = [
+    tour.area,
+    tour.durationHours ? `${tour.durationHours} giờ` : "",
+    tour.priceFromVnd ? `Từ ${formatVnd(tour.priceFromVnd)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return {
     id: tour.id,
     title: tour.title,
     desc: stopText || tour.subtitle,
     href: tour.href || "/tour",
     icon: MapPin,
+    kicker: "Tour",
+    meta,
+    img: backgroundFromUrl(firstContentImage(tour.thumbnailUrl, stopImage)),
   };
 }
 
 function mapContentToHomeItem(content: CmsContentItem): HomeContentItem {
+  const metadata = content.metadata ?? {};
+  const seo = metadata.seo && typeof metadata.seo === "object" && !Array.isArray(metadata.seo)
+    ? (metadata.seo as Record<string, unknown>)
+    : {};
+  const image = firstContentImage(
+    typeof metadata.image === "string" ? metadata.image : null,
+    typeof metadata.imageUrl === "string" ? metadata.imageUrl : null,
+    typeof metadata.thumbnailUrl === "string" ? metadata.thumbnailUrl : null,
+    typeof metadata.coverImage === "string" ? metadata.coverImage : null,
+    typeof metadata.coverUrl === "string" ? metadata.coverUrl : null,
+    typeof metadata.posterUrl === "string" ? metadata.posterUrl : null,
+    typeof seo.ogImage === "string" ? seo.ogImage : null,
+  );
+  const category = typeof metadata.category === "string" && metadata.category.trim()
+    ? metadata.category.trim()
+    : content.type === "BLOG"
+      ? "Blog"
+      : "Guide";
+  const publishedDate = content.publishedAt?.slice(0, 10) || content.updatedAt?.slice(0, 10);
+
   return {
     id: content.id,
     title: content.title,
     desc: content.excerpt || "Khám phá nội dung mới từ Vietyoru.",
     href: content.type === "BLOG" ? `/blog/${content.slug}` : `/legal/${content.slug}`,
     icon: content.type === "BLOG" ? Newspaper : BookOpen,
+    kicker: category,
+    meta: publishedDate,
+    img: backgroundFromUrl(image),
   };
+}
+
+function withApiImageFallbacks(items: HomeContentItem[], fallbackImages: Array<string | null | undefined>) {
+  const usableFallbacks = fallbackImages.filter(isUsableContentImage);
+  if (!usableFallbacks.length) return items;
+
+  return items.map((item, index) =>
+    item.img
+      ? item
+      : {
+          ...item,
+          img: backgroundFromUrl(usableFallbacks[index % usableFallbacks.length]),
+        },
+  );
 }
 
 function getRankingVisual(rankNumber: number, item: RankedItem) {
@@ -1875,44 +1940,72 @@ function ContentPlaceholderCard({
   compact?: boolean;
 }) {
   const Icon = item.icon;
+  const hasImage = Boolean(item.img);
+  const cardBackground = hasImage
+    ? `linear-gradient(180deg, rgba(12,12,15,.08) 0%, rgba(12,12,15,.82) 100%), ${item.img}`
+    : "var(--vy-surface-2)";
+  const cardStyle = {
+    "--nl-home-content-card-bg": cardBackground,
+    minWidth: compact ? "min(224px, 100%)" : "0",
+    minHeight: compact ? 218 : 244,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: hasImage ? "flex-end" : "flex-start",
+    borderRadius: homeCardRadius,
+    border: `1px solid ${hasImage ? "rgba(240,221,168,.28)" : colors.line}`,
+    background: "var(--nl-home-content-card-bg)",
+    color: hasImage ? "#fff" : colors.text,
+    padding: compact ? "14px" : "18px",
+    position: "relative",
+    overflow: "hidden",
+    boxShadow: hasImage ? "0 20px 44px rgba(0,0,0,.24)" : undefined,
+  } as CSSProperties;
 
   return (
     <Link
       href={item.href}
-      className="nl-home-card nl-home-content-card"
-      style={{
-        minWidth: compact ? "min(172px, 100%)" : "0",
-        display: "block",
-        borderRadius: homeCardRadius,
-        border: `1px solid ${colors.line}`,
-        background: "var(--vy-surface-2)",
-        color: colors.text,
-        padding: compact ? "14px" : "18px",
-      }}
+      className={`nl-home-card nl-home-content-card${hasImage ? " nl-home-content-card--media" : ""}`}
+      style={cardStyle}
     >
       <span
         style={{
-          width: compact ? 40 : 46,
-          height: compact ? 40 : 46,
-          borderRadius: homeMediaRadius,
+          width: hasImage ? "fit-content" : compact ? 40 : 46,
+          height: hasImage ? 31 : compact ? 40 : 46,
+          borderRadius: hasImage ? "999px" : homeMediaRadius,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: colors.goldSoft,
-          background: "var(--vy-gold-soft-bg)",
-          border: `1px solid ${colors.line}`,
+          gap: 7,
+          color: hasImage ? "#f7e6b4" : colors.goldSoft,
+          background: hasImage ? "rgba(12,12,15,.58)" : "var(--vy-gold-soft-bg)",
+          border: `1px solid ${hasImage ? "rgba(240,221,168,.32)" : colors.line}`,
+          padding: hasImage ? "0 10px" : 0,
+          backdropFilter: hasImage ? "blur(10px)" : undefined,
+          fontSize: compact ? 11 : 12,
+          fontWeight: 900,
         }}
       >
         <Icon size={compact ? 20 : 23} />
+        {hasImage ? item.kicker : null}
       </span>
-      <div style={{ marginTop: "12px", fontSize: compact ? "14px" : "16px", fontWeight: 900 }}>
+      {!hasImage ? (
+        <div style={{ marginTop: "12px", color: colors.gold, fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: ".08em" }}>
+          {item.kicker}
+        </div>
+      ) : null}
+      <div style={{ marginTop: hasImage ? "12px" : "8px", fontSize: compact ? "16px" : "18px", fontWeight: 950, lineHeight: 1.18 }}>
         {item.title}
       </div>
-      <p style={{ marginTop: "6px", color: colors.muted, fontSize: "12px", lineHeight: 1.5 }}>
+      <p style={{ marginTop: "7px", color: hasImage ? "rgba(255,255,255,.82)" : colors.muted, fontSize: "12px", lineHeight: 1.5 }}>
         {item.desc}
       </p>
-      <div style={{ marginTop: "12px", color: colors.gold, fontSize: "12px", fontWeight: 900 }}>
-        Xem chi tiết
+      <div style={{ marginTop: "12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ color: hasImage ? "rgba(255,255,255,.7)" : colors.muted, fontSize: "11px", fontWeight: 800 }}>
+          {item.meta}
+        </span>
+        <span className="nl-home-content-card-link" style={{ color: hasImage ? "#f7e6b4" : colors.gold, fontSize: "12px", fontWeight: 900, whiteSpace: "nowrap" }}>
+          Xem chi tiết
+        </span>
       </div>
     </Link>
   );
@@ -2333,11 +2426,16 @@ export default function Page() {
     ])
       .then(([tourResponse, blogResponse, policyResponse]) => {
         if (cancelled) return;
-        setHomeTours(tourResponse.map(mapTourToHomeItem));
+        const tourItems = tourResponse.map(mapTourToHomeItem);
+        const tourImages = tourResponse.flatMap((tour) => [
+          tour.thumbnailUrl,
+          ...tour.stops.map((stop) => stop.thumbnailUrl),
+        ]);
+        setHomeTours(tourItems);
         const items = [...(blogResponse.data ?? []), ...(policyResponse.data ?? [])]
           .slice(0, 3)
           .map(mapContentToHomeItem);
-        setHomeContentItems(items);
+        setHomeContentItems(withApiImageFallbacks(items, tourImages));
       })
       .catch(() => {
         if (!cancelled) {

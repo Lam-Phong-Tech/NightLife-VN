@@ -1885,7 +1885,18 @@ html.vy-light .nl-home-legacy-coupon-card {
 
 html.vy-light .nl-home-service-card,
 html.vy-light .nl-home-content-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 236, 219, 0.72)) !important;
+  background: var(--nl-home-content-card-bg, linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(245, 236, 219, 0.72))) !important;
+}
+
+html.vy-light .nl-home-content-card--media,
+html.vy-light .nl-home-content-card--media p,
+html.vy-light .nl-home-content-card--media span,
+html.vy-light .nl-home-content-card--media div {
+  color: #fff !important;
+}
+
+html.vy-light .nl-home-content-card--media .nl-home-content-card-link {
+  color: #f7e6b4 !important;
 }
 
 html.vy-light .nl-home-ranking-row {
