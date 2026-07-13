@@ -1040,19 +1040,33 @@ model PartnerRequest {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  actorId    String?  @map("actor_id") @db.Uuid
-  actor      User?    @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
-  action     String
-  targetType String   @map("target_type")
-  targetId   String   @map("target_id")
-  metadata   Json?
-  beforeJson Json?    @map("before_json")
-  afterJson  Json?    @map("after_json")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id                String   @id @default(uuid()) @db.Uuid
+  actorId           String?  @map("actor_id") @db.Uuid
+  actor             User?    @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorType         String?  @map("actor_type")
+  actorName         String?  @map("actor_name")
+  actorRole         String?  @map("actor_role")
+  module            String?
+  action            String
+  targetType        String   @map("target_type")
+  targetId          String   @map("target_id")
+  entityDisplayCode String?  @map("entity_display_code")
+  beforeJson        Json?    @map("before_json")
+  afterJson         Json?    @map("after_json")
+  changedFields     String[] @default([]) @map("changed_fields")
+  changeSummary     String?  @map("change_summary")
+  reason            String?
+  result            String?  @default("SUCCESS")
+  ipAddress         String?  @map("ip_address")
+  userAgent         String?  @map("user_agent")
+  requestId         String?  @map("request_id")
+  batchId           String?  @map("batch_id")
+  metadata          Json?
+  createdAt         DateTime @default(now()) @map("created_at")
 
   @@index([actorId])
   @@index([action])
+  @@index([module])
   @@index([targetType, targetId])
   @@map("audit_logs")
 }

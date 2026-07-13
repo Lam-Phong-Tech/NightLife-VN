@@ -12,6 +12,7 @@ import { TelegramModule } from './telegram/telegram.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SystemConfigModule } from './system-config/system-config.module';
 import { SupportChatModule } from './support-chat/support-chat.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -27,6 +28,7 @@ import { validateEnv } from './config/env.validation';
     CategoriesModule,
     SystemConfigModule,
     SupportChatModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

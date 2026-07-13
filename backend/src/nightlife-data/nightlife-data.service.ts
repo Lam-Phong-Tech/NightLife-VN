@@ -1547,9 +1547,16 @@ export class NightlifeDataService {
       await tx.auditLog.create({
         data: {
           actorId: user.id,
+          actorType: 'ADMIN',
+          actorName: user.email ?? 'Unknown',
+          actorRole: 'ADMIN',
+          module: 'Ranking',
+          changeSummary: `Created ranking config for ${targetType}`,
+          result: 'SUCCESS',
           action: 'ranking.config.create',
           targetType: 'RankingConfig',
           targetId: created.id,
+          entityDisplayCode: `RC-${created.id.substring(0, 8)}`,
           beforeJson: Prisma.JsonNull,
           afterJson: this.toPrismaJson(
             this.buildRankingConfigAuditSnapshot(
@@ -1682,9 +1689,16 @@ export class NightlifeDataService {
       await tx.auditLog.create({
         data: {
           actorId: user.id,
+          actorType: 'ADMIN',
+          actorName: user.email ?? 'Unknown',
+          actorRole: 'ADMIN',
+          module: 'Ranking',
+          changeSummary: `Updated ranking config for ${current.targetType}`,
+          result: 'SUCCESS',
           action: 'ranking.config.update',
           targetType: 'RankingConfig',
           targetId: rankingId,
+          entityDisplayCode: `RC-${rankingId.substring(0, 8)}`,
           beforeJson: this.toPrismaJson(
             this.buildRankingConfigAuditSnapshot(current),
           ),
@@ -1760,9 +1774,16 @@ export class NightlifeDataService {
       await tx.auditLog.create({
         data: {
           actorId: user.id,
+          actorType: 'ADMIN',
+          actorName: user.email ?? 'Unknown',
+          actorRole: 'ADMIN',
+          module: 'Ranking',
+          changeSummary: `Deleted ranking config for ${current.targetType}`,
+          result: 'SUCCESS',
           action: 'ranking.config.delete',
           targetType: 'RankingConfig',
           targetId: rankingId,
+          entityDisplayCode: `RC-${rankingId.substring(0, 8)}`,
           beforeJson: this.toPrismaJson(
             this.buildRankingConfigAuditSnapshot(current),
           ),
