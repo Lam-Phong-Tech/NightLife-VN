@@ -12,6 +12,7 @@ export type BookingStatusGroup = "Mới" | "Hoàn tất" | "Đã hủy";
 
 export type BookingRecord = {
   id: string;
+  bookingCode: string;
   storeId?: string;
   castId?: string | null;
   status: BookingStatus;

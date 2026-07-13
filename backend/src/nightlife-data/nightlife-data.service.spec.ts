@@ -1936,6 +1936,7 @@ describe('NightlifeDataService', () => {
   it('lists admin bookings when searching by the BK code prefix', async () => {
     const booking = {
       id: 'booking-5542',
+        bookingCode: 'BK-5542',
       user: null,
       guest: {
         displayName: 'Minh Tu Nguyen Dang',
@@ -1958,6 +1959,7 @@ describe('NightlifeDataService', () => {
     expect(result.data).toEqual([
       expect.objectContaining({
         id: 'booking-5542',
+        bookingCode: 'BK-5542',
         bookingCode: 'BK-5542',
       }),
     ]);
@@ -2044,12 +2046,14 @@ describe('NightlifeDataService', () => {
         guestId: 'guest-1',
         storeId: 'store-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         channel: 'EMAIL',
         status: 'QUEUED',
         recipient: 'guest@example.com',
         templateKey: 'customer.booking.qr_email.v1',
         payload: expect.objectContaining({
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           bookingCode: 'BK-BOOKING-',
           qrPayload: expect.stringContaining('NLBOOKING|booking-1|BK-BOOKING-'),
           qrImageUrl: expect.stringContaining('api.qrserver.com'),
@@ -2061,6 +2065,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         to: 'guest@example.com',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         bookingCode: 'BK-BOOKING-',
         qrPayload: expect.stringContaining('NLBOOKING|booking-1|BK-BOOKING-'),
         qrImageDataUrl: expect.stringContaining('data:image/png;base64,'),
@@ -2330,6 +2335,7 @@ describe('NightlifeDataService', () => {
         guestId: 'guest-1',
         storeId: 'store-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         channel: 'IN_APP',
         status: 'QUEUED',
         recipient: 'member-1',
@@ -2511,12 +2517,14 @@ describe('NightlifeDataService', () => {
         guestId: 'guest-1',
         storeId: 'store-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         channel: 'IN_APP',
         status: 'QUEUED',
         recipient: 'member-1',
         templateKey: 'customer.booking.cancelled.v1',
         payload: expect.objectContaining({
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           status: 'CANCELLED',
           reason: 'Change of plans',
           actorType: 'MEMBER',
@@ -2627,12 +2635,14 @@ describe('NightlifeDataService', () => {
         guestId: 'guest-1',
         storeId: 'store-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         channel: 'LINE',
         status: 'QUEUED',
         recipient: '+84901234567',
         templateKey: 'customer.booking.cancelled.v1',
         payload: expect.objectContaining({
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           status: 'CANCELLED',
           reason: 'Change of plans',
           actorType: 'GUEST',
@@ -2703,6 +2713,7 @@ describe('NightlifeDataService', () => {
       data: expect.objectContaining({
         userId: 'member-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         templateKey: 'customer.booking.cancelled.v1',
         payload: expect.objectContaining({
           actorType: 'ADMIN',
@@ -2724,6 +2735,7 @@ describe('NightlifeDataService', () => {
   it('looks up a guest booking by booking code and phone', async () => {
     const booking = {
       id: '550e8400-e29b-41d4-a716-446655440000',
+      bookingCode: 'BK-550E8400',
       status: 'REQUESTED',
       scheduledAt: new Date('2026-06-30T14:00:00.000Z'),
       partySize: 2,
@@ -4074,6 +4086,7 @@ describe('NightlifeDataService', () => {
       data: expect.objectContaining({
         userId: 'member-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         templateKey: 'customer.booking.checked_in.v1',
       }),
     });
@@ -4408,6 +4421,7 @@ describe('NightlifeDataService', () => {
       { id: 'member-1', role: 'USER' },
       {
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         totalVnd: 1800000,
         usedAt: '2026-06-30T14:00:00.000Z',
       },
@@ -4417,6 +4431,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           userId: 'member-1',
           guestId: 'guest-1',
           storeId: 'store-1',
@@ -4447,6 +4462,7 @@ describe('NightlifeDataService', () => {
         userId: 'member-1',
         storeId: 'store-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         billId: 'bill-1',
         channel: 'IN_APP',
         status: 'QUEUED',
@@ -4470,6 +4486,7 @@ describe('NightlifeDataService', () => {
             submitterType: 'MEMBER',
             storeId: 'store-1',
             bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
             submittedByUserId: 'member-1',
             submittedByPartnerAccountId: null,
             totalVnd: 1800000,
@@ -4708,6 +4725,7 @@ describe('NightlifeDataService', () => {
         sentAt: null,
         billId: 'bill-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         store: { id: 'store-1', name: 'Neon Club', slug: 'neon-club' },
         booking: {
           id: 'booking-1',
@@ -5916,6 +5934,7 @@ describe('NightlifeDataService', () => {
         userId: 'member-1',
         storeId: 'store-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         billId: 'bill-1',
         channel: 'IN_APP',
         status: 'QUEUED',
@@ -6618,6 +6637,7 @@ describe('NightlifeDataService', () => {
           id: 'ledger-earn-1',
           userId: 'member-1',
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           amountVnd: 2000000,
           points: 20,
           ruleSnapshot: null,
@@ -6752,6 +6772,7 @@ describe('NightlifeDataService', () => {
         points: 180,
         billId: 'bill-1',
         bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
         description: 'Approved bill points',
         expiresAt: new Date('2027-07-03T10:00:00.000Z'),
         postedAt: new Date('2026-07-03T10:00:00.000Z'),
@@ -6899,6 +6920,7 @@ describe('NightlifeDataService', () => {
         create: expect.objectContaining({
           userId: 'member-1',
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           billId: 'bill-member-1',
           type: 'EARN',
           status: 'POSTED',
@@ -7088,6 +7110,7 @@ describe('NightlifeDataService', () => {
         },
         {
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           couponId: 'coupon-1',
           couponIssueId: 'issue-1',
         },
@@ -7123,6 +7146,7 @@ describe('NightlifeDataService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           bookingId: 'booking-1',
+          bookingCode: 'BK-BOOKING-',
           couponId: 'coupon-1',
           couponIssueId: 'issue-1',
         }),

@@ -157,7 +157,7 @@ export class AdminNotificationService {
         this.bookingMessageInput(booking),
       ),
       lines: [
-        ['Booking', this.bookingPublicCode(booking.id)],
+        ['Booking', booking.bookingCode],
         ['Quán', booking.store?.name],
         ['Khách hàng', this.customerName(booking)],
         ['Email', this.customerEmail(booking)],
@@ -192,7 +192,7 @@ export class AdminNotificationService {
         reason: options.reason,
       }),
       lines: [
-        ['Booking', this.bookingPublicCode(booking.id)],
+        ['Booking', booking.bookingCode],
         ['Quán', booking.store?.name],
         ['Khách hàng', this.customerName(booking)],
         ['Email', this.customerEmail(booking)],
@@ -510,7 +510,7 @@ export class AdminNotificationService {
   private bookingPayload(booking: BookingAdminNotification) {
     return {
       bookingId: booking.id,
-      bookingCode: this.bookingPublicCode(booking.id),
+      bookingCode: booking.bookingCode,
       status: booking.status,
       statusLabel: this.bookingStatusLabel(booking.status),
       scheduledAt: this.toIso(booking.scheduledAt),
@@ -589,7 +589,7 @@ export class AdminNotificationService {
 
   private bookingMessageInput(booking: BookingAdminNotification) {
     return {
-      bookingCode: this.bookingPublicCode(booking.id),
+      bookingCode: booking.bookingCode,
       storeName: booking.store?.name,
       customerName: this.customerName(booking),
       customerEmail: this.customerEmail(booking),
@@ -692,9 +692,7 @@ export class AdminNotificationService {
     return 'Mới';
   }
 
-  private bookingPublicCode(bookingId: string) {
-    return `BK-${bookingId.slice(0, 8).toUpperCase()}`;
-  }
+
 
   private customerContact(input: {
     guest?: { phone?: string | null; email?: string | null } | null;

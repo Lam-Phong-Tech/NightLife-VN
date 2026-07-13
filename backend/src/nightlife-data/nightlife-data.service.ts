@@ -4085,7 +4085,7 @@ export class NightlifeDataService {
     return {
       scanType: 'BOOKING_QR',
       id: booking.id,
-      code: booking.qr?.code ?? this.bookingPublicCode(booking.id),
+      code: booking.qr?.code ?? booking.bookingCode,
       status,
       statusLabel: isUsed ? 'Đã check-in' : 'Booking hợp lệ',
       expiresAt: this.toAuditIso(booking.qr?.expiresAt),
@@ -9885,8 +9885,11 @@ export class NightlifeDataService {
             ).id
           : undefined);
 
+      const bookingCode = this.generateBookingCode();
+
       return prisma.booking.create({
         data: {
+          bookingCode,
           userId: input.userId,
           guestId: input.guestId,
           storeId: input.target.store.id,
@@ -10750,7 +10753,7 @@ export class NightlifeDataService {
       return;
     }
 
-    const bookingCode = this.bookingPublicCode(booking.id);
+    const bookingCode = booking.bookingCode;
     const qrPayload = this.bookingQrPayload(booking);
     const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
@@ -10846,15 +10849,21 @@ export class NightlifeDataService {
     }
   }
 
-  private bookingPublicCode(bookingId: string) {
-    return `BK-${bookingId.slice(0, 8).toUpperCase()}`;
+  private generateBookingCode(length = 6): string {
+    const characters = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const bytes = require('crypto').randomBytes(length);
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += characters[bytes[i] % characters.length];
+    }
+    return `BK-${result}`;
   }
 
   private bookingQrPayload(booking: BookingNotificationRecord) {
     return [
       'NLBOOKING',
       booking.id,
-      this.bookingPublicCode(booking.id),
+      booking.bookingCode,
       booking.store?.slug ?? 'nightlife',
       this.toAuditIso(booking.scheduledAt) ?? '',
     ].join('|');
@@ -15062,16 +15071,6 @@ export class NightlifeDataService {
     return and.length ? { AND: and } : undefined;
   }
 
-  private formatAdminBookingCode(id: string) {
-    const numericMatch = id.match(/\d+/g);
-
-    if (numericMatch && numericMatch.length > 0) {
-      return `BK-${numericMatch.join('').slice(-4)}`;
-    }
-
-    return `BK-${id.slice(0, 4).toUpperCase()}`;
-  }
-
   private cityCodeFromAreaCode(code: string) {
     return code.split('-')[0] || undefined;
   }
@@ -18142,7 +18141,7 @@ export class NightlifeDataService {
     else if (status === 'completed') prismaStatus = 'COMPLETED';
     else if (status === 'cancelled') prismaStatus = 'CANCELLED';
 
-    let dateFilter = {};
+    let dateFilter: any = {};
     if (timeframe) {
       const now = new Date();
       let startDate = new Date();
@@ -18158,24 +18157,16 @@ export class NightlifeDataService {
 
     const storeFilter = this.buildAdminDashboardStoreWhere({ city, category });
     const searchTerm = this.cleanText(search);
-    const normalizedBookingCodeSearch = searchTerm
-      ? searchTerm.toUpperCase().replace(/[^A-Z0-9]/g, '')
-      : '';
-    const bookingCodeNeedle = normalizedBookingCodeSearch.replace(/^BK/, '');
-    const isBookingCodeSearch = Boolean(
-      normalizedBookingCodeSearch === 'BK' ||
-        (bookingCodeNeedle &&
-          (normalizedBookingCodeSearch.startsWith('BK') ||
-            /^\d+$/.test(normalizedBookingCodeSearch))),
-    );
+    const dateFilterCondition = dateFilter ? dateFilter : {};
 
     const baseWhere: import('@prisma/client').Prisma.BookingWhereInput = {
       ...(storeId && { storeId }),
       ...(storeFilter ? { store: { is: storeFilter } } : {}),
       // TODO: Filter by source when the schema supports it. Currently hardcoded.
-      ...dateFilter,
-      ...(searchTerm && !isBookingCodeSearch && {
+      ...dateFilterCondition,
+      ...(searchTerm && {
         OR: [
+          { bookingCode: { contains: searchTerm.replace(/^BK-?/i, ''), mode: 'insensitive' } },
           { id: this.containsInsensitive(searchTerm.replace(/^BK-?/i, '')) },
           { user: { displayName: this.containsInsensitive(searchTerm) } },
           { guest: { displayName: this.containsInsensitive(searchTerm) } },
@@ -18197,60 +18188,6 @@ export class NightlifeDataService {
       orderBy = { createdAt: sortBy === 'oldest' ? 'asc' : 'desc' };
     }
 
-    if (isBookingCodeSearch) {
-      const [allStatusCandidates, tabCandidates] = await Promise.all([
-        this.prisma.booking.findMany({
-          where: baseWhere,
-          orderBy,
-          include: { store: true, cast: true, user: true, guest: true },
-        }),
-        this.prisma.booking.findMany({
-          where,
-          orderBy,
-          include: { store: true, cast: true, user: true, guest: true },
-        }),
-      ]);
-      const matchesBookingCode = (booking: { id: string }) =>
-        this.formatAdminBookingCode(booking.id)
-          .replace(/[^A-Z0-9]/g, '')
-          .includes(bookingCodeNeedle);
-      const allStatusMatches = allStatusCandidates.filter(matchesBookingCode);
-      const filteredItems = tabCandidates.filter(matchesBookingCode);
-      const items = filteredItems.slice(skip, skip + limit);
-      const data = items.map((bk) => ({
-        id: bk.id,
-        bookingCode: this.formatAdminBookingCode(bk.id),
-        customerName:
-          bk.user?.displayName || bk.guest?.displayName || 'KhÃ¡ch VÃ£ng Lai',
-        customerPhone: bk.user?.phone || bk.guest?.phone || '',
-        customerEmail: bk.user?.email || bk.guest?.email || '',
-        store: bk.store.name,
-        cast: bk.cast?.stageName ? 'Cast: ' + bk.cast.stageName : 'KhÃ´ng cast',
-        partySize: bk.partySize,
-        scheduledAt: bk.scheduledAt,
-        source: 'Telegram',
-        status: bk.status,
-        note: bk.note,
-      }));
-
-      return {
-        data,
-        meta: {
-          total: filteredItems.length,
-          page,
-          limit,
-          new: allStatusMatches.filter((bk) => bk.status === 'REQUESTED').length,
-          completed: allStatusMatches.filter((bk) => bk.status === 'COMPLETED')
-            .length,
-          cancelled: allStatusMatches.filter((bk) => bk.status === 'CANCELLED')
-            .length,
-          all: allStatusMatches.filter((bk) =>
-            ['REQUESTED', 'COMPLETED', 'CANCELLED'].includes(bk.status),
-          ).length,
-        },
-      };
-    }
-
     const [items, total, newCount, completedCount, cancelledCount] =
       await Promise.all([
         this.prisma.booking.findMany({
@@ -18260,15 +18197,15 @@ export class NightlifeDataService {
           orderBy,
           include: { store: true, cast: true, user: true, guest: true },
         }),
-        this.prisma.booking.count({ where }),
-        this.prisma.booking.count({ where: { ...where, status: 'REQUESTED' } }),
-        this.prisma.booking.count({ where: { ...where, status: 'COMPLETED' } }),
-        this.prisma.booking.count({ where: { ...where, status: 'CANCELLED' } }),
+        this.prisma.booking.count({ where: baseWhere }),
+        this.prisma.booking.count({ where: { ...baseWhere, status: 'REQUESTED' } }),
+        this.prisma.booking.count({ where: { ...baseWhere, status: 'COMPLETED' } }),
+        this.prisma.booking.count({ where: { ...baseWhere, status: 'CANCELLED' } }),
       ]);
 
     const data = items.map((bk) => ({
       id: bk.id,
-      bookingCode: this.formatAdminBookingCode(bk.id),
+      bookingCode: bk.bookingCode,
       customerName:
         bk.user?.displayName || bk.guest?.displayName || 'Khách Vãng Lai',
       customerPhone: bk.user?.phone || bk.guest?.phone || '',

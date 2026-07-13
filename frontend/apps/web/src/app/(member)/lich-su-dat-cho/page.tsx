@@ -158,7 +158,6 @@ const getTomorrowDate = () => {
   return toDateInputValue(date);
 };
 
-const bookingCode = (booking: BookingRecord) => `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
 const bookingTitle = (booking: BookingRecord) => {
   const storeName = booking.store?.name ?? "NightLife";
@@ -272,7 +271,7 @@ const billSubmitHref = (booking: BookingRecord) => {
 
 const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language: LanguageCode) => {
   if (isBookingPastDue(booking)) {
-    return `${bookingCode(booking)} · ${translateText("Đã qua giờ đặt, bạn có thể đặt lại nếu cần.", language)}`;
+    return `${booking.bookingCode} · ${translateText("Đã qua giờ đặt, bạn có thể đặt lại nếu cần.", language)}`;
   }
 
   if (group === "Hoàn tất") {
@@ -284,8 +283,8 @@ const statusMeta = (booking: BookingRecord, group: BookingStatusGroup, language:
   }
 
   return isConfirmedStatus(booking.status)
-    ? `${bookingCode(booking)} · ${translateText("QR đã cấp", language)}`
-    : `${bookingCode(booking)} · ${translateText("Admin đang điều phối", language)}`;
+    ? `${booking.bookingCode} · ${translateText("QR đã cấp", language)}`
+    : `${booking.bookingCode} · ${translateText("Admin đang điều phối", language)}`;
 };
 
 const bookingThumbnail = (booking: BookingRecord, group: BookingStatusGroup) => {
@@ -1127,7 +1126,7 @@ export default function Page() {
           <div className={styles.dialogPanel}>
             <h2 id="booking-chat-title">Chat với Admin</h2>
             <p>
-              {bookingTitle(chatBooking)} · {bookingCode(chatBooking)}
+              {bookingTitle(chatBooking)} · {chatBooking.bookingCode}
             </p>
             <div className={styles.chatList}>
               {chatLoading ? <div className={styles.chatEmpty}>Đang tải tin nhắn...</div> : null}

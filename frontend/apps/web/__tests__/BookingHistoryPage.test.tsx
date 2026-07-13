@@ -49,6 +49,7 @@ vi.mock("@/lib/api/bookings", async () => {
 
 const booking = (overrides: Partial<BookingRecord>): BookingRecord => ({
   id: overrides.id ?? "booking-1",
+  bookingCode: overrides.bookingCode ?? "BK-X7B9K2",
   status: overrides.status ?? "REQUESTED",
   scheduledAt: overrides.scheduledAt ?? "2030-07-09T14:00:00.000Z",
   partySize: overrides.partySize ?? 4,

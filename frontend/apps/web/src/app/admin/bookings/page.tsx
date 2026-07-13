@@ -101,13 +101,7 @@ function AdminBookingsContent() {
   };
 
   const formatBookingId = (booking: any) => {
-    if (booking?.bookingCode) return booking.bookingCode;
-    const id = String(booking?.id || '');
-    const numericMatch = id.match(/\d+/g);
-    if (numericMatch && numericMatch.length > 0) {
-      return `BK-${numericMatch.join('').slice(-4)}`;
-    }
-    return `BK-${id.slice(0, 4).toUpperCase()}`;
+    return booking?.bookingCode || `BK-${String(booking?.id || '').slice(0, 8).toUpperCase()}`;
   };
 
   return (

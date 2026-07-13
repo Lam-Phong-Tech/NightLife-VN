@@ -454,12 +454,7 @@ const isBookingQrPayload = (value: string) =>
   value.trim().toUpperCase().startsWith('NLBOOKING|');
 
 const bookingPayloadFromId = (bookingId: string, bookingCode?: string | null) => {
-  const code =
-    bookingCode?.trim() ||
-    (uuidPattern.test(bookingId)
-      ? `BK-${bookingId.slice(0, 8).toUpperCase()}`
-      : bookingId.trim());
-
+  const code = bookingCode?.trim() || (uuidPattern.test(bookingId) ? `BK-${bookingId.slice(0, 8).toUpperCase()}` : bookingId.trim());
   return `NLBOOKING|${bookingId.trim()}|${code}||`;
 };
 

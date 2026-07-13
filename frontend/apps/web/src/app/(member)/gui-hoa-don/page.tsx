@@ -148,8 +148,6 @@ const formatDateTime = (value: string | null | undefined, language: LanguageCode
   }).format(date);
 };
 
-const bookingCode = (booking: Pick<BookingRecord, "id">) =>
-  `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
 const bookingTitle = (booking: BookingRecord) => {
   const storeName = booking.store?.name ?? "NightLife";
@@ -174,7 +172,7 @@ const bookingQrPayload = (booking: BookingRecord) =>
   [
     "NLBOOKING",
     booking.id,
-    bookingCode(booking),
+    booking.bookingCode,
     booking.store?.slug ?? "nightlife",
     booking.scheduledAt,
   ].join("|");
@@ -490,7 +488,7 @@ export default function Page() {
       setUsedAt(toDatetimeLocalValue(new Date(booking.scheduledAt)));
       setNotice({
         tone: "success",
-        message: `Đã tự điền thông tin từ booking ${bookingCode(booking)}. Vui lòng nhập tổng tiền bill gốc trước khi gửi.`,
+        message: `Đã tự điền thông tin từ booking ${booking.bookingCode}. Vui lòng nhập tổng tiền bill gốc trước khi gửi.`,
       });
       setAppliedBookingId(requestedBookingId);
     });
@@ -724,7 +722,7 @@ export default function Page() {
                 <div className="nl-linked-qr">
                   <Image
                     src={bookingQrImageUrl(selectedBooking)}
-                    alt={`QR booking ${bookingCode(selectedBooking)}`}
+                    alt={`QR booking ${selectedBooking.bookingCode}`}
                     width={132}
                     height={132}
                     unoptimized
@@ -736,7 +734,7 @@ export default function Page() {
                   <dl>
                     <div>
                       <dt>Mã booking</dt>
-                      <dd>{bookingCode(selectedBooking)}</dd>
+                      <dd>{selectedBooking.bookingCode}</dd>
                     </div>
                     <div>
                       <dt>Thời gian</dt>
@@ -914,7 +912,7 @@ export default function Page() {
             <div className="nl-side-row">
               <span>Booking</span>
               <strong>
-                {selectedBooking ? `${bookingCode(selectedBooking)} · ${formatDateTime(selectedBooking.scheduledAt, activeLanguage)}` : "Không liên kết booking"}
+                {selectedBooking ? `${selectedBooking.bookingCode} · ${formatDateTime(selectedBooking.scheduledAt, activeLanguage)}` : "Không liên kết booking"}
               </strong>
             </div>
             <div className="nl-side-row">

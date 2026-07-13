@@ -27,7 +27,7 @@ export class TelegramService {
 
     try {
       const message = formatBookingRequestTelegramMessage({
-        bookingCode: this.bookingPublicCode(booking.id),
+        bookingCode: booking.bookingCode,
         storeName: booking.store?.name,
         customerName: booking.user?.displayName ?? booking.guest?.displayName,
         customerEmail: booking.guest?.email ?? booking.user?.email,
@@ -57,7 +57,4 @@ export class TelegramService {
     }
   }
 
-  private bookingPublicCode(bookingId?: string | null) {
-    return bookingId ? `BK-${bookingId.slice(0, 8).toUpperCase()}` : null;
-  }
 }

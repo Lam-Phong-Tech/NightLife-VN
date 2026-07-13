@@ -18,7 +18,6 @@ const formatDateTime = (value?: string) => {
   }).format(new Date(value));
 };
 
-const bookingCode = (booking: BookingRecord) => `#BK-${booking.id.slice(0, 8).toUpperCase()}`;
 
 const bookingQrFileName = (booking: BookingRecord) =>
   `nightlife-booking-${booking.id.slice(0, 8).toLowerCase()}-qr.png`;
@@ -38,7 +37,7 @@ const bookingQrPayload = (booking: BookingRecord) =>
   [
     "NLBOOKING",
     booking.id,
-    bookingCode(booking),
+    booking.bookingCode,
     booking.store?.slug ?? "nightlife",
     booking.scheduledAt,
   ].join("|");
@@ -155,7 +154,7 @@ export default function Page() {
             <section className={styles.summaryCard} aria-label="Tóm tắt đặt chỗ">
               <SummaryRow
                 label="Mã đặt chỗ"
-                value={<span className={styles.bookingCode}>{bookingCode(booking)}</span>}
+                value={<span className={styles.bookingCode}>{booking.bookingCode}</span>}
               />
               <SummaryRow label="Quán" value={title} />
               <SummaryRow label="Thời gian" value={formatDateTime(booking.scheduledAt)} />
@@ -177,7 +176,7 @@ export default function Page() {
               <div className={styles.qrBox}>
                 <Image
                   src={qrImageUrl}
-                  alt={`QR đặt chỗ ${bookingCode(booking)}`}
+                  alt={`QR đặt chỗ ${booking.bookingCode}`}
                   width={156}
                   height={156}
                   unoptimized

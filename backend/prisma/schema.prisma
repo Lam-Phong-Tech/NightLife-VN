@@ -577,6 +577,7 @@ model MemberFavoriteCast {
 
 model Booking {
   id                     String                 @id @default(uuid()) @db.Uuid
+  bookingCode            String                 @unique @map("booking_code") @db.VarChar(15)
   userId                 String?                @map("user_id") @db.Uuid
   guestId                String?                @map("guest_id") @db.Uuid
   storeId                String                 @map("store_id") @db.Uuid
