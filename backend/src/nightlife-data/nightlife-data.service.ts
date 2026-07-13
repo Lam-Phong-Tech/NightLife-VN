@@ -17806,7 +17806,7 @@ export class NightlifeDataService {
     });
   }
 
-  async softDeleteAdminStore(id: string) {
+  async deleteAdminStore(user: AuthenticatedUser, id: string, hard: boolean) {
     return this.prisma.$transaction(async (tx) => {
       const store = await tx.store.findUnique({
         where: { id },
@@ -17815,6 +17815,18 @@ export class NightlifeDataService {
 
       if (!store) {
         throw new NotFoundException('Store not found');
+      }
+
+      if (hard) {
+        if (user.role !== 'SUPER_ADMIN') {
+          throw new BadRequestException('Only Super Admin can hard delete stores');
+        }
+
+        await tx.store.delete({
+          where: { id },
+        });
+
+        return { message: 'Store hard deleted successfully' };
       }
 
       await tx.store.update({

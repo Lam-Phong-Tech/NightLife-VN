@@ -1608,12 +1608,16 @@ export class NightlifeDataController {
     return this.nightlifeDataService.linkAdminStorePartnerAccount(id, dto);
   }
 
-  @ApiOperation({ summary: 'Admin action: Soft delete a store' })
+  @ApiOperation({ summary: 'Admin action: Delete a store (soft or hard)' })
   @Roles('ADMIN')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('admin/stores/:id')
-  softDeleteAdminStore(@Param('id') id: string) {
-    return this.nightlifeDataService.softDeleteAdminStore(id);
+  deleteAdminStore(
+    @Req() request: RequestWithUser,
+    @Param('id') id: string,
+    @Query('hard') hard?: string,
+  ) {
+    return this.nightlifeDataService.deleteAdminStore(request.user, id, hard === 'true');
   }
 
   @ApiOperation({ summary: 'Admin action: Restore a soft-deleted store' })
