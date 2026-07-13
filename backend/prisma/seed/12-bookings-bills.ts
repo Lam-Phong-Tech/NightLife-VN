@@ -549,8 +549,12 @@ export async function seedBookingsAndBills(
     }
 
     const bookingId = seedUuid(`booking:${fixture.key}`);
+    const bookingCode = `BK-${seedHash(`booking-code:${fixture.key}`)
+      .slice(0, 6)
+      .toUpperCase()}`;
     const totalVnd = Math.max(0, fixture.subtotalVnd - fixture.discountVnd);
     const bookingData = {
+      bookingCode,
       userId: user?.id ?? null,
       guestId: guest?.id ?? null,
       storeId: store.id,

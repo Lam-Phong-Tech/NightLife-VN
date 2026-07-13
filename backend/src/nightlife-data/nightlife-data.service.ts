@@ -4050,6 +4050,7 @@ export class NightlifeDataService {
 
   private decoratePartnerBookingQr(booking: {
     id: string;
+    bookingCode?: string | null;
     storeId: string;
     status: string;
     scheduledAt: Date | string;
@@ -4086,7 +4087,7 @@ export class NightlifeDataService {
     return {
       scanType: 'BOOKING_QR',
       id: booking.id,
-      code: booking.qr?.code ?? booking.bookingCode,
+      code: booking.qr?.code ?? this.bookingCodeFor(booking),
       status,
       statusLabel: isUsed ? 'Đã check-in' : 'Booking hợp lệ',
       expiresAt: this.toAuditIso(booking.qr?.expiresAt),
@@ -10715,7 +10716,7 @@ export class NightlifeDataService {
         templateKey,
         payload: {
           bookingId: booking.id,
-          bookingCode: booking.bookingCode,
+          bookingCode: this.bookingCodeFor(booking),
           status: booking.status,
           ...payload,
         },
@@ -10760,7 +10761,7 @@ export class NightlifeDataService {
       return;
     }
 
-    const bookingCode = booking.bookingCode;
+    const bookingCode = this.bookingCodeFor(booking);
     const qrPayload = this.bookingQrPayload(booking);
     const qrImageDataUrl = await this.buildBookingQrImageDataUrl(qrPayload);
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qrPayload)}`;
@@ -10866,11 +10867,17 @@ export class NightlifeDataService {
     return `BK-${result}`;
   }
 
+  private bookingCodeFor(booking: { id: string; bookingCode?: string | null }) {
+    return booking.bookingCode ?? booking.id;
+  }
+
   private bookingQrPayload(booking: BookingNotificationRecord) {
+    const bookingCode = this.bookingCodeFor(booking);
+
     return [
       'NLBOOKING',
       booking.id,
-      booking.bookingCode,
+      bookingCode,
       booking.store?.slug ?? 'nightlife',
       this.toAuditIso(booking.scheduledAt) ?? '',
     ].join('|');
@@ -11793,7 +11800,7 @@ export class NightlifeDataService {
         templateKey,
         payload: {
           bookingId: booking.id,
-          bookingCode: booking.bookingCode,
+          bookingCode: this.bookingCodeFor(booking),
           status: booking.status,
           reason: options.reason ?? null,
           actorType: options.actorType,

@@ -41,6 +41,7 @@ type AdminTelegramNotification = AdminNotificationRelations & {
 
 export type BookingAdminNotification = {
   id: string;
+  bookingCode?: string | null;
   status: string;
   scheduledAt?: Date | string | null;
   partySize?: number | null;
