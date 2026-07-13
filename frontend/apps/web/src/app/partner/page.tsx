@@ -38,7 +38,7 @@ import {
 import jsQR from 'jsqr';
 import { useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, apiClient } from '@/lib/api/client';
+import { ApiError, apiClient, apiFormDataClient } from '@/lib/api/client';
 import { billApi } from '@/lib/api/bills';
 import { clearAuthSession } from '@/lib/auth/session';
 
@@ -262,6 +262,12 @@ type PartnerListingDraftResponse = {
   publishedAt: string | null;
   review: PartnerListingReview;
   draft: PartnerListingDraft;
+};
+
+type StorageUploadResponse = {
+  url?: string | null;
+  originalName?: string | null;
+  mimeType?: string | null;
 };
 
 type ListingValidationMode = 'draft' | 'submit';
@@ -949,6 +955,25 @@ const contentTabs: { key: ListingTabKey; label: string }[] = [
   { key: 'cast', label: 'Cast' },
 ];
 
+const listingUploadLimits = {
+  image: 15 * 1024 * 1024,
+  video: 25 * 1024 * 1024,
+};
+
+const listingImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp', 'image/gif']);
+const listingVideoMimeTypes = new Set(['video/mp4', 'video/webm']);
+const listingImageExtensions = ['.jpg', '.jpeg', '.png', '.svg', '.webp', '.gif'];
+const listingVideoExtensions = ['.mp4', '.webm'];
+
+const isAllowedListingFile = (file: File, kind: 'image' | 'video') => {
+  const name = file.name.toLowerCase();
+  if (kind === 'image') {
+    return listingImageMimeTypes.has(file.type) || listingImageExtensions.some((ext) => name.endsWith(ext));
+  }
+
+  return listingVideoMimeTypes.has(file.type) || listingVideoExtensions.some((ext) => name.endsWith(ext));
+};
+
 const navItems: { key: PanelKey; label: string; icon: LucideIcon }[] = [
   { key: 'scan', label: 'Quét mã QR', icon: QrCode },
   { key: 'overview', label: 'Tổng quan', icon: Home },
@@ -1372,6 +1397,7 @@ export default function PartnerPage() {
   const [listingNotice, setListingNotice] = useState('');
   const [listingErrors, setListingErrors] = useState<ListingValidationErrors>({});
   const [listingTagInput, setListingTagInput] = useState('');
+  const [listingUploadKey, setListingUploadKey] = useState<string | null>(null);
   const [activeCastProfileIndex, setActiveCastProfileIndex] = useState<number | null>(null);
   const [isAddingCastProfile, setIsAddingCastProfile] = useState(false);
   const [provinces, setProvinces] = useState<VietnamProvince[]>([]);
@@ -3083,6 +3109,127 @@ export default function PartnerPage() {
       </span>
     ) : null;
 
+  const uploadListingFiles = async (
+    files: File[],
+    options: {
+      key: string;
+      kind: 'image' | 'video';
+      purpose: string;
+      successLabel: string;
+      onUploaded: (urls: string[]) => void;
+    },
+  ) => {
+    if (!files.length) return;
+
+    const storeId = listingStoreId || activePartnerStore?.id;
+    if (!storeId) {
+      setListingNotice('Cần chọn quán trước khi tải file lên.');
+      return;
+    }
+
+    const invalidFile = files.find((file) => !isAllowedListingFile(file, options.kind));
+    if (invalidFile) {
+      setListingNotice(
+        options.kind === 'image'
+          ? `File ${invalidFile.name} không đúng định dạng. Chỉ nhận JPG, PNG, WebP, GIF hoặc SVG.`
+          : `File ${invalidFile.name} không đúng định dạng. Chỉ nhận MP4 hoặc WebM.`,
+      );
+      return;
+    }
+
+    const limit = listingUploadLimits[options.kind];
+    const oversizedFile = files.find((file) => file.size > limit);
+    if (oversizedFile) {
+      setListingNotice(
+        `${oversizedFile.name} vượt quá dung lượng ${options.kind === 'image' ? '15MB' : '25MB'}.`,
+      );
+      return;
+    }
+
+    setListingUploadKey(options.key);
+    setListingNotice(`Đang tải ${files.length} file lên...`);
+
+    try {
+      const urls: string[] = [];
+      for (const file of files) {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('purpose', options.purpose);
+        form.append('access', 'PUBLIC');
+        form.append('storeId', storeId);
+
+        const response = await apiFormDataClient<StorageUploadResponse>('/storage/upload', form);
+        const uploadedUrl = response.url?.trim();
+        if (!uploadedUrl) {
+          throw new Error('Không lấy được URL sau khi tải file lên.');
+        }
+        urls.push(uploadedUrl);
+      }
+
+      options.onUploaded(urls);
+      setListingNotice(`Đã tải ${options.successLabel}. Bấm Lưu nháp hoặc Gửi duyệt để lưu vào bản đăng tin.`);
+    } catch (error) {
+      setListingNotice(error instanceof Error ? error.message : 'Không tải file lên được.');
+    } finally {
+      setListingUploadKey(null);
+    }
+  };
+
+  const renderListingUploadButton = (options: {
+    key: string;
+    label: string;
+    loadingLabel: string;
+    kind: 'image' | 'video';
+    multiple?: boolean;
+    purpose: string;
+    successLabel: string;
+    onUploaded: (urls: string[]) => void;
+  }) => {
+    const isBusy = listingUploadKey === options.key;
+    const isDisabled = Boolean(listingUploadKey);
+
+    return (
+      <label
+        style={{
+          minHeight: '38px',
+          borderRadius: '11px',
+          border: `1px solid ${colors.borderGold22}`,
+          background: colors.surface2,
+          color: colors.gold,
+          padding: '0 12px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          fontWeight: 900,
+          fontSize: '12.5px',
+          cursor: isDisabled ? 'wait' : 'pointer',
+          opacity: isDisabled && !isBusy ? 0.56 : 1,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {options.kind === 'image' ? <ImagePlus size={15} /> : <Upload size={15} />}
+        {isBusy ? options.loadingLabel : options.label}
+        <input
+          type="file"
+          accept={
+            options.kind === 'image'
+              ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml'
+              : 'video/mp4,video/webm'
+          }
+          multiple={options.multiple}
+          disabled={isDisabled}
+          onChange={(event) => {
+            const files = Array.from(event.currentTarget.files ?? []);
+            event.currentTarget.value = '';
+            void uploadListingFiles(files, options);
+          }}
+          style={{ display: 'none' }}
+        />
+      </label>
+    );
+  };
+
   const validateListingBeforeAction = (mode: ListingValidationMode) => {
     if (!listingStoreId) {
       setListingNotice('Cần chọn quán trước khi lưu hoặc gửi duyệt.');
@@ -4114,8 +4261,50 @@ export default function PartnerPage() {
               style={listingInputStyle(`castProfiles.${index}.mediaUrls`)}
             />
             {listingErrorText(`castProfiles.${index}.mediaUrls`)}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {renderListingUploadButton({
+                key: `cast-media-image-${index}`,
+                label: 'Tải ảnh cast từ máy',
+                loadingLabel: 'Đang tải ảnh...',
+                kind: 'image',
+                multiple: true,
+                purpose: 'PARTNER_CAST_IMAGE',
+                successLabel: 'ảnh cast',
+                onUploaded: (urls) => {
+                  clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
+                  setListingDraft((current) => ({
+                    ...current,
+                    castProfiles: current.castProfiles.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, mediaUrls: [...(item.mediaUrls ?? []).filter(Boolean), ...urls] }
+                        : item,
+                    ),
+                  }));
+                },
+              })}
+              {renderListingUploadButton({
+                key: `cast-media-video-${index}`,
+                label: 'Tải video cast từ máy',
+                loadingLabel: 'Đang tải video...',
+                kind: 'video',
+                multiple: true,
+                purpose: 'PARTNER_CAST_VIDEO',
+                successLabel: 'video cast',
+                onUploaded: (urls) => {
+                  clearListingErrorsFor(`castProfiles.${index}.mediaUrls`);
+                  setListingDraft((current) => ({
+                    ...current,
+                    castProfiles: current.castProfiles.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, mediaUrls: [...(item.mediaUrls ?? []).filter(Boolean), ...urls] }
+                        : item,
+                    ),
+                  }));
+                },
+              })}
+            </div>
             <span style={{ color: colors.muted, fontSize: '11px', lineHeight: 1.5 }}>
-              Nhập nhiều ảnh bằng dấu phẩy. Ảnh đầu tiên sẽ dùng làm ảnh đại diện.
+              Nhập URL bằng dấu phẩy hoặc tải file từ máy. Media đầu tiên sẽ dùng làm ảnh đại diện.
             </span>
           </FormField>
           <FormField label="Video YouTube" className="partner-field-wide">
@@ -4825,6 +5014,20 @@ export default function PartnerPage() {
               style={listingInputStyle('coverImageUrl')}
             />
             {listingErrorText('coverImageUrl')}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {renderListingUploadButton({
+                key: 'store-cover-image',
+                label: 'Tải ảnh bìa từ máy',
+                loadingLabel: 'Đang tải ảnh bìa...',
+                kind: 'image',
+                purpose: 'PARTNER_STORE_COVER',
+                successLabel: 'ảnh bìa',
+                onUploaded: ([url]) => {
+                  if (!url) return;
+                  updateListingField('coverImageUrl', url);
+                },
+              })}
+            </div>
           </FormField>
         </section>
 
@@ -4854,10 +5057,28 @@ export default function PartnerPage() {
               </div>
             </div>
           ))}
-          <GhostButton onClick={addGalleryUrl}>
-            <ImagePlus size={16} />
-            Thêm ảnh
-          </GhostButton>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {renderListingUploadButton({
+              key: 'store-gallery-images',
+              label: 'Tải ảnh album từ máy',
+              loadingLabel: 'Đang tải ảnh...',
+              kind: 'image',
+              multiple: true,
+              purpose: 'PARTNER_STORE_GALLERY',
+              successLabel: 'ảnh album',
+              onUploaded: (urls) => {
+                clearListingErrorsFor('galleryUrls');
+                setListingDraft((current) => ({
+                  ...current,
+                  galleryUrls: [...current.galleryUrls.filter(Boolean), ...urls],
+                }));
+              },
+            })}
+            <GhostButton onClick={addGalleryUrl}>
+              <ImagePlus size={16} />
+              Thêm URL ảnh
+            </GhostButton>
+          </div>
         </section>
 
         <section className="partner-listing-section">
@@ -4886,10 +5107,28 @@ export default function PartnerPage() {
               </div>
             </div>
           ))}
-          <GhostButton onClick={addVideoUrl}>
-            <ImagePlus size={16} />
-            Thêm video
-          </GhostButton>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {renderListingUploadButton({
+              key: 'store-videos',
+              label: 'Tải video từ máy',
+              loadingLabel: 'Đang tải video...',
+              kind: 'video',
+              multiple: true,
+              purpose: 'PARTNER_STORE_VIDEO',
+              successLabel: 'video quán',
+              onUploaded: (urls) => {
+                clearListingErrorsFor('videoUrls');
+                setListingDraft((current) => ({
+                  ...current,
+                  videoUrls: [...current.videoUrls.filter(Boolean), ...urls],
+                }));
+              },
+            })}
+            <GhostButton onClick={addVideoUrl}>
+              <ImagePlus size={16} />
+              Thêm URL video
+            </GhostButton>
+          </div>
         </section>
 
         {listingDraft.mediaUrls.length ? (
@@ -4914,10 +5153,28 @@ export default function PartnerPage() {
                 </div>
               </div>
             ))}
-            <GhostButton onClick={addMediaUrl}>
-              <ImagePlus size={16} />
-              Thêm media khác
-            </GhostButton>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {renderListingUploadButton({
+                key: 'store-legacy-media',
+                label: 'Tải media từ máy',
+                loadingLabel: 'Đang tải media...',
+                kind: 'image',
+                multiple: true,
+                purpose: 'PARTNER_STORE_MEDIA',
+                successLabel: 'media khác',
+                onUploaded: (urls) => {
+                  clearListingErrorsFor('mediaUrls');
+                  setListingDraft((current) => ({
+                    ...current,
+                    mediaUrls: [...current.mediaUrls.filter(Boolean), ...urls],
+                  }));
+                },
+              })}
+              <GhostButton onClick={addMediaUrl}>
+                <ImagePlus size={16} />
+                Thêm URL media
+              </GhostButton>
+            </div>
           </section>
         ) : null}
 
@@ -5014,6 +5271,20 @@ export default function PartnerPage() {
                           style={listingInputStyle(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
                         />
                         {listingErrorText(`menuGroups.${groupIndex}.items.${itemIndex}.imageUrl`)}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          {renderListingUploadButton({
+                            key: `menu-item-image-${groupIndex}-${itemIndex}`,
+                            label: 'Tải ảnh món từ máy',
+                            loadingLabel: 'Đang tải ảnh...',
+                            kind: 'image',
+                            purpose: 'PARTNER_MENU_ITEM_IMAGE',
+                            successLabel: 'ảnh món',
+                            onUploaded: ([url]) => {
+                              if (!url) return;
+                              updateMenuItem(groupIndex, itemIndex, 'imageUrl', url);
+                            },
+                          })}
+                        </div>
                       </FormField>
                       <div style={{ display: 'flex', alignItems: 'end', gap: '8px' }}>
                         <button
