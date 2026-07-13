@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { ArrowLeft, BadgeCheck, Building2, Eye, LockKeyhole, LogIn, QrCode, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Building2, Eye, EyeOff, LockKeyhole, LogIn, QrCode, ShieldCheck } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { loginPartner } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
@@ -58,6 +58,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
   const isMobile = mode === 'mobile';
   const [email, setEmail] = useState(testAccount.email);
   const [password, setPassword] = useState(testAccount.password);
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const redirectTo = useMemo(() => {
@@ -88,6 +89,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
 
   return (
     <main
+      data-no-translate="true"
       style={{
         minHeight: '100vh',
         background: colors.bg,
@@ -129,57 +131,6 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
               </Link>
             ) : null}
             <Logo compact={isMobile} />
-          </div>
-          <div
-            style={{
-              width: isMobile ? '100%' : 'auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isMobile ? 'flex-end' : 'flex-start',
-              gap: isMobile ? '8px' : '14px',
-            }}
-          >
-            <span
-              style={{
-                minHeight: '38px',
-                padding: isMobile ? '0 10px' : '0 11px',
-                borderRadius: '19px',
-                border: `1px solid ${colors.borderGold32}`,
-                color: colors.gold,
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontSize: isMobile ? '11.5px' : '12px',
-                fontWeight: 700,
-                background: colors.surface2,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              VI / JP
-            </span>
-            <Link
-              href="/dang-nhap-doi-tac?redirect=/partner"
-              style={{ color: colors.text2, fontSize: isMobile ? '12px' : '13px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              href="/dang-ky-doi-tac"
-              style={{
-                minHeight: '38px',
-                borderRadius: '19px',
-                padding: isMobile ? '0 12px' : '0 16px',
-                background: colors.goldGrad,
-                color: colors.onGold,
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontSize: isMobile ? '12px' : '13px',
-                fontWeight: 800,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Đăng ký đối tác
-            </Link>
           </div>
         </header>
       </div>
@@ -304,7 +255,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
               Mật khẩu
               <span style={{ position: 'relative', display: 'block' }}>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   style={{
@@ -319,7 +270,31 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
                     outline: 'none',
                   }}
                 />
-                <Eye size={16} color={colors.gold} style={{ position: 'absolute', right: '14px', top: '14px' }} />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-pressed={showPassword}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setShowPassword((current) => !current)}
+                  style={{
+                    position: 'absolute',
+                    right: '7px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '34px',
+                    height: '34px',
+                    border: 0,
+                    borderRadius: '9px',
+                    color: colors.gold,
+                    background: 'rgba(212,178,106,.12)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </span>
             </label>
           </div>
@@ -349,7 +324,7 @@ function LoginContent({ mode }: { mode: 'mobile' | 'desktop' }) {
             }}
           >
             <LogIn size={16} />
-            {isSubmitting ? 'Dang xac thuc...' : 'Vào cổng đối tác'}
+            {isSubmitting ? 'Đang xác thực...' : 'Vào cổng đối tác'}
           </button>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px', marginTop: '14px' }}>
