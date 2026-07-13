@@ -655,15 +655,18 @@ export default function Page() {
 
         .coupon-hero {
           position: relative;
+          isolation: isolate;
           overflow: hidden;
           border: 1px solid rgba(212, 178, 106, .2);
           border-radius: 8px;
           background:
-            linear-gradient(115deg, rgba(18, 18, 22, .98), rgba(25, 23, 25, .86)),
+            linear-gradient(115deg, rgba(10, 10, 13, .76), rgba(13, 11, 16, .38) 52%, rgba(13, 9, 16, .18)),
             var(--coupon-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
           background-position: center;
           background-size: cover;
-          box-shadow: 0 28px 72px -44px rgba(0, 0, 0, .9);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, .045),
+            0 28px 72px -44px rgba(0, 0, 0, .9);
           display: grid;
           grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
           gap: 28px;
@@ -675,7 +678,9 @@ export default function Page() {
           content: "";
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, rgba(12, 12, 15, .96), rgba(12, 12, 15, .74) 48%, rgba(12, 12, 15, .52));
+          background:
+            radial-gradient(circle at 82% 32%, rgba(212, 178, 106, .13), transparent 34%),
+            linear-gradient(90deg, rgba(8, 8, 10, .78), rgba(8, 8, 10, .34) 48%, rgba(8, 8, 10, .16));
           pointer-events: none;
         }
 
@@ -692,6 +697,7 @@ export default function Page() {
           font-weight: 900;
           text-decoration: none;
           margin-bottom: 9px;
+          text-shadow: 0 2px 14px rgba(0, 0, 0, .72);
         }
 
         h1,
@@ -706,6 +712,7 @@ export default function Page() {
           font-size: clamp(34px, 4vw, 56px);
           line-height: .96;
           font-weight: 950;
+          text-shadow: 0 4px 24px rgba(0, 0, 0, .78);
         }
 
         .coupon-hero p {
@@ -714,6 +721,7 @@ export default function Page() {
           color: #bdb4a5;
           font-size: 14px;
           line-height: 1.65;
+          text-shadow: 0 2px 14px rgba(0, 0, 0, .68);
         }
 
         .hero-search {
@@ -1180,15 +1188,25 @@ export default function Page() {
         html.vy-light .coupon-hero {
           border-color: rgba(150, 116, 52, .28);
           background:
-            linear-gradient(115deg, rgba(255, 255, 255, .94), rgba(246, 244, 239, .9)),
+            linear-gradient(115deg, rgba(255, 250, 242, .78), rgba(246, 244, 239, .42) 54%, rgba(246, 244, 239, .22)),
             var(--coupon-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
           background-position: center;
           background-size: cover;
-          box-shadow: 0 22px 54px -34px rgba(40, 30, 10, .34);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, .68),
+            0 22px 54px -34px rgba(40, 30, 10, .34);
         }
 
         html.vy-light .coupon-hero::before {
-          background: linear-gradient(90deg, rgba(255, 255, 255, .92), rgba(246, 244, 239, .78) 50%, rgba(246, 244, 239, .62));
+          background:
+            radial-gradient(circle at 82% 32%, rgba(168, 124, 52, .16), transparent 34%),
+            linear-gradient(90deg, rgba(255, 250, 242, .8), rgba(246, 244, 239, .34) 50%, rgba(246, 244, 239, .14));
+        }
+
+        html.vy-light .back-link,
+        html.vy-light h1,
+        html.vy-light .coupon-hero p {
+          text-shadow: none;
         }
 
         html.vy-light .back-link,
