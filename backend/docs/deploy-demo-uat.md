@@ -67,25 +67,30 @@ The backend deploy workflow now gates schema changes as follows:
    `stores`. If it is empty, the workflow checks the known previous demo DB
    `backend_db`; when that DB is reachable and populated, it backs up `.env` and
    rewrites only the database name in `DATABASE_URL` to `backend_db`.
-5. If neither the configured DB nor `backend_db` has the required data, the
+5. If the configured database is already the default demo/UAT DB `backend_db`
+   and the core tables are reachable but empty, the workflow runs a guarded
+   migrate + seed bootstrap and verifies `users` and `stores` are populated
+   before restart.
+6. If neither the configured DB nor `backend_db` has the required data, the
    workflow stops before backup/migration. It must not create an empty DB for
    UAT evidence.
-6. Run `backend/scripts/backup-uat.sh` against the verified DB.
-7. If the legacy DB was previously managed with `prisma db push` and has
+7. Run `backend/scripts/backup-uat.sh` against the verified DB.
+8. If the legacy DB was previously managed with `prisma db push` and has
    incomplete `_prisma_migrations` history, run a guarded migration baseline
    only after backup. The workflow first runs `prisma migrate diff` from the
    live DB to `prisma/schema.prisma`; it marks missing/failed migrations as
    applied only when that diff is empty.
-8. Print backup evidence to the GitHub Actions log:
+9. Print backup evidence to the GitHub Actions log:
    - `nightlife-*-manifest.txt`
    - `nightlife-*-sha256.txt`
    - DB `.dump` size
    - `pg_restore --list` output
    - storage `.tgz` size or `.skipped` reason
-9. Run `pnpm exec prisma migrate deploy`.
-10. Restart backend PM2 process.
-11. Run backend, frontend, admin, and partner smoke checks.
-12. Write the deploy evidence file under `deploy-evidence/`.
+10. Run `pnpm exec prisma migrate deploy`.
+11. If the DB was the empty default demo/UAT DB, run the seed bootstrap.
+12. Restart backend PM2 process.
+13. Run backend, frontend, admin, and partner smoke checks.
+14. Write the deploy evidence file under `deploy-evidence/`.
 
 `npx prisma db push --accept-data-loss` is no longer used by the VPS deploy
 workflow.
@@ -105,6 +110,7 @@ workflow log or VPS `deploy-evidence` file:
 | Storage skipped reason | `/var/backups/nightlife/demo-uat/nightlife-storage-<timestamp>.skipped` |
 | Release note | `/var/www/api.demonightlight.test9.io.vn/deploy-evidence/nightlife-<timestamp>-release.txt` |
 | DB repoint proof | `database_name`, `database_repointed`, and `database_data_counts_users_stores_areas` in the release note |
+| DB bootstrap proof | `database_bootstrap_applied`, `database_bootstrap_reason`, and refreshed `database_data_counts_users_stores_areas` in the release note |
 | Migration baseline proof | `migration_baseline_applied`, `migration_baseline_reason`, and `migration_baseline_marked` in the release note |
 
 ## Smoke Checks
