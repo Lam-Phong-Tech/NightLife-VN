@@ -1,4 +1,4 @@
-import client from './client';
+import { apiClient } from './client';
 
 export type AuditLogRec = {
   id: string;
@@ -32,11 +32,9 @@ export async function getAuditLogs(params?: {
   action?: string;
   result?: string;
 }) {
-  const res = await client.get('/admin/audit-logs', { params });
-  return res.data;
+  return apiClient<{ items: AuditLogRec[]; meta: any }>('/admin/audit-logs', { params });
 }
 
 export async function getAuditLogById(id: string) {
-  const res = await client.get(`/admin/audit-logs/${id}`);
-  return res.data;
+  return apiClient<AuditLogRec>(`/admin/audit-logs/${id}`);
 }

@@ -16,8 +16,6 @@ export type AuthResponse = {
 };
 
 const sessionCookieMaxAge = 60 * 60 * 24;
-const authUserStorageKey = "nightlife_user";
-const authExpiresStorageKey = "nightlife_auth_expires_at";
 export const authSessionChangeEvent = "nightlife-auth-session-change";
 
 const notifyAuthSessionChanged = () => {
@@ -75,9 +73,17 @@ const isTokenExpired = (token: string) => {
   return Boolean(expiresAt && expiresAt <= Date.now());
 };
 
+export const getSessionScopePrefix = () => {
+  if (typeof window === "undefined") return "";
+  if (window.location.pathname.startsWith("/admin")) return "admin_";
+  if (window.location.pathname.startsWith("/partner")) return "partner_";
+  return "";
+};
+
 const getStoredAuthToken = () => {
   const cookies = parseCookies();
-  return cookies.auth_token || "";
+  const prefix = getSessionScopePrefix();
+  return cookies[`${prefix}auth_token`] || "";
 };
 
 export const getAuthSessionExpiresAt = () => {
@@ -86,22 +92,27 @@ export const getAuthSessionExpiresAt = () => {
   const tokenExpiresAt = readTokenExpiresAt(getStoredAuthToken());
   if (tokenExpiresAt) return tokenExpiresAt;
 
-  const storedExpiresAt = Number(window.localStorage.getItem(authExpiresStorageKey));
+  const prefix = getSessionScopePrefix();
+  const storedExpiresAt = Number(window.localStorage.getItem(`nightlife_${prefix}auth_expires_at`));
   return Number.isFinite(storedExpiresAt) && storedExpiresAt > 0 ? storedExpiresAt : null;
 };
 
 export const clearAuthSession = () => {
+  const prefix = getSessionScopePrefix();
+  
   if (typeof document !== "undefined") {
-    for (const name of ["auth_token", "user_role", "user_email", "user_name"]) {
+    for (const name of [`${prefix}auth_token`, `${prefix}user_role`, `${prefix}user_email`, `${prefix}user_name`]) {
       document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
     }
   }
 
   if (typeof window !== "undefined") {
-    window.localStorage.removeItem(authUserStorageKey);
-    window.localStorage.removeItem(authExpiresStorageKey);
-    window.localStorage.removeItem("nightlife_guest_bookings");
-    window.sessionStorage.removeItem("nightlife_last_booking");
+    window.localStorage.removeItem(`nightlife_${prefix}user`);
+    window.localStorage.removeItem(`nightlife_${prefix}auth_expires_at`);
+    if (!prefix) {
+      window.localStorage.removeItem("nightlife_guest_bookings");
+      window.sessionStorage.removeItem("nightlife_last_booking");
+    }
   }
 
   notifyAuthSessionChanged();
@@ -109,7 +120,8 @@ export const clearAuthSession = () => {
 
 const getValidAuthToken = () => {
   const cookies = parseCookies();
-  const token = cookies.auth_token || "";
+  const prefix = getSessionScopePrefix();
+  const token = cookies[`${prefix}auth_token`] || "";
   if (!token) {
     return "";
   }
@@ -133,17 +145,19 @@ export const setAuthSession = (session: AuthResponse) => {
     return;
   }
 
-  setCookie("auth_token", session.accessToken, maxAge);
-  setCookie("user_role", session.user.role, maxAge);
-  setCookie("user_email", session.user.email, maxAge);
-  setCookie("user_name", session.user.displayName ?? session.user.email, maxAge);
+  const prefix = getSessionScopePrefix();
 
-  window.localStorage.setItem(authUserStorageKey, JSON.stringify(session.user));
+  setCookie(`${prefix}auth_token`, session.accessToken, maxAge);
+  setCookie(`${prefix}user_role`, session.user.role, maxAge);
+  setCookie(`${prefix}user_email`, session.user.email, maxAge);
+  setCookie(`${prefix}user_name`, session.user.displayName ?? session.user.email, maxAge);
+
+  window.localStorage.setItem(`nightlife_${prefix}user`, JSON.stringify(session.user));
   const expiresAt = readTokenExpiresAt(session.accessToken);
   if (expiresAt) {
-    window.localStorage.setItem(authExpiresStorageKey, String(expiresAt));
+    window.localStorage.setItem(`nightlife_${prefix}auth_expires_at`, String(expiresAt));
   } else {
-    window.localStorage.removeItem(authExpiresStorageKey);
+    window.localStorage.removeItem(`nightlife_${prefix}auth_expires_at`);
   }
   notifyAuthSessionChanged();
 };
@@ -174,10 +188,17 @@ export const getAuthUser = (): AuthUser | null => {
   }
 
   const cookies = parseCookies();
+  const prefix = getSessionScopePrefix();
+  const userKey = `nightlife_${prefix}user`;
+  const expiresKey = `nightlife_${prefix}auth_expires_at`;
+  const emailCookie = `${prefix}user_email`;
+  const nameCookie = `${prefix}user_name`;
+  const roleCookie = `${prefix}user_role`;
+
   const hasStoredSessionHints = Boolean(
-    window.localStorage.getItem(authUserStorageKey) ||
-      window.localStorage.getItem(authExpiresStorageKey) ||
-      cookies.user_email,
+    window.localStorage.getItem(userKey) ||
+      window.localStorage.getItem(expiresKey) ||
+      cookies[emailCookie],
   );
   const token = getValidAuthToken();
   if (!token) {
@@ -187,24 +208,24 @@ export const getAuthUser = (): AuthUser | null => {
     return null;
   }
 
-  const storedUser = window.localStorage.getItem(authUserStorageKey);
+  const storedUser = window.localStorage.getItem(userKey);
   if (storedUser) {
     try {
       return JSON.parse(storedUser) as AuthUser;
     } catch {
-      window.localStorage.removeItem(authUserStorageKey);
+      window.localStorage.removeItem(userKey);
     }
   }
 
-  if (!cookies.user_email) {
+  if (!cookies[emailCookie]) {
     clearAuthSession();
     return null;
   }
 
   return {
     id: "",
-    email: cookies.user_email,
-    displayName: cookies.user_name ?? cookies.user_email,
-    role: (cookies.user_role as AuthRole) || "USER",
+    email: cookies[emailCookie],
+    displayName: cookies[nameCookie] ?? cookies[emailCookie],
+    role: (cookies[roleCookie] as AuthRole) || "USER",
   };
 };

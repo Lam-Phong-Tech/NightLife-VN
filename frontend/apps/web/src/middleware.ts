@@ -24,12 +24,19 @@ function parseJwtPayload(token: string) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const memberPaths = ['/tai-khoan', '/bao-mat-tai-khoan', '/da-luu', '/gui-hoa-don', '/vi-uu-dai'];
+  const isMemberPath = memberPaths.some(p => pathname.startsWith(p));
+  const isPartnerPath = pathname.startsWith('/partner');
+  const isAdminLoginPath = pathname === '/admin/dang-nhap';
+  const isAdminPath = pathname.startsWith('/admin') && !isAdminLoginPath;
+
+  const prefix = pathname.startsWith('/admin') ? 'admin_' : pathname.startsWith('/partner') ? 'partner_' : '';
   
   // Extract token from standard authorization or cookie
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.startsWith('Bearer ') 
     ? authHeader.substring(7) 
-    : request.cookies.get('auth_token')?.value;
+    : request.cookies.get(`${prefix}auth_token`)?.value;
 
   let userRole = 'PUBLIC';
   
@@ -39,16 +46,9 @@ export function middleware(request: NextRequest) {
       userRole = String(payload.role).toUpperCase();
     } else {
       // Fallback to cookie for development if token is not a valid JWT
-      userRole = (request.cookies.get('user_role')?.value || 'PUBLIC').toUpperCase();
+      userRole = (request.cookies.get(`${prefix}user_role`)?.value || 'PUBLIC').toUpperCase();
     }
   }
-
-  // Define protected paths
-  const memberPaths = ['/tai-khoan', '/bao-mat-tai-khoan', '/da-luu', '/gui-hoa-don', '/vi-uu-dai'];
-  const isMemberPath = memberPaths.some(p => pathname.startsWith(p));
-  const isPartnerPath = pathname.startsWith('/partner');
-  const isAdminLoginPath = pathname === '/admin/dang-nhap';
-  const isAdminPath = pathname.startsWith('/admin') && !isAdminLoginPath;
 
   // Protect paths requiring authentication
   if ((isMemberPath || isPartnerPath || isAdminPath) && !token) {

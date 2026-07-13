@@ -537,8 +537,13 @@ export class AuthService {
       secure: this.shouldUseSecureCookies(),
     };
 
-    for (const name of ['auth_token', 'user_role', 'user_email', 'user_name']) {
-      response.clearCookie(name, options);
+    const cookieNames = ['auth_token', 'user_role', 'user_email', 'user_name'];
+    const prefixes = ['', 'admin_', 'partner_'];
+
+    for (const prefix of prefixes) {
+      for (const name of cookieNames) {
+        response.clearCookie(`${prefix}${name}`, options);
+      }
     }
   }
 
