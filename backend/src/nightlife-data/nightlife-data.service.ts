@@ -17822,6 +17822,35 @@ export class NightlifeDataService {
           throw new BadRequestException('Only Super Admin can hard delete stores');
         }
 
+        // --- MANUALLY CASCADE DELETE ---
+        // 1. Direct dependencies
+        await tx.storePermission.deleteMany({ where: { storeId: id } });
+        await tx.commissionConfig.deleteMany({ where: { storeId: id } });
+
+        // 2. Booking dependencies
+        await tx.bookingChatMessage.deleteMany({ where: { storeId: id } });
+        await tx.bookingChangeRequest.deleteMany({ where: { storeId: id } });
+        await tx.bookingQr.deleteMany({ where: { storeId: id } });
+        await tx.bill.deleteMany({ where: { storeId: id } });
+        await tx.booking.deleteMany({ where: { storeId: id } });
+
+        // 3. Coupon dependencies
+        const coupons = await tx.coupon.findMany({ where: { storeId: id }, select: { id: true } });
+        if (coupons.length > 0) {
+          const couponIds = coupons.map(c => c.id);
+          await tx.couponIssue.deleteMany({ where: { couponId: { in: couponIds } } });
+          await tx.coupon.deleteMany({ where: { storeId: id } });
+        }
+
+        // 4. Cast dependencies
+        const casts = await tx.cast.findMany({ where: { storeId: id }, select: { id: true } });
+        if (casts.length > 0) {
+          const castIds = casts.map(c => c.id);
+          await tx.memberFavoriteCast.deleteMany({ where: { castId: { in: castIds } } });
+          await tx.cast.deleteMany({ where: { storeId: id } });
+        }
+
+        // 5. Finally, delete the store itself
         await tx.store.delete({
           where: { id },
         });
