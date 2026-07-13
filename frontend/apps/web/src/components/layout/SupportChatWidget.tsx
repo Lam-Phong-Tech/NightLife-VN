@@ -775,16 +775,8 @@ export function SupportChatWidget({
       userId: currentUser?.id
     }, (response: any) => {
       if (response && response.error === 'Offline') {
-        // Remove optimistic message if offline and show system message
-        setMessages(prev => [
-          ...prev.filter(m => m.id !== localTempId),
-          {
-            id: 'offline-' + Date.now(),
-            from: 'support',
-            text: 'Hiện tại chúng tôi đang ngoài giờ làm việc. Vui lòng liên hệ trực tiếp qua Hotline: 1900-xxxx',
-            time: formatChatTime(new Date(), activeLanguageRef.current),
-          }
-        ]);
+        // Remove optimistic message if offline (system message is emitted by server)
+        setMessages(prev => prev.filter(m => m.id !== localTempId));
         return;
       }
       
