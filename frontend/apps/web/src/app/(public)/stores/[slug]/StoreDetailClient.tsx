@@ -40,8 +40,16 @@ import {
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
-  validateBookingFormFields,
 } from "@/lib/booking-validation";
+import {
+  buildBookingFieldErrors,
+  firstBookingFieldError,
+  touchAllBookingFields,
+  visibleBookingFieldErrors,
+  type BookingFieldErrors,
+  type BookingTouchedFields,
+  type BookingValidationField,
+} from "@/lib/booking-field-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
@@ -565,6 +573,22 @@ function MapBlock({
   );
 }
 
+function BookingFieldError({
+  activeLanguage,
+  message,
+}: {
+  activeLanguage: LanguageCode;
+  message?: string;
+}) {
+  if (!message) return null;
+
+  return (
+    <span className="booking-field-error" aria-live="polite">
+      {translateText(message, activeLanguage)}
+    </span>
+  );
+}
+
 function BookingCard({
   store,
   selectedDateIso,
@@ -579,6 +603,7 @@ function BookingCard({
   note,
   isSubmitting,
   errorMessage,
+  fieldErrors,
   activeLanguage,
   onDateSelect,
   onTimeSelect,
@@ -586,6 +611,7 @@ function BookingCard({
   onGuestNameChange,
   onEmailChange,
   onNoteChange,
+  onFieldTouched,
   onSubmit,
 }: {
   store: PublicStoreDetail;
@@ -601,6 +627,7 @@ function BookingCard({
   note: string;
   isSubmitting: boolean;
   errorMessage: string;
+  fieldErrors: BookingFieldErrors;
   activeLanguage: LanguageCode;
   onDateSelect: (value: string) => void;
   onTimeSelect: (time: string) => void;
@@ -608,6 +635,7 @@ function BookingCard({
   onGuestNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onNoteChange: (value: string) => void;
+  onFieldTouched: (field: BookingValidationField) => void;
   onSubmit: () => void;
 }) {
   return (
@@ -636,8 +664,16 @@ function BookingCard({
               {...bookingInputAutofillBlockProps}
               name="nl-booking-store-display"
               value={guestName}
-              onChange={(event) => onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value))}
+              onBlur={() => onFieldTouched("guestName")}
+              onChange={(event) => {
+                onFieldTouched("guestName");
+                onGuestNameChange(sanitizeBookingDisplayNameInput(event.target.value));
+              }}
               placeholder="Vui lòng nhập họ tên"
+            />
+            <BookingFieldError
+              activeLanguage={activeLanguage}
+              message={fieldErrors.guestName}
             />
           </label>
           <label className="booking-field booking-input-field">
@@ -647,10 +683,15 @@ function BookingCard({
               type="email"
               name="nl-booking-store-contact"
               value={email}
-              onChange={(event) => onEmailChange(event.target.value)}
+              onBlur={() => onFieldTouched("email")}
+              onChange={(event) => {
+                onFieldTouched("email");
+                onEmailChange(event.target.value);
+              }}
               placeholder="Vui lòng nhập email"
               inputMode="email"
             />
+            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.email} />
           </label>
         </div>
 
@@ -661,7 +702,10 @@ function BookingCard({
               <button
                 type="button"
                 aria-label="Giảm số khách"
-                onClick={() => onGuestCountChange(Math.max(1, guestCount - 1))}
+                onClick={() => {
+                  onFieldTouched("guestCount");
+                  onGuestCountChange(Math.max(1, guestCount - 1));
+                }}
                 disabled={guestCount <= 1}
               >
                 <Minus size={15} />
@@ -670,12 +714,16 @@ function BookingCard({
               <button
                 type="button"
                 aria-label="Tăng số khách"
-                onClick={() => onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1))}
+                onClick={() => {
+                  onFieldTouched("guestCount");
+                  onGuestCountChange(Math.min(maxBookingGuests, guestCount + 1));
+                }}
                 disabled={guestCount >= maxBookingGuests}
               >
                 <Plus size={15} />
               </button>
             </div>
+            <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.guestCount} />
           </div>
 
           <BookingDateTimeFields
@@ -686,9 +734,17 @@ function BookingCard({
             timeOptionGroups={timeOptionGroups}
             minDate={minDate}
             maxDate={maxDate}
-            onDateChange={onDateSelect}
-            onTimeChange={onTimeSelect}
+            onDateChange={(value) => {
+              onFieldTouched("bookingDate");
+              onDateSelect(value);
+            }}
+            onTimeChange={(value) => {
+              onFieldTouched("bookingTime");
+              onTimeSelect(value);
+            }}
             emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
+            dateError={fieldErrors.bookingDate}
+            timeError={fieldErrors.bookingTime}
             fieldClassName="booking-field"
           />
         </div>
@@ -699,9 +755,14 @@ function BookingCard({
           className="booking-note-box"
           name="nl-booking-store-note"
           value={note}
-          onChange={(event) => onNoteChange(event.target.value)}
+          onBlur={() => onFieldTouched("note")}
+          onChange={(event) => {
+            onFieldTouched("note");
+            onNoteChange(event.target.value);
+          }}
           placeholder="Vui lòng nhập ghi chú nếu có"
         />
+        <BookingFieldError activeLanguage={activeLanguage} message={fieldErrors.note} />
 
         {errorMessage ? <div className="booking-error">{translateText(errorMessage, activeLanguage)}</div> : null}
 
@@ -776,6 +837,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const [isMemberBooking, setIsMemberBooking] = useState(false);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [bookingErrorMessage, setBookingErrorMessage] = useState("");
+  const [bookingTouchedFields, setBookingTouchedFields] = useState<BookingTouchedFields>({});
+  const [bookingSubmitAttempted, setBookingSubmitAttempted] = useState(false);
   const [isFavorite, setIsFavorite] = useState(
     () => hasMemberFavoriteAccess() && isFavoriteStore(store.slug),
   );
@@ -933,6 +996,45 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     };
   }, [bookingTimeOptions, selectedTime]);
 
+  const bookingScheduledAt = buildScheduledAtFromBookingSlot(
+    selectedDate.iso,
+    selectedTime,
+    normalizedOpeningHours ?? store.openingHours,
+  );
+  const bookingFieldErrors = useMemo(
+    () =>
+      buildBookingFieldErrors({
+        availableTimes: bookingTimeOptions,
+        bookingDate: selectedDate.iso,
+        bookingTime: selectedTime,
+        displayName: normalizeBookingDisplayName(guestName),
+        email: normalizeBookingEmail(email),
+        guestCount,
+        maxDate: getMaxBookingDate(),
+        note: normalizeBookingNote(note),
+        scheduledAt: bookingScheduledAt,
+        todayDate: getTodayDate(),
+      }),
+    [
+      bookingScheduledAt,
+      bookingTimeOptions,
+      email,
+      guestCount,
+      guestName,
+      note,
+      selectedDate.iso,
+      selectedTime,
+    ],
+  );
+  const visibleFieldErrors = useMemo(
+    () => visibleBookingFieldErrors(bookingFieldErrors, bookingTouchedFields, bookingSubmitAttempted),
+    [bookingFieldErrors, bookingSubmitAttempted, bookingTouchedFields],
+  );
+  const markBookingFieldTouched = (field: BookingValidationField) => {
+    setBookingTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }));
+    setBookingErrorMessage("");
+  };
+
   const bookingQuery = new URLSearchParams({
     storeId: store.id,
     storeSlug: store.slug,
@@ -986,13 +1088,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     if (isBookingSubmitting) return;
 
     setBookingErrorMessage("");
-
-    if (!selectedTime) {
-      setBookingErrorMessage(
-        translateText("Quán không có khung giờ đặt bàn trong ngày này.", activeLanguage),
-      );
-      return;
-    }
+    setBookingSubmitAttempted(true);
+    setBookingTouchedFields(touchAllBookingFields());
 
     const displayName = normalizeBookingDisplayName(guestName);
     const normalizedEmail = normalizeBookingEmail(email);
@@ -1007,7 +1104,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     setEmail(normalizedEmail);
     setNote(trimmedNote);
 
-    const validationError = validateBookingFormFields({
+    const validationError = firstBookingFieldError(buildBookingFieldErrors({
       availableTimes: bookingTimeOptions,
       bookingDate: selectedDate.iso,
       bookingTime: selectedTime,
@@ -1018,10 +1115,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
       note: trimmedNote,
       scheduledAt,
       todayDate: getTodayDate(),
-    });
+    }));
 
     if (validationError) {
-      setBookingErrorMessage(translateText(validationError, activeLanguage));
       return;
     }
 
@@ -1324,6 +1420,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               note={note}
               isSubmitting={isBookingSubmitting}
               errorMessage={bookingErrorMessage}
+              fieldErrors={visibleFieldErrors}
               activeLanguage={activeLanguage}
               onDateSelect={(value) => {
                 const nextIndex = dateOptions.findIndex((date) => date.iso === value);
@@ -1334,6 +1431,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
               onGuestNameChange={setGuestName}
               onEmailChange={setEmail}
               onNoteChange={setNote}
+              onFieldTouched={markBookingFieldTouched}
               onSubmit={submitDesktopBooking}
             />
 
@@ -2503,11 +2601,24 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           line-height: 1.45;
         }
 
+        .booking-field-error {
+          display: block;
+          margin-top: 6px;
+          color: #ff9caf;
+          font-size: 11.5px;
+          font-weight: 760;
+          line-height: 1.35;
+        }
+
         :global(html.vy-light) .booking-error {
           border-color: rgba(194, 69, 92, .34);
           background: rgba(194, 69, 92, .12);
           color: #8f1f33;
           font-weight: 760;
+        }
+
+        :global(html.vy-light) .booking-field-error {
+          color: #9b223a;
         }
 
         .primary-action {

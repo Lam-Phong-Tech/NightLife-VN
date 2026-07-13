@@ -29,8 +29,15 @@ import {
   normalizeBookingEmail,
   normalizeBookingNote,
   sanitizeBookingDisplayNameInput,
-  validateBookingFormFields,
 } from "@/lib/booking-validation";
+import {
+  buildBookingFieldErrors,
+  firstBookingFieldError,
+  touchAllBookingFields,
+  visibleBookingFieldErrors,
+  type BookingTouchedFields,
+  type BookingValidationField,
+} from "@/lib/booking-field-validation";
 import { translateText } from "@/lib/i18n/client-translations";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import styles from "../booking-flow.module.css";
@@ -170,6 +177,8 @@ export default function Page() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [touchedFields, setTouchedFields] = useState<BookingTouchedFields>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   useEffect(() => {
     const parsed = parseContext();
@@ -313,6 +322,47 @@ export default function Page() {
     };
   }, [bookingTime, bookingTimeOptions, storeHoursResolved]);
 
+  const scheduledPreviewAt = buildScheduledAtFromBookingSlot(
+    bookingDate,
+    bookingTime,
+    storeOpeningHours,
+  );
+  const fieldErrors = useMemo(
+    () =>
+      buildBookingFieldErrors({
+        availableTimes: bookingTimeOptions,
+        bookingDate,
+        bookingTime,
+        displayName: normalizeBookingDisplayName(guestName),
+        email: normalizeBookingEmail(email),
+        guestCount: guests,
+        loadingTimes: !storeHoursResolved,
+        maxDate: getMaxBookingDate(),
+        note: normalizeBookingNote(note),
+        scheduledAt: scheduledPreviewAt,
+        todayDate: getTodayDate(),
+      }),
+    [
+      bookingDate,
+      bookingTime,
+      bookingTimeOptions,
+      email,
+      guestName,
+      guests,
+      note,
+      scheduledPreviewAt,
+      storeHoursResolved,
+    ],
+  );
+  const visibleFieldErrors = useMemo(
+    () => visibleBookingFieldErrors(fieldErrors, touchedFields, submitAttempted),
+    [fieldErrors, submitAttempted, touchedFields],
+  );
+  const markFieldTouched = (field: BookingValidationField) => {
+    setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }));
+    setErrorMessage("");
+  };
+
   const memberLoginPath = useMemo(() => {
     const redirectParams = new URLSearchParams({
       mode: "member",
@@ -341,26 +391,11 @@ export default function Page() {
 
   const submit = async () => {
     setErrorMessage("");
+    setSubmitAttempted(true);
+    setTouchedFields(touchAllBookingFields());
     const displayName = normalizeBookingDisplayName(guestName);
     const normalizedEmail = normalizeBookingEmail(email);
     const trimmedNote = normalizeBookingNote(note);
-
-    if (!bookingTime) {
-      setErrorMessage(
-        translateText("Quán không có khung giờ đặt bàn trong ngày này.", activeLanguage),
-      );
-      return;
-    }
-
-    if (!storeHoursResolved) {
-      setErrorMessage(
-        translateText(
-          "Đang tải khung giờ của quán. Vui lòng thử lại sau vài giây.",
-          activeLanguage,
-        ),
-      );
-      return;
-    }
 
     const scheduledAt = buildScheduledAtFromBookingSlot(
       bookingDate,
@@ -368,25 +403,25 @@ export default function Page() {
       storeOpeningHours,
     );
 
-    const validationError = validateBookingFormFields({
+    const validationError = firstBookingFieldError(buildBookingFieldErrors({
       displayName,
       email: normalizedEmail,
       guestCount: guests,
       bookingDate,
       bookingTime,
       availableTimes: bookingTimeOptions,
+      loadingTimes: !storeHoursResolved,
       maxDate: getMaxBookingDate(),
       scheduledAt,
       note: trimmedNote,
       todayDate: getTodayDate(),
-    });
+    }));
 
     setGuestName(displayName);
     setEmail(normalizedEmail);
     setNote(trimmedNote);
 
     if (validationError) {
-      setErrorMessage(translateText(validationError, activeLanguage));
       return;
     }
 
@@ -503,11 +538,20 @@ export default function Page() {
                 label="Họ tên"
                 value={guestName}
                 onChange={(value) => setGuestName(sanitizeBookingDisplayNameInput(value))}
+                onTouched={() => markFieldTouched("guestName")}
                 placeholder="Vui lòng nhập họ tên"
                 icon={<UserRound size={16} />}
+                error={visibleFieldErrors.guestName}
+                activeLanguage={activeLanguage}
               />
 
-              <EmailField value={email} onChange={setEmail} />
+              <EmailField
+                value={email}
+                onChange={setEmail}
+                onTouched={() => markFieldTouched("email")}
+                error={visibleFieldErrors.email}
+                activeLanguage={activeLanguage}
+              />
 
               <BookingDateTimeFields
                 dateValue={bookingDate}
@@ -518,7 +562,10 @@ export default function Page() {
                       <button
                         type="button"
                         className={styles.stepButton}
-                        onClick={() => setGuests((value) => Math.max(1, value - 1))}
+                        onClick={() => {
+                          markFieldTouched("guestCount");
+                          setGuests((value) => Math.max(1, value - 1));
+                        }}
                         aria-label="Giảm số người"
                         disabled={guests <= 1}
                       >
@@ -528,13 +575,20 @@ export default function Page() {
                       <button
                         type="button"
                         className={`${styles.stepButton} ${styles.stepButtonActive}`}
-                        onClick={() => setGuests((value) => Math.min(maxGuests, value + 1))}
+                        onClick={() => {
+                          markFieldTouched("guestCount");
+                          setGuests((value) => Math.min(maxGuests, value + 1));
+                        }}
                         aria-label="Tăng số người"
                         disabled={guests >= maxGuests}
                       >
                         <Plus size={15} />
                       </button>
                     </div>
+                    <FieldError
+                      activeLanguage={activeLanguage}
+                      message={visibleFieldErrors.guestCount}
+                    />
                   </div>
                 }
                 timeValue={bookingTime}
@@ -542,10 +596,19 @@ export default function Page() {
                 timeOptionGroups={bookingTimeOptionGroups}
                 minDate={getTodayDate()}
                 maxDate={getMaxBookingDate()}
-                onDateChange={(value) => setBookingDate(clampBookingDate(value))}
-                onTimeChange={setBookingTime}
+                onDateChange={(value) => {
+                  markFieldTouched("bookingDate");
+                  setBookingDate(clampBookingDate(value));
+                }}
+                onTimeChange={(value) => {
+                  markFieldTouched("bookingTime");
+                  setBookingTime(value);
+                }}
                 loadingTimes={!storeHoursResolved}
                 emptyMessage="Quán không có khung giờ đặt bàn trong ngày này."
+                dateError={visibleFieldErrors.bookingDate}
+                timeError={visibleFieldErrors.bookingTime}
+                errorClassName={styles.fieldError}
                 className={styles.dateTimeFields}
                 fieldClassName={styles.field}
                 labelClassName={styles.fieldLabel}
@@ -562,10 +625,15 @@ export default function Page() {
                   {...bookingNoteAutofillBlockProps}
                   name="nl-booking-cast-note"
                   value={note}
-                  onChange={(event) => setNote(event.target.value)}
+                  onBlur={() => markFieldTouched("note")}
+                  onChange={(event) => {
+                    markFieldTouched("note");
+                    setNote(event.target.value);
+                  }}
                   placeholder="Vui lòng nhập ghi chú nếu có"
                   className={styles.noteArea}
                 />
+                <FieldError activeLanguage={activeLanguage} message={visibleFieldErrors.note} />
               </label>
 
               <div className={styles.infoNote}>
@@ -631,6 +699,23 @@ export default function Page() {
     </main>
   );
 }
+
+function FieldError({
+  activeLanguage,
+  message,
+}: {
+  activeLanguage: LanguageCode;
+  message?: string;
+}) {
+  if (!message) return null;
+
+  return (
+    <span className={styles.fieldError} aria-live="polite">
+      {translateText(message, activeLanguage)}
+    </span>
+  );
+}
+
 function ReadOnlyTextField({ label, value }: { label: string; value: string }) {
   return (
     <label className={styles.field}>
@@ -654,14 +739,20 @@ function TextField({
   label,
   value,
   onChange,
+  onTouched,
   placeholder,
   icon,
+  error,
+  activeLanguage,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onTouched: () => void;
   placeholder?: string;
   icon?: React.ReactNode;
+  error?: string;
+  activeLanguage: LanguageCode;
 }) {
   return (
     <label className={styles.field}>
@@ -674,15 +765,32 @@ function TextField({
           name="nl-booking-cast-display"
           value={value}
           placeholder={placeholder}
-          onChange={(event) => onChange(event.target.value)}
+          onBlur={onTouched}
+          onChange={(event) => {
+            onTouched();
+            onChange(event.target.value);
+          }}
           className={styles.input}
         />
       </span>
+      <FieldError activeLanguage={activeLanguage} message={error} />
     </label>
   );
 }
 
-function EmailField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function EmailField({
+  value,
+  onChange,
+  onTouched,
+  error,
+  activeLanguage,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onTouched: () => void;
+  error?: string;
+  activeLanguage: LanguageCode;
+}) {
   return (
     <label className={styles.field}>
       <span className={styles.fieldLabel}>Email</span>
@@ -694,11 +802,16 @@ function EmailField({ value, onChange }: { value: string; onChange: (value: stri
           name="nl-booking-cast-contact"
           value={value}
           placeholder="Vui lòng nhập email"
-          onChange={(event) => onChange(event.target.value)}
+          onBlur={onTouched}
+          onChange={(event) => {
+            onTouched();
+            onChange(event.target.value);
+          }}
           inputMode="email"
           className={styles.input}
         />
       </span>
+      <FieldError activeLanguage={activeLanguage} message={error} />
     </label>
   );
 }

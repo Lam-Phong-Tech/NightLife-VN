@@ -49,7 +49,9 @@ const dayjsLocales: Record<LanguageCode, string> = {
 type BookingDateTimeFieldsProps = {
   dateLabel?: ReactNode;
   dateFieldAddon?: ReactNode;
+  dateError?: ReactNode;
   timeLabel?: ReactNode;
+  timeError?: ReactNode;
   dateValue: string;
   timeValue: string;
   timeOptions: string[];
@@ -60,6 +62,7 @@ type BookingDateTimeFieldsProps = {
   onTimeChange: (value: string) => void;
   loadingTimes?: boolean;
   emptyMessage?: string;
+  errorClassName?: string;
   className?: string;
   fieldClassName?: string;
   labelClassName?: string;
@@ -122,7 +125,9 @@ const getDocumentBodyPopupContainer = (trigger: HTMLElement) => trigger.ownerDoc
 export function BookingDateTimeFields({
   dateLabel = "Ngày",
   dateFieldAddon,
+  dateError,
   timeLabel = "Khung giờ",
+  timeError,
   dateValue,
   timeValue,
   timeOptions,
@@ -133,6 +138,7 @@ export function BookingDateTimeFields({
   onTimeChange,
   loadingTimes = false,
   emptyMessage = "Quán không có khung giờ đặt bàn trong ngày này.",
+  errorClassName,
   className,
   fieldClassName,
   labelClassName,
@@ -146,6 +152,8 @@ export function BookingDateTimeFields({
   const max = parseDate(maxDate) ?? min.add(14, "day");
   const localizedDateLabel = translateNode(dateLabel, activeLanguage);
   const localizedTimeLabel = translateNode(timeLabel, activeLanguage);
+  const localizedDateError = translateNode(dateError, activeLanguage);
+  const localizedTimeError = translateNode(timeError, activeLanguage);
   const localizedEmptyMessage = translateText(emptyMessage, activeLanguage);
   const loadingTimesText = translateText("Đang tải khung giờ...", activeLanguage);
   const selectDateText = translateText("Chọn ngày", activeLanguage);
@@ -175,6 +183,9 @@ export function BookingDateTimeFields({
   const periodTabs = groups;
   const showPeriodTabs = periodTabs.length > 1;
   const dateFieldClassName = [fieldClassName, "nl-booking-date-field"].filter(Boolean).join(" ");
+  const fieldErrorClassName = ["nl-booking-field-error", errorClassName]
+    .filter(Boolean)
+    .join(" ");
   const timeFieldClassName = [
     fieldClassName,
     "nl-booking-time-field",
@@ -231,6 +242,11 @@ export function BookingDateTimeFields({
             popupClassName="nl-booking-ant-popup"
             value={currentDate}
           />
+          {dateError ? (
+            <span className={fieldErrorClassName} aria-live="polite">
+              {localizedDateError}
+            </span>
+          ) : null}
           {dateFieldAddon ? (
             <div className="nl-booking-date-addon">{dateFieldAddon}</div>
           ) : null}
@@ -277,8 +293,13 @@ export function BookingDateTimeFields({
               value={selectedTimeValue}
             />
           </div>
-          {!loadingTimes && !activeTimeOptions.length ? (
+          {!timeError && !loadingTimes && !activeTimeOptions.length ? (
             <span className="nl-booking-empty-message">{localizedEmptyMessage}</span>
+          ) : null}
+          {timeError ? (
+            <span className={fieldErrorClassName} aria-live="polite">
+              {localizedTimeError}
+            </span>
           ) : null}
         </div>
       </div>
