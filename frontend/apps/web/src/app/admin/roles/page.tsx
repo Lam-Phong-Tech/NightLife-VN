@@ -251,7 +251,6 @@ export default function AdminRolesPage() {
                 { id: 'admin', label: 'Quản trị viên' }, 
                 { id: 'operator', label: 'Nhân viên vận hành' }, { id: 'partner', label: 'Đối tác' }, 
                 { id: 'staff', label: 'Nhân viên quán' }, { id: 'user', label: 'Người dùng' },
-                { id: 'muted', label: 'Chờ kích hoạt' },
                 { id: 'disabled', label: 'Đã vô hiệu' }
               ].map(r => (
                 <span key={r.id} onClick={() => { setAccRole(r.id); setAccPage(0); }} style={{ fontSize: '11px', fontWeight: 600, padding: '5.5px 11px', borderRadius: '8px', cursor: 'pointer', whiteSpace: 'nowrap', ...(accRole === r.id ? { color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)' } : { color: '#9b958a', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }) }}>
