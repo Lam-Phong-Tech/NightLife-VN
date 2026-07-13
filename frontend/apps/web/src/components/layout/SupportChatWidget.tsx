@@ -709,7 +709,7 @@ export function SupportChatWidget({
     return () => {
       newSocket.close();
     };
-  }, [hasOpened.current]);
+  }, [hasOpened]);
 
   useEffect(() => {
     if (!isOpen) return;
