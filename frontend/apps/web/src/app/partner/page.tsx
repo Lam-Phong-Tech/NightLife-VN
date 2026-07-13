@@ -837,7 +837,6 @@ const validateListingDraft = (
         cast.measurements?.trim() ||
         cast.birthMonth ||
         cast.heightCm ||
-        cast.hourlyRateVnd ||
         cast.tags?.length ||
         cast.languages?.length ||
         cast.hobbies?.length ||
@@ -854,9 +853,6 @@ const validateListingDraft = (
     }
     if (cast.heightCm !== undefined && (cast.heightCm < 120 || cast.heightCm > 220)) {
       errors[`castProfiles.${index}.heightCm`] = 'Chiều cao hợp lệ trong khoảng 120 - 220 cm.';
-    }
-    if (cast.hourlyRateVnd !== undefined && cast.hourlyRateVnd < 0) {
-      errors[`castProfiles.${index}.hourlyRateVnd`] = 'Giá theo giờ không được âm.';
     }
     splitInlineList(cast.youtubeLinks?.join(',')).forEach((url, urlIndex) => {
       if (!isValidUrl(url)) {
@@ -920,13 +916,6 @@ const validateListingDraft = (
       errors[`videoUrls.${index}`] = 'Nhập URL video hoặc xóa dòng này.';
     } else if (!isValidUrl(url.trim())) {
       errors[`videoUrls.${index}`] = 'URL video phải bắt đầu bằng http hoặc https.';
-    }
-  });
-  draft.mediaUrls.forEach((url, index) => {
-    if (isBlank(url)) {
-      errors[`mediaUrls.${index}`] = 'Nhập URL media hoặc xóa dòng này.';
-    } else if (!isValidUrl(url.trim())) {
-      errors[`mediaUrls.${index}`] = 'URL media phải bắt đầu bằng http hoặc https.';
     }
   });
 
@@ -2997,7 +2986,6 @@ export default function PartnerPage() {
     !hasText(cast.measurements) &&
     !cast.birthMonth &&
     !cast.heightCm &&
-    !cast.hourlyRateVnd &&
     !(cast.tags?.length) &&
     !(cast.languages?.length) &&
     !(cast.hobbies?.length) &&
@@ -3063,32 +3051,6 @@ export default function PartnerPage() {
     setIsAddingCastProfile(false);
   };
 
-  const updateMediaUrl = (index: number, value: string) => {
-    clearListingErrorsFor(`mediaUrls.${index}`);
-    setListingDraft((current) => ({
-      ...current,
-      mediaUrls: current.mediaUrls.map((item, itemIndex) =>
-        itemIndex === index ? value : item,
-      ),
-    }));
-  };
-
-  const addMediaUrl = () => {
-    clearListingErrorsFor('mediaUrls');
-    setListingDraft((current) => ({
-      ...current,
-      mediaUrls: [...current.mediaUrls, ''],
-    }));
-  };
-
-  const removeMediaUrl = (index: number) => {
-    clearListingErrorsFor('mediaUrls');
-    setListingDraft((current) => ({
-      ...current,
-      mediaUrls: current.mediaUrls.filter((_, itemIndex) => itemIndex !== index),
-    }));
-  };
-
   const listingPayload = () => {
     const galleryUrls = listingDraft.galleryUrls.filter((url) => url.trim());
     const videoUrls = listingDraft.videoUrls.filter((url) => url.trim());
@@ -3096,7 +3058,6 @@ export default function PartnerPage() {
       listingDraft.coverImageUrl.trim(),
       ...galleryUrls,
       ...videoUrls,
-      ...listingDraft.mediaUrls.filter((url) => url.trim()),
     ]
       .filter(Boolean)
       .filter((url, index, list) => list.indexOf(url) === index);
@@ -3306,14 +3267,6 @@ export default function PartnerPage() {
   const getListingYoutubeThumb = (url: unknown) => {
     const videoId = getListingYoutubeId(url);
     return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
-  };
-
-  const isListingVideoUrl = (url: unknown) => {
-    const trimmed = safeListingText(url).trim();
-    return Boolean(
-      getListingYoutubeId(trimmed) ||
-        /\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(trimmed),
-    );
   };
 
   const renderListingUploadTile = (options: {
@@ -3694,71 +3647,6 @@ export default function PartnerPage() {
         </div>
       </section>
 
-      {listingDraft.mediaUrls.length ? (
-        <section className="partner-listing-section">
-          <div className="partner-listing-section-title">Media cũ</div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(126px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            {listingDraft.mediaUrls.map((url, index) => (
-              safeListingText(url).trim() ? (
-                <div key={`${url}-${index}`}>
-                  {isListingVideoUrl(url)
-                    ? renderListingVideoPreview(url, index, () => removeMediaUrl(index))
-                    : renderListingImagePreview(url, {
-                        label: `Xóa media ${index + 1}`,
-                        aspectRatio: '1 / 1',
-                        onRemove: () => removeMediaUrl(index),
-                      })}
-                  {listingErrorText(`mediaUrls.${index}`)}
-                </div>
-              ) : (
-                <div key={`empty-media-${index}`} style={{ ...softCardStyle, padding: '12px', display: 'grid', gap: '8px' }}>
-                  <FormField label="Media URL">
-                    <input
-                      value={url}
-                      onChange={(event) => updateMediaUrl(index, event.target.value)}
-                      placeholder="https://..."
-                      style={listingInputStyle(`mediaUrls.${index}`)}
-                    />
-                    {listingErrorText(`mediaUrls.${index}`)}
-                  </FormField>
-                  <GhostButton onClick={() => removeMediaUrl(index)}>
-                    <XCircle size={16} />
-                    Xóa
-                  </GhostButton>
-                </div>
-              )
-            ))}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-            {renderListingUploadButton({
-              key: 'store-legacy-media',
-              label: 'Tải media từ máy',
-              loadingLabel: 'Đang tải media...',
-              kind: 'image',
-              multiple: true,
-              purpose: 'PARTNER_STORE_MEDIA',
-              successLabel: 'media khác',
-              onUploaded: (urls) => {
-                clearListingErrorsFor('mediaUrls');
-                setListingDraft((current) => ({
-                  ...current,
-                  mediaUrls: [...current.mediaUrls.filter(Boolean), ...urls],
-                }));
-              },
-            })}
-            <GhostButton onClick={addMediaUrl}>
-              <ImagePlus size={16} />
-              Thêm URL media
-            </GhostButton>
-          </div>
-        </section>
-      ) : null}
     </>
   );
 
@@ -4720,7 +4608,7 @@ export default function PartnerPage() {
 
       <section className="partner-listing-section">
         <div className="partner-listing-section-title">Hồ sơ cast</div>
-        <div className="partner-listing-grid">
+        <div className="partner-listing-grid partner-cast-profile-grid">
           <FormField label="Tháng sinh">
             <ThemedListingSelect
               value={cast.birthMonth ? String(cast.birthMonth) : ''}
@@ -4759,16 +4647,6 @@ export default function PartnerPage() {
               style={listingInputStyle(`castProfiles.${index}.heightCm`)}
             />
             {listingErrorText(`castProfiles.${index}.heightCm`)}
-          </FormField>
-          <FormField label="Giá theo giờ">
-            <input
-              inputMode="numeric"
-              value={cast.hourlyRateVnd ? String(cast.hourlyRateVnd) : ''}
-              onChange={(event) => updateCastProfile(index, 'hourlyRateVnd', event.target.value ? Number(event.target.value.replace(/\D/g, '')) : undefined)}
-              placeholder="VD: 1200000"
-              style={listingInputStyle(`castProfiles.${index}.hourlyRateVnd`)}
-            />
-            {listingErrorText(`castProfiles.${index}.hourlyRateVnd`)}
           </FormField>
           <FormField label="Mô tả cast" className="partner-field-wide">
             <textarea
@@ -6172,6 +6050,9 @@ export default function PartnerPage() {
           gap: 16px 14px;
           align-items: start;
         }
+        .partner-cast-profile-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
         .partner-listing-form {
           display: grid;
           gap: 16px;
@@ -6499,6 +6380,7 @@ export default function PartnerPage() {
           .partner-metric-grid,
           .partner-settlement-summary,
           .partner-listing-grid,
+          .partner-cast-profile-grid,
           .partner-store-scope-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -6553,6 +6435,7 @@ export default function PartnerPage() {
           .partner-metric-grid,
           .partner-settlement-summary,
           .partner-listing-grid,
+          .partner-cast-profile-grid,
           .partner-hour-row,
           .partner-listing-toolbar,
           .partner-media-grid,
