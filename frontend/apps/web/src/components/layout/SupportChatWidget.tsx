@@ -573,10 +573,10 @@ export function SupportChatWidget({
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected'|'disconnected'|'error'>('disconnected');
-  const hasOpened = useRef(false);
+  const [hasOpened, setHasOpened] = useState(false);
 
   useEffect(() => {
-    if (isOpen) hasOpened.current = true;
+    if (isOpen) setHasOpened(true);
   }, [isOpen]);
 
   useEffect(() => {
@@ -647,7 +647,7 @@ export function SupportChatWidget({
   }, [socket, ticketId]);
 
   useEffect(() => {
-    if (!hasOpened.current) return;
+    if (!hasOpened) return;
 
     const socketConfig = getSupportSocketConfig();
 
