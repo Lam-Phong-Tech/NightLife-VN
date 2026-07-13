@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Heart, Play, Star, X } from "lucide-react";
+import { resolveClientUrl } from "@/lib/api/client";
 import { mediaBg, videoEmbedUrl } from "./cast-profile.helpers";
 import type { CastGalleryAction, CastMedia } from "./cast-profile.types";
 
@@ -29,6 +31,7 @@ export function CastGallery({
   onToggleFavorite,
 }: CastGalleryProps) {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const activeMedia = (gallery[Math.min(activeIndex, gallery.length - 1)] ?? gallery[0])!;
 
   const showPrevious = useCallback(() => {
@@ -38,6 +41,18 @@ export function CastGallery({
   const showNext = useCallback(() => {
     onSelect(activeIndex >= gallery.length - 1 ? 0 : activeIndex + 1, "next");
   }, [activeIndex, gallery.length, onSelect]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) setPortalTarget(document.body);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLightboxOpen) return undefined;
@@ -58,20 +73,24 @@ export function CastGallery({
     </span>
   );
 
-  const lightbox = isLightboxOpen && activeMedia ? (
-    <CastLightbox
-      gallery={gallery}
-      media={activeMedia}
-      count={gallery.length}
-      index={activeIndex}
-      onClose={onCloseLightbox}
-      onPrevious={showPrevious}
-      onNext={showNext}
-      onSelect={onSelect}
-      touchStartX={touchStartX}
-      setTouchStartX={setTouchStartX}
-    />
-  ) : null;
+  const lightbox =
+    isLightboxOpen && activeMedia && portalTarget
+      ? createPortal(
+          <CastLightbox
+            gallery={gallery}
+            media={activeMedia}
+            count={gallery.length}
+            index={activeIndex}
+            onClose={onCloseLightbox}
+            onPrevious={showPrevious}
+            onNext={showNext}
+            onSelect={onSelect}
+            touchStartX={touchStartX}
+            setTouchStartX={setTouchStartX}
+          />,
+          portalTarget,
+        )
+      : null;
 
   if (variant === "mobile") {
     return (
@@ -179,7 +198,8 @@ function CastLightbox({
   touchStartX: number | null;
   setTouchStartX: (value: number | null) => void;
 }) {
-  const embed = media.type === "VIDEO" ? videoEmbedUrl(media.url) : null;
+  const mediaUrl = resolveClientUrl(media.url) ?? media.url;
+  const embed = media.type === "VIDEO" ? videoEmbedUrl(mediaUrl) : null;
 
   const onTouchEnd = (clientX: number) => {
     if (touchStartX === null) return;
@@ -224,10 +244,10 @@ function CastLightbox({
               Mở video SNS
             </a>
           ) : (
-            <video src={embed?.url || media.url} controls autoPlay />
+            <video src={embed?.url || mediaUrl} controls autoPlay />
           )
         ) : (
-          <img src={media.url} alt={media.alt} />
+          <img src={mediaUrl} alt={media.alt} />
         )}
       </div>
 

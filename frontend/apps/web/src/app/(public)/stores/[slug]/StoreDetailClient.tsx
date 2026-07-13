@@ -23,7 +23,7 @@ import {
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { bookingApi, rememberLastBooking, type BookingRecord, type CreateBookingPayload } from "@/lib/api/bookings";
-import { ApiError, apiClient, getAuthToken, translateApiMessage } from "@/lib/api/client";
+import { ApiError, apiClient, getAuthToken, resolveClientUrl, translateApiMessage } from "@/lib/api/client";
 import { requestMemberNotificationsRefresh } from "@/lib/api/notifications";
 import { BookingDateTimeFields } from "@/components/ui/BookingDateTimeFields";
 import type { PublicStoreDetail, RelatedStore, StoreGalleryItem } from "@/lib/api/store-detail";
@@ -1103,7 +1103,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
   const bookingHref = `/dat-cho?${bookingQuery.toString()}`;
   const phoneHref = store.phone ? `tel:${store.phone.replace(/[^\d+]/g, "")}` : "";
   const lightboxMedia = gallery[selectedGalleryIndex] ?? selectedMedia;
-  const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMedia.url) : "";
+  const lightboxMediaUrl = lightboxMedia ? (resolveClientUrl(lightboxMedia.url) ?? lightboxMedia.url) : "";
+  const lightboxVideoUrl = lightboxMedia?.type === "VIDEO" ? videoEmbedUrl(lightboxMediaUrl) : "";
   const showPreviousMedia = () =>
     setSelectedGalleryIndex((index) => (index <= 0 ? gallery.length - 1 : index - 1));
   const showNextMedia = () =>
@@ -1593,7 +1594,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         portalTarget,
       ) : null}
 
-      {isLightboxOpen && lightboxMedia ? (
+      {portalTarget && isLightboxOpen && lightboxMedia ? createPortal(
         <div
           className="lightbox"
           role="dialog"
@@ -1629,10 +1630,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                   allowFullScreen
                 />
               ) : (
-                <video src={lightboxVideoUrl || lightboxMedia.url} controls autoPlay />
+                <video src={lightboxVideoUrl || lightboxMediaUrl} controls autoPlay />
               )
             ) : (
-              <img src={lightboxMedia.url} alt={lightboxMedia.alt || displayName} />
+              <img src={lightboxMediaUrl} alt={lightboxMedia.alt || displayName} />
             )}
           </div>
           {gallery.length > 1 ? (
@@ -1649,7 +1650,8 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
             {selectedGalleryIndex + 1}/{gallery.length}
             {lightboxMedia.purpose ? ` · ${lightboxMedia.purpose}` : ""}
           </div>
-        </div>
+        </div>,
+        portalTarget,
       ) : null}
 
       <style>{`
@@ -1802,6 +1804,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: grid;
           place-items: center;
           transform: translateY(-50%);
+          transition: none;
+          animation: none;
+          will-change: auto;
           cursor: pointer;
           box-shadow: 0 14px 28px rgba(79, 57, 19, .22);
           text-shadow: none;
@@ -1813,6 +1818,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .hero-media-nav.next {
           right: 14px;
+        }
+
+        .hero-media-nav:active,
+        .hero-media-nav:where(:hover, :focus-visible) {
+          transform: translateY(-50%) !important;
         }
 
         .video-badge {
@@ -3168,7 +3178,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .lightbox {
           position: fixed;
           inset: 0;
-          z-index: 120;
+          z-index: 1000;
           background: rgba(5, 6, 8, .94);
           display: grid;
           place-items: center;
@@ -3217,6 +3227,9 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           height: 52px;
           top: 50%;
           transform: translateY(-50%);
+          transition: none;
+          animation: none;
+          will-change: auto;
         }
 
         .lightbox-nav.previous {
@@ -3225,6 +3238,11 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .lightbox-nav.next {
           right: 22px;
+        }
+
+        .lightbox-nav:active,
+        .lightbox-nav:where(:hover, :focus-visible) {
+          transform: translateY(-50%) !important;
         }
 
         .lightbox-caption {

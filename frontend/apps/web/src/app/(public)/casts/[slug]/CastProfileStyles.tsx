@@ -104,8 +104,16 @@ export function CastProfileStyles() {
         cursor: pointer;
         pointer-events: auto;
         transform: translateY(-50%);
+        transition: none;
+        animation: none;
+        will-change: auto;
         backdrop-filter: blur(8px);
         box-shadow: 0 12px 26px rgba(79,57,19,.24);
+      }
+
+      .cast-hero-media-nav button:active,
+      .cast-hero-media-nav button:where(:hover, :focus-visible) {
+        transform: translateY(-50%) !important;
       }
 
       .cast-hero-media-nav .previous {
@@ -1264,7 +1272,7 @@ export function CastProfileStyles() {
       .cast-lightbox {
         position: fixed;
         inset: 0;
-        z-index: 80;
+        z-index: 1000;
         background: #000;
         color: var(--vy-text);
         display: grid;
@@ -1315,7 +1323,15 @@ export function CastProfileStyles() {
         width: 40px;
         height: 40px;
         transform: translateY(-50%);
+        transition: none;
+        animation: none;
+        will-change: auto;
         backdrop-filter: blur(6px);
+      }
+
+      .cast-lightbox-nav:active,
+      .cast-lightbox-nav:where(:hover, :focus-visible) {
+        transform: translateY(-50%) !important;
       }
 
       .cast-lightbox-nav.previous {
