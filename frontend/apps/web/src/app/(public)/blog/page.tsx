@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   filterBlogPosts,
   getBlogCategories,
-  getBlogTags,
   getFeaturedBlogPost,
   getPublishedBlogPosts,
   slugifyBlogTerm,
@@ -56,7 +55,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const allPosts = await getPublishedBlogPosts();
   const featuredPost = await getFeaturedBlogPost();
   const categories = getBlogCategories(allPosts);
-  const tags = getBlogTags(allPosts);
   const filteredPosts = filterBlogPosts(allPosts, {
     q: params.q,
     category: params.category,
@@ -321,7 +319,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 <span>{formatDate(featuredPost.publishedAt)}</span>
                 <span aria-hidden="true">·</span>
                 <span>{featuredPost.readTime}</span>
-                <span style={{ marginLeft: "auto", color: "var(--vy-gold-pale)" }}>Đọc tiếp</span>
               </div>
             </article>
           </Link>
