@@ -9,6 +9,14 @@ import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
 import { adminRankingsApi, AdminRankingConfig, AdminRankingTargetOption } from '@/lib/api/admin-rankings';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
+import { ConfigProvider, DatePicker } from 'antd';
+import viVN from 'antd/locale/vi_VN';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import 'dayjs/locale/vi';
+
+dayjs.extend(customParseFormat);
+dayjs.locale('vi');
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { 
   ssr: false, 
@@ -90,6 +98,7 @@ export default function AdminContentPage() {
 
   const [campaignDiscountType, setCampaignDiscountType] = useState<'percent' | 'amount'>('percent');
   const [campaignDiscountValue, setCampaignDiscountValue] = useState<string>('10%');
+  const [campaignDates, setCampaignDates] = useState<any>(null);
 
   const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
   const [isManagingTags, setIsManagingTags] = useState(false);
@@ -1718,9 +1727,34 @@ export default function AdminContentPage() {
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Thời gian chạy</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                  <input placeholder="01/07" style={{ width: '110px', textAlign: 'center', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 10px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
-                  <span style={{ color: '#57534b' }}>–</span>
-                  <input placeholder="31/07" style={{ width: '110px', textAlign: 'center', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '11px 10px', color: '#f3f0ea', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+                  <ConfigProvider
+                    theme={{
+                      token: {
+                        colorPrimary: '#d4b26a',
+                        colorBgContainer: 'rgba(12,12,15,.55)',
+                        colorBorder: 'rgba(255,255,255,.1)',
+                        colorText: '#f3f0ea',
+                        colorTextPlaceholder: '#57534b',
+                        borderRadius: 11,
+                        controlHeight: 44,
+                      },
+                      components: {
+                        DatePicker: {
+                          activeBorderColor: '#d4b26a',
+                          hoverBorderColor: 'rgba(212,178,106,.55)',
+                        }
+                      }
+                    }}
+                    locale={viVN}
+                  >
+                    <DatePicker.RangePicker 
+                      format="DD/MM"
+                      placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
+                      value={campaignDates}
+                      onChange={setCampaignDates}
+                      style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '0 15px' }}
+                    />
+                  </ConfigProvider>
                   <span style={{ fontSize: '11px', color: '#57534b' }}>Để trống cả hai = Luôn áp dụng</span>
                 </div>
               </div>
