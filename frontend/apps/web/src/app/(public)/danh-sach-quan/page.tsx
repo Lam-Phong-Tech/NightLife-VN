@@ -918,6 +918,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
       { label: getLocalizedCategoryLabel("CLUB", activeLanguage), value: "CLUB" },
       { label: getLocalizedCategoryLabel("KARAOKE", activeLanguage), value: "KARAOKE" },
       { label: getLocalizedCategoryLabel("MASSAGE_SPA", activeLanguage), value: "MASSAGE_SPA" },
+      { label: getLocalizedCategoryLabel("RESTAURANT", activeLanguage), value: "RESTAURANT" },
     ],
     [activeLanguage],
   );
