@@ -17156,6 +17156,9 @@ export class NightlifeDataService {
     const pendingPartners = await this.prisma.user
       .count({ where: { role: 'PARTNER' as any, status: 'PENDING' as any } })
       .catch(() => 0);
+    const pendingChats = await this.prisma.supportTicket
+      .count({ where: { status: 'PENDING' as any } })
+      .catch(() => 0);
 
     const rawLogs = await this.prisma.notificationLog.findMany({
       where: {
@@ -17199,6 +17202,7 @@ export class NightlifeDataService {
       pendingBills,
       pendingCasts,
       pendingPartners,
+      pendingChats,
       notifications,
     };
   }

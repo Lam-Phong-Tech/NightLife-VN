@@ -39,7 +39,6 @@ const navGroups: { title: string; items: AdminNavItem[] }[] = [
         icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, 
         label: 'Chat hỗ trợ', 
         href: '/admin/support-chat',
-        count: 2,
         countBg: '#e0a44e',
         countColor: '#241a0a'
       },
@@ -267,6 +266,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     pendingBills: 0, 
     pendingCasts: 0, 
     pendingPartners: 0,
+    pendingChats: 0,
     notifications: [] as any[]
   });
   const [isMounted, setIsMounted] = useState(false);
@@ -677,6 +677,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (item.href === '/admin/bills') overrideCount = badges.pendingBills || undefined;
                   if (item.href === '/admin/casts') overrideCount = badges.pendingCasts || undefined;
                   if (item.href === '/admin/partners') overrideCount = badges.pendingPartners || undefined;
+                  if (item.href === '/admin/support-chat') overrideCount = badges.pendingChats || undefined;
                   
                   return (
                     <Link
