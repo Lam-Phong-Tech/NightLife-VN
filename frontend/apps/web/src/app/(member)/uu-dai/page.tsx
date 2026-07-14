@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ApiError, resolveClientUrl } from "@/lib/api/client";
 import { contentApi, type CmsContentItem } from "@/lib/api/content";
-import { campaignsApi, type CampaignItem as PublicCampaign } from "@/lib/api/campaigns";
+import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
 import { useMoneyFormatter } from "@/components/providers/CurrencyProvider";
 import { translateText } from "@/lib/i18n/client-translations";
 import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
@@ -52,7 +52,7 @@ const fallbackImages = [
   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=720&q=76",
 ];
 
-const couponPageSize = 4;
+const campaignPageSize = 4;
 const defaultCouponBannerImage =
   "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76";
 
@@ -67,7 +67,7 @@ type CouponBannerMetadata = {
 };
 
 const formatDiscount = (
-  campaign: Pick<PublicCampaign, "discountType" | "discountValue">|Pick<PublicCampaign, "discountType" | "discountValue">,
+  campaign: Pick<CampaignItem, "discountType" | "discountValue">,
   language: LanguageCode = "vi",
   rates?: CurrencyRateMap,
 ) => {
@@ -145,7 +145,7 @@ const isCouponBanner = (content: CmsContentItem) => {
   );
 };
 
-const getCampaignImage = (campaign: PublicCampaign, index: number) =>
+const getCampaignImage = (campaign: CampaignItem, index: number) =>
   campaign.targetStore!.media?.[0]?.url ??
   categoryImages[campaign.targetStore!.category] ??
   fallbackImages[index % fallbackImages.length];
@@ -198,7 +198,7 @@ const normalizeCityLabel = (value: string, language: LanguageCode) => {
   return translateText(value, language);
 };
 
-const getStoreLocation = (campaign: PublicCampaign, language: LanguageCode) => {
+const getStoreLocation = (campaign: CampaignItem, language: LanguageCode) => {
   const area = [
     campaign.targetStore!.district ? normalizeDistrictLabel(campaign.targetStore!.district, language) : "",
     campaign.targetStore!.city ? normalizeCityLabel(campaign.targetStore!.city, language) : "",
@@ -275,19 +275,19 @@ function CampaignDealCard({
   language,
   rates,
 }: {
-  campaign: PublicCampaign;
+  campaign: CampaignItem;
   index: number;
   language: LanguageCode;
   rates: CurrencyRateMap;
 }) {
   const storeName = readableName(campaign.targetStore!.name);
-  const couponName = readableName(campaign.name);
+  const campaignName = readableName(campaign.name);
   const location = getStoreLocation(campaign, language);
   const copy = campaignCopy(language);
 
   return (
     <Link
-      aria-label={`${copy.viewOffer} ${couponName} ${language === "vi" ? "tại" : "at"} ${storeName}`}
+      aria-label={`${copy.viewOffer} ${campaignName} ${language === "vi" ? "tại" : "at"} ${storeName}`}
       className="campaign-card"
       href={`/stores/${campaign.targetStore!.slug}`}
     >
@@ -307,7 +307,7 @@ function CampaignDealCard({
           </span>
         </span>
         <strong>{formatDiscount(campaign, language, rates)}</strong>
-        <span className="campaign-title">{couponName}</span>
+        <span className="campaign-title">{campaignName}</span>
         <span className="campaign-place">
           <MapPin size={13} />
           {storeName} · {location}
@@ -324,7 +324,7 @@ function CampaignDealCard({
 export default function Page() {
   const activeLanguage = useActiveLanguage();
   const { rates } = useMoneyFormatter(activeLanguage);
-  const [campaigns, setCampaigns] = useState<PublicCampaign[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -335,15 +335,15 @@ export default function Page() {
   useEffect(() => {
     let isMounted = true;
 
-    couponApi
+    campaignsApi
       .listPublicCampaigns()
-      .then((data) => {
+      .then((data: any) => {
         if (isMounted) {
           setCampaigns(data);
           setLoadError("");
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         if (!isMounted) {
           return;
         }
@@ -387,7 +387,7 @@ export default function Page() {
       count,
       label: getCategoryLabel(category, activeLanguage),
     }));
-  }, [activeLanguage, coupons]);
+  }, [activeLanguage, campaigns]);
 
   const filteredCampaigns = useMemo(() => {
     const query = normalizeText(searchTerm);
@@ -398,7 +398,7 @@ export default function Page() {
         [
           campaign.name,
           
-          campaign.description ?? "",
+          "",
           campaign.targetStore!.name,
           campaign.targetStore!.city,
           campaign.targetStore!.district ?? "",
@@ -409,33 +409,33 @@ export default function Page() {
 
       return matchesCategory && (!query || searchable.includes(query));
     });
-  }, [activeCategory, activeLanguage, coupons, searchTerm]);
+  }, [activeCategory, activeLanguage, campaigns, searchTerm]);
 
-  const featuredCoupon = filteredCoupons[0] ?? coupons[0];
-  const couponBanner = useMemo(() => banners.find(isCouponBanner) ?? null, [banners]);
-  const couponBannerMetadata = couponBanner ? getCouponBannerMetadata(couponBanner) : null;
-  const couponBannerImage =
-    resolveClientUrl(couponBannerMetadata?.imageUrl) ||
-    couponBannerMetadata?.imageUrl ||
+  const featuredCoupon = filteredCampaigns[0] ?? campaigns[0];
+  const campaignBanner = useMemo(() => banners.find(isCouponBanner) ?? null, [banners]);
+  const campaignBannerMetadata = campaignBanner ? getCouponBannerMetadata(campaignBanner) : null;
+  const campaignBannerImage =
+    resolveClientUrl(campaignBannerMetadata?.imageUrl) ||
+    campaignBannerMetadata?.imageUrl ||
     defaultCouponBannerImage;
-  const couponHeroStyle = {
-    "--campaign-hero-image": `url(${JSON.stringify(couponBannerImage)})`,
+  const campaignHeroStyle = {
+    "--campaign-hero-image": `url(${JSON.stringify(campaignBannerImage)})`,
   } as CSSProperties;
-  const couponHeroTitle = couponBanner?.title || "Ưu đãi đêm nay";
-  const couponHeroDescription =
-    couponBannerMetadata?.description ||
-    couponBanner?.excerpt ||
+  const campaignHeroTitle = campaignBanner?.title || "Ưu đãi đêm nay";
+  const campaignHeroDescription =
+    campaignBannerMetadata?.description ||
+    campaignBanner?.excerpt ||
     "Coupon & khuyến mãi từ các quán đối tác, dẫn thẳng về trang đặt bàn để nhận QR.";
-  const couponHeroEyebrow = couponBannerMetadata?.tag || couponBannerMetadata?.statusLabel || "Xem danh sách quán";
-  const couponHeroHref =
-    couponBannerMetadata?.link && couponBannerMetadata.link !== "/uu-dai"
-      ? couponBannerMetadata.link
+  const campaignHeroEyebrow = campaignBannerMetadata?.tag || campaignBannerMetadata?.statusLabel || "Xem danh sách quán";
+  const campaignHeroHref =
+    campaignBannerMetadata?.link && campaignBannerMetadata.link !== "/uu-dai"
+      ? campaignBannerMetadata.link
       : "/danh-sach-quan";
-  const totalPages = Math.max(1, Math.ceil(filteredCoupons.length / couponPageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize));
   const currentCouponPage = Math.min(currentPage, totalPages);
-  const couponStartIndex = (currentCouponPage - 1) * couponPageSize;
-  const paginatedCoupons = filteredCoupons.slice(couponStartIndex, couponStartIndex + couponPageSize);
-  const shouldShowPagination = !isLoading && !loadError && filteredCoupons.length > couponPageSize;
+  const campaignStartIndex = (currentCouponPage - 1) * campaignPageSize;
+  const paginatedCoupons = filteredCampaigns.slice(campaignStartIndex, campaignStartIndex + campaignPageSize);
+  const shouldShowPagination = !isLoading && !loadError && filteredCampaigns.length > campaignPageSize;
 
   const updateSearchTerm = (value: string) => {
     setSearchTerm(value);
@@ -456,13 +456,13 @@ export default function Page() {
   return (
     <main className="campaign-page">
       <section className="campaign-shell">
-        <header className="campaign-hero" style={couponHeroStyle}>
+        <header className="campaign-hero" style={campaignHeroStyle}>
           <div className="hero-copy">
-            <Link className="back-link" href={couponHeroHref}>
-              {couponHeroEyebrow}
+            <Link className="back-link" href={campaignHeroHref}>
+              {campaignHeroEyebrow}
             </Link>
-            <h1>{couponHeroTitle}</h1>
-            <p>{couponHeroDescription}</p>
+            <h1>{campaignHeroTitle}</h1>
+            <p>{campaignHeroDescription}</p>
           </div>
 
           <div className="hero-search" role="search">
@@ -494,7 +494,7 @@ export default function Page() {
               <strong>{featuredCoupon ? readableName(featuredCoupon.name) : "Ưu đãi mới"}</strong>
               <p>
                 {featuredCoupon
-                  ? `${readableName(featuredCoupon.store.name)} · ${formatDiscount(featuredCoupon, activeLanguage, rates)}`
+                  ? `${readableName(featuredCoupon.targetStore!.name)} · ${formatDiscount(featuredCoupon, activeLanguage, rates)}`
                   : "Các ưu đãi sẽ được cập nhật liên tục theo khu vực."}
               </p>
             </div>
@@ -505,7 +505,7 @@ export default function Page() {
                   <Ticket size={17} />
                   Loại ưu đãi
                 </span>
-                <b>{filteredCoupons.length}</b>
+                <b>{filteredCampaigns.length}</b>
               </div>
               <div className="filter-list">
                 <button
@@ -540,7 +540,7 @@ export default function Page() {
             <div className="result-head">
               <div>
                 <span>Danh sách ưu đãi</span>
-                <strong>{isLoading ? "Đang tải..." : `${filteredCoupons.length} ưu đãi phù hợp`}</strong>
+                <strong>{isLoading ? "Đang tải..." : `${filteredCampaigns.length} ưu đãi phù hợp`}</strong>
               </div>
               {searchTerm || activeCategory !== "ALL" ? (
                 <button
@@ -560,7 +560,7 @@ export default function Page() {
               </section>
             ) : null}
 
-            {!isLoading && !loadError && filteredCoupons.length === 0 ? (
+            {!isLoading && !loadError && filteredCampaigns.length === 0 ? (
               <section className="empty-state">
                 <Ticket size={32} />
                 <h2>Chưa có campaign phù hợp</h2>
@@ -574,12 +574,12 @@ export default function Page() {
               </section>
             ) : null}
 
-            {!isLoading && !loadError && filteredCoupons.length ? (
+            {!isLoading && !loadError && filteredCampaigns.length ? (
               <section className="campaign-grid" aria-label="Danh sách campaign đang có">
                 {paginatedCoupons.map((campaign, index) => (
                   <CampaignDealCard
                     campaign={campaign}
-                    index={couponStartIndex + index}
+                    index={campaignStartIndex + index}
                     key={campaign.id}
                     language={activeLanguage}
                     rates={rates}

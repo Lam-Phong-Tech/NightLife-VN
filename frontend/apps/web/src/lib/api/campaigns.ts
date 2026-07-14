@@ -45,19 +45,19 @@ export const campaignsApi = {
   },
 
   adminCreate: async (data: Partial<CampaignItem>): Promise<CampaignItem> => {
-    const res = await apiClient<CampaignItem>('/admin/campaigns', {
+    const res = await apiClient<any>('/admin/campaigns', {
       method: 'POST',
       data,
     });
-    return res.data;
+    return res.data?.data || res.data;
   },
 
   adminUpdate: async (id: string, data: Partial<CampaignItem>): Promise<CampaignItem> => {
-    const res = await apiClient<CampaignItem>(`/admin/campaigns/${id}`, {
+    const res = await apiClient<any>(`/admin/campaigns/${id}`, {
       method: 'PATCH',
       data,
     });
-    return res.data;
+    return res.data?.data || res.data;
   },
 
   adminDelete: async (id: string): Promise<void> => {
