@@ -1752,6 +1752,7 @@ function RankingRow({ item }: { item: RankedItem }) {
     <Link
       href={item.href ?? "/xep-hang"}
       className="nl-home-ranking-row"
+      data-rank-tier={isPodium ? rankNumber : undefined}
       aria-label={`Xem chi tiết ${item.name ?? "mục xếp hạng"}`}
       style={{
         display: "grid",
@@ -1773,6 +1774,7 @@ function RankingRow({ item }: { item: RankedItem }) {
       {isPodium ? (
         <span
           aria-hidden="true"
+          className="nl-home-ranking-glow"
           style={{
             position: "absolute",
             inset: 0,
@@ -1822,6 +1824,7 @@ function RankingRow({ item }: { item: RankedItem }) {
       </div>
       <span
         aria-hidden="true"
+        className="nl-home-ranking-arrow"
         style={{
           width: 30,
           height: 30,
