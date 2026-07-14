@@ -1202,13 +1202,26 @@ export default function Page() {
         }
 
         html.vy-light .coupon-hero::before {
-          background: transparent;
+          background:
+            linear-gradient(90deg, rgba(6, 6, 8, .78), rgba(6, 6, 8, .42) 48%, rgba(6, 6, 8, .08) 74%, transparent);
         }
 
-        html.vy-light .back-link,
-        html.vy-light h1,
+        html.vy-light .coupon-hero .back-link,
+        html.vy-light .coupon-hero h1,
         html.vy-light .coupon-hero p {
-          text-shadow: none;
+          text-shadow: 0 3px 18px rgba(0, 0, 0, .72);
+        }
+
+        html.vy-light .coupon-hero .back-link {
+          color: #f3d782;
+        }
+
+        html.vy-light .coupon-hero h1 {
+          color: #fffaf1;
+        }
+
+        html.vy-light .coupon-hero p {
+          color: #f2eadc;
         }
 
         html.vy-light .back-link,
@@ -1228,7 +1241,6 @@ export default function Page() {
           color: #211e19;
         }
 
-        html.vy-light .coupon-hero p,
         html.vy-light .featured-card p,
         html.vy-light .note-card p,
         html.vy-light .coupon-place,
