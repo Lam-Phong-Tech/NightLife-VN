@@ -46,6 +46,7 @@ import {
   type PublicTourItem,
 } from "@/lib/api/content";
 import { couponApi, type PublicCoupon } from "@/lib/api/coupons";
+import { campaignsApi, type CampaignItem } from "@/lib/api/campaigns";
 import { rankingsApi, type PublicRankingItem } from "@/lib/api/rankings";
 import { resolveClientUrl } from "@/lib/api/client";
 import {
@@ -482,6 +483,34 @@ function mapCouponToHomeItem(
       .join(" · "),
     img: backgroundFromUrl(storeImageUrl),
     href: `/stores/${coupon.store.slug}`,
+  };
+}
+
+function mapCampaignToHomeItem(
+  campaign: CampaignItem,
+  index: number,
+  language: LanguageCode,
+  rates: CurrencyRateMap,
+): HomeCouponItem {
+  void index;
+  const storeImageUrl = campaign.targetStore?.media?.[0]?.url;
+  const value =
+    campaign.discountType === "PERCENT"
+      ? `-${campaign.discountValue}%`
+      : `-${formatVndByLanguage(campaign.discountValue, language, rates)}`;
+
+  return {
+    id: campaign.id,
+    title: campaign.name,
+    value,
+    place: [
+      campaign.targetStore?.name,
+      storeAreaText(campaign.targetStore?.district, undefined, campaign.targetStore?.city),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    img: backgroundFromUrl(storeImageUrl),
+    href: `/stores/${campaign.targetStore?.slug ?? ""}`,
   };
 }
 
@@ -2455,21 +2484,21 @@ export default function Page() {
       })
       .catch((e) => console.error("Failed to load banners", e));
 
-    couponApi
-      .listPublicCoupons()
-      .then((coupons) => {
+    campaignsApi
+      .listPublicCampaigns()
+      .then((campaigns) => {
         if (!cancelled) {
           setHomeCoupons(
-            coupons
+            campaigns
               .slice(0, 6)
-              .map((coupon, index) => mapCouponToHomeItem(coupon, index, activeLanguage, rates)),
+              .map((campaign, index) => mapCampaignToHomeItem(campaign, index, activeLanguage, rates)),
           );
         }
       })
       .catch(() => {
         if (!cancelled) {
           setHomeCoupons([]);
-          setHomeCouponsError("Chưa tải được coupon từ API.");
+          setHomeCouponsError("Chưa tải được ưu đãi từ API.");
         }
       })
       .finally(() => {
@@ -2721,11 +2750,11 @@ export default function Page() {
               <SectionHeading title={homeSectionTitles.coupon} />
               <div style={{ display: "grid", gap: "10px" }}>
                 {isHomeCouponsLoading ? (
-                  <HomeDataMessage text="Đang tải coupon từ API..." compact />
+                  <HomeDataMessage text="Đang tải ưu đãi từ API..." compact />
                 ) : homeCoupons.length ? (
                   homeCoupons.slice(0, 2).map((item) => <CouponCard key={item.id} item={item} compact />)
                 ) : (
-                  <HomeDataMessage text={homeCouponsError || "Chưa có coupon đang hoạt động."} compact />
+                  <HomeDataMessage text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."} compact />
                 )}
               </div>
             </section>
@@ -2869,11 +2898,11 @@ export default function Page() {
                 <SectionHeading title={homeSectionTitles.coupon} />
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px" }}>
                   {isHomeCouponsLoading ? (
-                    <HomeDataMessage text="Đang tải coupon từ API..." />
+                    <HomeDataMessage text="Đang tải ưu đãi từ API..." />
                   ) : homeCoupons.length ? (
                     homeCoupons.map((item) => <CouponCard key={item.id} item={item} />)
                   ) : (
-                    <HomeDataMessage text={homeCouponsError || "Chưa có coupon đang hoạt động."} />
+                    <HomeDataMessage text={homeCouponsError || "Chưa có ưu đãi đang hoạt động."} />
                   )}
                 </div>
               </div>
