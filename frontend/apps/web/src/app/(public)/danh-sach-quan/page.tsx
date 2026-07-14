@@ -687,18 +687,10 @@ export default function Page() {
     return [{ value: "", label: copy.all }, ...(dynamicOptions.length ? dynamicOptions : fallbackOptions)];
   }, [activeLanguage, areas, city, copy.all]);
 
-  const requestNearby = async ({ bypassPermissionNotice = false } = {}) => {
+  const startNearbyLocationRequest = () => {
     if (!navigator.geolocation) {
       setError("Thiết bị chưa hỗ trợ lấy vị trí.");
       return;
-    }
-
-    if (isMobileViewport() && !bypassPermissionNotice && !coords) {
-      const permissionState = await readGeolocationPermissionState();
-      if (permissionState !== "granted") {
-        setLocationPermissionOpen(true);
-        return;
-      }
     }
 
     setLocationPermissionOpen(false);
@@ -713,16 +705,35 @@ export default function Page() {
         setSort("nearest");
         setIsLocating(false);
       },
-      () => {
-        setError("Chưa lấy được vị trí hiện tại.");
+      (positionError) => {
+        const deniedMessage =
+          "Trình duyệt đang chặn quyền vị trí. Hãy mở quyền vị trí trong cài đặt trình duyệt rồi thử lại.";
+        setError(positionError.code === positionError.PERMISSION_DENIED ? deniedMessage : "Chưa lấy được vị trí hiện tại.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 8000 },
     );
   };
 
+  const requestNearby = async ({ bypassPermissionNotice = false } = {}) => {
+    if (!navigator.geolocation) {
+      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
+      return;
+    }
+
+    if (isMobileViewport() && !bypassPermissionNotice && !coords) {
+      const permissionState = await readGeolocationPermissionState();
+      if (permissionState !== "granted") {
+        setLocationPermissionOpen(true);
+        return;
+      }
+    }
+
+    startNearbyLocationRequest();
+  };
+
   const confirmLocationPermission = () => {
-    void requestNearby({ bypassPermissionNotice: true });
+    startNearbyLocationRequest();
   };
 
   const handleCityChange = (nextCity: string) => {
