@@ -620,12 +620,7 @@ export function CastProfileStyles() {
         line-height: 1;
       }
 
-      .cast-chip.language {
-        background: rgba(212,178,106,.12);
-        color: #d9c08a;
-        border: 1px solid rgba(212,178,106,.26);
-      }
-
+      .cast-chip.language,
       .cast-chip.tag {
         background: var(--vy-surface-2);
         color: var(--vy-muted);
@@ -1087,12 +1082,7 @@ export function CastProfileStyles() {
         color: #857968;
       }
 
-      html.vy-light .cast-desktop .cast-chip.language {
-        background: #fff3cf;
-        color: #8a641f;
-        border-color: rgba(212,178,106,.42);
-      }
-
+      html.vy-light .cast-desktop .cast-chip.language,
       html.vy-light .cast-desktop .cast-chip.tag {
         background: rgba(255,255,255,.74);
         color: #5f5548;

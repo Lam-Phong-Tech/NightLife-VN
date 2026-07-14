@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Clock3, Star, UsersRound } from "lucide-react";
+import { CalendarDays, ChevronRight, Sparkles, Star } from "lucide-react";
 import type { RelatedCast } from "@/lib/api/cast-detail";
 import {
   formatMonth,
@@ -96,12 +96,12 @@ export function CastInfo({
 
       <div className="cast-desktop-stat-row">
         <span>
-          <UsersRound size={14} />
+          <CalendarDays size={14} />
           <b>{month}</b>
           Tháng sinh
         </span>
         <span>
-          <Clock3 size={14} />
+          <Sparkles size={14} />
           <b>{zodiac}</b>
           Cung
         </span>

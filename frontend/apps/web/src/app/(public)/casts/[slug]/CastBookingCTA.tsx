@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import type { CastProfile, CastProfileTrack } from "./cast-profile.types";
 
 type CastBookingCTAProps = {
@@ -13,7 +13,6 @@ type CastBookingCTAProps = {
 };
 
 export function CastBookingCTA({
-  area,
   bookingHref,
   variant,
   isFavorite = false,
@@ -50,11 +49,6 @@ export function CastBookingCTA({
           <strong>Đặt cast này</strong>
         </Link>
       </div>
-      <p>
-        <Check size={14} strokeWidth={2} />
-        Xác nhận trong 5 phút · Miễn phí huỷ trước 2 giờ
-        {area ? ` · ${area}` : ""}
-      </p>
     </section>
   );
 }
