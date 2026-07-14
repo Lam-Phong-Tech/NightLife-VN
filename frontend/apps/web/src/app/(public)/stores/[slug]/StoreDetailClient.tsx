@@ -54,7 +54,6 @@ import {
   type BookingValidationField,
 } from "@/lib/booking-field-validation";
 import { translateText } from "@/lib/i18n/client-translations";
-import { formatVndByLanguage, type CurrencyRateMap } from "@/lib/i18n/currency-format";
 import { useActiveLanguage, type LanguageCode } from "@/lib/i18n/use-active-language";
 import { hasMemberFavoriteAccess, redirectToLoginForFavorite, requireMemberFavoriteAccess } from "@/lib/member-favorite-auth";
 import { isFavoriteStore, writeFavoriteStore } from "@/lib/member-favorites";
@@ -332,22 +331,10 @@ const rawOpeningSummary = (store: PublicStoreDetail) => {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 };
 
-const priceRangeText = (store: PublicStoreDetail, language: LanguageCode, rates: CurrencyRateMap) => {
+const priceRangeText = (store: PublicStoreDetail) => {
   const values = store.priceReference.items
     .map((item) => item.amountVnd)
     .filter((value): value is number => typeof value === "number" && value > 0);
-
-  if (values.length) {
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const minText = formatVndByLanguage(min, language, rates);
-    const maxText = formatVndByLanguage(max, language, rates);
-    return min === max ? minText : `${minText} - ${maxText}`;
-  }
-
-  if (store.priceReference.startingFromVnd) {
-    return formatVndByLanguage(store.priceReference.startingFromVnd, language, rates);
-  }
 
   return formatPriceTierRange(values, store.priceReference.startingFromVnd);
 };
@@ -702,7 +689,7 @@ function BookingCard({
   onFieldTouched: (field: BookingValidationField) => void;
   onSubmit: () => void;
 }) {
-  const { formatMoney } = useMoneyFormatter(activeLanguage);
+  const bookingPriceText = priceRangeText(store);
 
   return (
     <aside className="booking-card" aria-label={translateText("Đặt bàn", activeLanguage)}>
@@ -720,11 +707,7 @@ function BookingCard({
             <strong>{translateText("Đặt bàn", activeLanguage)}</strong>
             <small>{translateText("Gửi yêu cầu · Admin xác nhận", activeLanguage)}</small>
           </span>
-          <b>
-            {store.priceReference.startingFromVnd
-              ? formatMoney(store.priceReference.startingFromVnd)
-              : formatPriceTier(store.priceReference.startingFromVnd)}
-          </b>
+          <b>{bookingPriceText}</b>
         </div>
 
         <div className="booking-form-grid booking-contact-grid">
@@ -1042,8 +1025,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
     image: heroFavoriteImage,
   };
   const featureChips = [categoryLabel, ...(store.tags ?? []).map((chip) => translateText(chip, activeLanguage))];
-  const { rates } = useMoneyFormatter(activeLanguage);
-  const priceText = priceRangeText(store, activeLanguage, rates);
+  const priceText = priceRangeText(store);
   const structuredData = useMemo(() => buildStoreStructuredData(store), [store]);
   const introLines = useMemo(() => buildIntroLines(store.description), [store.description]);
   const introText = useMemo(
@@ -2753,20 +2735,23 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           opacity: .45;
         }
 
-        .guest-count-input-wrap {
+        .booking-card .guest-count-input-wrap {
           min-width: 0;
           flex: 1;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: 4px;
+          margin: 0;
           color: var(--vy-text);
           font-size: 13px;
           font-weight: 850;
+          letter-spacing: 0;
           line-height: 1.2;
+          text-transform: none;
         }
 
-        .guest-count-input-wrap input {
+        .booking-card .guest-count-input-wrap input {
           width: 2.5ch;
           min-width: 2.5ch;
           max-width: 3ch;
@@ -2784,16 +2769,20 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           cursor: text;
         }
 
-        .guest-count-input-wrap input::-webkit-outer-spin-button,
-        .guest-count-input-wrap input::-webkit-inner-spin-button {
+        .booking-card .guest-count-input-wrap input::-webkit-outer-spin-button,
+        .booking-card .guest-count-input-wrap input::-webkit-inner-spin-button {
           margin: 0;
           appearance: none;
         }
 
-        .guest-count-input-wrap span {
+        .booking-card .guest-count-input-wrap span {
+          display: inline;
           color: var(--vy-text);
           font-size: 13px;
+          font-weight: 850;
+          letter-spacing: 0;
           line-height: 1.2;
+          text-transform: none;
         }
 
         .booking-note-box {
