@@ -1193,9 +1193,7 @@ export default function Page() {
 
         html.vy-light .coupon-hero {
           border-color: rgba(150, 116, 52, .28);
-          background:
-            linear-gradient(115deg, rgba(255, 250, 242, .78), rgba(246, 244, 239, .42) 54%, rgba(246, 244, 239, .22)),
-            var(--coupon-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
+          background: var(--coupon-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
           background-position: center;
           background-size: cover;
           box-shadow:
@@ -1204,9 +1202,7 @@ export default function Page() {
         }
 
         html.vy-light .coupon-hero::before {
-          background:
-            radial-gradient(circle at 82% 32%, rgba(168, 124, 52, .16), transparent 34%),
-            linear-gradient(90deg, rgba(255, 250, 242, .8), rgba(246, 244, 239, .34) 50%, rgba(246, 244, 239, .14));
+          background: transparent;
         }
 
         html.vy-light .back-link,
