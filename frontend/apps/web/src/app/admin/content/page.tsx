@@ -8,6 +8,7 @@ import { contentApi, CmsContentItem } from '@/lib/api/content';
 import { categoriesApi, CategoryItem } from '@/lib/api/categories';
 import { apiFormDataClient, apiClient, resolveClientUrl } from '@/lib/api/client';
 import { adminRankingsApi, AdminRankingConfig, AdminRankingTargetOption } from '@/lib/api/admin-rankings';
+import { campaignsApi, CampaignItem } from '@/lib/api/campaigns';
 import { useSystemFeedback } from '@/components/ui/SystemFeedback';
 import { ConfigProvider, DatePicker } from 'antd';
 import viVN from 'antd/locale/vi_VN';
@@ -103,6 +104,10 @@ export default function AdminContentPage() {
   const [campaignStoreSearch, setCampaignStoreSearch] = useState('');
   const [campaignStoreResults, setCampaignStoreResults] = useState<any[]>([]);
   const [campaignLinkedStore, setCampaignLinkedStore] = useState<any | null>(null);
+  const [campaignName, setCampaignName] = useState('');
+  const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
+  const [editCampaignId, setEditCampaignId] = useState<string | null>(null);
+  const [isDeletingCampaign, setIsDeletingCampaign] = useState(false);
 
   const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
   const [isManagingTags, setIsManagingTags] = useState(false);
@@ -114,6 +119,7 @@ export default function AdminContentPage() {
     fetchBlogs();
     fetchBanners();
     fetchBannerTags();
+    fetchCampaigns();
   }, []);
 
   useEffect(() => {
@@ -338,6 +344,81 @@ export default function AdminContentPage() {
     }
   };
 
+  const fetchCampaigns = async () => {
+    try {
+      const data = await campaignsApi.adminList();
+      setCampaigns(data);
+    } catch (error) {
+      console.error('Failed to fetch campaigns:', error);
+    }
+  };
+
+  const handleEditCampaign = (campaign: CampaignItem) => {
+    setEditCampaignId(campaign.id);
+    setCampaignName(campaign.name);
+    setCampaignDiscountType(campaign.discountType === 'PERCENT' ? 'percent' : 'amount');
+    setCampaignDiscountValue(campaign.discountValue + (campaign.discountType === 'PERCENT' ? '%' : 'K'));
+    setCampaignDates(campaign.startsAt ? [dayjs(campaign.startsAt), campaign.endsAt ? dayjs(campaign.endsAt) : null] : null);
+    setCampaignStatus(campaign.status === 'ACTIVE' ? 'Hoạt động' : campaign.status === 'PAUSED' ? 'Tạm dừng' : 'Bản nháp');
+    setCampaignLinkedStore(campaign.targetStore || null);
+    setIsAdding('campaign');
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    feedback.showModal({
+      title: 'Xóa campaign',
+      description: 'Bạn có chắc chắn muốn xóa campaign này?',
+      onPrimary: async () => {
+        try {
+          setIsDeletingCampaign(true);
+          await campaignsApi.adminDelete(id);
+          fetchCampaigns();
+          feedback.closeModal();
+          closeDrawer();
+        } catch (e) {
+          feedback.showToast({ title: 'Lỗi khi xóa campaign', tone: 'error' });
+        } finally {
+          setIsDeletingCampaign(false);
+        }
+      }
+    });
+  };
+
+  const handleSaveCampaign = async () => {
+    if (!campaignName) {
+      feedback.showToast({ title: 'Vui lòng nhập tên chương trình', tone: 'error' });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const data = {
+        name: campaignName,
+        discountType: campaignDiscountType === 'percent' ? 'PERCENT' : 'FIXED_AMOUNT',
+        discountValue: parseInt(campaignDiscountValue.replace(/\D/g, '')),
+        status: campaignStatus === 'Hoạt động' ? 'ACTIVE' : campaignStatus === 'Tạm dừng' ? 'PAUSED' : 'DRAFT',
+        startsAt: campaignDates?.[0] ? campaignDates[0].toISOString() : null,
+        endsAt: campaignDates?.[1] ? campaignDates[1].toISOString() : null,
+        targetStoreId: campaignLinkedStore?.id || null,
+      };
+
+      if (editCampaignId) {
+        await campaignsApi.adminUpdate(editCampaignId, data as any);
+      } else {
+        await campaignsApi.adminCreate(data as any);
+      }
+      
+      fetchCampaigns();
+      closeDrawer();
+      feedback.showToast({ title: editCampaignId ? 'Đã cập nhật campaign' : 'Đã tạo campaign', tone: 'success' });
+    } catch (e) {
+      console.error(e);
+      feedback.showToast({ title: 'Có lỗi xảy ra khi lưu campaign', tone: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const fetchBannerTags = async () => {
     try {
       const data = await categoriesApi.adminList('BANNER_TAG');
@@ -543,6 +624,13 @@ export default function AdminContentPage() {
 
   const closeDrawer = () => {
     setIsAdding(null);
+    setCampaignName('');
+    setCampaignDates(null);
+    setCampaignLinkedStore(null);
+    setCampaignStatus('Hoạt động');
+    setCampaignDiscountType('percent');
+    setCampaignDiscountValue('10%');
+    setEditCampaignId(null);
     setEditBlogId(null);
     setEditBannerId(null);
     setBlogTitle('');
@@ -809,47 +897,39 @@ export default function AdminContentPage() {
 
 
 
-      {/* CAMPAIGN CONTENT (MOCKUP) */}
+      {/* CAMPAIGN CONTENT */}
       {activeTab === 'campaign' && (
         <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: '16px', overflow: 'hidden' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', padding: '13px 18px', fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#57534b', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,.06)', background: 'rgba(255,255,255,.015)' }}>
             <span>Chương trình</span><span>Áp dụng</span><span>Thời gian</span><span style={{ textAlign: 'right' }}>Trạng thái</span>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−30%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Happy Hour</span></div>
-            <span style={{ color: '#c5c0b6' }}>Club Lumière</span>
-            <span style={{ color: '#8c8679', fontSize: '12px' }}>01/06 – 07/07</span>
-            <span style={{ textAlign: 'right' }}><span style={{ color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đang chạy</span></span>
-          </div>
+          {campaigns.length === 0 ? (
+            <div style={{ padding: '30px', textAlign: 'center', color: '#8c8679', fontSize: '13px' }}>Chưa có campaign nào.</div>
+          ) : (
+            campaigns.map(camp => {
+              const discountText = camp.discountType === 'PERCENT' ? `−${camp.discountValue}%` : `−${camp.discountValue}K`;
+              const storeName = camp.targetStore?.name || 'Toàn hệ thống';
+              const timeText = camp.startsAt ? `${dayjs(camp.startsAt).format('DD/MM')} – ${camp.endsAt ? dayjs(camp.endsAt).format('DD/MM') : '...'}` : 'Luôn áp dụng';
+              
+              let statusColor = '#9ca3af';
+              let statusBorder = 'rgba(156,163,175,0.3)';
+              let statusText = camp.status;
+              if (camp.status === 'ACTIVE') { statusColor = '#4ade80'; statusBorder = 'rgba(74,222,128,0.3)'; statusText = 'Đang chạy'; }
+              if (camp.status === 'PAUSED') { statusColor = '#facc15'; statusBorder = 'rgba(250,204,21,0.3)'; statusText = 'Tạm dừng'; }
+              if (camp.status === 'DRAFT') { statusColor = '#818cf8'; statusBorder = 'rgba(129,140,248,0.3)'; statusText = 'Bản nháp'; }
+              if (camp.status === 'EXPIRED') { statusColor = '#9ca3af'; statusBorder = 'rgba(156,163,175,0.3)'; statusText = 'Đã kết thúc'; }
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−10%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>VIP độc quyền</span></div>
-            <span style={{ color: '#c5c0b6' }}>Akari Lounge</span>
-            <span style={{ color: '#8c8679', fontSize: '12px' }}>15/06 – 15/07</span>
-            <span style={{ textAlign: 'right' }}><span style={{ color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đang chạy</span></span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−5%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Ưu đãi khách mới</span></div>
-            <span style={{ color: '#c5c0b6' }}>Toàn hệ thống</span>
-            <span style={{ color: '#8c8679', fontSize: '12px' }}>Luôn áp dụng</span>
-            <span style={{ textAlign: 'right' }}><span style={{ color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đang chạy</span></span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>2+1</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Combo phòng VIP</span></div>
-            <span style={{ color: '#c5c0b6' }}>KTV Hoàng Gia</span>
-            <span style={{ color: '#8c8679', fontSize: '12px' }}>01/07 – 31/07</span>
-            <span style={{ textAlign: 'right' }}><span style={{ color: '#818cf8', border: '1px solid rgba(129,140,248,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đã lên lịch</span></span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>−20%</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>Tết Trung Thu</span></div>
-            <span style={{ color: '#c5c0b6' }}>Toàn hệ thống</span>
-            <span style={{ color: '#8c8679', fontSize: '12px' }}>01/09 – 17/09</span>
-            <span style={{ textAlign: 'right' }}><span style={{ color: '#9ca3af', border: '1px solid rgba(156,163,175,0.3)', padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>Đã kết thúc</span></span>
-          </div>
+              return (
+                <div key={camp.id} onClick={() => handleEditCampaign(camp)} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr 1.2fr 130px', gap: '12px', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,.04)', fontSize: '13px', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}><span style={{ fontSize: '15px', fontWeight: 800, color: '#e3c27e', minWidth: '52px' }}>{discountText}</span><span style={{ color: '#f3f0ea', fontWeight: 500 }}>{camp.name}</span></div>
+                  <span style={{ color: '#c5c0b6' }}>{storeName}</span>
+                  <span style={{ color: '#8c8679', fontSize: '12px' }}>{timeText}</span>
+                  <span style={{ textAlign: 'right' }}><span style={{ color: statusColor, border: `1px solid ${statusBorder}`, padding: '2px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600 }}>{statusText}</span></span>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 
@@ -1649,7 +1729,7 @@ export default function AdminContentPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,.07)', flex: 'none' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '1.4px', color: '#8c8679', textTransform: 'uppercase' }}>Campaign &amp; Discount</div>
-                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>Thêm campaign</div>
+                <div style={{ fontSize: '17px', fontWeight: 700, color: '#f3f0ea', marginTop: '3px' }}>{editCampaignId ? 'Sửa campaign' : 'Thêm campaign'}</div>
               </div>
               <span onClick={closeDrawer} style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9b958a', cursor: 'pointer' }}>
                 <X size={16} />
@@ -1658,7 +1738,7 @@ export default function AdminContentPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Tên chương trình</div>
-                <input placeholder="VD: Happy Hour cuối tuần" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
+                <input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="VD: Happy Hour cuối tuần" style={{ width: '100%', background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '12px 15px', color: '#f3f0ea', fontSize: '15px', fontWeight: 600, fontFamily: 'inherit', outline: 'none' }} />
               </div>
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Mức giảm</div>
@@ -1816,9 +1896,14 @@ export default function AdminContentPage() {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', borderTop: '1px solid rgba(255,255,255,.07)', flex: 'none', background: 'rgba(12,12,15,.35)' }}>
+              {editCampaignId && (
+                <span onClick={() => handleDeleteCampaign(editCampaignId)} style={{ fontSize: '12.5px', fontWeight: 600, color: '#e88b99', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(224,105,122,.25)', background: 'rgba(224,105,122,.08)' }}>{isDeletingCampaign ? 'Đang xóa...' : 'Xóa campaign'}</span>
+              )}
               <span style={{ flex: 1 }}></span>
               <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 600, color: '#9b958a', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer' }}>Hủy</span>
-              <span onClick={closeDrawer} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer' }}>Tạo campaign</span>
+              <button disabled={isSubmitting} onClick={handleSaveCampaign} style={{ fontSize: '12.5px', fontWeight: 700, color: '#241a0a', background: 'linear-gradient(135deg,#f0dda8,#d4b26a)', padding: '10px 20px', borderRadius: '10px', cursor: isSubmitting ? 'not-allowed' : 'pointer', border: 'none', outline: 'none', opacity: isSubmitting ? 0.7 : 1 }}>
+                {isSubmitting ? 'Đang lưu...' : (editCampaignId ? 'Cập nhật' : 'Tạo campaign')}
+              </button>
             </div>
           </div>
         </div>

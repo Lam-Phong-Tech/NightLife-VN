@@ -147,6 +147,14 @@ enum CouponStatus {
   DELETED
 }
 
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+  EXPIRED
+  DELETED
+}
+
 enum CouponIssueStatus {
   ISSUED
   USED
@@ -500,6 +508,7 @@ model Store {
   casts                      Cast[]
   bookings                   Booking[]
   bookingQrs                 BookingQr[]
+  campaigns                  Campaign[]
   coupons                    Coupon[]
   adminCouponIssues          AdminCouponIssue[]
   bills                      Bill[]
@@ -1327,4 +1336,23 @@ model SupportMessage {
   @@index([senderId])
   @@index([createdAt])
   @@map("support_messages")
+}
+
+model Campaign {
+  id              String         @id @default(uuid()) @db.Uuid
+  name            String
+  discountType    DiscountType   @map("discount_type")
+  discountValue   Int            @map("discount_value")
+  targetStoreId   String?        @map("target_store_id") @db.Uuid
+  targetStore     Store?         @relation(fields: [targetStoreId], references: [id], onDelete: SetNull)
+  startsAt        DateTime?      @map("starts_at")
+  endsAt          DateTime?      @map("ends_at")
+  status          CampaignStatus @default(DRAFT)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  @@index([targetStoreId])
+  @@index([status])
+  @@index([startsAt, endsAt])
+  @@map("campaigns")
 }

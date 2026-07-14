@@ -13,6 +13,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { SystemConfigModule } from './system-config/system-config.module';
 import { SupportChatModule } from './support-chat/support-chat.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -29,6 +30,7 @@ import { validateEnv } from './config/env.validation';
     SystemConfigModule,
     SupportChatModule,
     AuditLogsModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
