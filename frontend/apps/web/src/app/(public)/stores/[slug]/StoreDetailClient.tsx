@@ -1712,7 +1712,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           --store-hero-control-border: transparent;
           --store-hero-control-icon: #f7cf5c;
           --store-hero-control-shadow: none;
-          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .95)) drop-shadow(0 0 7px rgba(0, 0, 0, .68));
+          --store-hero-control-icon-shadow: none;
           min-height: 100vh;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -1726,7 +1726,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           --store-hero-control-border: transparent;
           --store-hero-control-icon: #d4a72f;
           --store-hero-control-shadow: none;
-          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .9)) drop-shadow(0 0 7px rgba(0, 0, 0, .42));
+          --store-hero-control-icon-shadow: none;
         }
 
         .nl-page-content:has(.store-detail-page) {

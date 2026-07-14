@@ -10,7 +10,7 @@ export function CastProfileStyles() {
         --cast-hero-control-border: transparent;
         --cast-hero-control-icon: #f7cf5c;
         --cast-hero-control-shadow: none;
-        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .95)) drop-shadow(0 0 7px rgba(0, 0, 0, .68));
+        --cast-hero-control-icon-shadow: none;
         min-height: 100vh;
         color: var(--vy-text);
         font-family: var(--nl-font-sans);
@@ -23,7 +23,7 @@ export function CastProfileStyles() {
         --cast-hero-control-border: transparent;
         --cast-hero-control-icon: #d4a72f;
         --cast-hero-control-shadow: none;
-        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .9)) drop-shadow(0 0 7px rgba(0, 0, 0, .42));
+        --cast-hero-control-icon-shadow: none;
       }
 
       .cast-mobile {
