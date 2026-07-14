@@ -13,7 +13,7 @@ export function CastProfileStyles() {
 
       .cast-mobile {
         min-height: 100vh;
-        padding-bottom: var(--cast-mobile-fixed-space);
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
         background: var(--vy-bg);
       }
 
@@ -27,12 +27,12 @@ export function CastProfileStyles() {
 
       @media (max-width: 767px) {
         .nl-page-content:has(.cast-page) {
-          padding-bottom: var(--cast-mobile-fixed-space) !important;
+          padding-bottom: 0 !important;
           scroll-padding-bottom: var(--cast-mobile-fixed-space) !important;
         }
 
         .nl-page-content:has(.cast-page) + .nl-site-footer {
-          padding-bottom: calc(180px + env(safe-area-inset-bottom)) !important;
+          padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
         }
       }
 

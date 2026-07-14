@@ -3352,16 +3352,16 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         @media (max-width: 980px) {
           .store-detail-page {
-            padding-bottom: var(--store-mobile-fixed-space);
+            padding-bottom: 18px;
           }
 
           .nl-page-content:has(.store-detail-page) {
-            padding-bottom: var(--store-mobile-fixed-space) !important;
+            padding-bottom: 0 !important;
             scroll-padding-bottom: var(--store-mobile-fixed-space) !important;
           }
 
           .nl-page-content:has(.store-detail-page) + .nl-site-footer {
-            padding-bottom: calc(180px + env(safe-area-inset-bottom)) !important;
+            padding-bottom: calc(168px + env(safe-area-inset-bottom)) !important;
           }
 
           .detail-shell {
