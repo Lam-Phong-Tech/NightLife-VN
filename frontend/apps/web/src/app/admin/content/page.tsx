@@ -1732,9 +1732,14 @@ export default function AdminContentPage() {
                       token: {
                         colorPrimary: '#d4b26a',
                         colorBgContainer: 'rgba(12,12,15,.55)',
+                        colorBgElevated: '#18181f',
                         colorBorder: 'rgba(255,255,255,.1)',
                         colorText: '#f3f0ea',
                         colorTextPlaceholder: '#57534b',
+                        colorTextDisabled: '#8c8679',
+                        colorTextHeading: '#f3f0ea',
+                        colorIcon: '#f3f0ea',
+                        colorIconHover: '#d4b26a',
                         borderRadius: 11,
                         controlHeight: 44,
                       },
@@ -1742,6 +1747,8 @@ export default function AdminContentPage() {
                         DatePicker: {
                           activeBorderColor: '#d4b26a',
                           hoverBorderColor: 'rgba(212,178,106,.55)',
+                          cellActiveWithRangeBg: 'rgba(212,178,106,.15)',
+                          cellHoverWithRangeBg: 'rgba(212,178,106,.15)',
                         }
                       }
                     }}
@@ -1752,6 +1759,7 @@ export default function AdminContentPage() {
                       placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
                       value={campaignDates}
                       onChange={setCampaignDates}
+                      disabledDate={(current) => current && current < dayjs().startOf('day')}
                       style={{ flex: 1, background: 'rgba(12,12,15,.55)', border: '1px solid rgba(255,255,255,.1)', borderRadius: '11px', padding: '0 15px' }}
                     />
                   </ConfigProvider>
