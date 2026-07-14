@@ -1312,34 +1312,42 @@ export default function Page() {
           }
 
           .vyr-kind-tabs {
-            width: 100%;
+            width: auto;
+            min-height: 38px;
+            flex: none;
+            border-radius: 13px;
           }
 
           .vyr-kind-tabs button {
-            flex: 1;
-            padding: 9px 0;
-            font-size: 13px;
+            min-width: 58px;
+            min-height: 30px;
+            flex: 0 0 auto;
+            padding: 0 13px;
+            font-size: 12.5px;
           }
 
           .vyr-ranking-mobile-filter-row {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: space-between;
             gap: 10px;
           }
 
           .vyr-ranking-select {
             min-width: 112px;
-            min-height: 29px;
-            border: 0;
-            padding: 0;
-            justify-content: flex-end;
-            background: transparent;
+            min-height: 38px;
+            border: 1px solid var(--vy-border-gold-22);
+            border-radius: 13px;
+            padding: 0 12px;
+            justify-content: space-between;
+            background: var(--vy-surface-1);
             font-size: 11.5px;
           }
 
           .vyr-ranking-select-trigger {
-            min-height: 29px;
+            min-height: 36px;
+            width: 100%;
+            justify-content: space-between;
             color: var(--vy-muted);
             font-size: 11.5px;
           }

@@ -909,6 +909,16 @@ const homeSectionTitleTextStyle: CSSProperties = {
   fontWeight: 900,
 };
 
+const homeControlFrameStyle: CSSProperties = {
+  minHeight: 40,
+  display: "inline-flex",
+  alignItems: "center",
+  border: `1px solid ${colors.line}`,
+  borderRadius: "14px",
+  background: "var(--vy-surface-1)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,.05)",
+};
+
 const pillStyle: CSSProperties = {
   border: `1px solid ${colors.line}`,
   background: "var(--vy-surface-1)",
@@ -2055,15 +2065,27 @@ function TabSwitch({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="nl-home-tab-switch" style={{ display: "flex", gap: "6px", border: `1px solid ${colors.line}`, borderRadius: homeCardRadius, padding: "4px", background: "rgba(255,255,255,.035)" }}>
+    <div
+      className="nl-home-tab-switch"
+      style={{
+        ...homeControlFrameStyle,
+        display: "grid",
+        gridTemplateColumns: `repeat(${items.length}, minmax(58px, 1fr))`,
+        gap: "4px",
+        padding: "4px",
+        flex: "0 0 auto",
+      }}
+    >
       {items.map((item) => (
         <button
           key={item.id}
+          type="button"
           onClick={() => onChange(item.id)}
           style={{
+            minHeight: 32,
             border: 0,
-            borderRadius: homeMediaRadius,
-            padding: "7px 14px",
+            borderRadius: "10px",
+            padding: "0 13px",
             background: active === item.id ? colors.gold : "transparent",
             color: active === item.id ? "var(--vy-on-gold)" : colors.muted,
             fontWeight: 800,
@@ -2107,16 +2129,12 @@ function RankingRegionDropdown({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         style={{
-          minHeight: 38,
-          display: "inline-flex",
-          alignItems: "center",
+          ...homeControlFrameStyle,
+          minWidth: 96,
           justifyContent: "center",
           gap: "7px",
-          border: `1px solid ${colors.line}`,
-          borderRadius: homeCardRadius,
-          background: "var(--vy-surface-1)",
           color: colors.goldSoft,
-          padding: "0 13px 0 15px",
+          padding: "0 13px",
           fontSize: "12px",
           fontWeight: 850,
           whiteSpace: "nowrap",
