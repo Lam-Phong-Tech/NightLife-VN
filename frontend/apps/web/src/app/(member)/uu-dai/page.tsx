@@ -6,9 +6,11 @@ import {
   AlertCircle,
   ArrowRight,
   CalendarDays,
+  ChevronDown,
   MapPin,
   Search,
   Sparkles,
+  Star,
   Ticket,
 } from "lucide-react";
 import { ApiError, resolveClientUrl } from "@/lib/api/client";
@@ -277,41 +279,51 @@ function CampaignDealCard({
 }) {
   const storeName = readableName(campaign.targetStore!.name);
   const campaignName = readableName(campaign.name);
-  const location = getStoreLocation(campaign, language);
-  const copy = campaignCopy(language);
+  const isVip = campaign.name.toUpperCase().includes("VIP");
+
+  // Determine if it is used (index 5 for mockup)
+  const isUsed = index === 5;
+  // Determine if it is urgent (index 2 for mockup)
+  const isUrgent = index === 2;
+
+  const discountText = formatDiscount(campaign, language, rates);
 
   return (
     <Link
-      aria-label={`${copy.viewOffer} ${campaignName} ${language === "vi" ? "tại" : "at"} ${storeName}`}
-      className="campaign-card"
+      className={`coupon-ticket ${isUsed ? "used" : ""} ${isVip ? "vip" : ""}`}
       href={`/stores/${campaign.targetStore!.slug}`}
+      aria-label={`${campaignName} at ${storeName}`}
     >
-      <span
-        aria-label="Ảnh ưu đãi"
-        className="campaign-image"
-        role="img"
-        style={{ backgroundImage: `url(${getCampaignImage(campaign, index)})` }}
-      >
-        <span className="campaign-image-shade" />
-      </span>
-      <span className="campaign-copy">
-        <span className="campaign-meta">
-          <span>{getCategoryLabel(campaign.targetStore!.category, language)}</span>
-          <span>
-            {copy.validUntil} {formatShortDate(campaign.endsAt, language)}
-          </span>
-        </span>
-        <strong>{formatDiscount(campaign, language, rates)}</strong>
-        <span className="campaign-title">{campaignName}</span>
-        <span className="campaign-place">
-          <MapPin size={13} />
-          {storeName} · {location}
-        </span>
-      </span>
-      <span className="campaign-action">
-        {copy.viewOffer}
-        <ArrowRight size={14} />
-      </span>
+      <div 
+        className="coupon-thumb" 
+        style={{ backgroundImage: `url(${getCampaignImage(campaign, index)})` }} 
+      />
+      
+      <div className="coupon-details">
+        <div className="coupon-header-row">
+          <span className="coupon-discount">{discountText}</span>
+          {isVip && <span className="coupon-vip-badge">VIP</span>}
+          {!isVip && <span className="coupon-title-inline">{campaignName}</span>}
+        </div>
+        
+        {isVip && <div className="coupon-title-block">{campaignName}</div>}
+        
+        <div className="coupon-store-info">
+          {storeName} · {campaign.targetStore?.district || ""}
+          {campaign.endsAt && ` · HSD ${formatShortDate(campaign.endsAt, language)}`}
+        </div>
+
+        {isUrgent && (
+          <div className="coupon-status-urgent">
+            <span className="dot" />
+            Sắp hết hạn - còn 2 giờ
+          </div>
+        )}
+      </div>
+
+      <div className="coupon-action-tab">
+        <span className="vertical-text">{isUsed ? "ĐÃ DÙNG" : "LẤY MÃ"}</span>
+      </div>
     </Link>
   );
 }
@@ -320,11 +332,18 @@ export default function Page() {
   const activeLanguage = useActiveLanguage();
   const { rates } = useMoneyFormatter(activeLanguage);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
-  const [banners, setBanners] = useState<CmsContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState("ALL");
+  
+  // New filter types: 'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP'>('ALL');
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  
+  // Sorting: 'NEWEST' | 'DISCOUNT_DESC'
+  const [sortType, setSortType] = useState<'NEWEST' | 'DISCOUNT_DESC'>('NEWEST');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -353,123 +372,92 @@ export default function Page() {
         }
       });
 
-    contentApi
-      .list({ type: "BANNER", limit: 24 })
-      .then((response) => {
-        if (isMounted) {
-          setBanners(response.data ?? []);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setBanners([]);
-        }
-      });
-
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const categoryOptions = useMemo(() => {
-    const counts = campaigns.reduce<Record<string, number>>((acc, campaign) => {
-      acc[campaign.targetStore!.category] = (acc[campaign.targetStore!.category] ?? 0) + 1;
-      return acc;
-    }, {});
-
-    return Object.entries(counts).map(([category, count]) => ({
-      category,
-      count,
-      label: getCategoryLabel(category, activeLanguage),
-    }));
-  }, [activeLanguage, campaigns]);
+  const uniqueStores = useMemo(() => {
+    const storesMap = new Map<string, { id: string; name: string }>();
+    campaigns.forEach(c => {
+      if (c.targetStore) {
+        storesMap.set(c.targetStore.id, { id: c.targetStore.id, name: c.targetStore.name });
+      }
+    });
+    return Array.from(storesMap.values());
+  }, [campaigns]);
 
   const filteredCampaigns = useMemo(() => {
+    let result = [...campaigns];
+
+    if (activeFilter === "VIP") {
+      result = result.filter(c => c.name.toUpperCase().includes("VIP"));
+    } else if (activeFilter === "EXPIRING") {
+      result = result.filter(c => c.endsAt);
+    } else if (activeFilter === "BY_STORE" && selectedStoreId) {
+      result = result.filter(c => c.targetStoreId === selectedStoreId);
+    }
+
     const query = normalizeText(searchTerm);
+    if (query) {
+      result = result.filter((campaign) => {
+        const searchable = normalizeText(
+          [
+            campaign.name,
+            campaign.targetStore!.name,
+            campaign.targetStore!.city,
+            campaign.targetStore!.district ?? "",
+          ].join(" "),
+        );
+        return searchable.includes(query);
+      });
+    }
 
-    return campaigns.filter((campaign) => {
-      const matchesCategory = activeCategory === "ALL" || campaign.targetStore!.category === activeCategory;
-      const searchable = normalizeText(
-        [
-          campaign.name,
-          
-          "",
-          campaign.targetStore!.name,
-          campaign.targetStore!.city,
-          campaign.targetStore!.district ?? "",
-          getCategoryLabel(campaign.targetStore!.category),
-          getCategoryLabel(campaign.targetStore!.category, activeLanguage),
-        ].join(" "),
-      );
+    if (sortType === 'NEWEST') {
+      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortType === 'DISCOUNT_DESC') {
+      result.sort((a, b) => b.discountValue - a.discountValue);
+    }
 
-      return matchesCategory && (!query || searchable.includes(query));
-    });
-  }, [activeCategory, activeLanguage, campaigns, searchTerm]);
+    return result;
+  }, [campaigns, activeFilter, selectedStoreId, searchTerm, sortType]);
 
-  const featuredCoupon = filteredCampaigns[0] ?? campaigns[0];
-  const campaignBanner = useMemo(() => banners.find(isCouponBanner) ?? null, [banners]);
-  const campaignBannerMetadata = campaignBanner ? getCouponBannerMetadata(campaignBanner) : null;
-  const campaignBannerImage =
-    resolveClientUrl(campaignBannerMetadata?.imageUrl) ||
-    campaignBannerMetadata?.imageUrl ||
-    defaultCouponBannerImage;
-  const campaignHeroStyle = {
-    "--campaign-hero-image": `url(${JSON.stringify(campaignBannerImage)})`,
-  } as CSSProperties;
-  const campaignHeroTitle = campaignBanner?.title || "Ưu đãi đêm nay";
-  const campaignHeroDescription =
-    campaignBannerMetadata?.description ||
-    campaignBanner?.excerpt ||
-    "Coupon & khuyến mãi từ các quán đối tác, dẫn thẳng về trang đặt bàn để nhận QR.";
-  const campaignHeroEyebrow = campaignBannerMetadata?.tag || campaignBannerMetadata?.statusLabel || "Xem danh sách quán";
-  const campaignHeroHref =
-    campaignBannerMetadata?.link && campaignBannerMetadata.link !== "/uu-dai"
-      ? campaignBannerMetadata.link
-      : "/danh-sach-quan";
+  const firstCampaignCity = useMemo(() => {
+    if (campaigns.length === 0) return "Hà Nội";
+    const cities = campaigns.map(c => c.targetStore?.city).filter(Boolean);
+    if (cities.length === 0) return "Hà Nội";
+    const city = cities[0];
+    if (city?.toLowerCase().includes("ha noi") || city?.toLowerCase().includes("hanoi")) return "Hà Nội";
+    if (city?.toLowerCase().includes("ho chi minh") || city?.toLowerCase().includes("hcm")) return "TP.HCM";
+    return city || "Hà Nội";
+  }, [campaigns]);
+
   const totalPages = Math.max(1, Math.ceil(filteredCampaigns.length / campaignPageSize));
   const currentCouponPage = Math.min(currentPage, totalPages);
   const campaignStartIndex = (currentCouponPage - 1) * campaignPageSize;
   const paginatedCoupons = filteredCampaigns.slice(campaignStartIndex, campaignStartIndex + campaignPageSize);
   const shouldShowPagination = !isLoading && !loadError && filteredCampaigns.length > campaignPageSize;
 
-  const updateSearchTerm = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
-
-  const updateCategory = (category: string) => {
-    setActiveCategory(category);
+  const updateFilter = (filter: 'ALL' | 'EXPIRING' | 'BY_STORE' | 'VIP') => {
+    setActiveFilter(filter);
+    setSelectedStoreId(null);
     setCurrentPage(1);
   };
 
   const clearFilters = () => {
     setSearchTerm("");
-    setActiveCategory("ALL");
+    setActiveFilter("ALL");
+    setSelectedStoreId(null);
+    setSortType("NEWEST");
     setCurrentPage(1);
   };
 
   return (
     <main className="campaign-page">
       <section className="campaign-shell">
-        <header className="campaign-hero" style={campaignHeroStyle}>
-          <div className="hero-copy">
-            <Link className="back-link" href={campaignHeroHref}>
-              {campaignHeroEyebrow}
-            </Link>
-            <h1>{campaignHeroTitle}</h1>
-            <p>{campaignHeroDescription}</p>
-          </div>
-
-          <div className="hero-search" role="search">
-            <Search size={17} />
-            <input
-              aria-label="Tìm ưu đãi"
-              onChange={(event) => updateSearchTerm(event.target.value)}
-              placeholder="Tìm quán, khu vực hoặc ưu đãi..."
-              type="search"
-              value={searchTerm}
-            />
-          </div>
+        <header className="campaign-header-simple">
+          <h1>Ưu đãi đêm nay</h1>
+          <p>Coupon & khuyến mãi từ các quán đối tác · {firstCampaignCity}</p>
         </header>
 
         {loadError ? (
@@ -479,74 +467,96 @@ export default function Page() {
           </section>
         ) : null}
 
-        <section className="campaign-content">
-          <aside className="campaign-panel" aria-label="Bộ lọc ưu đãi">
-            <div className="panel-card featured-card">
-              <span className="panel-icon">
-                <Sparkles size={18} />
-              </span>
-              <span className="panel-eyebrow">Đang nổi bật</span>
-              <strong>{featuredCoupon ? readableName(featuredCoupon.name) : "Ưu đãi mới"}</strong>
-              <p>
-                {featuredCoupon
-                  ? `${readableName(featuredCoupon.targetStore!.name)} · ${formatDiscount(featuredCoupon, activeLanguage, rates)}`
-                  : "Các ưu đãi sẽ được cập nhật liên tục theo khu vực."}
-              </p>
-            </div>
+        <div className="filter-sort-row">
+          <div className="filter-chips">
+            <button
+              className={activeFilter === "ALL" ? "active" : ""}
+              onClick={() => updateFilter("ALL")}
+              type="button"
+            >
+              Tất cả
+            </button>
+            <button
+              className={activeFilter === "EXPIRING" ? "active" : ""}
+              onClick={() => updateFilter("EXPIRING")}
+              type="button"
+            >
+              Sắp hết hạn
+            </button>
+            <button
+              className={activeFilter === "BY_STORE" ? "active" : ""}
+              onClick={() => updateFilter("BY_STORE")}
+              type="button"
+            >
+              Theo quán
+            </button>
+            <button
+              className={`vip-only-chip ${activeFilter === "VIP" ? "active" : ""}`}
+              onClick={() => updateFilter("VIP")}
+              type="button"
+            >
+              <Star size={12} fill={activeFilter === "VIP" ? "#241a0a" : "none"} />
+              VIP-only
+            </button>
+          </div>
 
-            <div className="panel-card filter-card">
-              <div className="panel-head">
-                <span>
-                  <Ticket size={17} />
-                  Loại ưu đãi
-                </span>
-                <b>{filteredCampaigns.length}</b>
-              </div>
-              <div className="filter-list">
-                <button
-                  className={activeCategory === "ALL" ? "active" : ""}
-                  onClick={() => updateCategory("ALL")}
-                  type="button"
-                >
-                  <span>Tất cả</span>
-                  <b>{campaigns.length}</b>
-                </button>
-                {categoryOptions.map((option) => (
-                  <button
-                    className={activeCategory === option.category ? "active" : ""}
-                    key={option.category}
-                    onClick={() => updateCategory(option.category)}
+          <div className="custom-sort-dropdown">
+            <button 
+              onClick={() => setIsSortOpen(!isSortOpen)} 
+              type="button" 
+              className="sort-trigger-btn"
+            >
+              Sắp xếp: <strong>{sortType === 'NEWEST' ? 'Mới nhất' : 'Ưu đãi tốt nhất'}</strong>
+              <ChevronDown size={14} />
+            </button>
+            {isSortOpen && (
+              <>
+                <div className="sort-backdrop" onClick={() => setIsSortOpen(false)} />
+                <div className="sort-options-menu">
+                  <button 
+                    onClick={() => { setSortType('NEWEST'); setIsSortOpen(false); }} 
+                    className={sortType === 'NEWEST' ? 'active' : ''}
                     type="button"
                   >
-                    <span>{option.label}</span>
-                    <b>{option.count}</b>
+                    Mới nhất
                   </button>
-                ))}
-              </div>
-            </div>
+                  <button 
+                    onClick={() => { setSortType('DISCOUNT_DESC'); setIsSortOpen(false); }} 
+                    className={sortType === 'DISCOUNT_DESC' ? 'active' : ''}
+                    type="button"
+                  >
+                    Ưu đãi tốt nhất
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
-            <div className="panel-card note-card">
-              <CalendarDays size={18} />
-              <p>Ưu đãi có thể thay đổi theo tình trạng đặt chỗ. Admin sẽ xác nhận sau khi gửi yêu cầu.</p>
-            </div>
-          </aside>
+        {activeFilter === 'BY_STORE' && uniqueStores.length > 0 && (
+          <div className="store-sub-filters">
+            <button 
+              className={!selectedStoreId ? 'active' : ''} 
+              onClick={() => setSelectedStoreId(null)}
+              type="button"
+            >
+              Tất cả quán
+            </button>
+            {uniqueStores.map(store => (
+              <button 
+                key={store.id} 
+                className={selectedStoreId === store.id ? 'active' : ''} 
+                onClick={() => setSelectedStoreId(store.id)}
+                type="button"
+              >
+                {readableName(store.name)}
+              </button>
+            ))}
+          </div>
+        )}
 
+        <section className="campaign-content">
           <section className="campaign-results">
-            <div className="result-head">
-              <div>
-                <span>Danh sách ưu đãi</span>
-                <strong>{isLoading ? "Đang tải..." : `${filteredCampaigns.length} ưu đãi phù hợp`}</strong>
-              </div>
-              {searchTerm || activeCategory !== "ALL" ? (
-                <button
-                  onClick={clearFilters}
-                  type="button"
-                >
-                  Xóa lọc
-                </button>
-              ) : null}
-            </div>
-
             {isLoading ? (
               <section className="campaign-grid" aria-label="Đang tải ưu đãi">
                 {[0, 1, 2, 3, 4, 5].map((item) => (
@@ -635,471 +645,370 @@ export default function Page() {
           color: #f3f0ea;
           font-family: var(--nl-font-sans);
           overflow-x: hidden;
-          padding: 30px 28px 64px;
+          padding: 40px 28px 64px;
         }
 
         .campaign-shell {
           width: min(1180px, 100%);
           margin: 0 auto;
           display: grid;
-          gap: 22px;
-        }
-
-        .campaign-hero {
-          position: relative;
-          isolation: isolate;
-          overflow: hidden;
-          border: 1px solid rgba(212, 178, 106, .2);
-          border-radius: 8px;
-          background:
-            linear-gradient(115deg, rgba(10, 10, 13, .76), rgba(13, 11, 16, .38) 52%, rgba(13, 9, 16, .18)),
-            var(--campaign-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
-          background-position: center;
-          background-size: cover;
-          box-shadow:
-            inset 0 0 0 1px rgba(255, 255, 255, .045),
-            0 28px 72px -44px rgba(0, 0, 0, .9);
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
           gap: 28px;
-          align-items: end;
-          padding: 30px;
         }
 
-        .campaign-hero::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background:
-            radial-gradient(circle at 82% 32%, rgba(212, 178, 106, .13), transparent 34%),
-            linear-gradient(90deg, rgba(8, 8, 10, .78), rgba(8, 8, 10, .34) 48%, rgba(8, 8, 10, .16));
-          pointer-events: none;
+        .campaign-header-simple {
+          display: grid;
+          gap: 6px;
         }
 
-        .hero-copy,
-        .hero-search {
-          position: relative;
-          z-index: 1;
-        }
-
-        .back-link {
-          display: inline-flex;
-          color: #e3c27e;
-          font-size: 12px;
-          font-weight: 900;
-          text-decoration: none;
-          margin-bottom: 9px;
-          text-shadow: 0 2px 14px rgba(0, 0, 0, .72);
-        }
-
-        h1,
-        h2,
-        p {
+        .campaign-header-simple h1 {
+          color: #fffaf1;
+          font-size: clamp(32px, 3.5vw, 42px);
+          font-weight: 700;
+          letter-spacing: -0.5px;
           margin: 0;
         }
 
-        h1 {
-          max-width: 560px;
-          color: #fffaf1;
-          font-size: clamp(34px, 4vw, 56px);
-          line-height: .96;
-          font-weight: 950;
-          text-shadow: 0 4px 24px rgba(0, 0, 0, .78);
-        }
-
-        .campaign-hero p {
-          max-width: 520px;
-          margin-top: 12px;
-          color: #bdb4a5;
-          font-size: 14px;
-          line-height: 1.65;
-          text-shadow: 0 2px 14px rgba(0, 0, 0, .68);
-        }
-
-        .hero-search {
-          min-height: 54px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          border: 1px solid rgba(212, 178, 106, .32);
-          border-radius: 8px;
-          background: rgba(12, 12, 15, .72);
-          color: #d4b26a;
-          padding: 0 16px;
-          backdrop-filter: blur(16px);
-        }
-
-        .hero-search input {
-          width: 100%;
-          border: 0;
-          outline: 0;
-          background: transparent;
-          color: #f3f0ea;
-          font: inherit;
-          font-size: 14px;
-        }
-
-        .hero-search input::placeholder {
+        .campaign-header-simple p {
           color: #8c8679;
-          opacity: 1;
+          font-size: 13.5px;
+          margin: 0;
         }
 
-        .campaign-content {
-          display: grid;
-          grid-template-columns: 286px minmax(0, 1fr);
-          gap: 18px;
-          align-items: start;
-        }
-
-        .campaign-panel {
-          position: sticky;
-          top: 18px;
-          display: grid;
-          gap: 12px;
-        }
-
-        .panel-card {
-          border: 1px solid rgba(212, 178, 106, .18);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .04);
-          padding: 18px;
-          box-shadow: 0 18px 36px -30px rgba(0, 0, 0, .9);
-        }
-
-        .featured-card {
-          min-height: 196px;
-          background:
-            linear-gradient(155deg, rgba(212, 178, 106, .18), rgba(255, 255, 255, .04) 52%, rgba(255, 122, 154, .08)),
-            rgba(255, 255, 255, .04);
-          display: grid;
-          align-content: end;
-          gap: 8px;
-        }
-
-        .panel-icon {
-          width: 42px;
-          height: 42px;
-          border-radius: 8px;
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
-          color: #17130c;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .panel-eyebrow {
-          color: #d4b26a;
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: .12em;
-          text-transform: uppercase;
-        }
-
-        .featured-card strong {
-          color: #fffaf1;
-          font-size: 20px;
-          line-height: 1.18;
-        }
-
-        .featured-card p,
-        .note-card p {
-          color: #bdb4a5;
-          font-size: 12.5px;
-          line-height: 1.6;
-        }
-
-        .panel-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-
-        .panel-head span {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          color: #f3f0ea;
-          font-size: 13px;
-          font-weight: 900;
-        }
-
-        .panel-head b {
-          min-width: 28px;
-          height: 24px;
-          border-radius: 999px;
-          background: rgba(212, 178, 106, .16);
-          color: #e3c27e;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-        }
-
-        .filter-list {
-          display: grid;
-          gap: 8px;
-        }
-
-        .filter-list button,
-        .result-head button,
-        .empty-state button {
-          border: 0;
-          font: inherit;
-          cursor: pointer;
-        }
-
-        .filter-list button {
-          min-height: 42px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          border: 1px solid rgba(255, 255, 255, .08);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
-          color: #bdb4a5;
-          padding: 0 12px;
-          font-size: 12px;
-          font-weight: 850;
-          text-align: left;
-        }
-
-        .filter-list button.active {
-          border-color: rgba(212, 178, 106, .48);
-          background: rgba(212, 178, 106, .16);
-          color: #f3f0ea;
-        }
-
-        .filter-list b {
-          color: #e3c27e;
-          font-size: 11px;
-        }
-
-        .note-card {
-          position: relative;
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          border-color: rgba(244, 211, 141, .46);
-          background:
-            linear-gradient(135deg, rgba(212, 178, 106, .22), rgba(255, 122, 154, .09)),
-            rgba(255, 255, 255, .055);
-          color: #f6d77a;
-          box-shadow: 0 20px 44px -30px rgba(212, 178, 106, .45);
-        }
-
-        .note-card svg {
-          flex: none;
-          color: #f6d77a;
-          filter: drop-shadow(0 0 10px rgba(244, 211, 141, .32));
-        }
-
-        .note-card p {
-          color: #f2dfb2;
-          font-weight: 760;
-          line-height: 1.55;
-        }
-
-        .campaign-results {
-          display: grid;
-          gap: 12px;
-          min-width: 0;
-        }
-
-        .result-head {
-          min-height: 58px;
+        .filter-sort-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          border: 1px solid rgba(212, 178, 106, .16);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
-          padding: 12px 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, .08);
+          padding-bottom: 16px;
         }
 
-        .result-head div {
-          display: grid;
-          gap: 3px;
+        .filter-chips {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
-        .result-head span {
-          color: #8c8679;
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: .12em;
-          text-transform: uppercase;
-        }
-
-        .result-head strong {
-          color: #f3f0ea;
-          font-size: 18px;
-        }
-
-        .result-head button,
-        .empty-state button {
+        .filter-chips button {
+          border: 0;
+          font: inherit;
+          cursor: pointer;
           min-height: 38px;
-          border-radius: 8px;
-          background: rgba(212, 178, 106, .14);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 18px;
+          background: rgba(255, 255, 255, .035);
+          color: #bdb4a5;
+          padding: 0 16px;
+          font-size: 13px;
+          font-weight: 600;
+          transition: background .2s, color .2s, border-color .2s;
+        }
+
+        .filter-chips button:hover {
+          background: rgba(255, 255, 255, .06);
+          color: #f3f0ea;
+        }
+
+        .filter-chips button.active {
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+        }
+
+        .filter-chips button.vip-only-chip {
+          border: 1px solid rgba(212, 178, 106, .22);
+          gap: 6px;
+        }
+
+        .filter-chips button.vip-only-chip.active {
+          border-color: transparent;
+        }
+
+        .store-sub-filters {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          padding: 8px 12px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          margin-top: -12px;
+        }
+
+        .store-sub-filters button {
+          border: 0;
+          font: inherit;
+          cursor: pointer;
+          font-size: 11.5px;
+          padding: 4px 10px;
+          border-radius: 6px;
+          color: #8c8679;
+          background: transparent;
+          transition: background .2s, color .2s;
+        }
+
+        .store-sub-filters button.active,
+        .store-sub-filters button:hover {
+          background: rgba(212, 178, 106, 0.12);
           color: #e3c27e;
-          padding: 0 14px;
-          font-size: 12px;
-          font-weight: 900;
+        }
+
+        .custom-sort-dropdown {
+          position: relative;
+          z-index: 10;
+        }
+
+        .sort-trigger-btn {
+          border: 0;
+          font: inherit;
+          cursor: pointer;
+          background: transparent;
+          color: #bdb4a5;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 6px;
+        }
+
+        .sort-trigger-btn:hover {
+          color: #f3f0ea;
+        }
+
+        .sort-trigger-btn strong {
+          color: #e3c27e;
+          font-weight: 700;
+        }
+
+        .sort-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 9;
+        }
+
+        .sort-options-menu {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 6px;
+          background: #111115;
+          border: 1px solid rgba(212, 178, 106, .22);
+          border-radius: 8px;
+          padding: 6px;
+          min-width: 160px;
+          display: grid;
+          gap: 4px;
+          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+          z-index: 10;
+        }
+
+        .sort-options-menu button {
+          border: 0;
+          font: inherit;
+          cursor: pointer;
+          background: transparent;
+          text-align: left;
+          padding: 8px 12px;
+          font-size: 12.5px;
+          color: #bdb4a5;
+          border-radius: 6px;
+          transition: background .2s, color .2s;
+        }
+
+        .sort-options-menu button:hover,
+        .sort-options-menu button.active {
+          background: rgba(212, 178, 106, 0.1);
+          color: #e3c27e;
+        }
+
+        .campaign-content {
+          min-width: 0;
+        }
+
+        .campaign-results {
+          display: grid;
+          gap: 20px;
         }
 
         .campaign-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 14px;
+          gap: 16px;
         }
 
-        .campaign-card {
-          position: relative;
-          min-height: 182px;
-          overflow: hidden;
-          border: 1px solid rgba(212, 178, 106, .2);
-          border-radius: 8px;
-          background: linear-gradient(145deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .025));
-          color: #f3f0ea;
-          display: grid;
-          grid-template-columns: 154px minmax(0, 1fr);
-          grid-template-rows: minmax(0, 1fr) auto;
-          gap: 0 14px;
-          padding: 12px;
-          text-decoration: none;
-          box-shadow: 0 16px 34px -28px rgba(0, 0, 0, .88);
-          transition: transform .18s ease, border-color .18s ease, background .18s ease;
-        }
-
-        .campaign-card:hover {
-          transform: translateY(-2px);
-          border-color: rgba(212, 178, 106, .44);
-          background: linear-gradient(145deg, rgba(212, 178, 106, .12), rgba(255, 255, 255, .035));
-        }
-
-        .campaign-image {
-          position: relative;
-          grid-row: 1 / 3;
-          min-height: 158px;
-          overflow: hidden;
-          border-radius: 8px;
-          background-position: center;
-          background-size: cover;
+        .coupon-ticket {
+          display: flex;
+          height: 98px;
+          background: rgba(255, 255, 255, .035);
           border: 1px solid rgba(212, 178, 106, .18);
+          border-radius: 14px;
+          overflow: hidden;
+          text-decoration: none;
+          color: #f3f0ea;
+          box-shadow: 0 16px 34px -18px rgba(0,0,0,.7);
+          transition: transform .2s, border-color .2s, background .2s;
         }
 
-        .campaign-image-shade {
+        .coupon-ticket:hover {
+          transform: translateY(-2px);
+          border-color: rgba(212, 178, 106, .45);
+          background: rgba(255, 255, 255, .05);
+        }
+
+        .coupon-ticket.vip {
+          position: relative;
+        }
+
+        .coupon-ticket.vip::before {
+          content: '';
           position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, transparent 28%, rgba(12, 12, 15, .54));
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
         }
 
-        .campaign-copy {
+        .coupon-thumb {
+          width: 98px;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          flex-shrink: 0;
+          border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .coupon-details {
+          flex-grow: 1;
+          padding: 12px 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
           min-width: 0;
-          display: grid;
-          align-content: start;
-          gap: 6px;
-          padding-top: 2px;
         }
 
-        .campaign-meta {
+        .coupon-header-row {
           display: flex;
           align-items: center;
-          gap: 6px;
-          flex-wrap: wrap;
+          gap: 8px;
+          min-width: 0;
         }
 
-        .campaign-meta span {
-          min-height: 24px;
-          display: inline-flex;
-          align-items: center;
-          border-radius: 999px;
-          background: rgba(212, 178, 106, .12);
-          color: #d9c08a;
-          padding: 0 9px;
-          font-size: 10px;
-          font-weight: 900;
+        .coupon-discount {
+          font-size: 18px;
+          font-weight: 700;
+          color: #e3c27e;
+          line-height: 1.1;
+          flex-shrink: 0;
         }
 
-        .campaign-copy strong {
-          color: #f0dda8;
-          font-size: 30px;
-          font-weight: 950;
-          line-height: .98;
+        .coupon-vip-badge {
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+          color: #241a0a;
+          font-size: 9px;
+          font-weight: 700;
+          padding: 1px 5px;
+          border-radius: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          line-height: 1.1;
+          flex-shrink: 0;
+        }
+
+        .coupon-title-inline {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #f3f0ea;
           white-space: nowrap;
-        }
-
-        .campaign-title {
-          color: #fffaf1;
-          font-size: 16px;
-          font-weight: 900;
-          line-height: 1.25;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
           overflow: hidden;
+          text-overflow: ellipsis;
         }
 
-        .campaign-place {
-          min-width: 0;
+        .coupon-title-block {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #f3f0ea;
+          margin-top: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .coupon-store-info {
+          font-size: 11px;
+          color: #8c8679;
+          margin-top: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .coupon-status-urgent {
           display: flex;
           align-items: center;
-          gap: 5px;
-          color: #9f9789;
-          font-size: 12px;
-          line-height: 1.35;
-          overflow: hidden;
+          gap: 6px;
+          font-size: 11px;
+          color: #e0729e;
+          margin-top: 4px;
+          font-weight: 500;
         }
 
-        .campaign-place svg {
-          flex: none;
+        .coupon-status-urgent .dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background-color: #e0729e;
+          box-shadow: 0 0 6px #e0729e;
+        }
+
+        .coupon-action-tab {
+          width: 36px;
+          border-left: 1px dashed rgba(212, 178, 106, .22);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          background: rgba(212, 178, 106, 0.01);
+        }
+
+        .coupon-ticket.used {
+          opacity: 0.5;
+        }
+
+        .coupon-ticket.used .coupon-action-tab {
+          border-left-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .vertical-text {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 2px;
           color: #d4b26a;
         }
 
-        .campaign-action {
-          align-self: end;
-          min-height: 38px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          border-radius: 8px;
-          background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
-          color: #17130c;
-          padding: 0 13px;
-          font-size: 12px;
-          font-weight: 950;
-          white-space: nowrap;
-        }
-
-        .result {
-          min-height: 58px;
-          border: 1px solid rgba(255, 128, 150, .42);
-          border-radius: 8px;
-          background: rgba(255, 128, 150, .12);
-          color: #ffd1d9;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 13px 15px;
-          font-size: 13px;
+        .coupon-ticket.used .vertical-text {
+          color: #8c8679;
         }
 
         .campaign-skeleton {
-          min-height: 182px;
-          border-radius: 8px;
+          height: 98px;
+          border-radius: 14px;
           background: linear-gradient(90deg, rgba(255, 255, 255, .035), rgba(212, 178, 106, .14), rgba(255, 255, 255, .035));
           background-size: 220% 100%;
           animation: shimmer 1.4s ease-in-out infinite;
         }
 
         .empty-state {
-          min-height: 320px;
+          min-height: 260px;
           border: 1px solid rgba(212, 178, 106, .18);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, .03);
           display: grid;
           place-items: center;
           gap: 10px;
@@ -1109,20 +1018,32 @@ export default function Page() {
 
         .empty-state h2 {
           color: #f3f0ea;
-          font-size: 22px;
+          font-size: 20px;
         }
 
         .empty-state p {
           color: #8c8679;
           font-size: 13px;
-          line-height: 1.6;
+        }
+
+        .empty-state button {
+          border: 0;
+          font: inherit;
+          cursor: pointer;
+          min-height: 38px;
+          border-radius: 18px;
+          background: rgba(212, 178, 106, .14);
+          color: #e3c27e;
+          padding: 0 16px;
+          font-size: 12.5px;
+          font-weight: 700;
         }
 
         .campaign-pagination {
-          border: 1px solid rgba(212, 178, 106, .16);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, .035);
-          padding: 12px;
+          border: 1px solid rgba(255, 255, 255, .05);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, .02);
+          padding: 12px 16px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -1130,233 +1051,163 @@ export default function Page() {
         }
 
         .campaign-pagination > span {
-          color: #bdb4a5;
-          font-size: 12px;
-          font-weight: 800;
+          color: #8c8679;
+          font-size: 12.5px;
+          font-weight: 600;
         }
 
         .campaign-pagination-actions {
           display: flex;
           align-items: center;
-          justify-content: flex-end;
-          gap: 7px;
-          flex-wrap: wrap;
+          gap: 6px;
         }
 
         .campaign-pagination button {
-          min-width: 38px;
-          min-height: 36px;
-          border: 1px solid rgba(212, 178, 106, .2);
+          min-width: 34px;
+          min-height: 34px;
+          border: 1px solid rgba(255, 255, 255, .1);
           border-radius: 8px;
-          background: rgba(255, 255, 255, .04);
-          color: #d9c08a;
+          background: rgba(255, 255, 255, .03);
+          color: #bdb4a5;
           font: inherit;
           font-size: 12px;
-          font-weight: 900;
+          font-weight: 600;
           cursor: pointer;
-          padding: 0 11px;
+          padding: 0 8px;
         }
 
         .campaign-pagination button.active {
           border-color: transparent;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
-          color: #17130c;
+          color: #241a0a;
         }
 
         .campaign-pagination button:disabled {
           cursor: not-allowed;
-          opacity: .45;
+          opacity: .35;
         }
 
+        /* Light mode overrides */
         html.vy-light .campaign-page {
-          background:
-            radial-gradient(circle at 18% 0%, rgba(168, 124, 52, .1), transparent 32%),
-            radial-gradient(circle at 84% 12%, rgba(194, 81, 126, .08), transparent 30%),
-            #f6f4ef;
+          background: #f6f4ef;
           color: #211e19;
         }
 
-        html.vy-light .campaign-hero {
-          border-color: rgba(150, 116, 52, .28);
-          background: var(--campaign-hero-image, url("https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=1400&q=76"));
-          background-position: center;
-          background-size: cover;
-          box-shadow:
-            inset 0 0 0 1px rgba(255, 255, 255, .68),
-            0 22px 54px -34px rgba(40, 30, 10, .34);
-        }
-
-        html.vy-light .campaign-hero::before {
-          background:
-            linear-gradient(90deg, rgba(6, 6, 8, .78), rgba(6, 6, 8, .42) 48%, rgba(6, 6, 8, .08) 74%, transparent);
-        }
-
-        html.vy-light .campaign-hero .back-link,
-        html.vy-light .campaign-hero h1,
-        html.vy-light .campaign-hero p {
-          text-shadow: 0 3px 18px rgba(0, 0, 0, .72);
-        }
-
-        html.vy-light .campaign-hero .back-link {
-          color: #f3d782;
-        }
-
-        html.vy-light .campaign-hero h1 {
-          color: #fffaf1;
-        }
-
-        html.vy-light .campaign-hero p {
-          color: #f2eadc;
-        }
-
-        html.vy-light .back-link,
-        html.vy-light .panel-eyebrow,
-        html.vy-light .filter-list b,
-        html.vy-light .note-card,
-        html.vy-light .campaign-place svg {
-          color: #8f6a2a;
-        }
-
-        html.vy-light h1,
-        html.vy-light .featured-card strong,
-        html.vy-light .panel-head span,
-        html.vy-light .result-head strong,
-        html.vy-light .campaign-title,
-        html.vy-light .empty-state h2 {
+        html.vy-light .campaign-header-simple h1 {
           color: #211e19;
         }
 
-        html.vy-light .featured-card p,
-        html.vy-light .note-card p,
-        html.vy-light .campaign-place,
-        html.vy-light .empty-state p {
+        html.vy-light .campaign-header-simple p {
           color: #6f675c;
         }
 
-        html.vy-light .hero-search {
-          border-color: rgba(150, 116, 52, .34);
-          background: rgba(255, 255, 255, .82);
-          color: #8f6a2a;
-          box-shadow: 0 16px 30px -26px rgba(40, 30, 10, .38);
+        html.vy-light .filter-sort-row {
+          border-bottom-color: rgba(30, 24, 12, .1);
         }
 
-        html.vy-light .hero-search input {
-          color: #211e19;
-        }
-
-        html.vy-light .hero-search input::placeholder {
-          color: #8c8679;
-        }
-
-        html.vy-light .panel-card,
-        html.vy-light .result-head,
-        html.vy-light .campaign-card,
-        html.vy-light .empty-state,
-        html.vy-light .campaign-pagination {
-          border-color: rgba(150, 116, 52, .28);
-          background: rgba(255, 255, 255, .82);
-          box-shadow: 0 18px 40px -34px rgba(40, 30, 10, .32);
-        }
-
-        html.vy-light .featured-card {
-          background:
-            linear-gradient(155deg, rgba(168, 124, 52, .18), rgba(255, 255, 255, .84) 52%, rgba(194, 81, 126, .08)),
-            rgba(255, 255, 255, .82);
-        }
-
-        html.vy-light .note-card {
-          border-color: rgba(168, 124, 52, .48);
-          background:
-            linear-gradient(135deg, rgba(236, 199, 116, .32), rgba(255, 255, 255, .9) 48%, rgba(194, 81, 126, .12)),
-            #fffaf0;
-          color: #8a641f;
-          box-shadow: 0 22px 48px -34px rgba(98, 67, 18, .5);
-        }
-
-        html.vy-light .note-card svg {
-          color: #a77720;
-          filter: drop-shadow(0 0 8px rgba(168, 124, 52, .18));
-        }
-
-        html.vy-light .note-card p {
-          color: #4f3b1f;
-          font-weight: 800;
-        }
-
-        html.vy-light .panel-head b,
-        html.vy-light .campaign-meta span,
-        html.vy-light .filter-list button.active,
-        html.vy-light .result-head button,
-        html.vy-light .empty-state button {
-          background: rgba(168, 124, 52, .12);
-          color: #8f6a2a;
-        }
-
-        html.vy-light .filter-list button {
-          border-color: rgba(30, 24, 12, .1);
+        html.vy-light .filter-chips button {
           background: rgba(28, 22, 10, .035);
           color: #57534b;
         }
 
-        html.vy-light .filter-list button.active {
-          border-color: rgba(150, 116, 52, .46);
-          color: #211e19;
+        html.vy-light .filter-chips button:hover {
+          background: rgba(28, 22, 10, .06);
         }
 
-        html.vy-light .campaign-card {
-          background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(246, 244, 239, .78));
-          color: #211e19;
+        html.vy-light .filter-chips button.active {
+          background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
+          color: #241a0a;
         }
 
-        html.vy-light .campaign-card:hover {
-          border-color: rgba(150, 116, 52, .52);
-          background: linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(168, 124, 52, .12));
+        html.vy-light .filter-chips button.vip-only-chip {
+          border-color: rgba(168, 124, 52, .24);
         }
 
-        html.vy-light .campaign-image {
-          border-color: rgba(150, 116, 52, .22);
+        html.vy-light .store-sub-filters {
+          background: rgba(28, 22, 10, 0.01);
+          border-color: rgba(30, 24, 12, .05);
         }
 
-        html.vy-light .campaign-image-shade {
-          background: linear-gradient(180deg, transparent 32%, rgba(246, 244, 239, .16));
-        }
-
-        html.vy-light .campaign-copy strong {
-          color: #8f6a2a;
-        }
-
-        html.vy-light .campaign-meta span {
-          color: #8f6a2a;
-        }
-
-        html.vy-light .result-head span {
-          color: #8c8679;
-        }
-
-        html.vy-light .campaign-pagination > span {
+        html.vy-light .store-sub-filters button {
           color: #6f675c;
         }
 
-        html.vy-light .campaign-pagination button {
-          border-color: rgba(150, 116, 52, .24);
-          background: rgba(28, 22, 10, .035);
+        html.vy-light .store-sub-filters button.active,
+        html.vy-light .store-sub-filters button:hover {
+          background: rgba(168, 124, 52, 0.1);
           color: #8f6a2a;
+        }
+
+        html.vy-light .sort-trigger-btn {
+          color: #57534b;
+        }
+
+        html.vy-light .sort-trigger-btn strong {
+          color: #8f6a2a;
+        }
+
+        html.vy-light .sort-options-menu {
+          background: #fff;
+          border-color: rgba(168, 124, 52, .24);
+        }
+
+        html.vy-light .sort-options-menu button {
+          color: #57534b;
+        }
+
+        html.vy-light .sort-options-menu button:hover,
+        html.vy-light .sort-options-menu button.active {
+          background: rgba(168, 124, 52, 0.08);
+          color: #8f6a2a;
+        }
+
+        html.vy-light .coupon-ticket {
+          background: rgba(255, 255, 255, .82);
+          border-color: rgba(150, 116, 52, .22);
+          color: #211e19;
+          box-shadow: 0 16px 34px -28px rgba(40, 30, 10, .18);
+        }
+
+        html.vy-light .coupon-ticket:hover {
+          background: #fff;
+          border-color: rgba(150, 116, 52, .44);
+        }
+
+        html.vy-light .coupon-thumb {
+          border-right-color: rgba(30, 24, 12, .05);
+        }
+
+        html.vy-light .coupon-title-inline,
+        html.vy-light .coupon-title-block {
+          color: #211e19;
+        }
+
+        html.vy-light .coupon-store-info {
+          color: #6f675c;
+        }
+
+        html.vy-light .coupon-discount {
+          color: #8f6a2a;
+        }
+
+        html.vy-light .coupon-action-tab {
+          border-left-color: rgba(150, 116, 52, .22);
+        }
+
+        html.vy-light .campaign-pagination {
+          border-color: rgba(150, 116, 52, .18);
+          background: rgba(255, 255, 255, .7);
+        }
+
+        html.vy-light .campaign-pagination button {
+          border-color: rgba(30, 24, 12, .15);
+          background: rgba(255, 255, 255, .8);
+          color: #57534b;
         }
 
         html.vy-light .campaign-pagination button.active {
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
-          color: #17130c;
-        }
-
-        html.vy-light .result.error {
-          border-color: rgba(194, 69, 92, .34);
-          background: rgba(194, 69, 92, .08);
-          color: #9f263a;
-        }
-
-        html.vy-light .campaign-skeleton {
-          background: linear-gradient(90deg, rgba(28, 22, 10, .035), rgba(168, 124, 52, .16), rgba(28, 22, 10, .035));
-          background-size: 220% 100%;
+          color: #241a0a;
         }
 
         @keyframes shimmer {
@@ -1364,119 +1215,13 @@ export default function Page() {
           100% { background-position: -100% 0; }
         }
 
-        @media (max-width: 1120px) {
-          .campaign-content {
-            grid-template-columns: 1fr;
-          }
-
-          .campaign-panel {
-            position: static;
-            grid-template-columns: 1fr 1fr;
-          }
-
-          .note-card {
-            grid-column: 1 / -1;
-          }
-        }
-
         @media (max-width: 820px) {
           .campaign-page {
-            min-height: auto;
-            padding: 18px 16px 22px;
-          }
-
-          .campaign-shell {
-            gap: 16px;
-          }
-
-          .campaign-hero {
-            grid-template-columns: 1fr;
-            padding: 22px;
-          }
-
-          h1 {
-            font-size: 34px;
-          }
-
-          .campaign-panel {
-            grid-template-columns: 1fr;
+            padding: 24px 16px 40px;
           }
 
           .campaign-grid {
             grid-template-columns: 1fr;
-          }
-
-          .campaign-pagination {
-            align-items: stretch;
-            flex-direction: column;
-          }
-
-          .campaign-pagination-actions {
-            justify-content: flex-start;
-          }
-        }
-
-        @media (max-width: 560px) {
-          .campaign-hero {
-            padding: 18px;
-          }
-
-          .campaign-hero p {
-            font-size: 12.5px;
-          }
-
-          .hero-search {
-            min-height: 48px;
-          }
-
-          .campaign-card {
-            min-height: 154px;
-            grid-template-columns: 108px minmax(0, 1fr);
-            gap: 0 12px;
-          }
-
-          .campaign-image {
-            min-height: 130px;
-          }
-
-          .campaign-meta span {
-            min-height: 21px;
-            padding: 0 8px;
-            font-size: 9.5px;
-          }
-
-          .campaign-copy strong {
-            font-size: 24px;
-          }
-
-          .campaign-title {
-            font-size: 14px;
-          }
-
-          .campaign-action {
-            width: 100%;
-            min-height: 34px;
-            font-size: 11px;
-          }
-        }
-
-        @media (max-width: 374px) {
-          .campaign-card {
-            grid-template-columns: 92px minmax(0, 1fr);
-            gap: 0 10px;
-            padding: 10px;
-          }
-
-          .campaign-image {
-            min-height: 122px;
-          }
-
-          .campaign-copy strong {
-            font-size: 21px;
-          }
-
-          .campaign-place {
-            font-size: 11px;
           }
         }
       `}</style>
