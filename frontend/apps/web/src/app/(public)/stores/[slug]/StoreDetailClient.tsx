@@ -1329,6 +1329,17 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 </>
               ) : null}
 
+              {selectedMedia?.type === "VIDEO" ? (
+                <button
+                  className="hero-video-play"
+                  type="button"
+                  aria-label={translateText("Xem video", activeLanguage)}
+                  onClick={() => openGallery(selectedGalleryIndex)}
+                >
+                  <Play size={34} fill="currentColor" />
+                </button>
+              ) : null}
+
               {selectedVideoIndex >= 0 ? (
                 <button
                   className="video-badge"
@@ -1787,6 +1798,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-top,
         .hero-name,
         .hero-media-nav,
+        .hero-video-play,
         .video-badge {
           position: absolute;
           z-index: 2;
@@ -1871,6 +1883,27 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .hero-media-nav:active,
         .hero-media-nav:where(:hover, :focus-visible) {
           transform: translateY(-50%) !important;
+        }
+
+        .hero-video-play {
+          left: 50%;
+          top: 50%;
+          width: 74px;
+          height: 74px;
+          border: 1px solid rgba(244, 221, 155, .76);
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(247, 232, 185, .96), rgba(212, 178, 106, .94) 58%, rgba(182, 146, 74, .92));
+          color: #241a0a;
+          display: grid;
+          place-items: center;
+          padding: 0 0 0 5px;
+          transform: translate(-50%, -50%);
+          cursor: pointer;
+          box-shadow: 0 18px 42px rgba(0, 0, 0, .38), 0 0 0 10px rgba(12, 12, 15, .28);
+        }
+
+        .hero-video-play:where(:hover, :focus-visible) {
+          box-shadow: 0 20px 48px rgba(0, 0, 0, .44), 0 0 0 12px rgba(244, 221, 155, .16);
         }
 
         .video-badge {
