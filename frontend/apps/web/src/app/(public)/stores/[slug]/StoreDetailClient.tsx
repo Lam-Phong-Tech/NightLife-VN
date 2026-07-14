@@ -1401,12 +1401,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
                 <h1>{displayName}</h1>
                 <div>
                   <span>{[categoryLabel, location].filter(Boolean).join(" · ")}</span>
-                  <b className={openNow ? "open" : "closed"}>
-                    <i />
-                    {openNow
-                      ? translateText(`Đang mở · ${todayOpening}`, activeLanguage)
-                      : translateText("Đang nghỉ", activeLanguage)}
-                  </b>
                 </div>
               </div>
             </section>
