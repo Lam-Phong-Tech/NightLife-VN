@@ -99,6 +99,7 @@ export default function AdminContentPage() {
   const [campaignDiscountType, setCampaignDiscountType] = useState<'percent' | 'amount'>('percent');
   const [campaignDiscountValue, setCampaignDiscountValue] = useState<string>('10%');
   const [campaignDates, setCampaignDates] = useState<any>(null);
+  const [campaignStatus, setCampaignStatus] = useState('Hoạt động');
 
   const [bannerTagsList, setBannerTagsList] = useState<CategoryItem[]>([]);
   const [isManagingTags, setIsManagingTags] = useState(false);
@@ -1718,9 +1719,9 @@ export default function AdminContentPage() {
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Trạng thái</div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ background: '#f0dda8', color: '#241a0a', border: '1px solid transparent', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>Đang chạy</span>
-                  <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã lên lịch</span>
-                  <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Đã kết thúc</span>
+                  <span onClick={() => setCampaignStatus('Hoạt động')} style={{ background: campaignStatus === 'Hoạt động' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Hoạt động' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Hoạt động' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Hoạt động' ? 700 : 600, cursor: 'pointer' }}>Hoạt động</span>
+                  <span onClick={() => setCampaignStatus('Tạm dừng')} style={{ background: campaignStatus === 'Tạm dừng' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Tạm dừng' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Tạm dừng' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Tạm dừng' ? 700 : 600, cursor: 'pointer' }}>Tạm dừng</span>
+                  <span onClick={() => setCampaignStatus('Bản nháp')} style={{ background: campaignStatus === 'Bản nháp' ? '#f0dda8' : 'rgba(255,255,255,.04)', color: campaignStatus === 'Bản nháp' ? '#241a0a' : '#c5c0b6', border: campaignStatus === 'Bản nháp' ? '1px solid transparent' : '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: campaignStatus === 'Bản nháp' ? 700 : 600, cursor: 'pointer' }}>Bản nháp</span>
                 </div>
               </div>
 
