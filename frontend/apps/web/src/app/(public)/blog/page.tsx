@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description:
         "Cập nhật hướng dẫn chọn quán, đặt bàn và dùng ưu đãi nightlife tại Việt Nam.",
       url: absoluteSiteUrl("/blog"),
-      images: [{ url: featuredPost.image, alt: featuredPost.imageAlt }],
+      images: featuredPost ? [{ url: featuredPost.image, alt: featuredPost.imageAlt }] : [],
     },
   };
 }
@@ -65,7 +65,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const hasFilter = Boolean(params.q || params.category || params.tag);
   const posts = hasFilter
     ? filteredPosts
-    : allPosts.filter((post) => !post.noindex && post.slug !== featuredPost.slug);
+    : allPosts.filter((post) => !post.noindex && post.slug !== featuredPost?.slug);
   const structuredData = jsonLdGraph([
     breadcrumbJsonLd(
       [
@@ -256,7 +256,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           </div>
         </div>
 
-        {!hasFilter ? (
+        {!hasFilter && featuredPost ? (
           <Link
             className="nl-blog-feature"
             href={`/blog/${featuredPost.slug}`}
