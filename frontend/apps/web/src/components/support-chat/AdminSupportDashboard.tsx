@@ -45,6 +45,7 @@ export function AdminSupportDashboard() {
     const newSocket = io(socketConfig.host + '/support', {
       path: socketConfig.path,
       query: { adminId, role },
+      forceNew: true,
     });
     console.log(`[Admin Dashboard] Connecting to socket at ${socketConfig.host}${socketConfig.path || ''} with role ${role}...`);
     setSocket(newSocket);
