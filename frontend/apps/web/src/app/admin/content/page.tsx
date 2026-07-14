@@ -1649,13 +1649,7 @@ export default function AdminContentPage() {
                   </div>
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Áp dụng cho</div>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ background: '#f0dda8', color: '#241a0a', border: '1px solid transparent', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>Toàn hệ thống</span>
-                  <span style={{ background: 'rgba(255,255,255,.04)', color: '#c5c0b6', border: '1px solid rgba(255,255,255,.1)', padding: '8px 16px', borderRadius: '11px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}>Quán cụ thể</span>
-                </div>
-              </div>
+
               <div>
                 <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.9px', color: '#8c8679', textTransform: 'uppercase', marginBottom: '8px' }}>Thời gian chạy</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
