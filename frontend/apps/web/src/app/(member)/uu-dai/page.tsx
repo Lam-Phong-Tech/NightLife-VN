@@ -220,7 +220,6 @@ const campaignCopy = (language: LanguageCode) =>
       page: "Trang",
       previous: "Trước",
       next: "Sau",
-      loadMore: "Xem thêm",
     },
     en: {
       validUntil: "Valid until",
@@ -228,7 +227,6 @@ const campaignCopy = (language: LanguageCode) =>
       page: "Page",
       previous: "Previous",
       next: "Next",
-      loadMore: "Load more",
     },
     ja: {
       validUntil: "有効期限",
@@ -236,7 +234,6 @@ const campaignCopy = (language: LanguageCode) =>
       page: "ページ",
       previous: "前へ",
       next: "次へ",
-      loadMore: "もっと見る",
     },
     ko: {
       validUntil: "유효기간",
@@ -244,7 +241,6 @@ const campaignCopy = (language: LanguageCode) =>
       page: "페이지",
       previous: "이전",
       next: "다음",
-      loadMore: "더 보기",
     },
     zh: {
       validUntil: "有效期至",
@@ -252,7 +248,6 @@ const campaignCopy = (language: LanguageCode) =>
       page: "页",
       previous: "上一页",
       next: "下一页",
-      loadMore: "查看更多",
     },
   })[language];
 
@@ -337,13 +332,13 @@ export default function Page() {
 
     campaignsApi
       .listPublicCampaigns()
-      .then((data: any) => {
+      .then((data: CampaignItem[]) => {
         if (isMounted) {
           setCampaigns(data);
           setLoadError("");
         }
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         if (!isMounted) {
           return;
         }
@@ -623,15 +618,6 @@ export default function Page() {
                   >
                     {campaignCopy(activeLanguage).next}
                   </button>
-                  {currentCouponPage < totalPages ? (
-                    <button
-                      className="load-more"
-                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                      type="button"
-                    >
-                      {campaignCopy(activeLanguage).loadMore}
-                    </button>
-                  ) : null}
                 </div>
               </nav>
             ) : null}
@@ -1171,8 +1157,7 @@ export default function Page() {
           padding: 0 11px;
         }
 
-        .campaign-pagination button.active,
-        .campaign-pagination button.load-more {
+        .campaign-pagination button.active {
           border-color: transparent;
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
           color: #17130c;
@@ -1358,8 +1343,7 @@ export default function Page() {
           color: #8f6a2a;
         }
 
-        html.vy-light .campaign-pagination button.active,
-        html.vy-light .campaign-pagination button.load-more {
+        html.vy-light .campaign-pagination button.active {
           background: linear-gradient(135deg, #f4e3b4, #d4b26a 58%, #b6924a);
           color: #17130c;
         }
