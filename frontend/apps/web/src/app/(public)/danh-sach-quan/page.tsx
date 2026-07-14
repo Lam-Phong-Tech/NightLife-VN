@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowLeft,
@@ -387,6 +387,7 @@ export default function Page() {
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [openNow, setOpenNow] = useState(true);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [isSortMenuOpen, setSortMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
@@ -398,6 +399,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const desktopFilterRef = useRef<HTMLDivElement | null>(null);
   const activeLanguage = useActiveLanguage();
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
 
@@ -405,7 +407,9 @@ export default function Page() {
     let cancelled = false;
 
     if (!hasMemberFavoriteAccess()) {
-      setFavoriteStoreSlugs([]);
+      queueMicrotask(() => {
+        if (!cancelled) setFavoriteStoreSlugs([]);
+      });
       return () => {
         cancelled = true;
       };
@@ -546,6 +550,29 @@ export default function Page() {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [isFilterSheetOpen]);
+
+  useEffect(() => {
+    if (!isDesktopFilterOpen) return;
+
+    const closeOnPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (target instanceof Node && desktopFilterRef.current?.contains(target)) return;
+      setDesktopFilterOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDesktopFilterOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeOnPointerDown);
+    document.addEventListener("touchstart", closeOnPointerDown);
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", closeOnPointerDown);
+      document.removeEventListener("touchstart", closeOnPointerDown);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isDesktopFilterOpen]);
 
   const topRankingOrder = useMemo(
     () => new Map(topRankingStoreSlugs.map((slug, index) => [slug, index])),
@@ -690,6 +717,19 @@ export default function Page() {
     setCityMenuOpen(false);
   };
 
+  const handleFilterButtonClick = () => {
+    setCityMenuOpen(false);
+    setSortMenuOpen(false);
+
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+      setDesktopFilterOpen(false);
+      setFilterSheetOpen(true);
+      return;
+    }
+
+    setDesktopFilterOpen((current) => !current);
+  };
+
   const toggleTopRankingOnly = () => {
     const nextValue = !topRankingOnly;
     setTopRankingOnly(nextValue);
@@ -762,23 +802,58 @@ export default function Page() {
         </header>
 
         <section className="venue-search-controls" aria-label={copy.searchAria}>
-          <label className="venue-search-input">
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={copy.searchPlaceholder}
-            />
-            <button
-              type="button"
-              aria-label={copy.openFilters}
-              className="venue-filter-icon"
-              data-testid="venue-filter-button"
-              onClick={() => setFilterSheetOpen(true)}
-            >
-              <SlidersHorizontal size={16} />
-            </button>
-          </label>
+          <div className="venue-search-field" ref={desktopFilterRef}>
+            <label className="venue-search-input">
+              <Search size={18} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={copy.searchPlaceholder}
+              />
+              <button
+                type="button"
+                aria-label={copy.openFilters}
+                aria-haspopup="dialog"
+                aria-expanded={isDesktopFilterOpen || isFilterSheetOpen}
+                className={`venue-filter-icon ${isDesktopFilterOpen ? "is-active" : ""}`}
+                data-testid="venue-filter-button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  handleFilterButtonClick();
+                }}
+              >
+                <SlidersHorizontal size={16} />
+              </button>
+            </label>
+
+            {isDesktopFilterOpen ? (
+              <DesktopVenueFilterPopover
+                area={area}
+                areaOptions={areaOptions}
+                applyLabel={formatVenueApplyLabel(venues.length, activeLanguage)}
+                category={category}
+                categoryOptions={categoryOptions}
+                city={city}
+                cityOptions={localizedCityOptions}
+                copy={copy}
+                hasActiveCoupon={hasActiveCoupon}
+                openNow={openNow}
+                topRankingOnly={topRankingOnly}
+                sort={sort}
+                sortOptions={localizedSortOptions}
+                subtitle={activeFilterCount ? formatVenueActiveFilters(activeFilterCount, activeLanguage) : copy.filterIntro}
+                onArea={setArea}
+                onCategory={setCategory}
+                onCity={handleCityChange}
+                onClose={() => setDesktopFilterOpen(false)}
+                onReset={resetFilters}
+                onSort={handleSortChange}
+                onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
+                onToggleOpenNow={() => setOpenNow((current) => !current)}
+                onToggleTopRanking={toggleTopRankingOnly}
+              />
+            ) : null}
+          </div>
 
           <div
             className="venue-city-select"
@@ -961,6 +1036,153 @@ export default function Page() {
         />
       ) : null}
     </main>
+  );
+}
+
+function DesktopVenueFilterPopover({
+  area,
+  areaOptions,
+  applyLabel,
+  category,
+  categoryOptions,
+  city,
+  cityOptions,
+  copy,
+  hasActiveCoupon,
+  openNow,
+  topRankingOnly,
+  sort,
+  sortOptions,
+  subtitle,
+  onArea,
+  onCategory,
+  onCity,
+  onClose,
+  onReset,
+  onSort,
+  onToggleCoupon,
+  onToggleOpenNow,
+  onToggleTopRanking,
+}: {
+  area: string;
+  areaOptions: FilterOption[];
+  applyLabel: string;
+  category: string;
+  categoryOptions: FilterOption[];
+  city: string;
+  cityOptions: FilterOption[];
+  copy: VenueSearchCopy;
+  hasActiveCoupon: boolean;
+  openNow: boolean;
+  topRankingOnly: boolean;
+  sort: DiscoverySort;
+  sortOptions: Array<{ value: DiscoverySort; label: string }>;
+  subtitle: string;
+  onArea: (value: string) => void;
+  onCategory: (value: string) => void;
+  onCity: (value: string) => void;
+  onClose: () => void;
+  onReset: () => void;
+  onSort: (value: DiscoverySort) => void;
+  onToggleCoupon: () => void;
+  onToggleOpenNow: () => void;
+  onToggleTopRanking: () => void;
+}) {
+  return (
+    <div className="venue-desktop-filter-popover" role="dialog" aria-label={copy.filterTitle}>
+      <header className="venue-desktop-filter-head">
+        <div>
+          <span>{copy.filterIntro}</span>
+          <strong>{copy.filterTitle}</strong>
+          <p>{subtitle}</p>
+        </div>
+        <button type="button" onClick={onClose} aria-label={copy.filterClose}>
+          <X size={16} />
+        </button>
+      </header>
+
+      <div className="venue-desktop-filter-body">
+        <section className="venue-desktop-filter-section is-wide" aria-label={copy.filterNeeds}>
+          <h3>{copy.filterNeeds}</h3>
+          <div className="venue-desktop-filter-options">
+            <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
+              {copy.openNow}
+            </button>
+            <button type="button" className={hasActiveCoupon ? "is-active" : ""} onClick={onToggleCoupon}>
+              {copy.hasDeals}
+            </button>
+            <button type="button" className={topRankingOnly ? "is-active" : ""} onClick={onToggleTopRanking}>
+              {copy.topRanking}
+            </button>
+          </div>
+        </section>
+
+        <DesktopVenueFilterOptionGroup
+          label={copy.chooseCity}
+          options={cityOptions}
+          value={city}
+          onChange={onCity}
+        />
+        <DesktopVenueFilterOptionGroup
+          label={copy.filterArea}
+          options={areaOptions}
+          value={area}
+          onChange={onArea}
+        />
+        <DesktopVenueFilterOptionGroup
+          label={copy.filterCategory}
+          options={categoryOptions}
+          value={category}
+          onChange={onCategory}
+        />
+        <DesktopVenueFilterOptionGroup
+          label={copy.sortLabel.replace(":", "")}
+          options={sortOptions}
+          value={sort}
+          onChange={(value) => onSort(value as DiscoverySort)}
+        />
+      </div>
+
+      <footer className="venue-desktop-filter-actions">
+        <button type="button" className="venue-desktop-filter-reset" onClick={onReset}>
+          <RotateCcw size={14} />
+          {copy.resetFilters}
+        </button>
+        <button type="button" className="venue-desktop-filter-apply" onClick={onClose}>
+          {applyLabel}
+        </button>
+      </footer>
+    </div>
+  );
+}
+
+function DesktopVenueFilterOptionGroup({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: FilterOption[] | Array<{ value: DiscoverySort; label: string }>;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <section className="venue-desktop-filter-section" aria-label={label}>
+      <h3>{label}</h3>
+      <div className="venue-desktop-filter-options">
+        {options.map((option) => (
+          <button
+            key={`${label}-${option.value || "all"}`}
+            type="button"
+            className={value === option.value ? "is-active" : ""}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1301,6 +1523,11 @@ const venueSearchCss = `
     margin-top: 24px;
   }
 
+  .venue-search-field {
+    position: relative;
+    min-width: 0;
+  }
+
   .venue-search-input,
   .venue-city-select,
   .venue-find-button,
@@ -1340,11 +1567,184 @@ const venueSearchCss = `
   }
 
   .venue-filter-icon {
-    display: none;
-    border: 0;
-    background: transparent;
-    color: var(--vy-muted);
+    width: 38px;
+    height: 38px;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    border: 1px solid var(--vy-border-gold-32);
+    border-radius: 11px;
+    background: var(--vy-surface-2);
+    color: var(--vy-gold);
     padding: 0;
+    cursor: pointer;
+  }
+
+  .venue-filter-icon:hover,
+  .venue-filter-icon:focus-visible,
+  .venue-filter-icon.is-active {
+    border-color: var(--vy-border-gold-40);
+    background: var(--vy-gold-soft-bg);
+    color: var(--vy-gold-pale);
+    outline: 0;
+  }
+
+  .venue-desktop-filter-popover {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 80;
+    width: min(640px, calc(100vw - 52px));
+    overflow: hidden;
+    border: 1px solid var(--vy-border-gold-32);
+    border-radius: 18px;
+    background: var(--vy-surface);
+    color: var(--vy-text);
+    box-shadow: 0 24px 70px -34px rgba(0, 0, 0, .72);
+  }
+
+  .venue-desktop-filter-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--vy-border);
+    background:
+      radial-gradient(circle at 20% 0%, rgba(212, 178, 106, .18), transparent 34%),
+      var(--vy-surface-1);
+  }
+
+  .venue-desktop-filter-head span {
+    display: block;
+    color: var(--vy-gold);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+
+  .venue-desktop-filter-head strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--vy-text);
+    font-size: 20px;
+    line-height: 1.1;
+    font-weight: 900;
+  }
+
+  .venue-desktop-filter-head p {
+    margin: 6px 0 0;
+    color: var(--vy-muted);
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .venue-desktop-filter-head button {
+    width: 34px;
+    height: 34px;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    border: 1px solid var(--vy-border);
+    border-radius: 50%;
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
+    cursor: pointer;
+  }
+
+  .venue-desktop-filter-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 18px;
+    padding: 16px 18px 14px;
+  }
+
+  .venue-desktop-filter-section {
+    min-width: 0;
+  }
+
+  .venue-desktop-filter-section.is-wide {
+    grid-column: 1 / -1;
+  }
+
+  .venue-desktop-filter-section h3 {
+    margin: 0 0 9px;
+    color: var(--vy-text);
+    font-size: 12.5px;
+    line-height: 1.2;
+    font-weight: 900;
+  }
+
+  .venue-desktop-filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .venue-desktop-filter-options button {
+    min-height: 34px;
+    border: 1px solid var(--vy-border);
+    border-radius: 999px;
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
+    padding: 0 13px;
+    font-family: var(--nl-font-sans);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .venue-desktop-filter-options button:hover,
+  .venue-desktop-filter-options button:focus-visible {
+    border-color: var(--vy-border-gold-32);
+    color: var(--vy-gold-pale);
+    outline: 0;
+  }
+
+  .venue-desktop-filter-options button.is-active {
+    border-color: transparent;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: var(--vy-on-gold);
+    box-shadow: 0 14px 30px -24px rgba(212, 178, 106, .72);
+  }
+
+  .venue-desktop-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px 18px;
+    border-top: 1px solid var(--vy-border);
+    background: var(--vy-surface-1);
+  }
+
+  .venue-desktop-filter-actions button {
+    min-height: 40px;
+    border-radius: 11px;
+    font-family: var(--nl-font-sans);
+    font-size: 12.5px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .venue-desktop-filter-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--vy-border);
+    background: var(--vy-surface-2);
+    color: var(--vy-muted);
+    padding: 0 13px;
+  }
+
+  .venue-desktop-filter-apply {
+    min-width: 150px;
+    border: 0;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: var(--vy-on-gold);
+    padding: 0 18px;
   }
 
   .venue-city-select,
@@ -2055,6 +2455,70 @@ const venueSearchCss = `
     color: #241a0a;
   }
 
+  html.vy-light .venue-filter-icon {
+    border-color: rgba(150, 116, 52, .28);
+    background: rgba(255, 255, 255, .72);
+    color: #9a732d;
+    box-shadow: 0 10px 24px -20px rgba(68, 48, 18, .46);
+  }
+
+  html.vy-light .venue-filter-icon:hover,
+  html.vy-light .venue-filter-icon:focus-visible,
+  html.vy-light .venue-filter-icon.is-active {
+    border-color: rgba(150, 116, 52, .42);
+    background: rgba(255, 248, 229, .96);
+    color: #7b591f;
+  }
+
+  html.vy-light .venue-desktop-filter-popover {
+    border-color: rgba(150, 116, 52, .28);
+    background: #fffaf1;
+    color: #241a0a;
+    box-shadow: 0 24px 70px -36px rgba(68, 48, 18, .52);
+  }
+
+  html.vy-light .venue-desktop-filter-head,
+  html.vy-light .venue-desktop-filter-actions {
+    border-color: rgba(150, 116, 52, .16);
+    background:
+      radial-gradient(circle at 16% 0%, rgba(212, 178, 106, .24), transparent 34%),
+      rgba(255, 248, 236, .94);
+  }
+
+  html.vy-light .venue-desktop-filter-head strong,
+  html.vy-light .venue-desktop-filter-section h3 {
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-desktop-filter-head span {
+    color: #8f6a2a;
+  }
+
+  html.vy-light .venue-desktop-filter-head p,
+  html.vy-light .venue-desktop-filter-options button,
+  html.vy-light .venue-desktop-filter-reset {
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-desktop-filter-head button,
+  html.vy-light .venue-desktop-filter-options button,
+  html.vy-light .venue-desktop-filter-reset {
+    border-color: rgba(150, 116, 52, .2);
+    background: rgba(255, 255, 255, .86);
+  }
+
+  html.vy-light .venue-desktop-filter-options button:hover,
+  html.vy-light .venue-desktop-filter-options button:focus-visible {
+    border-color: rgba(150, 116, 52, .38);
+    color: #8f6a2a;
+  }
+
+  html.vy-light .venue-desktop-filter-options button.is-active,
+  html.vy-light .venue-desktop-filter-apply {
+    background: linear-gradient(135deg, #ffe9a8 0%, #d7ae4b 66%, #b98f35 100%);
+    color: #241a0a;
+  }
+
   @media (max-width: 767px) {
     .venue-search-page {
       min-height: auto;
@@ -2128,6 +2592,10 @@ const venueSearchCss = `
       gap: 0;
     }
 
+    .venue-desktop-filter-popover {
+      display: none;
+    }
+
     .venue-search-input {
       min-height: 31px;
       gap: 9px;
@@ -2150,7 +2618,19 @@ const venueSearchCss = `
       height: 22px;
       display: inline-grid;
       place-items: center;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      box-shadow: none;
+      color: var(--vy-gold);
       flex: none;
+    }
+
+    html.vy-light .venue-filter-icon {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: #a1782d;
     }
 
     .venue-city-select,
