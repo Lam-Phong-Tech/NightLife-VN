@@ -5,12 +5,12 @@ export function CastProfileStyles() {
         --cast-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
         --cast-mobile-cta-height: 76px;
         --cast-mobile-fixed-space: calc(var(--cast-mobile-nav-height) + var(--cast-mobile-cta-height) + 28px);
-        --cast-hero-control-bg: rgba(8, 8, 11, .16);
-        --cast-hero-control-bg-strong: rgba(8, 8, 11, .22);
-        --cast-hero-control-border: rgba(255, 255, 255, .34);
-        --cast-hero-control-icon: #fff7d7;
-        --cast-hero-control-shadow: 0 12px 30px rgba(0, 0, 0, .32);
-        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .92)) drop-shadow(0 0 8px rgba(0, 0, 0, .58));
+        --cast-hero-control-bg: transparent;
+        --cast-hero-control-bg-strong: transparent;
+        --cast-hero-control-border: transparent;
+        --cast-hero-control-icon: #f7cf5c;
+        --cast-hero-control-shadow: none;
+        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .95)) drop-shadow(0 0 7px rgba(0, 0, 0, .68));
         min-height: 100vh;
         color: var(--vy-text);
         font-family: var(--nl-font-sans);
@@ -18,12 +18,12 @@ export function CastProfileStyles() {
       }
 
       html.vy-light .cast-page {
-        --cast-hero-control-bg: rgba(255, 255, 255, .14);
-        --cast-hero-control-bg-strong: rgba(255, 255, 255, .2);
-        --cast-hero-control-border: rgba(36, 26, 10, .28);
-        --cast-hero-control-icon: #241a0a;
-        --cast-hero-control-shadow: 0 12px 28px rgba(36, 26, 10, .16);
-        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .96)) drop-shadow(0 0 7px rgba(255, 255, 255, .82));
+        --cast-hero-control-bg: transparent;
+        --cast-hero-control-bg-strong: transparent;
+        --cast-hero-control-border: transparent;
+        --cast-hero-control-icon: #d4a72f;
+        --cast-hero-control-shadow: none;
+        --cast-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .9)) drop-shadow(0 0 7px rgba(0, 0, 0, .42));
       }
 
       .cast-mobile {
@@ -91,15 +91,13 @@ export function CastProfileStyles() {
         height: 38px;
         min-width: 38px;
         min-height: 38px;
-        border: 1px solid var(--cast-hero-control-border);
+        border: 0;
         border-radius: 999px;
         background: var(--cast-hero-control-bg);
         color: var(--cast-hero-control-icon);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        backdrop-filter: blur(9px) saturate(1.08);
-        -webkit-backdrop-filter: blur(9px) saturate(1.08);
         text-decoration: none;
         padding: 0;
         box-shadow: var(--cast-hero-control-shadow);
@@ -119,8 +117,8 @@ export function CastProfileStyles() {
 
       .cast-icon-button.is-active {
         background: var(--cast-hero-control-bg-strong);
-        border-color: color-mix(in srgb, var(--vy-favorite) 70%, transparent);
-        color: var(--vy-favorite);
+        border-color: transparent;
+        color: var(--cast-hero-control-icon);
       }
 
       .cast-hero-media-nav {
@@ -135,7 +133,7 @@ export function CastProfileStyles() {
         top: 47%;
         width: 38px;
         height: 38px;
-        border: 1px solid var(--cast-hero-control-border);
+        border: 0;
         border-radius: 999px;
         background: var(--cast-hero-control-bg);
         color: var(--cast-hero-control-icon);
@@ -149,8 +147,6 @@ export function CastProfileStyles() {
         transition: none;
         animation: none;
         will-change: auto;
-        backdrop-filter: blur(9px) saturate(1.08);
-        -webkit-backdrop-filter: blur(9px) saturate(1.08);
         box-shadow: var(--cast-hero-control-shadow);
       }
 
@@ -181,9 +177,7 @@ export function CastProfileStyles() {
         background: var(--cast-hero-control-bg-strong);
         color: var(--cast-hero-control-icon);
         box-shadow: var(--cast-hero-control-shadow);
-        border: 1px solid var(--cast-hero-control-border);
-        backdrop-filter: blur(10px) saturate(1.08);
-        -webkit-backdrop-filter: blur(10px) saturate(1.08);
+        border: 0;
         cursor: pointer;
       }
 

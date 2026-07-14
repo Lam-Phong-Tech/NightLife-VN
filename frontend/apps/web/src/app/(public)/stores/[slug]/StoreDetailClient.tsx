@@ -1707,12 +1707,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           --store-mobile-nav-height: calc(74px + env(safe-area-inset-bottom));
           --store-mobile-cta-height: 76px;
           --store-mobile-fixed-space: calc(var(--store-mobile-nav-height) + var(--store-mobile-cta-height) + 28px);
-          --store-hero-control-bg: rgba(8, 8, 11, .16);
-          --store-hero-control-bg-strong: rgba(8, 8, 11, .22);
-          --store-hero-control-border: rgba(255, 255, 255, .34);
-          --store-hero-control-icon: #fff7d7;
-          --store-hero-control-shadow: 0 12px 30px rgba(0, 0, 0, .32);
-          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .92)) drop-shadow(0 0 8px rgba(0, 0, 0, .58));
+          --store-hero-control-bg: transparent;
+          --store-hero-control-bg-strong: transparent;
+          --store-hero-control-border: transparent;
+          --store-hero-control-icon: #f7cf5c;
+          --store-hero-control-shadow: none;
+          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .95)) drop-shadow(0 0 7px rgba(0, 0, 0, .68));
           min-height: 100vh;
           background: var(--vy-bg);
           color: var(--vy-text);
@@ -1721,12 +1721,12 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         }
 
         html.vy-light .store-detail-page {
-          --store-hero-control-bg: rgba(255, 255, 255, .14);
-          --store-hero-control-bg-strong: rgba(255, 255, 255, .2);
-          --store-hero-control-border: rgba(36, 26, 10, .28);
-          --store-hero-control-icon: #241a0a;
-          --store-hero-control-shadow: 0 12px 28px rgba(36, 26, 10, .16);
-          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .96)) drop-shadow(0 0 7px rgba(255, 255, 255, .82));
+          --store-hero-control-bg: transparent;
+          --store-hero-control-bg-strong: transparent;
+          --store-hero-control-border: transparent;
+          --store-hero-control-icon: #d4a72f;
+          --store-hero-control-shadow: none;
+          --store-hero-control-icon-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, .9)) drop-shadow(0 0 7px rgba(0, 0, 0, .42));
         }
 
         .nl-page-content:has(.store-detail-page) {
@@ -1845,7 +1845,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
         .round-action {
           width: 40px;
           height: 40px;
-          border: 1px solid var(--store-hero-control-border);
+          border: 0;
           border-radius: 50%;
           background: var(--store-hero-control-bg);
           color: var(--store-hero-control-icon);
@@ -1854,8 +1854,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           justify-content: center;
           text-decoration: none;
           box-shadow: var(--store-hero-control-shadow);
-          backdrop-filter: blur(9px) saturate(1.08);
-          -webkit-backdrop-filter: blur(9px) saturate(1.08);
           cursor: pointer;
           padding: 0;
         }
@@ -1877,15 +1875,15 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
 
         .store-favorite-action.is-active {
           background: var(--store-hero-control-bg-strong);
-          border-color: color-mix(in srgb, var(--vy-favorite) 70%, transparent);
-          color: var(--vy-favorite);
+          border-color: transparent;
+          color: var(--store-hero-control-icon);
         }
 
         .hero-media-nav {
           top: 50%;
           width: 46px;
           height: 64px;
-          border: 1px solid var(--store-hero-control-border);
+          border: 0;
           border-radius: 999px;
           background: var(--store-hero-control-bg);
           color: var(--store-hero-control-icon);
@@ -1897,8 +1895,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           will-change: auto;
           cursor: pointer;
           box-shadow: var(--store-hero-control-shadow);
-          backdrop-filter: blur(9px) saturate(1.08);
-          -webkit-backdrop-filter: blur(9px) saturate(1.08);
           text-shadow: none;
         }
 
@@ -1920,7 +1916,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           top: 50%;
           width: 70px;
           height: 70px;
-          border: 1px solid var(--store-hero-control-border);
+          border: 0;
           border-radius: 50%;
           background: var(--store-hero-control-bg-strong);
           color: var(--store-hero-control-icon);
@@ -1930,12 +1926,10 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           transform: translate(-50%, -50%);
           cursor: pointer;
           box-shadow: var(--store-hero-control-shadow);
-          backdrop-filter: blur(10px) saturate(1.08);
-          -webkit-backdrop-filter: blur(10px) saturate(1.08);
         }
 
         .hero-video-play:where(:hover, :focus-visible) {
-          background: color-mix(in srgb, var(--store-hero-control-bg-strong) 86%, white 14%);
+          background: transparent;
         }
 
         .video-badge {
@@ -1944,7 +1938,7 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           display: inline-flex;
           align-items: center;
           gap: 7px;
-          border: 1px solid var(--store-hero-control-border);
+          border: 0;
           border-radius: 999px;
           background: var(--store-hero-control-bg);
           color: var(--store-hero-control-icon);
@@ -1953,8 +1947,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           letter-spacing: 0;
           text-transform: uppercase;
           padding: 7px 12px;
-          backdrop-filter: blur(9px) saturate(1.08);
-          -webkit-backdrop-filter: blur(9px) saturate(1.08);
           cursor: pointer;
         }
 
@@ -3435,7 +3427,6 @@ export default function StoreDetailClient({ store }: StoreDetailClientProps) {
           .hero-media-nav {
             width: 42px;
             height: 60px;
-            border-color: var(--store-hero-control-border);
             background: var(--store-hero-control-bg);
             color: var(--store-hero-control-icon);
           }
