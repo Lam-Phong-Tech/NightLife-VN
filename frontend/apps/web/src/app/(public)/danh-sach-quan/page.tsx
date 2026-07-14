@@ -69,6 +69,10 @@ type VenueSearchCopy = {
   find: string;
   hasDeals: string;
   listAria: string;
+  locationPermissionAction: string;
+  locationPermissionCancel: string;
+  locationPermissionDescription: string;
+  locationPermissionTitle: string;
   locating: string;
   mobileSubtitle: string;
   mobileTitle: string;
@@ -177,6 +181,11 @@ const venueCopyVi: VenueSearchCopy = {
   find: "Tìm",
   hasDeals: "Có ưu đãi",
   listAria: "Danh sách quán",
+  locationPermissionAction: "Cấp quyền vị trí",
+  locationPermissionCancel: "Để sau",
+  locationPermissionDescription:
+    "Bạn cần cấp quyền truy cập vị trí cho website thì hệ thống mới lấy được vị trí hiện tại và lọc quán gần tôi.",
+  locationPermissionTitle: "Cần quyền truy cập vị trí",
   locating: "Đang lấy vị trí",
   mobileSubtitle: "FIND VENUES",
   mobileTitle: "Tìm quán",
@@ -212,6 +221,11 @@ const venueCopyEn: VenueSearchCopy = {
   find: "Find",
   hasDeals: "Has deals",
   listAria: "Venue list",
+  locationPermissionAction: "Allow location",
+  locationPermissionCancel: "Later",
+  locationPermissionDescription:
+    "Please allow location access so the system can read your current position and filter venues near you.",
+  locationPermissionTitle: "Location permission needed",
   locating: "Finding location",
   mobileSubtitle: "FIND VENUES",
   mobileTitle: "Find venues",
@@ -307,6 +321,20 @@ const formatVenueApplyLabel = (count: number, language: LanguageCode) => {
   return `${translateText("Xem", language)} ${formatVenueCount(count, language)}`;
 };
 
+const isMobileViewport = () =>
+  typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+
+const readGeolocationPermissionState = async () => {
+  if (typeof navigator === "undefined" || !navigator.permissions?.query) return null;
+
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+    return status.state;
+  } catch {
+    return null;
+  }
+};
+
 const formatVenueSearchTitle = (
   cityLabel: string,
   language: LanguageCode,
@@ -317,6 +345,24 @@ const formatVenueSearchTitle = (
   if (language === "ko") return `${cityLabel} 나이트 장소 찾기`;
   if (language === "zh") return `查找${cityLabel}夜生活场所`;
   return `${copy.titlePrefix} ${cityLabel}`;
+};
+
+const formatCategoryVenueSearchTitle = (category: string, cityLabel: string, language: LanguageCode) => {
+  const categoryLabel = getLocalizedCategoryLabel(category, language);
+  if (language === "en") {
+    return category === "RESTAURANT" ? `Restaurants in ${cityLabel}` : `${categoryLabel} in ${cityLabel}`;
+  }
+  return translateText(`${categoryLabel} tại ${cityLabel}`, language);
+};
+
+const getCategoryVenueMobileTitle = (category: string, language: LanguageCode) =>
+  getLocalizedCategoryLabel(category, language);
+
+const getCategoryVenueSubtitle = (category: string, language: LanguageCode) => {
+  if (language === "en") {
+    return category === "RESTAURANT" ? "RESTAURANTS" : "SPA & WELLNESS";
+  }
+  return translateText(category === "RESTAURANT" ? "NHÀ HÀNG" : "SPA & WELLNESS", language);
 };
 
 const getLocalizedCategoryTags = (category: string, fallback: string, language: LanguageCode) =>
@@ -375,7 +421,12 @@ const toVenueView = (store: PublicStore, language: LanguageCode): VenueView => {
   };
 };
 
-export default function Page() {
+type VenueDirectoryPageProps = {
+  fixedCategory?: string;
+};
+
+export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = {}) {
+  const defaultOpenNow = !fixedCategory;
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("hn");
   const [area, setArea] = useState("");
@@ -385,9 +436,10 @@ export default function Page() {
   const [topRankingOnly, setTopRankingOnly] = useState(false);
   const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
-  const [openNow, setOpenNow] = useState(true);
+  const [openNow, setOpenNow] = useState(defaultOpenNow);
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
+  const [isLocationPermissionOpen, setLocationPermissionOpen] = useState(false);
   const [isCityMenuOpen, setCityMenuOpen] = useState(false);
   const [isSortMenuOpen, setSortMenuOpen] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
@@ -402,6 +454,8 @@ export default function Page() {
   const desktopFilterRef = useRef<HTMLDivElement | null>(null);
   const activeLanguage = useActiveLanguage();
   const copy = useMemo(() => getVenueCopy(activeLanguage), [activeLanguage]);
+  const isCategoryLocked = Boolean(fixedCategory);
+  const effectiveCategory = fixedCategory || category;
 
   useEffect(() => {
     let cancelled = false;
@@ -477,7 +531,7 @@ export default function Page() {
           q: query,
           city,
           area,
-          category,
+          category: effectiveCategory,
           lat: coords?.lat,
           lng: coords?.lng,
           limit: 48,
@@ -502,7 +556,7 @@ export default function Page() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [area, category, city, coords, hasActiveCoupon, query, sort]);
+  }, [area, city, coords, effectiveCategory, hasActiveCoupon, query, sort]);
 
   useEffect(() => {
     if (!topRankingOnly) {
@@ -574,6 +628,23 @@ export default function Page() {
     };
   }, [isDesktopFilterOpen]);
 
+  useEffect(() => {
+    if (!isLocationPermissionOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLocationPermissionOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isLocationPermissionOpen]);
+
   const topRankingOrder = useMemo(
     () => new Map(topRankingStoreSlugs.map((slug, index) => [slug, index])),
     [topRankingStoreSlugs],
@@ -641,15 +712,17 @@ export default function Page() {
     return [{ value: "", label: copy.all }, ...(dynamicOptions.length ? dynamicOptions : fallbackOptions)];
   }, [activeLanguage, areas, city, copy.all]);
 
-  const requestNearby = () => {
+  const startNearbyLocationRequest = () => {
     if (!navigator.geolocation) {
       setError("Thiết bị chưa hỗ trợ lấy vị trí.");
       return;
     }
 
+    setLocationPermissionOpen(false);
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        setError(null);
         setCoords({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -657,12 +730,35 @@ export default function Page() {
         setSort("nearest");
         setIsLocating(false);
       },
-      () => {
-        setError("Chưa lấy được vị trí hiện tại.");
+      (positionError) => {
+        const deniedMessage =
+          "Trình duyệt đang chặn quyền vị trí. Hãy mở quyền vị trí trong cài đặt trình duyệt rồi thử lại.";
+        setError(positionError.code === positionError.PERMISSION_DENIED ? deniedMessage : "Chưa lấy được vị trí hiện tại.");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 8000 },
     );
+  };
+
+  const requestNearby = async ({ bypassPermissionNotice = false } = {}) => {
+    if (!navigator.geolocation) {
+      setError("Thiết bị chưa hỗ trợ lấy vị trí.");
+      return;
+    }
+
+    if (isMobileViewport() && !bypassPermissionNotice && !coords) {
+      const permissionState = await readGeolocationPermissionState();
+      if (permissionState !== "granted") {
+        setLocationPermissionOpen(true);
+        return;
+      }
+    }
+
+    startNearbyLocationRequest();
+  };
+
+  const confirmLocationPermission = () => {
+    startNearbyLocationRequest();
   };
 
   const handleCityChange = (nextCity: string) => {
@@ -676,7 +772,7 @@ export default function Page() {
     setSortMenuOpen(false);
 
     if (nextSort === "nearest" && !coords) {
-      requestNearby();
+      void requestNearby();
       return;
     }
 
@@ -697,13 +793,22 @@ export default function Page() {
   const activeFilterCount = [
     city !== "hn",
     area,
-    category,
+    !isCategoryLocked && category,
     sort !== "priority",
     hasActiveCoupon,
     topRankingOnly,
-    !openNow,
+    openNow !== defaultOpenNow,
   ].filter(Boolean).length;
   const isResultsLoading = isLoading || isTopRankingLoading;
+  const pageTitle = fixedCategory
+    ? formatCategoryVenueSearchTitle(fixedCategory, cityLabel, activeLanguage)
+    : formatVenueSearchTitle(cityLabel, activeLanguage, copy);
+  const pageMobileTitle = fixedCategory
+    ? getCategoryVenueMobileTitle(fixedCategory, activeLanguage)
+    : copy.mobileTitle;
+  const pageSubtitle = fixedCategory
+    ? getCategoryVenueSubtitle(fixedCategory, activeLanguage)
+    : copy.subtitleDesktop;
 
   const resetFilters = () => {
     setCity("hn");
@@ -712,7 +817,7 @@ export default function Page() {
     setSort("priority");
     setHasActiveCoupon(false);
     setTopRankingOnly(false);
-    setOpenNow(true);
+    setOpenNow(defaultOpenNow);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
   };
@@ -790,13 +895,13 @@ export default function Page() {
           <div className="venue-search-title">
             <h1>
               <span className="venue-title-desktop">
-                {formatVenueSearchTitle(cityLabel, activeLanguage, copy)}
+                {pageTitle}
               </span>
-              <span className="venue-title-mobile">{copy.mobileTitle}</span>
+              <span className="venue-title-mobile">{pageMobileTitle}</span>
             </h1>
             <p>
-              <span className="venue-subtitle-desktop">{copy.subtitleDesktop}</span>
-              <span className="venue-subtitle-mobile">{copy.mobileSubtitle}</span>
+              <span className="venue-subtitle-desktop">{pageSubtitle}</span>
+              <span className="venue-subtitle-mobile">{fixedCategory ? pageSubtitle : copy.mobileSubtitle}</span>
             </p>
           </div>
         </header>
@@ -837,6 +942,7 @@ export default function Page() {
                 cityOptions={localizedCityOptions}
                 copy={copy}
                 hasActiveCoupon={hasActiveCoupon}
+                hideCategory={isCategoryLocked}
                 openNow={openNow}
                 topRankingOnly={topRankingOnly}
                 sort={sort}
@@ -908,7 +1014,9 @@ export default function Page() {
           <button
             type="button"
             className={`venue-chip ${sort === "nearest" ? "is-active" : ""}`}
-            onClick={requestNearby}
+            onClick={() => {
+              void requestNearby();
+            }}
             disabled={isLocating}
           >
             <LocateFixed size={13} />
@@ -928,7 +1036,7 @@ export default function Page() {
           >
             {copy.topRanking}
           </button>
-          {categoryChips.map((chip) => (
+          {!isCategoryLocked ? categoryChips.map((chip) => (
             <button
               key={chip.value}
               type="button"
@@ -937,7 +1045,7 @@ export default function Page() {
             >
               {chip.label}
             </button>
-          ))}
+          )) : null}
         </nav>
 
         <div className="venue-result-bar">
@@ -1019,6 +1127,7 @@ export default function Page() {
           cityOptions={localizedCityOptions}
           copy={copy}
           hasActiveCoupon={hasActiveCoupon}
+          hideCategory={isCategoryLocked}
           openNow={openNow}
           topRankingOnly={topRankingOnly}
           sort={sort}
@@ -1035,8 +1144,61 @@ export default function Page() {
           onToggleTopRanking={toggleTopRankingOnly}
         />
       ) : null}
+
+      {isLocationPermissionOpen ? (
+        <LocationPermissionDialog
+          copy={copy}
+          onAllow={confirmLocationPermission}
+          onClose={() => setLocationPermissionOpen(false)}
+        />
+      ) : null}
     </main>
   );
+}
+
+export default function Page() {
+  return <VenueDirectoryPage />;
+}
+
+function LocationPermissionDialog({
+  copy,
+  onAllow,
+  onClose,
+}: {
+  copy: VenueSearchCopy;
+  onAllow: () => void;
+  onClose: () => void;
+}) {
+  const dialog = (
+    <div className="venue-location-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="venue-location-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="venue-location-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button type="button" className="venue-location-close" onClick={onClose} aria-label={copy.filterClose}>
+          <X size={16} />
+        </button>
+        <div className="venue-location-icon" aria-hidden="true">
+          <LocateFixed size={22} />
+        </div>
+        <h2 id="venue-location-title">{copy.locationPermissionTitle}</h2>
+        <p>{copy.locationPermissionDescription}</p>
+        <div className="venue-location-actions">
+          <button type="button" className="venue-location-secondary" onClick={onClose}>
+            {copy.locationPermissionCancel}
+          </button>
+          <button type="button" className="venue-location-primary" onClick={onAllow}>
+            {copy.locationPermissionAction}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+
+  return createPortal(dialog, document.body);
 }
 
 function DesktopVenueFilterPopover({
@@ -1049,6 +1211,7 @@ function DesktopVenueFilterPopover({
   cityOptions,
   copy,
   hasActiveCoupon,
+  hideCategory,
   openNow,
   topRankingOnly,
   sort,
@@ -1073,6 +1236,7 @@ function DesktopVenueFilterPopover({
   cityOptions: FilterOption[];
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
+  hideCategory?: boolean;
   openNow: boolean;
   topRankingOnly: boolean;
   sort: DiscoverySort;
@@ -1129,12 +1293,14 @@ function DesktopVenueFilterPopover({
           value={area}
           onChange={onArea}
         />
-        <DesktopVenueFilterOptionGroup
-          label={copy.filterCategory}
-          options={categoryOptions}
-          value={category}
-          onChange={onCategory}
-        />
+        {!hideCategory ? (
+          <DesktopVenueFilterOptionGroup
+            label={copy.filterCategory}
+            options={categoryOptions}
+            value={category}
+            onChange={onCategory}
+          />
+        ) : null}
         <DesktopVenueFilterOptionGroup
           label={copy.sortLabel.replace(":", "")}
           options={sortOptions}
@@ -1196,6 +1362,7 @@ function MobileVenueFilterSheet({
   cityOptions,
   copy,
   hasActiveCoupon,
+  hideCategory,
   openNow,
   topRankingOnly,
   sort,
@@ -1220,6 +1387,7 @@ function MobileVenueFilterSheet({
   cityOptions: FilterOption[];
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
+  hideCategory?: boolean;
   openNow: boolean;
   topRankingOnly: boolean;
   sort: DiscoverySort;
@@ -1269,12 +1437,14 @@ function MobileVenueFilterSheet({
             value={area}
             onChange={onArea}
           />
-          <VenueFilterChipGroup
-            label={copy.filterCategory}
-            options={categoryOptions}
-            value={category}
-            onChange={onCategory}
-          />
+          {!hideCategory ? (
+            <VenueFilterChipGroup
+              label={copy.filterCategory}
+              options={categoryOptions}
+              value={category}
+              onChange={onCategory}
+            />
+          ) : null}
 
           <section className="venue-filter-group" aria-label={copy.filterNeeds}>
             <h3>{copy.filterNeeds}</h3>
@@ -2382,6 +2552,102 @@ const venueSearchCss = `
     color: var(--vy-on-gold);
   }
 
+  .venue-location-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 390;
+    display: grid;
+    place-items: center;
+    background: rgba(6, 6, 8, .72);
+    color: var(--vy-text);
+    padding: 20px;
+  }
+
+  .venue-location-dialog {
+    position: relative;
+    width: min(360px, calc(100vw - 34px));
+    overflow: hidden;
+    border: 1px solid rgba(212, 178, 106, .22);
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(212, 178, 106, .18), transparent 34%),
+      #121116;
+    box-shadow: 0 26px 70px -30px rgba(0, 0, 0, .86);
+    padding: 22px 18px 18px;
+    text-align: center;
+  }
+
+  .venue-location-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--vy-border);
+    border-radius: 50%;
+    background: var(--vy-surface-1);
+    color: var(--vy-muted);
+    cursor: pointer;
+  }
+
+  .venue-location-icon {
+    width: 52px;
+    height: 52px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid rgba(212, 178, 106, .36);
+    border-radius: 16px;
+    background: rgba(212, 178, 106, .12);
+    color: var(--vy-gold);
+    margin-bottom: 14px;
+  }
+
+  .venue-location-dialog h2 {
+    margin: 0;
+    color: var(--vy-text);
+    font-size: 19px;
+    line-height: 1.18;
+    font-weight: 900;
+  }
+
+  .venue-location-dialog p {
+    margin: 10px 0 0;
+    color: var(--vy-muted);
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 650;
+  }
+
+  .venue-location-actions {
+    display: grid;
+    grid-template-columns: .86fr 1.14fr;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .venue-location-actions button {
+    min-height: 42px;
+    border-radius: 12px;
+    font-family: var(--nl-font-sans);
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .venue-location-secondary {
+    border: 1px solid var(--vy-border);
+    background: var(--vy-surface-1);
+    color: var(--vy-muted);
+  }
+
+  .venue-location-primary {
+    border: 0;
+    background: linear-gradient(135deg, #f4e3b4, #d4b26a 55%, #b6924a);
+    color: var(--vy-on-gold);
+  }
+
   html.vy-light .venue-filter-backdrop {
     background: rgba(35, 27, 14, .32);
     color: #241a0a;
@@ -2451,6 +2717,45 @@ const venueSearchCss = `
   }
 
   html.vy-light .venue-filter-apply {
+    background: linear-gradient(135deg, #ffe9a8 0%, #d7ae4b 66%, #b98f35 100%);
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-location-backdrop {
+    background: rgba(35, 27, 14, .34);
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-location-dialog {
+    border-color: rgba(150, 116, 52, .24);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(212, 178, 106, .22), transparent 34%),
+      #fffaf1;
+    box-shadow: 0 24px 68px -34px rgba(68, 48, 18, .58);
+  }
+
+  html.vy-light .venue-location-close,
+  html.vy-light .venue-location-secondary {
+    border-color: rgba(150, 116, 52, .22);
+    background: rgba(255, 255, 255, .82);
+    color: #8f6a2a;
+  }
+
+  html.vy-light .venue-location-icon {
+    border-color: rgba(150, 116, 52, .32);
+    background: rgba(255, 232, 170, .52);
+    color: #8f6a2a;
+  }
+
+  html.vy-light .venue-location-dialog h2 {
+    color: #241a0a;
+  }
+
+  html.vy-light .venue-location-dialog p {
+    color: #6f6658;
+  }
+
+  html.vy-light .venue-location-primary {
     background: linear-gradient(135deg, #ffe9a8 0%, #d7ae4b 66%, #b98f35 100%);
     color: #241a0a;
   }

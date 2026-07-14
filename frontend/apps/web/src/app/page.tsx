@@ -88,8 +88,8 @@ const categoryItems = [
   { label: "Ưu đãi", icon: Ticket, href: "/uu-dai" },
   { label: "Sự kiện", icon: CalendarDays, href: "/danh-sach-quan" },
   { label: "Ranking", icon: Crown, href: "/xep-hang" },
-  { label: "Spa", icon: Waves, href: "/danh-sach-quan" },
-  { label: "Nhà hàng", icon: Utensils, href: "/danh-sach-quan" },
+  { label: "Spa", icon: Waves, href: "/spa" },
+  { label: "Nhà hàng", icon: Utensils, href: "/nha-hang" },
   { label: "VIP", icon: Star, href: "/dang-nhap", featured: true },
 ];
 
@@ -134,8 +134,8 @@ const categoryHrefById: Record<string, string> = {
   q3: "/uu-dai",
   q4: "/danh-sach-quan",
   q5: "/xep-hang",
-  q6: "/danh-sach-quan?category=MASSAGE_SPA",
-  q7: "/danh-sach-quan?category=RESTAURANT",
+  q6: "/spa",
+  q7: "/nha-hang",
   q8: "/dang-nhap",
 };
 
@@ -2489,8 +2489,12 @@ export default function Page() {
     let cancelled = false;
     const city = regionToCityCode(activeRankRegion);
 
-    setRankingsLoading(true);
-    setRankingsError("");
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setRankingsLoading(true);
+        setRankingsError("");
+      }
+    });
 
     Promise.all([
       rankingsApi.list({ targetType: "CAST", city, limit: 10 }),
