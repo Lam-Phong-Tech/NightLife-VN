@@ -914,7 +914,7 @@ export default function AdminContentPage() {
               
               let statusColor = '#9ca3af';
               let statusBorder = 'rgba(156,163,175,0.3)';
-              let statusText = camp.status;
+              let statusText: string = camp.status;
               if (camp.status === 'ACTIVE') { statusColor = '#4ade80'; statusBorder = 'rgba(74,222,128,0.3)'; statusText = 'Đang chạy'; }
               if (camp.status === 'PAUSED') { statusColor = '#facc15'; statusBorder = 'rgba(250,204,21,0.3)'; statusText = 'Tạm dừng'; }
               if (camp.status === 'DRAFT') { statusColor = '#818cf8'; statusBorder = 'rgba(129,140,248,0.3)'; statusText = 'Bản nháp'; }
