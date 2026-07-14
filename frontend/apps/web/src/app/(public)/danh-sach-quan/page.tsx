@@ -78,6 +78,7 @@ type VenueSearchCopy = {
   mobileSubtitle: string;
   mobileTitle: string;
   nearMe: string;
+  closedNow: string;
   openFilters: string;
   openNow: string;
   topRanking: string;
@@ -191,6 +192,7 @@ const venueCopyVi: VenueSearchCopy = {
   mobileSubtitle: "FIND VENUES",
   mobileTitle: "Tìm quán",
   nearMe: "Gần tôi",
+  closedNow: "Đang đóng",
   openFilters: "Mở bộ lọc",
   openNow: "Đang mở",
   topRanking: "Top ranking",
@@ -231,6 +233,7 @@ const venueCopyEn: VenueSearchCopy = {
   mobileSubtitle: "FIND VENUES",
   mobileTitle: "Find venues",
   nearMe: "Nearby",
+  closedNow: "Closed now",
   openFilters: "Open filters",
   openNow: "Open now",
   topRanking: "Top ranking",
@@ -525,6 +528,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
   const [topRankingStoreSlugs, setTopRankingStoreSlugs] = useState<string[]>([]);
   const [isTopRankingLoading, setTopRankingLoading] = useState(false);
   const [openNow, setOpenNow] = useState(defaultOpenNow);
+  const [closedNow, setClosedNow] = useState(false);
   const [openingClock, setOpeningClock] = useState(() => Date.now());
   const [isFilterSheetOpen, setFilterSheetOpen] = useState(false);
   const [isDesktopFilterOpen, setDesktopFilterOpen] = useState(false);
@@ -777,6 +781,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     }))
       .map((store) => toVenueView(store, activeLanguage, openingNow))
       .filter((venue) => !openNow || venue.isOpenNow)
+      .filter((venue) => !closedNow || !venue.isOpenNow)
       .filter((venue) => !topRankingOnly || topRankingOrder.has(venue.id));
 
     if (!topRankingOnly) return searchSortedVenues;
@@ -786,7 +791,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
         (topRankingOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
         (topRankingOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [activeLanguage, openNow, openingNow, query, stores, topRankingOnly, topRankingOrder]);
+  }, [activeLanguage, closedNow, openNow, openingNow, query, stores, topRankingOnly, topRankingOrder]);
 
   const cityLabel = getLocalizedCityLabel(city, activeLanguage);
   const selectedCityLabel = cityLabel;
@@ -924,7 +929,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     sort !== "priority",
     hasActiveCoupon,
     topRankingOnly,
-    openNow !== defaultOpenNow,
+    closedNow || openNow !== defaultOpenNow,
   ].filter(Boolean).length;
   const isResultsLoading = isLoading || isTopRankingLoading;
   const pageTitle = fixedCategory
@@ -945,8 +950,21 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
     setHasActiveCoupon(false);
     setTopRankingOnly(false);
     setOpenNow(defaultOpenNow);
+    setClosedNow(false);
     setSortMenuOpen(false);
     setCityMenuOpen(false);
+  };
+
+  const toggleOpenNow = () => {
+    const nextOpenNow = !openNow;
+    setOpenNow(nextOpenNow);
+    if (nextOpenNow) setClosedNow(false);
+  };
+
+  const toggleClosedNow = () => {
+    const nextClosedNow = !closedNow;
+    setClosedNow(nextClosedNow);
+    if (nextClosedNow) setOpenNow(false);
   };
 
   const handleFilterButtonClick = () => {
@@ -1067,6 +1085,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 categoryOptions={categoryOptions}
                 city={city}
                 cityOptions={localizedCityOptions}
+                closedNow={closedNow}
                 copy={copy}
                 hasActiveCoupon={hasActiveCoupon}
                 hideCategory={isCategoryLocked}
@@ -1082,7 +1101,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
                 onReset={resetFilters}
                 onSort={handleSortChange}
                 onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
-                onToggleOpenNow={() => setOpenNow((current) => !current)}
+                onToggleClosedNow={toggleClosedNow}
+                onToggleOpenNow={toggleOpenNow}
                 onToggleTopRanking={toggleTopRankingOnly}
               />
             ) : null}
@@ -1134,9 +1154,16 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           <button
             type="button"
             className={`venue-chip ${openNow ? "is-active" : ""}`}
-            onClick={() => setOpenNow((current) => !current)}
+            onClick={toggleOpenNow}
           >
             {copy.openNow}
+          </button>
+          <button
+            type="button"
+            className={`venue-chip ${closedNow ? "is-active" : ""}`}
+            onClick={toggleClosedNow}
+          >
+            {copy.closedNow}
           </button>
           <button
             type="button"
@@ -1252,6 +1279,7 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           categoryOptions={categoryOptions}
           city={city}
           cityOptions={localizedCityOptions}
+          closedNow={closedNow}
           copy={copy}
           hasActiveCoupon={hasActiveCoupon}
           hideCategory={isCategoryLocked}
@@ -1267,7 +1295,8 @@ export function VenueDirectoryPage({ fixedCategory }: VenueDirectoryPageProps = 
           onReset={resetFilters}
           onSort={handleSortChange}
           onToggleCoupon={() => setHasActiveCoupon((current) => !current)}
-          onToggleOpenNow={() => setOpenNow((current) => !current)}
+          onToggleClosedNow={toggleClosedNow}
+          onToggleOpenNow={toggleOpenNow}
           onToggleTopRanking={toggleTopRankingOnly}
         />
       ) : null}
@@ -1336,6 +1365,7 @@ function DesktopVenueFilterPopover({
   categoryOptions,
   city,
   cityOptions,
+  closedNow,
   copy,
   hasActiveCoupon,
   hideCategory,
@@ -1351,6 +1381,7 @@ function DesktopVenueFilterPopover({
   onReset,
   onSort,
   onToggleCoupon,
+  onToggleClosedNow,
   onToggleOpenNow,
   onToggleTopRanking,
 }: {
@@ -1361,6 +1392,7 @@ function DesktopVenueFilterPopover({
   categoryOptions: FilterOption[];
   city: string;
   cityOptions: FilterOption[];
+  closedNow: boolean;
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
   hideCategory?: boolean;
@@ -1376,6 +1408,7 @@ function DesktopVenueFilterPopover({
   onReset: () => void;
   onSort: (value: DiscoverySort) => void;
   onToggleCoupon: () => void;
+  onToggleClosedNow: () => void;
   onToggleOpenNow: () => void;
   onToggleTopRanking: () => void;
 }) {
@@ -1398,6 +1431,9 @@ function DesktopVenueFilterPopover({
           <div className="venue-desktop-filter-options">
             <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
               {copy.openNow}
+            </button>
+            <button type="button" className={closedNow ? "is-active" : ""} onClick={onToggleClosedNow}>
+              {copy.closedNow}
             </button>
             <button type="button" className={hasActiveCoupon ? "is-active" : ""} onClick={onToggleCoupon}>
               {copy.hasDeals}
@@ -1487,6 +1523,7 @@ function MobileVenueFilterSheet({
   categoryOptions,
   city,
   cityOptions,
+  closedNow,
   copy,
   hasActiveCoupon,
   hideCategory,
@@ -1502,6 +1539,7 @@ function MobileVenueFilterSheet({
   onReset,
   onSort,
   onToggleCoupon,
+  onToggleClosedNow,
   onToggleOpenNow,
   onToggleTopRanking,
 }: {
@@ -1512,6 +1550,7 @@ function MobileVenueFilterSheet({
   categoryOptions: FilterOption[];
   city: string;
   cityOptions: FilterOption[];
+  closedNow: boolean;
   copy: VenueSearchCopy;
   hasActiveCoupon: boolean;
   hideCategory?: boolean;
@@ -1527,6 +1566,7 @@ function MobileVenueFilterSheet({
   onReset: () => void;
   onSort: (value: DiscoverySort) => void;
   onToggleCoupon: () => void;
+  onToggleClosedNow: () => void;
   onToggleOpenNow: () => void;
   onToggleTopRanking: () => void;
 }) {
@@ -1578,6 +1618,9 @@ function MobileVenueFilterSheet({
             <div>
               <button type="button" className={openNow ? "is-active" : ""} onClick={onToggleOpenNow}>
                 {copy.openNow}
+              </button>
+              <button type="button" className={closedNow ? "is-active" : ""} onClick={onToggleClosedNow}>
+                {copy.closedNow}
               </button>
               <button
                 type="button"
